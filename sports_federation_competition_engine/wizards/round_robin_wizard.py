@@ -35,6 +35,14 @@ class RoundRobinWizard(models.TransientModel):
         compute="_compute_stage_round_count",
         store=False,
     )
+    round_mode = fields.Selection(
+        [("existing", "Use Existing Only"), ("auto", "Auto-Create Missing"), ("explicit", "Create Specific")],
+        string="Round Mode", default="auto", required=True,
+    )
+    requested_rounds = fields.Integer(
+        string="Rounds to Create",
+        help="Number of rounds to create when Round Mode is 'Create Specific'.",
+    )
     schedule_by_round = fields.Boolean(string="Schedule By Round", default=False)
     round_interval_hours = fields.Integer(string="Round Interval (hours)", default=24)
     start_datetime = fields.Datetime(string="Start Date/Time")
@@ -80,6 +88,8 @@ class RoundRobinWizard(models.TransientModel):
         "round_type",
         "rounds_count",
         "stage_round_count",
+        "round_mode",
+        "requested_rounds",
         "schedule_by_round",
         "start_datetime",
     )
@@ -96,11 +106,48 @@ class RoundRobinWizard(models.TransientModel):
                 wiz.summary = wiz._get_participant_requirement_message(parts)
                 continue
             stats = wiz._get_round_stats(n)
+            required_rounds = stats["total_rounds"]
+
+            # Determine effective rounds based on mode
+            if wiz.round_mode == "existing":
+                effective_rounds = wiz.stage_round_count
+                # Show total matches that will be created (not limited by gamedays)
+                summary = _(
+                    "%(n)s participants, %(total_matches)s total matches "
+                    "will be distributed across %(gamedays)s gamedays."
+                ) % {
+                    "n": n,
+                    "total_matches": stats["total_matches"],
+                    "gamedays": effective_rounds,
+                }
+                wiz.summary = summary
+                continue
+            elif wiz.round_mode == "explicit":
+                effective_rounds = wiz.requested_rounds or 0
+                if effective_rounds < required_rounds:
+                    summary = _(
+                        "Requested %(requested)s rounds but schedule needs %(required)s. "
+                        "Increase 'Rounds to Create' or use 'Auto-Create Missing'."
+                    ) % {"requested": effective_rounds, "required": required_rounds}
+                    wiz.summary = summary
+                    continue
+                summary = _(
+                    "%(n)s participants, %(requested)s rounds will be created, "
+                    "%(matches_per)s matches/round, %(total)s total matches."
+                ) % {
+                    "n": n,
+                    "requested": effective_rounds,
+                    "matches_per": stats["matches_per_round"],
+                    "total": stats["matches_per_round"] * effective_rounds,
+                }
+                wiz.summary = summary
+                continue
+
+            # Default: auto-create missing (original behavior)
             summary = (
                 f"{n} participants, {stats['total_rounds']} rounds, "
                 f"{stats['matches_per_round']} matches/round, {stats['total_matches']} total matches."
             )
-            required_rounds = stats["total_rounds"]
             if wiz.stage_round_count:
                 reused_rounds = min(wiz.stage_round_count, required_rounds)
                 missing_rounds = max(required_rounds - wiz.stage_round_count, 0)
@@ -199,6 +246,8 @@ class RoundRobinWizard(models.TransientModel):
         self.ensure_one()
         participants = self._get_participants()
         self._validate_generation_request(participants)
+        self._validate_round_mode(participants)
+
         options = {
             "double_round": self.round_type == "double",
             "start_datetime": self.start_datetime,
@@ -209,6 +258,8 @@ class RoundRobinWizard(models.TransientModel):
             "venue": self.venue or "",
             "overwrite": self.overwrite,
             "group": self.group_id,
+            "round_mode": self.round_mode,
+            "requested_rounds": self.requested_rounds,
         }
         engine = self.env["federation.competition.engine.service"]
         matches = engine.generate_round_robin_schedule(
@@ -224,6 +275,22 @@ class RoundRobinWizard(models.TransientModel):
                 "next": {"type": "ir.actions.act_window_close"},
             },
         }
+
+    def _validate_round_mode(self, participants):
+        """Validate round mode constraints."""
+        stats = self._get_round_stats(len(participants))
+        required_rounds = stats["total_rounds"]
+
+        if self.round_mode == "existing":
+            # No minimum requirement - just need at least 1 round to spread matches
+            if self.stage_round_count < 1:
+                raise UserError(_("Need at least 1 existing round to distribute matches."))
+        elif self.round_mode == "explicit":
+            if not self.requested_rounds or self.requested_rounds < required_rounds:
+                raise UserError(_(
+                    "Requested %(requested)s rounds but schedule needs %(required)s. "
+                    "Increase 'Rounds to Create' or use 'Auto-Create Missing'."
+                ) % {"requested": self.requested_rounds or 0, "required": required_rounds})
 
     def _validate_generation_request(self, participants):
         """Validate generation request."""

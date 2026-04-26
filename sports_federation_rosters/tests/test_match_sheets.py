@@ -60,7 +60,7 @@ class TestMatchSheets(TransactionCase):
             "season_id": cls.season.id,
             "date_start": "2024-01-01",
         })
-        cls.match = cls.env["federation.match"].create({
+        cls.match = cls.env["federation.match"].with_context(skip_auto_match_sheets=True).create({
             "tournament_id": cls.tournament.id,
             "home_team_id": cls.team_home.id,
             "away_team_id": cls.team_away.id,
@@ -369,3 +369,46 @@ class TestMatchSheets(TransactionCase):
             sheet.write({"notes": "Locked"})
         with self.assertRaises(ValidationError):
             line.write({"notes": "Not allowed"})
+
+    def test_auto_match_sheets_created_on_match_create(self):
+        """Creating a match auto-creates draft sheets for home and away teams."""
+        # Create an active roster so it can be linked
+        rule_set = self.env["federation.rule.set"].create({
+            "name": "Auto Sheet Rules",
+            "code": "AUTO_RS",
+        })
+        roster = self.env["federation.team.roster"].create({
+            "name": "Auto Roster",
+            "team_id": self.team_home.id,
+            "season_id": self.season.id,
+            "rule_set_id": rule_set.id,
+        })
+        roster.action_activate()
+
+        match = self.env["federation.match"].create({
+            "tournament_id": self.tournament.id,
+            "home_team_id": self.team_home.id,
+            "away_team_id": self.team_away.id,
+        })
+        sheets = self.env["federation.match.sheet"].search([("match_id", "=", match.id)])
+        self.assertEqual(len(sheets), 2)
+        sides = set(sheets.mapped("side"))
+        self.assertIn("home", sides)
+        self.assertIn("away", sides)
+        for sheet in sheets:
+            self.assertEqual(sheet.state, "draft")
+
+        home_sheet = sheets.filtered(lambda s: s.side == "home")
+        self.assertEqual(home_sheet.roster_id, roster, "Home sheet should be linked to the active roster")
+
+    def test_auto_match_sheets_no_duplicate_on_second_create(self):
+        """Auto-creation is skipped when a sheet already exists for that side."""
+        match = self.env["federation.match"].create({
+            "tournament_id": self.tournament.id,
+            "home_team_id": self.team_home.id,
+            "away_team_id": self.team_away.id,
+        })
+        # Calling _create_auto_match_sheets again should not raise or duplicate
+        match._create_auto_match_sheets()
+        sheets = self.env["federation.match.sheet"].search([("match_id", "=", match.id)])
+        self.assertEqual(len(sheets), 2)

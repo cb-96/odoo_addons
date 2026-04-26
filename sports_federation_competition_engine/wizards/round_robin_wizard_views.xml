@@ -17,6 +17,8 @@
                         <field name="use_all_participants"/>
                         <field name="participant_ids" invisible="use_all_participants"/>
                         <field name="stage_round_count" readonly="1" invisible="not stage_id"/>
+                        <field name="round_mode"/>
+                        <field name="requested_rounds" invisible="round_mode != 'explicit'"/>
                         <field name="schedule_by_round"/>
                     </group>
                 </group>

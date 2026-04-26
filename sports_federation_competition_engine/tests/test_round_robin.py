@@ -178,6 +178,103 @@ class TestRoundRobin(TransactionCase):
         round_numbers = sorted(set(matches.mapped("round_number")))
         self.assertEqual(round_numbers, [1, 2, 3, 4, 5])
 
+    def test_existing_round_mode_uses_only_existing(self):
+        """Round mode 'existing' should spread matches across existing rounds."""
+        # Create 3 pre-existing rounds
+        for i in range(1, 4):
+            self.env["federation.tournament.round"].create({
+                "stage_id": self.stage.id,
+                "sequence": i,
+                "name": f"Round {i}",
+            })
+
+        options = {
+            "double_round": False,
+            "start_datetime": False,
+            "interval_hours": 0,
+            "venue": "",
+            "overwrite": False,
+            "group": False,
+            "round_mode": "existing",
+            "requested_rounds": 0,
+        }
+        engine = self.env["federation.competition.engine.service"]
+        # 6 teams need 5 rounds, but with 3 existing rounds it should spread matches across them
+        matches = engine.generate_round_robin_schedule(
+            self.tournament, self.stage, self.participants, options
+        )
+        # Should still create 15 matches, distributed across 3 rounds
+        self.assertEqual(len(matches), 15)
+
+    def test_existing_round_mode_spreads_across_fewer_rounds(self):
+        """Round mode 'existing' should spread matches across fewer existing rounds."""
+        # Create 2 pre-existing rounds (fewer than the 5 needed mathematically)
+        for i in range(1, 3):
+            self.env["federation.tournament.round"].create({
+                "stage_id": self.stage.id,
+                "sequence": i,
+                "name": f"Round {i}",
+            })
+
+        options = {
+            "double_round": False,
+            "start_datetime": False,
+            "interval_hours": 0,
+            "venue": "",
+            "overwrite": False,
+            "group": False,
+            "round_mode": "existing",
+            "requested_rounds": 0,
+        }
+        engine = self.env["federation.competition.engine.service"]
+        matches = engine.generate_round_robin_schedule(
+            self.tournament, self.stage, self.participants, options
+        )
+        # Should still create 15 matches, distributed across 2 rounds
+        self.assertEqual(len(matches), 15)
+
+    def test_explicit_round_mode_creates_specific_count(self):
+        """Round mode 'explicit' should create specific number of rounds."""
+        options = {
+            "double_round": False,
+            "start_datetime": False,
+            "interval_hours": 0,
+            "venue": "",
+            "overwrite": False,
+            "group": False,
+            "round_mode": "explicit",
+            "requested_rounds": 10,  # More than needed
+        }
+        engine = self.env["federation.competition.engine.service"]
+        matches = engine.generate_round_robin_schedule(
+            self.tournament, self.stage, self.participants, options
+        )
+        # Should create 10 rounds but only use 5 for 15 matches
+        self.assertEqual(len(matches), 15)
+        # Verify 10 rounds were created
+        rounds = self.env["federation.tournament.round"].search([
+            ("stage_id", "=", self.stage.id)
+        ])
+        self.assertEqual(len(rounds), 10)
+
+    def test_explicit_round_mode_insufficient_rounds(self):
+        """Round mode 'explicit' should fail if requested rounds less than needed."""
+        options = {
+            "double_round": False,
+            "start_datetime": False,
+            "interval_hours": 0,
+            "venue": "",
+            "overwrite": False,
+            "group": False,
+            "round_mode": "explicit",
+            "requested_rounds": 3,  # Less than needed (5)
+        }
+        engine = self.env["federation.competition.engine.service"]
+        with self.assertRaises(UserError):
+            engine.generate_round_robin_schedule(
+                self.tournament, self.stage, self.participants, options
+            )
+
         for round_number in round_numbers:
             round_matches = matches.filtered(lambda match: match.round_number == round_number)
             self.assertEqual(len(round_matches), 3)

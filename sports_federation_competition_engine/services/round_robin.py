@@ -182,16 +182,40 @@ class RoundRobinService(models.AbstractModel):
         schedule_by_round=False,
         round_interval_hours=24,
         venue_rec=False,
+        round_mode="auto",
+        requested_rounds=0,
     ):
-        """Return round records."""
+        """Return round records based on round mode.
+
+        Args:
+            round_mode: 'existing' (use only existing), 'auto' (create missing), 'explicit' (create specific count)
+            requested_rounds: number of rounds to create in explicit mode
+        """
         Round = self.env["federation.tournament.round"]
         existing_rounds = {
             round_record.sequence: round_record
             for round_record in self._get_stage_rounds(stage, group=group)
         }
 
+        # Determine how many rounds we can work with
+        if round_mode == "existing":
+            # Only use existing gamedays (rounds), but generate ALL matches
+            available_rounds = sorted(existing_rounds.keys())
+            if not available_rounds:
+                raise UserError(_("No existing rounds found. Use 'Auto-Create Missing' or 'Create Specific' mode."))
+            # Return existing gamedays - ALL matches will be distributed across them
+            round_records = [existing_rounds[seq] for seq in available_rounds]
+            # Bypass the normal round creation - just return gamedays
+            return round_records
+        elif round_mode == "explicit":
+            # Create exactly requested_rounds (may be more than needed)
+            target_rounds = requested_rounds
+        else:
+            # Auto mode: create as many as needed (original behavior)
+            target_rounds = len(rounds)
+
         round_records = []
-        for round_number in range(1, len(rounds) + 1):
+        for round_number in range(1, target_rounds + 1):
             round_vals = {
                 "name": _("Round %(number)s") % {"number": round_number},
             }
@@ -204,18 +228,30 @@ class RoundRobinService(models.AbstractModel):
                 round_vals["venue_id"] = venue_rec.id
 
             round_record = existing_rounds.get(round_number)
-            round_record = Round.get_or_create_stage_round(
-                stage,
-                round_number,
-                group=group,
-                values=round_vals,
-            ) if not round_record else Round.get_or_create_stage_round(
-                stage,
-                round_number,
-                group=group,
-                values=round_vals,
-            )
-            round_records.append(round_record)
+            if round_record:
+                # Update existing round with new values if empty
+                write_vals = {}
+                if not round_record.name and round_vals.get("name"):
+                    write_vals["name"] = round_vals["name"]
+                for field_name in ("round_date", "venue_id"):
+                    if field_name in round_vals and field_name in round_record._fields and not round_record[field_name]:
+                        write_vals[field_name] = round_vals[field_name]
+                if write_vals:
+                    round_record.write(write_vals)
+                round_records.append(round_record)
+            else:
+                # Create new round
+                create_vals = {
+                    "stage_id": stage.id,
+                    "group_id": group.id if group else False,
+                    "sequence": round_number,
+                    "name": round_vals.get("name", _("Round %(number)s") % {"number": round_number}),
+                }
+                if schedule_by_round and start_dt:
+                    create_vals["round_date"] = round_vals["round_date"]
+                if venue_rec and "venue_id" in Round._fields:
+                    create_vals["venue_id"] = venue_rec.id
+                round_records.append(Round.create(create_vals))
         return round_records
 
     def _get_round_base_datetime(
@@ -255,6 +291,7 @@ class RoundRobinService(models.AbstractModel):
         venue = options.get("venue", "")
         group = options.get("group")
         schedule_by_round = bool(options.get("schedule_by_round"))
+        round_mode = options.get("round_mode", "auto")
 
         created = []
 
@@ -275,10 +312,22 @@ class RoundRobinService(models.AbstractModel):
             schedule_by_round=schedule_by_round,
             round_interval_hours=round_interval,
             venue_rec=venue_rec,
+            round_mode=options.get("round_mode", "auto"),
+            requested_rounds=options.get("requested_rounds", 0),
         )
 
         sequential_index = 0
-        for round_number, (round_pairs, round_record) in enumerate(zip(rounds, round_records), start=1):
+
+        # If we have fewer round records than round sets, cycle through them
+        if len(round_records) < len(rounds) and round_mode == "existing":
+            _logger.info(
+                "Spreading %d match sets across %d existing rounds",
+                len(rounds), len(round_records)
+            )
+
+        for round_number, round_pairs in enumerate(rounds, start=1):
+            # Cycle through round records if needed (for "existing" mode)
+            round_record = round_records[(round_number - 1) % len(round_records)]
             ordered_entries = self._get_ordered_round_entries(round_pairs)
             round_base = self._get_round_base_datetime(
                 round_record,
@@ -295,7 +344,7 @@ class RoundRobinService(models.AbstractModel):
                     "home_team_id": entry["home"].id,
                     "away_team_id": entry["away"].id,
                     "round_id": round_record.id,
-                    "round_number": round_number,
+                    "round_number": round_record.sequence if round_record.sequence else round_number,
                     "state": "draft",
                 }
                 if group:
