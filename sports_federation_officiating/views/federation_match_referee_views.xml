@@ -39,6 +39,7 @@
                     <separator string="Notes"/>
                     <field name="notes"/>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>
@@ -47,8 +48,10 @@
         <field name="name">federation.match.referee.list</field>
         <field name="model">federation.match.referee</field>
         <field name="arch" type="xml">
-            <list string="Match Referee Assignments">
+            <list string="Match Referee Assignments"
+                  decoration-danger="is_confirmation_overdue and state == 'draft'">
                 <field name="match_id"/>
+                <field name="match_id.scheduled_date" string="Match Date" optional="show"/>
                 <field name="tournament_id"/>
                 <field name="referee_id"/>
                 <field name="role"/>
@@ -69,6 +72,8 @@
                 <field name="referee_id"/>
                 <field name="tournament_id"/>
                 <field name="confirmation_deadline"/>
+                <filter name="overdue" string="Overdue Confirmation"
+                        domain="[('is_confirmation_overdue', '=', True), ('state', '=', 'draft')]"/>
                 <filter name="draft" string="Assigned" domain="[('state', '=', 'draft')]"/>
                 <filter name="confirmed" string="Confirmed" domain="[('state', '=', 'confirmed')]"/>
                 <filter name="done" string="Done" domain="[('state', '=', 'done')]"/>
@@ -79,13 +84,14 @@
                     <filter name="referee" string="Referee" context="{'group_by': 'referee_id'}"/>
                     <filter name="tournament" string="Tournament" context="{'group_by': 'tournament_id'}"/>
                     <filter name="role" string="Role" context="{'group_by': 'role'}"/>
+                    <filter name="state" string="Status" context="{'group_by': 'state'}"/>
                 </group>
             </search>
         </field>
     </record>
 
     <record id="federation_match_referee_action" model="ir.actions.act_window">
-        <field name="name">Match Referee Assignments</field>
+        <field name="name">Match Assignments</field>
         <field name="res_model">federation.match.referee</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_federation_match_referee_search"/>

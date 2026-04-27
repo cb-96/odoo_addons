@@ -31,7 +31,7 @@
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-                        <button name="action_view_lines" type="object" class="oe_stat_button" icon="fa-list" invisible="not line_count">
+                        <button name="action_view_lines" type="object" class="oe_stat_button" icon="fa-list">
                             <field name="line_count" string="Lines" widget="statinfo"/>
                         </button>
                     </div>
@@ -52,7 +52,7 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Lines" name="lines">
+                        <page string="Standings Table" name="lines">
                             <field name="line_ids" readonly="1">
                                 <list>
                                     <field name="rank"/>
@@ -106,10 +106,39 @@
         </field>
     </record>
 
+    <record id="view_federation_standing_search" model="ir.ui.view">
+        <field name="name">federation.standing.search</field>
+        <field name="model">federation.standing</field>
+        <field name="arch" type="xml">
+            <search string="Search Standings">
+                <field name="name"/>
+                <field name="tournament_id"/>
+                <field name="stage_id"/>
+                <field name="competition_id"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="computed" string="Computed" domain="[('state', '=', 'computed')]"/>
+                <filter name="frozen" string="Frozen" domain="[('state', '=', 'frozen')]"/>
+                <separator/>
+                <group>
+                    <filter name="tournament" string="Tournament" context="{'group_by': 'tournament_id'}"/>
+                    <filter name="stage" string="Stage" context="{'group_by': 'stage_id'}"/>
+                    <filter name="competition" string="Competition" context="{'group_by': 'competition_id'}"/>
+                    <filter name="state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
     <record id="action_federation_standing" model="ir.actions.act_window">
         <field name="name">Standings</field>
         <field name="res_model">federation.standing</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_federation_standing_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Standings are recomputed after match results are approved.
+            </p>
+        </field>
     </record>
 
     <record id="action_federation_standing_line" model="ir.actions.act_window">

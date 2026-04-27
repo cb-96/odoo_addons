@@ -83,7 +83,29 @@
                         </page>
                     </notebook>
                 </sheet>
+                <chatter/>
             </form>
+        </field>
+    </record>
+
+    <record id="view_federation_match_sheet_search" model="ir.ui.view">
+        <field name="name">federation.match.sheet.search</field>
+        <field name="model">federation.match.sheet</field>
+        <field name="arch" type="xml">
+            <search string="Search Match Sheets">
+                <field name="name"/>
+                <field name="match_id"/>
+                <field name="team_id"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="submitted" string="Submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <separator/>
+                <group>
+                    <filter name="match" string="Match" context="{'group_by': 'match_id'}"/>
+                    <filter name="team" string="Team" context="{'group_by': 'team_id'}"/>
+                    <filter name="state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
@@ -91,5 +113,11 @@
         <field name="name">Match Sheets</field>
         <field name="res_model">federation.match.sheet</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_federation_match_sheet_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Match sheets are created automatically for each team when a match is scheduled.
+            </p>
+        </field>
     </record>
 </odoo>

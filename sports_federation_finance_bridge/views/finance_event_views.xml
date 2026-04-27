@@ -64,6 +64,7 @@
                         <field name="closure_note" placeholder="Optional closure and reconciliation notes..."/>
                     </group>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>

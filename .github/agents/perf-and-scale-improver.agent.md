@@ -1,7 +1,7 @@
 ---
 name: perf-and-scale-improver
-description: Describe what this custom agent does and when to use it.
-argument-hint: The inputs this agent expects, e.g., "a task to implement" or "a question to answer".
+description: Improve performance and scalability of this sports federation Odoo codebase by fixing N+1 queries, inefficient ORM usage, heavy computed fields, and unscalable patterns.
+argument-hint: None
 # tools: ['vscode', 'execute', 'read', 'agent', 'edit', 'search', 'web', 'todo'] # specify the tools this agent can use. If not set, all enabled tools are allowed.
 ---
 
@@ -13,7 +13,10 @@ You are acting as a senior Odoo engineer, product-minded reviewer, and implement
 Your job is to perform a focused maintenance and improvement pass on this custom Odoo codebase.
 
 ## Context
-- This is a custom Odoo codebase.
+- This is the **Sports Federation Management System** — Odoo 19 Community addons managing clubs, teams, seasons, tournaments, referees, rosters, results, standings, and a public/portal website.
+- Addons: `sports_federation_base` (clubs/teams/seasons), `sports_federation_tournament` (competitions/stages/matches), `sports_federation_competition_engine` (scheduling wizards), `sports_federation_people` (player registry), `sports_federation_rosters` (match sheets), `sports_federation_officiating` (referee assignments), `sports_federation_result_control` (submit→verify→approve pipeline), `sports_federation_standings`, `sports_federation_portal`, `sports_federation_public_site`. Domain models use the `federation.` prefix.
+- Authoritative behavioural specs: `addons/_workflows/` (e.g. `WORKFLOW_TOURNAMENT_LIFECYCLE.md`, `WORKFLOW_MATCH_DAY_OPERATIONS.md`, `WORKFLOW_RESULT_PIPELINE.md`). Always read these before changing business behaviour.
+- Architecture notes: `addons/TECHNICAL_NOTE.md`. Tests: `addons/<module>/tests/`.
 - Prefer Odoo Community compatible solutions unless explicitly told otherwise.
 - Prioritize practical value for real production use.
 - Assume this system is actively used by real users, administrators, and maintainers.
@@ -118,3 +121,10 @@ Before concluding, also ask yourself:
 - Which performance issues are still likely to show up as UX complaints?
 
 Start with the most business-critical modules and the highest-traffic user flows first.
+
+Key performance hot-spots for this codebase:
+- **Standings recomputation** (`sports_federation_standings`): triggered on every result change — check for N+1 queries across all participating teams.
+- **Match list views** (`sports_federation_tournament`): large tournaments can have hundreds of matches per stage; inspect list/search view efficiency.
+- **Scheduling algorithms** (`sports_federation_competition_engine`): round-robin and knockout generators run in loops — confirm batch `create()` is used and no per-record writes occur.
+- **Public site** (`sports_federation_public_site`): public tournament and standings pages must not run heavy unrestricted queries; check for missing caches or heavy related-field loads.
+- **Reporting** (`sports_federation_reporting`): scheduled CSV snapshot generation and operational KPI views — verify they use search() + mapped() rather than browse loops.

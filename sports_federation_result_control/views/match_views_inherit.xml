@@ -7,9 +7,11 @@
         <field name="model">federation.match</field>
         <field name="inherit_id" ref="sports_federation_tournament.view_federation_match_form"/>
         <field name="arch" type="xml">
-            <!-- Add result control buttons in header -->
-            <xpath expr="//header" position="inside">
-                <field name="result_state" widget="statusbar" statusbar_visible="draft,submitted,verified,approved,contested,corrected"/>
+            <!-- Add result state statusbar after match state statusbar -->
+            <xpath expr="//header/field[@name='state']" position="after">
+                <field name="result_state" widget="statusbar"
+                       statusbar_visible="draft,submitted,verified,approved,contested,corrected"
+                       string="Result"/>
             </xpath>
             <!-- Add result control buttons -->
             <xpath expr="//header/button[@name='action_draft']" position="after">
@@ -29,11 +31,7 @@
             <!-- Add result control section in body -->
             <xpath expr="//sheet/group[2]" position="after">
                 <group string="Result Control">
-                    <group>
-                        <field name="result_state"/>
-                        <field name="include_in_official_standings"/>
-                    </group>
-                    <group>
+                    <group string="Approval Trail">
                         <field name="result_submitted_by_id"/>
                         <field name="result_submitted_on"/>
                         <field name="result_verified_by_id"/>
@@ -41,8 +39,11 @@
                         <field name="result_approved_by_id"/>
                         <field name="result_approved_on"/>
                     </group>
+                    <group string="Standings">
+                        <field name="include_in_official_standings"/>
+                    </group>
                 </group>
-                <group string="Contest/Correction">
+                <group string="Contest / Correction">
                     <field name="result_contest_reason"
                            placeholder="Required before contesting a result."
                            invisible="result_state not in ('submitted', 'verified', 'approved', 'contested')"/>
@@ -90,12 +91,14 @@
         <field name="arch" type="xml">
             <xpath expr="//filter[@name='cancelled']" position="after">
                 <separator/>
-                <filter name="result_draft" string="Result Draft" domain="[('result_state', '=', 'draft')]"/>
-                <filter name="result_submitted" string="Result Submitted" domain="[('result_state', '=', 'submitted')]"/>
-                <filter name="result_verified" string="Result Verified" domain="[('result_state', '=', 'verified')]"/>
-                <filter name="result_approved" string="Result Approved" domain="[('result_state', '=', 'approved')]"/>
-                <filter name="result_contested" string="Result Contested" domain="[('result_state', '=', 'contested')]"/>
-                <filter name="result_corrected" string="Result Corrected" domain="[('result_state', '=', 'corrected')]"/>
+                <filter name="pending_results" string="Pending Results"
+                        domain="[('state', '=', 'done'), ('result_state', 'in', ('draft', 'submitted', 'verified'))]"/>
+                <filter name="result_draft" string="Result: Draft" domain="[('result_state', '=', 'draft')]"/>
+                <filter name="result_submitted" string="Result: Submitted" domain="[('result_state', '=', 'submitted')]"/>
+                <filter name="result_verified" string="Result: Verified" domain="[('result_state', '=', 'verified')]"/>
+                <filter name="result_approved" string="Result: Approved" domain="[('result_state', '=', 'approved')]"/>
+                <filter name="result_contested" string="Result: Contested" domain="[('result_state', '=', 'contested')]"/>
+                <filter name="result_corrected" string="Result: Corrected" domain="[('result_state', '=', 'corrected')]"/>
             </xpath>
             <xpath expr="//filter[@name='state']" position="after">
                 <filter name="result_state" string="Result State" context="{'group_by': 'result_state'}"/>

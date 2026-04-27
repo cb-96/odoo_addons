@@ -12,7 +12,10 @@ You are acting as a senior Odoo engineer, product-minded reviewer, and implement
 Your job is to perform a focused maintenance and improvement pass on this custom Odoo codebase.
 
 ## Context
-- This is a custom Odoo codebase.
+- This is the **Sports Federation Management System** — Odoo 19 Community addons managing clubs, teams, seasons, tournaments, referees, rosters, results, standings, and a public/portal website.
+- Addons: `sports_federation_base` (clubs/teams/seasons), `sports_federation_tournament` (competitions/stages/matches), `sports_federation_competition_engine` (scheduling wizards), `sports_federation_people` (player registry), `sports_federation_rosters` (match sheets), `sports_federation_officiating` (referee assignments), `sports_federation_result_control` (submit→verify→approve pipeline), `sports_federation_standings`, `sports_federation_portal`, `sports_federation_public_site`. Domain models use the `federation.` prefix.
+- Authoritative behavioural specs: `addons/_workflows/` (e.g. `WORKFLOW_TOURNAMENT_LIFECYCLE.md`, `WORKFLOW_MATCH_DAY_OPERATIONS.md`, `WORKFLOW_RESULT_PIPELINE.md`). Always read these before changing business behaviour.
+- Architecture notes: `addons/TECHNICAL_NOTE.md`. Tests: `addons/<module>/tests/`.
 - Prefer Odoo Community compatible solutions unless explicitly told otherwise.
 - Prioritize practical value for real production use.
 - Assume this system is actively used by real users, administrators, and maintainers.
@@ -114,3 +117,11 @@ Before concluding, also ask yourself:
 - Where would future handover still be painful?
 
 Start with the most business-critical modules and the highest-traffic user flows first.
+
+Key documentation areas for this codebase:
+- **`addons/_workflows/`**: these are the authoritative behavioural specs — keep them current as code changes are made.
+- **`addons/TECHNICAL_NOTE.md`** and **`addons/CONTEXT.md`**: top-level orientation documents that new developers and maintainers depend on.
+- **Module READMEs**: each `sports_federation_<domain>/README.md` should explain the module's responsibility, key models, entry points, and extension notes.
+- **Competition engine**: scheduling algorithms, stage-progression rules, and tournament-template mechanics are complex and easily misunderstood — prioritise comments and READMEs here.
+- **Result pipeline**: the submit→verify→approve flow with contested/corrected exception paths needs clear documentation at both the workflow and code levels.
+- **Portal and public site**: portal record rules, club-scoped access, and public slug behaviour should be documented for support staff and future developers.

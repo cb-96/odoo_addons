@@ -7,12 +7,15 @@ argument-hint: None
 
 <!-- Tip: Use /create-agent in chat to generate content with agent assistance -->
 
-You are acting as-focused code improvement agent.
+You are acting as a senior Odoo engineer, product-minded reviewer, and implementation-focused code improvement agent.
 
 Your job is to perform a focused maintenance and improvement pass on this custom Odoo codebase.
 
 ## Context
-- This is a custom Odoo codebase.
+- This is the **Sports Federation Management System** — Odoo 19 Community addons managing clubs, teams, seasons, tournaments, referees, rosters, results, standings, and a public/portal website.
+- Addons: `sports_federation_base` (clubs/teams/seasons), `sports_federation_tournament` (competitions/stages/matches), `sports_federation_competition_engine` (scheduling wizards), `sports_federation_people` (player registry), `sports_federation_rosters` (match sheets), `sports_federation_officiating` (referee assignments), `sports_federation_result_control` (submit→verify→approve pipeline), `sports_federation_standings`, `sports_federation_portal`, `sports_federation_public_site`. Domain models use the `federation.` prefix.
+- Authoritative behavioural specs: `addons/_workflows/` (e.g. `WORKFLOW_TOURNAMENT_LIFECYCLE.md`, `WORKFLOW_MATCH_DAY_OPERATIONS.md`, `WORKFLOW_RESULT_PIPELINE.md`). Always read these before changing business behaviour.
+- Architecture notes: `addons/TECHNICAL_NOTE.md`. Tests: `addons/<module>/tests/`.
 - Prefer Odoo Community compatible solutions unless explicitly told otherwise.
 - Prioritize practical value for real production use.
 - Assume this system is actively used by real users, administrators, and maintainers.
@@ -111,10 +114,5 @@ Before concluding, also ask yourself:
 - Where is the UI still too technical or cluttered?
 - Where are users still doing unnecessary clicks or repeated data entry?
 - Where are naming, layout, defaults, or workflows still inconsistent?
-- clearer forms, lists, kanban views, search views, buttons, labels, menus, and statuses
-- better defaults and smarter behavior
-- fewer user errors
-- better feedback after actions
-- more intuitive navigation and workflows
 
 Start with the most business-critical modules and the highest-traffic user flows first.

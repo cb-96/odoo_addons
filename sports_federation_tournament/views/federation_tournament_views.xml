@@ -83,12 +83,17 @@
         <field name="arch" type="xml">
             <list string="Tournaments">
                 <field name="name"/>
-                <field name="code"/>
+                <field name="code" optional="hide"/>
                 <field name="season_id"/>
+                <field name="category" optional="show"/>
+                <field name="gender" optional="show"/>
+                <field name="competition_id" optional="show"/>
                 <field name="date_start"/>
-                <field name="tournament_type"/>
+                <field name="date_end" optional="show"/>
+                <field name="tournament_type" optional="hide"/>
                 <field name="state"/>
                 <field name="participant_count"/>
+                <field name="match_count" optional="show"/>
             </list>
         </field>
     </record>
@@ -101,7 +106,9 @@
                 <field name="name"/>
                 <field name="code"/>
                 <field name="season_id"/>
+                <field name="competition_id"/>
                 <field name="location"/>
+                <filter name="active" string="Active" domain="[('state', 'in', ('open', 'in_progress'))]"/>
                 <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
                 <filter name="open" string="Open" domain="[('state', '=', 'open')]"/>
                 <filter name="in_progress" string="In Progress" domain="[('state', '=', 'in_progress')]"/>
@@ -111,6 +118,9 @@
                 <separator/>
                 <group>
                     <filter name="season" string="Season" context="{'group_by': 'season_id'}"/>
+                    <filter name="competition" string="Competition" context="{'group_by': 'competition_id'}"/>
+                    <filter name="category" string="Category" context="{'group_by': 'category'}"/>
+                    <filter name="gender" string="Gender" context="{'group_by': 'gender'}"/>
                     <filter name="type" string="Type" context="{'group_by': 'tournament_type'}"/>
                     <filter name="state" string="Status" context="{'group_by': 'state'}"/>
                 </group>
@@ -123,6 +133,7 @@
         <field name="res_model">federation.tournament</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_federation_tournament_search"/>
+        <field name="context">{'search_default_active': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first tournament.

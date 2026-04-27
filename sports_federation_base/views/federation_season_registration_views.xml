@@ -35,6 +35,7 @@
                     <separator string="Notes"/>
                     <field name="notes"/>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>
@@ -62,10 +63,18 @@
             <search string="Search Registrations">
                 <field name="season_id"/>
                 <field name="team_id"/>
+                <field name="club_id"/>
                 <separator/>
                 <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
                 <filter name="confirmed" string="Confirmed" domain="[('state', '=', 'confirmed')]"/>
                 <filter name="cancelled" string="Cancelled" domain="[('state', '=', 'cancelled')]"/>
+                <separator/>
+                <group>
+                    <filter name="season" string="Season" context="{'group_by': 'season_id'}"/>
+                    <filter name="club" string="Club" context="{'group_by': 'club_id'}"/>
+                    <filter name="division" string="Division" context="{'group_by': 'division'}"/>
+                    <filter name="state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
             </search>
         </field>
     </record>
@@ -75,6 +84,7 @@
         <field name="res_model">federation.season.registration</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_federation_season_registration_search"/>
+        <field name="context">{}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first season registration.
