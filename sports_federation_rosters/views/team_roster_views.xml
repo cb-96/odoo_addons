@@ -117,14 +117,10 @@
                 <field name="name"/>
                 <field name="team_id"/>
                 <field name="season_id"/>
-                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
-                <filter name="confirmed" string="Confirmed" domain="[('state', '=', 'confirmed')]"/>
-                <filter name="locked" string="Locked" domain="[('state', '=', 'locked')]"/>
                 <separator/>
                 <group>
                     <filter name="team" string="Team" context="{'group_by': 'team_id'}"/>
                     <filter name="season" string="Season" context="{'group_by': 'season_id'}"/>
-                    <filter name="state" string="Status" context="{'group_by': 'state'}"/>
                 </group>
             </search>
         </field>

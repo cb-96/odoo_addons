@@ -208,7 +208,12 @@ class RoundRobinService(models.AbstractModel):
             # Bypass the normal round creation - just return gamedays
             return round_records
         elif round_mode == "explicit":
-            # Create exactly requested_rounds (may be more than needed)
+            # Create exactly requested_rounds; must be at least the minimum needed
+            if requested_rounds < len(rounds):
+                raise UserError(_(
+                    "Requested %(requested)d round(s) is fewer than the minimum %(needed)d "
+                    "required for %(count)d participants. Please request at least %(needed)d rounds."
+                ) % {"requested": requested_rounds, "needed": len(rounds), "count": len(rounds) + 1})
             target_rounds = requested_rounds
         else:
             # Auto mode: create as many as needed (original behavior)

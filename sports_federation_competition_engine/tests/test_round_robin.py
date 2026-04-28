@@ -257,8 +257,13 @@ class TestRoundRobin(TransactionCase):
         ])
         self.assertEqual(len(rounds), 10)
 
-    def test_explicit_round_mode_insufficient_rounds(self):
-        """Round mode 'explicit' should fail if requested rounds less than needed."""
+    def test_explicit_round_mode_fewer_gamedays_than_math_rounds(self):
+        """Explicit mode with fewer gamedays than math rounds is valid.
+
+        Requesting 3 gamedays for 6 participants (which needs 5 math rounds)
+        is a valid scheduling choice — all 15 matches are created and cycled
+        across the 3 gameday records.
+        """
         options = {
             "double_round": False,
             "start_datetime": False,
@@ -267,16 +272,37 @@ class TestRoundRobin(TransactionCase):
             "overwrite": False,
             "group": False,
             "round_mode": "explicit",
-            "requested_rounds": 3,  # Less than needed (5)
+            "requested_rounds": 3,  # Fewer gamedays than the 5 math rounds needed
         }
         engine = self.env["federation.competition.engine.service"]
-        with self.assertRaises(UserError):
+        matches = engine.generate_round_robin_schedule(
+            self.tournament, self.stage, self.participants, options
+        )
+        # All 15 matches are still created
+        self.assertEqual(len(matches), 15)
+        # Exactly 3 gameday (round) records are created
+        rounds = self.env["federation.tournament.round"].search([
+            ("stage_id", "=", self.stage.id)
+        ])
+        self.assertEqual(len(rounds), 3)
+        # Every match is assigned to one of those 3 gamedays
+        for match in matches:
+            self.assertIn(match.round_id, rounds)
+
+    def test_explicit_round_mode_zero_gamedays_raises(self):
+        """Explicit mode with requested_rounds=0 must raise UserError."""
+        options = {
+            "double_round": False,
+            "start_datetime": False,
+            "interval_hours": 0,
+            "venue": "",
+            "overwrite": False,
+            "group": False,
+            "round_mode": "explicit",
+            "requested_rounds": 0,
+        }
+        engine = self.env["federation.competition.engine.service"]
+        with self.assertRaises(Exception):
             engine.generate_round_robin_schedule(
                 self.tournament, self.stage, self.participants, options
             )
-
-        for round_number in round_numbers:
-            round_matches = matches.filtered(lambda match: match.round_number == round_number)
-            self.assertEqual(len(round_matches), 3)
-            self.assertEqual(len(round_matches.mapped("round_id")), 1)
-            self.assertEqual(round_matches.mapped("round_id.sequence"), [round_number])

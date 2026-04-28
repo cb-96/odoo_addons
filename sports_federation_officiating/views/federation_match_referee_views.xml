@@ -51,7 +51,6 @@
             <list string="Match Referee Assignments"
                   decoration-danger="is_confirmation_overdue and state == 'draft'">
                 <field name="match_id"/>
-                <field name="match_id.scheduled_date" string="Match Date" optional="show"/>
                 <field name="tournament_id"/>
                 <field name="referee_id"/>
                 <field name="role"/>
@@ -72,8 +71,6 @@
                 <field name="referee_id"/>
                 <field name="tournament_id"/>
                 <field name="confirmation_deadline"/>
-                <filter name="overdue" string="Overdue Confirmation"
-                        domain="[('is_confirmation_overdue', '=', True), ('state', '=', 'draft')]"/>
                 <filter name="draft" string="Assigned" domain="[('state', '=', 'draft')]"/>
                 <filter name="confirmed" string="Confirmed" domain="[('state', '=', 'confirmed')]"/>
                 <filter name="done" string="Done" domain="[('state', '=', 'done')]"/>

@@ -50,7 +50,8 @@
                             <field name="away_team_id"/>
                             <field name="away_score" invisible="state not in ('in_progress', 'done')"/>
                         </group>
-                    </group>                    <notebook>
+                    </group>
+                    <notebook>
                         <page string="Bracket" name="bracket"
                               invisible="not source_match_1_id and not source_match_2_id and not bracket_type">
                             <group>
@@ -82,8 +83,6 @@
         <field name="model">federation.match</field>
         <field name="arch" type="xml">
             <list string="Matches"
-                  decoration-success="state == 'done' and result_state == 'approved'"
-                  decoration-warning="state == 'done' and result_state in ('contested',)"
                   decoration-muted="state == 'cancelled'">
                 <field name="scheduled_date" optional="show"/>
                 <field name="scheduled_time" widget="float_time" optional="show"/>
@@ -97,7 +96,6 @@
                 <field name="bracket_type" optional="hide"/>
                 <field name="round_number" optional="hide"/>
                 <field name="state"/>
-                <field name="result_state" invisible="1"/>
             </list>
         </field>
     </record>

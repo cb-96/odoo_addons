@@ -70,12 +70,16 @@
         </field>
     </record>
 
-    <!-- Inherit Match Tree to add result_state column -->
+    <!-- Inherit Match Tree to add result_state column and decorations -->
     <record id="view_federation_match_tree_inherit_result_control" model="ir.ui.view">
         <field name="name">federation.match.tree.inherit.result.control</field>
         <field name="model">federation.match</field>
         <field name="inherit_id" ref="sports_federation_tournament.view_federation_match_list"/>
         <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="decoration-success">state == 'done' and result_state == 'approved'</attribute>
+                <attribute name="decoration-warning">state == 'done' and result_state in ('contested',)</attribute>
+            </xpath>
             <xpath expr="//field[@name='state']" position="after">
                 <field name="result_state" optional="show"/>
                 <field name="include_in_official_standings" optional="hide"/>
