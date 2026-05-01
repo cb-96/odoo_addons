@@ -127,8 +127,8 @@ class FederationMatchSheet(models.Model):
     notes = fields.Text(string="Notes")
 
     _unique_match_team_side = models.Constraint(
-        'UNIQUE(match_id, team_id, side)',
-        'A match sheet already exists for this team and side in this match.',
+        "UNIQUE(match_id, team_id, side)",
+        "A match sheet already exists for this team and side in this match.",
     )
 
     @api.depends("line_ids")
@@ -154,9 +154,7 @@ class FederationMatchSheet(models.Model):
         """Return the home and away teams of the linked match for domain filtering."""
         for record in self:
             if record.match_id:
-                teams = (
-                    record.match_id.home_team_id | record.match_id.away_team_id
-                )
+                teams = record.match_id.home_team_id | record.match_id.away_team_id
                 record.match_team_ids = teams
             else:
                 record.match_team_ids = self.env["federation.team"]
@@ -199,9 +197,15 @@ class FederationMatchSheet(models.Model):
         # Auto-set side when the team unambiguously maps to one side
         if self.match_id:
             match = self.match_id
-            if self.team_id == match.home_team_id and self.team_id != match.away_team_id:
+            if (
+                self.team_id == match.home_team_id
+                and self.team_id != match.away_team_id
+            ):
                 self.side = "home"
-            elif self.team_id == match.away_team_id and self.team_id != match.home_team_id:
+            elif (
+                self.team_id == match.away_team_id
+                and self.team_id != match.home_team_id
+            ):
                 self.side = "away"
 
     @api.depends("line_ids.entered_minute")
@@ -219,9 +223,7 @@ class FederationMatchSheet(models.Model):
         for record in records:
             record._log_audit_event(
                 "match_sheet_created",
-                _(
-                    "Match sheet '%(sheet)s' created for match '%(match)s'."
-                )
+                _("Match sheet '%(sheet)s' created for match '%(match)s'.")
                 % {
                     "sheet": record.display_name,
                     "match": record.match_id.display_name,
@@ -234,12 +236,12 @@ class FederationMatchSheet(models.Model):
         if not self.env.context.get("bypass_match_sheet_lock"):
             locked_records = self.filtered(lambda rec: rec.state == "locked")
             if locked_records:
-                raise ValidationError(
-                    _("Locked match sheets cannot be modified.")
-                )
+                raise ValidationError(_("Locked match sheets cannot be modified."))
             approved_records = self.filtered(lambda rec: rec.state == "approved")
             allowed_on_approved = {"state", "notes", "locked_on", "locked_by_id"}
-            if approved_records and any(field not in allowed_on_approved for field in vals):
+            if approved_records and any(
+                field not in allowed_on_approved for field in vals
+            ):
                 raise ValidationError(
                     _(
                         "Approved match sheets cannot change their declared squad. Record substitutions on the sheet lines instead."
@@ -304,7 +306,9 @@ class FederationMatchSheet(models.Model):
         issues = []
 
         if not self.roster_id:
-            issues.append(_("Select an active roster before submitting the match sheet."))
+            issues.append(
+                _("Select an active roster before submitting the match sheet.")
+            )
         elif self.roster_id.status != "active":
             issues.append(_("The selected roster must be active before submission."))
 
@@ -372,7 +376,9 @@ class FederationMatchSheet(models.Model):
             issues = record._get_submission_issues()
             if issues:
                 raise ValidationError(
-                    _("Match sheet '%(sheet)s' is not ready for submission:\n- %(issues)s")
+                    _(
+                        "Match sheet '%(sheet)s' is not ready for submission:\n- %(issues)s"
+                    )
                     % {
                         "sheet": record.display_name,
                         "issues": "\n- ".join(issues),
@@ -405,24 +411,19 @@ class FederationMatchSheet(models.Model):
         """Execute the approve action."""
         for record in self:
             if record.state != "submitted":
-                raise ValidationError(
-                    _("Only submitted match sheets can be approved.")
-                )
+                raise ValidationError(_("Only submitted match sheets can be approved."))
         self.write({"state": "approved"})
         for record in self:
             record._log_audit_event(
                 "match_sheet_approved",
-                _("Match sheet '%(sheet)s' approved.")
-                % {"sheet": record.display_name},
+                _("Match sheet '%(sheet)s' approved.") % {"sheet": record.display_name},
             )
 
     def action_lock(self):
         """Execute the lock action."""
         for record in self:
             if record.state != "approved":
-                raise ValidationError(
-                    _("Only approved match sheets can be locked.")
-                )
+                raise ValidationError(_("Only approved match sheets can be locked."))
         self.write(
             {
                 "state": "locked",
@@ -433,7 +434,5 @@ class FederationMatchSheet(models.Model):
         for record in self:
             record._log_audit_event(
                 "match_sheet_locked",
-                _("Match sheet '%(sheet)s' locked.")
-                % {"sheet": record.display_name},
+                _("Match sheet '%(sheet)s' locked.") % {"sheet": record.display_name},
             )
-

@@ -17,7 +17,8 @@ Usage::
     if not result["eligible"]:
         raise ValidationError("\\n".join(result["reasons"]))
 """
-from datetime import date, timedelta
+
+from datetime import date
 
 from odoo import api, fields, models
 
@@ -86,11 +87,14 @@ class FederationEligibilityService(models.AbstractModel):
         if not rule_set:
             return result.to_dict()
 
-        rules = self.env["federation.eligibility.rule"].search([
-            ("rule_set_id", "=", rule_set.id),
-            ("active", "=", True),
-            ("is_placeholder", "=", False),
-        ], order="sequence")
+        rules = self.env["federation.eligibility.rule"].search(
+            [
+                ("rule_set_id", "=", rule_set.id),
+                ("active", "=", True),
+                ("is_placeholder", "=", False),
+            ],
+            order="sequence",
+        )
 
         for rule in rules:
             check = self._evaluate_rule(rule, player, context)
@@ -133,7 +137,9 @@ class FederationEligibilityService(models.AbstractModel):
                 context["competition_id"] = roster.competition_id.id
             if getattr(line, "license_id", False):
                 context["license_id"] = line.license_id.id
-            results[player.id] = self.check_player_eligibility(player, effective_rule_set, context)
+            results[player.id] = self.check_player_eligibility(
+                player, effective_rule_set, context
+            )
         return results
 
     @api.model
@@ -153,7 +159,9 @@ class FederationEligibilityService(models.AbstractModel):
         rule_set = self._resolve_rule_set(match)
         context = {
             "tournament_id": match.tournament_id.id if match.tournament_id else None,
-            "match_date": match.date_scheduled.date() if match.date_scheduled else date.today(),
+            "match_date": (
+                match.date_scheduled.date() if match.date_scheduled else date.today()
+            ),
         }
         if match.tournament_id and match.tournament_id.season_id:
             context["season_id"] = match.tournament_id.season_id.id
@@ -163,7 +171,9 @@ class FederationEligibilityService(models.AbstractModel):
                 context["club_id"] = team.club_id.id
         results = {}
         for player in players:
-            results[player.id] = self.check_player_eligibility(player, rule_set, context)
+            results[player.id] = self.check_player_eligibility(
+                player, rule_set, context
+            )
         return results
 
     # ------------------------------------------------------------------
@@ -215,7 +225,9 @@ class FederationEligibilityService(models.AbstractModel):
         if age < rule.age_limit:
             return EligibilityResult(
                 eligible=False,
-                reasons=[f"Rule '{rule.name}': player age {age} is below minimum {rule.age_limit}."],
+                reasons=[
+                    f"Rule '{rule.name}': player age {age} is below minimum {rule.age_limit}."
+                ],
             )
         return EligibilityResult()
 
@@ -231,7 +243,9 @@ class FederationEligibilityService(models.AbstractModel):
         if age > rule.age_limit:
             return EligibilityResult(
                 eligible=False,
-                reasons=[f"Rule '{rule.name}': player age {age} exceeds maximum {rule.age_limit}."],
+                reasons=[
+                    f"Rule '{rule.name}': player age {age} exceeds maximum {rule.age_limit}."
+                ],
             )
         return EligibilityResult()
 
@@ -274,13 +288,18 @@ class FederationEligibilityService(models.AbstractModel):
             selected_license = License.browse(selected_license_id)
             reasons = []
             if not selected_license.exists() or selected_license.player_id != player:
-                reasons.append(f"Player '{player.name}' does not have the selected license.")
+                reasons.append(
+                    f"Player '{player.name}' does not have the selected license."
+                )
             else:
                 if selected_license.state != "active":
                     reasons.append(
                         f"Selected license '{selected_license.name}' is not active."
                     )
-                if selected_license.issue_date and selected_license.issue_date > reference_date:
+                if (
+                    selected_license.issue_date
+                    and selected_license.issue_date > reference_date
+                ):
                     reasons.append(
                         f"Selected license '{selected_license.name}' is not valid yet for {reference_date}."
                     )
@@ -388,11 +407,14 @@ class FederationEligibilityService(models.AbstractModel):
         if not season_id or not team_id:
             return EligibilityResult()
 
-        reg = Registration.search([
-            ("team_id", "=", team_id),
-            ("season_id", "=", season_id),
-            ("state", "!=", "cancelled"),
-        ], limit=1)
+        reg = Registration.search(
+            [
+                ("team_id", "=", team_id),
+                ("season_id", "=", season_id),
+                ("state", "!=", "cancelled"),
+            ],
+            limit=1,
+        )
         if not reg:
             team = self.env["federation.team"].browse(team_id)
             season = self.env["federation.season"].browse(season_id)

@@ -8,6 +8,7 @@ Tests cover:
 - Participation CSV: correct columns, row count, correct state encoding
 - Missing tournament / season returns empty (graceful handling of empty result sets)
 """
+
 import csv
 import io
 from odoo.tests.common import TransactionCase
@@ -19,44 +20,78 @@ class TestKpiCsvExport(TransactionCase):
     def setUpClass(cls):
         """Set up shared test data for the test case."""
         super().setUpClass()
-        cls.club = cls.env["federation.club"].create({
-            "name": "KPI Club", "code": "KPIC",
-        })
-        cls.team_a = cls.env["federation.team"].create({
-            "name": "KPI Team A", "club_id": cls.club.id, "code": "KPITA",
-        })
-        cls.team_b = cls.env["federation.team"].create({
-            "name": "KPI Team B", "club_id": cls.club.id, "code": "KPITB",
-        })
-        cls.season = cls.env["federation.season"].create({
-            "name": "KPI Season", "code": "KPIS24",
-            "date_start": "2024-01-01", "date_end": "2024-12-31",
-        })
-        cls.tournament = cls.env["federation.tournament"].create({
-            "name": "KPI Tournament", "code": "KPIT",
-            "season_id": cls.season.id, "date_start": "2024-06-01",
-        })
-        cls.rule_set = cls.env["federation.rule.set"].create({
-            "name": "KPI Rules", "code": "KPIRS",
-            "points_win": 3, "points_draw": 1, "points_loss": 0,
-        })
-        cls.finance_fee_type = cls.env["federation.fee.type"].create({
-            "name": "KPI Finance Fee",
-            "code": "KPIFIN",
-            "category": "registration",
-            "default_amount": 75.00,
-        })
-        cls.participant_a = cls.env["federation.tournament.participant"].create({
-            "tournament_id": cls.tournament.id, "team_id": cls.team_a.id,
-        })
-        cls.participant_b = cls.env["federation.tournament.participant"].create({
-            "tournament_id": cls.tournament.id, "team_id": cls.team_b.id,
-        })
-        cls.standing = cls.env["federation.standing"].create({
-            "name": "KPI Standing",
-            "tournament_id": cls.tournament.id,
-            "rule_set_id": cls.rule_set.id,
-        })
+        cls.club = cls.env["federation.club"].create(
+            {
+                "name": "KPI Club",
+                "code": "KPIC",
+            }
+        )
+        cls.team_a = cls.env["federation.team"].create(
+            {
+                "name": "KPI Team A",
+                "club_id": cls.club.id,
+                "code": "KPITA",
+            }
+        )
+        cls.team_b = cls.env["federation.team"].create(
+            {
+                "name": "KPI Team B",
+                "club_id": cls.club.id,
+                "code": "KPITB",
+            }
+        )
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "KPI Season",
+                "code": "KPIS24",
+                "date_start": "2024-01-01",
+                "date_end": "2024-12-31",
+            }
+        )
+        cls.tournament = cls.env["federation.tournament"].create(
+            {
+                "name": "KPI Tournament",
+                "code": "KPIT",
+                "season_id": cls.season.id,
+                "date_start": "2024-06-01",
+            }
+        )
+        cls.rule_set = cls.env["federation.rule.set"].create(
+            {
+                "name": "KPI Rules",
+                "code": "KPIRS",
+                "points_win": 3,
+                "points_draw": 1,
+                "points_loss": 0,
+            }
+        )
+        cls.finance_fee_type = cls.env["federation.fee.type"].create(
+            {
+                "name": "KPI Finance Fee",
+                "code": "KPIFIN",
+                "category": "registration",
+                "default_amount": 75.00,
+            }
+        )
+        cls.participant_a = cls.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": cls.tournament.id,
+                "team_id": cls.team_a.id,
+            }
+        )
+        cls.participant_b = cls.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": cls.tournament.id,
+                "team_id": cls.team_b.id,
+            }
+        )
+        cls.standing = cls.env["federation.standing"].create(
+            {
+                "name": "KPI Standing",
+                "tournament_id": cls.tournament.id,
+                "rule_set_id": cls.rule_set.id,
+            }
+        )
         # Create a match so standings actually compute
         match_vals = {
             "tournament_id": cls.tournament.id,
@@ -70,24 +105,28 @@ class TestKpiCsvExport(TransactionCase):
             match_vals["include_in_official_standings"] = True
         cls.match = cls.env["federation.match"].create(match_vals)
         cls.standing.action_recompute()
-        cls.finance_event_draft = cls.env["federation.finance.event"].create({
-            "name": "KPI Draft Fee",
-            "fee_type_id": cls.finance_fee_type.id,
-            "event_type": "charge",
-            "amount": 75.00,
-            "source_model": "federation.club",
-            "source_res_id": cls.club.id,
-            "club_id": cls.club.id,
-        })
-        cls.finance_event_confirmed = cls.env["federation.finance.event"].create({
-            "name": "KPI Confirmed Fee",
-            "fee_type_id": cls.finance_fee_type.id,
-            "event_type": "charge",
-            "amount": 90.00,
-            "source_model": "federation.team",
-            "source_res_id": cls.team_a.id,
-            "club_id": cls.club.id,
-        })
+        cls.finance_event_draft = cls.env["federation.finance.event"].create(
+            {
+                "name": "KPI Draft Fee",
+                "fee_type_id": cls.finance_fee_type.id,
+                "event_type": "charge",
+                "amount": 75.00,
+                "source_model": "federation.club",
+                "source_res_id": cls.club.id,
+                "club_id": cls.club.id,
+            }
+        )
+        cls.finance_event_confirmed = cls.env["federation.finance.event"].create(
+            {
+                "name": "KPI Confirmed Fee",
+                "fee_type_id": cls.finance_fee_type.id,
+                "event_type": "charge",
+                "amount": 90.00,
+                "source_model": "federation.team",
+                "source_res_id": cls.team_a.id,
+                "club_id": cls.club.id,
+            }
+        )
         cls.finance_event_confirmed.action_confirm()
 
     # ---------------------------------------------------------------
@@ -96,45 +135,74 @@ class TestKpiCsvExport(TransactionCase):
 
     def _build_standings_csv(self, tournament_id):
         """Mirror the controller's CSV generation logic."""
-        standings = self.env["federation.standing"].search([
-            ("tournament_id", "=", tournament_id),
-        ], order="name asc")
+        standings = self.env["federation.standing"].search(
+            [
+                ("tournament_id", "=", tournament_id),
+            ],
+            order="name asc",
+        )
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow([
-            "Standing", "Rank", "Team", "Club",
-            "Played", "Won", "Drawn", "Lost",
-            "GF", "GA", "GD", "Points", "Tiebreak Notes",
-        ])
+        writer.writerow(
+            [
+                "Standing",
+                "Rank",
+                "Team",
+                "Club",
+                "Played",
+                "Won",
+                "Drawn",
+                "Lost",
+                "GF",
+                "GA",
+                "GD",
+                "Points",
+                "Tiebreak Notes",
+            ]
+        )
         for standing in standings:
-            for line in standing.line_ids.sorted(lambda l: l.rank):
-                writer.writerow([
-                    standing.name, line.rank,
-                    line.team_id.name if line.team_id else "",
-                    line.club_id.name if line.club_id else "",
-                    line.played, line.won, line.drawn, line.lost,
-                    line.score_for, line.score_against, line.score_diff,
-                    line.points, line.tiebreak_notes or "",
-                ])
+            for line in standing.line_ids.sorted(lambda ln: ln.rank):
+                writer.writerow(
+                    [
+                        standing.name,
+                        line.rank,
+                        line.team_id.name if line.team_id else "",
+                        line.club_id.name if line.club_id else "",
+                        line.played,
+                        line.won,
+                        line.drawn,
+                        line.lost,
+                        line.score_for,
+                        line.score_against,
+                        line.score_diff,
+                        line.points,
+                        line.tiebreak_notes or "",
+                    ]
+                )
         output.seek(0)
         return list(csv.reader(output))
 
     def _build_participation_csv(self, season_id):
         """Mirror the controller's participation CSV generation logic."""
-        participants = self.env["federation.tournament.participant"].search([
-            ("tournament_id.season_id", "=", season_id),
-        ], order="tournament_id asc, team_id asc")
+        participants = self.env["federation.tournament.participant"].search(
+            [
+                ("tournament_id.season_id", "=", season_id),
+            ],
+            order="tournament_id asc, team_id asc",
+        )
         output = io.StringIO()
         writer = csv.writer(output)
         writer.writerow(["Tournament", "Season", "Team", "Club", "State"])
         for p in participants:
-            writer.writerow([
-                p.tournament_id.name if p.tournament_id else "",
-                p.tournament_id.season_id.name if p.tournament_id.season_id else "",
-                p.team_id.name if p.team_id else "",
-                p.club_id.name if p.club_id else "",
-                p.state or "",
-            ])
+            writer.writerow(
+                [
+                    p.tournament_id.name if p.tournament_id else "",
+                    p.tournament_id.season_id.name if p.tournament_id.season_id else "",
+                    p.team_id.name if p.team_id else "",
+                    p.club_id.name if p.club_id else "",
+                    p.state or "",
+                ]
+            )
         output.seek(0)
         return list(csv.reader(output))
 
@@ -146,21 +214,25 @@ class TestKpiCsvExport(TransactionCase):
         )
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow([
-            "Fee Type",
-            "Category",
-            "State",
-            "Event Count",
-            "Total Amount",
-        ])
+        writer.writerow(
+            [
+                "Fee Type",
+                "Category",
+                "State",
+                "Event Count",
+                "Total Amount",
+            ]
+        )
         for row in finance_rows:
-            writer.writerow([
-                row.fee_type_id.name if row.fee_type_id else "",
-                row.fee_type_id.category if row.fee_type_id else "",
-                row.state or "",
-                row.event_count,
-                row.total_amount,
-            ])
+            writer.writerow(
+                [
+                    row.fee_type_id.name if row.fee_type_id else "",
+                    row.fee_type_id.category if row.fee_type_id else "",
+                    row.state or "",
+                    row.event_count,
+                    row.total_amount,
+                ]
+            )
         output.seek(0)
         return list(csv.reader(output))
 
@@ -183,9 +255,14 @@ class TestKpiCsvExport(TransactionCase):
         """One data row per standing line."""
         rows = self._build_standings_csv(self.tournament.id)
         data_rows = rows[1:]  # skip header
-        expected = sum(len(s.line_ids) for s in self.env["federation.standing"].search([
-            ("tournament_id", "=", self.tournament.id),
-        ]))
+        expected = sum(
+            len(s.line_ids)
+            for s in self.env["federation.standing"].search(
+                [
+                    ("tournament_id", "=", self.tournament.id),
+                ]
+            )
+        )
         self.assertEqual(len(data_rows), expected)
 
     def test_standings_csv_team_names_present(self):
@@ -201,7 +278,9 @@ class TestKpiCsvExport(TransactionCase):
         # column index 11 = Points
         points_col = 11
         team_col = 2
-        team_a_row = next((r for r in rows[1:] if r[team_col] == self.team_a.name), None)
+        team_a_row = next(
+            (r for r in rows[1:] if r[team_col] == self.team_a.name), None
+        )
         self.assertIsNotNone(team_a_row, "Team A not found in standings CSV.")
         self.assertEqual(int(team_a_row[points_col]), 3)
 
@@ -226,9 +305,11 @@ class TestKpiCsvExport(TransactionCase):
         """One row per participant registered to tournaments in the season."""
         rows = self._build_participation_csv(self.season.id)
         data_rows = rows[1:]
-        expected = self.env["federation.tournament.participant"].search_count([
-            ("tournament_id.season_id", "=", self.season.id),
-        ])
+        expected = self.env["federation.tournament.participant"].search_count(
+            [
+                ("tournament_id.season_id", "=", self.season.id),
+            ]
+        )
         self.assertEqual(len(data_rows), expected)
 
     def test_participation_csv_includes_both_teams(self):
@@ -266,11 +347,7 @@ class TestKpiCsvExport(TransactionCase):
     def test_finance_csv_includes_confirmed_and_draft_rows(self):
         """Finance CSV contains grouped rows for the finance report states present."""
         rows = self._build_finance_csv()
-        states = [
-            row[2]
-            for row in rows[1:]
-            if row[0] == self.finance_fee_type.name
-        ]
+        states = [row[2] for row in rows[1:] if row[0] == self.finance_fee_type.name]
         self.assertIn("draft", states)
         self.assertIn("confirmed", states)
 

@@ -31,7 +31,11 @@ class FederationTournamentParticipant(models.Model):
         compute="_compute_team_selection",
     )
     club_id = fields.Many2one(
-        "federation.club", string="Club", related="team_id.club_id", store=True, readonly=True
+        "federation.club",
+        string="Club",
+        related="team_id.club_id",
+        store=True,
+        readonly=True,
     )
     stage_id = fields.Many2one(
         "federation.tournament.stage", string="Stage", ondelete="set null"
@@ -55,7 +59,10 @@ class FederationTournamentParticipant(models.Model):
     )
     notes = fields.Text(string="Notes")
 
-    _team_tournament_unique = models.Constraint('unique (team_id, tournament_id)', 'A team can only participate once per tournament.')
+    _team_tournament_unique = models.Constraint(
+        "unique (team_id, tournament_id)",
+        "A team can only participate once per tournament.",
+    )
 
     @api.depends("team_id", "tournament_id")
     def _compute_name(self):
@@ -78,8 +85,10 @@ class FederationTournamentParticipant(models.Model):
                 continue
 
             rec.eligible_team_ids = rec.tournament_id.search_eligible_teams()
-            selection_snapshot = rec.tournament_id.get_participant_team_selection_snapshot(
-                current_participant=rec
+            selection_snapshot = (
+                rec.tournament_id.get_participant_team_selection_snapshot(
+                    current_participant=rec
+                )
             )
             rec.available_team_ids = selection_snapshot["available_teams"]
             rec.excluded_team_feedback_html = rec._render_excluded_team_feedback_html(
@@ -92,9 +101,7 @@ class FederationTournamentParticipant(models.Model):
             return False
 
         intro = escape(
-            _(
-                "Only teams that can currently be selected appear in the Team dropdown."
-            )
+            _("Only teams that can currently be selected appear in the Team dropdown.")
         )
         items = "".join(
             "<li><strong>{team}</strong> ({club}): {reason}</li>".format(
@@ -118,7 +125,11 @@ class FederationTournamentParticipant(models.Model):
     def _onchange_tournament_id(self):
         """Handle onchange tournament ID."""
         domain = [("id", "in", self.available_team_ids.ids)]
-        if self.team_id and self.tournament_id and self.team_id not in self.available_team_ids:
+        if (
+            self.team_id
+            and self.tournament_id
+            and self.team_id not in self.available_team_ids
+        ):
             warning = {
                 "title": _("Ineligible Team"),
                 "message": self._get_team_unavailability_reason(self.team_id),

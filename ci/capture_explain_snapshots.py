@@ -5,10 +5,8 @@ from __future__ import annotations
 
 import argparse
 import subprocess
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE_ROOT = REPO_ROOT.parent
@@ -51,9 +49,15 @@ def _run_psql(
         "-c",
         sql,
     ]
-    result = subprocess.run(command, cwd=WORKSPACE_ROOT, capture_output=True, text=True, check=False)
+    result = subprocess.run(
+        command, cwd=WORKSPACE_ROOT, capture_output=True, text=True, check=False
+    )
     if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or f"psql failed for query: {sql}")
+        raise RuntimeError(
+            result.stderr.strip()
+            or result.stdout.strip()
+            or f"psql failed for query: {sql}"
+        )
     return result.stdout.strip()
 
 
@@ -83,21 +87,29 @@ def _capture_plan(
     sql: str,
 ) -> str:
     explain_sql = f"EXPLAIN {sql}"
-    return _run_psql(compose_file, project_name, db_service, db_user, db_name, explain_sql)
+    return _run_psql(
+        compose_file, project_name, db_service, db_user, db_name, explain_sql
+    )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--db", required=True, help="Database to query for EXPLAIN snapshots.")
+    parser.add_argument(
+        "--db", required=True, help="Database to query for EXPLAIN snapshots."
+    )
     parser.add_argument(
         "--compose-file",
         default=str(WORKSPACE_ROOT / "docker-compose.yaml"),
         help="Compose file to use for docker compose exec.",
     )
     parser.add_argument("--project-name", help="Optional docker compose project name.")
-    parser.add_argument("--db-service", default="db", help="Compose database service name.")
+    parser.add_argument(
+        "--db-service", default="db", help="Compose database service name."
+    )
     parser.add_argument("--db-user", default="odoo", help="PostgreSQL user for psql.")
-    parser.add_argument("--season-id", help="Optional explicit season id to use in snapshot queries.")
+    parser.add_argument(
+        "--season-id", help="Optional explicit season id to use in snapshot queries."
+    )
     parser.add_argument(
         "--output-dir",
         default=str(DEFAULT_OUTPUT_DIR),

@@ -129,9 +129,7 @@ class FederationClubRepresentative(models.Model):
         """Validate dates."""
         for rec in self:
             if rec.date_start and rec.date_end and rec.date_start > rec.date_end:
-                raise ValidationError(
-                    "Start date cannot be after end date."
-                )
+                raise ValidationError("Start date cannot be after end date.")
 
     @api.constrains("club_id", "team_id", "role_type_id")
     def _check_team_scope(self):
@@ -242,42 +240,51 @@ class FederationClubRepresentative(models.Model):
     def _get_club_for_user(self, user=None):
         """Return the first active club for the given user (or current user)."""
         user = user or self.env.user
-        rep = self.sudo().search([
-            ("user_id", "=", user.id),
-            ("is_current", "=", True),
-        ], limit=1)
+        rep = self.sudo().search(
+            [
+                ("user_id", "=", user.id),
+                ("is_current", "=", True),
+            ],
+            limit=1,
+        )
         return rep.club_id if rep else self.env["federation.club"]
 
     @api.model
     def _get_clubs_for_user(self, user=None):
         """Return all active clubs the given user represents."""
         user = user or self.env.user
-        reps = self.sudo().search([
-            ("user_id", "=", user.id),
-            ("is_current", "=", True),
-        ])
+        reps = self.sudo().search(
+            [
+                ("user_id", "=", user.id),
+                ("is_current", "=", True),
+            ]
+        )
         return reps.mapped("club_id")
 
     @api.model
     def _get_club_scope_for_user(self, user=None):
         """Return clubs for whole-club portal roles only."""
         user = user or self.env.user
-        reps = self.sudo().search([
-            ("user_id", "=", user.id),
-            ("is_current", "=", True),
-            ("team_id", "=", False),
-        ])
+        reps = self.sudo().search(
+            [
+                ("user_id", "=", user.id),
+                ("is_current", "=", True),
+                ("team_id", "=", False),
+            ]
+        )
         return reps.mapped("club_id")
 
     @api.model
     def _get_teams_for_user(self, user=None):
         """Return teams explicitly assigned to the given user's portal roles."""
         user = user or self.env.user
-        reps = self.sudo().search([
-            ("user_id", "=", user.id),
-            ("is_current", "=", True),
-            ("team_id", "!=", False),
-        ])
+        reps = self.sudo().search(
+            [
+                ("user_id", "=", user.id),
+                ("is_current", "=", True),
+                ("team_id", "!=", False),
+            ]
+        )
         return reps.mapped("team_id")
 
     @api.model

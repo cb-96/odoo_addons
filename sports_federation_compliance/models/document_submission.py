@@ -8,7 +8,11 @@ from odoo.exceptions import ValidationError
 class FederationDocumentSubmission(models.Model):
     _name = "federation.document.submission"
     _description = "Federation Document Submission"
-    _inherit = ["federation.compliance.target.mixin", "mail.thread", "mail.activity.mixin"]
+    _inherit = [
+        "federation.compliance.target.mixin",
+        "mail.thread",
+        "mail.activity.mixin",
+    ]
     _order = "create_date desc"
 
     STATUS_SELECTION = [
@@ -106,7 +110,9 @@ class FederationDocumentSubmission(models.Model):
     def _compute_target_display(self):
         """Store a normalized target label for list views and SQL-backed reports."""
         for rec in self:
-            rec.target_display = rec._compliance_get_target_display(target_model=rec.target_model)
+            rec.target_display = rec._compliance_get_target_display(
+                target_model=rec.target_model
+            )
 
     @api.constrains(
         "club_id",
@@ -127,9 +133,7 @@ class FederationDocumentSubmission(models.Model):
             ]
             set_count = sum(1 for f in target_fields if f)
             if set_count == 0:
-                raise ValidationError(
-                    "Exactly one target entity must be set."
-                )
+                raise ValidationError("Exactly one target entity must be set.")
             if set_count > 1:
                 raise ValidationError(
                     "Only one target entity can be set. Multiple targets found."
@@ -156,9 +160,7 @@ class FederationDocumentSubmission(models.Model):
         for rec in self:
             if rec.issue_date and rec.expiry_date:
                 if rec.expiry_date < rec.issue_date:
-                    raise ValidationError(
-                        "Expiry date cannot be before issue date."
-                    )
+                    raise ValidationError("Expiry date cannot be before issue date.")
 
     is_expired = fields.Boolean(
         string="Is Expired",
@@ -210,7 +212,9 @@ class FederationDocumentSubmission(models.Model):
             },
             "expired": {"label": "Renewal Due", "tone": "danger"},
         }
-        meta = dict(metadata.get(status_key, {"label": status_key, "tone": "secondary"}))
+        meta = dict(
+            metadata.get(status_key, {"label": status_key, "tone": "secondary"})
+        )
         if (
             status_key == "approved"
             and latest_submission
@@ -240,7 +244,9 @@ class FederationDocumentSubmission(models.Model):
         }
 
     @api.model
-    def _portal_prepare_submission(self, requirement, target_record, values=None, user=None):
+    def _portal_prepare_submission(
+        self, requirement, target_record, values=None, user=None
+    ):
         """Reuse or create the draft submission that a portal upload will submit.
 
         Access is re-checked through the elevated requirement service so stale
@@ -262,9 +268,13 @@ class FederationDocumentSubmission(models.Model):
                 "A submission for this requirement is already awaiting review."
             )
 
-        target_field_name = requirement._portal_get_target_field_name(requirement.target_model)
+        target_field_name = requirement._portal_get_target_field_name(
+            requirement.target_model
+        )
         if not target_field_name:
-            raise ValidationError("This requirement target cannot be handled through the portal.")
+            raise ValidationError(
+                "This requirement target cannot be handled through the portal."
+            )
 
         prepared_values = self._portal_prepare_submission_write_values(values=values)
 
@@ -275,7 +285,11 @@ class FederationDocumentSubmission(models.Model):
         ):
             submission = PortalPrivilege.elevate(latest_submission, user=user)
         else:
-            target_name = target_record.display_name or getattr(target_record, "name", False) or requirement.name
+            target_name = (
+                target_record.display_name
+                or getattr(target_record, "name", False)
+                or requirement.name
+            )
             submission = PortalPrivilege.portal_create(
                 self,
                 {
@@ -421,11 +435,13 @@ class FederationDocumentSubmission(models.Model):
                 raise ValidationError(
                     "Only submitted or replacement requested documents can be approved."
                 )
-            rec.write({
-                "status": "approved",
-                "reviewer_id": self.env.user.id,
-                "reviewed_on": fields.Datetime.now(),
-            })
+            rec.write(
+                {
+                    "status": "approved",
+                    "reviewer_id": self.env.user.id,
+                    "reviewed_on": fields.Datetime.now(),
+                }
+            )
             rec.flush_recordset()
         self._recompute_related_checks()
 
@@ -436,11 +452,13 @@ class FederationDocumentSubmission(models.Model):
                 raise ValidationError(
                     "Only submitted or replacement requested documents can be rejected."
                 )
-            rec.write({
-                "status": "rejected",
-                "reviewer_id": self.env.user.id,
-                "reviewed_on": fields.Datetime.now(),
-            })
+            rec.write(
+                {
+                    "status": "rejected",
+                    "reviewer_id": self.env.user.id,
+                    "reviewed_on": fields.Datetime.now(),
+                }
+            )
             rec.flush_recordset()
         self._recompute_related_checks()
 
@@ -456,11 +474,13 @@ class FederationDocumentSubmission(models.Model):
                 raise ValidationError(
                     "Only approved documents can have replacement requested."
                 )
-            rec.write({
-                "status": "replacement_requested",
-                "reviewer_id": self.env.user.id,
-                "reviewed_on": fields.Datetime.now(),
-            })
+            rec.write(
+                {
+                    "status": "replacement_requested",
+                    "reviewer_id": self.env.user.id,
+                    "reviewed_on": fields.Datetime.now(),
+                }
+            )
             rec.flush_recordset()
         self._recompute_related_checks()
 

@@ -19,12 +19,19 @@ class FederationPortalBase(CustomerPortal):
         through controlled elevated access.
         """
         values = super()._prepare_portal_layout_values()
-        representative = request.env["federation.club.representative"].sudo().search(
-            [("user_id", "=", request.env.user.id)],
-            limit=1,
+        representative = (
+            request.env["federation.club.representative"]
+            .sudo()
+            .search(
+                [("user_id", "=", request.env.user.id)],
+                limit=1,
+            )
         )
-        referee = request.env["federation.referee"].with_user(request.env.user).sudo()._portal_get_for_user(
-            user=request.env.user
+        referee = (
+            request.env["federation.referee"]
+            .with_user(request.env.user)
+            .sudo()
+            ._portal_get_for_user(user=request.env.user)
         )
         values["federation_representative"] = representative
         values["federation_club"] = representative.club_id if representative else None

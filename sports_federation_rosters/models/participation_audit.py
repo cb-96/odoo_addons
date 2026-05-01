@@ -46,13 +46,13 @@ class FederationParticipationAudit(models.Model):
     match_sheet_id = fields.Many2one(
         "federation.match.sheet",
         string="Match Sheet",
-        ondelete="cascade",
+        ondelete="set null",
         index=True,
     )
     match_id = fields.Many2one(
         "federation.match",
         string="Match",
-        ondelete="set null",
+        ondelete="cascade",
         index=True,
     )
     player_id = fields.Many2one(

@@ -9,7 +9,9 @@ class FederationCompetitionEdition(models.Model):
     _order = "date_start desc, name"
 
     name = fields.Char(
-        string="Edition Name", required=True, tracking=True,
+        string="Edition Name",
+        required=True,
+        tracking=True,
         help="e.g. 'Premier League 2025-2026', 'Youth Cup Spring 2026'",
     )
     competition_id = fields.Many2one(
@@ -28,7 +30,9 @@ class FederationCompetitionEdition(models.Model):
         ondelete="restrict",
     )
     competition_type = fields.Selection(
-        related="competition_id.competition_type", store=True, readonly=True,
+        related="competition_id.competition_type",
+        store=True,
+        readonly=True,
     )
     date_start = fields.Date(string="Start Date", tracking=True)
     date_end = fields.Date(string="End Date", tracking=True)
@@ -53,17 +57,21 @@ class FederationCompetitionEdition(models.Model):
         tracking=True,
     )
     tournament_ids = fields.One2many(
-        "federation.tournament", "edition_id", string="Divisions / Tournaments",
+        "federation.tournament",
+        "edition_id",
+        string="Divisions / Tournaments",
     )
     tournament_count = fields.Integer(
-        string="Division Count", compute="_compute_tournament_count", store=False,
+        string="Division Count",
+        compute="_compute_tournament_count",
+        store=False,
     )
     notes = fields.Text(string="Notes")
     active = fields.Boolean(default=True)
 
     _edition_unique = models.Constraint(
-        'unique (competition_id, season_id)',
-        'An edition already exists for this competition and season.',
+        "unique (competition_id, season_id)",
+        "An edition already exists for this competition and season.",
     )
 
     @api.depends("tournament_ids")
@@ -82,7 +90,11 @@ class FederationCompetitionEdition(models.Model):
     @api.onchange("competition_id")
     def _onchange_competition_id(self):
         """Handle onchange competition ID."""
-        if self.competition_id and self.competition_id.rule_set_id and not self.rule_set_id:
+        if (
+            self.competition_id
+            and self.competition_id.rule_set_id
+            and not self.rule_set_id
+        ):
             self.rule_set_id = self.competition_id.rule_set_id
 
     def action_open(self):
@@ -113,8 +125,8 @@ class FederationCompetitionEdition(models.Model):
     def action_view_tournaments(self):
         """Execute the view tournaments action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id(
-            'sports_federation_tournament.federation_tournament_action'
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_tournament.federation_tournament_action"
         )
-        action['domain'] = [('edition_id', '=', self.id)]
+        action["domain"] = [("edition_id", "=", self.id)]
         return action

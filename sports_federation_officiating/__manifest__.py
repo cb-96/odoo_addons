@@ -7,7 +7,11 @@
     "author": "Sports Federation",
     "website": "",
     "license": "LGPL-3",
-    "depends": ["sports_federation_base", "sports_federation_tournament", "sports_federation_people"],
+    "depends": [
+        "sports_federation_base",
+        "sports_federation_tournament",
+        "sports_federation_people",
+    ],
     "data": [
         "security/ir.model.access.csv",
         "views/federation_referee_views.xml",

@@ -1,7 +1,6 @@
 from pathlib import Path
 import re
 
-
 ROUTE_PATTERN = re.compile(
     r"^\|\s*`(?P<method>GET|POST)\s+(?P<path>[^`]+)`\s*\|\s*`(?P<owner_module>[^`]+)`\s*\|"
 )

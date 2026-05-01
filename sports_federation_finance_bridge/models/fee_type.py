@@ -26,4 +26,4 @@ class FederationFeeType(models.Model):
     active = fields.Boolean(default=True)
     notes = fields.Text()
 
-    _code_unique = models.Constraint('unique (code)', 'Fee type code must be unique.')
+    _code_unique = models.Constraint("unique (code)", "Fee type code must be unique.")

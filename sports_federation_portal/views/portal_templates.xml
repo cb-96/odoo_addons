@@ -102,6 +102,9 @@
                 <a href="/my/teams" class="btn btn-outline-secondary btn-sm">
                     <i class="fa fa-users me-1"/>Teams
                 </a>
+                <a href="/my/players" class="btn btn-outline-secondary btn-sm">
+                    <i class="fa fa-user me-1"/>Players
+                </a>
                 <a href="/my/match-sheets" class="btn btn-outline-secondary btn-sm">
                     <i class="fa fa-list-alt me-1"/>Match Sheets
                 </a>
@@ -357,7 +360,163 @@
     </template>
 
     <!-- ============================================================ -->
+    <!-- My Players Page                                               -->
+    <!-- ============================================================ -->
+
+    <template id="portal_my_players" name="My Players">
+        <t t-call="portal.portal_layout">
+            <div class="container py-4">
+                <div class="row mb-3 align-items-center">
+                    <div class="col">
+                        <h2><i class="fa fa-user me-2"/>Players</h2>
+                    </div>
+                    <div class="col-auto">
+                        <a href="/my/players/new" class="btn btn-primary">
+                            <i class="fa fa-plus me-1"/>Add Player
+                        </a>
+                    </div>
+                </div>
+
+                <div t-if="success" class="alert alert-success" role="status">
+                    <t t-esc="success"/>
+                </div>
+                <div t-if="error" class="alert alert-danger" role="alert">
+                    <t t-esc="error"/>
+                </div>
+
+                <!-- Filters -->
+                <form method="GET" action="/my/players" class="row g-2 mb-3 align-items-end">
+                    <div class="col-auto">
+                        <label class="form-label mb-1" for="filter_gender">Gender</label>
+                        <select id="filter_gender" name="gender" class="form-select form-select-sm">
+                            <option value="">All</option>
+                            <option value="male" t-att-selected="'selected' if filter_gender == 'male' else None">Male</option>
+                            <option value="female" t-att-selected="'selected' if filter_gender == 'female' else None">Female</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label mb-1" for="filter_state">Status</label>
+                        <select id="filter_state" name="state" class="form-select form-select-sm">
+                            <option value="">All</option>
+                            <option value="active" t-att-selected="'selected' if filter_state == 'active' else None">Active</option>
+                            <option value="inactive" t-att-selected="'selected' if filter_state == 'inactive' else None">Inactive</option>
+                            <option value="suspended" t-att-selected="'selected' if filter_state == 'suspended' else None">Suspended</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
+                        <a href="/my/players" class="btn btn-link btn-sm">Clear</a>
+                    </div>
+                </form>
+
+                <div t-if="players">
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <caption class="visually-hidden">Players registered under the current club representative's clubs.</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Gender</th>
+                                    <th scope="col">Birth Date</th>
+                                    <th scope="col">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="players" t-as="player">
+                                    <tr>
+                                        <td class="fw-semibold"><t t-esc="player.name"/></td>
+                                        <td><t t-esc="dict(player._fields['gender'].selection).get(player.gender) if player.gender else '—'"/></td>
+                                        <td><t t-esc="player.birth_date or '—'"/></td>
+                                        <td>
+                                            <span t-att-class="'badge text-bg-success' if player.state == 'active' else 'badge text-bg-warning' if player.state == 'suspended' else 'badge text-bg-secondary'">
+                                                <t t-esc="dict(player._fields['state'].selection).get(player.state, player.state)"/>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div t-else="" class="text-center py-5">
+                    <i class="fa fa-user fa-3x text-muted mb-3 d-block"/>
+                    <p class="fw-semibold mb-1">No players found</p>
+                    <p class="text-muted mb-3">
+                        <t t-if="filter_gender or filter_state">No players match the selected filters.</t>
+                        <t t-else="">Add your first player to begin building your club roster.</t>
+                    </p>
+                    <a t-if="not filter_gender and not filter_state" href="/my/players/new" class="btn btn-primary">Add Your First Player</a>
+                    <a t-else="" href="/my/players" class="btn btn-outline-secondary">Clear Filters</a>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================================ -->
+    <!-- Add Player Form                                               -->
+    <!-- ============================================================ -->
+
+    <template id="portal_my_player_new" name="Add Player">
+        <t t-call="portal.portal_layout">
+            <div class="container py-4">
+                <div class="row mb-3">
+                    <div class="col">
+                        <h2><i class="fa fa-user-plus me-2"/>Add Player</h2>
+                    </div>
+                </div>
+
+                <div t-if="error" class="alert alert-danger" role="alert">
+                    <t t-esc="error"/>
+                </div>
+
+                <form action="/my/players/new" method="POST">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="player_first_name">First Name <span class="text-danger">*</span></label>
+                        <input id="player_first_name" class="form-control" name="first_name" required="required"/>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="player_last_name">Last Name <span class="text-danger">*</span></label>
+                        <input id="player_last_name" class="form-control" name="last_name" required="required"/>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="player_birth_date">Birth Date</label>
+                        <input id="player_birth_date" class="form-control" name="birth_date" type="date"/>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="player_gender">Gender</label>
+                        <select id="player_gender" name="gender" class="form-select">
+                            <option value="">— Select —</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="player_email">Email</label>
+                        <input id="player_email" class="form-control" name="email" type="email"/>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="player_phone">Phone</label>
+                        <input id="player_phone" class="form-control" name="phone"/>
+                    </div>
+
+                    <button class="btn btn-primary" type="submit">Add Player</button>
+                    <a class="btn btn-secondary" href="/my/players">Cancel</a>
+                </form>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================================ -->
     <!-- My Season Registrations Page                                  -->
+    <!-- ============================================================ -->
     <!-- ============================================================ -->
 
     <template id="portal_my_season_registrations" name="My Season Registrations">

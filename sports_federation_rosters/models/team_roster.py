@@ -117,8 +117,8 @@ class FederationTeamRoster(models.Model):
     )
 
     _unique_team_season_competition_name = models.Constraint(
-        'UNIQUE(team_id, season_id, competition_id, name)',
-        'A roster with this name already exists for this team, season, and competition.',
+        "UNIQUE(team_id, season_id, competition_id, name)",
+        "A roster with this name already exists for this team, season, and competition.",
     )
 
     def _build_generated_name(self, team, season, competition=False):
@@ -149,7 +149,11 @@ class FederationTeamRoster(models.Model):
             team = record.team_id if record else Team.browse([])
 
         if "season_id" in vals:
-            season = Season.browse(vals["season_id"]) if vals["season_id"] else Season.browse([])
+            season = (
+                Season.browse(vals["season_id"])
+                if vals["season_id"]
+                else Season.browse([])
+            )
         else:
             season = record.season_id if record else Season.browse([])
 
@@ -166,7 +170,9 @@ class FederationTeamRoster(models.Model):
 
     def _get_generated_name(self, vals=None, record=False):
         """Return generated name."""
-        team, season, competition = self._resolve_scope_for_name(vals=vals, record=record)
+        team, season, competition = self._resolve_scope_for_name(
+            vals=vals, record=record
+        )
         if not team or not season:
             return False
 
@@ -248,7 +254,9 @@ class FederationTeamRoster(models.Model):
     )
     def _compute_match_day_lock(self):
         """Compute match day lock."""
-        state_labels = dict(self.env["federation.match.sheet"]._fields["state"].selection)
+        state_labels = dict(
+            self.env["federation.match.sheet"]._fields["state"].selection
+        )
         for record in self:
             locking_sheets = record._get_locking_match_sheets()
             record.match_day_locked = bool(locking_sheets)
@@ -330,7 +338,9 @@ class FederationTeamRoster(models.Model):
             vals.pop("name")
 
         scope_fields = {"team_id", "season_id", "competition_id"}
-        if (scope_fields.intersection(vals) or force_generated_name) and "name" not in vals:
+        if (
+            scope_fields.intersection(vals) or force_generated_name
+        ) and "name" not in vals:
             result = True
             for record in self:
                 record_vals = dict(vals)
@@ -338,7 +348,9 @@ class FederationTeamRoster(models.Model):
                     vals=record_vals,
                     record=record,
                 )
-                result = super(FederationTeamRoster, record).write(record_vals) and result
+                result = (
+                    super(FederationTeamRoster, record).write(record_vals) and result
+                )
         else:
             result = super().write(vals)
         tracked_fields = {
@@ -355,7 +367,9 @@ class FederationTeamRoster(models.Model):
         }
         changed_fields = sorted(tracked_fields.intersection(vals))
         if changed_fields:
-            field_labels = ", ".join(self._fields[field].string for field in changed_fields)
+            field_labels = ", ".join(
+                self._fields[field].string for field in changed_fields
+            )
             for record in self:
                 record._log_audit_event(
                     "roster_updated",
@@ -403,7 +417,9 @@ class FederationTeamRoster(models.Model):
             lambda sheet: sheet.state in ("submitted", "approved", "locked")
         )
 
-    def _log_audit_event(self, event_type, description, player=False, match_sheet=False):
+    def _log_audit_event(
+        self, event_type, description, player=False, match_sheet=False
+    ):
         """Handle log audit event."""
         Audit = self.env.get("federation.participation.audit")
         if Audit is None:
@@ -456,7 +472,11 @@ class FederationTeamRoster(models.Model):
         today = fields.Date.context_today(self)
         if self.valid_from and self.valid_from > today:
             return self.valid_from
-        if self.season_id and self.season_id.date_start and self.season_id.date_start > today:
+        if (
+            self.season_id
+            and self.season_id.date_start
+            and self.season_id.date_start > today
+        ):
             return self.season_id.date_start
         return today
 
@@ -464,8 +484,12 @@ class FederationTeamRoster(models.Model):
         """Return required player bounds."""
         self.ensure_one()
         rule_set = self._get_effective_rule_set()
-        min_required = self.min_players_required or (rule_set.squad_min_size if rule_set else 0)
-        max_allowed = self.max_players_allowed or (rule_set.squad_max_size if rule_set else 0)
+        min_required = self.min_players_required or (
+            rule_set.squad_min_size if rule_set else 0
+        )
+        max_allowed = self.max_players_allowed or (
+            rule_set.squad_max_size if rule_set else 0
+        )
         return min_required, max_allowed
 
     def _get_readiness_issues(self, reference_date=None):
@@ -476,13 +500,11 @@ class FederationTeamRoster(models.Model):
 
         if self.valid_from and reference_date < self.valid_from:
             issues.append(
-                _("Roster is not valid yet on %(date)s.")
-                % {"date": self.valid_from}
+                _("Roster is not valid yet on %(date)s.") % {"date": self.valid_from}
             )
         if self.valid_to and reference_date > self.valid_to:
             issues.append(
-                _("Roster expired before %(date)s.")
-                % {"date": reference_date}
+                _("Roster expired before %(date)s.") % {"date": reference_date}
             )
 
         active_lines = self.line_ids.filtered(lambda line: line.status == "active")
@@ -561,4 +583,3 @@ class FederationTeamRoster(models.Model):
                 "roster_closed",
                 _("Roster '%(roster)s' closed.") % {"roster": record.display_name},
             )
-

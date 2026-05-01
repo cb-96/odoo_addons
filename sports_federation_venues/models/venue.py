@@ -1,5 +1,4 @@
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
 
 
 class FederationVenue(models.Model):
@@ -28,8 +27,8 @@ class FederationVenue(models.Model):
     )
 
     _unique_name_city = models.Constraint(
-        'UNIQUE(name, city)',
-        'A venue with this name already exists in this city.',
+        "UNIQUE(name, city)",
+        "A venue with this name already exists in this city.",
     )
 
     @api.depends("playing_area_ids")
@@ -41,8 +40,10 @@ class FederationVenue(models.Model):
     def action_view_playing_areas(self):
         """Execute the view playing areas action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('sports_federation_venues.action_federation_playing_area')
-        action['domain'] = [('venue_id', '=', self.id)]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_venues.action_federation_playing_area"
+        )
+        action["domain"] = [("venue_id", "=", self.id)]
         return action
 
 
@@ -71,6 +72,6 @@ class FederationPlayingArea(models.Model):
     active = fields.Boolean(default=True)
 
     _unique_venue_name = models.Constraint(
-        'UNIQUE(venue_id, name)',
-        'A playing area with this name already exists for this venue.',
+        "UNIQUE(venue_id, name)",
+        "A playing area with this name already exists for this venue.",
     )

@@ -4,6 +4,7 @@ Extracted from ``PublicTournamentHubController`` so that the main controller
 module stays focused on routing and rendering.  Mix this class in first when
 composing the controller.
 """
+
 from odoo.http import request
 
 
@@ -97,8 +98,10 @@ class TournamentHubFilterMixin:
         """Return seasons, venues, and selection-field options for filter widgets."""
         Tournament = request.env["federation.tournament"]
         return {
-            "category_options": [("", "All Categories")] + list(Tournament._fields["category"].selection),
-            "gender_options": [("", "All Genders")] + list(Tournament._fields["gender"].selection),
+            "category_options": [("", "All Categories")]
+            + list(Tournament._fields["category"].selection),
+            "gender_options": [("", "All Genders")]
+            + list(Tournament._fields["gender"].selection),
             "state_options": [
                 ("", "All States"),
                 ("open", "Open"),
@@ -106,7 +109,9 @@ class TournamentHubFilterMixin:
                 ("closed", "Closed"),
                 ("cancelled", "Cancelled"),
             ],
-            "seasons": request.env["federation.season"].sudo().search([], order="date_start desc, id desc"),
+            "seasons": request.env["federation.season"]
+            .sudo()
+            .search([], order="date_start desc, id desc"),
             "venues": (
                 request.env["federation.venue"].sudo().search([], order="name asc")
                 if "venue_id" in Tournament._fields

@@ -63,7 +63,11 @@ class TestDemoDataPack(TransactionCase):
                             f"Demo record {record_id} references unknown local id {ref_value}.",
                         )
 
-                if field.type == "selection" and field_node.text and not field_node.get("eval"):
+                if (
+                    field.type == "selection"
+                    and field_node.text
+                    and not field_node.get("eval")
+                ):
                     selection = field.selection
                     if isinstance(selection, (list, tuple)):
                         allowed_values = {value for value, _label in selection}
@@ -111,16 +115,16 @@ class TestDemoDataPack(TransactionCase):
             if record.get("model") == "federation.match.sheet"
         ]
         match_records = [
-            record for record in self.records if record.get("model") == "federation.match"
+            record
+            for record in self.records
+            if record.get("model") == "federation.match"
         ]
 
         submitted_sides = {
-            record.xpath("./field[@name='side']/text()")[0]
-            for record in sheet_records
+            record.xpath("./field[@name='side']/text()")[0] for record in sheet_records
         }
         match_states = Counter(
-            record.xpath("./field[@name='state']/text()")[0]
-            for record in match_records
+            record.xpath("./field[@name='state']/text()")[0] for record in match_records
         )
 
         self.assertEqual(submitted_sides, {"home", "away"})
@@ -133,6 +137,8 @@ class TestDemoDataPack(TransactionCase):
             self.assertTrue(
                 roster_ref, "Every match sheet should point to a demo roster."
             )
-            self.assertTrue(match_ref, "Every match sheet should point to a demo match.")
+            self.assertTrue(
+                match_ref, "Every match sheet should point to a demo match."
+            )
             self.assertIn(roster_ref[0], records_by_id)
             self.assertIn(match_ref[0], records_by_id)

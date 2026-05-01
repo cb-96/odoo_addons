@@ -43,6 +43,4 @@ def migrate(cr, version):
                 f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS"
                 f" {_MAIL_COLUMN} INTEGER"
             )
-            _logger.info(
-                "pre-migrate: added column %s to %s", _MAIL_COLUMN, table
-            )
+            _logger.info("pre-migrate: added column %s to %s", _MAIL_COLUMN, table)

@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import fields, models
 from odoo.exceptions import ValidationError
 
 
@@ -68,9 +68,8 @@ class FederationMatchResultControl(models.Model):
 
     def write(self, vals):
         """Update records with module-specific side effects."""
-        if (
-            {"home_score", "away_score"} & set(vals)
-            and not self.env.context.get("allow_approved_result_score_write")
+        if {"home_score", "away_score"} & set(vals) and not self.env.context.get(
+            "allow_approved_result_score_write"
         ):
             approved_results = self.filtered(lambda rec: rec.result_state == "approved")
             if approved_results:
@@ -95,15 +94,16 @@ class FederationMatchResultControl(models.Model):
             relevant = standings.filtered(
                 lambda standing: (
                     not standing.stage_id or standing.stage_id == rec.stage_id
-                ) and (
-                    not standing.group_id or standing.group_id == rec.group_id
                 )
+                and (not standing.group_id or standing.group_id == rec.group_id)
             )
             for standing in relevant:
                 if standing.state != "frozen":
                     standing.action_recompute()
 
-    def _log_result_audit(self, event_type, description, from_state, to_state, reason=False):
+    def _log_result_audit(
+        self, event_type, description, from_state, to_state, reason=False
+    ):
         """Handle log result audit."""
         Audit = self.env.get("federation.match.result.audit")
         if Audit is None:
@@ -128,15 +128,17 @@ class FederationMatchResultControl(models.Model):
                     "Only draft or corrected results can be submitted."
                 )
             from_state = rec.result_state
-            rec.write({
-                "result_state": "submitted",
-                "result_submitted_by_id": self.env.user.id,
-                "result_submitted_on": fields.Datetime.now(),
-                "result_verified_by_id": False,
-                "result_verified_on": False,
-                "result_approved_by_id": False,
-                "result_approved_on": False,
-            })
+            rec.write(
+                {
+                    "result_state": "submitted",
+                    "result_submitted_by_id": self.env.user.id,
+                    "result_submitted_on": fields.Datetime.now(),
+                    "result_verified_by_id": False,
+                    "result_verified_on": False,
+                    "result_approved_by_id": False,
+                    "result_approved_on": False,
+                }
+            )
             rec._log_result_audit(
                 "submitted",
                 "Result submitted for verification.",
@@ -155,19 +157,19 @@ class FederationMatchResultControl(models.Model):
         )
         for rec in self:
             if rec.result_state != "submitted":
-                raise ValidationError(
-                    "Only submitted results can be verified."
-                )
+                raise ValidationError("Only submitted results can be verified.")
             if rec.result_submitted_by_id == self.env.user:
                 raise ValidationError(
                     "The submitting user cannot verify the same result."
                 )
             from_state = rec.result_state
-            rec.write({
-                "result_state": "verified",
-                "result_verified_by_id": self.env.user.id,
-                "result_verified_on": fields.Datetime.now(),
-            })
+            rec.write(
+                {
+                    "result_state": "verified",
+                    "result_verified_by_id": self.env.user.id,
+                    "result_verified_on": fields.Datetime.now(),
+                }
+            )
             rec._log_result_audit(
                 "verified",
                 "Result verified.",
@@ -183,9 +185,7 @@ class FederationMatchResultControl(models.Model):
         )
         for rec in self:
             if rec.result_state != "verified":
-                raise ValidationError(
-                    "Only verified results can be approved."
-                )
+                raise ValidationError("Only verified results can be approved.")
             if rec.result_submitted_by_id == self.env.user:
                 raise ValidationError(
                     "The submitting user cannot approve the same result."
@@ -195,12 +195,14 @@ class FederationMatchResultControl(models.Model):
                     "The verifying user cannot approve the same result."
                 )
             from_state = rec.result_state
-            rec.write({
-                "result_state": "approved",
-                "result_approved_by_id": self.env.user.id,
-                "result_approved_on": fields.Datetime.now(),
-                "include_in_official_standings": True,
-            })
+            rec.write(
+                {
+                    "result_state": "approved",
+                    "result_approved_by_id": self.env.user.id,
+                    "result_approved_on": fields.Datetime.now(),
+                    "include_in_official_standings": True,
+                }
+            )
             rec._log_result_audit(
                 "approved",
                 "Result approved and included in official standings.",
@@ -220,14 +222,14 @@ class FederationMatchResultControl(models.Model):
                     "Only submitted, verified, or approved results can be contested."
                 )
             if not rec.result_contest_reason:
-                raise ValidationError(
-                    "A contest reason is required."
-                )
+                raise ValidationError("A contest reason is required.")
             from_state = rec.result_state
-            rec.write({
-                "result_state": "contested",
-                "include_in_official_standings": False,
-            })
+            rec.write(
+                {
+                    "result_state": "contested",
+                    "include_in_official_standings": False,
+                }
+            )
             rec._log_result_audit(
                 "contested",
                 "Result contested.",
@@ -248,14 +250,14 @@ class FederationMatchResultControl(models.Model):
                     "Only contested or approved results can be corrected."
                 )
             if not rec.result_correction_reason:
-                raise ValidationError(
-                    "A correction reason is required."
-                )
+                raise ValidationError("A correction reason is required.")
             from_state = rec.result_state
-            rec.write({
-                "result_state": "corrected",
-                "include_in_official_standings": False,
-            })
+            rec.write(
+                {
+                    "result_state": "corrected",
+                    "include_in_official_standings": False,
+                }
+            )
             rec._log_result_audit(
                 "corrected",
                 "Result corrected and removed from official standings until resubmitted.",
@@ -273,14 +275,16 @@ class FederationMatchResultControl(models.Model):
         )
         for rec in self:
             from_state = rec.result_state
-            rec.write({
-                "result_state": "draft",
-                "include_in_official_standings": False,
-                "result_verified_by_id": False,
-                "result_verified_on": False,
-                "result_approved_by_id": False,
-                "result_approved_on": False,
-            })
+            rec.write(
+                {
+                    "result_state": "draft",
+                    "include_in_official_standings": False,
+                    "result_verified_by_id": False,
+                    "result_verified_on": False,
+                    "result_approved_by_id": False,
+                    "result_approved_on": False,
+                }
+            )
             rec._log_result_audit(
                 "reset",
                 "Result reset to draft.",

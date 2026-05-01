@@ -67,8 +67,8 @@ class FederationStanding(models.Model):
     notes = fields.Text(string="Notes")
 
     _unique_tournament_stage_group_name = models.Constraint(
-        'UNIQUE(tournament_id, stage_id, group_id, name)',
-        'A standing with this name already exists for this tournament/stage/group.',
+        "UNIQUE(tournament_id, stage_id, group_id, name)",
+        "A standing with this name already exists for this tournament/stage/group.",
     )
 
     @api.depends("line_ids")
@@ -92,14 +92,10 @@ class FederationStanding(models.Model):
         """Validate group stage consistency."""
         for record in self:
             if record.group_id and not record.stage_id:
-                raise ValidationError(
-                    "Group cannot be set without a Stage."
-                )
+                raise ValidationError("Group cannot be set without a Stage.")
             if record.group_id and record.stage_id:
                 if record.group_id.stage_id != record.stage_id:
-                    raise ValidationError(
-                        "Group must belong to the selected Stage."
-                    )
+                    raise ValidationError("Group must belong to the selected Stage.")
 
     @api.constrains("stage_id", "tournament_id")
     def _check_stage_tournament_consistency(self):
@@ -177,7 +173,7 @@ class FederationStanding(models.Model):
 
     def _build_standing_table(self):
         """Build the standing table from matches.
-        
+
         Returns a dict keyed by participant_id with stats.
         """
         self.ensure_one()
@@ -246,7 +242,7 @@ class FederationStanding(models.Model):
 
     def _sort_standings(self, stats):
         """Sort standings according to the specified order.
-        
+
         Order:
         1. points desc
         2. wins desc
@@ -300,7 +296,6 @@ class FederationStanding(models.Model):
             elif prev_s["score_for"] != s["score_for"]:
                 notes[pid] = _("Ranked by goals scored")
             else:
-                participant = participant_map.get(pid)
                 notes[pid] = _("Ranked alphabetically by team name")
         return notes
 
@@ -319,7 +314,9 @@ class FederationStanding(models.Model):
             sorted_items = record._sort_standings(stats)
             participants = record._get_participants()
             participant_map = {p.id: p for p in participants}
-            tiebreak_notes = record._compute_tiebreak_notes(sorted_items, participant_map)
+            tiebreak_notes = record._compute_tiebreak_notes(
+                sorted_items, participant_map
+            )
 
             # Delete existing lines
             record.line_ids.unlink()
@@ -329,25 +326,29 @@ class FederationStanding(models.Model):
             for pid, s in sorted_items:
                 participant = participant_map.get(pid)
                 if participant:
-                    self.env["federation.standing.line"].create({
-                        "standing_id": record.id,
-                        "participant_id": pid,
-                        "rank": rank,
-                        "played": s["played"],
-                        "won": s["won"],
-                        "drawn": s["drawn"],
-                        "lost": s["lost"],
-                        "score_for": s["score_for"],
-                        "score_against": s["score_against"],
-                        "points": s["points"],
-                        "tiebreak_notes": tiebreak_notes.get(pid, ""),
-                    })
+                    self.env["federation.standing.line"].create(
+                        {
+                            "standing_id": record.id,
+                            "participant_id": pid,
+                            "rank": rank,
+                            "played": s["played"],
+                            "won": s["won"],
+                            "drawn": s["drawn"],
+                            "lost": s["lost"],
+                            "score_for": s["score_for"],
+                            "score_against": s["score_against"],
+                            "points": s["points"],
+                            "tiebreak_notes": tiebreak_notes.get(pid, ""),
+                        }
+                    )
                     rank += 1
 
-            record.write({
-                "state": "computed",
-                "computed_on": fields.Datetime.now(),
-            })
+            record.write(
+                {
+                    "state": "computed",
+                    "computed_on": fields.Datetime.now(),
+                }
+            )
 
     def action_freeze(self):
         """Freeze the standing to prevent recomputation.
@@ -390,17 +391,22 @@ class FederationStanding(models.Model):
             [{"team": team_record, "rank": int, "points": int,
               "score_diff": int, "score_for": int, "group": group_record}]
         """
-        groups = self.env["federation.tournament.group"].search([
-            ("stage_id", "=", stage.id),
-        ])
+        groups = self.env["federation.tournament.group"].search(
+            [
+                ("stage_id", "=", stage.id),
+            ]
+        )
         entries = []
         for group in groups:
-            standing = self.search([
-                ("tournament_id", "=", stage.tournament_id.id),
-                ("stage_id", "=", stage.id),
-                ("group_id", "=", group.id),
-                ("state", "in", ("computed", "frozen")),
-            ], limit=1)
+            standing = self.search(
+                [
+                    ("tournament_id", "=", stage.tournament_id.id),
+                    ("stage_id", "=", stage.id),
+                    ("group_id", "=", group.id),
+                    ("state", "in", ("computed", "frozen")),
+                ],
+                limit=1,
+            )
             if not standing:
                 continue
             for line in standing.line_ids:
@@ -408,17 +414,26 @@ class FederationStanding(models.Model):
                     continue
                 if rank_to and line.rank > rank_to:
                     continue
-                entries.append({
-                    "team": line.team_id,
-                    "rank": line.rank,
-                    "points": line.points,
-                    "score_diff": line.score_diff,
-                    "score_for": line.score_for,
-                    "group": group,
-                })
+                entries.append(
+                    {
+                        "team": line.team_id,
+                        "rank": line.rank,
+                        "points": line.points,
+                        "score_diff": line.score_diff,
+                        "score_for": line.score_for,
+                        "group": group,
+                    }
+                )
 
         # Sort: points desc → goal diff desc → goals for desc → team name asc
-        entries.sort(key=lambda e: (-e["points"], -e["score_diff"], -e["score_for"], e["team"].name))
+        entries.sort(
+            key=lambda e: (
+                -e["points"],
+                -e["score_diff"],
+                -e["score_for"],
+                e["team"].name,
+            )
+        )
         return entries
 
 
@@ -472,8 +487,8 @@ class FederationStandingLine(models.Model):
     tiebreak_notes = fields.Text(string="Tiebreak Notes", readonly=True)
 
     _unique_standing_participant = models.Constraint(
-        'UNIQUE(standing_id, participant_id)',
-        'A standing line already exists for this participant.',
+        "UNIQUE(standing_id, participant_id)",
+        "A standing line already exists for this participant.",
     )
 
     @api.depends("score_for", "score_against")

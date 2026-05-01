@@ -92,13 +92,20 @@ class FederationFinanceEvent(models.Model):
     closed_on = fields.Datetime(readonly=True)
     closed_by_id = fields.Many2one("res.users", readonly=True)
 
-    _fee_source_unique = models.Constraint('unique (fee_type_id, source_model, source_res_id)', 'A finance event already exists for this fee type and source record.')
+    _fee_source_unique = models.Constraint(
+        "unique (fee_type_id, source_model, source_res_id)",
+        "A finance event already exists for this fee type and source record.",
+    )
 
     @api.model
     def _resolve_source_record(self, source_model, source_res_id):
         """Resolve source record."""
         if not source_model or not source_res_id:
-            return self.env[source_model].browse() if source_model else self.env["federation.season"].browse()
+            return (
+                self.env[source_model].browse()
+                if source_model
+                else self.env["federation.season"].browse()
+            )
         model = self.env.get(source_model)
         if model is None:
             return self.env["federation.season"].browse()
@@ -218,7 +225,9 @@ class FederationFinanceEvent(models.Model):
                     "Only confirmed or settled finance events can be exported."
                 )
             if record.handoff_state == "closed":
-                raise ValidationError("Closed handoff records cannot be exported again.")
+                raise ValidationError(
+                    "Closed handoff records cannot be exported again."
+                )
             record.write(
                 {
                     "handoff_state": "exported",

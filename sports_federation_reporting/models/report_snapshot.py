@@ -20,11 +20,17 @@ class FederationReportSnapshot(models.Model):
     ]
 
     name = fields.Char(string="Name", compute="_compute_name", store=True)
-    snapshot_on = fields.Date(string="Snapshot Date", required=True, default=fields.Date.context_today)
-    snapshot_type = fields.Selection(SNAPSHOT_TYPE_SELECTION, string="Snapshot Type", required=True)
+    snapshot_on = fields.Date(
+        string="Snapshot Date", required=True, default=fields.Date.context_today
+    )
+    snapshot_type = fields.Selection(
+        SNAPSHOT_TYPE_SELECTION, string="Snapshot Type", required=True
+    )
     current_value = fields.Integer(string="Current Value", required=True)
     previous_value = fields.Integer(string="Previous Value", default=0)
-    delta_value = fields.Integer(string="Delta", compute="_compute_delta_value", store=True)
+    delta_value = fields.Integer(
+        string="Delta", compute="_compute_delta_value", store=True
+    )
     status = fields.Selection(STATUS_SELECTION, string="Status")
     note = fields.Char(string="Summary")
 
@@ -39,13 +45,17 @@ class FederationReportSnapshot(models.Model):
         labels = dict(self._fields["snapshot_type"].selection)
         for record in self:
             label = labels.get(record.snapshot_type, record.snapshot_type or "Snapshot")
-            record.name = f"{label} - {record.snapshot_on}" if record.snapshot_on else label
+            record.name = (
+                f"{label} - {record.snapshot_on}" if record.snapshot_on else label
+            )
 
     @api.depends("current_value", "previous_value")
     def _compute_delta_value(self):
         """Compute delta value."""
         for record in self:
-            record.delta_value = (record.current_value or 0) - (record.previous_value or 0)
+            record.delta_value = (record.current_value or 0) - (
+                record.previous_value or 0
+            )
 
     @api.model
     def _build_snapshot_rows(self):
@@ -56,21 +66,33 @@ class FederationReportSnapshot(models.Model):
         finance_exception_model = self.env["federation.report.finance.exception"]
         season_checklist_model = self.env["federation.report.season.checklist"]
 
-        override_backlog = workflow_model.search_count([
-            ("exception_type", "in", ("override_review_stalled", "override_implementation_stalled")),
-        ])
+        override_backlog = workflow_model.search_count(
+            [
+                (
+                    "exception_type",
+                    "in",
+                    ("override_review_stalled", "override_implementation_stalled"),
+                ),
+            ]
+        )
         sanction_exposure = finance_exception_model.search_count([])
         compliance_rows = compliance_model.search([])
         compliance_pending = sum(
             row.pending_count + row.expired_count + row.non_compliant_count
             for row in compliance_rows
         )
-        finance_follow_up = finance_follow_up_model.search_count([
-            ("needs_follow_up", "=", True),
-        ])
+        finance_follow_up = finance_follow_up_model.search_count(
+            [
+                ("needs_follow_up", "=", True),
+            ]
+        )
         season_rows = season_checklist_model.search([])
-        blocked_seasons = len(season_rows.filtered(lambda row: row.checklist_status == "blocked"))
-        attention_seasons = len(season_rows.filtered(lambda row: row.checklist_status == "attention"))
+        blocked_seasons = len(
+            season_rows.filtered(lambda row: row.checklist_status == "blocked")
+        )
+        attention_seasons = len(
+            season_rows.filtered(lambda row: row.checklist_status == "attention")
+        )
         seasonal_readiness = blocked_seasons + attention_seasons
 
         return [
@@ -120,9 +142,7 @@ class FederationReportSnapshot(models.Model):
                 "status": (
                     "blocked"
                     if blocked_seasons
-                    else "attention"
-                    if attention_seasons
-                    else "healthy"
+                    else "attention" if attention_seasons else "healthy"
                 ),
                 "note": (
                     f"{blocked_seasons} blocked season(s), {attention_seasons} attention season(s)."
@@ -135,7 +155,11 @@ class FederationReportSnapshot(models.Model):
     @api.model
     def capture_snapshot(self, snapshot_on=None):
         """Handle capture snapshot."""
-        snapshot_on = fields.Date.to_date(snapshot_on) if snapshot_on else fields.Date.context_today(self)
+        snapshot_on = (
+            fields.Date.to_date(snapshot_on)
+            if snapshot_on
+            else fields.Date.context_today(self)
+        )
         records = self.browse([])
         for row in self._build_snapshot_rows():
             previous = self.search(

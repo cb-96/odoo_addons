@@ -1,7 +1,5 @@
 import random
-from datetime import datetime
 
-from odoo import fields
 from odoo.tests.common import TransactionCase
 
 
@@ -13,8 +11,12 @@ class TestSimulateTournament(TransactionCase):
         super().setUpClass()
 
         # Re-usable refs
-        cls.portal_group = cls.env.ref("sports_federation_portal.group_federation_portal_club")
-        cls.role_type = cls.env.ref("sports_federation_portal.role_type_competition_contact")
+        cls.portal_group = cls.env.ref(
+            "sports_federation_portal.group_federation_portal_club"
+        )
+        cls.role_type = cls.env.ref(
+            "sports_federation_portal.role_type_competition_contact"
+        )
 
         # Create 10 clubs and portal users; first two clubs will create 2 teams each
         cls.clubs = []
@@ -22,19 +24,25 @@ class TestSimulateTournament(TransactionCase):
         cls.teams = []
 
         for i in range(10):
-            club = cls.env["federation.club"].create({
-                "name": f"Sim Club {i+1}",
-                "code": f"SC{i+1:02d}",
-            })
+            club = cls.env["federation.club"].create(
+                {
+                    "name": f"Sim Club {i+1}",
+                    "code": f"SC{i+1:02d}",
+                }
+            )
             cls.clubs.append(club)
 
-            user = cls.env["res.users"].with_context(no_reset_password=True).create(
-                {
-                    "name": f"Portal User {i+1}",
-                    "login": f"portal.user.{i+1}@example.com",
-                    "email": f"portal.user.{i+1}@example.com",
-                    "group_ids": [(6, 0, [cls.portal_group.id])],
-                }
+            user = (
+                cls.env["res.users"]
+                .with_context(no_reset_password=True)
+                .create(
+                    {
+                        "name": f"Portal User {i+1}",
+                        "login": f"portal.user.{i+1}@example.com",
+                        "email": f"portal.user.{i+1}@example.com",
+                        "group_ids": [(6, 0, [cls.portal_group.id])],
+                    }
+                )
             )
             cls.users.append(user)
 
@@ -94,15 +102,30 @@ class TestSimulateTournament(TransactionCase):
 
         # Create stages: Round Robin (group) then Knockout
         stage_rr = self.env["federation.tournament.stage"].create(
-            {"name": "Round Robin", "tournament_id": tournament.id, "sequence": 1, "stage_type": "group"}
+            {
+                "name": "Round Robin",
+                "tournament_id": tournament.id,
+                "sequence": 1,
+                "stage_type": "group",
+            }
         )
         stage_ko = self.env["federation.tournament.stage"].create(
-            {"name": "Knockout", "tournament_id": tournament.id, "sequence": 2, "stage_type": "knockout"}
+            {
+                "name": "Knockout",
+                "tournament_id": tournament.id,
+                "sequence": 2,
+                "stage_type": "knockout",
+            }
         )
 
         # Single group containing all teams
         group = self.env["federation.tournament.group"].create(
-            {"name": "All Teams", "stage_id": stage_rr.id, "sequence": 1, "max_participants": len(self.teams)}
+            {
+                "name": "All Teams",
+                "stage_id": stage_rr.id,
+                "sequence": 1,
+                "max_participants": len(self.teams),
+            }
         )
 
         # Submit portal registrations for each team (using the club's portal user)
@@ -112,16 +135,18 @@ class TestSimulateTournament(TransactionCase):
             # find a user representing this team.club
             user = None
             for u in self.users:
-                reps = self.env["federation.club.representative"].search([
-                    ("user_id", "=", u.id), ("club_id", "=", team.club_id.id)
-                ])
+                reps = self.env["federation.club.representative"].search(
+                    [("user_id", "=", u.id), ("club_id", "=", team.club_id.id)]
+                )
                 if reps:
                     user = u
                     break
             if not user:
                 user = self.users[0]
 
-            reg = Registration._portal_submit_registration_request(tournament, team, notes="Sim registration", user=user)
+            reg = Registration._portal_submit_registration_request(
+                tournament, team, notes="Sim registration", user=user
+            )
             # Confirm as federation staff (create participant)
             reg.action_confirm()
             participant = reg.participant_id
@@ -129,10 +154,21 @@ class TestSimulateTournament(TransactionCase):
             participant.write({"stage_id": stage_rr.id, "group_id": group.id})
             created_regs.append(reg)
 
-        participants = self.env["federation.tournament.participant"].search([
-            ("tournament_id", "=", tournament.id), ("stage_id", "=", stage_rr.id)
-        ])
+        participants = self.env["federation.tournament.participant"].search(
+            [("tournament_id", "=", tournament.id), ("stage_id", "=", stage_rr.id)]
+        )
         self.assertEqual(len(participants), len(self.teams))
+
+        # Pre-create gamedays for the round-robin stage (enough for any team count)
+        for i in range(1, 21):
+            self.env["federation.tournament.round"].create(
+                {
+                    "stage_id": stage_rr.id,
+                    "group_id": group.id,
+                    "sequence": i,
+                    "name": f"Gameday {i}",
+                }
+            )
 
         # Generate round-robin schedule across 4 gamedays by using 8h round intervals
         rr_service = self.env["federation.round.robin.service"]
@@ -153,7 +189,7 @@ class TestSimulateTournament(TransactionCase):
         for idx, match in enumerate(rr_matches):
             match.action_schedule()
             home_score = (idx % 5) + 1
-            away_score = ((idx + 2) % 5)
+            away_score = (idx + 2) % 5
             if home_score == away_score:
                 away_score = (away_score + 1) % 6
             match.write({"home_score": home_score, "away_score": away_score})
@@ -161,7 +197,12 @@ class TestSimulateTournament(TransactionCase):
 
         # Compute standings for the group
         standing = self.env["federation.standing"].create(
-            {"name": "RR Standing", "tournament_id": tournament.id, "stage_id": stage_rr.id, "group_id": group.id}
+            {
+                "name": "RR Standing",
+                "tournament_id": tournament.id,
+                "stage_id": stage_rr.id,
+                "group_id": group.id,
+            }
         )
         standing.action_recompute()
         self.assertEqual(standing.state, "computed")
@@ -182,9 +223,9 @@ class TestSimulateTournament(TransactionCase):
         # Execute progression to create confirmed participants in the knockout stage
         prog.action_execute()
 
-        ko_participants = self.env["federation.tournament.participant"].search([
-            ("tournament_id", "=", tournament.id), ("stage_id", "=", stage_ko.id)
-        ])
+        ko_participants = self.env["federation.tournament.participant"].search(
+            [("tournament_id", "=", tournament.id), ("stage_id", "=", stage_ko.id)]
+        )
         self.assertTrue(len(ko_participants) >= 2)
 
         # Generate knockout bracket from qualified participants
@@ -196,11 +237,16 @@ class TestSimulateTournament(TransactionCase):
             "seeding": "seed",
             "overwrite": True,
         }
-        ko_matches = ko_service.generate(tournament, stage_ko, ko_participants, ko_options)
+        ko_matches = ko_service.generate(
+            tournament, stage_ko, ko_participants, ko_options
+        )
         self.assertTrue(ko_matches)
 
         # Simulate knockout: iterate by round and finish matches when both teams present
-        all_ko_matches = self.env["federation.match"].search([("stage_id", "=", stage_ko.id)], order="round_number asc, bracket_position asc")
+        all_ko_matches = self.env["federation.match"].search(
+            [("stage_id", "=", stage_ko.id)],
+            order="round_number asc, bracket_position asc",
+        )
         max_round = max(m.round_number for m in all_ko_matches)
         for rnd in range(1, max_round + 1):
             round_matches = all_ko_matches.filtered(lambda m: m.round_number == rnd)
@@ -210,7 +256,7 @@ class TestSimulateTournament(TransactionCase):
                     continue
                 # deterministic winner assignment
                 h = (rnd + idx) % 3 + 1
-                a = (idx % 2)
+                a = idx % 2
                 if h == a:
                     a = 0
                 m.write({"home_score": h, "away_score": a})
@@ -221,5 +267,9 @@ class TestSimulateTournament(TransactionCase):
         self.assertTrue(final_matches)
         final = final_matches[0]
         self.assertEqual(final.state, "done")
-        winner = final.home_team_id if final.home_score > final.away_score else final.away_team_id
+        winner = (
+            final.home_team_id
+            if final.home_score > final.away_score
+            else final.away_team_id
+        )
         self.assertTrue(winner)

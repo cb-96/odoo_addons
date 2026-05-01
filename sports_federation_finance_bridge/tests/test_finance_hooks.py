@@ -5,6 +5,7 @@ Tests for Phase 2 finance hooks:
 - Multiple matches can each have their own auto finance event on approval
 - Without result_fee_type_id, no extra event is created on approval
 """
+
 from odoo.tests import TransactionCase
 from odoo.exceptions import ValidationError
 
@@ -18,67 +19,101 @@ class TestFinanceHooks(TransactionCase):
         super().setUpClass()
         cls.has_result_control = "result_state" in cls.env["federation.match"]._fields
 
-        cls.club = cls.env["federation.club"].create({
-            "name": "Hook Test Club",
-            "code": "HTC",
-        })
-        cls.team_a = cls.env["federation.team"].create({
-            "name": "Hook Team A",
-            "club_id": cls.club.id,
-            "code": "HTA",
-        })
-        cls.team_b = cls.env["federation.team"].create({
-            "name": "Hook Team B",
-            "club_id": cls.club.id,
-            "code": "HTB",
-        })
-        cls.season = cls.env["federation.season"].create({
-            "name": "Hook Season",
-            "code": "HS2024",
-            "date_start": "2024-01-01",
-            "date_end": "2024-12-31",
-        })
-        cls.tournament = cls.env["federation.tournament"].create({
-            "name": "Hook Tournament",
-            "code": "HTOUR",
-            "season_id": cls.season.id,
-            "date_start": "2024-06-01",
-        })
-        cls.venue = cls.env["federation.venue"].create({
-            "name": "Hook Venue",
-            "city": "Hook City",
-        })
-        cls.fee_type_venue = cls.env["federation.fee.type"].create({
-            "name": "Venue Booking",
-            "code": "venue_booking",
-            "category": "other",
-            "default_amount": 150.00,
-        })
-        cls.fee_type_result = cls.env["federation.fee.type"].create({
-            "name": "Result Processing",
-            "code": "RESULT_PROC",
-            "category": "other",
-            "default_amount": 25.00,
-        })
-        cls.manager_group = cls.env.ref("sports_federation_base.group_federation_manager")
+        cls.club = cls.env["federation.club"].create(
+            {
+                "name": "Hook Test Club",
+                "code": "HTC",
+            }
+        )
+        cls.team_a = cls.env["federation.team"].create(
+            {
+                "name": "Hook Team A",
+                "club_id": cls.club.id,
+                "code": "HTA",
+            }
+        )
+        cls.team_b = cls.env["federation.team"].create(
+            {
+                "name": "Hook Team B",
+                "club_id": cls.club.id,
+                "code": "HTB",
+            }
+        )
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "Hook Season",
+                "code": "HS2024",
+                "date_start": "2024-01-01",
+                "date_end": "2024-12-31",
+            }
+        )
+        cls.tournament = cls.env["federation.tournament"].create(
+            {
+                "name": "Hook Tournament",
+                "code": "HTOUR",
+                "season_id": cls.season.id,
+                "date_start": "2024-06-01",
+            }
+        )
+        cls.venue = cls.env["federation.venue"].create(
+            {
+                "name": "Hook Venue",
+                "city": "Hook City",
+            }
+        )
+        cls.fee_type_venue = cls.env["federation.fee.type"].create(
+            {
+                "name": "Venue Booking",
+                "code": "venue_booking",
+                "category": "other",
+                "default_amount": 150.00,
+            }
+        )
+        cls.fee_type_result = cls.env["federation.fee.type"].create(
+            {
+                "name": "Result Processing",
+                "code": "RESULT_PROC",
+                "category": "other",
+                "default_amount": 25.00,
+            }
+        )
+        cls.manager_group = cls.env.ref(
+            "sports_federation_base.group_federation_manager"
+        )
         cls.validator_group = cls.env.ref(
             "sports_federation_result_control.group_result_validator"
         )
         cls.approver_group = cls.env.ref(
             "sports_federation_result_control.group_result_approver"
         )
-        cls.validator_user = cls.env["res.users"].with_context(no_reset_password=True).create({
-            "name": "Finance Hook Validator",
-            "login": "finance.hook.validator@example.com",
-            "email": "finance.hook.validator@example.com",
-            "group_ids": [(6, 0, [cls.manager_group.id, cls.validator_group.id])],
-        })
-        cls.approver_user = cls.env["res.users"].with_context(no_reset_password=True).create({
-            "name": "Finance Hook Approver",
-            "login": "finance.hook.approver@example.com",
-            "email": "finance.hook.approver@example.com",
-            "group_ids": [(6, 0, [cls.manager_group.id, cls.approver_group.id])],
-        })
+        cls.validator_user = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Finance Hook Validator",
+                    "login": "finance.hook.validator@example.com",
+                    "email": "finance.hook.validator@example.com",
+                    "group_ids": [
+                        (6, 0, [cls.manager_group.id, cls.validator_group.id])
+                    ],
+                }
+            )
+        )
+        cls.approver_user = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Finance Hook Approver",
+                    "login": "finance.hook.approver@example.com",
+                    "email": "finance.hook.approver@example.com",
+                    "group_ids": [
+                        (6, 0, [cls.manager_group.id, cls.approver_group.id])
+                    ],
+                }
+            )
+        )
 
     def _create_done_match(self, with_venue=True, with_result_fee=False):
         """Helper to create a done match with optional configuration."""
@@ -118,26 +153,34 @@ class TestFinanceHooks(TransactionCase):
         """Test that venue finance event helper is idempotent."""
         match = self._create_done_match(with_venue=True)
 
-        match.action_create_venue_finance_event(fee_type_code="venue_booking", amount=150.0)
-        match.action_create_venue_finance_event(fee_type_code="venue_booking", amount=200.0)
+        match.action_create_venue_finance_event(
+            fee_type_code="venue_booking", amount=150.0
+        )
+        match.action_create_venue_finance_event(
+            fee_type_code="venue_booking", amount=200.0
+        )
 
         self.assertEqual(
-            self.env["federation.finance.event"].search_count([
-                ("fee_type_id", "=", self.fee_type_venue.id),
-                ("source_model", "=", "federation.match"),
-                ("source_res_id", "=", match.id),
-            ]),
+            self.env["federation.finance.event"].search_count(
+                [
+                    ("fee_type_id", "=", self.fee_type_venue.id),
+                    ("source_model", "=", "federation.match"),
+                    ("source_res_id", "=", match.id),
+                ]
+            ),
             1,
         )
 
     def test_scheduling_match_with_venue_creates_automatic_venue_event(self):
         """Test that scheduling match with venue creates automatic venue event."""
-        match = self.env["federation.match"].create({
-            "tournament_id": self.tournament.id,
-            "home_team_id": self.team_a.id,
-            "away_team_id": self.team_b.id,
-            "venue_id": self.venue.id,
-        })
+        match = self.env["federation.match"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "home_team_id": self.team_a.id,
+                "away_team_id": self.team_b.id,
+                "venue_id": self.venue.id,
+            }
+        )
 
         match.action_schedule()
 
@@ -166,7 +209,9 @@ class TestFinanceHooks(TransactionCase):
             amount=200.0,
         )
         self.assertTrue(events)
-        fee_type = self.env["federation.fee.type"].search([("code", "=", "NEW_AUTO_CODE")], limit=1)
+        fee_type = self.env["federation.fee.type"].search(
+            [("code", "=", "NEW_AUTO_CODE")], limit=1
+        )
         self.assertTrue(fee_type, "Fee type should be auto-created.")
 
     # ------------------------------------------------------------------
@@ -181,17 +226,24 @@ class TestFinanceHooks(TransactionCase):
         # go through result pipeline
         match.action_submit_result()
         match.with_user(self.validator_user).action_verify_result()
-        event_count_before = self.env["federation.finance.event"].search_count([
-            ("source_model", "=", "federation.match"),
-            ("source_res_id", "=", match.id),
-        ])
+        event_count_before = self.env["federation.finance.event"].search_count(
+            [
+                ("source_model", "=", "federation.match"),
+                ("source_res_id", "=", match.id),
+            ]
+        )
         match.with_user(self.approver_user).action_approve_result()
-        event_count_after = self.env["federation.finance.event"].search_count([
-            ("source_model", "=", "federation.match"),
-            ("source_res_id", "=", match.id),
-        ])
-        self.assertEqual(event_count_before, event_count_after,
-                         "No extra finance event should be created without fee type.")
+        event_count_after = self.env["federation.finance.event"].search_count(
+            [
+                ("source_model", "=", "federation.match"),
+                ("source_res_id", "=", match.id),
+            ]
+        )
+        self.assertEqual(
+            event_count_before,
+            event_count_after,
+            "No extra finance event should be created without fee type.",
+        )
 
     def test_finance_event_created_on_result_approval(self):
         """When result_fee_type_id is set, approving a result auto-creates finance event."""
@@ -203,10 +255,12 @@ class TestFinanceHooks(TransactionCase):
         match.with_user(self.validator_user).action_verify_result()
         match.with_user(self.approver_user).action_approve_result()
 
-        events = self.env["federation.finance.event"].search([
-            ("source_model", "=", "federation.match"),
-            ("source_res_id", "=", match.id),
-        ])
+        events = self.env["federation.finance.event"].search(
+            [
+                ("source_model", "=", "federation.match"),
+                ("source_res_id", "=", match.id),
+            ]
+        )
         self.assertTrue(events, "A finance event should be auto-created on approval.")
         event = events[0]
         self.assertEqual(event.fee_type_id, self.fee_type_result)
@@ -228,11 +282,13 @@ class TestFinanceHooks(TransactionCase):
         match.with_user(self.approver_user).action_approve_result()
 
         self.assertEqual(
-            self.env["federation.finance.event"].search_count([
-                ("fee_type_id", "=", self.fee_type_result.id),
-                ("source_model", "=", "federation.match"),
-                ("source_res_id", "=", match.id),
-            ]),
+            self.env["federation.finance.event"].search_count(
+                [
+                    ("fee_type_id", "=", self.fee_type_result.id),
+                    ("source_model", "=", "federation.match"),
+                    ("source_res_id", "=", match.id),
+                ]
+            ),
             1,
         )
 
@@ -257,5 +313,7 @@ class TestFinanceHooks(TransactionCase):
         match.action_submit_result()
         match.with_user(self.validator_user).action_verify_result()
         match.with_user(self.approver_user).action_approve_result()
-        self.assertTrue(match.include_in_official_standings,
-                        "include_in_official_standings should be True after approval.")
+        self.assertTrue(
+            match.include_in_official_standings,
+            "include_in_official_standings should be True after approval.",
+        )

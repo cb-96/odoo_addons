@@ -60,4 +60,8 @@ class FederationComplianceTargetMixin(models.AbstractModel):
         target_record = self._compliance_get_target_record(target_model=target_model)
         if not target_record:
             return "Not set"
-        return target_record.display_name or getattr(target_record, "name", False) or "Not set"
+        return (
+            target_record.display_name
+            or getattr(target_record, "name", False)
+            or "Not set"
+        )

@@ -1,6 +1,7 @@
 from . import test_club_representative
 from . import test_http_smoke
 from . import test_officiating_portal_access
+from . import test_player_portal_access
 from . import test_roster_portal_access
 from . import test_season_registration
 from . import test_team_portal_access

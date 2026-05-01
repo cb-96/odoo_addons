@@ -13,21 +13,34 @@ class FederationReportStandingReconciliation(models.Model):
     TOURNAMENT_STATE_SELECTION = FederationReportOperational.TOURNAMENT_STATE_SELECTION
 
     season_id = fields.Many2one("federation.season", string="Season", readonly=True)
-    tournament_id = fields.Many2one("federation.tournament", string="Tournament", readonly=True)
-    tournament_state = fields.Selection(TOURNAMENT_STATE_SELECTION, string="Tournament State", readonly=True)
-    confirmed_participant_count = fields.Integer(string="Confirmed Participants", readonly=True)
-    covered_participant_count = fields.Integer(string="Covered Participants", readonly=True)
+    tournament_id = fields.Many2one(
+        "federation.tournament", string="Tournament", readonly=True
+    )
+    tournament_state = fields.Selection(
+        TOURNAMENT_STATE_SELECTION, string="Tournament State", readonly=True
+    )
+    confirmed_participant_count = fields.Integer(
+        string="Confirmed Participants", readonly=True
+    )
+    covered_participant_count = fields.Integer(
+        string="Covered Participants", readonly=True
+    )
     frozen_standing_count = fields.Integer(string="Frozen Standings", readonly=True)
-    missing_participant_count = fields.Integer(string="Missing Participants", readonly=True)
-    orphaned_participant_count = fields.Integer(string="Orphaned Participants", readonly=True)
-    reconciliation_status = fields.Selection(STATUS_SELECTION, string="Reconciliation Status", readonly=True)
+    missing_participant_count = fields.Integer(
+        string="Missing Participants", readonly=True
+    )
+    orphaned_participant_count = fields.Integer(
+        string="Orphaned Participants", readonly=True
+    )
+    reconciliation_status = fields.Selection(
+        STATUS_SELECTION, string="Reconciliation Status", readonly=True
+    )
     reconciliation_note = fields.Text(string="Reconciliation Note", readonly=True)
 
     def init(self):
         """Rebuild the SQL view so reconciliation columns stay registry-aligned."""
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute(
-            """
+        self.env.cr.execute("""
             CREATE VIEW federation_report_standing_reconciliation AS (
                 -- block: participant_stats
                 WITH participant_stats AS (
@@ -82,5 +95,4 @@ class FederationReportStandingReconciliation(models.Model):
                 LEFT JOIN participant_stats ps ON ps.tournament_id = t.id
                 LEFT JOIN coverage_stats cs ON cs.tournament_id = t.id
             )
-            """
-        )
+            """)

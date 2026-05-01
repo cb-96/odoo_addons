@@ -8,7 +8,9 @@ class FederationSeasonRegistrationFinanceHooks(models.Model):
     def create(self, vals_list):
         """Create records with module-specific defaults and side effects."""
         registrations = super().create(vals_list)
-        registrations.filtered(lambda rec: rec.state == "confirmed")._ensure_registration_finance_event()
+        registrations.filtered(
+            lambda rec: rec.state == "confirmed"
+        )._ensure_registration_finance_event()
         return registrations
 
     def write(self, vals):
@@ -16,7 +18,9 @@ class FederationSeasonRegistrationFinanceHooks(models.Model):
         should_create_events = vals.get("state") == "confirmed"
         res = super().write(vals)
         if should_create_events:
-            self.filtered(lambda rec: rec.state == "confirmed")._ensure_registration_finance_event()
+            self.filtered(
+                lambda rec: rec.state == "confirmed"
+            )._ensure_registration_finance_event()
         return res
 
     def _ensure_registration_finance_event(self):

@@ -16,6 +16,7 @@ tournament registration workflows on top of the federation base modules.
         "website",
         "portal",
         "sports_federation_base",
+        "sports_federation_people",
         "sports_federation_tournament",
         "sports_federation_officiating",
         "sports_federation_rosters",

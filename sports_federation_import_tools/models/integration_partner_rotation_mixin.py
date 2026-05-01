@@ -32,7 +32,9 @@ class FederationIntegrationPartnerRotationMixin(models.AbstractModel):
     def action_rotate_token(self):
         """Rotate the partner token and expose the raw secret one time."""
         self.ensure_one()
-        if not self.env.user.has_group("sports_federation_base.group_federation_manager"):
+        if not self.env.user.has_group(
+            "sports_federation_base.group_federation_manager"
+        ):
             raise AccessError("Only federation managers can rotate integration tokens.")
 
         raw_token = self._issue_auth_token(rotation_required=False)

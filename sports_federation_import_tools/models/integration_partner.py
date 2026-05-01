@@ -49,7 +49,8 @@ class FederationIntegrationPartner(models.Model):
         """Return subscription."""
         self.ensure_one()
         return self.subscription_ids.filtered(
-            lambda line: line.contract_id.code == contract_code and line.state == "active"
+            lambda line: line.contract_id.code == contract_code
+            and line.state == "active"
         )[:1]
 
     @api.model
@@ -62,7 +63,9 @@ class FederationIntegrationPartner(models.Model):
             ],
             limit=1,
         )
-        if not partner or not partner._verify_stored_auth_token(partner.auth_token, token):
+        if not partner or not partner._verify_stored_auth_token(
+            partner.auth_token, token
+        ):
             raise AccessError("Invalid partner credentials.")
 
         partner.write({"last_request_on": fields.Datetime.now()})

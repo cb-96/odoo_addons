@@ -95,9 +95,10 @@ class FederationDisciplinaryCase(models.Model):
         """Create records with module-specific defaults and side effects."""
         for vals in vals_list:
             if vals.get("reference", "New") == "New":
-                vals["reference"] = self.env["ir.sequence"].next_by_code(
-                    "federation.disciplinary.case"
-                ) or "New"
+                vals["reference"] = (
+                    self.env["ir.sequence"].next_by_code("federation.disciplinary.case")
+                    or "New"
+                )
         return super().create(vals_list)
 
     @api.constrains(
@@ -109,12 +110,14 @@ class FederationDisciplinaryCase(models.Model):
     def _check_subject(self):
         """Validate subject."""
         for record in self:
-            if not any([
-                record.subject_player_id,
-                record.subject_club_id,
-                record.subject_referee_id,
-                record.incident_ids,
-            ]):
+            if not any(
+                [
+                    record.subject_player_id,
+                    record.subject_club_id,
+                    record.subject_referee_id,
+                    record.incident_ids,
+                ]
+            ):
                 raise ValidationError(
                     "At least one subject (Player, Club, Referee) "
                     "or incident must be present."
@@ -124,9 +127,7 @@ class FederationDisciplinaryCase(models.Model):
         """Execute the submit review action."""
         for record in self:
             if record.state != "draft":
-                raise ValidationError(
-                    "Only draft cases can be submitted for review."
-                )
+                raise ValidationError("Only draft cases can be submitted for review.")
             record.state = "under_review"
             for incident in record.incident_ids:
                 if incident.status == "new":

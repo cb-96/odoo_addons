@@ -19,7 +19,9 @@ class FederationIntegrationPartnerTokenMixin(models.AbstractModel):
     @api.model
     def _auth_token_is_hashed(self, stored_token):
         """Return whether a stored token already uses the hash format."""
-        return bool(stored_token and stored_token.startswith(f"{self.TOKEN_HASH_PREFIX}$"))
+        return bool(
+            stored_token and stored_token.startswith(f"{self.TOKEN_HASH_PREFIX}$")
+        )
 
     @api.model
     def _hash_auth_token(self, token, salt=None, rounds=None):
@@ -61,7 +63,9 @@ class FederationIntegrationPartnerTokenMixin(models.AbstractModel):
         return hmac.compare_digest(candidate_digest, encoded_digest)
 
     @api.model
-    def _prepare_auth_token_values(self, token, rotation_required=False, mark_rotated=True):
+    def _prepare_auth_token_values(
+        self, token, rotation_required=False, mark_rotated=True
+    ):
         """Build storage values for a raw token."""
         values = {
             "auth_token": self._hash_auth_token(token),
@@ -88,9 +92,15 @@ class FederationIntegrationPartnerTokenMixin(models.AbstractModel):
     @api.model
     def _migrate_plaintext_tokens(self):
         """Hash legacy plaintext tokens and flag them for scheduled rotation."""
-        partners = self.sudo().with_context(active_test=False).search([
-            ("auth_token", "!=", False),
-        ])
+        partners = (
+            self.sudo()
+            .with_context(active_test=False)
+            .search(
+                [
+                    ("auth_token", "!=", False),
+                ]
+            )
+        )
         for partner in partners:
             if partner._auth_token_is_hashed(partner.auth_token):
                 continue
@@ -113,7 +123,9 @@ class FederationIntegrationPartnerTokenMixin(models.AbstractModel):
                 prepared_vals.update(
                     self._prepare_auth_token_values(
                         raw_token,
-                        rotation_required=bool(prepared_vals.get("token_rotation_required", False)),
+                        rotation_required=bool(
+                            prepared_vals.get("token_rotation_required", False)
+                        ),
                         mark_rotated=True,
                     )
                 )
@@ -128,7 +140,9 @@ class FederationIntegrationPartnerTokenMixin(models.AbstractModel):
             prepared_vals.update(
                 self._prepare_auth_token_values(
                     raw_token,
-                    rotation_required=bool(prepared_vals.get("token_rotation_required", False)),
+                    rotation_required=bool(
+                        prepared_vals.get("token_rotation_required", False)
+                    ),
                     mark_rotated=True,
                 )
             )

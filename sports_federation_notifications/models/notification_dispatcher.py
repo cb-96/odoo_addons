@@ -14,8 +14,11 @@ Usage (from any model override):
     if Dispatcher is not None:
         Dispatcher.send_result_approved(self)
 """
+
 from odoo import fields, models
-from odoo.addons.sports_federation_base.models.failure_feedback import build_failure_feedback
+from odoo.addons.sports_federation_base.models.failure_feedback import (
+    build_failure_feedback,
+)
 
 
 class FederationNotificationDispatcher(models.AbstractModel):
@@ -40,15 +43,21 @@ class FederationNotificationDispatcher(models.AbstractModel):
 
     def _log_missing_recipients(self, record, log_name, notification_type, message):
         """Handle log missing recipients."""
-        return self.env["federation.notification.log"].sudo().create({
-            "name": log_name,
-            "target_model": record._name,
-            "target_res_id": record.id,
-            "notification_type": notification_type,
-            "state": "failed",
-            "failure_category": "configuration_error",
-            "operator_message": message,
-        })
+        return (
+            self.env["federation.notification.log"]
+            .sudo()
+            .create(
+                {
+                    "name": log_name,
+                    "target_model": record._name,
+                    "target_res_id": record.id,
+                    "notification_type": notification_type,
+                    "state": "failed",
+                    "failure_category": "configuration_error",
+                    "operator_message": message,
+                }
+            )
+        )
 
     def _send_email_or_log(self, record, template_xmlid, log_name, emails):
         """Handle send email or log."""
@@ -78,14 +87,20 @@ class FederationNotificationDispatcher(models.AbstractModel):
                 "No recipient email available for this notification.",
             )
 
-        log = self.env["federation.notification.log"].sudo().create({
-            "name": log_name,
-            "target_model": record._name,
-            "target_res_id": record.id,
-            "recipient_email": ",".join(unique_emails),
-            "notification_type": "email",
-            "state": "pending",
-        })
+        log = (
+            self.env["federation.notification.log"]
+            .sudo()
+            .create(
+                {
+                    "name": log_name,
+                    "target_model": record._name,
+                    "target_res_id": record.id,
+                    "recipient_email": ",".join(unique_emails),
+                    "notification_type": "email",
+                    "state": "pending",
+                }
+            )
+        )
         email_from = (
             self.env.user.company_id.email_formatted
             or self.env.user.email_formatted
@@ -95,28 +110,38 @@ class FederationNotificationDispatcher(models.AbstractModel):
         )
 
         try:
-            mail = self.env["mail.mail"].sudo().create({
-                "subject": subject,
-                "body_html": body_html,
-                "email_to": ",".join(unique_emails),
-                "email_from": email_from,
-                "auto_delete": False,
-            })
+            mail = (
+                self.env["mail.mail"]
+                .sudo()
+                .create(
+                    {
+                        "subject": subject,
+                        "body_html": body_html,
+                        "email_to": ",".join(unique_emails),
+                        "email_from": email_from,
+                        "auto_delete": False,
+                    }
+                )
+            )
             mail.send()
-            log.write({
-                "state": "sent",
-                "sent_on": fields.Datetime.now(),
-                "failure_category": False,
-                "operator_message": False,
-            })
+            log.write(
+                {
+                    "state": "sent",
+                    "sent_on": fields.Datetime.now(),
+                    "failure_category": False,
+                    "operator_message": False,
+                }
+            )
         except Exception as exc:
             failure_category, operator_message = build_failure_feedback(error=exc)
-            log.write({
-                "state": "failed",
-                "failure_category": failure_category,
-                "operator_message": operator_message,
-                "message": False,
-            })
+            log.write(
+                {
+                    "state": "failed",
+                    "failure_category": failure_category,
+                    "operator_message": operator_message,
+                    "message": False,
+                }
+            )
 
         return log
 
@@ -144,7 +169,11 @@ class FederationNotificationDispatcher(models.AbstractModel):
     def _get_season_registration_recipient(self, registration):
         """Return season registration recipient."""
         partner = False
-        if "partner_id" in registration._fields and registration.partner_id and registration.partner_id.email:
+        if (
+            "partner_id" in registration._fields
+            and registration.partner_id
+            and registration.partner_id.email
+        ):
             partner = registration.partner_id
 
         email_to = False
@@ -181,7 +210,9 @@ class FederationNotificationDispatcher(models.AbstractModel):
 
     def send_tournament_published(self, tournament):
         """Handle send tournament published."""
-        emails = tournament.participant_ids.mapped("club_id.email") + tournament.participant_ids.mapped("team_id.email")
+        emails = tournament.participant_ids.mapped(
+            "club_id.email"
+        ) + tournament.participant_ids.mapped("team_id.email")
         return self._send_email_or_log(
             tournament,
             "sports_federation_notifications.template_federation_tournament_published",
@@ -262,7 +293,8 @@ class FederationNotificationDispatcher(models.AbstractModel):
             match_officiating,
             "sports_federation_base.group_federation_manager",
             f"Referee confirmation overdue: {match_officiating.match_id.name}",
-            note=match_officiating.readiness_feedback or "Referee confirmation deadline has been missed.",
+            note=match_officiating.readiness_feedback
+            or "Referee confirmation deadline has been missed.",
         )
 
     def send_referee_shortage_alert(self, match):
@@ -271,7 +303,8 @@ class FederationNotificationDispatcher(models.AbstractModel):
             match,
             "sports_federation_base.group_federation_manager",
             f"Referee shortage: {match.name}",
-            note=getattr(match, "official_readiness_issues", False) or "Match is missing required officials.",
+            note=getattr(match, "official_readiness_issues", False)
+            or "Match is missing required officials.",
         )
 
     # ------------------------------------------------------------------

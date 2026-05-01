@@ -17,8 +17,6 @@
                         <field name="use_all_participants"/>
                         <field name="participant_ids" invisible="use_all_participants"/>
                         <field name="stage_round_count" readonly="1" invisible="not stage_id"/>
-                        <field name="round_mode"/>
-                        <field name="requested_rounds" invisible="round_mode != 'explicit'"/>
                         <field name="schedule_by_round"/>
                     </group>
                 </group>
@@ -34,7 +32,7 @@
                     </group>
                 </group>
                 <div class="alert alert-info" role="status">
-                    Generated matches are always assigned to tournament rounds. Round dates and venues live on the round, while exact kickoff times stay on the matches.
+                    Matches are assigned to the gamedays you define on the stage. Create your gamedays first, then run this wizard to fill them with matches.
                 </div>
                 <separator string="Preview"/>
                 <field name="summary" readonly="1"/>

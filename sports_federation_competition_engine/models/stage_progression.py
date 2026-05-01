@@ -132,6 +132,7 @@ class FederationStageProgression(models.Model):
     def action_execute(self):
         """Execute the progression: read standings and advance teams."""
         import random as _random
+
         for rec in self:
             if rec.state == "executed":
                 raise UserError("This progression rule has already been executed.")
@@ -144,17 +145,22 @@ class FederationStageProgression(models.Model):
             if rec.seeding_method == "random":
                 _random.shuffle(qualified)
             elif rec.seeding_method == "reseed":
-                qualified.sort(key=lambda x: (-x["points"], -x["score_diff"], x["name"]))
+                qualified.sort(
+                    key=lambda x: (-x["points"], -x["score_diff"], x["name"])
+                )
             # keep_rank: already sorted by rank
 
             Participant = self.env["federation.tournament.participant"]
             for idx, entry in enumerate(qualified):
                 team = entry["team"]
                 # Find existing participant or create
-                existing = Participant.search([
-                    ("tournament_id", "=", rec.tournament_id.id),
-                    ("team_id", "=", team.id),
-                ], limit=1)
+                existing = Participant.search(
+                    [
+                        ("tournament_id", "=", rec.tournament_id.id),
+                        ("team_id", "=", team.id),
+                    ],
+                    limit=1,
+                )
                 vals = {
                     "stage_id": rec.target_stage_id.id,
                     "group_id": rec.target_group_id.id or False,
@@ -164,10 +170,12 @@ class FederationStageProgression(models.Model):
                 if existing:
                     existing.write(vals)
                 else:
-                    vals.update({
-                        "tournament_id": rec.tournament_id.id,
-                        "team_id": team.id,
-                    })
+                    vals.update(
+                        {
+                            "tournament_id": rec.tournament_id.id,
+                            "team_id": team.id,
+                        }
+                    )
                     Participant.create(vals)
 
             rec.state = "executed"
@@ -182,50 +190,63 @@ class FederationStageProgression(models.Model):
 
         if self.source_group_id:
             # Single group — read standings for that group
-            standings = Standing.search([
-                ("tournament_id", "=", self.tournament_id.id),
-                ("stage_id", "=", self.source_stage_id.id),
-                ("group_id", "=", self.source_group_id.id),
-                ("state", "in", ("computed", "frozen")),
-            ], limit=1)
+            standings = Standing.search(
+                [
+                    ("tournament_id", "=", self.tournament_id.id),
+                    ("stage_id", "=", self.source_stage_id.id),
+                    ("group_id", "=", self.source_group_id.id),
+                    ("state", "in", ("computed", "frozen")),
+                ],
+                limit=1,
+            )
             if not standings:
                 return []
             lines = standings.line_ids.filtered(
-                lambda l: self.rank_from <= l.rank <= self.rank_to
+                lambda ln: self.rank_from <= ln.rank <= self.rank_to
             ).sorted("rank")
-            return [{
-                "team": l.team_id,
-                "rank": l.rank,
-                "points": l.points,
-                "score_diff": l.score_diff,
-                "name": l.team_id.name,
-            } for l in lines]
+            return [
+                {
+                    "team": ln.team_id,
+                    "rank": ln.rank,
+                    "points": ln.points,
+                    "score_diff": ln.score_diff,
+                    "name": ln.team_id.name,
+                }
+                for ln in lines
+            ]
         else:
             # Cross-group: collect the specified rank range across ALL groups in the stage
-            groups = self.env["federation.tournament.group"].search([
-                ("stage_id", "=", self.source_stage_id.id),
-            ])
+            groups = self.env["federation.tournament.group"].search(
+                [
+                    ("stage_id", "=", self.source_stage_id.id),
+                ]
+            )
             all_entries = []
             for group in groups:
-                standings = Standing.search([
-                    ("tournament_id", "=", self.tournament_id.id),
-                    ("stage_id", "=", self.source_stage_id.id),
-                    ("group_id", "=", group.id),
-                    ("state", "in", ("computed", "frozen")),
-                ], limit=1)
+                standings = Standing.search(
+                    [
+                        ("tournament_id", "=", self.tournament_id.id),
+                        ("stage_id", "=", self.source_stage_id.id),
+                        ("group_id", "=", group.id),
+                        ("state", "in", ("computed", "frozen")),
+                    ],
+                    limit=1,
+                )
                 if not standings:
                     continue
                 lines = standings.line_ids.filtered(
-                    lambda l: self.rank_from <= l.rank <= self.rank_to
+                    lambda ln: self.rank_from <= ln.rank <= self.rank_to
                 ).sorted("rank")
-                for l in lines:
-                    all_entries.append({
-                        "team": l.team_id,
-                        "rank": l.rank,
-                        "points": l.points,
-                        "score_diff": l.score_diff,
-                        "name": l.team_id.name,
-                    })
+                for ln in lines:
+                    all_entries.append(
+                        {
+                            "team": ln.team_id,
+                            "rank": ln.rank,
+                            "points": ln.points,
+                            "score_diff": ln.score_diff,
+                            "name": ln.team_id.name,
+                        }
+                    )
             # Sort cross-group by points desc, then goal diff desc, then goals for desc
             all_entries.sort(key=lambda x: (-x["points"], -x["score_diff"], x["name"]))
             return all_entries

@@ -1,7 +1,9 @@
 from datetime import timedelta
 
 from odoo import api, fields, models
-from odoo.addons.sports_federation_base.models.failure_feedback import FAILURE_CATEGORY_SELECTION
+from odoo.addons.sports_federation_base.models.failure_feedback import (
+    FAILURE_CATEGORY_SELECTION,
+)
 
 
 class FederationNotificationLog(models.Model):
@@ -45,27 +47,35 @@ class FederationNotificationLog(models.Model):
         default="pending",
         required=True,
     )
-    failure_category = fields.Selection(FAILURE_CATEGORY_SELECTION, string="Failure Category")
+    failure_category = fields.Selection(
+        FAILURE_CATEGORY_SELECTION, string="Failure Category"
+    )
     operator_message = fields.Text(string="Operator Message")
     message = fields.Text(string="Message")
 
     @api.model
     def _cron_notification_scan(self):
         """Delegate to the notification service cron method."""
-        self.env["federation.notification.service"]._cron_placeholder_notification_scan()
+        self.env[
+            "federation.notification.service"
+        ]._cron_placeholder_notification_scan()
 
     @api.model
     def _purge_retained_logs(self, reference_dt=None):
         """Delete notification logs that exceeded the policy for their state."""
-        reference_dt = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now())
+        reference_dt = fields.Datetime.to_datetime(
+            reference_dt or fields.Datetime.now()
+        )
         total_deleted = 0
         for state, days in self.RETENTION_DAYS_BY_STATE.items():
             cutoff = fields.Datetime.to_string(reference_dt - timedelta(days=days))
-            logs = self.sudo().search([
-                ("state", "=", state),
-                ("create_date", "!=", False),
-                ("create_date", "<", cutoff),
-            ])
+            logs = self.sudo().search(
+                [
+                    ("state", "=", state),
+                    ("create_date", "!=", False),
+                    ("create_date", "<", cutoff),
+                ]
+            )
             total_deleted += len(logs)
             logs.unlink()
         return total_deleted

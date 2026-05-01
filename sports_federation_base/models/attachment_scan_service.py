@@ -4,9 +4,10 @@ import shlex
 import subprocess
 
 from odoo import api, models
-from odoo.addons.sports_federation_base.exceptions import AttachmentScanVerificationError
+from odoo.addons.sports_federation_base.exceptions import (
+    AttachmentScanVerificationError,
+)
 from odoo.exceptions import ValidationError
-
 
 _logger = logging.getLogger(__name__)
 
@@ -19,18 +20,22 @@ class FederationAttachmentScanService(models.AbstractModel):
     def _get_scan_command(self):
         """Return the configured external scan command, if any."""
         return (
-            self.env["ir.config_parameter"].sudo().get_param(
-                "sports_federation.attachment_scan.command"
-            )
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param("sports_federation.attachment_scan.command")
             or ""
         ).strip()
 
     @api.model
     def _get_timeout_seconds(self):
         """Return the scan timeout with a safe integer fallback."""
-        raw_timeout = self.env["ir.config_parameter"].sudo().get_param(
-            "sports_federation.attachment_scan.timeout_seconds",
-            default="15",
+        raw_timeout = (
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param(
+                "sports_federation.attachment_scan.timeout_seconds",
+                default="15",
+            )
         )
         try:
             timeout_seconds = int(raw_timeout)
@@ -71,7 +76,9 @@ class FederationAttachmentScanService(models.AbstractModel):
         )
 
     @api.model
-    def _run_external_hook(self, command, policy_code, filename, payload, mimetype=None):
+    def _run_external_hook(
+        self, command, policy_code, filename, payload, mimetype=None
+    ):
         """Run the configured external command against the raw upload bytes."""
         try:
             result = subprocess.run(
@@ -79,7 +86,9 @@ class FederationAttachmentScanService(models.AbstractModel):
                 input=payload,
                 capture_output=True,
                 check=False,
-                env=self._build_scan_environment(policy_code, filename, mimetype=mimetype),
+                env=self._build_scan_environment(
+                    policy_code, filename, mimetype=mimetype
+                ),
                 timeout=self._get_timeout_seconds(),
             )
         except (FileNotFoundError, PermissionError):

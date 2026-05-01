@@ -30,7 +30,9 @@ class FederationMatch(models.Model):
         if round_record.venue_id and not vals.get("venue_id"):
             vals["venue_id"] = round_record.venue_id.id
         if vals.get("playing_area_id") and vals.get("venue_id"):
-            playing_area = self.env["federation.playing.area"].browse(vals["playing_area_id"])
+            playing_area = self.env["federation.playing.area"].browse(
+                vals["playing_area_id"]
+            )
             if playing_area.exists() and playing_area.venue_id.id != vals["venue_id"]:
                 vals["playing_area_id"] = False
         return vals
@@ -72,7 +74,11 @@ class FederationMatch(models.Model):
             return
         if self.round_id.venue_id:
             self.venue_id = self.round_id.venue_id
-        if self.playing_area_id and self.venue_id and self.playing_area_id.venue_id != self.venue_id:
+        if (
+            self.playing_area_id
+            and self.venue_id
+            and self.playing_area_id.venue_id != self.venue_id
+        ):
             self.playing_area_id = False
 
     @api.constrains("round_id", "venue_id")
@@ -98,8 +104,12 @@ class FederationMatch(models.Model):
             domain = [
                 ("round_id", "=", rec.round_id.id),
                 "|",
-                "&", ("home_team_id", "=", rec.home_team_id.id), ("away_team_id", "=", rec.away_team_id.id),
-                "&", ("home_team_id", "=", rec.away_team_id.id), ("away_team_id", "=", rec.home_team_id.id),
+                "&",
+                ("home_team_id", "=", rec.home_team_id.id),
+                ("away_team_id", "=", rec.away_team_id.id),
+                "&",
+                ("home_team_id", "=", rec.away_team_id.id),
+                ("away_team_id", "=", rec.home_team_id.id),
                 ("id", "!=", rec.id),
             ]
             dup = self.search(domain, limit=1)

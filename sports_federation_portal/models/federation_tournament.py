@@ -27,7 +27,9 @@ class FederationTournament(models.Model):
     def _compute_registration_request_count(self):
         """Compute registration request count."""
         for tournament in self:
-            tournament.registration_request_count = len(tournament.registration_request_ids)
+            tournament.registration_request_count = len(
+                tournament.registration_request_ids
+            )
 
     def action_view_registration_requests(self):
         """Execute the view registration requests action."""
@@ -46,7 +48,11 @@ class FederationTournament(models.Model):
         club_scope = user.portal_club_scope_ids
         team_scope = user.portal_team_scope_ids
         if team_scope and club_scope:
-            return ["|", ("id", "in", team_scope.ids), ("club_id", "in", club_scope.ids)]
+            return [
+                "|",
+                ("id", "in", team_scope.ids),
+                ("club_id", "in", club_scope.ids),
+            ]
         if team_scope:
             return [("id", "in", team_scope.ids)]
         if club_scope:
@@ -342,7 +348,8 @@ class FederationTournament(models.Model):
 
         tournament = PortalPrivilege.portal_search(
             self,
-            self._portal_get_workspace_tournament_domain() + [("id", "=", tournament_id)],
+            self._portal_get_workspace_tournament_domain()
+            + [("id", "=", tournament_id)],
             limit=1,
             user=user,
         )
@@ -382,7 +389,9 @@ class FederationTournament(models.Model):
 
         active_tournament_ids = active_tournaments.ids
         team_by_id = {team.id: team for team in teams}
-        tournament_by_id = {tournament.id: tournament for tournament in active_tournaments}
+        tournament_by_id = {
+            tournament.id: tournament for tournament in active_tournaments
+        }
 
         pair_keys = set()
 

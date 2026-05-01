@@ -73,8 +73,8 @@ class FederationTeamRosterLine(models.Model):
     )
 
     _unique_roster_player_date_from = models.Constraint(
-        'UNIQUE(roster_id, player_id, date_from)',
-        'A roster line for this player with this start date already exists.',
+        "UNIQUE(roster_id, player_id, date_from)",
+        "A roster line for this player with this start date already exists.",
     )
 
     @api.model_create_multi
@@ -109,7 +109,9 @@ class FederationTeamRosterLine(models.Model):
         }
         changed_fields = sorted(tracked_fields.intersection(vals))
         if changed_fields:
-            field_labels = ", ".join(self._fields[field].string for field in changed_fields)
+            field_labels = ", ".join(
+                self._fields[field].string for field in changed_fields
+            )
             for record in self:
                 record.roster_id._log_audit_event(
                     "roster_line_updated",
@@ -178,9 +180,7 @@ class FederationTeamRosterLine(models.Model):
         for record in self:
             if record.date_from and record.date_to:
                 if record.date_to < record.date_from:
-                    raise ValidationError(
-                        _("Date To cannot be before Date From.")
-                    )
+                    raise ValidationError(_("Date To cannot be before Date From."))
 
     @api.constrains("is_captain", "roster_id", "status")
     def _check_single_captain(self):
@@ -265,7 +265,9 @@ class FederationTeamRosterLine(models.Model):
         for record in self:
             locking_lines = record._get_locking_match_sheet_lines()
             if locking_lines:
-                sheet_names = ", ".join(locking_lines.mapped("match_sheet_id").mapped("display_name"))
+                sheet_names = ", ".join(
+                    locking_lines.mapped("match_sheet_id").mapped("display_name")
+                )
                 raise ValidationError(
                     _(
                         "Roster line for player '%(player)s' is locked because it already appears on live match sheet(s): %(sheets)s."

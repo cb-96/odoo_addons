@@ -578,6 +578,10 @@
                                 <table class="table table-sm mb-0">
                                     <tr><th>Match</th><td><t t-esc="sheet.match_id.display_name"/></td></tr>
                                     <tr><th>Team</th><td><t t-esc="sheet.team_id.name"/></td></tr>
+                                    <tr><th>Roster</th><td>
+                                        <t t-if="sheet.roster_id"><t t-esc="sheet.roster_id.name"/></t>
+                                        <span t-if="not sheet.roster_id" class="text-warning">Not linked</span>
+                                    </td></tr>
                                     <tr><th>State</th><td><t t-esc="dict(sheet._fields['state'].selection).get(sheet.state)"/></td></tr>
                                     <tr><th>Result State</th><td><t t-esc="dict(sheet.match_id._fields['result_state'].selection).get(sheet.match_id.result_state)"/></td></tr>
                                     <tr><th>Substitutions</th><td><t t-esc="sheet.substitution_count"/></td></tr>
@@ -609,6 +613,26 @@
                                       class="mt-4">
                                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                     <div class="row g-3">
+                                        <!-- Roster -->
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold" for="match_sheet_roster_id">Roster <span class="text-danger">*</span></label>
+                                            <select id="match_sheet_roster_id" name="roster_id" class="form-select">
+                                                <option value="">— Select a roster —</option>
+                                                <t t-foreach="available_rosters" t-as="roster">
+                                                    <option t-att-value="roster.id"
+                                                            t-att-selected="sheet.roster_id and sheet.roster_id.id == roster.id and 'selected' or None">
+                                                        <t t-esc="roster.name"/>
+                                                        (<t t-esc="dict(roster._fields['status'].selection).get(roster.status)"/>)
+                                                    </option>
+                                                </t>
+                                            </select>
+                                            <div t-if="not available_rosters" class="form-text text-warning">
+                                                No active or draft rosters found for this team. Please create and activate a roster first.
+                                            </div>
+                                            <div t-if="available_rosters" class="form-text">
+                                                Only active or draft rosters for this team are shown. An active roster is required for submission.
+                                            </div>
+                                        </div>
                                         <!-- Coach -->
                                         <div class="col-md-6">
                                             <label class="form-label" for="match_sheet_coach_id">Coach</label>
@@ -678,7 +702,7 @@
                     <div class="col-12">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <h4 class="mb-0">Squad</h4>
-                            <span t-if="not sheet.roster_id" class="text-muted small">Link a roster to manage the squad.</span>
+                            <span t-if="not sheet.roster_id" class="text-muted small">Select a roster in the preparation form above to manage the squad.</span>
                         </div>
 
                         <!-- Editable squad form (draft + roster linked) -->

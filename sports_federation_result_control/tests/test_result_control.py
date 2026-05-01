@@ -9,85 +9,133 @@ class TestResultControl(TransactionCase):
     def setUpClass(cls):
         """Set up shared test data for the test case."""
         super().setUpClass()
-        cls.club_home = cls.env["federation.club"].create({
-            "name": "Home Club",
-            "code": "HOME",
-        })
-        cls.club_away = cls.env["federation.club"].create({
-            "name": "Away Club",
-            "code": "AWAY",
-        })
-        cls.team_home = cls.env["federation.team"].create({
-            "name": "Home Team",
-            "club_id": cls.club_home.id,
-        })
-        cls.team_away = cls.env["federation.team"].create({
-            "name": "Away Team",
-            "club_id": cls.club_away.id,
-        })
-        cls.season = cls.env["federation.season"].create({
-            "name": "Test Season",
-            "code": "TS2024",
-            "date_start": "2024-09-01",
-            "date_end": "2025-06-30",
-        })
-        cls.rule_set = cls.env["federation.rule.set"].create({
-            "name": "Result Rule Set",
-            "code": "RRS",
-            "points_win": 3,
-            "points_draw": 1,
-            "points_loss": 0,
-        })
-        cls.tournament = cls.env["federation.tournament"].create({
-            "name": "Test Tournament",
-            "season_id": cls.season.id,
-            "date_start": "2024-09-01",
-            "rule_set_id": cls.rule_set.id,
-        })
-        cls.participant_home = cls.env["federation.tournament.participant"].create({
-            "tournament_id": cls.tournament.id,
-            "team_id": cls.team_home.id,
-        })
-        cls.participant_away = cls.env["federation.tournament.participant"].create({
-            "tournament_id": cls.tournament.id,
-            "team_id": cls.team_away.id,
-        })
+        cls.club_home = cls.env["federation.club"].create(
+            {
+                "name": "Home Club",
+                "code": "HOME",
+            }
+        )
+        cls.club_away = cls.env["federation.club"].create(
+            {
+                "name": "Away Club",
+                "code": "AWAY",
+            }
+        )
+        cls.team_home = cls.env["federation.team"].create(
+            {
+                "name": "Home Team",
+                "club_id": cls.club_home.id,
+            }
+        )
+        cls.team_away = cls.env["federation.team"].create(
+            {
+                "name": "Away Team",
+                "club_id": cls.club_away.id,
+            }
+        )
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "Test Season",
+                "code": "TS2024",
+                "date_start": "2024-09-01",
+                "date_end": "2025-06-30",
+            }
+        )
+        cls.rule_set = cls.env["federation.rule.set"].create(
+            {
+                "name": "Result Rule Set",
+                "code": "RRS",
+                "points_win": 3,
+                "points_draw": 1,
+                "points_loss": 0,
+            }
+        )
+        cls.tournament = cls.env["federation.tournament"].create(
+            {
+                "name": "Test Tournament",
+                "season_id": cls.season.id,
+                "date_start": "2024-09-01",
+                "rule_set_id": cls.rule_set.id,
+            }
+        )
+        cls.participant_home = cls.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": cls.tournament.id,
+                "team_id": cls.team_home.id,
+            }
+        )
+        cls.participant_away = cls.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": cls.tournament.id,
+                "team_id": cls.team_away.id,
+            }
+        )
         Standing = cls.env.get("federation.standing")
-        cls.standing = Standing.create({
-            "name": "Result Standing",
-            "tournament_id": cls.tournament.id,
-            "rule_set_id": cls.rule_set.id,
-        }) if Standing else False
+        cls.standing = (
+            Standing.create(
+                {
+                    "name": "Result Standing",
+                    "tournament_id": cls.tournament.id,
+                    "rule_set_id": cls.rule_set.id,
+                }
+            )
+            if Standing
+            else False
+        )
 
         manager_group = cls.env.ref("sports_federation_base.group_federation_manager")
-        validator_group = cls.env.ref("sports_federation_result_control.group_result_validator")
-        approver_group = cls.env.ref("sports_federation_result_control.group_result_approver")
-        cls.submitter_user = cls.env["res.users"].with_context(no_reset_password=True).create({
-            "name": "Result Submitter",
-            "login": "result.submitter@example.com",
-            "email": "result.submitter@example.com",
-            "group_ids": [(6, 0, [manager_group.id])],
-        })
-        cls.verifier_user = cls.env["res.users"].with_context(no_reset_password=True).create({
-            "name": "Result Verifier",
-            "login": "result.verifier@example.com",
-            "email": "result.verifier@example.com",
-            "group_ids": [(6, 0, [manager_group.id, validator_group.id])],
-        })
-        cls.approver_user = cls.env["res.users"].with_context(no_reset_password=True).create({
-            "name": "Result Approver",
-            "login": "result.approver@example.com",
-            "email": "result.approver@example.com",
-            "group_ids": [(6, 0, [manager_group.id, approver_group.id])],
-        })
-        cls.match = cls.env["federation.match"].create({
-            "tournament_id": cls.tournament.id,
-            "home_team_id": cls.team_home.id,
-            "away_team_id": cls.team_away.id,
-            "home_score": 2,
-            "away_score": 1,
-            "state": "done",
-        })
+        validator_group = cls.env.ref(
+            "sports_federation_result_control.group_result_validator"
+        )
+        approver_group = cls.env.ref(
+            "sports_federation_result_control.group_result_approver"
+        )
+        cls.submitter_user = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Result Submitter",
+                    "login": "result.submitter@example.com",
+                    "email": "result.submitter@example.com",
+                    "group_ids": [(6, 0, [manager_group.id])],
+                }
+            )
+        )
+        cls.verifier_user = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Result Verifier",
+                    "login": "result.verifier@example.com",
+                    "email": "result.verifier@example.com",
+                    "group_ids": [(6, 0, [manager_group.id, validator_group.id])],
+                }
+            )
+        )
+        cls.approver_user = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Result Approver",
+                    "login": "result.approver@example.com",
+                    "email": "result.approver@example.com",
+                    "group_ids": [(6, 0, [manager_group.id, approver_group.id])],
+                }
+            )
+        )
+        cls.match = cls.env["federation.match"].create(
+            {
+                "tournament_id": cls.tournament.id,
+                "home_team_id": cls.team_home.id,
+                "away_team_id": cls.team_away.id,
+                "home_score": 2,
+                "away_score": 1,
+                "state": "done",
+            }
+        )
 
     def test_submit_result(self):
         """Test that submit result."""
@@ -239,8 +287,12 @@ class TestResultControl(TransactionCase):
         self.match.result_correction_reason = "Score corrected after review"
         self.match.action_correct_result()
 
-        contest_entry = self.match.result_audit_ids.filtered(lambda entry: entry.event_type == "contested")[:1]
-        correction_entry = self.match.result_audit_ids.filtered(lambda entry: entry.event_type == "corrected")[:1]
+        contest_entry = self.match.result_audit_ids.filtered(
+            lambda entry: entry.event_type == "contested"
+        )[:1]
+        correction_entry = self.match.result_audit_ids.filtered(
+            lambda entry: entry.event_type == "corrected"
+        )[:1]
 
         self.assertTrue(contest_entry)
         self.assertEqual(contest_entry.reason, "Score disputed")

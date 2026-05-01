@@ -1,5 +1,7 @@
 from odoo import fields, models
-from odoo.addons.sports_federation_governance.workflow_states import OVERRIDE_DECISION_SELECTION
+from odoo.addons.sports_federation_governance.workflow_states import (
+    OVERRIDE_DECISION_SELECTION,
+)
 
 
 class FederationOverrideDecision(models.Model):

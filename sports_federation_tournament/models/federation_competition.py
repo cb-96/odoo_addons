@@ -1,5 +1,4 @@
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
 
 
 class FederationCompetition(models.Model):
@@ -52,7 +51,9 @@ class FederationCompetition(models.Model):
     )
     notes = fields.Text(string="Notes")
 
-    _code_unique = models.Constraint('unique (code)', 'Competition code must be unique.')
+    _code_unique = models.Constraint(
+        "unique (code)", "Competition code must be unique."
+    )
 
     @api.depends("edition_ids")
     def _compute_edition_count(self):
@@ -78,6 +79,8 @@ class FederationCompetition(models.Model):
     def action_view_editions(self):
         """Execute the view editions action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('sports_federation_tournament.federation_competition_edition_action')
-        action['domain'] = [('competition_id', '=', self.id)]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_tournament.federation_competition_edition_action"
+        )
+        action["domain"] = [("competition_id", "=", self.id)]
         return action

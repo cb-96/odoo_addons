@@ -15,7 +15,14 @@ class FederationSanctionFinanceHooks(models.Model):
         """Update records with module-specific side effects."""
         should_sync = any(
             key in vals
-            for key in ("sanction_type", "amount", "player_id", "club_id", "referee_id", "case_id")
+            for key in (
+                "sanction_type",
+                "amount",
+                "player_id",
+                "club_id",
+                "referee_id",
+                "case_id",
+            )
         )
         res = super().write(vals)
         if should_sync:

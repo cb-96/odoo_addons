@@ -1,5 +1,4 @@
 from odoo import models
-from odoo.exceptions import ValidationError
 
 
 class FederationImportClubsWizard(models.TransientModel):
@@ -56,7 +55,11 @@ class FederationImportClubsWizard(models.TransientModel):
             if not existing:
                 existing = Club.search([("name", "=", name)], limit=1)
             if existing:
-                duplicate_key = f"code '{code}'" if code and existing.code == code else f"name '{name}'"
+                duplicate_key = (
+                    f"code '{code}'"
+                    if code and existing.code == code
+                    else f"name '{name}'"
+                )
                 self._record_error(
                     errors,
                     error_categories,
@@ -69,13 +72,15 @@ class FederationImportClubsWizard(models.TransientModel):
 
             if self._execute_row_create(
                 row_num,
-                lambda: Club.create({
-                    "name": name,
-                    "code": code or False,
-                    "email": self._get_row_value(row, "email") or False,
-                    "phone": self._get_row_value(row, "phone") or False,
-                    "city": self._get_row_value(row, "city") or False,
-                }),
+                lambda: Club.create(
+                    {
+                        "name": name,
+                        "code": code or False,
+                        "email": self._get_row_value(row, "email") or False,
+                        "phone": self._get_row_value(row, "phone") or False,
+                        "city": self._get_row_value(row, "city") or False,
+                    }
+                ),
                 errors,
                 error_categories,
             ):

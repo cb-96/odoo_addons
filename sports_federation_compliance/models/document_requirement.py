@@ -41,8 +41,8 @@ class FederationDocumentRequirement(models.Model):
     )
 
     _code_target_model_unique = models.Constraint(
-        'UNIQUE(code, target_model)',
-        'A requirement with this code already exists for this target model.',
+        "UNIQUE(code, target_model)",
+        "A requirement with this code already exists for this target model.",
     )
 
     @api.model
@@ -95,7 +95,9 @@ class FederationDocumentRequirement(models.Model):
             user=user,
         )
         if target_record not in visible_targets:
-            raise AccessError("You can only manage compliance items that belong to you or your club.")
+            raise AccessError(
+                "You can only manage compliance items that belong to you or your club."
+            )
         return True
 
     def _portal_get_latest_submission(self, target_record):
@@ -104,13 +106,17 @@ class FederationDocumentRequirement(models.Model):
         field_name = self._portal_get_target_field_name(self.target_model)
         if not field_name:
             return self.env["federation.document.submission"].browse([])
-        return self.env["federation.document.submission"].sudo().search(
-            [
-                ("requirement_id", "=", self.id),
-                (field_name, "=", target_record.id),
-            ],
-            limit=1,
-            order="create_date desc, id desc",
+        return (
+            self.env["federation.document.submission"]
+            .sudo()
+            .search(
+                [
+                    ("requirement_id", "=", self.id),
+                    (field_name, "=", target_record.id),
+                ],
+                limit=1,
+                order="create_date desc, id desc",
+            )
         )
 
     def _portal_get_submission_history(self, target_record):
@@ -119,12 +125,16 @@ class FederationDocumentRequirement(models.Model):
         field_name = self._portal_get_target_field_name(self.target_model)
         if not field_name:
             return self.env["federation.document.submission"].browse([])
-        return self.env["federation.document.submission"].sudo().search(
-            [
-                ("requirement_id", "=", self.id),
-                (field_name, "=", target_record.id),
-            ],
-            order="create_date desc, id desc",
+        return (
+            self.env["federation.document.submission"]
+            .sudo()
+            .search(
+                [
+                    ("requirement_id", "=", self.id),
+                    (field_name, "=", target_record.id),
+                ],
+                order="create_date desc, id desc",
+            )
         )
 
     def _portal_get_remediation_row(self, submission):
@@ -163,17 +173,22 @@ class FederationDocumentRequirement(models.Model):
         renewal_due_date = latest_submission.expiry_date if latest_submission else False
         renewal_due_soon = bool(
             renewal_due_date
-            and renewal_due_date <= today + timedelta(days=self.PORTAL_RENEWAL_WARNING_DAYS)
+            and renewal_due_date
+            <= today + timedelta(days=self.PORTAL_RENEWAL_WARNING_DAYS)
             and renewal_due_date >= today
         )
-        requires_attention = effective_status in {
-            "missing",
-            "draft",
-            "submitted",
-            "rejected",
-            "replacement_requested",
-            "expired",
-        } or renewal_due_soon
+        requires_attention = (
+            effective_status
+            in {
+                "missing",
+                "draft",
+                "submitted",
+                "rejected",
+                "replacement_requested",
+                "expired",
+            }
+            or renewal_due_soon
+        )
         return {
             "key": effective_status,
             "label": status_meta["label"],
@@ -205,17 +220,25 @@ class FederationDocumentRequirement(models.Model):
         elif effective_status == "missing":
             summary_parts.append("No submission is on file yet.")
         elif effective_status == "draft":
-            summary_parts.append("A draft exists but has not been submitted for review.")
+            summary_parts.append(
+                "A draft exists but has not been submitted for review."
+            )
         elif effective_status == "submitted":
-            summary_parts.append("Your latest submission is waiting for federation review.")
+            summary_parts.append(
+                "Your latest submission is waiting for federation review."
+            )
         elif effective_status == "rejected":
-            summary_parts.append("The last submission was rejected and needs replacement documentation.")
+            summary_parts.append(
+                "The last submission was rejected and needs replacement documentation."
+            )
         elif effective_status == "replacement_requested":
             summary_parts.append("Federation staff requested updated documentation.")
         elif effective_status == "expired":
             summary_parts.append("The approved document has expired and needs renewal.")
         else:
-            summary_parts.append("The latest submission is approved and currently compliant.")
+            summary_parts.append(
+                "The latest submission is approved and currently compliant."
+            )
 
         if renewal_due_date:
             if renewal_due_date < today:
@@ -278,7 +301,8 @@ class FederationDocumentRequirement(models.Model):
             "renewal_due_date": status["renewal_due_date"],
             "renewal_due_soon": status["renewal_due_soon"],
             "requires_attention": status["requires_attention"],
-            "can_submit": not latest_submission or latest_submission.status != "submitted",
+            "can_submit": not latest_submission
+            or latest_submission.status != "submitted",
             "detail_url": detail_url,
         }
 
@@ -307,7 +331,9 @@ class FederationDocumentRequirement(models.Model):
     @api.model
     def _portal_workspace_sort_key(self, entry):
         """Sort attention items first, then nearest renewals, then stable names."""
-        renewal_due_date = entry["renewal_due_date"] or fields.Date.to_date("9999-12-31")
+        renewal_due_date = entry["renewal_due_date"] or fields.Date.to_date(
+            "9999-12-31"
+        )
         return (
             0 if entry["requires_attention"] else 1,
             renewal_due_date,
@@ -335,6 +361,8 @@ class FederationDocumentRequirement(models.Model):
                 user=user,
             )
             for target_record in targets:
-                entries.append(requirement._portal_get_workspace_entry(target_record, user=user))
+                entries.append(
+                    requirement._portal_get_workspace_entry(target_record, user=user)
+                )
 
         return sorted(entries, key=self._portal_workspace_sort_key)

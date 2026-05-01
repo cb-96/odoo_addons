@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Member Registration Fee -->
+        <record id="fee_type_member_registration" model="federation.fee.type">
+            <field name="name">Member Registration Fee</field>
+            <field name="code">member_registration</field>
+            <field name="category">registration</field>
+            <field name="default_amount">0</field>
+            <field name="active">True</field>
+        </record>
+    </data>
+</odoo>

@@ -87,9 +87,7 @@ class TestPortalTemplateMobile(TransactionCase):
             if "d-flex" not in classes:
                 continue
             # Only check groups that contain buttons or links
-            has_actions = group.xpath(
-                "./*[self::button or self::a or self::form]"
-            )
+            has_actions = group.xpath("./*[self::button or self::a or self::form]")
             if not has_actions:
                 continue
             self.assertIn(

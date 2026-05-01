@@ -2,7 +2,6 @@ from datetime import timedelta
 
 from odoo import fields
 from odoo.tests import TransactionCase
-from odoo.exceptions import ValidationError
 
 
 class TestNotifications(TransactionCase):
@@ -13,19 +12,23 @@ class TestNotifications(TransactionCase):
         """Set up shared test data for the test case."""
         super().setUpClass()
         # Create test club
-        cls.club = cls.env["federation.club"].create({
-            "name": "Test Club",
-            "code": "TC001",
-            "email": "test@example.com",
-        })
+        cls.club = cls.env["federation.club"].create(
+            {
+                "name": "Test Club",
+                "code": "TC001",
+                "email": "test@example.com",
+            }
+        )
 
     def test_log_creation(self):
         """Test creating a notification log."""
-        log = self.env["federation.notification.log"].create({
-            "name": "Test Log",
-            "notification_type": "email",
-            "state": "pending",
-        })
+        log = self.env["federation.notification.log"].create(
+            {
+                "name": "Test Log",
+                "notification_type": "email",
+                "state": "pending",
+            }
+        )
         self.assertTrue(log.id)
         self.assertEqual(log.name, "Test Log")
         self.assertEqual(log.notification_type, "email")
@@ -89,16 +92,20 @@ class TestNotifications(TransactionCase):
 
     def test_notification_log_retention_purges_old_sent_records(self):
         """Retention should purge old sent logs without deleting recent failures."""
-        old_log = self.env["federation.notification.log"].create({
-            "name": "Old Sent Log",
-            "notification_type": "email",
-            "state": "sent",
-        })
-        failed_log = self.env["federation.notification.log"].create({
-            "name": "Recent Failed Log",
-            "notification_type": "email",
-            "state": "failed",
-        })
+        old_log = self.env["federation.notification.log"].create(
+            {
+                "name": "Old Sent Log",
+                "notification_type": "email",
+                "state": "sent",
+            }
+        )
+        failed_log = self.env["federation.notification.log"].create(
+            {
+                "name": "Recent Failed Log",
+                "notification_type": "email",
+                "state": "failed",
+            }
+        )
 
         old_create_date = fields.Datetime.to_string(
             fields.Datetime.to_datetime(fields.Datetime.now()) - timedelta(days=120)
@@ -122,25 +129,31 @@ class TestNotifications(TransactionCase):
         if Suspension is None or DisciplineCase is None:
             self.skipTest("Discipline module is not installed in this test run.")
 
-        player = self.env["federation.player"].create({
-            "first_name": "Suspended",
-            "last_name": "Player",
-            "club_id": self.club.id,
-            "email": "suspended.player@example.com",
-        })
-        case = DisciplineCase.create({
-            "name": "Suspension Notification Case",
-            "subject_player_id": player.id,
-            "summary": "Suspension notification coverage.",
-        })
-        suspension = Suspension.create({
-            "name": "One Match Suspension",
-            "case_id": case.id,
-            "player_id": player.id,
-            "date_start": "2026-07-01",
-            "date_end": "2026-07-07",
-            "notes": "Activated during notification test.",
-        })
+        player = self.env["federation.player"].create(
+            {
+                "first_name": "Suspended",
+                "last_name": "Player",
+                "club_id": self.club.id,
+                "email": "suspended.player@example.com",
+            }
+        )
+        case = DisciplineCase.create(
+            {
+                "name": "Suspension Notification Case",
+                "subject_player_id": player.id,
+                "summary": "Suspension notification coverage.",
+            }
+        )
+        suspension = Suspension.create(
+            {
+                "name": "One Match Suspension",
+                "case_id": case.id,
+                "player_id": player.id,
+                "date_start": "2026-07-01",
+                "date_end": "2026-07-07",
+                "notes": "Activated during notification test.",
+            }
+        )
 
         suspension.action_activate()
 
@@ -166,34 +179,52 @@ class TestNotifications(TransactionCase):
         role_type = self.env.ref(
             "sports_federation_portal.role_type_competition_contact"
         )
-        season = self.env["federation.season"].create({
-            "name": "Notification Season",
-            "code": "NOTIFSEASON",
-            "date_start": "2026-01-01",
-            "date_end": "2026-12-31",
-        })
-        team = self.env["federation.team"].create({
-            "name": "Notification Team",
-            "club_id": self.club.id,
-            "code": "NOTIFTEAM",
-        })
-        user = self.env["res.users"].with_context(no_reset_password=True).create({
-            "name": "Notification Portal User",
-            "login": "notification.portal.user@example.com",
-            "email": "notification.portal.user@example.com",
-            "group_ids": [(6, 0, [portal_group.id])],
-        })
-        self.env["federation.club.representative"].create({
-            "club_id": self.club.id,
-            "partner_id": user.partner_id.id,
-            "user_id": user.id,
-            "role_type_id": role_type.id,
-        })
+        season = self.env["federation.season"].create(
+            {
+                "name": "Notification Season",
+                "code": "NOTIFSEASON",
+                "date_start": "2026-01-01",
+                "date_end": "2026-12-31",
+            }
+        )
+        team = self.env["federation.team"].create(
+            {
+                "name": "Notification Team",
+                "club_id": self.club.id,
+                "code": "NOTIFTEAM",
+            }
+        )
+        user = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Notification Portal User",
+                    "login": "notification.portal.user@example.com",
+                    "email": "notification.portal.user@example.com",
+                    "group_ids": [(6, 0, [portal_group.id])],
+                }
+            )
+        )
+        self.env["federation.club.representative"].create(
+            {
+                "club_id": self.club.id,
+                "partner_id": user.partner_id.id,
+                "user_id": user.id,
+                "role_type_id": role_type.id,
+            }
+        )
 
-        registration = self.env["federation.season.registration"].with_user(user).create({
-            "season_id": season.id,
-            "team_id": team.id,
-        })
+        registration = (
+            self.env["federation.season.registration"]
+            .with_user(user)
+            .create(
+                {
+                    "season_id": season.id,
+                    "team_id": team.id,
+                }
+            )
+        )
         registration.with_user(user).action_submit()
         registration.with_user(user).action_confirm()
 
@@ -220,34 +251,52 @@ class TestNotifications(TransactionCase):
         role_type = self.env.ref(
             "sports_federation_portal.role_type_competition_contact"
         )
-        season = self.env["federation.season"].create({
-            "name": "Rejected Notification Season",
-            "code": "REJNOTIF",
-            "date_start": "2026-01-01",
-            "date_end": "2026-12-31",
-        })
-        team = self.env["federation.team"].create({
-            "name": "Rejected Notification Team",
-            "club_id": self.club.id,
-            "code": "REJTEAM",
-        })
-        user = self.env["res.users"].with_context(no_reset_password=True).create({
-            "name": "Rejected Notification User",
-            "login": "rejected.notification.user@example.com",
-            "email": "rejected.notification.user@example.com",
-            "group_ids": [(6, 0, [portal_group.id])],
-        })
-        self.env["federation.club.representative"].create({
-            "club_id": self.club.id,
-            "partner_id": user.partner_id.id,
-            "user_id": user.id,
-            "role_type_id": role_type.id,
-        })
+        season = self.env["federation.season"].create(
+            {
+                "name": "Rejected Notification Season",
+                "code": "REJNOTIF",
+                "date_start": "2026-01-01",
+                "date_end": "2026-12-31",
+            }
+        )
+        team = self.env["federation.team"].create(
+            {
+                "name": "Rejected Notification Team",
+                "club_id": self.club.id,
+                "code": "REJTEAM",
+            }
+        )
+        user = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Rejected Notification User",
+                    "login": "rejected.notification.user@example.com",
+                    "email": "rejected.notification.user@example.com",
+                    "group_ids": [(6, 0, [portal_group.id])],
+                }
+            )
+        )
+        self.env["federation.club.representative"].create(
+            {
+                "club_id": self.club.id,
+                "partner_id": user.partner_id.id,
+                "user_id": user.id,
+                "role_type_id": role_type.id,
+            }
+        )
 
-        registration = self.env["federation.season.registration"].with_user(user).create({
-            "season_id": season.id,
-            "team_id": team.id,
-        })
+        registration = (
+            self.env["federation.season.registration"]
+            .with_user(user)
+            .create(
+                {
+                    "season_id": season.id,
+                    "team_id": team.id,
+                }
+            )
+        )
         registration.with_user(user).action_submit()
         registration.with_user(user).action_reject("Missing supporting document")
 
@@ -269,37 +318,49 @@ class TestNotifications(TransactionCase):
 
     def test_referee_shortage_alert_creates_notification_log(self):
         """Test that referee shortage alert creates notification log."""
-        season = self.env["federation.season"].create({
-            "name": "Notification Match Season",
-            "code": "NMSEASON",
-            "date_start": "2026-01-01",
-            "date_end": "2026-12-31",
-        })
-        home_team = self.env["federation.team"].create({
-            "name": "Notification Home Team",
-            "club_id": self.club.id,
-            "code": "NMHT",
-        })
-        away_club = self.env["federation.club"].create({
-            "name": "Notification Away Club",
-            "code": "NMAC",
-        })
-        away_team = self.env["federation.team"].create({
-            "name": "Notification Away Team",
-            "club_id": away_club.id,
-            "code": "NMAT",
-        })
-        tournament = self.env["federation.tournament"].create({
-            "name": "Notification Match Tournament",
-            "code": "NMT",
-            "season_id": season.id,
-            "date_start": "2026-06-01",
-        })
-        match = self.env["federation.match"].create({
-            "tournament_id": tournament.id,
-            "home_team_id": home_team.id,
-            "away_team_id": away_team.id,
-        })
+        season = self.env["federation.season"].create(
+            {
+                "name": "Notification Match Season",
+                "code": "NMSEASON",
+                "date_start": "2026-01-01",
+                "date_end": "2026-12-31",
+            }
+        )
+        home_team = self.env["federation.team"].create(
+            {
+                "name": "Notification Home Team",
+                "club_id": self.club.id,
+                "code": "NMHT",
+            }
+        )
+        away_club = self.env["federation.club"].create(
+            {
+                "name": "Notification Away Club",
+                "code": "NMAC",
+            }
+        )
+        away_team = self.env["federation.team"].create(
+            {
+                "name": "Notification Away Team",
+                "club_id": away_club.id,
+                "code": "NMAT",
+            }
+        )
+        tournament = self.env["federation.tournament"].create(
+            {
+                "name": "Notification Match Tournament",
+                "code": "NMT",
+                "season_id": season.id,
+                "date_start": "2026-06-01",
+            }
+        )
+        match = self.env["federation.match"].create(
+            {
+                "tournament_id": tournament.id,
+                "home_team_id": home_team.id,
+                "away_team_id": away_team.id,
+            }
+        )
 
         dispatcher = self.env["federation.notification.dispatcher"]
         dispatcher.send_referee_shortage_alert(match)

@@ -54,7 +54,9 @@ class FederationOverrideOutcome(models.Model):
         prepared_vals_list = []
         for vals in vals_list:
             prepared_vals = dict(vals)
-            request = self.env["federation.override.request"].browse(prepared_vals.get("request_id"))
+            request = self.env["federation.override.request"].browse(
+                prepared_vals.get("request_id")
+            )
             if request:
                 prepared_vals.setdefault("request_state", request.state)
                 prepared_vals.setdefault("target_model", request.target_model)
@@ -69,4 +71,8 @@ class FederationOverrideOutcome(models.Model):
         for record in self:
             outcome_label = labels.get(record.outcome, record.outcome or "Outcome")
             request_label = record.request_id.display_name or "Override Request"
-            record.name = f"{request_label} - {outcome_label} - {record.outcome_on}" if record.outcome_on else f"{request_label} - {outcome_label}"
+            record.name = (
+                f"{request_label} - {outcome_label} - {record.outcome_on}"
+                if record.outcome_on
+                else f"{request_label} - {outcome_label}"
+            )

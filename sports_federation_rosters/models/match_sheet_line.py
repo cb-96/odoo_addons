@@ -44,8 +44,8 @@ class FederationMatchSheetLine(models.Model):
     )
 
     _unique_match_sheet_player = models.Constraint(
-        'UNIQUE(match_sheet_id, player_id)',
-        'A player cannot appear twice on the same match sheet.',
+        "UNIQUE(match_sheet_id, player_id)",
+        "A player cannot appear twice on the same match sheet.",
     )
 
     @api.model_create_multi
@@ -76,8 +76,7 @@ class FederationMatchSheetLine(models.Model):
                     )
                 if record.left_minute:
                     minute_bits.append(
-                        _("left in minute %(minute)s")
-                        % {"minute": record.left_minute}
+                        _("left in minute %(minute)s") % {"minute": record.left_minute}
                     )
                 record.match_sheet_id._log_audit_event(
                     "substitution_recorded",
@@ -100,7 +99,9 @@ class FederationMatchSheetLine(models.Model):
             }
             changed_fields = sorted(tracked_fields.intersection(vals))
             if changed_fields:
-                field_labels = ", ".join(self._fields[field].string for field in changed_fields)
+                field_labels = ", ".join(
+                    self._fields[field].string for field in changed_fields
+                )
                 for record in self:
                     record.match_sheet_id._log_audit_event(
                         "sheet_line_updated",
@@ -162,7 +163,11 @@ class FederationMatchSheetLine(models.Model):
 
     def _assert_parent_sheets_allow_new_lines(self, vals_list):
         """Handle assert parent sheets allow new lines."""
-        sheet_ids = [vals.get("match_sheet_id") for vals in vals_list if vals.get("match_sheet_id")]
+        sheet_ids = [
+            vals.get("match_sheet_id")
+            for vals in vals_list
+            if vals.get("match_sheet_id")
+        ]
         sheets = self.env["federation.match.sheet"].browse(sheet_ids)
         for sheet in sheets:
             if sheet.state in ("approved", "locked"):
@@ -177,9 +182,7 @@ class FederationMatchSheetLine(models.Model):
         """Handle assert parent sheet line editable."""
         for record in self:
             if record.match_sheet_id.state == "locked":
-                raise ValidationError(
-                    _("Locked match sheets cannot be modified.")
-                )
+                raise ValidationError(_("Locked match sheets cannot be modified."))
             if record.match_sheet_id.state == "approved":
                 allowed_fields = {"entered_minute", "left_minute", "notes"}
                 if vals is None or any(field not in allowed_fields for field in vals):
@@ -216,9 +219,7 @@ class FederationMatchSheetLine(models.Model):
                     )
             if left_minute:
                 if left_minute <= 0:
-                    raise ValidationError(
-                        _("Left minute must be a positive number.")
-                    )
+                    raise ValidationError(_("Left minute must be a positive number."))
                 if not (record.is_starter or entered_minute):
                     raise ValidationError(
                         _(
@@ -228,7 +229,9 @@ class FederationMatchSheetLine(models.Model):
             if entered_minute and left_minute:
                 if left_minute <= entered_minute:
                     raise ValidationError(
-                        _("A player cannot leave before or at the same minute they entered.")
+                        _(
+                            "A player cannot leave before or at the same minute they entered."
+                        )
                     )
 
     @api.constrains("roster_line_id", "match_sheet_id")
@@ -256,20 +259,31 @@ class FederationMatchSheetLine(models.Model):
 
         if self.roster_line_id:
             if self.roster_line_id.player_id != self.player_id:
-                reasons.append(_("Selected roster line does not belong to the chosen player."))
+                reasons.append(
+                    _("Selected roster line does not belong to the chosen player.")
+                )
             if self.roster_line_id.status != "active":
                 reasons.append(_("Selected roster line is not active."))
-            if self.roster_line_id.date_from and reference_date < self.roster_line_id.date_from:
+            if (
+                self.roster_line_id.date_from
+                and reference_date < self.roster_line_id.date_from
+            ):
                 reasons.append(
                     _("Selected roster line is not active before %(date)s.")
                     % {"date": self.roster_line_id.date_from}
                 )
-            if self.roster_line_id.date_to and reference_date > self.roster_line_id.date_to:
+            if (
+                self.roster_line_id.date_to
+                and reference_date > self.roster_line_id.date_to
+            ):
                 reasons.append(
                     _("Selected roster line expired after %(date)s.")
                     % {"date": self.roster_line_id.date_to}
                 )
-            if self.roster_line_id.team_id and self.roster_line_id.team_id != sheet.team_id:
+            if (
+                self.roster_line_id.team_id
+                and self.roster_line_id.team_id != sheet.team_id
+            ):
                 reasons.append(_("Selected roster line belongs to a different team."))
             if self.roster_line_id.eligibility_feedback:
                 reasons.extend(self.roster_line_id.eligibility_feedback.splitlines())
@@ -279,13 +293,28 @@ class FederationMatchSheetLine(models.Model):
         if service is not None and rule_set:
             context = {
                 "match_date": reference_date,
-                "tournament_id": sheet.match_id.tournament_id.id if sheet.match_id.tournament_id else None,
-                "season_id": sheet.match_id.tournament_id.season_id.id if sheet.match_id.tournament_id and sheet.match_id.tournament_id.season_id else None,
+                "tournament_id": (
+                    sheet.match_id.tournament_id.id
+                    if sheet.match_id.tournament_id
+                    else None
+                ),
+                "season_id": (
+                    sheet.match_id.tournament_id.season_id.id
+                    if sheet.match_id.tournament_id
+                    and sheet.match_id.tournament_id.season_id
+                    else None
+                ),
                 "team_id": sheet.team_id.id if sheet.team_id else None,
-                "club_id": sheet.team_id.club_id.id if sheet.team_id and sheet.team_id.club_id else None,
+                "club_id": (
+                    sheet.team_id.club_id.id
+                    if sheet.team_id and sheet.team_id.club_id
+                    else None
+                ),
             }
             if self.roster_line_id and self.roster_line_id.license_id:
                 context["license_id"] = self.roster_line_id.license_id.id
-            result = service.check_player_eligibility(self.player_id, rule_set, context=context)
+            result = service.check_player_eligibility(
+                self.player_id, rule_set, context=context
+            )
             reasons.extend(result.get("reasons", []))
         return reasons

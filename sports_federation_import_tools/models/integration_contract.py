@@ -62,7 +62,9 @@ class FederationIntegrationContract(models.Model):
         if not self.required_module:
             return True
         return bool(
-            self.env["ir.module.module"].sudo().search_count(
+            self.env["ir.module.module"]
+            .sudo()
+            .search_count(
                 [
                     ("name", "=", self.required_module),
                     ("state", "=", "installed"),
@@ -83,8 +85,14 @@ class FederationIntegrationContract(models.Model):
             "route_hint": self.route_hint,
             "description": self.description or "",
             "deprecation_stage": self.deprecation_stage,
-            "sunset_on": fields.Date.to_string(self.sunset_on) if self.sunset_on else None,
-            "replacement_contract": self.replacement_contract_id.code if self.replacement_contract_id else None,
+            "sunset_on": (
+                fields.Date.to_string(self.sunset_on) if self.sunset_on else None
+            ),
+            "replacement_contract": (
+                self.replacement_contract_id.code
+                if self.replacement_contract_id
+                else None
+            ),
             "available": self._is_available(),
         }
         if subscription:

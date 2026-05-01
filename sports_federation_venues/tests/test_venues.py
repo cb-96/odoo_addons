@@ -20,17 +20,23 @@ class TestVenues(TransactionCase):
                 "surface_type": "outdoor",
             }
         )
-        cls.tournament = cls.env["federation.tournament"].create({
-            "name": "Test Tournament",
-            "code": "TTOUR",
-            "season_id": cls.env["federation.season"].create({
-                "name": "Test Season",
-                "code": "TVTS",
-                "date_start": "2024-01-01",
-                "date_end": "2024-12-31",
-            }).id,
-            "date_start": "2024-06-01",
-        })
+        cls.tournament = cls.env["federation.tournament"].create(
+            {
+                "name": "Test Tournament",
+                "code": "TTOUR",
+                "season_id": cls.env["federation.season"]
+                .create(
+                    {
+                        "name": "Test Season",
+                        "code": "TVTS",
+                        "date_start": "2024-01-01",
+                        "date_end": "2024-12-31",
+                    }
+                )
+                .id,
+                "date_start": "2024-06-01",
+            }
+        )
 
     def test_create_venue(self):
         """Test venue creation with basic fields."""

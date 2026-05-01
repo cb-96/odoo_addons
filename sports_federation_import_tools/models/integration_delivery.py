@@ -1,5 +1,7 @@
 from odoo import api, fields, models
-from odoo.addons.sports_federation_base.models.failure_feedback import FAILURE_CATEGORY_SELECTION
+from odoo.addons.sports_federation_base.models.failure_feedback import (
+    FAILURE_CATEGORY_SELECTION,
+)
 from odoo.addons.sports_federation_import_tools.workflow_states import (
     INBOUND_DELIVERY_ACTIVE_STATES,
     INBOUND_DELIVERY_STATE_CANCELLED,
@@ -75,8 +77,12 @@ class FederationIntegrationDelivery(models.Model):
         default=INBOUND_DELIVERY_STATE_STAGED,
         readonly=True,
     )
-    received_via = fields.Selection(RECEIVED_VIA_SELECTION, required=True, default="api")
-    received_on = fields.Datetime(required=True, default=fields.Datetime.now, readonly=True)
+    received_via = fields.Selection(
+        RECEIVED_VIA_SELECTION, required=True, default="api"
+    )
+    received_on = fields.Datetime(
+        required=True, default=fields.Datetime.now, readonly=True
+    )
     previewed_on = fields.Datetime(readonly=True)
     approved_on = fields.Datetime(readonly=True)
     processed_on = fields.Datetime(readonly=True)
@@ -110,6 +116,10 @@ class FederationIntegrationDelivery(models.Model):
         """Validate contract direction."""
         for record in self:
             if record.contract_id.direction != "inbound":
-                raise ValidationError("Only inbound contracts can be staged as deliveries.")
+                raise ValidationError(
+                    "Only inbound contracts can be staged as deliveries."
+                )
             if not record.contract_id.import_template_id:
-                raise ValidationError("Inbound contracts must be linked to an import template.")
+                raise ValidationError(
+                    "Inbound contracts must be linked to an import template."
+                )

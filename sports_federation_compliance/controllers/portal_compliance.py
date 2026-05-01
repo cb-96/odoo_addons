@@ -1,7 +1,9 @@
 from urllib.parse import quote_plus
 
 from odoo import http
-from odoo.addons.sports_federation_base.exceptions import AttachmentScanVerificationError
+from odoo.addons.sports_federation_base.exceptions import (
+    AttachmentScanVerificationError,
+)
 from odoo.addons.portal.controllers.portal import CustomerPortal
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
@@ -41,14 +43,34 @@ class FederationCompliancePortal(CustomerPortal):
     def portal_my_compliance(self, **kw):
         """Render the compliance workspace from the shared requirement status rules."""
         Requirement = request.env["federation.document.requirement"]
-        workspace_entries = Requirement._portal_get_workspace_entries(user=request.env.user)
+        workspace_entries = Requirement._portal_get_workspace_entries(
+            user=request.env.user
+        )
         values = self._prepare_compliance_layout_values(
             workspace_entries=workspace_entries,
             has_compliance_access=Requirement._portal_has_access(user=request.env.user),
             counts={
-                "attention": len([entry for entry in workspace_entries if entry["requires_attention"]]),
-                "in_review": len([entry for entry in workspace_entries if entry["status_key"] == "submitted"]),
-                "approved": len([entry for entry in workspace_entries if entry["status_key"] == "approved"]),
+                "attention": len(
+                    [
+                        entry
+                        for entry in workspace_entries
+                        if entry["requires_attention"]
+                    ]
+                ),
+                "in_review": len(
+                    [
+                        entry
+                        for entry in workspace_entries
+                        if entry["status_key"] == "submitted"
+                    ]
+                ),
+                "approved": len(
+                    [
+                        entry
+                        for entry in workspace_entries
+                        if entry["status_key"] == "approved"
+                    ]
+                ),
             },
             success=kw.get("success"),
             error=kw.get("error"),
@@ -64,7 +86,9 @@ class FederationCompliancePortal(CustomerPortal):
         auth="user",
         website=True,
     )
-    def portal_my_compliance_detail(self, requirement_id, target_model, target_id, **kw):
+    def portal_my_compliance_detail(
+        self, requirement_id, target_model, target_id, **kw
+    ):
         """Render detail only while the requirement and target stay in user scope."""
         entry = self._get_workspace_entry(requirement_id, target_model, target_id)
         if not entry:
@@ -83,14 +107,18 @@ class FederationCompliancePortal(CustomerPortal):
         )
 
     @http.route(
-        ["/my/compliance/<int:requirement_id>/<path:target_model>/<int:target_id>/submit"],
+        [
+            "/my/compliance/<int:requirement_id>/<path:target_model>/<int:target_id>/submit"
+        ],
         type="http",
         auth="user",
         website=True,
         methods=["POST"],
         csrf=False,
     )
-    def portal_my_compliance_submit(self, requirement_id, target_model, target_id, **post):
+    def portal_my_compliance_submit(
+        self, requirement_id, target_model, target_id, **post
+    ):
         """Validate CSRF manually and submit a multipart compliance upload safely.
 
         The route keeps `csrf=False` only because the payload is multipart; it

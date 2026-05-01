@@ -3,9 +3,12 @@ from odoo.exceptions import UserError
 
 def get_effective_season(schedule):
     """Return the explicit season or fall back to the active season snapshot."""
-    return schedule.season_id or schedule.env["federation.season"].search([
-        ("active", "=", True),
-    ], limit=1)
+    return schedule.season_id or schedule.env["federation.season"].search(
+        [
+            ("active", "=", True),
+        ],
+        limit=1,
+    )
 
 
 def _get_season_scope(schedule):
@@ -17,7 +20,9 @@ def _get_season_scope(schedule):
 
 def build_operational_rows(schedule):
     season, domain, season_code = _get_season_scope(schedule)
-    rows = schedule.env["federation.report.operational"].search(domain, order="tournament_id asc")
+    rows = schedule.env["federation.report.operational"].search(
+        domain, order="tournament_id asc"
+    )
     headers = [
         "Season",
         "Tournament",
@@ -93,7 +98,11 @@ def build_standing_reconciliation_rows(schedule):
         ]
         for row in rows
     ]
-    return headers, data, f"standing_reconciliation_{schedule.period_type}_{season_code}"
+    return (
+        headers,
+        data,
+        f"standing_reconciliation_{schedule.period_type}_{season_code}",
+    )
 
 
 def build_finance_reconciliation_rows(schedule):
@@ -152,7 +161,11 @@ def build_workflow_exception_rows(schedule):
         "Responsible User",
         "Note",
     ]
-    selection = dict(schedule.env["federation.report.workflow.exception"]._fields["exception_type"].selection)
+    selection = dict(
+        schedule.env["federation.report.workflow.exception"]
+        ._fields["exception_type"]
+        .selection
+    )
     data = [
         [
             row.season_id.name if row.season_id else "",
@@ -172,7 +185,9 @@ def build_workflow_exception_rows(schedule):
 
 def build_season_checklist_rows(schedule):
     season, domain, season_code = _get_season_scope(schedule)
-    rows = schedule.env["federation.report.season.checklist"].search(domain, order="season_id asc")
+    rows = schedule.env["federation.report.season.checklist"].search(
+        domain, order="season_id asc"
+    )
     headers = [
         "Season",
         "Season State",
@@ -209,7 +224,9 @@ def build_season_checklist_rows(schedule):
 
 def build_season_portfolio_rows(schedule):
     season, domain, season_code = _get_season_scope(schedule)
-    rows = schedule.env["federation.report.season.portfolio"].search(domain, order="date_start desc, season_id asc")
+    rows = schedule.env["federation.report.season.portfolio"].search(
+        domain, order="date_start desc, season_id asc"
+    )
     headers = [
         "Season",
         "Season State",
@@ -311,7 +328,9 @@ def build_club_performance_rows(schedule):
 
 
 def build_compliance_summary_rows(schedule):
-    rows = schedule.env["federation.report.compliance"].search([], order="target_model asc")
+    rows = schedule.env["federation.report.compliance"].search(
+        [], order="target_model asc"
+    )
     headers = [
         "Target Model",
         "Compliant",
@@ -396,7 +415,9 @@ def build_board_pack_rows(schedule):
     ]
     data = [
         [
-            dict(snapshot_model._fields["snapshot_type"].selection).get(row.snapshot_type, row.snapshot_type),
+            dict(snapshot_model._fields["snapshot_type"].selection).get(
+                row.snapshot_type, row.snapshot_type
+            ),
             row.snapshot_on,
             row.current_value,
             row.previous_value,
@@ -501,8 +522,7 @@ REPORT_SPECS = {
 }
 
 REPORT_TYPE_SELECTION = [
-    (report_type, spec["label"])
-    for report_type, spec in REPORT_SPECS.items()
+    (report_type, spec["label"]) for report_type, spec in REPORT_SPECS.items()
 ]
 
 

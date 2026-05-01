@@ -17,8 +17,12 @@ class FederationIntegrationApiAuthMixin:
         """Return partner credentials from the allowed request headers."""
         request_proxy = self._request_proxy
         headers = request_proxy.httprequest.headers
-        if request_proxy.params.get("partner_code") or request_proxy.params.get("access_token"):
-            raise AccessError("Partner credentials must be supplied via request headers only.")
+        if request_proxy.params.get("partner_code") or request_proxy.params.get(
+            "access_token"
+        ):
+            raise AccessError(
+                "Partner credentials must be supplied via request headers only."
+            )
         partner_code = (headers.get("X-Federation-Partner-Code") or "").strip()
         token = (headers.get("X-Federation-Partner-Token") or "").strip()
         if not token:
@@ -32,7 +36,10 @@ class FederationIntegrationApiAuthMixin:
         request_proxy = self._request_proxy
         headers = getattr(request_proxy.httprequest, "headers", {}) or {}
         forwarded_for = (headers.get("X-Forwarded-For") or "").split(",", 1)[0].strip()
-        remote_addr = forwarded_for or (getattr(request_proxy.httprequest, "remote_addr", "") or "").strip()
+        remote_addr = (
+            forwarded_for
+            or (getattr(request_proxy.httprequest, "remote_addr", "") or "").strip()
+        )
         return remote_addr or "unknown"
 
     def _get_rate_limit_subject(self):
@@ -45,9 +52,13 @@ class FederationIntegrationApiAuthMixin:
 
     def _rate_limit_response(self, scope):
         """Return a 429 response when the caller exceeds the route limit."""
-        decision = self._request_proxy.env["federation.request.rate.limit"].sudo().consume(
-            scope,
-            self._get_rate_limit_subject(),
+        decision = (
+            self._request_proxy.env["federation.request.rate.limit"]
+            .sudo()
+            .consume(
+                scope,
+                self._get_rate_limit_subject(),
+            )
         )
         if decision["allowed"]:
             return False
@@ -63,10 +74,12 @@ class FederationIntegrationApiAuthMixin:
     def _authenticate(self, contract_code=None):
         """Authenticate the current request against the managed partner registry."""
         partner_code, token = self._get_credentials()
-        return self._request_proxy.env[
-            "federation.integration.partner"
-        ].sudo().authenticate_partner(
-            partner_code,
-            token,
-            contract_code=contract_code,
+        return (
+            self._request_proxy.env["federation.integration.partner"]
+            .sudo()
+            .authenticate_partner(
+                partner_code,
+                token,
+                contract_code=contract_code,
+            )
         )

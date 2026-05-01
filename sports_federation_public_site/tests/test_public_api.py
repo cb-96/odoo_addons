@@ -7,6 +7,7 @@ Tests for new public site endpoints (Phase 4):
 These are ORM-level tests (no HTTP client needed) that verify
 the data layer logic that the new controller endpoints rely on.
 """
+
 from datetime import datetime
 import json
 from types import SimpleNamespace
@@ -28,114 +29,163 @@ class TestPublicSiteNewEndpoints(TransactionCase):
     def setUpClass(cls):
         """Set up shared test data for the test case."""
         super().setUpClass()
-        cls.club = cls.env["federation.club"].create({
-            "name": "PS Club", "code": "PSC",
-        })
-        cls.team_a = cls.env["federation.team"].create({
-            "name": "PS Team A", "club_id": cls.club.id, "code": "PSTA", "public_slug": "ps-team-a",
-        })
-        cls.team_b = cls.env["federation.team"].create({
-            "name": "PS Team B", "club_id": cls.club.id, "code": "PSTB",
-        })
-        cls.team_c = cls.env["federation.team"].create({
-            "name": "PS Team C", "club_id": cls.club.id, "code": "PSTC",
-        })
-        cls.hidden_team = cls.env["federation.team"].create({
-            "name": "PS Hidden Team", "club_id": cls.club.id, "code": "PSHT", "public_slug": "ps-hidden-team",
-        })
-        cls.season = cls.env["federation.season"].create({
-            "name": "PS Season", "code": "PSS24",
-            "date_start": "2024-01-01", "date_end": "2024-12-31",
-        })
-        cls.hidden_season = cls.env["federation.season"].create({
-            "name": "Hidden PS Season", "code": "HPSS24",
-            "date_start": "2025-01-01", "date_end": "2025-12-31",
-            "public_slug": "hidden-ps-season",
-        })
+        cls.club = cls.env["federation.club"].create(
+            {
+                "name": "PS Club",
+                "code": "PSC",
+            }
+        )
+        cls.team_a = cls.env["federation.team"].create(
+            {
+                "name": "PS Team A",
+                "club_id": cls.club.id,
+                "code": "PSTA",
+                "public_slug": "ps-team-a",
+            }
+        )
+        cls.team_b = cls.env["federation.team"].create(
+            {
+                "name": "PS Team B",
+                "club_id": cls.club.id,
+                "code": "PSTB",
+            }
+        )
+        cls.team_c = cls.env["federation.team"].create(
+            {
+                "name": "PS Team C",
+                "club_id": cls.club.id,
+                "code": "PSTC",
+            }
+        )
+        cls.hidden_team = cls.env["federation.team"].create(
+            {
+                "name": "PS Hidden Team",
+                "club_id": cls.club.id,
+                "code": "PSHT",
+                "public_slug": "ps-hidden-team",
+            }
+        )
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "PS Season",
+                "code": "PSS24",
+                "date_start": "2024-01-01",
+                "date_end": "2024-12-31",
+            }
+        )
+        cls.hidden_season = cls.env["federation.season"].create(
+            {
+                "name": "Hidden PS Season",
+                "code": "HPSS24",
+                "date_start": "2025-01-01",
+                "date_end": "2025-12-31",
+                "public_slug": "hidden-ps-season",
+            }
+        )
 
         # Active published tournament (in_progress)
-        cls.active_tour = cls.env["federation.tournament"].create({
-            "name": "Active Tour",
-            "code": "ATOUR",
-            "public_slug": "active-tour",
-            "season_id": cls.season.id,
-            "date_start": "2024-06-01",
-            "state": "in_progress",
-            "public_featured": True,
-            "public_editorial_summary": "A featured in-progress tournament.",
-            "public_pinned_announcement": "Final round starts tonight.",
-            "show_public_results": True,
-            "show_public_standings": True,
-            "website_published": True,
-        })
+        cls.active_tour = cls.env["federation.tournament"].create(
+            {
+                "name": "Active Tour",
+                "code": "ATOUR",
+                "public_slug": "active-tour",
+                "season_id": cls.season.id,
+                "date_start": "2024-06-01",
+                "state": "in_progress",
+                "public_featured": True,
+                "public_editorial_summary": "A featured in-progress tournament.",
+                "public_pinned_announcement": "Final round starts tonight.",
+                "show_public_results": True,
+                "show_public_standings": True,
+                "website_published": True,
+            }
+        )
 
         # Closed published tournament (archive candidate)
-        cls.closed_tour = cls.env["federation.tournament"].create({
-            "name": "Old Tour",
-            "code": "OTOUR",
-            "season_id": cls.season.id,
-            "date_start": "2023-01-01",
-            "date_end": "2023-12-31",
-            "website_published": True,
-            "state": "closed",
-        })
+        cls.closed_tour = cls.env["federation.tournament"].create(
+            {
+                "name": "Old Tour",
+                "code": "OTOUR",
+                "season_id": cls.season.id,
+                "date_start": "2023-01-01",
+                "date_end": "2023-12-31",
+                "website_published": True,
+                "state": "closed",
+            }
+        )
 
         # Unpublished closed tournament (should not appear in archive)
-        cls.unpub_closed_tour = cls.env["federation.tournament"].create({
-            "name": "Unpub Closed Tour",
-            "code": "UCTOUR",
-            "season_id": cls.season.id,
-            "date_start": "2023-01-01",
-            "date_end": "2023-06-30",
-            "website_published": False,
-            "state": "closed",
-        })
-        cls.env["federation.tournament.participant"].create({
-            "tournament_id": cls.unpub_closed_tour.id,
-            "team_id": cls.hidden_team.id,
-            "state": "confirmed",
-        })
-        cls.schedule_match = cls.env["federation.match"].create({
-            "tournament_id": cls.active_tour.id,
-            "home_team_id": cls.team_a.id,
-            "away_team_id": cls.team_b.id,
-            "date_scheduled": "2024-06-03 10:00:00",
-            "state": "scheduled",
-        })
-        cls.result_match = cls.env["federation.match"].create({
-            "tournament_id": cls.active_tour.id,
-            "home_team_id": cls.team_a.id,
-            "away_team_id": cls.team_b.id,
-            "date_scheduled": "2024-06-01 10:00:00",
-            "state": "done",
-            "home_score": 3,
-            "away_score": 1,
-            "result_state": "approved",
-        })
-        cls.bracket_match = cls.env["federation.match"].create({
-            "tournament_id": cls.active_tour.id,
-            "home_team_id": cls.team_a.id,
-            "away_team_id": cls.team_b.id,
-            "date_scheduled": "2024-06-05 14:00:00",
-            "state": "scheduled",
-            "round_number": 1,
-            "bracket_type": "winners",
-        })
-        cls.standing = cls.env["federation.standing"].create({
-            "name": "Active Tour Standing",
-            "tournament_id": cls.active_tour.id,
-            "website_published": True,
-        })
-        cls.confirmed_participant = cls.env["federation.tournament.participant"].create({
-            "tournament_id": cls.active_tour.id,
-            "team_id": cls.team_a.id,
-            "state": "confirmed",
-        })
-        cls.season.write({
-            "website_published": True,
-            "public_slug": "ps-season",
-            "public_summary": "Season-wide discovery entry.",
-        })
+        cls.unpub_closed_tour = cls.env["federation.tournament"].create(
+            {
+                "name": "Unpub Closed Tour",
+                "code": "UCTOUR",
+                "season_id": cls.season.id,
+                "date_start": "2023-01-01",
+                "date_end": "2023-06-30",
+                "website_published": False,
+                "state": "closed",
+            }
+        )
+        cls.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": cls.unpub_closed_tour.id,
+                "team_id": cls.hidden_team.id,
+                "state": "confirmed",
+            }
+        )
+        cls.schedule_match = cls.env["federation.match"].create(
+            {
+                "tournament_id": cls.active_tour.id,
+                "home_team_id": cls.team_a.id,
+                "away_team_id": cls.team_b.id,
+                "date_scheduled": "2024-06-03 10:00:00",
+                "state": "scheduled",
+            }
+        )
+        cls.result_match = cls.env["federation.match"].create(
+            {
+                "tournament_id": cls.active_tour.id,
+                "home_team_id": cls.team_a.id,
+                "away_team_id": cls.team_b.id,
+                "date_scheduled": "2024-06-01 10:00:00",
+                "state": "done",
+                "home_score": 3,
+                "away_score": 1,
+                "result_state": "approved",
+            }
+        )
+        cls.bracket_match = cls.env["federation.match"].create(
+            {
+                "tournament_id": cls.active_tour.id,
+                "home_team_id": cls.team_a.id,
+                "away_team_id": cls.team_b.id,
+                "date_scheduled": "2024-06-05 14:00:00",
+                "state": "scheduled",
+                "round_number": 1,
+                "bracket_type": "winners",
+            }
+        )
+        cls.standing = cls.env["federation.standing"].create(
+            {
+                "name": "Active Tour Standing",
+                "tournament_id": cls.active_tour.id,
+                "website_published": True,
+            }
+        )
+        cls.confirmed_participant = cls.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": cls.active_tour.id,
+                "team_id": cls.team_a.id,
+                "state": "confirmed",
+            }
+        )
+        cls.season.write(
+            {
+                "website_published": True,
+                "public_slug": "ps-season",
+                "public_summary": "Season-wide discovery entry.",
+            }
+        )
 
     def _create_editorial_item(self, **values):
         """Create a minimal editorial item anchored to the shared season."""
@@ -154,27 +204,35 @@ class TestPublicSiteNewEndpoints(TransactionCase):
 
     def test_archive_only_returns_closed_published(self):
         """Archive query excludes unpublished and non-closed tournaments."""
-        tournaments = self.env["federation.tournament"].search([
-            ("website_published", "=", True),
-            ("state", "in", ("closed", "cancelled")),
-        ], order="date_start desc")
+        tournaments = self.env["federation.tournament"].search(
+            [
+                ("website_published", "=", True),
+                ("state", "in", ("closed", "cancelled")),
+            ],
+            order="date_start desc",
+        )
         self.assertIn(self.closed_tour, tournaments)
         self.assertNotIn(self.active_tour, tournaments)
         self.assertNotIn(self.unpub_closed_tour, tournaments)
 
     def test_archive_includes_cancelled_published(self):
         """Cancelled published tournaments also appear in the archive."""
-        cancelled = self.env["federation.tournament"].create({
-            "name": "Cancelled Tour", "code": "CNTOUR",
-            "season_id": self.season.id,
-            "date_start": "2022-06-01",
-            "website_published": True,
-            "state": "cancelled",
-        })
-        tournaments = self.env["federation.tournament"].search([
-            ("website_published", "=", True),
-            ("state", "in", ("closed", "cancelled")),
-        ])
+        cancelled = self.env["federation.tournament"].create(
+            {
+                "name": "Cancelled Tour",
+                "code": "CNTOUR",
+                "season_id": self.season.id,
+                "date_start": "2022-06-01",
+                "website_published": True,
+                "state": "cancelled",
+            }
+        )
+        tournaments = self.env["federation.tournament"].search(
+            [
+                ("website_published", "=", True),
+                ("state", "in", ("closed", "cancelled")),
+            ]
+        )
         self.assertIn(cancelled, tournaments)
 
     # ------------------------------------------------------------------
@@ -184,15 +242,19 @@ class TestPublicSiteNewEndpoints(TransactionCase):
     def test_teams_excludes_withdrawn_participants(self):
         """The teams page query excludes withdrawn participants."""
         p_confirmed = self.confirmed_participant
-        p_withdrawn = self.env["federation.tournament.participant"].create({
-            "tournament_id": self.active_tour.id,
-            "team_id": self.team_b.id,
-            "state": "withdrawn",
-        })
-        participants = self.env["federation.tournament.participant"].search([
-            ("tournament_id", "=", self.active_tour.id),
-            ("state", "!=", "withdrawn"),
-        ])
+        p_withdrawn = self.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": self.active_tour.id,
+                "team_id": self.team_b.id,
+                "state": "withdrawn",
+            }
+        )
+        participants = self.env["federation.tournament.participant"].search(
+            [
+                ("tournament_id", "=", self.active_tour.id),
+                ("state", "!=", "withdrawn"),
+            ]
+        )
         self.assertIn(p_confirmed, participants)
         self.assertNotIn(p_withdrawn, participants)
 
@@ -216,9 +278,12 @@ class TestPublicSiteNewEndpoints(TransactionCase):
 
     def test_json_api_returns_published_only(self):
         """JSON API query returns only published tournaments."""
-        tournaments = self.env["federation.tournament"].search([
-            ("website_published", "=", True),
-        ], order="date_start asc")
+        tournaments = self.env["federation.tournament"].search(
+            [
+                ("website_published", "=", True),
+            ],
+            order="date_start asc",
+        )
         pub_ids = tournaments.mapped("id")
         self.assertIn(self.active_tour.id, pub_ids)
         self.assertIn(self.closed_tour.id, pub_ids)
@@ -242,10 +307,15 @@ class TestPublicSiteNewEndpoints(TransactionCase):
 
     def test_json_api_date_null_when_not_set(self):
         """JSON API date fields are None when the tournament has no date."""
-        t = self.env["federation.tournament"].create({
-            "name": "No Dates Tour", "code": "NDTOUR", "season_id": self.season.id,
-            "website_published": True, "date_start": "2024-01-01",
-        })
+        t = self.env["federation.tournament"].create(
+            {
+                "name": "No Dates Tour",
+                "code": "NDTOUR",
+                "season_id": self.season.id,
+                "website_published": True,
+                "date_start": "2024-01-01",
+            }
+        )
         date_end_val = t.date_end.isoformat() if t.date_end else None
         self.assertIsNone(date_end_val)
 
@@ -255,7 +325,10 @@ class TestPublicSiteNewEndpoints(TransactionCase):
 
         self.assertEqual(resolved, self.active_tour)
         self.assertEqual(self.active_tour.get_public_path(), "/tournaments/active-tour")
-        self.assertEqual(self.active_tour.get_public_schedule_ics_path(), "/tournaments/active-tour/schedule.ics")
+        self.assertEqual(
+            self.active_tour.get_public_schedule_ics_path(),
+            "/tournaments/active-tour/schedule.ics",
+        )
 
     def test_public_slug_resolution_can_apply_publication_domain(self):
         """Public slug resolution can fail closed for unpublished tournaments."""
@@ -335,9 +408,13 @@ class TestPublicSiteNewEndpoints(TransactionCase):
             "odoo.addons.sports_federation_public_site.controllers._filters.request",
             new=mock_request,
         ):
-            tournaments = self.env["federation.tournament"].sudo().search(
-                controller._build_main_tournament_domain(filters),
-                order="date_start desc, id desc",
+            tournaments = (
+                self.env["federation.tournament"]
+                .sudo()
+                .search(
+                    controller._build_main_tournament_domain(filters),
+                    order="date_start desc, id desc",
+                )
             )
 
         self.assertIn(self.active_tour, tournaments)
@@ -355,7 +432,9 @@ class TestPublicSiteNewEndpoints(TransactionCase):
     def test_live_and_recent_public_tournament_helpers(self):
         """Live and recently updated helper queries surface the expected tournaments."""
         live = self.env["federation.tournament"].get_public_live_tournaments()
-        recent = self.env["federation.tournament"].get_public_recent_result_tournaments()
+        recent = self.env[
+            "federation.tournament"
+        ].get_public_recent_result_tournaments()
 
         self.assertIn(self.active_tour, live)
         self.assertIn(self.active_tour, recent)
@@ -363,15 +442,21 @@ class TestPublicSiteNewEndpoints(TransactionCase):
     def test_public_discovery_helpers_stay_within_query_budget(self):
         """Public discovery helpers keep a stable query budget for CI regression checks."""
         with self.assertQueryCount(1):
-            featured = self.env["federation.tournament"].get_public_featured_tournaments(limit=4)
+            featured = self.env[
+                "federation.tournament"
+            ].get_public_featured_tournaments(limit=4)
             self.assertIn(self.active_tour, featured)
 
         with self.assertQueryCount(1):
-            live = self.env["federation.tournament"].get_public_live_tournaments(limit=4)
+            live = self.env["federation.tournament"].get_public_live_tournaments(
+                limit=4
+            )
             self.assertIn(self.active_tour, live)
 
         with self.assertQueryCount(3):
-            recent = self.env["federation.tournament"].get_public_recent_result_tournaments(limit=4)
+            recent = self.env[
+                "federation.tournament"
+            ].get_public_recent_result_tournaments(limit=4)
             self.assertEqual(recent[:1], self.active_tour)
 
     def test_public_schedule_sections_stay_within_query_budget(self):
@@ -413,9 +498,16 @@ class TestPublicSiteNewEndpoints(TransactionCase):
         self.assertIn("standings", payload)
         self.assertEqual(payload["tournament"]["id"], self.active_tour.id)
         self.assertEqual(payload["tournament"]["slug"], "active-tour")
-        self.assertEqual(payload["tournament"]["public_url"], "/tournaments/active-tour")
-        self.assertEqual(payload["tournament"]["schedule_ics_url"], "/tournaments/active-tour/schedule.ics")
-        self.assertEqual(payload["participants"][0]["team_url"], self.team_a.get_public_path())
+        self.assertEqual(
+            payload["tournament"]["public_url"], "/tournaments/active-tour"
+        )
+        self.assertEqual(
+            payload["tournament"]["schedule_ics_url"],
+            "/tournaments/active-tour/schedule.ics",
+        )
+        self.assertEqual(
+            payload["participants"][0]["team_url"], self.team_a.get_public_path()
+        )
         self.assertEqual(payload["results"][0]["id"], self.result_match.id)
 
     def test_schedule_ics_contains_public_event_rows(self):
@@ -434,29 +526,37 @@ class TestPublicSiteNewEndpoints(TransactionCase):
         self.assertEqual(resolved, self.season)
         self.assertTrue(self.season.can_access_public_detail())
         self.assertEqual(self.season.get_public_path(), "/seasons/ps-season")
-        self.assertIn(self.season, self.env["federation.season"].get_public_published_seasons())
+        self.assertIn(
+            self.season, self.env["federation.season"].get_public_published_seasons()
+        )
 
     def test_editorial_items_only_go_live_inside_publication_window(self):
         """Test that editorial items only go live inside publication window."""
-        live_item = self.env["federation.public.editorial.item"].create({
-            "name": "Season Highlight",
-            "content_type": "highlight",
-            "publication_state": "scheduled",
-            "summary": "Currently live highlight.",
-            "season_id": self.season.id,
-            "publish_start": "2024-05-01 08:00:00",
-            "publish_end": "2026-07-01 08:00:00",
-        })
-        future_item = self.env["federation.public.editorial.item"].create({
-            "name": "Future Highlight",
-            "content_type": "announcement",
-            "publication_state": "scheduled",
-            "summary": "Not live yet.",
-            "season_id": self.season.id,
-            "publish_start": "2099-01-01 08:00:00",
-        })
+        live_item = self.env["federation.public.editorial.item"].create(
+            {
+                "name": "Season Highlight",
+                "content_type": "highlight",
+                "publication_state": "scheduled",
+                "summary": "Currently live highlight.",
+                "season_id": self.season.id,
+                "publish_start": "2024-05-01 08:00:00",
+                "publish_end": "2026-07-01 08:00:00",
+            }
+        )
+        future_item = self.env["federation.public.editorial.item"].create(
+            {
+                "name": "Future Highlight",
+                "content_type": "announcement",
+                "publication_state": "scheduled",
+                "summary": "Not live yet.",
+                "season_id": self.season.id,
+                "publish_start": "2099-01-01 08:00:00",
+            }
+        )
 
-        items = self.env["federation.public.editorial.item"].get_live_items(season=self.season)
+        items = self.env["federation.public.editorial.item"].get_live_items(
+            season=self.season
+        )
 
         self.assertIn(live_item, items)
         self.assertNotIn(future_item, items)
@@ -549,10 +649,18 @@ class TestPublicSiteNewEndpoints(TransactionCase):
         payload = self.team_a.get_public_feed_payload()
         ics_payload = self.team_a.get_public_schedule_ics()
 
-        self.assertEqual(self.team_a.get_public_schedule_path(), "/teams/ps-team-a/schedule")
-        self.assertEqual(self.team_a.get_public_results_path(), "/teams/ps-team-a/results")
-        self.assertEqual(self.team_a.get_public_schedule_ics_path(), "/teams/ps-team-a/schedule.ics")
-        self.assertEqual(self.team_a.get_public_feed_path(), "/api/v1/teams/ps-team-a/feed")
+        self.assertEqual(
+            self.team_a.get_public_schedule_path(), "/teams/ps-team-a/schedule"
+        )
+        self.assertEqual(
+            self.team_a.get_public_results_path(), "/teams/ps-team-a/results"
+        )
+        self.assertEqual(
+            self.team_a.get_public_schedule_ics_path(), "/teams/ps-team-a/schedule.ics"
+        )
+        self.assertEqual(
+            self.team_a.get_public_feed_path(), "/api/v1/teams/ps-team-a/feed"
+        )
         self.assertTrue(schedule_sections)
         self.assertTrue(result_sections)
         self.assertEqual(payload["api_version"], "v1")

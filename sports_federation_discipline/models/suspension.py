@@ -42,9 +42,7 @@ class FederationSuspension(models.Model):
         for record in self:
             if record.date_end and record.date_start:
                 if record.date_end < record.date_start:
-                    raise ValidationError(
-                        "End date must be on or after start date."
-                    )
+                    raise ValidationError("End date must be on or after start date.")
 
     def action_activate(self):
         """Activate the suspension and mark the affected player as suspended."""
@@ -79,10 +77,13 @@ class FederationSuspension(models.Model):
         """Restore the player to active if they have no remaining active suspensions."""
         self.ensure_one()
         player = self.player_id
-        active_suspensions = self.env["federation.suspension"].search([
-            ("player_id", "=", player.id),
-            ("state", "=", "active"),
-            ("id", "!=", self.id),
-        ], limit=1)
+        active_suspensions = self.env["federation.suspension"].search(
+            [
+                ("player_id", "=", player.id),
+                ("state", "=", "active"),
+                ("id", "!=", self.id),
+            ],
+            limit=1,
+        )
         if not active_suspensions:
             player.action_activate()

@@ -40,11 +40,14 @@ class FederationMatch(models.Model):
                 sides.append((match.away_team_id, "away"))
 
             for team, side in sides:
-                existing = Sheet.search([
-                    ("match_id", "=", match.id),
-                    ("team_id", "=", team.id),
-                    ("side", "=", side),
-                ], limit=1)
+                existing = Sheet.search(
+                    [
+                        ("match_id", "=", match.id),
+                        ("team_id", "=", team.id),
+                        ("side", "=", side),
+                    ],
+                    limit=1,
+                )
                 if existing:
                     continue
 
@@ -105,7 +108,7 @@ class FederationMatch(models.Model):
             return []
 
         issues = []
-        for team in (self.home_team_id | self.away_team_id):
+        for team in self.home_team_id | self.away_team_id:
             assessment = team._get_tournament_roster_assessment(
                 self.tournament_id,
                 today=today,

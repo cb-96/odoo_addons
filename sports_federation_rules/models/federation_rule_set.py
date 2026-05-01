@@ -87,7 +87,7 @@ class FederationRuleSet(models.Model):
         "federation.qualification.rule", "rule_set_id", string="Qualification Rules"
     )
 
-    _code_unique = models.Constraint('unique (code)', 'Rule set code must be unique.')
+    _code_unique = models.Constraint("unique (code)", "Rule set code must be unique.")
 
     @api.constrains("squad_min_size", "squad_max_size")
     def _check_squad_sizes(self):

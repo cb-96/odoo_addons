@@ -1,4 +1,6 @@
-from odoo.addons.sports_federation_base.tests.route_inventory import load_route_inventory
+from odoo.addons.sports_federation_base.tests.route_inventory import (
+    load_route_inventory,
+)
 from odoo.tests.common import HttpCase, tagged
 
 
@@ -20,15 +22,17 @@ class TestComplianceHttpSmoke(HttpCase):
                 "code": "CSC",
             }
         )
-        cls.club_user = cls.env["res.users"].with_context(
-            no_reset_password=True
-        ).create(
-            {
-                "name": "Compliance Smoke User",
-                "login": "compliance.smoke@example.com",
-                "email": "compliance.smoke@example.com",
-                "group_ids": [(6, 0, [cls.portal_club_group.id])],
-            }
+        cls.club_user = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Compliance Smoke User",
+                    "login": "compliance.smoke@example.com",
+                    "email": "compliance.smoke@example.com",
+                    "group_ids": [(6, 0, [cls.portal_club_group.id])],
+                }
+            )
         )
         cls.env["federation.club.representative"].create(
             {
@@ -48,13 +52,15 @@ class TestComplianceHttpSmoke(HttpCase):
         )
 
     def test_compliance_detail_route_supports_dotted_target_models(self):
-        entry = self.env["federation.document.requirement"].with_user(
-            self.club_user
-        )._portal_get_workspace_entry_for_user(
-            self.requirement.id,
-            "federation.club",
-            self.club.id,
-            user=self.club_user,
+        entry = (
+            self.env["federation.document.requirement"]
+            .with_user(self.club_user)
+            ._portal_get_workspace_entry_for_user(
+                self.requirement.id,
+                "federation.club",
+                self.club.id,
+                user=self.club_user,
+            )
         )
 
         self.assertTrue(entry)
@@ -73,13 +79,15 @@ class TestComplianceHttpSmoke(HttpCase):
         self.assertIn("No submission is on file yet.", detail_response.text)
 
     def test_compliance_submit_route_handles_stale_csrf(self):
-        entry = self.env["federation.document.requirement"].with_user(
-            self.club_user
-        )._portal_get_workspace_entry_for_user(
-            self.requirement.id,
-            "federation.club",
-            self.club.id,
-            user=self.club_user,
+        entry = (
+            self.env["federation.document.requirement"]
+            .with_user(self.club_user)
+            ._portal_get_workspace_entry_for_user(
+                self.requirement.id,
+                "federation.club",
+                self.club.id,
+                user=self.club_user,
+            )
         )
 
         self.assertTrue(entry)

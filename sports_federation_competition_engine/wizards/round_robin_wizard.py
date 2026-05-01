@@ -10,12 +10,15 @@ class RoundRobinWizard(models.TransientModel):
         "federation.tournament", string="Tournament", required=True
     )
     stage_id = fields.Many2one(
-        "federation.tournament.stage", string="Stage", required=True,
-        domain="[('tournament_id', '=', tournament_id)]"
+        "federation.tournament.stage",
+        string="Stage",
+        required=True,
+        domain="[('tournament_id', '=', tournament_id)]",
     )
     group_id = fields.Many2one(
-        "federation.tournament.group", string="Group",
-        domain="[('stage_id', '=', stage_id)]"
+        "federation.tournament.group",
+        string="Group",
+        domain="[('stage_id', '=', stage_id)]",
     )
     participant_ids = fields.Many2many(
         "federation.tournament.participant",
@@ -27,21 +30,15 @@ class RoundRobinWizard(models.TransientModel):
     )
     round_type = fields.Selection(
         [("single", "Single Round"), ("double", "Double Round")],
-        string="Round Type", default="single", required=True
+        string="Round Type",
+        default="single",
+        required=True,
     )
     rounds_count = fields.Integer(string="Full Cycles (repeats)", default=1)
     stage_round_count = fields.Integer(
-        string="Existing Rounds",
+        string="Existing Gamedays",
         compute="_compute_stage_round_count",
         store=False,
-    )
-    round_mode = fields.Selection(
-        [("existing", "Use Existing Only"), ("auto", "Auto-Create Missing"), ("explicit", "Create Specific")],
-        string="Round Mode", default="auto", required=True,
-    )
-    requested_rounds = fields.Integer(
-        string="Rounds to Create",
-        help="Number of rounds to create when Round Mode is 'Create Specific'.",
     )
     schedule_by_round = fields.Boolean(string="Schedule By Round", default=False)
     round_interval_hours = fields.Integer(string="Round Interval (hours)", default=24)
@@ -67,7 +64,9 @@ class RoundRobinWizard(models.TransientModel):
     def _get_round_stats(self, participant_count):
         """Return round stats."""
         self.ensure_one()
-        base_rounds = participant_count - 1 if participant_count % 2 == 0 else participant_count
+        base_rounds = (
+            participant_count - 1 if participant_count % 2 == 0 else participant_count
+        )
         rounds_per_cycle = base_rounds * (2 if self.round_type == "double" else 1)
         total_rounds = rounds_per_cycle * (self.rounds_count or 1)
         matches_per_round = participant_count // 2
@@ -88,8 +87,6 @@ class RoundRobinWizard(models.TransientModel):
         "round_type",
         "rounds_count",
         "stage_round_count",
-        "round_mode",
-        "requested_rounds",
         "schedule_by_round",
         "start_datetime",
     )
@@ -101,85 +98,44 @@ class RoundRobinWizard(models.TransientModel):
             if n < 2:
                 wiz.summary = wiz._get_participant_requirement_message(parts)
                 continue
-            invalid_participants = parts.filtered(lambda participant: participant.state != "confirmed")
+            invalid_participants = parts.filtered(
+                lambda participant: participant.state != "confirmed"
+            )
             if invalid_participants:
                 wiz.summary = wiz._get_participant_requirement_message(parts)
                 continue
             stats = wiz._get_round_stats(n)
             required_rounds = stats["total_rounds"]
 
-            # Determine effective rounds based on mode
-            if wiz.round_mode == "existing":
-                effective_rounds = wiz.stage_round_count
-                # Show total matches that will be created (not limited by gamedays)
-                summary = _(
-                    "%(n)s participants, %(total_matches)s total matches "
-                    "will be distributed across %(gamedays)s gamedays."
-                ) % {
-                    "n": n,
-                    "total_matches": stats["total_matches"],
-                    "gamedays": effective_rounds,
-                }
-                wiz.summary = summary
-                continue
-            elif wiz.round_mode == "explicit":
-                effective_rounds = wiz.requested_rounds or 0
-                if effective_rounds < required_rounds:
-                    summary = _(
-                        "Requested %(requested)s rounds but schedule needs %(required)s. "
-                        "Increase 'Rounds to Create' or use 'Auto-Create Missing'."
-                    ) % {"requested": effective_rounds, "required": required_rounds}
-                    wiz.summary = summary
-                    continue
-                summary = _(
-                    "%(n)s participants, %(requested)s rounds will be created, "
-                    "%(matches_per)s matches/round, %(total)s total matches."
-                ) % {
-                    "n": n,
-                    "requested": effective_rounds,
-                    "matches_per": stats["matches_per_round"],
-                    "total": stats["matches_per_round"] * effective_rounds,
-                }
-                wiz.summary = summary
+            if not wiz.stage_round_count:
+                wiz.summary = _(
+                    "No gamedays defined for this stage. "
+                    "Create at least one gameday before generating matches."
+                )
                 continue
 
-            # Default: auto-create missing (original behavior)
-            summary = (
-                f"{n} participants, {stats['total_rounds']} rounds, "
-                f"{stats['matches_per_round']} matches/round, {stats['total_matches']} total matches."
-            )
-            if wiz.stage_round_count:
-                reused_rounds = min(wiz.stage_round_count, required_rounds)
-                missing_rounds = max(required_rounds - wiz.stage_round_count, 0)
-                if missing_rounds:
-                    summary += " " + _(
-                        "This stage already has %(existing)s rounds. %(reused)s existing rounds will be reused and %(missing)s additional rounds will be created."
-                    ) % {
-                        "existing": wiz.stage_round_count,
-                        "reused": reused_rounds,
-                        "missing": missing_rounds,
-                    }
-                else:
-                    summary += " " + _(
-                        "This stage already has %(existing)s rounds. The first %(required)s rounds will be reused in sequence order."
-                    ) % {
-                        "existing": wiz.stage_round_count,
-                        "required": required_rounds,
-                    }
-            else:
+            summary = _(
+                "%(n)s participants, %(total_matches)s total matches "
+                "across %(gamedays)s gameday(s)."
+            ) % {
+                "n": n,
+                "total_matches": stats["total_matches"],
+                "gamedays": wiz.stage_round_count,
+            }
+
+            if wiz.stage_round_count < required_rounds:
                 summary += " " + _(
-                    "Generated matches will create %(required)s rounds on the selected stage."
-                ) % {
-                    "required": required_rounds,
-                }
+                    "%(gamedays)s gameday(s) is fewer than the %(required)s rounds the "
+                    "algorithm needs \u2014 some gamedays will receive more matches."
+                ) % {"gamedays": wiz.stage_round_count, "required": required_rounds}
 
             if wiz.schedule_by_round and wiz.start_datetime:
                 summary += " " + _(
-                    "Round dates will be derived from the start date and round interval, while individual match kickoff times stay on the matches themselves."
+                    "Kickoff times will be derived from each gameday's date."
                 )
             elif wiz.schedule_by_round:
                 summary += " " + _(
-                    "Enable Start Date/Time to assign kickoff times inside each generated round automatically."
+                    "Set a Start Date/Time to assign kickoff times automatically."
                 )
 
             wiz.summary = summary
@@ -188,7 +144,10 @@ class RoundRobinWizard(models.TransientModel):
         """Return participants."""
         self.ensure_one()
         if self.use_all_participants:
-            domain = [("tournament_id", "=", self.tournament_id.id), ("state", "=", "confirmed")]
+            domain = [
+                ("tournament_id", "=", self.tournament_id.id),
+                ("state", "=", "confirmed"),
+            ]
             if self.group_id:
                 domain.append(("group_id", "=", self.group_id.id))
             elif self.stage_id:
@@ -212,7 +171,9 @@ class RoundRobinWizard(models.TransientModel):
         Participant = self.env["federation.tournament.participant"]
         scope_domain = self._get_participant_scope_domain()
         scope_total = Participant.search_count(scope_domain)
-        scope_confirmed = Participant.search_count(scope_domain + [("state", "=", "confirmed")])
+        scope_confirmed = Participant.search_count(
+            scope_domain + [("state", "=", "confirmed")]
+        )
         tournament_confirmed = Participant.search_count(
             [("tournament_id", "=", self.tournament_id.id), ("state", "=", "confirmed")]
         )
@@ -220,7 +181,9 @@ class RoundRobinWizard(models.TransientModel):
         if not self.use_all_participants:
             selected_total = len(self.participant_ids)
             selected_confirmed = len(
-                self.participant_ids.filtered(lambda participant: participant.state == "confirmed")
+                self.participant_ids.filtered(
+                    lambda participant: participant.state == "confirmed"
+                )
             )
             if selected_total < 2:
                 return _(
@@ -258,8 +221,6 @@ class RoundRobinWizard(models.TransientModel):
             "venue": self.venue or "",
             "overwrite": self.overwrite,
             "group": self.group_id,
-            "round_mode": self.round_mode,
-            "requested_rounds": self.requested_rounds,
         }
         engine = self.env["federation.competition.engine.service"]
         matches = engine.generate_round_robin_schedule(
@@ -277,31 +238,31 @@ class RoundRobinWizard(models.TransientModel):
         }
 
     def _validate_round_mode(self, participants):
-        """Validate round mode constraints."""
-        stats = self._get_round_stats(len(participants))
-        required_rounds = stats["total_rounds"]
-
-        if self.round_mode == "existing":
-            # No minimum requirement - just need at least 1 round to spread matches
-            if self.stage_round_count < 1:
-                raise UserError(_("Need at least 1 existing round to distribute matches."))
-        elif self.round_mode == "explicit":
-            if not self.requested_rounds or self.requested_rounds < required_rounds:
-                raise UserError(_(
-                    "Requested %(requested)s rounds but schedule needs %(required)s. "
-                    "Increase 'Rounds to Create' or use 'Auto-Create Missing'."
-                ) % {"requested": self.requested_rounds or 0, "required": required_rounds})
+        """Validate that at least one gameday exists for match distribution."""
+        if self.stage_round_count < 1:
+            raise UserError(
+                _(
+                    "No gamedays defined for this stage. "
+                    "Create at least one gameday before generating matches."
+                )
+            )
 
     def _validate_generation_request(self, participants):
         """Validate generation request."""
         if self.tournament_id.state not in ("open", "in_progress"):
-            raise UserError(_("Tournament must be Open or In Progress to generate matches."))
+            raise UserError(
+                _("Tournament must be Open or In Progress to generate matches.")
+            )
 
         if not self.tournament_id._get_effective_rule_set():
-            raise UserError(_("Assign a rule set before generating a round-robin schedule."))
+            raise UserError(
+                _("Assign a rule set before generating a round-robin schedule.")
+            )
 
         if self.stage_id.tournament_id != self.tournament_id:
-            raise UserError(_("The selected stage must belong to the selected tournament."))
+            raise UserError(
+                _("The selected stage must belong to the selected tournament.")
+            )
 
         if self.group_id and self.group_id.stage_id != self.stage_id:
             raise UserError(_("The selected group must belong to the selected stage."))
@@ -309,6 +270,8 @@ class RoundRobinWizard(models.TransientModel):
         if len(participants) < 2:
             raise UserError(self._get_participant_requirement_message(participants))
 
-        invalid_participants = participants.filtered(lambda participant: participant.state != "confirmed")
+        invalid_participants = participants.filtered(
+            lambda participant: participant.state != "confirmed"
+        )
         if invalid_participants:
             raise UserError(self._get_participant_requirement_message(participants))

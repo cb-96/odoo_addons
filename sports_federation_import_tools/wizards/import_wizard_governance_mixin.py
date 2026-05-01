@@ -1,5 +1,7 @@
 from odoo import fields, models
-from odoo.addons.sports_federation_base.models.failure_feedback import DEFAULT_OPERATOR_MESSAGES
+from odoo.addons.sports_federation_base.models.failure_feedback import (
+    DEFAULT_OPERATOR_MESSAGES,
+)
 from odoo.addons.sports_federation_import_tools.workflow_states import (
     IMPORT_JOB_STATE_COMPLETED,
     IMPORT_JOB_STATE_COMPLETED_WITH_ERRORS,
@@ -139,10 +141,18 @@ class FederationImportWizardGovernanceMixin(models.AbstractModel):
         if self.integration_delivery_id and self.dry_run:
             self.integration_delivery_id.action_mark_previewed(self)
 
-        if not self.dry_run and self.governance_job_id and is_import_job_approved(self.governance_job_id.state):
+        if (
+            not self.dry_run
+            and self.governance_job_id
+            and is_import_job_approved(self.governance_job_id.state)
+        ):
             after_count = self._get_target_record_count()
-            failure_category = self._get_overall_failure_category(error_categories=error_categories)
-            operator_message = self._get_overall_operator_message(error_categories=error_categories)
+            failure_category = self._get_overall_failure_category(
+                error_categories=error_categories
+            )
+            operator_message = self._get_overall_operator_message(
+                error_categories=error_categories
+            )
             self.governance_job_id.write(
                 {
                     "state": (
@@ -156,7 +166,9 @@ class FederationImportWizardGovernanceMixin(models.AbstractModel):
                     "failure_category": failure_category,
                     "operator_message": operator_message,
                     "execution_result_message": result_message,
-                    "verification_summary": self._build_execution_verification_summary(baseline_count),
+                    "verification_summary": self._build_execution_verification_summary(
+                        baseline_count
+                    ),
                     "pre_import_record_count": baseline_count,
                     "post_import_record_count": after_count,
                     "executed_by_id": self.env.user.id,
@@ -164,16 +176,23 @@ class FederationImportWizardGovernanceMixin(models.AbstractModel):
                 }
             )
             if self.integration_delivery_id:
-                self.integration_delivery_id.action_mark_processed(self.governance_job_id)
+                self.integration_delivery_id.action_mark_processed(
+                    self.governance_job_id
+                )
         return self._reopen_wizard()
 
     def action_request_approval(self):
         """Create and submit the governance job for the current previewed upload."""
         self.ensure_one()
         if not self.template_id:
-            raise ValidationError("Select an import template before requesting approval.")
+            raise ValidationError(
+                "Select an import template before requesting approval."
+            )
         current_checksum = self._current_upload_checksum()
-        if not self.preview_file_checksum or self.preview_file_checksum != current_checksum:
+        if (
+            not self.preview_file_checksum
+            or self.preview_file_checksum != current_checksum
+        ):
             raise ValidationError(
                 "Run a dry-run preview for the current CSV before requesting approval."
             )
@@ -209,7 +228,9 @@ class FederationImportWizardGovernanceMixin(models.AbstractModel):
     def action_approve_import(self):
         """Approve the pending governance job for the current upload."""
         self.ensure_one()
-        if not self.env.user.has_group("sports_federation_base.group_federation_manager"):
+        if not self.env.user.has_group(
+            "sports_federation_base.group_federation_manager"
+        ):
             raise AccessError("Only federation managers can approve import jobs.")
         if not self.governance_job_id:
             raise ValidationError("Request approval before approving an import job.")

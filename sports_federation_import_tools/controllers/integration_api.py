@@ -3,13 +3,14 @@ import io
 import logging
 
 from odoo import http
-from odoo.addons.sports_federation_base.exceptions import AttachmentScanVerificationError
+from odoo.addons.sports_federation_base.exceptions import (
+    AttachmentScanVerificationError,
+)
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import Response, request
 
 from .integration_api_auth_mixin import FederationIntegrationApiAuthMixin
 from .integration_api_response_mixin import FederationIntegrationApiResponseMixin
-
 
 _logger = logging.getLogger(__name__)
 
@@ -72,7 +73,9 @@ class FederationIntegrationApi(
         if blocked_response:
             return blocked_response
         try:
-            partner, _subscription = self._authenticate(contract_code="finance_event_v1")
+            partner, _subscription = self._authenticate(
+                contract_code="finance_event_v1"
+            )
         except (AccessError, ValidationError) as error:
             return self._json_error_response(status=401, error=error)
 
@@ -95,7 +98,9 @@ class FederationIntegrationApi(
                 )
                 events = export_batch["events"]
             else:
-                events = FinanceEvent.sudo().search([], order="create_date desc, id desc")
+                events = FinanceEvent.sudo().search(
+                    [], order="create_date desc, id desc"
+                )
         except ValidationError as error:
             return self._json_error_response(status=400, error=error)
 
@@ -106,7 +111,10 @@ class FederationIntegrationApi(
             writer.writerow(event.get_handoff_export_row())
 
         headers = [
-            ("Content-Disposition", 'attachment; filename="finance_events_partner_handoff.csv"'),
+            (
+                "Content-Disposition",
+                'attachment; filename="finance_events_partner_handoff.csv"',
+            ),
             ("X-Federation-Contract", "finance_event_v1"),
             ("X-Federation-Contract-Version", FinanceEvent.EXPORT_SCHEMA_VERSION),
             ("X-Federation-Partner-Code", partner.code),
@@ -116,12 +124,17 @@ class FederationIntegrationApi(
                 [
                     ("X-Federation-Export-Mode", "cursor_page"),
                     ("X-Federation-Export-Count", str(export_batch["count"])),
-                    ("X-Federation-Has-More", "true" if export_batch["has_more"] else "false"),
+                    (
+                        "X-Federation-Has-More",
+                        "true" if export_batch["has_more"] else "false",
+                    ),
                     ("X-Federation-Page-Limit", str(export_batch["limit"])),
                 ]
             )
             if export_batch["next_cursor"]:
-                headers.append(("X-Federation-Next-Cursor", export_batch["next_cursor"]))
+                headers.append(
+                    ("X-Federation-Next-Cursor", export_batch["next_cursor"])
+                )
 
         return Response(
             output.getvalue(),
@@ -147,23 +160,29 @@ class FederationIntegrationApi(
             partner, subscription = self._authenticate(contract_code=contract_code)
             payload = request_proxy.httprequest.get_json(silent=True) or {}
             if not isinstance(payload, dict):
-                raise ValidationError("Inbound delivery requests must use a JSON object body.")
+                raise ValidationError(
+                    "Inbound delivery requests must use a JSON object body."
+                )
 
             request_idempotency_key = (
-                request_proxy.httprequest.headers.get("X-Federation-Idempotency-Key") or ""
+                request_proxy.httprequest.headers.get("X-Federation-Idempotency-Key")
+                or ""
             ).strip() or False
 
-            delivery_result = request_proxy.env[
-                "federation.integration.delivery"
-            ].sudo().stage_partner_delivery_result(
-                partner=partner,
-                contract=subscription.contract_id,
-                filename=(payload.get("filename") or "").strip(),
-                payload_base64=(payload.get("payload_base64") or "").strip(),
-                content_type=(payload.get("content_type") or "").strip() or False,
-                notes=(payload.get("notes") or "").strip() or False,
-                source_reference=(payload.get("source_reference") or "").strip() or False,
-                idempotency_key=request_idempotency_key,
+            delivery_result = (
+                request_proxy.env["federation.integration.delivery"]
+                .sudo()
+                .stage_partner_delivery_result(
+                    partner=partner,
+                    contract=subscription.contract_id,
+                    filename=(payload.get("filename") or "").strip(),
+                    payload_base64=(payload.get("payload_base64") or "").strip(),
+                    content_type=(payload.get("content_type") or "").strip() or False,
+                    notes=(payload.get("notes") or "").strip() or False,
+                    source_reference=(payload.get("source_reference") or "").strip()
+                    or False,
+                    idempotency_key=request_idempotency_key,
+                )
             )
             delivery = delivery_result["delivery"]
         except AccessError as error:
@@ -177,7 +196,9 @@ class FederationIntegrationApi(
                 default_category="retryable_delivery",
             )
         except Exception as error:
-            _logger.exception("Inbound delivery staging failed for contract %s", contract_code)
+            _logger.exception(
+                "Inbound delivery staging failed for contract %s", contract_code
+            )
             return self._json_error_response(status=500, error=error)
 
         headers = [("X-Federation-Delivery-Outcome", delivery_result["outcome"])]
@@ -208,7 +229,7 @@ class FederationIntegrationApi(
                     "idempotency_key": delivery.idempotency_key,
                     "payload_checksum": delivery.payload_checksum,
                     "route_hint": delivery.contract_id.route_hint,
-                }
+                },
             },
             status=201,
             headers=headers,

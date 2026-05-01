@@ -1,6 +1,8 @@
 import json
 
-from odoo.addons.sports_federation_base.models.failure_feedback import build_failure_feedback
+from odoo.addons.sports_federation_base.models.failure_feedback import (
+    build_failure_feedback,
+)
 from odoo.http import Response
 
 
@@ -14,7 +16,9 @@ class FederationIntegrationApiResponseMixin:
             headers=headers or [],
         )
 
-    def _json_error_response(self, status, error=None, detail=None, default_category="unexpected_bug"):
+    def _json_error_response(
+        self, status, error=None, detail=None, default_category="unexpected_bug"
+    ):
         """Return a typed JSON error payload with sanitized operator detail."""
         failure_category, operator_message = build_failure_feedback(
             error=error,

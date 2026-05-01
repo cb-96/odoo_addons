@@ -40,10 +40,12 @@ EOF
 list_suites() {
   cat <<'EOF'
 Available suites:
-  competition_core   Base, tournament, scheduling, results, and standings critical path
-  portal_public_ops  Portal ownership, public routes, compliance, standings, and venue-facing flows
-  finance_reporting  Finance bridge and reporting coverage
-  release_surfaces   Broader portal/public, match-day, compliance, and notification release verification
+  competition_core       Base, tournament, scheduling, results, and standings critical path
+  portal_public_ops      Portal ownership, public routes, compliance, standings, and venue-facing flows
+  finance_reporting      Finance bridge and reporting coverage
+  release_surfaces       Broader portal/public, match-day, compliance, and notification release verification
+  people_rosters_rules   People, rosters, rules, and officiating modules
+  ops_and_notifications  Discipline, governance, notifications, import_tools, and demo modules
 EOF
 }
 
@@ -85,6 +87,23 @@ sports_federation_notifications
 sports_federation_discipline
 sports_federation_standings
 sports_federation_venues
+EOF
+      ;;
+    people_rosters_rules)
+      cat <<'EOF'
+sports_federation_people
+sports_federation_rosters
+sports_federation_rules
+sports_federation_officiating
+EOF
+      ;;
+    ops_and_notifications)
+      cat <<'EOF'
+sports_federation_discipline
+sports_federation_governance
+sports_federation_notifications
+sports_federation_import_tools
+sports_federation_demo
 EOF
       ;;
     *)

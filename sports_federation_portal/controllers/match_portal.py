@@ -17,7 +17,9 @@ class FederationMatchPortal(FederationRosterPortalBase):
     )
     def portal_my_match_sheets(self, page=1, **kw):
         """List match sheets visible to the current portal user."""
-        MatchSheet = request.env["federation.match.sheet"].with_user(request.env.user).sudo()
+        MatchSheet = (
+            request.env["federation.match.sheet"].with_user(request.env.user).sudo()
+        )
         domain = MatchSheet._portal_get_domain(user=request.env.user)
         if domain == [("id", "=", False)]:
             return self._redirect_with_query("/my/club")
@@ -63,13 +65,38 @@ class FederationMatchPortal(FederationRosterPortalBase):
 
         club = sheet.team_id.club_id
         Representative = request.env["federation.club.representative"].sudo()
-        available_coaches = Representative.search([
-            ("club_id", "=", club.id),
-            ("role_type_id.code", "=", "coach"),
-        ]) if club else Representative.browse()
-        available_managers = Representative.search([
-            ("club_id", "=", club.id),
-        ]) if club else Representative.browse()
+        available_coaches = (
+            Representative.search(
+                [
+                    ("club_id", "=", club.id),
+                    ("role_type_id.code", "=", "coach"),
+                ]
+            )
+            if club
+            else Representative.browse()
+        )
+        available_managers = (
+            Representative.search(
+                [
+                    ("club_id", "=", club.id),
+                ]
+            )
+            if club
+            else Representative.browse()
+        )
+
+        available_rosters = (
+            request.env["federation.team.roster"]
+            .sudo()
+            .search(
+                [
+                    ("team_id", "=", sheet.team_id.id),
+                    ("status", "in", ("active", "draft")),
+                ]
+            )
+            if sheet.team_id
+            else request.env["federation.team.roster"].browse()
+        )
 
         values = {
             "sheet": sheet,
@@ -80,9 +107,15 @@ class FederationMatchPortal(FederationRosterPortalBase):
             "can_edit_squad": sheet.state == "draft",
             "available_coaches": available_coaches,
             "available_managers": available_managers,
-            "roster_lines": sheet.roster_id.line_ids if sheet.roster_id
-                else request.env["federation.team.roster.line"].browse(),
-            "sheet_line_by_player": {line.player_id.id: line for line in sheet.line_ids},
+            "available_rosters": available_rosters,
+            "roster_lines": (
+                sheet.roster_id.line_ids
+                if sheet.roster_id
+                else request.env["federation.team.roster.line"].browse()
+            ),
+            "sheet_line_by_player": {
+                line.player_id.id: line for line in sheet.line_ids
+            },
         }
         return request.render(
             "sports_federation_portal.portal_my_match_sheet_detail",
@@ -111,6 +144,7 @@ class FederationMatchPortal(FederationRosterPortalBase):
                     "coach_name": kw.get("coach_name"),
                     "manager_id": kw.get("manager_id") or False,
                     "manager_name": kw.get("manager_name"),
+                    "roster_id": kw.get("roster_id") or False,
                     "notes": kw.get("notes"),
                 },
             )
@@ -165,12 +199,14 @@ class FederationMatchPortal(FederationRosterPortalBase):
             role = form.get(f"player_{player_id}_role", "starter")
             is_captain = bool(form.get(f"player_{player_id}_captain"))
             jersey = (form.get(f"player_{player_id}_jersey") or "").strip()
-            squad_data.append({
-                "player_id": player_id,
-                "role": role,
-                "is_captain": is_captain,
-                "jersey_number": jersey or False,
-            })
+            squad_data.append(
+                {
+                    "player_id": player_id,
+                    "role": role,
+                    "is_captain": is_captain,
+                    "jersey_number": jersey or False,
+                }
+            )
 
         try:
             sheet._portal_sync_squad(squad_data, user=request.env.user)
@@ -195,7 +231,9 @@ class FederationMatchPortal(FederationRosterPortalBase):
     )
     def portal_my_match_day(self, page=1, **kw):
         """List upcoming match-day sheets for the current user."""
-        MatchSheet = request.env["federation.match.sheet"].with_user(request.env.user).sudo()
+        MatchSheet = (
+            request.env["federation.match.sheet"].with_user(request.env.user).sudo()
+        )
         domain = MatchSheet._portal_get_domain(user=request.env.user)
         if domain == [("id", "=", False)]:
             return self._redirect_with_query("/my/club")

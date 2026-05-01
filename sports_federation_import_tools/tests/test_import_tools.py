@@ -21,23 +21,29 @@ class TestImportTools(TransactionCase):
         """Set up shared test data for the test case."""
         super().setUpClass()
         # Create test club
-        cls.club = cls.env["federation.club"].create({
-            "name": "Test Club",
-            "code": "TC001",
-        })
+        cls.club = cls.env["federation.club"].create(
+            {
+                "name": "Test Club",
+                "code": "TC001",
+            }
+        )
         # Create test tournament
-        cls.tournament = cls.env["federation.tournament"].create({
-            "name": "Test Tournament",
-            "code": "TT2024",
-            "date_start": "2024-01-01",
-            "date_end": "2024-01-31",
-        })
+        cls.tournament = cls.env["federation.tournament"].create(
+            {
+                "name": "Test Tournament",
+                "code": "TT2024",
+                "date_start": "2024-01-01",
+                "date_end": "2024-01-31",
+            }
+        )
         # Create test team
-        cls.team = cls.env["federation.team"].create({
-            "name": "Test Team",
-            "code": "TEAM001",
-            "club_id": cls.club.id,
-        })
+        cls.team = cls.env["federation.team"].create(
+            {
+                "name": "Test Team",
+                "code": "TEAM001",
+                "club_id": cls.club.id,
+            }
+        )
 
     def _create_csv_file(self, content):
         """Helper to create a CSV file binary."""
@@ -54,14 +60,18 @@ class TestImportTools(TransactionCase):
 
     def _create_integration_partner(self, contract):
         """Exercise create integration partner."""
-        partner = self.env["federation.integration.partner"].create({
-            "name": f"Partner {contract.code}",
-            "code": f"PARTNER_{contract.code.upper()}",
-        })
-        subscription = self.env["federation.integration.partner.contract"].create({
-            "partner_id": partner.id,
-            "contract_id": contract.id,
-        })
+        partner = self.env["federation.integration.partner"].create(
+            {
+                "name": f"Partner {contract.code}",
+                "code": f"PARTNER_{contract.code.upper()}",
+            }
+        )
+        subscription = self.env["federation.integration.partner.contract"].create(
+            {
+                "partner_id": partner.id,
+                "contract_id": contract.id,
+            }
+        )
         return partner, subscription
 
     def test_all_import_wizards_inherit_shared_mixin(self):
@@ -146,10 +156,12 @@ class TestImportTools(TransactionCase):
 
     def test_import_wizard_mixin_categorizes_common_errors(self):
         """The shared mixin should keep the common error taxonomy stable across wizards."""
-        wizard = self.env["federation.import.clubs.wizard"].create({
-            "upload_file": self._create_csv_file("name\nCategory Club"),
-            "dry_run": True,
-        })
+        wizard = self.env["federation.import.clubs.wizard"].create(
+            {
+                "upload_file": self._create_csv_file("name\nCategory Club"),
+                "dry_run": True,
+            }
+        )
 
         self.assertEqual(
             wizard._categorize_exception(ValidationError("Club not found."))[0],
@@ -170,10 +182,12 @@ class TestImportTools(TransactionCase):
 
     def test_import_wizard_mixin_executes_shared_row_create_flow(self):
         """The shared row-create helper should skip dry runs and record live failures consistently."""
-        wizard = self.env["federation.import.clubs.wizard"].create({
-            "upload_file": self._create_csv_file("name\nRow Create Club"),
-            "dry_run": True,
-        })
+        wizard = self.env["federation.import.clubs.wizard"].create(
+            {
+                "upload_file": self._create_csv_file("name\nRow Create Club"),
+                "dry_run": True,
+            }
+        )
 
         dry_run_calls = []
         errors = []
@@ -204,11 +218,15 @@ class TestImportTools(TransactionCase):
 
     def test_import_clubs_dry_run_exposes_mapping_guide(self):
         """Clubs dry-run should validate rows without creating records and show guidance."""
-        csv_content = "name;code;email;phone;city\nNew Club;NC001;new@example.com;123456;City1"
-        wizard = self.env["federation.import.clubs.wizard"].create({
-            "upload_file": self._create_csv_file(csv_content),
-            "dry_run": True,
-        })
+        csv_content = (
+            "name;code;email;phone;city\nNew Club;NC001;new@example.com;123456;City1"
+        )
+        wizard = self.env["federation.import.clubs.wizard"].create(
+            {
+                "upload_file": self._create_csv_file(csv_content),
+                "dry_run": True,
+            }
+        )
 
         self.assertIn("Recommended columns", wizard.mapping_guide)
 
@@ -218,15 +236,19 @@ class TestImportTools(TransactionCase):
         self.assertEqual(wizard.success_count, 1)
         self.assertEqual(wizard.error_count, 0)
         self.assertTrue(wizard.template_id)
-        self.assertFalse(self.env["federation.club"].search([("name", "=", "New Club")]))
+        self.assertFalse(
+            self.env["federation.club"].search([("name", "=", "New Club")])
+        )
 
     def test_import_governance_requires_approval_for_live_run(self):
         """Test that import governance requires approval for live run."""
         csv_content = "name;code;email;phone;city\nGoverned Club;GC001;gov@example.com;123456;City1"
-        wizard = self.env["federation.import.clubs.wizard"].create({
-            "upload_file": self._create_csv_file(csv_content),
-            "dry_run": True,
-        })
+        wizard = self.env["federation.import.clubs.wizard"].create(
+            {
+                "upload_file": self._create_csv_file(csv_content),
+                "dry_run": True,
+            }
+        )
 
         wizard.action_parse_and_import()
         wizard.action_request_approval()
@@ -245,26 +267,37 @@ class TestImportTools(TransactionCase):
         wizard.action_parse_and_import()
 
         self.assertEqual(wizard.governance_job_id.state, "completed")
-        self.assertEqual(wizard.governance_job_id.pre_import_record_count + 1, wizard.governance_job_id.post_import_record_count)
-        self.assertIn("Net new target records: 1", wizard.governance_job_id.verification_summary)
-        self.assertTrue(self.env["federation.club"].search([("code", "=", "GC001")], limit=1))
+        self.assertEqual(
+            wizard.governance_job_id.pre_import_record_count + 1,
+            wizard.governance_job_id.post_import_record_count,
+        )
+        self.assertIn(
+            "Net new target records: 1", wizard.governance_job_id.verification_summary
+        )
+        self.assertTrue(
+            self.env["federation.club"].search([("code", "=", "GC001")], limit=1)
+        )
 
     def test_import_governance_invalidates_approval_when_file_changes(self):
         """Test that import governance invalidates approval when file changes."""
         initial_csv = "name;code\nInitial Club;IC001"
-        wizard = self.env["federation.import.clubs.wizard"].create({
-            "upload_file": self._create_csv_file(initial_csv),
-            "dry_run": True,
-        })
+        wizard = self.env["federation.import.clubs.wizard"].create(
+            {
+                "upload_file": self._create_csv_file(initial_csv),
+                "dry_run": True,
+            }
+        )
 
         wizard.action_parse_and_import()
         wizard.action_request_approval()
         wizard.action_approve_import()
 
-        wizard.write({
-            "upload_file": self._create_csv_file("name;code\nChanged Club;CC001"),
-            "dry_run": False,
-        })
+        wizard.write(
+            {
+                "upload_file": self._create_csv_file("name;code\nChanged Club;CC001"),
+                "dry_run": False,
+            }
+        )
 
         with self.assertRaises(ValidationError):
             wizard.action_parse_and_import()
@@ -405,7 +438,9 @@ class TestImportTools(TransactionCase):
             "sports_federation_import_tools.federation_integration_contract_clubs_csv"
         )
         partner, _subscription = self._create_integration_partner(contract)
-        payload = self._create_csv_file("name;code\nIdempotent Club;IDC001").decode("utf-8")
+        payload = self._create_csv_file("name;code\nIdempotent Club;IDC001").decode(
+            "utf-8"
+        )
 
         delivery = self.env["federation.integration.delivery"].stage_partner_delivery(
             partner=partner,
@@ -434,8 +469,12 @@ class TestImportTools(TransactionCase):
             "sports_federation_import_tools.federation_integration_contract_clubs_csv"
         )
         partner, _subscription = self._create_integration_partner(contract)
-        first_payload = self._create_csv_file("name;code\nIdempotent Club;IDC001").decode("utf-8")
-        second_payload = self._create_csv_file("name;code\nDifferent Club;IDC002").decode("utf-8")
+        first_payload = self._create_csv_file(
+            "name;code\nIdempotent Club;IDC001"
+        ).decode("utf-8")
+        second_payload = self._create_csv_file(
+            "name;code\nDifferent Club;IDC002"
+        ).decode("utf-8")
 
         self.env["federation.integration.delivery"].stage_partner_delivery(
             partner=partner,
@@ -462,7 +501,9 @@ class TestImportTools(TransactionCase):
             "sports_federation_import_tools.federation_integration_contract_clubs_csv"
         )
         partner, _subscription = self._create_integration_partner(contract)
-        payload = self._create_csv_file("name;code\nProcessed Club;IDC003").decode("utf-8")
+        payload = self._create_csv_file("name;code\nProcessed Club;IDC003").decode(
+            "utf-8"
+        )
 
         delivery = self.env["federation.integration.delivery"].stage_partner_delivery(
             partner=partner,
@@ -496,7 +537,9 @@ class TestImportTools(TransactionCase):
             "sports_federation_import_tools.federation_integration_contract_clubs_csv"
         )
         partner, _subscription = self._create_integration_partner(contract)
-        payload = self._create_csv_file("name;code\nDelivery Club;DC001").decode("utf-8")
+        payload = self._create_csv_file("name;code\nDelivery Club;DC001").decode(
+            "utf-8"
+        )
         delivery = self.env["federation.integration.delivery"].stage_partner_delivery(
             partner=partner,
             contract=contract,
@@ -530,7 +573,9 @@ class TestImportTools(TransactionCase):
         self.assertEqual(delivery.state, "processed")
         self.assertEqual(delivery.governance_job_id.state, "completed")
         self.assertEqual(delivery.success_count, 1)
-        self.assertTrue(self.env["federation.club"].search([("code", "=", "DC001")], limit=1))
+        self.assertTrue(
+            self.env["federation.club"].search([("code", "=", "DC001")], limit=1)
+        )
 
     def test_inbound_delivery_rejects_disallowed_payload_extension(self):
         """Inbound staging should reject payloads outside the shared extension allowlist."""
@@ -544,7 +589,9 @@ class TestImportTools(TransactionCase):
                 partner=partner,
                 contract=contract,
                 filename="clubs.json",
-                payload_base64=self._create_csv_file("name;code\nStaged Club;SC001").decode("utf-8"),
+                payload_base64=self._create_csv_file(
+                    "name;code\nStaged Club;SC001"
+                ).decode("utf-8"),
             )
 
         self.assertIn("extensions", str(error.exception))
@@ -559,7 +606,9 @@ class TestImportTools(TransactionCase):
             partner=partner,
             contract=contract,
             filename="delivery-clubs.csv",
-            payload_base64=self._create_csv_file("name;code\nDelivery Club;DC001").decode("utf-8"),
+            payload_base64=self._create_csv_file(
+                "name;code\nDelivery Club;DC001"
+            ).decode("utf-8"),
         )
 
         delivery.action_mark_failed("Preview checksum failed")
@@ -578,19 +627,25 @@ class TestImportTools(TransactionCase):
             partner=partner,
             contract=contract,
             filename="retained-clubs.csv",
-            payload_base64=self._create_csv_file("name;code\nRetained Club;RC001").decode("utf-8"),
+            payload_base64=self._create_csv_file(
+                "name;code\nRetained Club;RC001"
+            ).decode("utf-8"),
         )
         attachment = delivery.attachment_id
 
         old_processed_on = fields.Datetime.to_string(
             fields.Datetime.to_datetime(fields.Datetime.now()) - timedelta(days=200)
         )
-        delivery.write({
-            "state": "processed",
-            "processed_on": old_processed_on,
-        })
+        delivery.write(
+            {
+                "state": "processed",
+                "processed_on": old_processed_on,
+            }
+        )
 
-        deleted = self.env["federation.integration.delivery"]._purge_retained_deliveries()
+        deleted = self.env[
+            "federation.integration.delivery"
+        ]._purge_retained_deliveries()
 
         self.assertEqual(deleted, 1)
         self.assertFalse(delivery.exists())
@@ -628,14 +683,18 @@ class TestImportTools(TransactionCase):
         with patch.object(
             type(scanner),
             "scan_upload",
-            side_effect=ValidationError("Uploaded files failed the federation malware scan."),
+            side_effect=ValidationError(
+                "Uploaded files failed the federation malware scan."
+            ),
         ):
             with self.assertRaises(ValidationError) as error:
                 self.env["federation.integration.delivery"].stage_partner_delivery(
                     partner=partner,
                     contract=contract,
                     filename="clubs.csv",
-                    payload_base64=self._create_csv_file("name;code\nBlocked Club;BC001").decode("utf-8"),
+                    payload_base64=self._create_csv_file(
+                        "name;code\nBlocked Club;BC001"
+                    ).decode("utf-8"),
                 )
 
         self.assertIn("malware scan", str(error.exception))
@@ -646,10 +705,14 @@ class TestImportTools(TransactionCase):
             "club_code,team_name,code,category,gender,email,phone\n"
             "TC001,Reserve Team,TEAM002,youth,mixed,reserve@example.com,555"
         )
-        wizard = self._approve_wizard_import(self.env["federation.import.teams.wizard"].create({
-            "upload_file": self._create_csv_file(csv_content),
-            "dry_run": False,
-        }))
+        wizard = self._approve_wizard_import(
+            self.env["federation.import.teams.wizard"].create(
+                {
+                    "upload_file": self._create_csv_file(csv_content),
+                    "dry_run": False,
+                }
+            )
+        )
 
         wizard.action_parse_and_import()
 
@@ -666,10 +729,14 @@ class TestImportTools(TransactionCase):
     def test_import_players_splits_legacy_name_and_sets_club(self):
         """Players import should translate legacy full-name CSVs into first and last names."""
         csv_content = "name,birth_date,club_code,gender,state\nAlice Example,2005-04-06,TC001,female,active"
-        wizard = self._approve_wizard_import(self.env["federation.import.players.wizard"].create({
-            "upload_file": self._create_csv_file(csv_content),
-            "dry_run": False,
-        }))
+        wizard = self._approve_wizard_import(
+            self.env["federation.import.players.wizard"].create(
+                {
+                    "upload_file": self._create_csv_file(csv_content),
+                    "dry_run": False,
+                }
+            )
+        )
 
         wizard.action_parse_and_import()
 
@@ -677,10 +744,13 @@ class TestImportTools(TransactionCase):
         self.assertEqual(wizard.success_count, 1)
         self.assertEqual(wizard.error_count, 0)
 
-        player = self.env["federation.player"].search([
-            ("first_name", "=", "Alice"),
-            ("last_name", "=", "Example"),
-        ], limit=1)
+        player = self.env["federation.player"].search(
+            [
+                ("first_name", "=", "Alice"),
+                ("last_name", "=", "Example"),
+            ],
+            limit=1,
+        )
         self.assertTrue(player)
         self.assertEqual(player.club_id, self.club)
         self.assertEqual(player.gender, "female")
@@ -692,10 +762,12 @@ class TestImportTools(TransactionCase):
             "Season 2026,S2026,2026-01-01,2026-12-31,open\n"
             "Season 2027,S2027,2026/01/01,2026-12-31,open"
         )
-        wizard = self.env["federation.import.seasons.wizard"].create({
-            "upload_file": self._create_csv_file(csv_content),
-            "dry_run": False,
-        })
+        wizard = self.env["federation.import.seasons.wizard"].create(
+            {
+                "upload_file": self._create_csv_file(csv_content),
+                "dry_run": False,
+            }
+        )
 
         self._approve_wizard_import(wizard)
 
@@ -713,18 +785,24 @@ class TestImportTools(TransactionCase):
             "Season 2028,S2028,2028-01-01,2028-12-31,open\n"
             "Season 2029,S2029,2028/01/01,2028-12-31,open"
         )
-        wizard = self.env["federation.import.seasons.wizard"].create({
-            "upload_file": self._create_csv_file(csv_content),
-            "dry_run": False,
-        })
+        wizard = self.env["federation.import.seasons.wizard"].create(
+            {
+                "upload_file": self._create_csv_file(csv_content),
+                "dry_run": False,
+            }
+        )
 
         self._approve_wizard_import(wizard)
         wizard.action_parse_and_import()
 
         self.assertEqual(wizard.governance_job_id.state, "completed_with_errors")
         self.assertEqual(wizard.governance_job_id.failure_category, "data_validation")
-        self.assertIn("row-level validation errors", wizard.governance_job_id.operator_message)
-        self.assertTrue(self.env["federation.season"].search([("code", "=", "S2028")], limit=1))
+        self.assertIn(
+            "row-level validation errors", wizard.governance_job_id.operator_message
+        )
+        self.assertTrue(
+            self.env["federation.season"].search([("code", "=", "S2028")], limit=1)
+        )
 
     def test_import_seasons_supports_planning_targets(self):
         """Test that import seasons supports planning targets."""
@@ -732,10 +810,12 @@ class TestImportTools(TransactionCase):
             "name,code,date_start,date_end,state,target_club_count,target_team_count,target_tournament_count,target_participant_count\n"
             "Planning Season,SPLAN,2026-01-01,2026-12-31,draft,8,18,4,32"
         )
-        wizard = self.env["federation.import.seasons.wizard"].create({
-            "upload_file": self._create_csv_file(csv_content),
-            "dry_run": False,
-        })
+        wizard = self.env["federation.import.seasons.wizard"].create(
+            {
+                "upload_file": self._create_csv_file(csv_content),
+                "dry_run": False,
+            }
+        )
 
         self._approve_wizard_import(wizard)
         wizard.action_parse_and_import()
@@ -749,44 +829,62 @@ class TestImportTools(TransactionCase):
 
     def test_import_tournament_participants_duplicate_skip(self):
         """Tournament participant import should block duplicate rows using the shared backend reason."""
-        self.env["federation.tournament.participant"].create({
-            "tournament_id": self.tournament.id,
-            "team_id": self.team.id,
-        })
+        self.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "team_id": self.team.id,
+            }
+        )
 
-        csv_content = f"tournament_code,team_code\n{self.tournament.code},{self.team.code}"
-        wizard = self._approve_wizard_import(self.env["federation.import.tournament.participants.wizard"].create({
-            "upload_file": self._create_csv_file(csv_content),
-            "dry_run": False,
-        }))
+        csv_content = (
+            f"tournament_code,team_code\n{self.tournament.code},{self.team.code}"
+        )
+        wizard = self._approve_wizard_import(
+            self.env["federation.import.tournament.participants.wizard"].create(
+                {
+                    "upload_file": self._create_csv_file(csv_content),
+                    "dry_run": False,
+                }
+            )
+        )
 
         wizard.action_parse_and_import()
 
         self.assertEqual(wizard.line_count, 1)
         self.assertEqual(wizard.success_count, 0)
         self.assertEqual(wizard.error_count, 1)
-        self.assertIn("A participant record already exists for this team.", wizard.result_message)
+        self.assertIn(
+            "A participant record already exists for this team.", wizard.result_message
+        )
         self.assertIn("duplicate_entry", wizard.result_message)
 
     def test_import_tournament_participants_accepts_codes_and_seed(self):
         """Tournament participant import should resolve references by code and persist seed."""
-        tournament = self.env["federation.tournament"].create({
-            "name": "Spring Invitational",
-            "code": "SPRING2026",
-            "date_start": "2026-03-01",
-            "date_end": "2026-03-02",
-        })
-        team = self.env["federation.team"].create({
-            "name": "Seeded Team",
-            "code": "TEAM003",
-            "club_id": self.club.id,
-        })
+        tournament = self.env["federation.tournament"].create(
+            {
+                "name": "Spring Invitational",
+                "code": "SPRING2026",
+                "date_start": "2026-03-01",
+                "date_end": "2026-03-02",
+            }
+        )
+        team = self.env["federation.team"].create(
+            {
+                "name": "Seeded Team",
+                "code": "TEAM003",
+                "club_id": self.club.id,
+            }
+        )
 
         csv_content = f"tournament_code,team_code,seed\n{tournament.code},{team.code},4"
-        wizard = self._approve_wizard_import(self.env["federation.import.tournament.participants.wizard"].create({
-            "upload_file": self._create_csv_file(csv_content),
-            "dry_run": False,
-        }))
+        wizard = self._approve_wizard_import(
+            self.env["federation.import.tournament.participants.wizard"].create(
+                {
+                    "upload_file": self._create_csv_file(csv_content),
+                    "dry_run": False,
+                }
+            )
+        )
 
         wizard.action_parse_and_import()
 
@@ -794,9 +892,12 @@ class TestImportTools(TransactionCase):
         self.assertEqual(wizard.success_count, 1)
         self.assertEqual(wizard.error_count, 0)
 
-        participant = self.env["federation.tournament.participant"].search([
-            ("tournament_id", "=", tournament.id),
-            ("team_id", "=", team.id),
-        ], limit=1)
+        participant = self.env["federation.tournament.participant"].search(
+            [
+                ("tournament_id", "=", tournament.id),
+                ("team_id", "=", team.id),
+            ],
+            limit=1,
+        )
         self.assertTrue(participant)
         self.assertEqual(participant.seed, 4)

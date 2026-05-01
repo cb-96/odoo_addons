@@ -7,7 +7,15 @@ class FederationPortalPrivilege(models.AbstractModel):
     _description = "Federation Portal Privilege Boundary"
 
     @api.model
-    def _log_portal_audit(self, event_type, description, records, user=None, action_name=False, changed_fields=False):
+    def _log_portal_audit(
+        self,
+        event_type,
+        description,
+        records,
+        user=None,
+        action_name=False,
+        changed_fields=False,
+    ):
         """Capture one audit row per portal-managed target record."""
         audit_model = self.env.get("federation.audit.event")
         if audit_model is None:
@@ -79,7 +87,9 @@ class FederationPortalPrivilege(models.AbstractModel):
         return self.elevate(model_env, user=user).search(domain, **kwargs)
 
     @api.model
-    def portal_search_by_id(self, model_env, record_id, domain=None, user=None, **kwargs):
+    def portal_search_by_id(
+        self, model_env, record_id, domain=None, user=None, **kwargs
+    ):
         """Resolve one record id only when it matches the expected portal domain."""
         domain = list(domain or [])
         domain.append(("id", "=", record_id))
@@ -98,7 +108,9 @@ class FederationPortalPrivilege(models.AbstractModel):
             raise AccessError(access_message)
 
         privileged_records = self.elevate(records, user=user)
-        allowed_count = privileged_records.search_count(list(domain) + [("id", "in", records.ids)])
+        allowed_count = privileged_records.search_count(
+            list(domain) + [("id", "in", records.ids)]
+        )
         if allowed_count != len(records):
             raise AccessError(access_message)
         return privileged_records

@@ -36,7 +36,9 @@ class FederationRequestRateLimit(models.Model):
     @api.model
     def _get_window_start(self, now, window_seconds):
         epoch = datetime(1970, 1, 1)
-        window_epoch = int((now - epoch).total_seconds() // window_seconds) * window_seconds
+        window_epoch = (
+            int((now - epoch).total_seconds() // window_seconds) * window_seconds
+        )
         return epoch + timedelta(seconds=window_epoch)
 
     @api.model
@@ -63,7 +65,9 @@ class FederationRequestRateLimit(models.Model):
             )
         )
         if limit < 1 or window_seconds < 1:
-            raise ValidationError("Rate-limit policies must use positive limits and windows.")
+            raise ValidationError(
+                "Rate-limit policies must use positive limits and windows."
+            )
         return {
             "limit": limit,
             "window_seconds": window_seconds,
@@ -86,10 +90,12 @@ class FederationRequestRateLimit(models.Model):
         )
         if bucket:
             hit_count = bucket.hit_count + 1
-            bucket.write({
-                "hit_count": hit_count,
-                "last_seen": now,
-            })
+            bucket.write(
+                {
+                    "hit_count": hit_count,
+                    "last_seen": now,
+                }
+            )
         else:
             hit_count = 1
             bucket = self.create(

@@ -40,7 +40,9 @@ class FederationTournamentParticipant(models.Model):
             assessment = record._get_roster_assessment()
             record.ready_for_confirmation = not bool(assessment["blocking_issues"])
             record.roster_deadline_date = assessment["deadline_date"] or False
-            record.readiness_roster_id = assessment["roster"].id if assessment["roster"] else False
+            record.readiness_roster_id = (
+                assessment["roster"].id if assessment["roster"] else False
+            )
             record.confirmation_feedback = assessment["feedback"]
 
     def _get_readiness_roster(self):
@@ -98,7 +100,9 @@ class FederationTournamentParticipant(models.Model):
         for record in self:
             assessment = record._get_roster_assessment()
             if assessment["blocking_issues"]:
-                feedback = assessment["feedback"] or "; ".join(assessment["blocking_issues"])
+                feedback = assessment["feedback"] or "; ".join(
+                    assessment["blocking_issues"]
+                )
                 errors.append(
                     _("%(team)s: %(feedback)s")
                     % {

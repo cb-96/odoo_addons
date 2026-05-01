@@ -26,7 +26,7 @@ class FederationWorkspacePortal(FederationPortalBase):
             step=step,
         )
         values = {
-            "workspace_entries": entries[pager["offset"]:pager["offset"] + step],
+            "workspace_entries": entries[pager["offset"] : pager["offset"] + step],
             "pager": pager,
             "page_name": "my_tournament_workspaces",
             "has_workspace_access": Tournament._portal_has_workspace_access(
@@ -46,7 +46,9 @@ class FederationWorkspacePortal(FederationPortalBase):
     )
     def portal_my_tournament_workspace_detail(self, tournament_id, team_id, **kw):
         """Render a single tournament workspace entry."""
-        workspace_entry = request.env["federation.tournament"]._portal_get_workspace_entry_for_user(
+        workspace_entry = request.env[
+            "federation.tournament"
+        ]._portal_get_workspace_entry_for_user(
             tournament_id,
             team_id,
             user=request.env.user,

@@ -37,7 +37,9 @@ class FederationImportWizardMixin(models.AbstractModel):
         string="Contract Version",
         readonly=True,
     )
-    mapping_guide = fields.Text(string="Column Guide", compute="_compute_mapping_guide", readonly=True)
+    mapping_guide = fields.Text(
+        string="Column Guide", compute="_compute_mapping_guide", readonly=True
+    )
     result_message = fields.Text(string="Result", readonly=True)
     verification_summary = fields.Text(
         related="governance_job_id.verification_summary",

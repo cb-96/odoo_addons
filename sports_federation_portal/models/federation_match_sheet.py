@@ -62,7 +62,11 @@ class FederationMatchSheet(models.Model):
         club_scope = user.portal_club_scope_ids
         team_scope = user.portal_team_scope_ids
         if team_scope and club_scope:
-            return ["|", ("team_id", "in", team_scope.ids), ("team_id.club_id", "in", club_scope.ids)]
+            return [
+                "|",
+                ("team_id", "in", team_scope.ids),
+                ("team_id.club_id", "in", club_scope.ids),
+            ]
         if team_scope:
             return [("team_id", "in", team_scope.ids)]
         if club_scope:
@@ -89,7 +93,9 @@ class FederationMatchSheet(models.Model):
         self._portal_assert_review_access(user=user)
         locked = self.filtered(lambda sheet: sheet.state == "locked")
         if locked:
-            raise ValidationError(_("Locked match sheets cannot be updated from the portal."))
+            raise ValidationError(
+                _("Locked match sheets cannot be updated from the portal.")
+            )
         values = values or {}
         prepared = {}
 
@@ -98,7 +104,11 @@ class FederationMatchSheet(models.Model):
             raw = values.get("coach_id")
             if raw:
                 try:
-                    coach = self.env["federation.club.representative"].sudo().browse(int(raw))
+                    coach = (
+                        self.env["federation.club.representative"]
+                        .sudo()
+                        .browse(int(raw))
+                    )
                 except (ValueError, TypeError):
                     coach = self.env["federation.club.representative"].browse()
                 if coach.exists():
@@ -109,7 +119,9 @@ class FederationMatchSheet(models.Model):
             else:
                 prepared["coach_id"] = False
                 if "coach_name" in values:
-                    prepared["coach_name"] = (values.get("coach_name") or "").strip() or False
+                    prepared["coach_name"] = (
+                        values.get("coach_name") or ""
+                    ).strip() or False
         elif "coach_name" in values:
             prepared["coach_name"] = (values.get("coach_name") or "").strip() or False
 
@@ -118,7 +130,11 @@ class FederationMatchSheet(models.Model):
             raw = values.get("manager_id")
             if raw:
                 try:
-                    manager = self.env["federation.club.representative"].sudo().browse(int(raw))
+                    manager = (
+                        self.env["federation.club.representative"]
+                        .sudo()
+                        .browse(int(raw))
+                    )
                 except (ValueError, TypeError):
                     manager = self.env["federation.club.representative"].browse()
                 if manager.exists():
@@ -129,12 +145,35 @@ class FederationMatchSheet(models.Model):
             else:
                 prepared["manager_id"] = False
                 if "manager_name" in values:
-                    prepared["manager_name"] = (values.get("manager_name") or "").strip() or False
+                    prepared["manager_name"] = (
+                        values.get("manager_name") or ""
+                    ).strip() or False
         elif "manager_name" in values:
-            prepared["manager_name"] = (values.get("manager_name") or "").strip() or False
+            prepared["manager_name"] = (
+                values.get("manager_name") or ""
+            ).strip() or False
 
         if "notes" in values:
             prepared["notes"] = (values.get("notes") or "").strip() or False
+
+        # roster_id: validate the roster belongs to the sheet's team
+        if "roster_id" in values:
+            raw = values.get("roster_id")
+            if raw:
+                try:
+                    roster = (
+                        self.env["federation.team.roster"].sudo().browse(int(raw))
+                    )
+                except (ValueError, TypeError):
+                    roster = self.env["federation.team.roster"].browse()
+                if roster.exists():
+                    for rec in self:
+                        if roster.team_id == rec.team_id:
+                            prepared["roster_id"] = roster.id
+                            break
+            else:
+                prepared["roster_id"] = False
+
         if prepared:
             self.env["federation.portal.privilege"].portal_write(
                 self,
@@ -166,11 +205,17 @@ class FederationMatchSheet(models.Model):
                 )
 
             valid_player_ids = set(sheet.roster_id.line_ids.mapped("player_id").ids)
-            submitted = {d["player_id"]: d for d in squad_data if d["player_id"] in valid_player_ids}
+            submitted = {
+                d["player_id"]: d
+                for d in squad_data
+                if d["player_id"] in valid_player_ids
+            }
             existing_lines = {line.player_id.id: line for line in sheet.line_ids}
 
             # Remove lines whose players were unchecked
-            to_remove = sheet.line_ids.filtered(lambda l: l.player_id.id not in submitted)
+            to_remove = sheet.line_ids.filtered(
+                lambda ln: ln.player_id.id not in submitted
+            )
             if to_remove:
                 Privilege.portal_call(to_remove, "unlink", user=user)
 
@@ -181,7 +226,7 @@ class FederationMatchSheet(models.Model):
                 is_captain = bool(data.get("is_captain"))
                 jersey_number = data.get("jersey_number") or False
                 roster_line = sheet.roster_id.line_ids.filtered(
-                    lambda l, pid=player_id: l.player_id.id == pid
+                    lambda ln, pid=player_id: ln.player_id.id == pid
                 )[:1]
 
                 if player_id in existing_lines:
@@ -217,7 +262,9 @@ class FederationMatchSheet(models.Model):
         self._portal_assert_review_access(user=user)
         drafts = self.filtered(lambda sheet: sheet.state == "draft")
         if not drafts:
-            raise ValidationError(_("Only draft match sheets can be submitted from the portal."))
+            raise ValidationError(
+                _("Only draft match sheets can be submitted from the portal.")
+            )
         return self.env["federation.portal.privilege"].portal_call(
             drafts,
             "action_submit",

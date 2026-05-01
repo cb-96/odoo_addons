@@ -1,7 +1,9 @@
 import re
 
 from odoo import SUPERUSER_ID, api
-from odoo.addons.sports_federation_base.tests.route_inventory import load_route_inventory
+from odoo.addons.sports_federation_base.tests.route_inventory import (
+    load_route_inventory,
+)
 from odoo.tests.common import HttpCase, tagged
 
 
@@ -74,15 +76,17 @@ class TestPublicSiteHttpSmoke(HttpCase):
                     "public_slug": "hidden-public-smoke-season",
                 }
             )
-            official_user = env["res.users"].with_context(
-                no_reset_password=True
-            ).create(
-                {
-                    "name": "Wrong Role Registration Smoke User",
-                    "login": "wrong.role.registration@example.com",
-                    "email": "wrong.role.registration@example.com",
-                    "group_ids": [(6, 0, [portal_official_group.id])],
-                }
+            official_user = (
+                env["res.users"]
+                .with_context(no_reset_password=True)
+                .create(
+                    {
+                        "name": "Wrong Role Registration Smoke User",
+                        "login": "wrong.role.registration@example.com",
+                        "email": "wrong.role.registration@example.com",
+                        "group_ids": [(6, 0, [portal_official_group.id])],
+                    }
+                )
             )
             club = env["federation.club"].create(
                 {
@@ -90,15 +94,17 @@ class TestPublicSiteHttpSmoke(HttpCase):
                     "code": "PRSC",
                 }
             )
-            club_user = env["res.users"].with_context(
-                no_reset_password=True
-            ).create(
-                {
-                    "name": "Public Registration Club User",
-                    "login": "public.registration.club@example.com",
-                    "email": "public.registration.club@example.com",
-                    "group_ids": [(6, 0, [portal_club_group.id])],
-                }
+            club_user = (
+                env["res.users"]
+                .with_context(no_reset_password=True)
+                .create(
+                    {
+                        "name": "Public Registration Club User",
+                        "login": "public.registration.club@example.com",
+                        "email": "public.registration.club@example.com",
+                        "group_ids": [(6, 0, [portal_club_group.id])],
+                    }
+                )
             )
             env["federation.club.representative"].create(
                 {
@@ -197,7 +203,9 @@ class TestPublicSiteHttpSmoke(HttpCase):
         cls.club_user = cls.env["res.users"].browse(club_user.id)
         cls.eligible_team = cls.env["federation.team"].browse(eligible_team.id)
         cls.hidden_team = cls.env["federation.team"].browse(hidden_team.id)
-        cls.full_tournament = cls.env["federation.tournament"].browse(full_tournament.id)
+        cls.full_tournament = cls.env["federation.tournament"].browse(
+            full_tournament.id
+        )
         cls.full_team = cls.env["federation.team"].browse(full_team.id)
         cls.occupied_team = cls.env["federation.team"].browse(occupied_team.id)
 
@@ -300,7 +308,9 @@ class TestPublicSiteHttpSmoke(HttpCase):
             self.assertIn(form_response.status_code, (301, 302, 303, 307, 308))
             self.assertTrue(form_response.headers["Location"].endswith("/tournaments"))
             self.assertIn(submit_response.status_code, (301, 302, 303, 307, 308))
-            self.assertTrue(submit_response.headers["Location"].endswith("/tournaments"))
+            self.assertTrue(
+                submit_response.headers["Location"].endswith("/tournaments")
+            )
 
         after_count = Registration.search_count(
             [("tournament_id", "=", self.unpublished_tournament.id)]

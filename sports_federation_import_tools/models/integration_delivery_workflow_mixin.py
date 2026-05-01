@@ -1,5 +1,7 @@
 from odoo import fields, models
-from odoo.addons.sports_federation_base.models.failure_feedback import build_failure_feedback
+from odoo.addons.sports_federation_base.models.failure_feedback import (
+    build_failure_feedback,
+)
 from odoo.addons.sports_federation_import_tools.workflow_states import (
     INBOUND_DELIVERY_STATE_APPROVED,
     INBOUND_DELIVERY_STATE_AWAITING_APPROVAL,
@@ -18,16 +20,22 @@ class FederationIntegrationDeliveryWorkflowMixin(models.AbstractModel):
         """Open the downstream import wizard for the staged payload."""
         self.ensure_one()
         if self.state == INBOUND_DELIVERY_STATE_CANCELLED:
-            raise ValidationError("Cancelled deliveries cannot be reopened in the import pipeline.")
+            raise ValidationError(
+                "Cancelled deliveries cannot be reopened in the import pipeline."
+            )
         if not self.attachment_id or not self.attachment_id.datas:
-            raise ValidationError("The staged delivery does not have an attached payload.")
+            raise ValidationError(
+                "The staged delivery does not have an attached payload."
+            )
         if not self.import_template_id:
             raise ValidationError("This delivery is not linked to an import template.")
 
         wizard_model = self.import_template_id.wizard_model
         wizard_env = self.env.get(wizard_model)
         if wizard_env is None:
-            raise ValidationError("The import wizard for this delivery is not available.")
+            raise ValidationError(
+                "The import wizard for this delivery is not available."
+            )
 
         wizard = wizard_env.create(
             {
@@ -111,7 +119,8 @@ class FederationIntegrationDeliveryWorkflowMixin(models.AbstractModel):
                 "error_count": job.error_count,
                 "failure_category": job.failure_category,
                 "operator_message": job.operator_message,
-                "result_message": job.execution_result_message or job.preview_result_message,
+                "result_message": job.execution_result_message
+                or job.preview_result_message,
                 "verification_summary": job.verification_summary,
             }
         )

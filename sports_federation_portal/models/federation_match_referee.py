@@ -1,5 +1,5 @@
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import ValidationError
 
 
 class FederationMatchReferee(models.Model):
@@ -42,7 +42,9 @@ class FederationMatchReferee(models.Model):
         invalid = self.filtered(lambda assignment: assignment.state != "draft")
         if invalid:
             raise ValidationError(
-                _("Only newly assigned officiating requests can be confirmed from the portal.")
+                _(
+                    "Only newly assigned officiating requests can be confirmed from the portal."
+                )
             )
         prepared_note = (response_note or "").strip()
         if prepared_note:
@@ -64,7 +66,9 @@ class FederationMatchReferee(models.Model):
         invalid = self.filtered(lambda assignment: assignment.state != "draft")
         if invalid:
             raise ValidationError(
-                _("Only newly assigned officiating requests can be declined from the portal.")
+                _(
+                    "Only newly assigned officiating requests can be declined from the portal."
+                )
             )
         prepared_note = (response_note or "").strip()
         if not prepared_note:

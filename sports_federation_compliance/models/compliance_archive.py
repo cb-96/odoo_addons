@@ -21,7 +21,9 @@ class FederationComplianceCheckArchive(models.Model):
         ondelete="set null",
         index=True,
     )
-    archived_on = fields.Datetime(string="Archived On", required=True, default=fields.Datetime.now, index=True)
+    archived_on = fields.Datetime(
+        string="Archived On", required=True, default=fields.Datetime.now, index=True
+    )
     checked_on = fields.Datetime(string="Checked On")
     target_model = fields.Char(string="Target Model", required=True, index=True)
     target_res_id = fields.Integer(string="Target Record ID", required=True, index=True)
@@ -37,7 +39,9 @@ class FederationComplianceCheckArchive(models.Model):
         string="Submission",
         ondelete="set null",
     )
-    status = fields.Selection(selection=STATUS_SELECTION, string="Status", required=True, index=True)
+    status = fields.Selection(
+        selection=STATUS_SELECTION, string="Status", required=True, index=True
+    )
     note = fields.Char(string="Note")
 
     @api.depends("target_display", "status", "archived_on")
@@ -46,4 +50,8 @@ class FederationComplianceCheckArchive(models.Model):
         labels = dict(self._fields["status"].selection)
         for record in self:
             status_label = labels.get(record.status, record.status or "Archive")
-            record.name = f"{record.target_display} - {status_label} - {record.archived_on}" if record.archived_on else f"{record.target_display} - {status_label}"
+            record.name = (
+                f"{record.target_display} - {status_label} - {record.archived_on}"
+                if record.archived_on
+                else f"{record.target_display} - {status_label}"
+            )

@@ -2,13 +2,16 @@ import logging
 from datetime import datetime, timedelta
 
 from odoo import fields, models, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError  # noqa: F401 — kept for import compatibility
+
+from odoo.addons.sports_federation_tournament.workflow_states import MATCH_STATE_DRAFT
 
 _logger = logging.getLogger(__name__)
 
 
 class RoundRobinService(models.AbstractModel):
     _name = "federation.round.robin.service"
+    _inherit = "federation.base.schedule.service"
     _description = "Round Robin Schedule Generation Service"
 
     def generate(self, tournament, stage, participants, options):
@@ -45,42 +48,23 @@ class RoundRobinService(models.AbstractModel):
 
         repeats = int(options.get("rounds_count", 1) or 1)
         rounds = []
-        for _ in range(repeats):
+        for _r in range(repeats):
             rounds.extend(base_rounds)
 
         matches = self._create_matches(tournament, stage, rounds, options)
 
         _logger.info(
             "Generated %d round-robin matches for tournament %s, stage %s",
-            len(matches), tournament.name, stage.name
+            len(matches),
+            tournament.name,
+            stage.name,
         )
         return matches
 
     def _validate_inputs(self, tournament, stage, participants, options):
         """Validate inputs."""
-        if tournament.state not in ("open", "in_progress"):
-            raise UserError(_("Tournament must be Open or In Progress to generate matches."))
-        if len(participants) < 2:
-            raise UserError(_("At least 2 participants are required for round-robin."))
-
-    def _check_existing_matches(self, stage, group):
-        """Validate existing matches."""
-        domain = [("stage_id", "=", stage.id)]
-        if group:
-            domain.append(("group_id", "=", group.id))
-        existing = self.env["federation.match"].search(domain)
-        if existing:
-            raise UserError(_(
-                "Existing matches found in this stage/group. "
-                "Enable overwrite mode to replace them."
-            ))
-
-    def _clear_existing_matches(self, stage, group):
-        """Clear existing matches."""
-        domain = [("stage_id", "=", stage.id)]
-        if group:
-            domain.append(("group_id", "=", group.id))
-        self.env["federation.match"].search(domain).unlink()
+        self._validate_tournament_state(tournament)
+        self._validate_participant_count(participants)
 
     def _generate_pairings(self, teams, double_round):
         """
@@ -153,7 +137,9 @@ class RoundRobinService(models.AbstractModel):
 
         male = [entry for entry in entries if entry["gender"] == "male"]
         female = [entry for entry in entries if entry["gender"] == "female"]
-        mixed = [entry for entry in entries if entry["gender"] not in ("male", "female")]
+        mixed = [
+            entry for entry in entries if entry["gender"] not in ("male", "female")
+        ]
 
         ordered = []
         last = None
@@ -173,91 +159,24 @@ class RoundRobinService(models.AbstractModel):
         ordered.extend(mixed)
         return ordered
 
-    def _get_round_records(
-        self,
-        stage,
-        rounds,
-        group=False,
-        start_dt=False,
-        schedule_by_round=False,
-        round_interval_hours=24,
-        venue_rec=False,
-        round_mode="auto",
-        requested_rounds=0,
-    ):
-        """Return round records based on round mode.
+    def _get_round_records(self, stage, group=False):
+        """Return pre-defined gameday records for the stage, ordered by sequence.
 
-        Args:
-            round_mode: 'existing' (use only existing), 'auto' (create missing), 'explicit' (create specific count)
-            requested_rounds: number of rounds to create in explicit mode
+        Matches are distributed across these gamedays by cycling when there are
+        more algorithm rounds than available gamedays.
+
+        Raises:
+            UserError: if no gamedays exist for the stage/group.
         """
-        Round = self.env["federation.tournament.round"]
-        existing_rounds = {
-            round_record.sequence: round_record
-            for round_record in self._get_stage_rounds(stage, group=group)
-        }
-
-        # Determine how many rounds we can work with
-        if round_mode == "existing":
-            # Only use existing gamedays (rounds), but generate ALL matches
-            available_rounds = sorted(existing_rounds.keys())
-            if not available_rounds:
-                raise UserError(_("No existing rounds found. Use 'Auto-Create Missing' or 'Create Specific' mode."))
-            # Return existing gamedays - ALL matches will be distributed across them
-            round_records = [existing_rounds[seq] for seq in available_rounds]
-            # Bypass the normal round creation - just return gamedays
-            return round_records
-        elif round_mode == "explicit":
-            # Create exactly requested_rounds; must be at least the minimum needed
-            if requested_rounds < len(rounds):
-                raise UserError(_(
-                    "Requested %(requested)d round(s) is fewer than the minimum %(needed)d "
-                    "required for %(count)d participants. Please request at least %(needed)d rounds."
-                ) % {"requested": requested_rounds, "needed": len(rounds), "count": len(rounds) + 1})
-            target_rounds = requested_rounds
-        else:
-            # Auto mode: create as many as needed (original behavior)
-            target_rounds = len(rounds)
-
-        round_records = []
-        for round_number in range(1, target_rounds + 1):
-            round_vals = {
-                "name": _("Round %(number)s") % {"number": round_number},
-            }
-            if schedule_by_round and start_dt:
-                round_vals["round_date"] = (
-                    fields.Datetime.to_datetime(start_dt)
-                    + timedelta(hours=(round_number - 1) * round_interval_hours)
-                ).date()
-            if venue_rec and "venue_id" in Round._fields:
-                round_vals["venue_id"] = venue_rec.id
-
-            round_record = existing_rounds.get(round_number)
-            if round_record:
-                # Update existing round with new values if empty
-                write_vals = {}
-                if not round_record.name and round_vals.get("name"):
-                    write_vals["name"] = round_vals["name"]
-                for field_name in ("round_date", "venue_id"):
-                    if field_name in round_vals and field_name in round_record._fields and not round_record[field_name]:
-                        write_vals[field_name] = round_vals[field_name]
-                if write_vals:
-                    round_record.write(write_vals)
-                round_records.append(round_record)
-            else:
-                # Create new round
-                create_vals = {
-                    "stage_id": stage.id,
-                    "group_id": group.id if group else False,
-                    "sequence": round_number,
-                    "name": round_vals.get("name", _("Round %(number)s") % {"number": round_number}),
-                }
-                if schedule_by_round and start_dt:
-                    create_vals["round_date"] = round_vals["round_date"]
-                if venue_rec and "venue_id" in Round._fields:
-                    create_vals["venue_id"] = venue_rec.id
-                round_records.append(Round.create(create_vals))
-        return round_records
+        existing = self._get_stage_rounds(stage, group=group)
+        if not existing:
+            raise UserError(
+                _(
+                    "No gamedays defined for this stage. "
+                    "Create at least one gameday before generating matches."
+                )
+            )
+        return list(existing)
 
     def _get_round_base_datetime(
         self,
@@ -296,8 +215,6 @@ class RoundRobinService(models.AbstractModel):
         venue = options.get("venue", "")
         group = options.get("group")
         schedule_by_round = bool(options.get("schedule_by_round"))
-        round_mode = options.get("round_mode", "auto")
-
         created = []
 
         # Try to resolve a venue record if a venue name was provided
@@ -309,25 +226,15 @@ class RoundRobinService(models.AbstractModel):
         if not round_interval:
             round_interval = interval or 24
 
-        round_records = self._get_round_records(
-            stage,
-            rounds,
-            group=group,
-            start_dt=start_dt,
-            schedule_by_round=schedule_by_round,
-            round_interval_hours=round_interval,
-            venue_rec=venue_rec,
-            round_mode=options.get("round_mode", "auto"),
-            requested_rounds=options.get("requested_rounds", 0),
-        )
+        round_records = self._get_round_records(stage, group=group)
 
         sequential_index = 0
 
-        # If we have fewer round records than round sets, cycle through them
-        if len(round_records) < len(rounds) and round_mode == "existing":
+        if len(round_records) < len(rounds):
             _logger.info(
-                "Spreading %d match sets across %d existing rounds",
-                len(rounds), len(round_records)
+                "Spreading %d algorithm rounds across %d gamedays",
+                len(rounds),
+                len(round_records),
             )
 
         for round_number, round_pairs in enumerate(rounds, start=1):
@@ -349,22 +256,32 @@ class RoundRobinService(models.AbstractModel):
                     "home_team_id": entry["home"].id,
                     "away_team_id": entry["away"].id,
                     "round_id": round_record.id,
-                    "round_number": round_record.sequence if round_record.sequence else round_number,
-                    "state": "draft",
+                    "round_number": (
+                        round_record.sequence if round_record.sequence else round_number
+                    ),
+                    "state": MATCH_STATE_DRAFT,
                 }
                 if group:
                     vals["group_id"] = group.id
 
                 if venue_rec and Venue is not None:
-                    vals["venue_id"] = round_record.venue_id.id if "venue_id" in round_record._fields and round_record.venue_id else venue_rec.id
+                    vals["venue_id"] = (
+                        round_record.venue_id.id
+                        if "venue_id" in round_record._fields and round_record.venue_id
+                        else venue_rec.id
+                    )
 
                 if round_base:
                     if interval:
-                        vals["date_scheduled"] = round_base + timedelta(hours=match_index * interval)
+                        vals["date_scheduled"] = round_base + timedelta(
+                            hours=match_index * interval
+                        )
                     else:
                         vals["date_scheduled"] = round_base
                 elif start_dt and interval:
-                    vals["date_scheduled"] = fields.Datetime.to_datetime(start_dt) + timedelta(hours=sequential_index * interval)
+                    vals["date_scheduled"] = fields.Datetime.to_datetime(
+                        start_dt
+                    ) + timedelta(hours=sequential_index * interval)
                 elif start_dt:
                     vals["date_scheduled"] = start_dt
 

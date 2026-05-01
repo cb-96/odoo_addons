@@ -30,22 +30,40 @@ class FederationReportOperational(models.Model):
     ]
 
     season_id = fields.Many2one("federation.season", string="Season", readonly=True)
-    tournament_id = fields.Many2one("federation.tournament", string="Tournament", readonly=True)
-    tournament_state = fields.Selection(TOURNAMENT_STATE_SELECTION, string="Tournament State", readonly=True)
+    tournament_id = fields.Many2one(
+        "federation.tournament", string="Tournament", readonly=True
+    )
+    tournament_state = fields.Selection(
+        TOURNAMENT_STATE_SELECTION, string="Tournament State", readonly=True
+    )
     date_start = fields.Date(string="Start Date", readonly=True)
     date_end = fields.Date(string="End Date", readonly=True)
     participant_count = fields.Integer(string="Participants", readonly=True)
-    confirmed_participant_count = fields.Integer(string="Confirmed Participants", readonly=True)
-    participant_confirmation_rate = fields.Float(string="Participant Confirmation %", readonly=True, digits=(16, 2))
+    confirmed_participant_count = fields.Integer(
+        string="Confirmed Participants", readonly=True
+    )
+    participant_confirmation_rate = fields.Float(
+        string="Participant Confirmation %", readonly=True, digits=(16, 2)
+    )
     match_count = fields.Integer(string="Matches", readonly=True)
     completed_match_count = fields.Integer(string="Completed Matches", readonly=True)
-    match_completion_rate = fields.Float(string="Match Completion %", readonly=True, digits=(16, 2))
+    match_completion_rate = fields.Float(
+        string="Match Completion %", readonly=True, digits=(16, 2)
+    )
     frozen_standing_count = fields.Integer(string="Frozen Standings", readonly=True)
     standing_line_coverage = fields.Integer(string="Standing Coverage", readonly=True)
-    pending_finance_event_count = fields.Integer(string="Pending Finance Events", readonly=True)
-    pending_finance_amount = fields.Float(string="Pending Finance Amount", readonly=True)
-    open_club_compliance_count = fields.Integer(string="Open Club Compliance Checks", readonly=True)
-    readiness_status = fields.Selection(STATUS_SELECTION, string="Readiness Status", readonly=True)
+    pending_finance_event_count = fields.Integer(
+        string="Pending Finance Events", readonly=True
+    )
+    pending_finance_amount = fields.Float(
+        string="Pending Finance Amount", readonly=True
+    )
+    open_club_compliance_count = fields.Integer(
+        string="Open Club Compliance Checks", readonly=True
+    )
+    readiness_status = fields.Selection(
+        STATUS_SELECTION, string="Readiness Status", readonly=True
+    )
     readiness_note = fields.Text(string="Readiness Note", readonly=True)
 
     def init(self):
@@ -55,8 +73,7 @@ class FederationReportOperational(models.Model):
         query blocks after schema or join changes.
         """
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute(
-            """
+        self.env.cr.execute("""
             CREATE VIEW federation_report_operational AS (
                 -- block: participant_stats
                 WITH participant_stats AS (
@@ -199,5 +216,4 @@ class FederationReportOperational(models.Model):
                 LEFT JOIN finance_stats fs ON fs.tournament_id = t.id
                 LEFT JOIN club_compliance_stats ccs ON ccs.tournament_id = t.id
             )
-            """
-        )
+            """)

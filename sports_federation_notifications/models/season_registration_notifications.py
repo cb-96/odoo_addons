@@ -19,6 +19,8 @@ class FederationSeasonRegistrationNotifications(models.Model):
         result = super().action_reject(reason=reason)
         dispatcher = self.env.get("federation.notification.dispatcher")
         if dispatcher is not None:
-            for registration in submitted_registrations.filtered(lambda rec: rec.state == "draft"):
+            for registration in submitted_registrations.filtered(
+                lambda rec: rec.state == "draft"
+            ):
                 dispatcher.send_season_registration_rejected(registration)
         return result

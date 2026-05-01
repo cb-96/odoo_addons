@@ -16,7 +16,6 @@ from odoo.addons.sports_federation_base.models.failure_feedback import (
 
 from ..services import report_schedule_builders
 
-
 _logger = logging.getLogger(__name__)
 
 
@@ -40,14 +39,20 @@ class FederationReportSchedule(models.Model):
     ]
 
     name = fields.Char(required=True)
-    report_type = fields.Selection(REPORT_TYPE_SELECTION, required=True, default="operational")
-    period_type = fields.Selection(PERIOD_TYPE_SELECTION, required=True, default="weekly")
+    report_type = fields.Selection(
+        REPORT_TYPE_SELECTION, required=True, default="operational"
+    )
+    period_type = fields.Selection(
+        PERIOD_TYPE_SELECTION, required=True, default="weekly"
+    )
     season_id = fields.Many2one("federation.season", string="Season")
     active = fields.Boolean(default=True)
     next_run_on = fields.Datetime(required=True, default=fields.Datetime.now)
     last_attempt_on = fields.Datetime(readonly=True)
     last_run_on = fields.Datetime(readonly=True)
-    last_run_status = fields.Selection(RUN_STATUS_SELECTION, readonly=True, default="never")
+    last_run_status = fields.Selection(
+        RUN_STATUS_SELECTION, readonly=True, default="never"
+    )
     last_period_start = fields.Date(readonly=True)
     last_period_end = fields.Date(readonly=True)
     last_row_count = fields.Integer(readonly=True)
@@ -56,7 +61,9 @@ class FederationReportSchedule(models.Model):
     last_failure_category = fields.Selection(FAILURE_CATEGORY_SELECTION, readonly=True)
     last_operator_message = fields.Text(readonly=True)
     consecutive_failure_count = fields.Integer(readonly=True)
-    generated_file = fields.Binary(string="Last Generated File", attachment=True, readonly=True)
+    generated_file = fields.Binary(
+        string="Last Generated File", attachment=True, readonly=True
+    )
     generated_filename = fields.Char(readonly=True)
     notes = fields.Text()
 
@@ -73,7 +80,9 @@ class FederationReportSchedule(models.Model):
     def _get_next_run_on(self, reference_dt=None):
         """Return the next scheduled execution anchored to the latest attempt."""
         self.ensure_one()
-        reference_dt = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now())
+        reference_dt = fields.Datetime.to_datetime(
+            reference_dt or fields.Datetime.now()
+        )
         if self.period_type == "monthly":
             return fields.Datetime.to_string(reference_dt + relativedelta(months=1))
         return fields.Datetime.to_string(reference_dt + timedelta(days=7))
@@ -98,8 +107,22 @@ class FederationReportSchedule(models.Model):
         self.ensure_one()
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(["Report", dict(self._fields["report_type"].selection).get(self.report_type, self.report_type)])
-        writer.writerow(["Cadence", dict(self._fields["period_type"].selection).get(self.period_type, self.period_type)])
+        writer.writerow(
+            [
+                "Report",
+                dict(self._fields["report_type"].selection).get(
+                    self.report_type, self.report_type
+                ),
+            ]
+        )
+        writer.writerow(
+            [
+                "Cadence",
+                dict(self._fields["period_type"].selection).get(
+                    self.period_type, self.period_type
+                ),
+            ]
+        )
         writer.writerow(["Period Start", period_start])
         writer.writerow(["Period End", period_end])
         writer.writerow([])
@@ -171,23 +194,27 @@ class FederationReportSchedule(models.Model):
         self.ensure_one()
         run_at = run_at or fields.Datetime.now()
         try:
-            payload, filename, row_count, period_start, period_end = self._build_report_payload()
-            self.write({
-                "last_attempt_on": run_at,
-                "last_run_on": run_at,
-                "last_run_status": "success",
-                "last_period_start": period_start,
-                "last_period_end": period_end,
-                "last_row_count": row_count,
-                "last_failure_on": False,
-                "last_error_message": False,
-                "last_failure_category": False,
-                "last_operator_message": False,
-                "consecutive_failure_count": 0,
-                "generated_filename": filename,
-                "generated_file": base64.b64encode(payload),
-                "next_run_on": self._get_next_run_on(run_at),
-            })
+            payload, filename, row_count, period_start, period_end = (
+                self._build_report_payload()
+            )
+            self.write(
+                {
+                    "last_attempt_on": run_at,
+                    "last_run_on": run_at,
+                    "last_run_status": "success",
+                    "last_period_start": period_start,
+                    "last_period_end": period_end,
+                    "last_row_count": row_count,
+                    "last_failure_on": False,
+                    "last_error_message": False,
+                    "last_failure_category": False,
+                    "last_operator_message": False,
+                    "consecutive_failure_count": 0,
+                    "generated_filename": filename,
+                    "generated_file": base64.b64encode(payload),
+                    "next_run_on": self._get_next_run_on(run_at),
+                }
+            )
             return False
         except Exception as error:
             failure_category, operator_message = build_failure_feedback(error=error)
@@ -196,16 +223,18 @@ class FederationReportSchedule(models.Model):
                 self.display_name,
                 self.report_type,
             )
-            self.write({
-                "last_attempt_on": run_at,
-                "last_run_status": "failed",
-                "last_failure_on": run_at,
-                "last_error_message": False,
-                "last_failure_category": failure_category,
-                "last_operator_message": operator_message,
-                "consecutive_failure_count": self.consecutive_failure_count + 1,
-                "next_run_on": self._get_next_run_on(run_at),
-            })
+            self.write(
+                {
+                    "last_attempt_on": run_at,
+                    "last_run_status": "failed",
+                    "last_failure_on": run_at,
+                    "last_error_message": False,
+                    "last_failure_category": failure_category,
+                    "last_operator_message": operator_message,
+                    "consecutive_failure_count": self.consecutive_failure_count + 1,
+                    "next_run_on": self._get_next_run_on(run_at),
+                }
+            )
             return operator_message
 
     def _generate_report(self):
@@ -250,27 +279,38 @@ class FederationReportSchedule(models.Model):
     @api.model
     def _cron_generate_scheduled_reports(self):
         """Process a bounded batch of due schedules so cron stays catch-up friendly."""
-        schedules = self.search([
-            ("active", "=", True),
-            ("next_run_on", "!=", False),
-            ("next_run_on", "<=", fields.Datetime.now()),
-        ], limit=20)
+        schedules = self.search(
+            [
+                ("active", "=", True),
+                ("next_run_on", "!=", False),
+                ("next_run_on", "<=", fields.Datetime.now()),
+            ],
+            limit=20,
+        )
         schedules._generate_report()
 
     @api.model
     def _purge_generated_files(self, reference_dt=None):
         """Clear stored report payloads after the retention window expires."""
-        reference_dt = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now())
-        cutoff = fields.Datetime.to_string(reference_dt - timedelta(days=self.GENERATED_FILE_RETENTION_DAYS))
-        schedules = self.search([
-            ("generated_file", "!=", False),
-            ("last_run_on", "!=", False),
-            ("last_run_on", "<", cutoff),
-        ])
-        schedules.write({
-            "generated_file": False,
-            "generated_filename": False,
-        })
+        reference_dt = fields.Datetime.to_datetime(
+            reference_dt or fields.Datetime.now()
+        )
+        cutoff = fields.Datetime.to_string(
+            reference_dt - timedelta(days=self.GENERATED_FILE_RETENTION_DAYS)
+        )
+        schedules = self.search(
+            [
+                ("generated_file", "!=", False),
+                ("last_run_on", "!=", False),
+                ("last_run_on", "<", cutoff),
+            ]
+        )
+        schedules.write(
+            {
+                "generated_file": False,
+                "generated_filename": False,
+            }
+        )
         return len(schedules)
 
     @api.model

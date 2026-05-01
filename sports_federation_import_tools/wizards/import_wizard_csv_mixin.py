@@ -6,6 +6,10 @@ import io
 from odoo import models
 from odoo.exceptions import ValidationError
 
+from odoo.addons.sports_federation_base.models.failure_feedback import (
+    is_safe_operator_detail,
+)
+
 
 class FederationImportWizardCsvMixin(models.AbstractModel):
     _name = "federation.import.wizard.csv.mixin"
@@ -69,7 +73,9 @@ class FederationImportWizardCsvMixin(models.AbstractModel):
         reader = csv.DictReader(io.StringIO(content_str), dialect=dialect)
         if not reader.fieldnames:
             raise ValidationError("CSV file is empty or invalid.")
-        reader.fieldnames = [field.strip() if field else field for field in reader.fieldnames]
+        reader.fieldnames = [
+            field.strip() if field else field for field in reader.fieldnames
+        ]
         return reader
 
     def _require_columns(self, fieldnames, required_columns):
@@ -109,7 +115,12 @@ class FederationImportWizardCsvMixin(models.AbstractModel):
             return "missing_required_field", message
         if isinstance(error, ValidationError):
             return "constraint_violation", message
-        return "unexpected_error", message
+        safe_message = (
+            message
+            if is_safe_operator_detail(message)
+            else "An unexpected error occurred. Please contact your administrator."
+        )
+        return "unexpected_error", safe_message
 
     def _execute_row_create(self, row_num, create_row, errors, error_categories):
         """Execute one row-level create callback and record shared failures."""
@@ -123,7 +134,9 @@ class FederationImportWizardCsvMixin(models.AbstractModel):
             self._record_error(errors, error_categories, row_num, category, message)
             return False
 
-    def _build_result_message(self, line_count, success_count, error_count, errors, error_categories=None):
+    def _build_result_message(
+        self, line_count, success_count, error_count, errors, error_categories=None
+    ):
         """Build the user-facing result summary for preview and live runs."""
         result_parts = [
             f"Total lines processed: {line_count}",

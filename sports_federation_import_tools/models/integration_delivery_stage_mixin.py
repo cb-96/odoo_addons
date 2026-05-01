@@ -73,7 +73,9 @@ class FederationIntegrationDeliveryStageMixin(models.AbstractModel):
         try:
             return base64.b64decode(payload_base64, validate=True)
         except (binascii.Error, ValueError) as error:
-            raise ValidationError("Inbound payload must be valid base64-encoded content.") from error
+            raise ValidationError(
+                "Inbound payload must be valid base64-encoded content."
+            ) from error
 
     @api.model
     def _validate_partner_payload_upload(self, filename, payload, content_type=None):
@@ -107,7 +109,10 @@ class FederationIntegrationDeliveryStageMixin(models.AbstractModel):
     ):
         """Reuse an already-staged payload and attach idempotency metadata if missing."""
         if normalized_idempotency_key:
-            if existing.idempotency_key and existing.idempotency_key != normalized_idempotency_key:
+            if (
+                existing.idempotency_key
+                and existing.idempotency_key != normalized_idempotency_key
+            ):
                 raise ValidationError(
                     "This payload is already staged under a different inbound idempotency key."
                 )
@@ -152,14 +157,18 @@ class FederationIntegrationDeliveryStageMixin(models.AbstractModel):
                 "notes": notes,
             }
         )
-        attachment = self.env["ir.attachment"].sudo().create(
-            {
-                "name": upload["filename"],
-                "datas": payload_base64,
-                "res_model": delivery._name,
-                "res_id": delivery.id,
-                "mimetype": upload["mimetype"],
-            }
+        attachment = (
+            self.env["ir.attachment"]
+            .sudo()
+            .create(
+                {
+                    "name": upload["filename"],
+                    "datas": payload_base64,
+                    "res_model": delivery._name,
+                    "res_id": delivery.id,
+                    "mimetype": upload["mimetype"],
+                }
+            )
         )
         delivery.write({"attachment_id": attachment.id})
         return {
@@ -207,13 +216,19 @@ class FederationIntegrationDeliveryStageMixin(models.AbstractModel):
     ):
         """Stage a partner delivery and return replay plus outcome metadata."""
         if not partner:
-            raise ValidationError("Select a partner before staging an inbound delivery.")
+            raise ValidationError(
+                "Select a partner before staging an inbound delivery."
+            )
         if not contract or contract.direction != "inbound":
-            raise ValidationError("The selected contract does not accept inbound deliveries.")
+            raise ValidationError(
+                "The selected contract does not accept inbound deliveries."
+            )
         if not filename:
             raise ValidationError("Inbound deliveries require a filename.")
         if not payload_base64:
-            raise ValidationError("Inbound deliveries require a base64-encoded payload.")
+            raise ValidationError(
+                "Inbound deliveries require a base64-encoded payload."
+            )
 
         payload = self._decode_partner_payload(payload_base64)
         upload = self._validate_partner_payload_upload(
@@ -241,7 +256,8 @@ class FederationIntegrationDeliveryStageMixin(models.AbstractModel):
                 return {
                     "delivery": existing,
                     "replayed": True,
-                    "idempotency_key": existing.idempotency_key or normalized_idempotency_key,
+                    "idempotency_key": existing.idempotency_key
+                    or normalized_idempotency_key,
                     "outcome": self.DELIVERY_OUTCOME_IDEMPOTENCY_REPLAY,
                 }
 

@@ -10,16 +10,20 @@ class TestFederationTournamentStage(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.season = cls.env["federation.season"].create({
-            "name": "2025-2026",
-            "date_start": "2025-09-01",
-            "date_end": "2026-06-30",
-        })
-        cls.tournament = cls.env["federation.tournament"].create({
-            "name": "Test Tournament",
-            "season_id": cls.season.id,
-            "date_start": "2025-09-01",
-        })
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "2025-2026",
+                "date_start": "2025-09-01",
+                "date_end": "2026-06-30",
+            }
+        )
+        cls.tournament = cls.env["federation.tournament"].create(
+            {
+                "name": "Test Tournament",
+                "season_id": cls.season.id,
+                "date_start": "2025-09-01",
+            }
+        )
 
     def _make_stage(self, **kwargs):
         vals = {
@@ -59,10 +63,12 @@ class TestFederationTournamentStage(TransactionCase):
     def test_round_count_increments(self):
         stage = self._make_stage()
         self.assertEqual(stage.round_count, 0)
-        self.env["federation.tournament.round"].create({
-            "stage_id": stage.id,
-            "sequence": 1,
-        })
+        self.env["federation.tournament.round"].create(
+            {
+                "stage_id": stage.id,
+                "sequence": 1,
+            }
+        )
         self.assertEqual(stage.round_count, 1)
 
     def test_stage_types(self):
@@ -77,27 +83,33 @@ class TestFederationTournamentRound(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.season = cls.env["federation.season"].create({
-            "name": "2025-2026",
-            "date_start": "2025-09-01",
-            "date_end": "2026-06-30",
-        })
-        cls.tournament = cls.env["federation.tournament"].create({
-            "name": "Test Tournament",
-            "season_id": cls.season.id,
-            "date_start": "2025-09-01",
-        })
-        cls.stage = cls.env["federation.tournament.stage"].create({
-            "name": "Group Stage",
-            "tournament_id": cls.tournament.id,
-        })
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "2025-2026",
+                "date_start": "2025-09-01",
+                "date_end": "2026-06-30",
+            }
+        )
+        cls.tournament = cls.env["federation.tournament"].create(
+            {
+                "name": "Test Tournament",
+                "season_id": cls.season.id,
+                "date_start": "2025-09-01",
+            }
+        )
+        cls.stage = cls.env["federation.tournament.stage"].create(
+            {
+                "name": "Group Stage",
+                "tournament_id": cls.tournament.id,
+            }
+        )
         cls.club = cls.env["federation.club"].create({"name": "Club"})
-        cls.team_a = cls.env["federation.team"].create({
-            "name": "Team A", "club_id": cls.club.id
-        })
-        cls.team_b = cls.env["federation.team"].create({
-            "name": "Team B", "club_id": cls.club.id
-        })
+        cls.team_a = cls.env["federation.team"].create(
+            {"name": "Team A", "club_id": cls.club.id}
+        )
+        cls.team_b = cls.env["federation.team"].create(
+            {"name": "Team B", "club_id": cls.club.id}
+        )
 
     def _make_round(self, **kwargs):
         vals = {"stage_id": self.stage.id, "sequence": 1}
@@ -114,10 +126,12 @@ class TestFederationTournamentRound(TransactionCase):
         self.assertEqual(rnd.name, "Matchday 1")
 
     def test_auto_name_with_group(self):
-        group = self.env["federation.tournament.group"].create({
-            "name": "Group A",
-            "stage_id": self.stage.id,
-        })
+        group = self.env["federation.tournament.group"].create(
+            {
+                "name": "Group A",
+                "stage_id": self.stage.id,
+            }
+        )
         rnd = self._make_round(group_id=group.id, sequence=1)
         self.assertIn("Group A", rnd.name)
 
@@ -133,13 +147,15 @@ class TestFederationTournamentRound(TransactionCase):
     def test_match_count_computed(self):
         rnd = self._make_round(sequence=3)
         self.assertEqual(rnd.match_count, 0)
-        self.env["federation.match"].create({
-            "tournament_id": self.tournament.id,
-            "stage_id": self.stage.id,
-            "round_id": rnd.id,
-            "home_team_id": self.team_a.id,
-            "away_team_id": self.team_b.id,
-        })
+        self.env["federation.match"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "stage_id": self.stage.id,
+                "round_id": rnd.id,
+                "home_team_id": self.team_a.id,
+                "away_team_id": self.team_b.id,
+            }
+        )
         self.assertEqual(rnd.match_count, 1)
 
     def test_round_date_change_syncs_match_date(self):
@@ -147,14 +163,16 @@ class TestFederationTournamentRound(TransactionCase):
             round_date=date(2025, 10, 5),
             sequence=4,
         )
-        match = self.env["federation.match"].create({
-            "tournament_id": self.tournament.id,
-            "stage_id": self.stage.id,
-            "round_id": rnd.id,
-            "home_team_id": self.team_a.id,
-            "away_team_id": self.team_b.id,
-            "scheduled_time": 15.0,
-        })
+        match = self.env["federation.match"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "stage_id": self.stage.id,
+                "round_id": rnd.id,
+                "home_team_id": self.team_a.id,
+                "away_team_id": self.team_b.id,
+                "scheduled_time": 15.0,
+            }
+        )
         self.assertEqual(match.date_scheduled.date(), date(2025, 10, 5))
 
         rnd.write({"round_date": date(2025, 10, 19)})
@@ -171,33 +189,43 @@ class TestFederationTournamentGroup(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.season = cls.env["federation.season"].create({
-            "name": "2025-2026",
-            "date_start": "2025-09-01",
-            "date_end": "2026-06-30",
-        })
-        cls.tournament = cls.env["federation.tournament"].create({
-            "name": "Test Tournament",
-            "season_id": cls.season.id,
-            "date_start": "2025-09-01",
-        })
-        cls.stage = cls.env["federation.tournament.stage"].create({
-            "name": "Group Phase",
-            "tournament_id": cls.tournament.id,
-        })
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "2025-2026",
+                "date_start": "2025-09-01",
+                "date_end": "2026-06-30",
+            }
+        )
+        cls.tournament = cls.env["federation.tournament"].create(
+            {
+                "name": "Test Tournament",
+                "season_id": cls.season.id,
+                "date_start": "2025-09-01",
+            }
+        )
+        cls.stage = cls.env["federation.tournament.stage"].create(
+            {
+                "name": "Group Phase",
+                "tournament_id": cls.tournament.id,
+            }
+        )
 
     def test_create_group(self):
-        group = self.env["federation.tournament.group"].create({
-            "name": "Group A",
-            "stage_id": self.stage.id,
-        })
+        group = self.env["federation.tournament.group"].create(
+            {
+                "name": "Group A",
+                "stage_id": self.stage.id,
+            }
+        )
         self.assertEqual(group.name, "Group A")
         self.assertEqual(group.stage_id, self.stage)
 
     def test_group_stage_count_updates(self):
         self.assertEqual(self.stage.group_count, 0)
-        self.env["federation.tournament.group"].create({
-            "name": "Group B",
-            "stage_id": self.stage.id,
-        })
+        self.env["federation.tournament.group"].create(
+            {
+                "name": "Group B",
+                "stage_id": self.stage.id,
+            }
+        )
         self.assertEqual(self.stage.group_count, 1)

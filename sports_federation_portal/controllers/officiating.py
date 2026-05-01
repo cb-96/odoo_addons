@@ -24,10 +24,15 @@ class FederationOfficiatingPortal(http.Controller):
         if not referee:
             return request.redirect("/my")
 
-        Assignment = request.env["federation.match.referee"].with_user(request.env.user).sudo()
+        Assignment = (
+            request.env["federation.match.referee"].with_user(request.env.user).sudo()
+        )
         domain = Assignment._portal_get_domain(user=request.env.user)
         filter_map = {
-            "upcoming": [("match_kickoff", "!=", False), ("state", "in", ("draft", "confirmed"))],
+            "upcoming": [
+                ("match_kickoff", "!=", False),
+                ("state", "in", ("draft", "confirmed")),
+            ],
             "pending": [("state", "=", "draft")],
             "history": [("state", "in", ("done", "cancelled"))],
             "all": [],
@@ -69,7 +74,9 @@ class FederationOfficiatingPortal(http.Controller):
     )
     def portal_my_referee_assignment_detail(self, assignment_id, **kw):
         """Handle the portal my referee assignment detail flow."""
-        Assignment = request.env["federation.match.referee"].with_user(request.env.user).sudo()
+        Assignment = (
+            request.env["federation.match.referee"].with_user(request.env.user).sudo()
+        )
         assignment = Assignment.browse(assignment_id)
         try:
             if not assignment.exists():
@@ -97,9 +104,13 @@ class FederationOfficiatingPortal(http.Controller):
         methods=["POST"],
         csrf=True,
     )
-    def portal_my_referee_assignment_respond(self, assignment_id, action=None, response_note=None, **kw):
+    def portal_my_referee_assignment_respond(
+        self, assignment_id, action=None, response_note=None, **kw
+    ):
         """Handle the portal my referee assignment respond flow."""
-        Assignment = request.env["federation.match.referee"].with_user(request.env.user).sudo()
+        Assignment = (
+            request.env["federation.match.referee"].with_user(request.env.user).sudo()
+        )
         assignment = Assignment.browse(assignment_id)
         try:
             if not assignment.exists():

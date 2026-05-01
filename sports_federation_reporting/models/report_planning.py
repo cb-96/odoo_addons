@@ -20,7 +20,9 @@ class FederationReportSeasonPortfolio(models.Model):
     ]
 
     season_id = fields.Many2one("federation.season", string="Season", readonly=True)
-    season_state = fields.Selection(SEASON_STATE_SELECTION, string="Season State", readonly=True)
+    season_state = fields.Selection(
+        SEASON_STATE_SELECTION, string="Season State", readonly=True
+    )
     date_start = fields.Date(string="Start Date", readonly=True)
     date_end = fields.Date(string="End Date", readonly=True)
     target_club_count = fields.Integer(string="Target Clubs", readonly=True)
@@ -32,21 +34,28 @@ class FederationReportSeasonPortfolio(models.Model):
     target_tournament_count = fields.Integer(string="Target Tournaments", readonly=True)
     actual_tournament_count = fields.Integer(string="Actual Tournaments", readonly=True)
     tournament_delta = fields.Integer(string="Tournament Delta", readonly=True)
-    target_participant_count = fields.Integer(string="Target Participants", readonly=True)
-    actual_participant_count = fields.Integer(string="Actual Participants", readonly=True)
+    target_participant_count = fields.Integer(
+        string="Target Participants", readonly=True
+    )
+    actual_participant_count = fields.Integer(
+        string="Actual Participants", readonly=True
+    )
     participant_delta = fields.Integer(string="Participant Delta", readonly=True)
     budget_amount = fields.Float(string="Budget", readonly=True)
     actual_finance_amount = fields.Float(string="Actual Finance", readonly=True)
     budget_variance_amount = fields.Float(string="Budget Variance", readonly=True)
-    open_compliance_item_count = fields.Integer(string="Open Compliance Items", readonly=True)
-    planning_status = fields.Selection(STATUS_SELECTION, string="Planning Status", readonly=True)
+    open_compliance_item_count = fields.Integer(
+        string="Open Compliance Items", readonly=True
+    )
+    planning_status = fields.Selection(
+        STATUS_SELECTION, string="Planning Status", readonly=True
+    )
     planning_note = fields.Text(string="Planning Note", readonly=True)
 
     def init(self):
         """Handle init."""
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute(
-            """
+        self.env.cr.execute("""
             CREATE VIEW federation_report_season_portfolio AS (
                 WITH team_stats AS (
                     SELECT
@@ -148,8 +157,7 @@ class FederationReportSeasonPortfolio(models.Model):
                 LEFT JOIN finance_stats fs ON fs.season_id = s.id
                 LEFT JOIN compliance_stats cs ON cs.season_id = s.id
             )
-            """
-        )
+            """)
 
 
 class FederationReportClubPerformance(models.Model):
@@ -164,7 +172,9 @@ class FederationReportClubPerformance(models.Model):
     club_id = fields.Many2one("federation.club", string="Club", readonly=True)
     confirmed_team_count = fields.Integer(string="Confirmed Teams", readonly=True)
     tournament_entry_count = fields.Integer(string="Tournament Entries", readonly=True)
-    confirmed_tournament_entry_count = fields.Integer(string="Confirmed Entries", readonly=True)
+    confirmed_tournament_entry_count = fields.Integer(
+        string="Confirmed Entries", readonly=True
+    )
     completed_match_count = fields.Integer(string="Completed Matches", readonly=True)
     win_count = fields.Integer(string="Wins", readonly=True)
     draw_count = fields.Integer(string="Draws", readonly=True)
@@ -173,16 +183,21 @@ class FederationReportClubPerformance(models.Model):
     goals_against = fields.Integer(string="Goals Against", readonly=True)
     goal_difference = fields.Integer(string="Goal Difference", readonly=True)
     win_rate = fields.Float(string="Win Rate %", readonly=True, digits=(16, 2))
-    pending_finance_event_count = fields.Integer(string="Pending Finance Events", readonly=True)
-    open_compliance_item_count = fields.Integer(string="Open Compliance Items", readonly=True)
-    performance_status = fields.Selection(STATUS_SELECTION, string="Performance Status", readonly=True)
+    pending_finance_event_count = fields.Integer(
+        string="Pending Finance Events", readonly=True
+    )
+    open_compliance_item_count = fields.Integer(
+        string="Open Compliance Items", readonly=True
+    )
+    performance_status = fields.Selection(
+        STATUS_SELECTION, string="Performance Status", readonly=True
+    )
     performance_note = fields.Text(string="Performance Note", readonly=True)
 
     def init(self):
         """Handle init."""
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute(
-            """
+        self.env.cr.execute("""
             CREATE VIEW federation_report_club_performance AS (
                 WITH confirmed_teams AS (
                     SELECT
@@ -316,5 +331,4 @@ class FederationReportClubPerformance(models.Model):
                 LEFT JOIN finance_stats fs ON fs.season_id = scope.season_id AND fs.club_id = scope.club_id
                 LEFT JOIN compliance_stats cs ON cs.season_id = scope.season_id AND cs.club_id = scope.club_id
             )
-            """
-        )
+            """)

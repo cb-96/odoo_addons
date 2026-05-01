@@ -62,29 +62,41 @@ class TestTournamentWorkspace(TransactionCase):
             }
         )
 
-        cls.user_a = cls.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Workspace User A",
-                "login": "workspace.a@example.com",
-                "email": "workspace.a@example.com",
-                "group_ids": [(6, 0, [cls.portal_group.id])],
-            }
+        cls.user_a = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Workspace User A",
+                    "login": "workspace.a@example.com",
+                    "email": "workspace.a@example.com",
+                    "group_ids": [(6, 0, [cls.portal_group.id])],
+                }
+            )
         )
-        cls.user_b = cls.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Workspace User B",
-                "login": "workspace.b@example.com",
-                "email": "workspace.b@example.com",
-                "group_ids": [(6, 0, [cls.portal_group.id])],
-            }
+        cls.user_b = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Workspace User B",
+                    "login": "workspace.b@example.com",
+                    "email": "workspace.b@example.com",
+                    "group_ids": [(6, 0, [cls.portal_group.id])],
+                }
+            )
         )
-        cls.coach_user = cls.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Workspace Coach",
-                "login": "workspace.coach@example.com",
-                "email": "workspace.coach@example.com",
-                "group_ids": [(6, 0, [cls.portal_group.id])],
-            }
+        cls.coach_user = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Workspace Coach",
+                    "login": "workspace.coach@example.com",
+                    "email": "workspace.coach@example.com",
+                    "group_ids": [(6, 0, [cls.portal_group.id])],
+                }
+            )
         )
 
         cls.env["federation.club.representative"].create(
@@ -197,14 +209,18 @@ class TestTournamentWorkspace(TransactionCase):
             }
         )
 
-        cls.future_match = cls.env["federation.match"].create(
-            {
-                "tournament_id": cls.live_tournament.id,
-                "home_team_id": cls.team_a.id,
-                "away_team_id": cls.team_b.id,
-                "date_scheduled": "2025-07-10 18:00:00",
-                "state": "scheduled",
-            }
+        cls.future_match = (
+            cls.env["federation.match"]
+            .with_context(skip_auto_match_sheets=True)
+            .create(
+                {
+                    "tournament_id": cls.live_tournament.id,
+                    "home_team_id": cls.team_a.id,
+                    "away_team_id": cls.team_b.id,
+                    "date_scheduled": "2025-07-10 18:00:00",
+                    "state": "scheduled",
+                }
+            )
         )
         cls.future_sheet = cls.env["federation.match.sheet"].create(
             {
@@ -224,17 +240,21 @@ class TestTournamentWorkspace(TransactionCase):
             }
         )
 
-        cls.past_match = cls.env["federation.match"].create(
-            {
-                "tournament_id": cls.live_tournament.id,
-                "home_team_id": cls.team_a.id,
-                "away_team_id": cls.team_b.id,
-                "date_scheduled": "2025-07-05 18:00:00",
-                "state": "done",
-                "home_score": 2,
-                "away_score": 1,
-                "result_state": "submitted",
-            }
+        cls.past_match = (
+            cls.env["federation.match"]
+            .with_context(skip_auto_match_sheets=True)
+            .create(
+                {
+                    "tournament_id": cls.live_tournament.id,
+                    "home_team_id": cls.team_a.id,
+                    "away_team_id": cls.team_b.id,
+                    "date_scheduled": "2025-07-05 18:00:00",
+                    "state": "done",
+                    "home_score": 2,
+                    "away_score": 1,
+                    "result_state": "submitted",
+                }
+            )
         )
         cls.past_sheet = cls.env["federation.match.sheet"].create(
             {
@@ -295,19 +315,27 @@ class TestTournamentWorkspace(TransactionCase):
         self.assertEqual(live_entry["pending_match_day_count"], 1)
         self.assertEqual(len(live_entry["upcoming_match_sheets"]), 1)
         self.assertEqual(live_entry["result_follow_up_count"], 1)
-        self.assertEqual(live_entry["result_follow_up_rows"][0]["match"], self.past_match)
-        self.assertEqual(live_entry["result_follow_up_rows"][0]["sheet"], self.past_sheet)
+        self.assertEqual(
+            live_entry["result_follow_up_rows"][0]["match"], self.past_match
+        )
+        self.assertEqual(
+            live_entry["result_follow_up_rows"][0]["sheet"], self.past_sheet
+        )
 
     def test_workspace_entry_lookup_enforces_portal_scope(self):
         """Test that workspace entry lookup enforces portal scope."""
-        own_entry = self.env["federation.tournament"]._portal_get_workspace_entry_for_user(
+        own_entry = self.env[
+            "federation.tournament"
+        ]._portal_get_workspace_entry_for_user(
             self.live_tournament.id,
             self.team_a.id,
             user=self.user_a,
         )
         self.assertTrue(own_entry)
 
-        other_team_entry = self.env["federation.tournament"]._portal_get_workspace_entry_for_user(
+        other_team_entry = self.env[
+            "federation.tournament"
+        ]._portal_get_workspace_entry_for_user(
             self.live_tournament.id,
             self.team_b.id,
             user=self.user_a,

@@ -9,6 +9,7 @@ Coverage:
 - Teams fully equal: "Ranked alphabetically by team name"
 - Rank 1 always gets empty tiebreak_notes
 """
+
 from odoo.tests.common import TransactionCase
 
 
@@ -18,23 +19,29 @@ class TestTiebreakNotes(TransactionCase):
     def setUpClass(cls):
         """Set up shared test data for the test case."""
         super().setUpClass()
-        cls.club = cls.env["federation.club"].create({
-            "name": "TB Club",
-            "code": "TBC",
-        })
-        cls.season = cls.env["federation.season"].create({
-            "name": "TB Season",
-            "code": "TBS24",
-            "date_start": "2024-01-01",
-            "date_end": "2024-12-31",
-        })
-        cls.rule_set = cls.env["federation.rule.set"].create({
-            "name": "TB Rule Set",
-            "code": "TBRS",
-            "points_win": 3,
-            "points_draw": 1,
-            "points_loss": 0,
-        })
+        cls.club = cls.env["federation.club"].create(
+            {
+                "name": "TB Club",
+                "code": "TBC",
+            }
+        )
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "TB Season",
+                "code": "TBS24",
+                "date_start": "2024-01-01",
+                "date_end": "2024-12-31",
+            }
+        )
+        cls.rule_set = cls.env["federation.rule.set"].create(
+            {
+                "name": "TB Rule Set",
+                "code": "TBRS",
+                "points_win": 3,
+                "points_draw": 1,
+                "points_loss": 0,
+            }
+        )
 
     # ------------------------------------------------------------------
     # Helpers
@@ -42,25 +49,41 @@ class TestTiebreakNotes(TransactionCase):
 
     def _make_setup(self, suffix):
         """Create tournament + 2 participants, return (tournament, p1, p2)."""
-        t1 = self.env["federation.team"].create({
-            "name": f"Alpha {suffix}", "club_id": self.club.id, "code": f"AL{suffix}",
-        })
-        t2 = self.env["federation.team"].create({
-            "name": f"Zeta {suffix}", "club_id": self.club.id, "code": f"ZT{suffix}",
-        })
-        tour = self.env["federation.tournament"].create({
-            "name": f"TB Tour {suffix}",
-            "code": f"TBT{suffix}",
-            "season_id": self.season.id,
-            "date_start": "2024-06-01",
-            "rule_set_id": self.rule_set.id,
-        })
-        p1 = self.env["federation.tournament.participant"].create({
-            "tournament_id": tour.id, "team_id": t1.id,
-        })
-        p2 = self.env["federation.tournament.participant"].create({
-            "tournament_id": tour.id, "team_id": t2.id,
-        })
+        t1 = self.env["federation.team"].create(
+            {
+                "name": f"Alpha {suffix}",
+                "club_id": self.club.id,
+                "code": f"AL{suffix}",
+            }
+        )
+        t2 = self.env["federation.team"].create(
+            {
+                "name": f"Zeta {suffix}",
+                "club_id": self.club.id,
+                "code": f"ZT{suffix}",
+            }
+        )
+        tour = self.env["federation.tournament"].create(
+            {
+                "name": f"TB Tour {suffix}",
+                "code": f"TBT{suffix}",
+                "season_id": self.season.id,
+                "date_start": "2024-06-01",
+                "rule_set_id": self.rule_set.id,
+            }
+        )
+        p1 = self.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": tour.id,
+                "team_id": t1.id,
+            }
+        )
+        p2 = self.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": tour.id,
+                "team_id": t2.id,
+            }
+        )
         return tour, t1, t2, p1, p2
 
     def _make_match(self, tour, home, away, home_score, away_score, state="done"):
@@ -79,11 +102,13 @@ class TestTiebreakNotes(TransactionCase):
 
     def _standing(self, tour):
         """Exercise standing."""
-        return self.env["federation.standing"].create({
-            "name": f"Standing {tour.name}",
-            "tournament_id": tour.id,
-            "rule_set_id": self.rule_set.id,
-        })
+        return self.env["federation.standing"].create(
+            {
+                "name": f"Standing {tour.name}",
+                "tournament_id": tour.id,
+                "rule_set_id": self.rule_set.id,
+            }
+        )
 
     def _lines_by_team(self, standing):
         """Return dict {team.name: standing_line}."""
@@ -126,12 +151,19 @@ class TestTiebreakNotes(TransactionCase):
         # Both get draw → 1 pt each, 0 wins each, same GD → alphabetical
         # To test "wins" tiebreak need 3 teams. Use setUpClass teams...
         # Let's add a third team:
-        t3 = self.env["federation.team"].create({
-            "name": f"Beta WIN", "club_id": self.club.id, "code": "BWIN",
-        })
-        p3 = self.env["federation.tournament.participant"].create({
-            "tournament_id": tour.id, "team_id": t3.id,
-        })
+        t3 = self.env["federation.team"].create(
+            {
+                "name": "Beta WIN",
+                "club_id": self.club.id,
+                "code": "BWIN",
+            }
+        )
+        p3 = self.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": tour.id,
+                "team_id": t3.id,
+            }
+        )
         # Alpha beats Beta 1-0 (3 pts), Zeta beats Beta 1-0 (3 pts)
         # Alpha vs Zeta draw 0-0 (each +1 pt) → Alpha=4, Zeta=4, Beta=0
         # Alpha: 2W(vs Beta + draw... no)
@@ -219,4 +251,6 @@ class TestTiebreakNotes(TransactionCase):
         rank1_name = sorted([t1.name, t2.name])[0]
         rank2_name = sorted([t1.name, t2.name])[1]
         self.assertEqual(lines[rank1_name].tiebreak_notes or "", "")
-        self.assertIn("alphabetically", (lines[rank2_name].tiebreak_notes or "").lower())
+        self.assertIn(
+            "alphabetically", (lines[rank2_name].tiebreak_notes or "").lower()
+        )

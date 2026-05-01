@@ -17,7 +17,9 @@ class FederationRosterPortal(FederationRosterPortalBase):
     )
     def portal_my_rosters(self, page=1, **kw):
         """List rosters visible to the current user."""
-        Roster = request.env["federation.team.roster"].with_user(request.env.user).sudo()
+        Roster = (
+            request.env["federation.team.roster"].with_user(request.env.user).sudo()
+        )
         domain = Roster._portal_get_scope_domain(user=request.env.user)
         if domain == [("id", "=", False)]:
             return self._redirect_with_query("/my/club")
@@ -70,8 +72,11 @@ class FederationRosterPortal(FederationRosterPortalBase):
     )
     def portal_my_roster_create(self, registration_id, **kw):
         """Create a roster for a confirmed season registration."""
-        registration = request.env["federation.season.registration"].with_user(request.env.user).sudo().browse(
-            registration_id
+        registration = (
+            request.env["federation.season.registration"]
+            .with_user(request.env.user)
+            .sudo()
+            .browse(registration_id)
         )
         if not registration.exists():
             return self._redirect_with_query(
@@ -80,7 +85,9 @@ class FederationRosterPortal(FederationRosterPortalBase):
             )
 
         try:
-            roster = request.env["federation.team.roster"]._portal_create_roster_for_registration(
+            roster = request.env[
+                "federation.team.roster"
+            ]._portal_create_roster_for_registration(
                 registration,
                 user=request.env.user,
             )

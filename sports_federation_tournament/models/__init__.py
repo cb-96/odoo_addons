@@ -6,5 +6,6 @@ from . import federation_tournament_group
 from . import federation_tournament_round
 from . import federation_tournament_participant
 from . import federation_match
+from . import federation_match_bracket
 from . import federation_season_registration_inherit
 from . import federation_season_inherit
