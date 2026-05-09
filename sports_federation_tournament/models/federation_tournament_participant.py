@@ -7,6 +7,7 @@ from odoo.exceptions import ValidationError
 class FederationTournamentParticipant(models.Model):
     _name = "federation.tournament.participant"
     _description = "Tournament Participant"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "name"
 
     name = fields.Char(string="Name", compute="_compute_name", store=True)

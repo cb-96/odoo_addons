@@ -415,3 +415,133 @@ class TestRosters(TransactionCase):
         self.assertIn("roster_created", event_types)
         self.assertIn("roster_line_added", event_types)
         self.assertIn("roster_activated", event_types)
+
+    # ------------------------------------------------------------------
+    # Unique active roster constraint
+    # ------------------------------------------------------------------
+
+    def test_only_one_active_roster_per_team_season_competition(self):
+        """Activating a second roster for the same scope must raise a ValidationError."""
+        roster_a = self.env["federation.team.roster"].create(
+            {
+                "team_id": self.team.id,
+                "season_id": self.season.id,
+                "competition_id": self.competition.id,
+            }
+        )
+        self.env["federation.team.roster.line"].create(
+            {
+                "roster_id": roster_a.id,
+                "player_id": self.player1.id,
+            }
+        )
+        roster_a.action_activate()
+        self.assertEqual(roster_a.status, "active")
+
+        roster_b = self.env["federation.team.roster"].create(
+            {
+                "team_id": self.team.id,
+                "season_id": self.season.id,
+                "competition_id": self.competition.id,
+            }
+        )
+        self.env["federation.team.roster.line"].create(
+            {
+                "roster_id": roster_b.id,
+                "player_id": self.player2.id,
+            }
+        )
+        with self.assertRaises(ValidationError):
+            roster_b.action_activate()
+
+    def test_only_one_active_roster_per_team_season_no_competition(self):
+        """Activating a second season-scoped roster (no competition) must raise."""
+        roster_a = self.env["federation.team.roster"].create(
+            {
+                "team_id": self.team.id,
+                "season_id": self.season.id,
+            }
+        )
+        self.env["federation.team.roster.line"].create(
+            {
+                "roster_id": roster_a.id,
+                "player_id": self.player1.id,
+            }
+        )
+        roster_a.action_activate()
+
+        roster_b = self.env["federation.team.roster"].create(
+            {
+                "team_id": self.team.id,
+                "season_id": self.season.id,
+            }
+        )
+        self.env["federation.team.roster.line"].create(
+            {
+                "roster_id": roster_b.id,
+                "player_id": self.player2.id,
+            }
+        )
+        with self.assertRaises(ValidationError):
+            roster_b.action_activate()
+
+    def test_different_competitions_allow_separate_active_rosters(self):
+        """Two active rosters for the same team/season but different competitions are allowed."""
+        other_competition = self.env["federation.competition"].create(
+            {
+                "name": "Other Competition",
+                "code": "OC",
+            }
+        )
+        roster_a = self.env["federation.team.roster"].create(
+            {
+                "team_id": self.team.id,
+                "season_id": self.season.id,
+                "competition_id": self.competition.id,
+            }
+        )
+        self.env["federation.team.roster.line"].create(
+            {"roster_id": roster_a.id, "player_id": self.player1.id}
+        )
+        roster_a.action_activate()
+
+        roster_b = self.env["federation.team.roster"].create(
+            {
+                "team_id": self.team.id,
+                "season_id": self.season.id,
+                "competition_id": other_competition.id,
+            }
+        )
+        self.env["federation.team.roster.line"].create(
+            {"roster_id": roster_b.id, "player_id": self.player2.id}
+        )
+        roster_b.action_activate()  # must NOT raise
+        self.assertEqual(roster_b.status, "active")
+
+    def test_closing_first_roster_allows_activating_second(self):
+        """After closing the active roster, a new one can be activated in its place."""
+        roster_a = self.env["federation.team.roster"].create(
+            {
+                "team_id": self.team.id,
+                "season_id": self.season.id,
+                "competition_id": self.competition.id,
+            }
+        )
+        self.env["federation.team.roster.line"].create(
+            {"roster_id": roster_a.id, "player_id": self.player1.id}
+        )
+        roster_a.action_activate()
+        roster_a.action_close()
+
+        roster_b = self.env["federation.team.roster"].create(
+            {
+                "team_id": self.team.id,
+                "season_id": self.season.id,
+                "competition_id": self.competition.id,
+            }
+        )
+        self.env["federation.team.roster.line"].create(
+            {"roster_id": roster_b.id, "player_id": self.player2.id}
+        )
+        roster_b.action_activate()  # must NOT raise
+        self.assertEqual(roster_b.status, "active")

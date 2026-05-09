@@ -4,6 +4,7 @@ from odoo import api, fields, models
 class FederationTournamentGroup(models.Model):
     _name = "federation.tournament.group"
     _description = "Tournament Group / Poule"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "sequence, id"
 
     name = fields.Char(string="Group Name", required=True)

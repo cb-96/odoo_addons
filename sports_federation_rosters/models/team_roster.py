@@ -326,6 +326,7 @@ class FederationTeamRoster(models.Model):
     def write(self, vals):
         """Update records with module-specific side effects."""
         self._assert_scope_editable_for_match_day(vals)
+        self._assert_unique_active_roster(vals)
         if not vals.get("rule_set_id") and vals.get("competition_id"):
             competition = self.env["federation.competition"].browse(
                 vals["competition_id"]
@@ -434,6 +435,38 @@ class FederationTeamRoster(models.Model):
                 player=player,
             )
         return True
+
+    def _assert_unique_active_roster(self, vals):
+        """Raise ValidationError if activating would create a duplicate active roster."""
+        if vals.get("status") != "active":
+            return
+        for record in self:
+            team_id = vals.get("team_id", record.team_id.id)
+            season_id = vals.get("season_id", record.season_id.id)
+            competition_id = vals.get(
+                "competition_id",
+                record.competition_id.id if record.competition_id else False,
+            )
+            duplicate = self.search(
+                [
+                    ("team_id", "=", team_id),
+                    ("season_id", "=", season_id),
+                    ("competition_id", "=", competition_id),
+                    ("status", "=", "active"),
+                    ("id", "!=", record.id),
+                ],
+                limit=1,
+            )
+            if duplicate:
+                raise ValidationError(
+                    _(
+                        "Team '%(team)s' already has an active roster for this season/competition: '%(duplicate)s'."
+                    )
+                    % {
+                        "team": record.team_id.display_name,
+                        "duplicate": duplicate.display_name,
+                    }
+                )
 
     def _assert_scope_editable_for_match_day(self, vals):
         """Handle assert scope editable for match day."""

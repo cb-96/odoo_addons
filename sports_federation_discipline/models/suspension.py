@@ -5,6 +5,7 @@ from odoo.exceptions import ValidationError
 class FederationSuspension(models.Model):
     _name = "federation.suspension"
     _description = "Suspension"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "date_start desc, id desc"
 
     name = fields.Char(required=True)

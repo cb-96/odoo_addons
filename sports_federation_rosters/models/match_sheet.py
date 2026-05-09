@@ -16,6 +16,7 @@ def _dedupe_reasons(reasons):
 class FederationMatchSheet(models.Model):
     _name = "federation.match.sheet"
     _description = "Match Sheet"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
 
     name = fields.Char(
         compute="_compute_name",

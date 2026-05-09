@@ -7,6 +7,7 @@ from odoo.exceptions import ValidationError
 class FederationMatchReferee(models.Model):
     _name = "federation.match.referee"
     _description = "Match Referee Assignment"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "match_id, role"
 
     match_id = fields.Many2one(

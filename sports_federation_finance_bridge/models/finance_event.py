@@ -5,7 +5,7 @@ from odoo.exceptions import ValidationError
 class FederationFinanceEvent(models.Model):
     _name = "federation.finance.event"
     _description = "Federation Finance Event"
-    _inherit = ["federation.finance.event.export.mixin"]
+    _inherit = ["federation.finance.event.export.mixin", "mail.thread", "mail.activity.mixin"]
     _order = "create_date desc"
 
     name = fields.Char(required=True)

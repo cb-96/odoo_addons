@@ -5,6 +5,7 @@ from odoo.exceptions import UserError, ValidationError
 class FederationStageProgression(models.Model):
     _name = "federation.stage.progression"
     _description = "Stage Progression Rule"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "sequence, id"
 
     name = fields.Char(string="Name", compute="_compute_name", store=True)

@@ -53,6 +53,7 @@ class FederationImportTemplate(models.Model):
 class FederationImportJob(models.Model):
     _name = "federation.import.job"
     _description = "Federation Import Governance Job"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "create_date desc, id desc"
 
     STATE_SELECTION = IMPORT_JOB_STATE_SELECTION

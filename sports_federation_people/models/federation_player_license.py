@@ -5,6 +5,7 @@ from odoo.exceptions import ValidationError
 class FederationPlayerLicense(models.Model):
     _name = "federation.player.license"
     _description = "Player License"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "issue_date desc, id"
 
     name = fields.Char(string="License Number", required=True, copy=False)
