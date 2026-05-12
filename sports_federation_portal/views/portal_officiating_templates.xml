@@ -91,6 +91,7 @@
                 </div>
                 <div t-if="error" class="alert alert-danger" role="alert">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
                 <div class="row g-4">

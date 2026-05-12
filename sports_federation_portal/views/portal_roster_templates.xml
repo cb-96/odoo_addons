@@ -25,6 +25,7 @@
                 </div>
                 <div t-if="error" class="alert alert-danger" role="alert">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
                 <div class="row mb-4" t-if="roster_opportunities">
@@ -146,6 +147,7 @@
                 </div>
                 <div t-if="error" class="alert alert-danger" role="alert">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
                 <div t-if="portal_manage_error" class="alert alert-warning" role="alert">
                     <t t-esc="portal_manage_error"/>
@@ -319,6 +321,7 @@
 
                 <div t-if="error" class="alert alert-danger" role="alert">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
                 <div class="row g-4">
@@ -393,6 +396,7 @@
 
                 <div t-if="error" class="alert alert-danger" role="alert">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
                 <div class="card">
@@ -568,6 +572,7 @@
                 </div>
                 <div t-if="error" class="alert alert-danger" role="alert">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
                 <div class="row g-4">

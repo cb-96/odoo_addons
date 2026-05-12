@@ -11,7 +11,8 @@
             <xpath expr="//header/field[@name='state']" position="after">
                 <field name="result_state" widget="statusbar"
                        statusbar_visible="draft,submitted,verified,approved,contested,corrected"
-                       string="Result"/>
+                       string="Result"
+                       readonly="state != 'done'"/>
             </xpath>
             <!-- Add result control buttons -->
             <xpath expr="//header/button[@name='action_draft']" position="after">
@@ -30,6 +31,9 @@
             </xpath>
             <!-- Add result control section in body -->
             <xpath expr="//sheet/group[2]" position="after">
+                <div class="alert alert-info py-1 px-2 small" invisible="state != 'done'" role="status">
+                    Match complete — use Result Status above to track the approval pipeline.
+                </div>
                 <group string="Result Control">
                     <group string="Approval Trail">
                         <field name="result_submitted_by_id"/>

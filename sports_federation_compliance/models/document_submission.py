@@ -99,6 +99,10 @@ class FederationDocumentSubmission(models.Model):
         compute="_compute_target_display",
         store=True,
     )
+    target_entity_label = fields.Char(
+        string="Applies To",
+        compute="_compute_target_entity_label",
+    )
 
     @api.depends(
         "club_id",
@@ -111,6 +115,21 @@ class FederationDocumentSubmission(models.Model):
         """Store a normalized target label for list views and SQL-backed reports."""
         for rec in self:
             rec.target_display = rec._compliance_get_target_display(
+                target_model=rec.target_model
+            )
+
+    @api.depends(
+        "club_id",
+        "player_id",
+        "referee_id",
+        "venue_id",
+        "club_representative_id",
+        "target_model",
+    )
+    def _compute_target_entity_label(self):
+        """Return the display name of the resolved target entity for form-view display."""
+        for rec in self:
+            rec.target_entity_label = rec._compliance_get_target_display(
                 target_model=rec.target_model
             )
 

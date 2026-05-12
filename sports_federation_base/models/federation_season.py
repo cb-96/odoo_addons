@@ -39,14 +39,30 @@ class FederationSeason(models.Model):
     registration_count = fields.Integer(
         string="Registration Count", compute="_compute_registration_count", store=True
     )
+    confirmed_registration_count = fields.Integer(
+        string="Confirmed Registrations",
+        compute="_compute_registration_count",
+        store=True,
+    )
+    pending_registration_count = fields.Integer(
+        string="Pending Registrations",
+        compute="_compute_registration_count",
+        store=True,
+    )
 
     _code_unique = models.Constraint("unique (code)", "Season code must be unique.")
 
-    @api.depends("registration_ids")
+    @api.depends("registration_ids", "registration_ids.state")
     def _compute_registration_count(self):
-        """Compute registration count."""
+        """Compute total, confirmed, and pending registration counts."""
         for rec in self:
             rec.registration_count = len(rec.registration_ids)
+            rec.confirmed_registration_count = len(
+                rec.registration_ids.filtered(lambda r: r.state == "confirmed")
+            )
+            rec.pending_registration_count = len(
+                rec.registration_ids.filtered(lambda r: r.state == "draft")
+            )
 
     def action_view_registrations(self):
         """Execute the view registrations action."""
@@ -55,6 +71,26 @@ class FederationSeason(models.Model):
             "sports_federation_base.federation_season_registration_action"
         )
         action["domain"] = [("season_id", "=", self.id)]
+        return action
+
+    def action_view_confirmed_registrations(self):
+        """Open confirmed registrations for this season."""
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_base.federation_season_registration_action"
+        )
+        action["domain"] = [("season_id", "=", self.id), ("state", "=", "confirmed")]
+        action["display_name"] = _("Confirmed Registrations")
+        return action
+
+    def action_view_pending_registrations(self):
+        """Open draft/pending registrations for this season."""
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_base.federation_season_registration_action"
+        )
+        action["domain"] = [("season_id", "=", self.id), ("state", "=", "draft")]
+        action["display_name"] = _("Pending Registrations")
         return action
 
     @api.constrains("date_start", "date_end")

@@ -679,3 +679,48 @@ class TestCompliance(TransactionCase):
         )
 
         self.assertEqual(len(submission.attachment_ids), 1)
+
+    def test_target_entity_label_returns_correct_name(self):
+        """target_entity_label returns the display name of the resolved target entity."""
+        player_req = self.env["federation.document.requirement"].create(
+            {
+                "name": "Player Card",
+                "code": "PLAY_CARD",
+                "target_model": "federation.player",
+            }
+        )
+        referee_req = self.env["federation.document.requirement"].create(
+            {
+                "name": "Referee Badge",
+                "code": "REF_BADGE",
+                "target_model": "federation.referee",
+            }
+        )
+
+        club_sub = self.env["federation.document.submission"].create(
+            {
+                "name": "Club Label Test",
+                "requirement_id": self.requirement.id,
+                "club_id": self.club.id,
+                "expiry_date": date.today() + timedelta(days=365),
+            }
+        )
+        player_sub = self.env["federation.document.submission"].create(
+            {
+                "name": "Player Label Test",
+                "requirement_id": player_req.id,
+                "player_id": self.player.id,
+            }
+        )
+        referee_sub = self.env["federation.document.submission"].create(
+            {
+                "name": "Referee Label Test",
+                "requirement_id": referee_req.id,
+                "referee_id": self.referee.id,
+                "expiry_date": date.today() + timedelta(days=365),
+            }
+        )
+
+        self.assertEqual(club_sub.target_entity_label, self.club.display_name)
+        self.assertEqual(player_sub.target_entity_label, self.player.display_name)
+        self.assertEqual(referee_sub.target_entity_label, self.referee.display_name)

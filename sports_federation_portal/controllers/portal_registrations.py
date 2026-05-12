@@ -43,6 +43,7 @@ class FederationRegistrationPortal(FederationPortalBase):
             "page_name": "my_season_registrations",
             "success": kw.get("success"),
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
         }
         return request.render(
             "sports_federation_portal.portal_my_season_registrations",
@@ -86,6 +87,7 @@ class FederationRegistrationPortal(FederationPortalBase):
             "page_name": "my_tournament_registrations",
             "success": kw.get("success"),
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
         }
         return request.render(
             "sports_federation_portal.portal_my_tournament_registrations",
@@ -132,6 +134,7 @@ class FederationRegistrationPortal(FederationPortalBase):
             "preselect_team_id": preselect_team_id,
             "page_name": "new_season_registration",
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
         }
         return request.render(
             "sports_federation_portal.portal_season_registration_form",
@@ -167,7 +170,9 @@ class FederationRegistrationPortal(FederationPortalBase):
             )
         except (AccessError, ValidationError) as error:
             return self._redirect_with_query(
-                "/my/season-registration/new", error=str(error)
+                "/my/season-registration/new",
+                error=str(error),
+                error_hint="Check all required fields are completed and the season is still open for registration.",
             )
 
         return self._redirect_with_query(
@@ -201,6 +206,7 @@ class FederationRegistrationPortal(FederationPortalBase):
             return self._redirect_with_query(
                 "/my/tournament-registrations",
                 error=str(error),
+                error_hint="This registration may not be cancellable at its current stage. Contact the federation if needed.",
             )
 
         return self._redirect_with_query(
@@ -234,6 +240,7 @@ class FederationRegistrationPortal(FederationPortalBase):
             return self._redirect_with_query(
                 "/my/season-registrations",
                 error=str(error),
+                error_hint="This registration may not be cancellable at its current stage. Contact the federation if needed.",
             )
 
         return self._redirect_with_query(

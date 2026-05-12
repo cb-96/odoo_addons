@@ -103,6 +103,7 @@ class FederationMatchPortal(FederationRosterPortalBase):
             "page_name": "my_match_sheets",
             "success": kw.get("success"),
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
             "can_prepare_sheet": sheet.state != "locked",
             "can_edit_squad": sheet.state == "draft",
             "available_coaches": available_coaches,
@@ -156,6 +157,7 @@ class FederationMatchPortal(FederationRosterPortalBase):
             return self._redirect_with_query(
                 f"/my/match-sheets/{sheet_id}",
                 error=str(exc),
+                error_hint="Check the squad contains the required number of eligible players and preparation details are complete.",
             )
 
         success_message = (
@@ -216,6 +218,7 @@ class FederationMatchPortal(FederationRosterPortalBase):
             return self._redirect_with_query(
                 f"/my/match-sheets/{sheet_id}",
                 error=str(exc),
+                error_hint="Check the squad composition meets match requirements and no player is listed twice.",
             )
 
         return self._redirect_with_query(

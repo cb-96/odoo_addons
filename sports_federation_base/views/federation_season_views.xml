@@ -29,6 +29,20 @@
                                 icon="fa-pencil-square-o">
                             <field name="registration_count" widget="statinfo" string="Registrations"/>
                         </button>
+                        <button name="action_view_confirmed_registrations"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-check-circle"
+                                invisible="not confirmed_registration_count">
+                            <field name="confirmed_registration_count" widget="statinfo" string="Confirmed"/>
+                        </button>
+                        <button name="action_view_pending_registrations"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-clock-o"
+                                invisible="not pending_registration_count">
+                            <field name="pending_registration_count" widget="statinfo" string="Pending"/>
+                        </button>
                     </div>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
                             invisible="active"/>

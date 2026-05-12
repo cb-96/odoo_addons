@@ -53,6 +53,41 @@ class FederationNotificationLog(models.Model):
     operator_message = fields.Text(string="Operator Message")
     message = fields.Text(string="Message")
 
+    target_display_name = fields.Char(
+        string="Target",
+        compute="_compute_target_display_name",
+    )
+
+    @api.depends("target_model", "target_res_id")
+    def _compute_target_display_name(self):
+        """Resolve the display name of the target record, guarding for optional models."""
+        for rec in self:
+            if not rec.target_model or not rec.target_res_id:
+                rec.target_display_name = False
+                continue
+            model = self.env.get(rec.target_model)
+            if model is None:
+                rec.target_display_name = rec.target_model
+                continue
+            try:
+                record = model.sudo().browse(rec.target_res_id).exists()
+                rec.target_display_name = record.display_name if record else False
+            except Exception:
+                rec.target_display_name = False
+
+    def action_view_target(self):
+        """Return an act_window action to open the target record."""
+        self.ensure_one()
+        if not self.target_model or not self.target_res_id:
+            return False
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": self.target_model,
+            "view_mode": "form",
+            "res_id": self.target_res_id,
+            "target": "current",
+        }
+
     @api.model
     def _cron_notification_scan(self):
         """Delegate to the notification service cron method."""

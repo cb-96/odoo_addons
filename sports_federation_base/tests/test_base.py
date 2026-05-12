@@ -241,6 +241,44 @@ class TestFederationSeason(TransactionCase):
         with self.assertRaises(ValidationError):
             self.season.write({"target_team_count": -1})
 
+    def test_season_registration_counts_by_state(self):
+        """confirmed_registration_count and pending_registration_count return correct values."""
+        club = self.env["federation.club"].create({"name": "Count Club", "code": "CC"})
+        team_a = self.env["federation.team"].create(
+            {"name": "Count Team A", "club_id": club.id, "code": "CTA"}
+        )
+        team_b = self.env["federation.team"].create(
+            {"name": "Count Team B", "club_id": club.id, "code": "CTB"}
+        )
+        season = self.env["federation.season"].create(
+            {
+                "name": "Count Season",
+                "code": "CNTSZN",
+                "date_start": "2026-01-01",
+                "date_end": "2026-12-31",
+            }
+        )
+        reg_a = self.env["federation.season.registration"].create(
+            {"season_id": season.id, "team_id": team_a.id}
+        )
+        reg_b = self.env["federation.season.registration"].create(
+            {"season_id": season.id, "team_id": team_b.id}
+        )
+
+        self.assertEqual(season.registration_count, 2)
+        self.assertEqual(season.confirmed_registration_count, 0)
+        self.assertEqual(season.pending_registration_count, 2)
+
+        reg_a.action_confirm()
+        season.invalidate_recordset()
+        self.assertEqual(season.confirmed_registration_count, 1)
+        self.assertEqual(season.pending_registration_count, 1)
+
+        reg_b.action_confirm()
+        season.invalidate_recordset()
+        self.assertEqual(season.confirmed_registration_count, 2)
+        self.assertEqual(season.pending_registration_count, 0)
+
 
 class TestFederationSeasonRegistration(TransactionCase):
 

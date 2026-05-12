@@ -131,13 +131,13 @@ gated by `invisible="target_model != '...'"`. In read mode, users see the one
 relevant field surrounded by blank labels for the 4 irrelevant ones.
 
 Work:
-- [ ] Add a computed `target_entity_label` char field that returns the
+- [x] Add a computed `target_entity_label` char field that returns the
   `display_name` of the resolved target record based on `target_model`.
-- [ ] In the form view, show `target_entity_label` (read-only) above the
+- [x] In the form view, show `target_entity_label` (read-only) above the
   conditional entity fields with a clear "Applies To:" label.
-- [ ] Keep the existing entity `Many2one` fields for draft editing, but move them
+- [x] Keep the existing entity `Many2one` fields for draft editing, but move them
   under a collapsible group visible only in draft state.
-- [ ] Tests: CI view validation; assert `target_entity_label` returns the correct
+- [x] Tests: CI view validation; assert `target_entity_label` returns the correct
   name for each `target_model` variant.
 
 Done when: in read mode, users see "Applies To: Player — João Silva" rather than
@@ -152,12 +152,12 @@ Decide, Appeal, Close) with no explanation of the workflow or when each is valid
 Federation officers new to the system cannot self-serve.
 
 Work:
-- [ ] Add `title=` tooltip attributes to each action button explaining the
+- [x] Add `title=` tooltip attributes to each action button explaining the
   precondition and effect (e.g. "Submit this case for panel review. Only Draft
   cases can be submitted.").
-- [ ] Add a final `<page string="Workflow Guide">` tab containing a brief plain-text
+- [x] Add a final `<page string="Workflow Guide">` tab containing a brief plain-text
   description of the 5 states and which roles can perform each transition.
-- [ ] Tests: CI view validation.
+- [x] Tests: CI view validation.
 
 Done when: hovering any action button shows an actionable tooltip; the guide tab
 is present and renders without errors.
@@ -172,12 +172,12 @@ Module: `sports_federation_result_control`
 progress bars with no indication of their relationship or sequencing.
 
 Work:
-- [ ] Add a brief inline `<div class="alert alert-info py-1 px-2 small">` above the
+- [x] Add a brief inline `<div class="alert alert-info py-1 px-2 small">` above the
   result statusbar, shown only when `state == 'done'`:
   "Match complete — use Result Status below to track the approval pipeline."
-- [ ] Add `readonly="state != 'done'"` to the `result_status` statusbar so it
+- [x] Add `readonly="state != 'done'"` to the `result_status` statusbar so it
   cannot be changed before the match is complete.
-- [ ] Tests: CI view validation.
+- [x] Tests: CI view validation.
 
 Done when: the two statusbars are visually and textually connected; the result
 status cannot be advanced before the match is done.
@@ -191,12 +191,12 @@ Module: `sports_federation_governance`
 may not notice it unlocked after approval.
 
 Work:
-- [ ] Show `implementation_note` at all times but with
+- [x] Show `implementation_note` at all times but with
   `readonly="state not in ('approved', 'implemented')"` and
   `placeholder="Add implementation notes once this request is approved."`.
-- [ ] Add a small `<p class="text-muted small">` note below the field in readonly
+- [x] Add a small `<p class="text-muted small">` note below the field in readonly
   mode: "This field unlocks after the request is approved."
-- [ ] Tests: CI view validation.
+- [x] Tests: CI view validation.
 
 Done when: the field is always visible; its locked state is self-explanatory.
 
@@ -213,14 +213,14 @@ plain text. There is no way to jump to the tournament, match, or player that
 triggered the notification without copying the ID and navigating manually.
 
 Work:
-- [ ] Add a computed `target_display_name` char field on the log model that
+- [x] Add a computed `target_display_name` char field on the log model that
   resolves `env.get(target_model).sudo().browse(target_res_id).display_name`.
   Guard `env.get()` for `None` (optional addons).
-- [ ] Add `action_view_target()` returning an `act_window` for the target model
+- [x] Add `action_view_target()` returning an `act_window` for the target model
   filtered to `target_res_id`.
-- [ ] Add a smart button (`type="object"`, icon `fa-external-link`) showing the
+- [x] Add a smart button (`type="object"`, icon `fa-external-link`) showing the
   display name, hidden when `target_res_id` is not set.
-- [ ] Tests: assert `action_view_target` returns a valid `act_window` for a log
+- [x] Tests: assert `action_view_target` returns a valid `act_window` for a log
   whose `target_model` is `federation.match`.
 
 Done when: notification log records have a one-click link to the triggering record.
@@ -238,15 +238,15 @@ breakdown by state (confirmed vs. draft/pending). Planning for a new season
 requires knowing how many clubs are confirmed.
 
 Work (Club):
-- [ ] Add `representative_count` computed Integer field on `federation.club`.
-- [ ] Add smart button using `type="object"` backed by a Python method (see
+- [x] Add `representative_count` computed Integer field on `federation.club`.
+- [x] Add smart button using `type="object"` backed by a Python method (see
   `odoo-patterns.md` for the correct `_for_xml_id` pattern).
 
 Work (Season):
-- [ ] Add `confirmed_registration_count` and `pending_registration_count` computed
+- [x] Add `confirmed_registration_count` and `pending_registration_count` computed
   Integer fields on `federation.season`.
-- [ ] Add two state-specific smart buttons opening filtered list views.
-- [ ] Tests: assert each computed field returns the correct count after creating
+- [x] Add two state-specific smart buttons opening filtered list views.
+- [x] Tests: assert each computed field returns the correct count after creating
   registrations in different states.
 
 Done when: club form shows rep count; season form shows confirmed vs. pending
@@ -261,13 +261,13 @@ standings it appears as an unsorted flat list across tournaments. The form has n
 visual indication of the tournament → stage → group hierarchy.
 
 Work:
-- [ ] Change `_order` on `FederationStanding` to
+- [x] Change `_order` on `FederationStanding` to
   `"tournament_id, stage_id, group_id, name"`.
-- [ ] Add a compact `<group string="Context">` at the top of the form view showing
+- [x] Add a compact `<group string="Context">` at the top of the form view showing
   `tournament_id` (readonly link), `stage_id`, and `group_id`.
-- [ ] Add default search filters to the standings list action context:
+- [x] Add default search filters to the standings list action context:
   a "Group By Tournament" filter and a "My Tournaments" domain filter.
-- [ ] Tests: CI view validation; assert model `_order` value.
+- [x] Tests: CI view validation; assert model `_order` value.
 
 Done when: the list is ordered by tournament by default; the form context is
 self-explanatory.
@@ -285,12 +285,12 @@ can be a raw Python `ValidationError` message (e.g. "Min players required: 15 no
 met"). Club representatives see technical language with no guidance.
 
 Work:
-- [ ] In portal controllers, translate caught `ValidationError` into a
+- [x] In portal controllers, translate caught `ValidationError` into a
   user-friendly message and pass a separate `error_hint` to the template.
-- [ ] Update portal templates to render `error_hint` as a `<p class="small
+- [x] Update portal templates to render `error_hint` as a `<p class="small
   text-muted mt-1">` below the error box.
-- [ ] Audit all portal controller `except` blocks for raw exception passthrough.
-- [ ] Tests: assert that submitting an invalid roster via portal renders the
+- [x] Audit all portal controller `except` blocks for raw exception passthrough.
+- [x] Tests: assert that submitting an invalid roster via portal renders the
   expected `error_hint` text (not a raw Python string).
 
 Done when: portal error messages always end with an actionable suggestion; no raw
@@ -305,12 +305,12 @@ Workspace", "Season Registrations", "Match Day") with no grouping. Mobile users
 see a long flat list in arbitrary order.
 
 Work:
-- [ ] Audit all `portal_home_menuitem` entries and standardise into three groups:
+- [x] Audit all `portal_home_menuitem` entries and standardise into three groups:
   "Your Season" (registrations, rosters), "Match Day" (sheets, results),
   "Club Admin" (compliance, representatives).
-- [ ] Use `sequence` values to enforce group order.
-- [ ] Add `<hr/>` separators between groups in the portal home template.
-- [ ] Tests: `HttpCase` smoke test that portal home renders without errors.
+- [x] Use `sequence` values to enforce group order.
+- [x] Add `<hr/>` separators between groups in the portal home template.
+- [x] Tests: `HttpCase` smoke test that portal home renders without errors.
 
 Done when: portal home groups related items with clear headings matching the user's
 workflow context.
@@ -324,7 +324,7 @@ tournaments, matches, standings, rosters, or results. A fresh install looks empt
 and cannot be used for evaluation or onboarding.
 
 Work:
-- [ ] Expand `demo/` to include at minimum:
+- [x] Expand `demo/` to include at minimum:
   - 1 tournament with 2 stages (group + knockout) and 2 groups of 4.
   - 16 players distributed across 6 teams.
   - 1 active season-scoped roster per team.
@@ -333,8 +333,8 @@ Work:
   - 2 document submissions per team (license + medical).
   - 2 disciplinary cases (1 open, 1 closed).
   - 1 notification rule and 3 log entries.
-- [ ] Keep records isolated under `sports_federation_demo` as source module.
-- [ ] Tests: assert that after installing `sports_federation_demo`, at least
+- [x] Keep records isolated under `sports_federation_demo` as source module.
+- [x] Tests: assert that after installing `sports_federation_demo`, at least
   1 tournament, 6 matches, and 2 standings exist.
 
 Done when: a fresh demo install shows a realistic federation with an ongoing season

@@ -8,6 +8,18 @@
         <field name="arch" type="xml">
             <form string="Notification Log">
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_target"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-external-link"
+                                invisible="not target_res_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text"><field name="target_display_name"/></span>
+                                <span class="o_stat_text">View Record</span>
+                            </div>
+                        </button>
+                    </div>
                     <group>
                         <group string="General">
                             <field name="name"/>

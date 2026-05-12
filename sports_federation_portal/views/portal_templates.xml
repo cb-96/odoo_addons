@@ -40,17 +40,18 @@
                 </div>
             </a>
 
-            <!-- Numbered workflow steps -->
+            <!-- Grouped navigation links -->
             <div class="card mb-3">
+                <!-- Your Season -->
                 <div class="card-header py-2 bg-transparent">
-                    <span class="small fw-semibold text-uppercase text-muted">Season workflow</span>
+                    <span class="small fw-semibold text-uppercase text-muted">
+                        <i class="fa fa-calendar me-1"/>Your Season
+                    </span>
                 </div>
                 <div class="list-group list-group-flush">
                     <a href="/my/season-registrations"
                        class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2">
-                        <span class="badge bg-light text-dark border rounded-circle d-inline-flex
-                                     align-items-center justify-content-center flex-shrink-0"
-                              style="width:24px;height:24px;font-size:.75rem;">1</span>
+                        <i class="fa fa-pencil-square-o fa-fw text-muted flex-shrink-0"/>
                         <div>
                             <div class="fw-semibold small">Season Registrations</div>
                             <div class="text-muted" style="font-size:.8rem;">
@@ -60,9 +61,7 @@
                     </a>
                     <a href="/my/rosters"
                        class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2">
-                        <span class="badge bg-light text-dark border rounded-circle d-inline-flex
-                                     align-items-center justify-content-center flex-shrink-0"
-                              style="width:24px;height:24px;font-size:.75rem;">2</span>
+                        <i class="fa fa-list fa-fw text-muted flex-shrink-0"/>
                         <div>
                             <div class="fw-semibold small">Rosters</div>
                             <div class="text-muted" style="font-size:.8rem;">
@@ -72,9 +71,7 @@
                     </a>
                     <a href="/my/tournament-registrations"
                        class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2">
-                        <span class="badge bg-light text-dark border rounded-circle d-inline-flex
-                                     align-items-center justify-content-center flex-shrink-0"
-                              style="width:24px;height:24px;font-size:.75rem;">3</span>
+                        <i class="fa fa-trophy fa-fw text-muted flex-shrink-0"/>
                         <div>
                             <div class="fw-semibold small">Tournament Registrations</div>
                             <div class="text-muted" style="font-size:.8rem;">
@@ -82,11 +79,20 @@
                             </div>
                         </div>
                     </a>
+                </div>
+
+                <hr class="my-0"/>
+
+                <!-- Match Day -->
+                <div class="card-header py-2 bg-transparent border-top-0">
+                    <span class="small fw-semibold text-uppercase text-muted">
+                        <i class="fa fa-futbol-o me-1"/>Match Day
+                    </span>
+                </div>
+                <div class="list-group list-group-flush">
                     <a href="/my/match-day"
                        class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2">
-                        <span class="badge bg-light text-dark border rounded-circle d-inline-flex
-                                     align-items-center justify-content-center flex-shrink-0"
-                              style="width:24px;height:24px;font-size:.75rem;">4</span>
+                        <i class="fa fa-clock-o fa-fw text-muted flex-shrink-0"/>
                         <div>
                             <div class="fw-semibold small">Match Day</div>
                             <div class="text-muted" style="font-size:.8rem;">
@@ -94,23 +100,58 @@
                             </div>
                         </div>
                     </a>
+                    <a href="/my/match-sheets"
+                       class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2">
+                        <i class="fa fa-list-alt fa-fw text-muted flex-shrink-0"/>
+                        <div>
+                            <div class="fw-semibold small">Match Sheets</div>
+                            <div class="text-muted" style="font-size:.8rem;">
+                                View and manage official match sheets
+                            </div>
+                        </div>
+                    </a>
                 </div>
-            </div>
 
-            <!-- Secondary quick links -->
-            <div class="d-flex flex-wrap gap-2">
-                <a href="/my/teams" class="btn btn-outline-secondary btn-sm">
-                    <i class="fa fa-users me-1"/>Teams
-                </a>
-                <a href="/my/players" class="btn btn-outline-secondary btn-sm">
-                    <i class="fa fa-user me-1"/>Players
-                </a>
-                <a href="/my/match-sheets" class="btn btn-outline-secondary btn-sm">
-                    <i class="fa fa-list-alt me-1"/>Match Sheets
-                </a>
-                <a href="/my/club" class="btn btn-outline-secondary btn-sm">
-                    <i class="fa fa-shield me-1"/>Club Info
-                </a>
+                <hr class="my-0"/>
+
+                <!-- Club Admin -->
+                <div class="card-header py-2 bg-transparent border-top-0">
+                    <span class="small fw-semibold text-uppercase text-muted">
+                        <i class="fa fa-shield me-1"/>Club Admin
+                    </span>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="/my/teams"
+                       class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2">
+                        <i class="fa fa-users fa-fw text-muted flex-shrink-0"/>
+                        <div>
+                            <div class="fw-semibold small">Teams</div>
+                            <div class="text-muted" style="font-size:.8rem;">
+                                Manage your club's teams
+                            </div>
+                        </div>
+                    </a>
+                    <a href="/my/players"
+                       class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2">
+                        <i class="fa fa-user fa-fw text-muted flex-shrink-0"/>
+                        <div>
+                            <div class="fw-semibold small">Players</div>
+                            <div class="text-muted" style="font-size:.8rem;">
+                                Manage player registrations and licenses
+                            </div>
+                        </div>
+                    </a>
+                    <a href="/my/club"
+                       class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2">
+                        <i class="fa fa-info-circle fa-fw text-muted flex-shrink-0"/>
+                        <div>
+                            <div class="fw-semibold small">Club Info</div>
+                            <div class="text-muted" style="font-size:.8rem;">
+                                View and update club details
+                            </div>
+                        </div>
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -165,6 +206,7 @@
 
                 <div t-if="error" class="alert alert-warning">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
                 <t t-if="club">
@@ -239,6 +281,7 @@
                 </div>
                 <div t-if="error" class="alert alert-danger" role="alert">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
                 <div t-if="teams">
@@ -303,6 +346,7 @@
 
                 <div t-if="error" class="alert alert-danger" role="alert">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
                 <form action="/my/teams/new" method="POST">
@@ -382,6 +426,7 @@
                 </div>
                 <div t-if="error" class="alert alert-danger" role="alert">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
                 <!-- Filters -->
@@ -468,6 +513,7 @@
 
                 <div t-if="error" class="alert alert-danger" role="alert">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
                 <form action="/my/players/new" method="POST">
@@ -538,6 +584,7 @@
                 </div>
                 <div t-if="error" class="alert alert-danger" role="alert">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
                 <div class="row">
@@ -627,6 +674,7 @@
                 </div>
                 <div t-if="error" class="alert alert-danger" role="alert">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
                 <div class="row">
@@ -717,6 +765,7 @@
 
                 <div t-if="error" class="alert alert-danger" role="alert">
                     <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
                 <div t-if="not seasons" class="alert alert-info" role="status">

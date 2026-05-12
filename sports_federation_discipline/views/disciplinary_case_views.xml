@@ -24,11 +24,22 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_submit_review" string="Submit for Review" type="object" class="oe_highlight" invisible="state != 'draft'"/>
-                    <button name="action_reopen" string="Reopen" type="object" invisible="state != 'under_review'"/>
-                    <button name="action_decide" string="Decide" type="object" class="oe_highlight" invisible="state != 'under_review'"/>
-                    <button name="action_mark_appealed" string="Mark as Appealed" type="object" invisible="state != 'decided'"/>
-                    <button name="action_close" string="Close" type="object" invisible="state in ['draft', 'closed']" confirm="Closing this case will also close all attached incidents. Continue?"/>
+                    <button name="action_submit_review" string="Submit for Review" type="object" class="oe_highlight"
+                            invisible="state != 'draft'"
+                            title="Submit this case for panel review. Only Draft cases can be submitted."/>
+                    <button name="action_reopen" string="Reopen" type="object"
+                            invisible="state != 'under_review'"
+                            title="Reopen this case to Draft for further investigation. Only cases Under Review can be reopened."/>
+                    <button name="action_decide" string="Decide" type="object" class="oe_highlight"
+                            invisible="state != 'under_review'"
+                            title="Record a decision for this case. Only cases Under Review can be decided."/>
+                    <button name="action_mark_appealed" string="Mark as Appealed" type="object"
+                            invisible="state != 'decided'"
+                            title="Mark this case as appealed. Only Decided cases can be appealed."/>
+                    <button name="action_close" string="Close" type="object"
+                            invisible="state in ['draft', 'closed']"
+                            confirm="Closing this case will also close all attached incidents. Continue?"
+                            title="Close this case permanently. All attached incidents will also be closed."/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,under_review,decided,closed"/>
                 </header>
                 <sheet>
@@ -79,6 +90,23 @@
                                 <field name="summary"/>
                                 <field name="notes"/>
                             </group>
+                        </page>
+                        <page string="Workflow Guide" name="workflow_guide">
+                            <div class="o_field_widget p-3">
+                                <p><strong>Disciplinary Case Workflow</strong></p>
+                                <dl>
+                                    <dt><strong>Draft</strong></dt>
+                                    <dd>Initial state. The case is being prepared. Federation administrators can edit all fields and attach incidents. Submit for Review to begin the formal process.</dd>
+                                    <dt><strong>Under Review</strong></dt>
+                                    <dd>The case is under panel review. Administrators and case managers can add sanctions and suspensions. Use <em>Decide</em> to record the panel's decision, or <em>Reopen</em> to return to Draft if more investigation is needed.</dd>
+                                    <dt><strong>Decided</strong></dt>
+                                    <dd>The panel has issued a decision. Sanctions and suspensions are finalised. If the subject files an appeal, use <em>Mark as Appealed</em>. The case can still be closed from this state.</dd>
+                                    <dt><strong>Appealed</strong></dt>
+                                    <dd>An appeal has been lodged. The case remains open for review. Close the case once the appeal process is resolved.</dd>
+                                    <dt><strong>Closed</strong></dt>
+                                    <dd>The case is complete. All attached incidents are also closed. No further transitions are possible.</dd>
+                                </dl>
+                            </div>
                         </page>
                     </notebook>
                 </sheet>

@@ -357,3 +357,10 @@ class TestStandings(TransactionCase):
                     "participant_id": self.participant_a.id,
                 }
             )
+
+    def test_standing_model_order(self):
+        """Test that FederationStanding uses the expected composite _order."""
+        self.assertEqual(
+            self.env["federation.standing"]._order,
+            "tournament_id, stage_id, group_id, name",
+        )

@@ -41,9 +41,14 @@
                     <group string="Reason">
                         <field name="reason" nolabel="1"/>
                     </group>
-                    <group string="Implementation" invisible="state not in ('approved', 'implemented')">
-                        <field name="implementation_note" nolabel="1"/>
+                    <group string="Implementation">
+                        <field name="implementation_note" nolabel="1"
+                               readonly="state not in ('approved', 'implemented')"
+                               placeholder="Add implementation notes once this request is approved."/>
                     </group>
+                    <div class="text-muted small ps-3 pb-2" invisible="state in ('approved', 'implemented')">
+                        This field unlocks after the request is approved.
+                    </div>
                     <notebook>
                         <page string="Decisions" name="decisions">
                             <field name="decision_ids">

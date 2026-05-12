@@ -6,7 +6,7 @@ class FederationStanding(models.Model):
     _name = "federation.standing"
     _description = "Federation Standing"
     _inherit = ["mail.thread"]
-    _order = "name"
+    _order = "tournament_id, stage_id, group_id, name"
 
     name = fields.Char(required=True, tracking=True)
     active = fields.Boolean(default=True)

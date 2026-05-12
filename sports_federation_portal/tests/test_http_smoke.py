@@ -650,3 +650,19 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         )
         # Cross-club access now returns 403 Access Denied (not a generic 404)
         self.assertEqual(foreign_line_response.status_code, 403)
+
+    def test_portal_error_hint_displayed_on_validation_error(self):
+        """Contextual error_hint text appears in the page when a ValidationError occurs."""
+        data = self._create_roster_workspace_smoke_data()
+        self.authenticate(self.season_user.login, "ignored")
+
+        # Hit the roster list page with an error_hint query param (simulating a
+        # redirect from a failed POST) and verify the hint renders.
+        hint_text = "Ensure the registration is confirmed and a roster has not already been created for this team."
+        response = self.url_open(
+            f"/my/rosters?error=Some+error&error_hint={hint_text.replace(' ', '+')}"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(hint_text, response.text)
+        # Raw Python exception noise must NOT appear.
+        self.assertNotIn("Traceback", response.text)

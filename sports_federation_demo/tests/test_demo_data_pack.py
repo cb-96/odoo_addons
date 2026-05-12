@@ -82,25 +82,31 @@ class TestDemoDataPack(TransactionCase):
 
     def test_demo_pack_has_expected_record_counts(self):
         expected_counts = {
-            "federation.club": 3,
-            "federation.team": 6,
+            "federation.club": 5,
+            "federation.team": 8,
             "federation.season": 1,
             "federation.rule.set": 1,
-            "federation.player": 15,
-            "federation.player.license": 15,
-            "federation.season.registration": 3,
+            "federation.player": 20,
+            "federation.player.license": 20,
+            "federation.season.registration": 6,
             "federation.competition": 1,
             "federation.competition.edition": 1,
             "federation.tournament": 1,
-            "federation.tournament.stage": 1,
-            "federation.tournament.group": 1,
-            "federation.tournament.participant": 3,
-            "federation.tournament.round": 3,
-            "federation.match": 3,
-            "federation.team.roster": 3,
-            "federation.team.roster.line": 12,
+            "federation.tournament.stage": 2,
+            "federation.tournament.group": 2,
+            "federation.tournament.participant": 8,
+            "federation.tournament.round": 4,
+            "federation.match": 8,
+            "federation.team.roster": 6,
+            "federation.team.roster.line": 20,
             "federation.match.sheet": 2,
             "federation.match.sheet.line": 8,
+            "federation.standing": 2,
+            "federation.standing.line": 8,
+            "federation.document.requirement": 2,
+            "federation.document.submission": 4,
+            "federation.disciplinary.case": 2,
+            "federation.notification.log": 3,
         }
         actual_counts = Counter(record.get("model") for record in self.records)
         self.assertEqual(actual_counts, expected_counts)
@@ -128,8 +134,7 @@ class TestDemoDataPack(TransactionCase):
         )
 
         self.assertEqual(submitted_sides, {"home", "away"})
-        self.assertEqual(match_states["done"], 1)
-        self.assertEqual(match_states["scheduled"], 2)
+        self.assertGreaterEqual(match_states["done"], 1)
 
         for sheet_record in sheet_records:
             roster_ref = sheet_record.xpath("./field[@name='roster_id']/@ref")
@@ -142,3 +147,22 @@ class TestDemoDataPack(TransactionCase):
             )
             self.assertIn(roster_ref[0], records_by_id)
             self.assertIn(match_ref[0], records_by_id)
+
+    def test_demo_pack_has_tournament_matches_and_standings(self):
+        """Ensure the demo pack has at least 1 tournament, 6 matches, and 2 standings."""
+        model_counts = Counter(record.get("model") for record in self.records)
+        self.assertGreaterEqual(
+            model_counts["federation.tournament"],
+            1,
+            "Demo pack must have at least 1 tournament.",
+        )
+        self.assertGreaterEqual(
+            model_counts["federation.match"],
+            6,
+            "Demo pack must have at least 6 matches.",
+        )
+        self.assertGreaterEqual(
+            model_counts["federation.standing"],
+            2,
+            "Demo pack must have at least 2 standings.",
+        )

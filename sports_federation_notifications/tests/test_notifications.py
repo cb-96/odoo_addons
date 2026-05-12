@@ -243,7 +243,61 @@ class TestNotifications(TransactionCase):
         self.assertTrue(log)
         self.assertIn(log.state, ("sent", "failed"))
 
-    def test_season_registration_reject_creates_notification_log(self):
+    def test_action_view_target_returns_act_window_for_match_log(self):
+        """action_view_target returns a valid act_window for a log targeting a federation.match."""
+        Match = self.env.get("federation.match")
+        if Match is None:
+            self.skipTest("federation.match not installed in this test run.")
+
+        tournament = self.env["federation.tournament"].create(
+            {
+                "name": "Target Test Tournament",
+                "date_start": "2026-01-01",
+            }
+        )
+        home_team = self.env["federation.team"].create(
+            {"name": "Target Home", "club_id": self.club.id, "code": "TH01"}
+        )
+        away_team = self.env["federation.team"].create(
+            {"name": "Target Away", "club_id": self.club.id, "code": "TA01"}
+        )
+        match = Match.create(
+            {
+                "name": "Target Test Match",
+                "tournament_id": tournament.id,
+                "home_team_id": home_team.id,
+                "away_team_id": away_team.id,
+            }
+        )
+        log = self.env["federation.notification.log"].create(
+            {
+                "name": "Target Test Log",
+                "notification_type": "email",
+                "state": "sent",
+                "target_model": "federation.match",
+                "target_res_id": match.id,
+            }
+        )
+
+        self.assertEqual(log.target_display_name, match.display_name)
+
+        action = log.action_view_target()
+        self.assertIsNotNone(action)
+        self.assertEqual(action["type"], "ir.actions.act_window")
+        self.assertEqual(action["res_model"], "federation.match")
+        self.assertEqual(action["res_id"], match.id)
+
+    def test_action_view_target_returns_false_when_no_target(self):
+        """action_view_target returns False when target_res_id is not set."""
+        log = self.env["federation.notification.log"].create(
+            {
+                "name": "No Target Log",
+                "notification_type": "email",
+                "state": "pending",
+            }
+        )
+        self.assertFalse(log.action_view_target())
+        self.assertFalse(log.target_display_name)
         """Test that season registration reject creates notification log."""
         portal_group = self.env.ref(
             "sports_federation_portal.group_federation_portal_club"

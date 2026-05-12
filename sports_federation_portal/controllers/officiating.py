@@ -97,6 +97,7 @@ class FederationOfficiatingPortal(http.Controller):
             "assignment": assignment,
             "page_name": "my_referee_assignments",
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
             "success": kw.get("success"),
         }
         return request.render(
@@ -142,8 +143,12 @@ class FederationOfficiatingPortal(http.Controller):
             return self._render_access_denied()
         except ValidationError as exc:
             return request.redirect(
-                "/my/referee-assignments/%s?error=%s"
-                % (assignment_id, quote_plus(str(exc)))
+                "/my/referee-assignments/%s?error=%s&error_hint=%s"
+                % (
+                    assignment_id,
+                    quote_plus(str(exc)),
+                    quote_plus("Check your response is valid. The assignment deadline may have passed."),
+                )
             )
 
         return request.redirect(

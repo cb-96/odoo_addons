@@ -20,6 +20,10 @@ demonstration database with realistic walkthrough content.
         "sports_federation_people",
         "sports_federation_tournament",
         "sports_federation_rosters",
+        "sports_federation_standings",
+        "sports_federation_compliance",
+        "sports_federation_discipline",
+        "sports_federation_notifications",
     ],
     "data": [],
     "demo": [

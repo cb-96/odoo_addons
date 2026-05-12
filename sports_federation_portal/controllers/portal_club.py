@@ -62,6 +62,7 @@ class FederationClubPortal(FederationPortalBase):
             "page_name": "my_teams",
             "success": kw.get("success"),
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
         }
         return request.render("sports_federation_portal.portal_my_teams", values)
 
@@ -82,6 +83,7 @@ class FederationClubPortal(FederationPortalBase):
             "clubs": clubs,
             "page_name": "new_team",
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
         }
         return request.render("sports_federation_portal.portal_my_team_new", values)
 
@@ -118,7 +120,11 @@ class FederationClubPortal(FederationPortalBase):
                 user=request.env.user,
             )
         except (AccessError, ValidationError) as error:
-            return self._redirect_with_query("/my/teams/new", error=str(error))
+            return self._redirect_with_query(
+                "/my/teams/new",
+                error=str(error),
+                error_hint="Verify all required fields are filled in and the team code is unique for your club.",
+            )
 
         return self._redirect_with_query(
             "/my/teams", success="Team created successfully"
@@ -164,6 +170,7 @@ class FederationClubPortal(FederationPortalBase):
             "filter_state": state,
             "success": kw.get("success"),
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
         }
         return request.render("sports_federation_portal.portal_my_players", values)
 
@@ -183,6 +190,7 @@ class FederationClubPortal(FederationPortalBase):
         values = {
             "page_name": "new_player",
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
         }
         return request.render("sports_federation_portal.portal_my_player_new", values)
 
@@ -223,7 +231,11 @@ class FederationClubPortal(FederationPortalBase):
                 user=request.env.user,
             )
         except (AccessError, ValidationError) as error:
-            return self._redirect_with_query("/my/players/new", error=str(error))
+            return self._redirect_with_query(
+                "/my/players/new",
+                error=str(error),
+                error_hint="Verify all required player fields are filled in correctly.",
+            )
 
         return self._redirect_with_query(
             "/my/players", success="Player added successfully"
