@@ -220,3 +220,44 @@ docker compose up -d odoo
 ```
 
 Adjust database names and paths to match the selected backup directory.
+
+---
+
+## Upgrade Path Notes (per release train)
+
+This section records DB migrations, new `ir.config_parameter` keys, deprecated
+field removals, and module install order changes introduced in each release.
+Add a subsection here for every release train that makes schema or behavioural
+changes. Reference `COMPATIBILITY_INVENTORY.md` for route retirement dates.
+
+### Release 2026.05
+
+**DB migrations**: None.
+
+**New `ir.config_parameter` keys**:
+
+| Key | Purpose | Default |
+|---|---|---|
+| `sports_federation.rate_limit.<scope>.limit` | Per-scope rate-limit ceiling override | See `_POLICIES` in `request_rate_limit.py` |
+| `sports_federation.rate_limit.<scope>.window_seconds` | Per-scope window override | See `_POLICIES` |
+
+**Deprecated field removals**: None.
+
+**Module install order changes**: None. Default install order (tier 1 → 2 → 3 → 4)
+is unchanged; see `DEPLOYMENT_GUIDE.md`.
+
+**Behaviour changes**:
+
+- Rate-limit policies are now overridable at runtime via `ir.config_parameter`
+  without a code deployment. See `openapi/ERROR_CODES.md` for per-scope limits.
+- Integration partner tokens are now stored hashed. Existing plaintext tokens
+  were migrated in place and flagged `token_rotation_required = True`. Rotate
+  all partner tokens within one release cycle.
+
+**Scheduled actions to verify**:
+
+| Action | Expected state after upgrade |
+|---|---|
+| `Federation: GC Rate Limit Buckets` | Active, interval 1 hour |
+| `Federation: GC Staged Deliveries` | Active, interval 1 day |
+| `Federation: Expire Player Licenses` | Active, interval 1 day |

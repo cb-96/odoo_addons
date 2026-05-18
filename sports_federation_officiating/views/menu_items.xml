@@ -35,4 +35,10 @@
               action="federation_match_club_referee_duty_action"
               sequence="40"/>
 
+    <menuitem id="menu_federation_reimbursement_request"
+              name="Reimbursements"
+              parent="menu_federation_officiating"
+              action="federation_reimbursement_request_action"
+              sequence="50"/>
+
 </odoo>

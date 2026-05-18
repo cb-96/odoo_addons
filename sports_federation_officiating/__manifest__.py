@@ -21,6 +21,7 @@
         "views/federation_match_club_referee_duty_views.xml",
         "views/federation_round_assign_wizard_views.xml",
         "views/federation_match_views_inherit.xml",
+        "views/federation_reimbursement_request_views.xml",
         "views/menu_items.xml",
     ],
     "demo": [],

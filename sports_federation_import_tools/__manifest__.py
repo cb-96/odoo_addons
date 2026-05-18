@@ -17,6 +17,7 @@
         "data/import_template_data.xml",
         "data/integration_contract_data.xml",
         "data/integration_retention_cron.xml",
+        "data/integration_token_rotation_cron.xml",
         "views/import_governance_views.xml",
         "views/integration_partner_views.xml",
         "views/import_wizard_views.xml",

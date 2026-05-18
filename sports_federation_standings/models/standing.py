@@ -470,6 +470,11 @@ class FederationStandingLine(models.Model):
         store=True,
     )
     rank = fields.Integer(string="Rank")
+    rank_badge = fields.Char(
+        string="Medal",
+        compute="_compute_rank_badge",
+        store=True,
+    )
     played = fields.Integer(string="Played", default=0)
     won = fields.Integer(string="Won", default=0)
     drawn = fields.Integer(string="Drawn", default=0)
@@ -497,3 +502,10 @@ class FederationStandingLine(models.Model):
         """Compute score diff."""
         for record in self:
             record.score_diff = record.score_for - record.score_against
+
+    @api.depends("rank")
+    def _compute_rank_badge(self):
+        """Compute gold/silver/bronze medal emoji for top-3 positions."""
+        _MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
+        for line in self:
+            line.rank_badge = _MEDALS.get(line.rank, "")

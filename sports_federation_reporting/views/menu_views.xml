@@ -70,6 +70,20 @@
               action="action_federation_report_compliance"
               sequence="30"/>
 
+    <!-- Club Compliance Summary -->
+    <menuitem id="menu_federation_report_club_compliance_summary"
+              name="Club Compliance Summary"
+              parent="menu_federation_reporting"
+              action="action_federation_report_club_compliance_summary"
+              sequence="32"/>
+
+    <!-- Referee Coverage KPI -->
+    <menuitem id="menu_federation_report_officiating_coverage"
+              name="Referee Coverage"
+              parent="menu_federation_reporting"
+              action="action_federation_report_officiating_coverage"
+              sequence="22"/>
+
     <!-- Finance Report -->
     <menuitem id="menu_federation_report_finance"
               name="Finance"

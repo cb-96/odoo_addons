@@ -166,6 +166,86 @@ Certification: active=True  (valid, current)
 | Match cancelled? | Coordinator cancels all assignments; `cancelled_on` recorded |
 | Referee deactivated (`active = False`)? | All future assignments blocked; `assignment_ready = False` |
 
+## Referee Availability & Self-Service
+
+> **Note**: The availability model is a planned feature. The fields and steps
+> below describe the intended design; the `federation.referee.availability`
+> model may not yet be present in all installations. Check the module README
+> for the current implementation status.
+
+### Marking Availability Windows
+
+**Actor**: Referee (portal) or federation coordinator (back office)
+**Module**: `sports_federation_officiating` + `sports_federation_portal`
+
+1. Referee logs into the federation portal.
+2. Navigates to **My Availability** in the officiating section.
+3. Creates `federation.referee.availability` records specifying:
+   - **Start** and **End** datetime of the available window
+   - Optional notes (e.g. "available only from 14:00")
+4. Saves. Availability records are immediately visible to the coordinator.
+
+Alternatively, the coordinator creates availability records on behalf of the
+referee from the back office (**Federation → Officiating → Referees → Availability tab**).
+
+### Assignment Engine Conflict Check
+
+**Actor**: System (at assignment creation time)
+**Module**: `sports_federation_officiating`
+
+When the coordinator assigns a referee to a match:
+
+1. The system checks whether the match's scheduled kickoff falls within any
+   `federation.referee.availability` window for that referee.
+2. If the match falls **outside** all recorded availability windows, a warning
+   is shown on the assignment form: *"No availability record covers this match
+   slot."*
+3. The coordinator can override the warning and save the assignment (warnings
+   do not block creation).
+4. If no availability records exist for a referee, no conflict check is
+   performed and no warning is raised.
+
+The assignment engine does **not** prevent double-booking across matches: if
+a referee is already assigned to another match that overlaps, the coordinator
+sees this via the `assignment_count` field and the referee's assignment list.
+
+### Portal Accept / Decline Flow
+
+**Actor**: Referee (portal)
+**Module**: `sports_federation_officiating` + `sports_federation_portal`
+
+After an assignment is created in `draft` state and the referee receives the
+assignment notification:
+
+1. Referee opens the notification or navigates to **My Assignments** in the portal.
+2. Views the match date, venue, and role.
+3. Clicks **Confirm** or **Decline**:
+   - **Confirm**: assignment state `draft → confirmed`.
+   - **Decline**: assignment state `draft → cancelled`. The coordinator is
+     notified to assign a replacement.
+
+Both actions are available until the `confirmation_deadline` (48 hours before
+kickoff) passes.
+
+### Confirmation Deadline and Overdue Escalation
+
+**Actor**: System + federation coordinator
+**Module**: `sports_federation_officiating` + `sports_federation_notifications`
+
+If the referee does not confirm or decline before the `confirmation_deadline`:
+
+1. `is_confirmation_overdue` becomes `True` on the assignment.
+2. The assignment is surfaced in the coordinator's overdue-assignment dashboard
+   filter (**Federation → Officiating → Assignments → Overdue**).
+3. If `sports_federation_notifications` is installed, the scheduled notification
+   scan sends an overdue alert to the coordinator.
+4. The coordinator:
+   - Contacts the referee directly, OR
+   - Cancels the assignment and assigns a replacement.
+
+There is no auto-cancel on deadline expiry. The coordinator makes the final
+decision on shortage resolution.
+
 ## Related Workflows
 
 - [Match Day Operations](WORKFLOW_MATCH_DAY_OPERATIONS.md) — referee assignment within the broader match-day sequence
