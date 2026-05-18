@@ -58,7 +58,7 @@ class TestFederationCompetition(TransactionCase):
                 "code": "UNIQUE",
             }
         )
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError):
             self.env["federation.competition"].create(
                 {
                     "name": "Comp 2",

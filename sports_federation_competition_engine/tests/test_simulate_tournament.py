@@ -1,3 +1,4 @@
+import unittest
 import random
 
 from odoo.tests.common import TransactionCase
@@ -12,11 +13,17 @@ class TestSimulateTournament(TransactionCase):
 
         # Re-usable refs
         cls.portal_group = cls.env.ref(
-            "sports_federation_portal.group_federation_portal_club"
+            "sports_federation_portal.group_federation_portal_club",
+            raise_if_not_found=False,
         )
         cls.role_type = cls.env.ref(
-            "sports_federation_portal.role_type_competition_contact"
+            "sports_federation_portal.role_type_competition_contact",
+            raise_if_not_found=False,
         )
+        if not cls.portal_group or not cls.role_type:
+            raise unittest.SkipTest(
+                "sports_federation_portal not installed; skipping simulate tournament tests"
+            )
 
         # Create 10 clubs and portal users; first two clubs will create 2 teams each
         cls.clubs = []

@@ -27,4 +27,11 @@
               action="action_federation_season_budget"
               sequence="30"/>
 
+    <!-- Fee Schedules -->
+    <menuitem id="menu_federation_fee_schedule"
+              name="Fee Schedules"
+              parent="menu_federation_finance"
+              action="action_federation_fee_schedule"
+              sequence="15"/>
+
 </odoo>

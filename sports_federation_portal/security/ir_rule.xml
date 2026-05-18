@@ -101,6 +101,13 @@
         <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
     </record>
 
+    <record id="rule_club_referee_duty_portal_own" model="ir.rule">
+        <field name="name">Portal: own club referee duties only</field>
+        <field name="model_id" ref="sports_federation_officiating.model_federation_match_club_referee_duty"/>
+        <field name="domain_force">[('club_id', 'in', user.portal_club_scope_ids.ids)]</field>
+        <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
+    </record>
+
     <record id="rule_referee_portal_official_own" model="ir.rule">
         <field name="name">Portal Official: own referee profile only</field>
         <field name="model_id" ref="sports_federation_officiating.model_federation_referee"/>

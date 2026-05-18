@@ -1,4 +1,5 @@
 import re
+import unittest
 
 from odoo import SUPERUSER_ID, api
 from odoo.addons.sports_federation_base.tests.route_inventory import (
@@ -27,14 +28,21 @@ class TestPublicSiteHttpSmoke(HttpCase):
         with cls.registry.cursor() as cr:
             env = api.Environment(cr, SUPERUSER_ID, {})
             portal_club_group = env.ref(
-                "sports_federation_portal.group_federation_portal_club"
+                "sports_federation_portal.group_federation_portal_club",
+                raise_if_not_found=False,
             )
             portal_official_group = env.ref(
-                "sports_federation_portal.group_federation_portal_official"
+                "sports_federation_portal.group_federation_portal_official",
+                raise_if_not_found=False,
             )
             portal_role_type = env.ref(
-                "sports_federation_portal.role_type_competition_contact"
+                "sports_federation_portal.role_type_competition_contact",
+                raise_if_not_found=False,
             )
+            if not (portal_club_group and portal_official_group and portal_role_type):
+                raise unittest.SkipTest(
+                    "sports_federation_portal not installed; skipping HTTP smoke tests"
+                )
             season = env["federation.season"].create(
                 {
                     "name": "Public Registration Smoke Season",

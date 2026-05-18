@@ -1,4 +1,4 @@
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlencode
 
 from odoo import fields, http
 from odoo.addons.portal.controllers.portal import pager as portal_pager
@@ -143,15 +143,9 @@ class FederationOfficiatingPortal(http.Controller):
             return self._render_access_denied()
         except ValidationError as exc:
             return request.redirect(
-                "/my/referee-assignments/%s?error=%s&error_hint=%s"
-                % (
-                    assignment_id,
-                    quote_plus(str(exc)),
-                    quote_plus("Check your response is valid. The assignment deadline may have passed."),
-                )
+                f"/my/referee-assignments/{assignment_id}?{urlencode({'error': str(exc), 'error_hint': 'Check your response is valid. The assignment deadline may have passed.'})}"
             )
 
         return request.redirect(
-            "/my/referee-assignments/%s?success=%s"
-            % (assignment_id, quote_plus(message))
+            f"/my/referee-assignments/{assignment_id}?{urlencode({'success': message})}"
         )

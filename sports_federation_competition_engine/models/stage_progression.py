@@ -216,38 +216,61 @@ class FederationStageProgression(models.Model):
                 for ln in lines
             ]
         else:
-            # Cross-group: collect the specified rank range across ALL groups in the stage
+            # Cross-group: collect the specified rank range across ALL groups in the stage.
+            # Also handles the no-group case (standings with group_id = False).
             groups = self.env["federation.tournament.group"].search(
                 [
                     ("stage_id", "=", self.source_stage_id.id),
                 ]
             )
             all_entries = []
-            for group in groups:
+
+            def _extract_lines(standing_rec):
+                return standing_rec.line_ids.filtered(
+                    lambda ln: self.rank_from <= ln.rank <= self.rank_to
+                ).sorted("rank")
+
+            def _to_entry(ln):
+                return {
+                    "team": ln.team_id,
+                    "rank": ln.rank,
+                    "points": ln.points,
+                    "score_diff": ln.score_diff,
+                    "name": ln.team_id.name,
+                }
+
+            if groups:
+                for group in groups:
+                    standings = Standing.search(
+                        [
+                            ("tournament_id", "=", self.tournament_id.id),
+                            ("stage_id", "=", self.source_stage_id.id),
+                            ("group_id", "=", group.id),
+                            ("state", "in", ("computed", "frozen")),
+                        ],
+                        limit=1,
+                    )
+                    if not standings:
+                        continue
+                    all_entries.extend(_to_entry(ln) for ln in _extract_lines(standings))
+
+            # Fallback (and no-group case): also check for stage-level standings
+            # (group_id = False). This handles stages without group splits, or
+            # tournaments where standings were computed at stage level rather than
+            # group level.
+            if not all_entries:
                 standings = Standing.search(
                     [
                         ("tournament_id", "=", self.tournament_id.id),
                         ("stage_id", "=", self.source_stage_id.id),
-                        ("group_id", "=", group.id),
+                        ("group_id", "=", False),
                         ("state", "in", ("computed", "frozen")),
                     ],
                     limit=1,
                 )
-                if not standings:
-                    continue
-                lines = standings.line_ids.filtered(
-                    lambda ln: self.rank_from <= ln.rank <= self.rank_to
-                ).sorted("rank")
-                for ln in lines:
-                    all_entries.append(
-                        {
-                            "team": ln.team_id,
-                            "rank": ln.rank,
-                            "points": ln.points,
-                            "score_diff": ln.score_diff,
-                            "name": ln.team_id.name,
-                        }
-                    )
-            # Sort cross-group by points desc, then goal diff desc, then goals for desc
+                if standings:
+                    all_entries.extend(_to_entry(ln) for ln in _extract_lines(standings))
+
+            # Sort cross-group by points desc, then goal diff desc, then name asc
             all_entries.sort(key=lambda x: (-x["points"], -x["score_diff"], x["name"]))
             return all_entries

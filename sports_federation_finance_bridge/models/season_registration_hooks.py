@@ -26,6 +26,7 @@ class FederationSeasonRegistrationFinanceHooks(models.Model):
     def _ensure_registration_finance_event(self):
         """Handle ensure registration finance event."""
         finance_event_model = self.env["federation.finance.event"].sudo()
+        fee_schedule_model = self.env["federation.fee.schedule"].sudo()
         for registration in self:
             registration_sudo = registration.sudo()
             fee_type = registration_sudo._get_registration_fee_type()
@@ -33,9 +34,23 @@ class FederationSeasonRegistrationFinanceHooks(models.Model):
             if "partner_id" in registration_sudo._fields:
                 partner = registration_sudo.partner_id
 
+            # Resolve scheduled amount based on team category/gender in this season
+            amount = None
+            team = registration_sudo.team_id
+            if team and registration_sudo.season_id:
+                scheduled = fee_schedule_model.lookup_amount(
+                    fee_type,
+                    registration_sudo.season_id,
+                    team.category,
+                    team.gender,
+                )
+                if scheduled is not False:
+                    amount = scheduled
+
             finance_event_model.ensure_from_source(
                 registration_sudo,
                 fee_type,
+                amount=amount,
                 event_type="charge",
                 partner=partner,
                 note=(

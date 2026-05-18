@@ -47,6 +47,33 @@ class FederationPortalBase(CustomerPortal):
         values["federation_representative"] = representative
         values["federation_club"] = representative.club_id if representative else None
         values["federation_referee"] = referee
+
+        # Count badges for portal home sidebar urgency indicators
+        if representative:
+            clubs = representative.mapped("club_id")
+            club_ids = clubs.ids
+            values["federation_pending_duties_count"] = (
+                request.env["federation.match.club.referee.duty"]
+                .sudo()
+                .search_count([
+                    ("club_id", "in", club_ids),
+                    ("state", "in", ("open", "rejected")),
+                ])
+            )
+            values["federation_pending_results_count"] = (
+                request.env["federation.match.result"]
+                .sudo()
+                .search_count([
+                    ("state", "=", "pending_approval"),
+                    "|",
+                    ("match_id.home_team_id.club_id", "in", club_ids),
+                    ("match_id.away_team_id.club_id", "in", club_ids),
+                ])
+            ) if "federation.match.result" in request.env else 0
+        else:
+            values["federation_pending_duties_count"] = 0
+            values["federation_pending_results_count"] = 0
+
         return values
 
     def _get_portal_clubs(self):

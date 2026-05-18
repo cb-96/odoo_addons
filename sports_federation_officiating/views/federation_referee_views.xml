@@ -64,6 +64,13 @@
                 <field name="name"/>
                 <field name="email"/>
                 <separator/>
+                <filter name="has_certification" string="Has Certification"
+                        domain="[('certification_ids', '!=', False)]"/>
+                <filter name="national_plus" string="National or Above"
+                        domain="[('certification_level', 'in', ['national', 'international'])]"/>
+                <filter name="regional_plus" string="Regional or Above"
+                        domain="[('certification_level', 'in', ['regional', 'national', 'international'])]"/>
+                <separator/>
                 <group>
                     <filter name="level" string="Certification Level" context="{'group_by': 'certification_level'}"/>
                 </group>

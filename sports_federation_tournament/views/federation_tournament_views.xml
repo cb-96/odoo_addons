@@ -49,24 +49,42 @@
                             <field name="code" placeholder="Code"/>
                         </h3>
                     </div>
-                    <group>
-                        <group string="Schedule">
-                            <field name="tournament_type"/>
-                            <field name="date_start"/>
-                            <field name="date_end" invisible="tournament_type == 'single_day'"/>
-                        </group>
-                        <group string="Details">
-                            <field name="season_id"/>
-                            <field name="location"/>
-                            <field name="max_participants"/>
-                            <field name="edition_id"/>
-                            <field name="competition_id"/>
-                            <field name="category"/>
-                            <field name="gender"/>
-                            <field name="rule_set_id"/>
-                        </group>
-                    </group>
                     <notebook>
+                        <page string="Basic Info" name="basic_info">
+                            <group>
+                                <group>
+                                    <field name="tournament_type"/>
+                                    <field name="max_participants"/>
+                                    <field name="edition_id"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Scope" name="scope">
+                            <group>
+                                <group>
+                                    <field name="season_id"/>
+                                    <field name="competition_id"/>
+                                    <field name="category"/>
+                                    <field name="gender"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Schedule &amp; Rounds" name="schedule">
+                            <group>
+                                <group>
+                                    <field name="date_start"/>
+                                    <field name="date_end" invisible="tournament_type == 'single_day'"/>
+                                    <field name="location"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Rules &amp; Overrides" name="rules">
+                            <group>
+                                <group>
+                                    <field name="rule_set_id"/>
+                                </group>
+                            </group>
+                        </page>
                         <page string="Notes" name="notes">
                             <field name="notes"/>
                         </page>

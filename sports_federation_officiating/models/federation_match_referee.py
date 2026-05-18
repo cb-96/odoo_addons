@@ -76,6 +76,41 @@ class FederationMatchReferee(models.Model):
         "A referee can only be assigned once per role per match.",
     )
 
+    @api.constrains("match_id", "referee_id", "state")
+    def _check_no_same_day_conflict(self):
+        """Raise if the referee has another active assignment on the same calendar day."""
+        for rec in self:
+            if rec.state == "cancelled":
+                continue
+            match_date = rec.match_id.date_scheduled
+            if not match_date:
+                continue
+            match_day = match_date.date()
+            other_assignments = self.search(
+                [
+                    ("referee_id", "=", rec.referee_id.id),
+                    ("match_id", "!=", rec.match_id.id),
+                    ("state", "!=", "cancelled"),
+                    ("id", "!=", rec.id),
+                ]
+            )
+            for other in other_assignments:
+                if (
+                    other.match_id.date_scheduled
+                    and other.match_id.date_scheduled.date() == match_day
+                ):
+                    raise ValidationError(
+                        _(
+                            "Referee %(name)s is already assigned to %(match)s on %(date)s. "
+                            "Remove the conflicting assignment first."
+                        )
+                        % {
+                            "name": rec.referee_id.name,
+                            "match": other.match_id.display_name,
+                            "date": match_day,
+                        }
+                    )
+
     @api.model_create_multi
     def create(self, vals_list):
         """Create records with module-specific defaults and side effects."""
@@ -209,6 +244,13 @@ class FederationMatchRefereeExtension(models.Model):
         compute="_compute_referee_assignment_count",
         string="Referee Assignment Count",
     )
+    club_referee_duty_ids = fields.One2many(
+        "federation.match.club.referee.duty", "match_id", string="Club Referee Duties"
+    )
+    club_duty_pending_count = fields.Integer(
+        compute="_compute_club_duty_pending_count",
+        string="Pending Club Duties",
+    )
     required_referee_count = fields.Integer(
         compute="_compute_officiating_readiness",
         string="Required Referees",
@@ -239,6 +281,16 @@ class FederationMatchRefereeExtension(models.Model):
         """Compute referee assignment count."""
         for record in self:
             record.referee_assignment_count = len(record.referee_assignment_ids)
+
+    @api.depends("club_referee_duty_ids.state")
+    def _compute_club_duty_pending_count(self):
+        """Compute number of club duties not yet confirmed."""
+        for record in self:
+            record.club_duty_pending_count = sum(
+                1
+                for duty in record.club_referee_duty_ids
+                if duty.state not in ("confirmed",)
+            )
 
     @api.depends(
         "date_scheduled",
@@ -346,6 +398,16 @@ class FederationMatchRefereeExtension(models.Model):
         self.ensure_one()
         action = self.env["ir.actions.act_window"]._for_xml_id(
             "sports_federation_officiating.federation_match_referee_action"
+        )
+        action["domain"] = [("match_id", "=", self.id)]
+        action["context"] = {"default_match_id": self.id}
+        return action
+
+    def action_view_club_referee_duties(self):
+        """Execute the view club referee duties action."""
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_officiating.federation_match_club_referee_duty_action"
         )
         action["domain"] = [("match_id", "=", self.id)]
         action["context"] = {"default_match_id": self.id}

@@ -448,3 +448,45 @@ class FederationFinanceEvent(models.Model):
                 extra_vals=extra_vals,
             )
         )
+
+    def action_create_invoice(self):
+        """Create an account.move (customer invoice) from this finance event.
+
+        Guards silently when the accounting module is not installed.
+        Raises ValidationError if an invoice already exists or the event
+        is cancelled.
+        """
+        self.ensure_one()
+        if "account.move" not in self.env:
+            return False
+        if self.invoice_ref:
+            raise ValidationError(
+                "An invoice already exists for this finance event."
+            )
+        if self.state == "cancelled":
+            raise ValidationError(
+                "Cannot create an invoice for a cancelled finance event."
+            )
+        partner = (
+            self.partner_id
+            or (self.club_id.partner_id if self.club_id else False)
+        )
+        invoice_vals = {
+            "move_type": "out_invoice",
+            "partner_id": partner.id if partner else False,
+            "invoice_line_ids": [
+                (
+                    0,
+                    0,
+                    {
+                        "name": self.name,
+                        "quantity": 1.0,
+                        "price_unit": self.amount,
+                        "currency_id": self.currency_id.id,
+                    },
+                )
+            ],
+        }
+        invoice = self.env["account.move"].sudo().create(invoice_vals)
+        self.write({"invoice_ref": str(invoice.id)})
+        return invoice

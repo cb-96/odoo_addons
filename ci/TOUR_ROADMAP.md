@@ -162,9 +162,64 @@
 
 ---
 
-## Planned Tours
+---
 
-_All tours T-01 through T-12 are implemented and passing. No additional tours are currently planned._
+### ✅ T-13: Standings Computation — Full Lifecycle
+
+- **File**: `sports_federation_standings/tests/test_tour_standings.py`
+- **Class**: `TestTourStandings`
+- **Suite**: `competition_core`
+- **Tests**:
+  - `test_standing_starts_draft` — new standing has no lines and is draft
+  - `test_recompute_with_no_matches` — recompute with no matches creates zero-stat lines
+  - `test_recompute_correct_points` — points computed per rule set (W=3, D=1, L=0)
+  - `test_lines_sorted_by_points_then_wins` — ranking order: pts → wins → GD → GF → name
+  - `test_tiebreak_notes_populated_for_tied_teams` — tiebreak_notes set when teams share same pts
+  - `test_freeze_blocks_recompute` — frozen standing raises ValidationError without force flag
+  - `test_force_recompute_works_on_frozen` — force_recompute context overrides the freeze block
+  - `test_unfreeze_allows_recompute` — action_unfreeze transitions frozen → computed
+  - `test_contested_match_excluded_when_flag_present` — include_in_official_standings=False excluded (skips if result_control not installed)
+
+---
+
+### ✅ T-13b: Club Referee Duty — Full Nomination Lifecycle
+
+- **File**: `sports_federation_officiating/tests/test_tour_club_referee_duty.py`
+- **Class**: `TestTourClubRefereeDuty`
+- **Suite**: `people_rosters_rules`
+- **Tests**:
+  - `test_full_happy_path` — draft → open → nominated → confirmed; assignment created
+  - `test_rejection_and_renomination_cycle` — nominated → rejected → re-nominated → confirmed
+  - `test_cross_club_nomination_blocked` — player from wrong club raises ValidationError
+  - `test_cancel_resets_to_draft` — action_cancel clears nominee and resets to draft
+  - `test_cancel_blocked_on_confirmed` — action_cancel raises on confirmed duty
+  - `test_nomination_deadline_72h_before_match` — nomination_deadline = match_date − 72h
+  - `test_deadline_overdue_flag_past_match` — is_deadline_overdue True for open past-deadline duty
+  - `test_deadline_overdue_false_when_confirmed` — confirmed duty never overdue
+  - `test_duplicate_duty_blocked` — unique constraint rejects second (match, club, role)
+  - `test_pending_count_on_match` — club_duty_pending_count increments on open, decrements on confirm
+  - `test_display_name_is_readable` — display_name includes club name
+
+---
+
+### ✅ T-15: Portal Workflows — Club Representative End-to-End
+
+- **File**: `sports_federation_portal/tests/test_tour_portal_workflows.py`
+- **Class**: `TestTourPortalWorkflows`
+- **Suite**: `portal_public_ops`
+- **Tests**:
+  - `test_portal_club_scope_ids_returns_own_club` — portal_club_scope_ids only yields rep's club
+  - `test_portal_user_can_submit_season_registration` — creates + submits registration for own team
+  - `test_portal_user_cannot_register_rival_team` — AccessError/ValidationError on other club's team
+  - `test_portal_user_can_create_roster` — roster created for own team
+  - `test_portal_user_cannot_see_rival_roster` — record rule hides rival rosters
+  - `test_portal_user_can_nominate_player_for_open_duty` — nominates own-club player
+  - `test_portal_user_cannot_nominate_player_from_wrong_club` — ValidationError on wrong-club player
+  - `test_rival_user_cannot_see_own_clubs_duty` — isolation: rival can't read our duty
+  - `test_portal_user_can_submit_match_result` — result submitted → pending_approval
+  - `test_rival_user_cannot_access_our_pending_result` — record rule isolation on results
+  - `test_portal_layout_values_include_pending_duty_count` — federation_pending_duties_count ≥ 1
+  - `test_portal_layout_values_duties_zero_for_rival_user` — rival user sees no our-club duties
 
 ---
 
@@ -172,10 +227,11 @@ _All tours T-01 through T-12 are implemented and passing. No additional tours ar
 
 | CI Suite | Tours |
 |----------|-------|
-| `competition_core` | T-01, T-02, T-05, T-12 |
-| `people_rosters_rules` | T-03, T-04, T-06, T-07, T-10 |
+| `competition_core` | T-01, T-02, T-05, T-12, T-13 |
+| `people_rosters_rules` | T-03, T-04, T-06, T-07, T-10, T-13b |
 | `finance_reporting` | T-08 |
 | `release_surfaces` | T-09 |
 | `ops_and_notifications` | T-11 |
+| `portal_public_ops` | T-15 |
 
 - **Suite**: `people_rosters_rules`

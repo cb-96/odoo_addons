@@ -29,4 +29,10 @@
               action="federation_match_referee_action"
               sequence="30"/>
 
+    <menuitem id="menu_federation_match_club_referee_duty"
+              name="Club Duties"
+              parent="menu_federation_officiating"
+              action="federation_match_club_referee_duty_action"
+              sequence="40"/>
+
 </odoo>

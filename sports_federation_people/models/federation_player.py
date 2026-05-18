@@ -18,7 +18,7 @@ class FederationPlayer(models.Model):
         string="Gender",
         tracking=True,
     )
-    nationality_id = fields.Many2one("res.country", string="Nationality")
+    nationality_id = fields.Many2one("res.country", string="Nationality", ondelete="set null")
     active = fields.Boolean(default=True)
     state = fields.Selection(
         [
@@ -49,6 +49,11 @@ class FederationPlayer(models.Model):
     license_count = fields.Integer(
         string="License Count", compute="_compute_counts", store=True
     )
+    is_eligible = fields.Boolean(
+        string="Eligible",
+        compute="_compute_is_eligible",
+        help="True if the player has at least one active license.",
+    )
 
     _name_birthdate_unique = models.Constraint(
         "unique (first_name, last_name, birth_date)",
@@ -67,6 +72,14 @@ class FederationPlayer(models.Model):
         """Compute counts."""
         for rec in self:
             rec.license_count = len(rec.license_ids)
+
+    @api.depends("license_ids.state")
+    def _compute_is_eligible(self):
+        """Compute eligibility: True if the player has at least one active license."""
+        for rec in self:
+            rec.is_eligible = any(
+                lic.state == "active" for lic in rec.license_ids
+            )
 
     def action_view_licenses(self):
         """Execute the view licenses action."""

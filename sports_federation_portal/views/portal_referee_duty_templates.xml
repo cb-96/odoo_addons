@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         portal_referee_duty_list  –  Duty list for club rep
+    ================================================================ -->
+    <template id="portal_referee_duty_list" name="My Club Referee Duties">
+        <t t-call="portal.portal_layout">
+            <div class="container py-4">
+
+                <div class="row mb-3">
+                    <div class="col">
+                        <h2><i class="fa fa-users me-2"/>Club Referee Duties</h2>
+                        <p class="text-muted mb-0">
+                            Duties your club must fulfil by nominating a player as a table or assistant official.
+                        </p>
+                    </div>
+                </div>
+
+                <div t-if="success" class="alert alert-success" role="status">
+                    <t t-esc="success"/>
+                </div>
+                <div t-if="error" class="alert alert-danger" role="alert">
+                    <t t-esc="error"/>
+                </div>
+
+                <div t-if="not duties" class="alert alert-info">
+                    No referee duties assigned to your club at this time.
+                </div>
+
+                <div t-if="duties" class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <caption class="visually-hidden">Club referee duties open for nomination.</caption>
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Match</th>
+                                <th scope="col">Role</th>
+                                <th scope="col">Deadline</th>
+                                <th scope="col">Status</th>
+                                <th scope="col" class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="duties" t-as="duty">
+                                <tr t-att-class="'table-danger' if duty.is_deadline_overdue and duty.state not in ('confirmed',) else ''">
+                                    <td>
+                                        <a t-attf-href="/my/referee-duties/#{duty.id}">
+                                            <t t-esc="duty.match_id.display_name or duty.match_id.name"/>
+                                        </a>
+                                    </td>
+                                    <td><t t-esc="dict(duty._fields['role'].selection).get(duty.role, duty.role)"/></td>
+                                    <td>
+                                        <t t-if="duty.nomination_deadline">
+                                            <t t-esc="duty.nomination_deadline" t-options="{'widget': 'datetime'}"/>
+                                            <span t-if="duty.is_deadline_overdue" class="badge bg-danger ms-1">Overdue</span>
+                                        </t>
+                                        <t t-else="">—</t>
+                                    </td>
+                                    <td>
+                                        <span t-att-class="'badge ' + {
+                                            'draft': 'bg-secondary',
+                                            'open': 'bg-info text-dark',
+                                            'nominated': 'bg-warning text-dark',
+                                            'confirmed': 'bg-success',
+                                            'rejected': 'bg-danger',
+                                        }.get(duty.state, 'bg-secondary')">
+                                            <t t-esc="dict(duty._fields['state'].selection).get(duty.state, duty.state).capitalize()"/>
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a t-attf-href="/my/referee-duties/#{duty.id}"
+                                           class="btn btn-sm btn-outline-primary"
+                                           t-if="duty.state in ('open', 'rejected')">
+                                            Nominate
+                                        </a>
+                                        <a t-attf-href="/my/referee-duties/#{duty.id}"
+                                           class="btn btn-sm btn-outline-secondary"
+                                           t-else="">
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+
+                <t t-if="pager">
+                    <t t-call="portal.pager"/>
+                </t>
+            </div>
+        </t>
+    </template>
+
+    <!-- ================================================================
+         portal_referee_duty_form  –  Duty detail + nomination form
+    ================================================================ -->
+    <template id="portal_referee_duty_form" name="Club Referee Duty Detail">
+        <t t-call="portal.portal_layout">
+            <div class="container py-4">
+
+                <div class="row mb-3">
+                    <div class="col">
+                        <h2><i class="fa fa-user-plus me-2"/>Nominate a Player</h2>
+                        <p class="text-muted mb-0">
+                            Match: <strong><t t-esc="duty.match_id.display_name or duty.match_id.name"/></strong>
+                            — Role: <strong><t t-esc="dict(duty._fields['role'].selection).get(duty.role, duty.role)"/></strong>
+                        </p>
+                    </div>
+                </div>
+
+                <div t-if="success" class="alert alert-success" role="status">
+                    <t t-esc="success"/>
+                </div>
+                <div t-if="error" class="alert alert-danger" role="alert">
+                    <t t-esc="error"/>
+                    <p t-if="error_hint" class="small text-muted mt-1 mb-0">
+                        <t t-esc="error_hint"/>
+                    </p>
+                </div>
+
+                <!-- Duty summary card -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Club</dt>
+                            <dd class="col-sm-8"><t t-esc="duty.club_id.display_name"/></dd>
+                            <dt class="col-sm-4">State</dt>
+                            <dd class="col-sm-8">
+                                <span t-att-class="'badge ' + {
+                                    'draft': 'bg-secondary',
+                                    'open': 'bg-info text-dark',
+                                    'nominated': 'bg-warning text-dark',
+                                    'confirmed': 'bg-success',
+                                    'rejected': 'bg-danger',
+                                }.get(duty.state, 'bg-secondary')">
+                                    <t t-esc="dict(duty._fields['state'].selection).get(duty.state, duty.state).capitalize()"/>
+                                </span>
+                            </dd>
+                            <dt class="col-sm-4">Nomination Deadline</dt>
+                            <dd class="col-sm-8">
+                                <t t-if="duty.nomination_deadline">
+                                    <t t-esc="duty.nomination_deadline" t-options="{'widget': 'datetime'}"/>
+                                    <span t-if="duty.is_deadline_overdue" class="badge bg-danger ms-1">Overdue</span>
+                                </t>
+                                <t t-else="">—</t>
+                            </dd>
+                            <t t-if="duty.nominated_player_id">
+                                <dt class="col-sm-4">Current Nominee</dt>
+                                <dd class="col-sm-8"><t t-esc="duty.nominated_player_id.display_name"/></dd>
+                            </t>
+                            <t t-if="duty.notes">
+                                <dt class="col-sm-4">Notes</dt>
+                                <dd class="col-sm-8"><t t-esc="duty.notes"/></dd>
+                            </t>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Nomination form: only shown when club can nominate -->
+                <div t-if="duty.state in ('open', 'rejected')" class="card">
+                    <div class="card-header"><h5 class="mb-0">Submit Nomination</h5></div>
+                    <div class="card-body">
+                        <form t-attf-action="/my/referee-duties/#{duty.id}/nominate"
+                              method="post" class="row g-3">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <div class="col-md-8">
+                                <label for="player_id" class="form-label">Select Player</label>
+                                <select name="player_id" id="player_id" class="form-select" required="required">
+                                    <option value="">— choose a player —</option>
+                                    <t t-foreach="players" t-as="player">
+                                        <option t-att-value="player.id"
+                                                t-att-selected="player.id == (duty.nominated_player_id.id or False)">
+                                            <t t-esc="player.display_name"/>
+                                        </option>
+                                    </t>
+                                </select>
+                                <div t-if="not players" class="form-text text-danger">
+                                    No players found for your club. Please contact the federation.
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary" t-if="players">
+                                    Submit Nomination
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Read-only view when confirmed or state doesn't allow nomination -->
+                <div t-if="duty.state == 'confirmed'" class="alert alert-success">
+                    <i class="fa fa-check-circle me-1"/>
+                    This duty has been confirmed.
+                    <t t-if="duty.assignment_id">
+                        Referee assignment created.
+                    </t>
+                </div>
+                <div t-if="duty.state == 'nominated'" class="alert alert-info">
+                    <i class="fa fa-clock-o me-1"/>
+                    Your nomination is awaiting federation review.
+                </div>
+
+                <div class="mt-3">
+                    <a href="/my/referee-duties" class="btn btn-outline-secondary">
+                        <i class="fa fa-arrow-left me-1"/>Back to Duties
+                    </a>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>

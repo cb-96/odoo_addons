@@ -32,7 +32,7 @@ class FederationStanding(models.Model):
     competition_id = fields.Many2one(
         "federation.competition",
         string="Competition",
-        ondelete="set null",
+        ondelete="cascade",
         index=True,
     )
     rule_set_id = fields.Many2one(

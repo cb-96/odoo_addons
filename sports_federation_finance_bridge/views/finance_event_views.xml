@@ -12,6 +12,8 @@
                             invisible="state != 'draft'"/>
                     <button name="action_settle" string="Settle" type="object" class="btn-secondary"
                             invisible="state != 'confirmed'" confirm="Settling this finance event cannot be undone. Continue?"/>
+                    <button name="action_create_invoice" string="Create Invoice" type="object" class="btn-secondary"
+                            invisible="state == 'cancelled' or invoice_ref"/>
                     <button name="action_mark_exported" string="Mark Exported" type="object" class="btn-secondary"
                         invisible="state not in ('confirmed', 'settled') or handoff_state in ('exported', 'reconciled', 'closed')"/>
                     <button name="action_mark_reconciled" string="Mark Reconciled" type="object" class="btn-secondary"
@@ -145,6 +147,23 @@
         <field name="res_model">federation.finance.event</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_federation_finance_event_search"/>
+    </record>
+
+    <!-- Batch Create Invoices server action -->
+    <record id="action_batch_create_invoices" model="ir.actions.server">
+        <field name="name">Create Invoices</field>
+        <field name="model_id" ref="model_federation_finance_event"/>
+        <field name="binding_model_id" ref="model_federation_finance_event"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+for event in records:
+    if not event.invoice_ref and event.state != 'cancelled':
+        try:
+            event.action_create_invoice()
+        except Exception:
+            pass
+        </field>
     </record>
 
 </odoo>

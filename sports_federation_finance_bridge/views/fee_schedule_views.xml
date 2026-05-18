@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Form View -->
+    <record id="view_federation_fee_schedule_form" model="ir.ui.view">
+        <field name="name">federation.fee.schedule.form</field>
+        <field name="model">federation.fee.schedule</field>
+        <field name="arch" type="xml">
+            <form string="Fee Schedule">
+                <sheet>
+                    <group>
+                        <group string="Key">
+                            <field name="season_id"/>
+                            <field name="fee_type_id"/>
+                            <field name="category"/>
+                            <field name="gender"/>
+                        </group>
+                        <group string="Rate">
+                            <field name="amount"/>
+                            <field name="currency_id"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- List View -->
+    <record id="view_federation_fee_schedule_list" model="ir.ui.view">
+        <field name="name">federation.fee.schedule.list</field>
+        <field name="model">federation.fee.schedule</field>
+        <field name="arch" type="xml">
+            <list string="Fee Schedules" editable="bottom">
+                <field name="season_id"/>
+                <field name="fee_type_id"/>
+                <field name="category"/>
+                <field name="gender"/>
+                <field name="amount"/>
+                <field name="currency_id"/>
+                <field name="notes" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_federation_fee_schedule_search" model="ir.ui.view">
+        <field name="name">federation.fee.schedule.search</field>
+        <field name="model">federation.fee.schedule</field>
+        <field name="arch" type="xml">
+            <search string="Search Fee Schedules">
+                <field name="season_id"/>
+                <field name="fee_type_id"/>
+                <filter name="senior" string="Senior" domain="[('category', '=', 'senior')]"/>
+                <filter name="youth" string="Youth" domain="[('category', '=', 'youth')]"/>
+                <separator/>
+                <group>
+                    <filter name="group_season" string="Season" context="{'group_by': 'season_id'}"/>
+                    <filter name="group_fee_type" string="Fee Type" context="{'group_by': 'fee_type_id'}"/>
+                    <filter name="group_category" string="Category" context="{'group_by': 'category'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_federation_fee_schedule" model="ir.actions.act_window">
+        <field name="name">Fee Schedules</field>
+        <field name="res_model">federation.fee.schedule</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_federation_fee_schedule_search"/>
+    </record>
+
+</odoo>

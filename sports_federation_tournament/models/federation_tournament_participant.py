@@ -58,12 +58,67 @@ class FederationTournamentParticipant(models.Model):
         default="registered",
         required=True,
     )
-    notes = fields.Text(string="Notes")
 
     _team_tournament_unique = models.Constraint(
         "unique (team_id, tournament_id)",
         "A team can only participate once per tournament.",
     )
+    notes = fields.Text(string="Notes")
+
+    @api.constrains("team_id", "tournament_id")
+    def _check_unique_team_per_tournament(self):
+        for rec in self:
+            if rec.tournament_id and rec.team_id:
+                duplicate = self.search(
+                    [
+                        ("tournament_id", "=", rec.tournament_id.id),
+                        ("team_id", "=", rec.team_id.id),
+                        ("id", "!=", rec.id),
+                    ],
+                    limit=1,
+                )
+                if duplicate:
+                    raise ValidationError(
+                        _(
+                            "Team '%(team)s' is already registered in tournament '%(tournament)s'.",
+                            team=rec.team_id.name,
+                            tournament=rec.tournament_id.name,
+                        )
+                    )
+
+    def _raise_if_duplicate_team(self, team_id, tournament_id, exclude_id=None):
+        """Pre-insert/write check that raises ValidationError before DB constraint fires."""
+        if not team_id or not tournament_id:
+            return
+        domain = [("tournament_id", "=", tournament_id), ("team_id", "=", team_id)]
+        if exclude_id:
+            domain.append(("id", "!=", exclude_id))
+        if self.search(domain, limit=1):
+            team = self.env["federation.team"].browse(team_id)
+            tournament = self.env["federation.tournament"].browse(tournament_id)
+            raise ValidationError(
+                _(
+                    "Team '%(team)s' is already registered in tournament '%(tournament)s'.",
+                    team=team.name,
+                    tournament=tournament.name,
+                )
+            )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._raise_if_duplicate_team(
+                vals.get("team_id"), vals.get("tournament_id")
+            )
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if "team_id" in vals or "tournament_id" in vals:
+            for rec in self:
+                team_id = vals.get("team_id", rec.team_id.id)
+                tournament_id = vals.get("tournament_id", rec.tournament_id.id)
+                self._raise_if_duplicate_team(team_id, tournament_id, exclude_id=rec.id)
+        return super().write(vals)
 
     @api.depends("team_id", "tournament_id")
     def _compute_name(self):

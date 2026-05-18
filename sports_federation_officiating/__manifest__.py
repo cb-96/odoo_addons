@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Officiating",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.3.0",
     "category": "Sports",
     "summary": "Referee management and match assignments",
     "description": "Referee management, certifications, and match assignment workflows.",
@@ -18,6 +18,8 @@
         "views/federation_referee_views.xml",
         "views/federation_referee_certification_views.xml",
         "views/federation_match_referee_views.xml",
+        "views/federation_match_club_referee_duty_views.xml",
+        "views/federation_round_assign_wizard_views.xml",
         "views/federation_match_views_inherit.xml",
         "views/menu_items.xml",
     ],

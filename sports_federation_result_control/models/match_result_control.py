@@ -79,7 +79,14 @@ class FederationMatchResultControl(models.Model):
         return super().write(vals)
 
     def _check_result_group(self, group_xmlid, error_message):
-        """Validate result group."""
+        """Validate result group.
+
+        Superuser (env.su) bypasses the group guard so that portal controllers
+        and other trusted callers can invoke result actions via sudo() without
+        requiring the superuser account to hold every federation role.
+        """
+        if self.env.su:
+            return
         if not self.env.user.has_group(group_xmlid):
             raise ValidationError(error_message)
 
