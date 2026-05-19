@@ -63,7 +63,22 @@ Referee assignments now support a second portal ownership path alongside club re
 - a dedicated official access path avoids leaking club data just to allow assignment confirmation.
 - the self-service flow reuses the same `federation.match.referee` lifecycle rather than inventing a parallel response model.
 
-#### 6. Active Tournament Workspace
+#### 7. Live Tournament Operations Board
+
+An Owl-based, mobile-friendly operations board is available at `/sports/tournament/<id>/operations` for any user who has access to the tournament:
+
+- **Portal users** (`group_federation_portal_club`) must have provable tournament-scoped activity: a non-cancelled registration, a tournament participant record, or at least one match visible in their club/team scope. Tournament-wide portal ACL alone does not grant access.
+- **Internal users** (federation managers, validators, etc.) access the board through the same route with their normal Odoo session.
+
+The board is powered by two JSON-RPC endpoints in `controllers/tournament_operations.py` and the business logic lives in `models/federation_tournament_operations.py` (`_inherit = "federation.tournament"`). No new persistent models are introduced.
+
+Key design decisions:
+- All writes go through the existing result-control action methods (`action_submit_result`, `action_verify_result`, `action_approve_result`, `action_contest_result`, `action_correct_result`) rather than direct ORM writes.
+- Portal writes use `federation.portal.privilege.elevate()` so the acting user identity is preserved for audit trails and self-verification guards.
+- The Owl app uses Owl `mount()` (not the backend web-client `mountComponent`) so it works correctly inside the website/portal frontend context.
+- The Owl app polls every 60 seconds but skips polls while the result panel is dirty or an action is in flight.
+
+#### 8. Active Tournament Workspace (renamed from §7)
 
 Club and team-scoped portal users now get a tournament-first workspace for active obligations.
 
@@ -113,7 +128,10 @@ sports_federation_portal/
         __init__.py
         main.py
         officiating.py
+        result_portal.py
+        referee_duty_portal.py
         rosters.py
+        tournament_operations.py
         web_auth.py
     data/
         ir_sequence.xml
@@ -129,13 +147,22 @@ sports_federation_portal/
         federation_team.py
         federation_team_roster.py
         federation_tournament.py
+        federation_tournament_operations.py
         federation_tournament_registration.py
+        portal_privilege.py
         res_partner.py
         res_users.py
     security/
         ir.model.access.csv
         ir_rule.xml
         res_groups.xml
+    static/
+        src/
+            components/
+                tournament_operations/
+                    tournament_operations.js
+                    tournament_operations.xml
+                    tournament_operations.scss
     views/
         federation_club_representative_portal_views.xml
         federation_club_representative_views.xml
@@ -148,8 +175,11 @@ sports_federation_portal/
         menu_items.xml
         portal_officiating_templates.xml
         portal_templates.xml
+        portal_tournament_operations_templates.xml
         portal_tournament_workspace_templates.xml
         portal_roster_templates.xml
+        portal_result_templates.xml
+        portal_referee_duty_templates.xml
         res_partner_views.xml
         res_users_views.xml
         website_menus.xml
@@ -223,6 +253,16 @@ Public routes use `sudo()` to bypass ACL (since anonymous users have no federati
 - [ ] **Portal dashboard** shows federation cards for club representatives.
 - [ ] **Tournament workspace** (`/my/tournament-workspaces`) groups active tournament obligations by visible team.
 - [ ] **Tournament workspace detail** shows registration checkpoint, roster checkpoint, upcoming match-day sheets, and result follow-up links.
+- [ ] **Operations board** (`/sports/tournament/<id>/operations`) opens for authorized portal and internal users.
+- [ ] **Operations board** is blocked for portal users with no tournament-scoped activity.
+- [ ] **Operations board summary cards** show correct counts for now-playing, next matches, missing results, needs validation, court issues, and completed.
+- [ ] **Operations board match cards** display scheduled time, teams, score, state, court, and referee.
+- [ ] **Operations board filters** filter by court, match state, result state, timeline, and team search.
+- [ ] **Result panel opens** when a match card is selected.
+- [ ] **Result save** calls backend validation; invalid score shows clear error.
+- [ ] **Saved result** updates UI without full page reload.
+- [ ] **Board refreshes** via the refresh button and auto-polls every 60 seconds when the panel is clean.
+- [ ] **Offline banner** appears when the browser loses connectivity.
 - [ ] **Portal dashboard** shows officiating cards for linked match officials.
 - [ ] **Match official portal** (`/my/referee-assignments`) shows only the current official's assignments.
 - [ ] **Match official response** can confirm or decline draft assignments with an optional or required response note respectively.

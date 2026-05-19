@@ -97,7 +97,10 @@
                                         </div>
                                     </div>
 
-                                    <div class="mt-auto d-flex gap-2 flex-wrap">
+                                     <div class="mt-auto d-flex gap-2 flex-wrap">
+                                        <a t-attf-href="/sports/tournament/#{tournament.id}/operations" class="btn btn-primary btn-sm">
+                                            Operations Board
+                                        </a>
                                         <a t-attf-href="/my/tournament-workspaces/#{tournament.id}/#{team.id}" class="btn btn-primary btn-sm">
                                             Open Workspace
                                         </a>
@@ -137,10 +140,13 @@
                             <t t-if="workspace['club']"> · <t t-esc="workspace['club'].name"/></t>
                         </p>
                     </div>
-                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                     <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
                         <span class="badge rounded-pill text-bg-dark me-2">
                             <t t-esc="dict(tournament._fields['state'].selection).get(tournament.state)"/>
                         </span>
+                        <a t-attf-href="/sports/tournament/#{tournament.id}/operations" class="btn btn-primary btn-sm me-2">
+                            <i class="fa fa-tasks me-1"/> Operations
+                        </a>
                         <t t-if="workspace['roster']">
                             <a t-attf-href="/my/rosters/#{workspace['roster'].id}" class="btn btn-outline-primary btn-sm">
                                 <i class="fa fa-users me-1"/> Roster

@@ -325,6 +325,7 @@ Portal patterns
 - Use a dedicated `federation.club.representative` model to map `res.users` → `federation.club` for portal ownership and record rules.
 - Controllers must perform ownership validation (`_get_clubs_for_user()`) before writes. Record rules are enforcement, controllers are defense-in-depth.
 - ORM-level ownership constraints should mirror controller checks for portal-created registrations so bypassing a controller does not widen access.
+- The tournament operations board (`/sports/tournament/<id>/operations`) extends these patterns with an Owl frontend. Portal access requires provable tournament-scoped activity (registration, participant, or visible match). Writes delegate to existing result-control action methods. The Owl app uses standalone `mount()` from `@odoo/owl`, not the backend webclient `mountComponent`, since it runs inside the website/portal frontend context.
 
 Public site
 

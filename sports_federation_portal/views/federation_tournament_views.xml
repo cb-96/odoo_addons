@@ -6,6 +6,13 @@
         <field name="model">federation.tournament</field>
         <field name="inherit_id" ref="sports_federation_tournament.view_federation_tournament_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_operations_portal"
+                        string="Operations Board"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="id == False"/>
+            </xpath>
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_view_registration_requests"
                         type="object"

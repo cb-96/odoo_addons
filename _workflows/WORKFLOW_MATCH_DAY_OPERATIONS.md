@@ -206,3 +206,40 @@ Match: draft → scheduled → in_progress → done
 - [Result Pipeline](WORKFLOW_RESULT_PIPELINE.md) — what happens after score entry
 - [Discipline Pipeline](WORKFLOW_DISCIPLINE_PIPELINE.md) — incident follow-up
 - [Tournament Lifecycle](WORKFLOW_TOURNAMENT_LIFECYCLE.md) — tournament-level context
+
+## Tournament Operations Board
+
+A live operations board is available at `/sports/tournament/<id>/operations` for tournament day use:
+
+- **Audience**: tournament organizers, court managers, result table volunteers, federation admins.
+- **Access**: portal users with provable tournament-scoped activity (registration, participant record, or visible match in club/team scope); internal federation staff via their normal Odoo session.
+- **Entry points**: "Operations Board" button on the backend tournament form; "Go to operations board" link in the tournament workspace page.
+
+### Board sections
+
+| Section | Purpose |
+|---------|---------|
+| Tournament header | Name, venue, status, match counts, refresh button |
+| Summary cards | Clickable filters: Now playing, Next matches, Missing results, Needs validation, Court issues, Completed |
+| Match list by court | Cards grouped by playing area; each card shows teams, score, state, referee, and one primary action |
+| Result entry panel | Inline panel for fast score entry, result actions, and validation feedback |
+| Filters | Search by team name; filter by court, match state, result state, timeline, referee |
+
+### How results are saved
+
+Result saves on the operations board call the existing result-control action methods on the server:
+
+- `action_submit_result` — submits a score for verification
+- `action_verify_result` — marks result verified by a validator
+- `action_approve_result` — approves and counts in standings
+- `action_contest_result` — contests an approved result
+- `action_correct_result` — corrects a contested result
+
+All validation and workflow state guards remain server-side. Standings recomputation is triggered by the existing hooks in `sports_federation_result_control` on approve/contest/correct.
+
+### Known limitations and follow-up ideas
+
+- Live push (Odoo bus) is not implemented; the board polls every 60 s.
+- Referee assignment workflow is not exposed on the board; use the existing officiating views.
+- Bracket visualization and drag-and-drop court scheduling are not in scope for this version.
+- QR-code per court, offline-first result capture, and pool standings preview are follow-up ideas.

@@ -1,0 +1,102 @@
+.o_fed_ops_board {
+    .o_fed_ops_metric {
+        border-radius: 0.75rem;
+        background: var(--bs-light-bg-subtle, #f8f9fa);
+        padding: 0.9rem 1rem;
+        height: 100%;
+    }
+
+    .o_fed_ops_summary_card {
+        border-radius: 0.9rem;
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+
+        &:hover,
+        &:focus-visible {
+            transform: translateY(-1px);
+            box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.08);
+        }
+
+        &.o-active {
+            outline: 2px solid var(--bs-primary, #0d6efd);
+            background: rgba(13, 110, 253, 0.04);
+        }
+    }
+
+    .o_fed_ops_filters .btn.active {
+        box-shadow: none;
+    }
+
+    .o_fed_ops_group,
+    .o_fed_ops_match_card,
+    .o_fed_ops_panel,
+    .o_fed_ops_panel_placeholder {
+        border-radius: 1rem;
+    }
+
+    .o_fed_ops_match_card {
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+
+        &:hover,
+        &:focus-within {
+            transform: translateY(-1px);
+            box-shadow: 0 0.9rem 1.8rem rgba(0, 0, 0, 0.08);
+        }
+
+        .o_fed_ops_score {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.8rem 1rem;
+            border-radius: 0.85rem;
+            background: var(--bs-light-bg-subtle, #f8f9fa);
+        }
+
+        .o_fed_ops_score_value {
+            font-size: 1.35rem;
+            font-weight: 700;
+        }
+    }
+
+    .o_fed_ops_panel {
+        position: sticky;
+        top: 1rem;
+
+        .o_fed_ops_score_separator {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+            padding-bottom: 0.25rem;
+        }
+    }
+
+    .o_fed_ops_panel_footer {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .o_fed_ops_board {
+        .o_fed_ops_panel {
+            position: static;
+        }
+    }
+}
+
+@media (max-width: 575.98px) {
+    .o_fed_ops_board {
+        .o_fed_ops_match_card .o_fed_ops_score {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .o_fed_ops_panel_footer {
+            padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0));
+            background: var(--bs-white, #fff);
+        }
+    }
+}

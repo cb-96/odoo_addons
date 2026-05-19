@@ -4,3 +4,4 @@ from . import officiating
 from . import rosters
 from . import result_portal
 from . import referee_duty_portal
+from . import tournament_operations

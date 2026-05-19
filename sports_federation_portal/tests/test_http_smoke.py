@@ -566,6 +566,7 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
             inventory_routes,
             {
                 ("GET", "/web/login"),
+                ("GET", "/sports/tournament/<id>/operations"),
                 ("POST", "/my/teams/new"),
                 ("POST", "/my/players/new"),
                 ("POST", "/my/season-registration/new"),
@@ -605,6 +606,13 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         )
         self.assertEqual(workspace_detail_response.status_code, 200)
         self.assertIn("Portal Smoke Workspace Team", workspace_detail_response.text)
+
+        operations_response = self.url_open(
+            f"/sports/tournament/{data['tournament_id']}/operations"
+        )
+        self.assertEqual(operations_response.status_code, 200)
+        self.assertIn("Tournament Operations", operations_response.text)
+        self.assertIn("sf_tournament_operations_root", operations_response.text)
 
         match_sheet_list_response = self.url_open("/my/match-sheets")
         self.assertEqual(match_sheet_list_response.status_code, 200)

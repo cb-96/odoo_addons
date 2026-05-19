@@ -11,5 +11,6 @@ from . import test_team_portal_access
 from . import test_template_accessibility
 from . import test_template_mobile
 from . import test_tournament_registration
+from . import test_tournament_operations
 from . import test_tournament_workspace
 from . import test_tour_portal_workflows

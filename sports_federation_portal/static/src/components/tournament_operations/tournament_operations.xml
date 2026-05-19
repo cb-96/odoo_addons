@@ -1,0 +1,595 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="sports_federation_portal.TournamentOperationsStatusBadge">
+        <span t-att-class="this.badgeClass">
+            <t t-esc="props.label"/>
+        </span>
+    </t>
+
+    <t t-name="sports_federation_portal.TournamentOperationsSummaryCards">
+        <section class="o_fed_ops_summary mb-4">
+            <div class="row g-3">
+                <t t-foreach="this.cards" t-as="card" t-key="card.key">
+                    <div class="col-6 col-lg-4 col-xxl-2">
+                        <button type="button"
+                                class="card h-100 border-0 shadow-sm o_fed_ops_summary_card"
+                                t-att-data-key="card.key"
+                                t-att-class="props.activeKey === card.key ? 'o-active' : ''"
+                                t-on-click="onSelectCard">
+                            <div class="card-body text-start">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="text-uppercase small text-muted"><t t-esc="card.label"/></div>
+                                        <div class="display-6 fw-semibold mb-0"><t t-esc="card.count"/></div>
+                                    </div>
+                                    <StatusBadge t-props="{ label: props.activeKey === card.key ? 'Active' : 'Filter', tone: card.tone }"/>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </t>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_portal.TournamentOperationsFilters">
+        <section class="card shadow-sm mb-4 o_fed_ops_filters">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
+                    <div>
+                        <h3 class="h6 mb-1">Find the next task quickly</h3>
+                        <p class="text-muted small mb-0">Search by team, court, referee, or narrow the board to just the matches that need action.</p>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" t-on-click="onClearFilters">
+                        Clear filters
+                    </button>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label fw-semibold" for="sf_ops_search">Search teams or match</label>
+                        <input id="sf_ops_search"
+                               type="search"
+                               class="form-control"
+                               placeholder="Search team, court, or referee"
+                               t-att-value="props.filters.search"
+                               t-on-input="onSearchInput"/>
+                    </div>
+                    <div class="col-6 col-lg-2">
+                        <label class="form-label fw-semibold" for="sf_ops_court">Court</label>
+                        <select id="sf_ops_court" name="court" class="form-select" t-on-change="onFilterChange">
+                            <option value="all" t-att-selected="props.filters.court === 'all'">All courts</option>
+                            <t t-foreach="props.options.courts || []" t-as="court" t-key="court.value">
+                                <option t-att-value="court.value" t-att-selected="props.filters.court === court.value">
+                                    <t t-esc="court.label"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="col-6 col-lg-2">
+                        <label class="form-label fw-semibold" for="sf_ops_match_state">Match state</label>
+                        <select id="sf_ops_match_state" name="matchState" class="form-select" t-on-change="onFilterChange">
+                            <option value="all" t-att-selected="props.filters.matchState === 'all'">All states</option>
+                            <t t-foreach="props.options.match_states || []" t-as="stateOption" t-key="stateOption.value">
+                                <option t-att-value="stateOption.value" t-att-selected="props.filters.matchState === stateOption.value">
+                                    <t t-esc="stateOption.label"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="col-6 col-lg-2">
+                        <label class="form-label fw-semibold" for="sf_ops_result_state">Result state</label>
+                        <select id="sf_ops_result_state" name="resultState" class="form-select" t-on-change="onFilterChange">
+                            <option value="all" t-att-selected="props.filters.resultState === 'all'">All result states</option>
+                            <t t-foreach="props.options.result_states || []" t-as="resultState" t-key="resultState.value">
+                                <option t-att-value="resultState.value" t-att-selected="props.filters.resultState === resultState.value">
+                                    <t t-esc="resultState.label"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="col-6 col-lg-2">
+                        <label class="form-label fw-semibold" for="sf_ops_timeline">When</label>
+                        <select id="sf_ops_timeline" name="timeline" class="form-select" t-on-change="onFilterChange">
+                            <option value="all" t-att-selected="props.filters.timeline === 'all'">All timing</option>
+                            <option value="current" t-att-selected="props.filters.timeline === 'current'">Playing now</option>
+                            <option value="upcoming" t-att-selected="props.filters.timeline === 'upcoming'">Upcoming</option>
+                            <option value="completed" t-att-selected="props.filters.timeline === 'completed'">Completed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-12 col-lg-4" t-if="(props.options.referees || []).length">
+                        <label class="form-label fw-semibold" for="sf_ops_referee">Referee</label>
+                        <select id="sf_ops_referee" name="referee" class="form-select" t-on-change="onFilterChange">
+                            <option value="all" t-att-selected="props.filters.referee === 'all'">All referees</option>
+                            <t t-foreach="props.options.referees || []" t-as="referee" t-key="referee.value">
+                                <option t-att-value="referee.value" t-att-selected="props.filters.referee === referee.value">
+                                    <t t-esc="referee.label"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="col-12 col-lg-8">
+                        <label class="form-label fw-semibold d-block">Focus on</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button"
+                                    data-flag="attentionOnly"
+                                    class="btn btn-outline-primary"
+                                    t-att-class="props.filters.attentionOnly ? 'active' : ''"
+                                    t-on-click="onToggleFlag">
+                                Needs attention
+                            </button>
+                            <button type="button"
+                                    data-flag="missingOnly"
+                                    class="btn btn-outline-warning"
+                                    t-att-class="props.filters.missingOnly ? 'active' : ''"
+                                    t-on-click="onToggleFlag">
+                                Missing results
+                            </button>
+                            <button type="button"
+                                    data-flag="validationIssuesOnly"
+                                    class="btn btn-outline-danger"
+                                    t-att-class="props.filters.validationIssuesOnly ? 'active' : ''"
+                                    t-on-click="onToggleFlag">
+                                Validation issues
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_portal.TournamentOperationsMatchCard">
+        <article class="card h-100 o_fed_ops_match_card"
+                 t-att-class="this.selectedClass"
+                 t-on-click="onSelectMatch"
+                 t-att-id="'match-' + props.match.id">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                    <div>
+                        <div class="text-uppercase small text-muted">
+                            <t t-if="props.match.scheduled_time_label"><t t-esc="props.match.scheduled_time_label"/></t>
+                            <t t-else="">No kickoff time</t>
+                            · <t t-esc="props.match.court_name"/>
+                        </div>
+                        <h3 class="h5 mb-1 mt-1"><t t-esc="props.match.home_team_name"/> <span class="text-muted">vs</span> <t t-esc="props.match.away_team_name"/></h3>
+                        <div class="text-muted small">
+                            <t t-if="props.match.stage_name"><t t-esc="props.match.stage_name"/></t>
+                            <t t-if="props.match.group_name"> · <t t-esc="props.match.group_name"/></t>
+                            <t t-if="props.match.round_name"> · <t t-esc="props.match.round_name"/></t>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap justify-content-end">
+                        <StatusBadge t-props="{ label: props.match.state_label, tone: props.match.state_tone }"/>
+                        <StatusBadge t-props="{ label: props.match.validation_status.label, tone: props.match.validation_status.tone }"/>
+                    </div>
+                </div>
+
+                <div class="o_fed_ops_score mt-3">
+                    <div class="o_fed_ops_score_label text-muted small">Score</div>
+                    <div class="o_fed_ops_score_value"><t t-esc="this.scoreLabel"/></div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-3 mt-3 text-muted small">
+                    <span t-if="props.match.venue_name"><i class="fa fa-map-marker me-1"/> <t t-esc="props.match.venue_name"/></span>
+                    <span t-if="props.match.referee_name"><i class="fa fa-flag me-1"/> <t t-esc="props.match.referee_name"/></span>
+                    <span t-if="props.match.missing_referees_count"><i class="fa fa-user-times me-1"/> <t t-esc="props.match.missing_referees_count"/> official(s) missing</span>
+                </div>
+
+                <div class="alert alert-warning mt-3 mb-0 py-2" role="status" t-if="this.visibleAttentionItems.length">
+                    <div class="fw-semibold small mb-1">Needs attention</div>
+                    <div class="small">
+                        <t t-foreach="this.visibleAttentionItems" t-as="issue" t-key="issue">
+                            <div><t t-esc="issue"/></div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button"
+                            class="btn btn-primary"
+                            t-on-click="onPrimaryAction">
+                        <t t-esc="props.match.primary_action.label"/>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" t-on-click="onSelectMatch">
+                        View details
+                    </button>
+                </div>
+            </div>
+        </article>
+    </t>
+
+    <t t-name="sports_federation_portal.TournamentOperationsCourtMatchGroup">
+        <section class="card shadow-sm o_fed_ops_group">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                        <h2 class="h5 mb-1"><t t-esc="props.group.name"/></h2>
+                        <div class="text-muted small">
+                            <t t-if="props.group.venueName"><i class="fa fa-map-marker me-1"/> <t t-esc="props.group.venueName"/></t>
+                            <t t-if="props.group.nextMatch"> · Next at <t t-esc="props.group.nextMatch.scheduled_time_label or props.group.nextMatch.scheduled_label"/></t>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <StatusBadge t-if="props.group.liveCount" t-props="{ label: props.group.liveCount + ' live', tone: 'primary' }"/>
+                        <StatusBadge t-if="props.group.issueCount" t-props="{ label: props.group.issueCount + ' need attention', tone: 'danger' }"/>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <t t-foreach="props.group.matches" t-as="match" t-key="match.id">
+                        <div class="col-12">
+                            <MatchCard t-props="{
+                                match: match,
+                                selected: props.selectedMatchId === match.id,
+                                onSelect: props.onSelectMatch,
+                                onPrimaryAction: props.onPrimaryAction,
+                            }"/>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_portal.TournamentOperationsResultEntryPanel">
+        <aside class="card shadow-sm o_fed_ops_panel">
+            <div class="card-header d-flex justify-content-between align-items-start gap-3">
+                <div>
+                    <div class="text-uppercase small text-muted">Fast result entry</div>
+                    <h2 class="h5 mb-1 mt-1"><t t-esc="props.match.name"/></h2>
+                    <div class="text-muted small">
+                        <t t-esc="props.match.scheduled_label or 'Kickoff not scheduled'"/>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm" t-on-click="onClosePanel">
+                    Close
+                </button>
+            </div>
+            <div class="card-body">
+                <div t-if="props.successMessage" class="alert alert-success" role="status">
+                    <t t-esc="props.successMessage"/>
+                </div>
+                <div t-if="props.errorMessage" class="alert alert-danger" role="alert">
+                    <t t-esc="props.errorMessage"/>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap mb-3">
+                    <StatusBadge t-props="{ label: props.match.state_label, tone: props.match.state_tone }"/>
+                    <StatusBadge t-props="{ label: props.match.result_state_label, tone: props.match.result_state_tone }"/>
+                    <StatusBadge t-props="{ label: props.match.validation_status.label, tone: props.match.validation_status.tone }"/>
+                </div>
+
+                <div class="alert alert-warning" role="status" t-if="(props.match.attention_items || []).length">
+                    <div class="fw-semibold mb-1">What needs attention</div>
+                    <t t-foreach="props.match.attention_items" t-as="issue" t-key="issue">
+                        <div class="small"><t t-esc="issue"/></div>
+                    </t>
+                </div>
+
+                <div class="card border-0 bg-light-subtle mb-3">
+                    <div class="card-body">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-sm-5">
+                                <label class="form-label fw-semibold" for="sf_ops_home_score">Home team</label>
+                                <div class="fw-semibold mb-2"><t t-esc="props.match.home_team_name"/></div>
+                                <input id="sf_ops_home_score"
+                                       name="home_score"
+                                       type="number"
+                                       inputmode="numeric"
+                                       min="0"
+                                       class="form-control form-control-lg text-center"
+                                       t-att-disabled="this.scoreInputsDisabled"
+                                       t-att-value="props.form.home_score"
+                                       t-on-input="onFieldInput"/>
+                            </div>
+                            <div class="col-12 col-sm-2 text-center">
+                                <div class="o_fed_ops_score_separator">-</div>
+                            </div>
+                            <div class="col-12 col-sm-5">
+                                <label class="form-label fw-semibold" for="sf_ops_away_score">Away team</label>
+                                <div class="fw-semibold mb-2"><t t-esc="props.match.away_team_name"/></div>
+                                <input id="sf_ops_away_score"
+                                       name="away_score"
+                                       type="number"
+                                       inputmode="numeric"
+                                       min="0"
+                                       class="form-control form-control-lg text-center"
+                                       t-att-disabled="this.scoreInputsDisabled"
+                                       t-att-value="props.form.away_score"
+                                       t-on-input="onFieldInput"/>
+                            </div>
+                        </div>
+                        <p class="small text-muted mt-3 mb-0">
+                            Saving a score does not make it official. Standings only update after result approval.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="row g-3 small mb-3">
+                    <div class="col-12 col-md-6" t-if="props.match.court_name">
+                        <div class="text-muted text-uppercase">Court</div>
+                        <div class="fw-semibold"><t t-esc="props.match.court_name"/></div>
+                    </div>
+                    <div class="col-12 col-md-6" t-if="props.match.venue_name">
+                        <div class="text-muted text-uppercase">Venue</div>
+                        <div class="fw-semibold"><t t-esc="props.match.venue_name"/></div>
+                    </div>
+                    <div class="col-12 col-md-6" t-if="props.match.referee_summary">
+                        <div class="text-muted text-uppercase">Referees</div>
+                        <div class="fw-semibold"><t t-esc="props.match.referee_summary"/></div>
+                    </div>
+                    <div class="col-12 col-md-6" t-if="props.match.latest_audit_description">
+                        <div class="text-muted text-uppercase">Latest audit</div>
+                        <div class="fw-semibold"><t t-esc="props.match.latest_audit_description"/></div>
+                    </div>
+                </div>
+
+                <div class="card border-0 bg-light-subtle mb-3"
+                     t-if="this.actionKeys.includes('contest')">
+                    <div class="card-body">
+                        <label class="form-label fw-semibold" for="sf_ops_contest_reason">
+                            Contest reason
+                        </label>
+                        <textarea id="sf_ops_contest_reason"
+                                  name="result_contest_reason"
+                                  class="form-control"
+                                  rows="3"
+                                  placeholder="Explain what needs review before the result becomes official."
+                                  t-on-input="onFieldInput"><t t-esc="props.form.result_contest_reason"/></textarea>
+                    </div>
+                </div>
+
+                <div class="card border-0 bg-light-subtle"
+                     t-if="this.actionKeys.includes('correct')">
+                    <div class="card-body">
+                        <label class="form-label fw-semibold" for="sf_ops_correction_reason">
+                            Correction reason
+                        </label>
+                        <textarea id="sf_ops_correction_reason"
+                                  name="result_correction_reason"
+                                  class="form-control"
+                                  rows="3"
+                                  placeholder="Describe the correction that should be applied before the result is resubmitted."
+                                  t-on-input="onFieldInput"><t t-esc="props.form.result_correction_reason"/></textarea>
+                    </div>
+                </div>
+
+                <div class="small text-muted mt-3" t-if="props.match.result_submitted_by_name or props.match.result_verified_by_name or props.match.result_approved_by_name">
+                    <div t-if="props.match.result_submitted_by_name">
+                        Sent by <strong><t t-esc="props.match.result_submitted_by_name"/></strong>
+                        <t t-if="props.match.result_submitted_on"> · <t t-esc="props.match.result_submitted_on"/></t>
+                    </div>
+                    <div t-if="props.match.result_verified_by_name">
+                        Checked by <strong><t t-esc="props.match.result_verified_by_name"/></strong>
+                        <t t-if="props.match.result_verified_on"> · <t t-esc="props.match.result_verified_on"/></t>
+                    </div>
+                    <div t-if="props.match.result_approved_by_name">
+                        Approved by <strong><t t-esc="props.match.result_approved_by_name"/></strong>
+                        <t t-if="props.match.result_approved_on"> · <t t-esc="props.match.result_approved_on"/></t>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-white o_fed_ops_panel_footer">
+                <div class="d-grid gap-2">
+                    <button t-if="props.match.primary_action"
+                            type="button"
+                            class="btn btn-primary btn-lg"
+                            t-att-data-action="props.match.primary_action.key"
+                            t-att-disabled="props.savingAction"
+                            t-on-click="onActionClick">
+                        <t t-if="props.savingAction === props.match.primary_action.key">Working…</t>
+                        <t t-else=""><t t-esc="props.match.primary_action.label"/></t>
+                    </button>
+                    <t t-foreach="props.match.secondary_actions || []" t-as="action" t-key="action.key">
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                t-att-data-action="action.key"
+                                t-att-disabled="props.savingAction"
+                                t-on-click="onActionClick">
+                            <t t-if="props.savingAction === action.key">Working…</t>
+                            <t t-else=""><t t-esc="action.label"/></t>
+                        </button>
+                    </t>
+                </div>
+            </div>
+        </aside>
+    </t>
+
+    <t t-name="sports_federation_portal.TournamentOperationsApp">
+        <div class="o_fed_ops_board">
+            <t t-if="state.loading and !state.data">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="placeholder-glow">
+                            <span class="placeholder col-4 mb-3"/>
+                            <span class="placeholder col-10 mb-2"/>
+                            <span class="placeholder col-8"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <t t-foreach="[1, 2, 3, 4]" t-as="cardIndex" t-key="cardIndex">
+                        <div class="col-6 col-lg-3">
+                            <div class="card shadow-sm">
+                                <div class="card-body placeholder-glow">
+                                    <span class="placeholder col-7 mb-2"/>
+                                    <span class="placeholder col-4"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+                <div class="card shadow-sm">
+                    <div class="card-body placeholder-glow">
+                        <span class="placeholder col-3 mb-3"/>
+                        <span class="placeholder col-12 mb-2"/>
+                        <span class="placeholder col-11 mb-2"/>
+                        <span class="placeholder col-9"/>
+                    </div>
+                </div>
+            </t>
+            <t t-elif="state.fatalErrorType === 'forbidden'">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <div class="display-6 mb-3"><i class="fa fa-lock"/></div>
+                        <h2 class="h4 mb-2">You do not have access to this tournament operations page.</h2>
+                        <p class="text-muted mb-0">If you should be able to manage this tournament, contact a federation administrator.</p>
+                    </div>
+                </div>
+            </t>
+            <t t-elif="state.fatalError">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <div class="display-6 mb-3"><i class="fa fa-exclamation-circle"/></div>
+                        <h2 class="h4 mb-2">We could not load the tournament board.</h2>
+                        <p class="text-muted mb-4"><t t-esc="state.fatalError"/></p>
+                        <button type="button" class="btn btn-primary" t-on-click="refreshBoard">
+                            Try again
+                        </button>
+                    </div>
+                </div>
+            </t>
+            <t t-else="">
+                <div t-if="state.offline" class="alert alert-warning" role="status">
+                    You are offline. You can review the board, but changes cannot be saved until your connection returns.
+                </div>
+                <div t-if="state.bannerError" class="alert alert-danger" role="alert">
+                    <t t-esc="state.bannerError"/>
+                </div>
+
+                <section class="card shadow-sm mb-4 o_fed_ops_header">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                            <div>
+                                <div class="text-uppercase small text-muted">Tournament day board</div>
+                                <h1 class="h3 mb-1 mt-1"><t t-esc="state.data.tournament.name"/></h1>
+                                <div class="text-muted d-flex gap-3 flex-wrap small">
+                                    <span t-if="state.data.tournament.date_label"><i class="fa fa-calendar me-1"/> <t t-esc="state.data.tournament.date_label"/></span>
+                                    <span t-if="state.data.tournament.venue_name"><i class="fa fa-map-marker me-1"/> <t t-esc="state.data.tournament.venue_name"/></span>
+                                    <span t-if="state.data.tournament.location"><i class="fa fa-location-arrow me-1"/> <t t-esc="state.data.tournament.location"/></span>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <StatusBadge t-props="{ label: state.data.tournament.state_label, tone: state.data.tournament.state_tone }"/>
+                                <button type="button" class="btn btn-outline-secondary" t-att-disabled="state.refreshing" t-on-click="refreshBoard">
+                                    <t t-if="state.refreshing">Refreshing…</t>
+                                    <t t-else="">Refresh</t>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-6 col-lg-2">
+                                <div class="o_fed_ops_metric">
+                                    <div class="text-muted small text-uppercase">Matches</div>
+                                    <div class="h4 mb-0"><t t-esc="state.data.summary.match_count"/></div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-lg-2">
+                                <div class="o_fed_ops_metric">
+                                    <div class="text-muted small text-uppercase">Completed</div>
+                                    <div class="h4 mb-0"><t t-esc="state.data.summary.completed_count"/></div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-lg-2">
+                                <div class="o_fed_ops_metric">
+                                    <div class="text-muted small text-uppercase">Missing results</div>
+                                    <div class="h4 mb-0"><t t-esc="state.data.summary.missing_result_count"/></div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-lg-2">
+                                <div class="o_fed_ops_metric">
+                                    <div class="text-muted small text-uppercase">Validation issues</div>
+                                    <div class="h4 mb-0"><t t-esc="state.data.summary.validation_issue_count"/></div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-lg-2">
+                                <div class="o_fed_ops_metric">
+                                    <div class="text-muted small text-uppercase">Needs validation</div>
+                                    <div class="h4 mb-0"><t t-esc="state.data.summary.needs_validation_count"/></div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-lg-2">
+                                <div class="o_fed_ops_metric">
+                                    <div class="text-muted small text-uppercase">Last refreshed</div>
+                                    <div class="small fw-semibold"><t t-esc="state.data.generated_at"/></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <TournamentSummaryCards t-props="{
+                    summary: state.data.summary,
+                    activeKey: state.filters.summaryKey,
+                    onSelect: this.selectSummaryCard.bind(this),
+                }"/>
+
+                <TournamentFilters t-props="{
+                    filters: state.filters,
+                    options: state.data.filters,
+                    onSearchInput: this.updateSearch.bind(this),
+                    onFilterChange: this.updateFilter.bind(this),
+                    onToggleFlag: this.toggleFlag.bind(this),
+                    onClear: this.clearFilters.bind(this),
+                }"/>
+
+                <div class="row g-4">
+                    <div class="col-12 col-xl-8 order-2 order-xl-1">
+                        <div t-if="!state.data.matches.length" class="card shadow-sm">
+                            <div class="card-body text-center py-5">
+                                <div class="display-6 mb-3"><i class="fa fa-calendar-check-o"/></div>
+                                <h2 class="h4 mb-2">No matches are scheduled for this tournament yet.</h2>
+                                <p class="text-muted mb-0">Once the tournament schedule is in place, the board will group matches by court and show what needs attention.</p>
+                            </div>
+                        </div>
+                        <div t-elif="!this.groupedMatches.length" class="card shadow-sm">
+                            <div class="card-body text-center py-5">
+                                <div class="display-6 mb-3"><i class="fa fa-filter"/></div>
+                                <h2 class="h4 mb-2">No matches match these filters.</h2>
+                                <p class="text-muted mb-4">Try clearing one or more filters to bring the board back into view.</p>
+                                <button type="button" class="btn btn-outline-secondary" t-on-click="clearFilters">
+                                    Clear filters
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column gap-3" t-else="">
+                            <CourtMatchGroup t-foreach="this.groupedMatches"
+                                             t-as="group"
+                                             t-key="group.key"
+                                             t-props="{
+                                                group: group,
+                                                selectedMatchId: state.selectedMatchId,
+                                                onSelectMatch: this.selectMatch.bind(this),
+                                                onPrimaryAction: this.handlePrimaryAction.bind(this),
+                                             }"/>
+                        </div>
+                    </div>
+                    <div class="col-12 col-xl-4 order-1 order-xl-2">
+                        <ResultEntryPanel t-if="this.selectedMatch"
+                                          t-props="{
+                                            match: this.selectedMatch,
+                                            form: state.form,
+                                            savingAction: state.savingAction,
+                                            successMessage: state.successMessage,
+                                            errorMessage: state.panelError,
+                                            onClose: this.closePanel.bind(this),
+                                            onFieldInput: this.updateFormField.bind(this),
+                                            onAction: this.runAction.bind(this),
+                                          }"/>
+                        <div t-else="" class="card shadow-sm o_fed_ops_panel_placeholder">
+                            <div class="card-body py-5 text-center">
+                                <div class="display-6 mb-3"><i class="fa fa-hand-pointer-o"/></div>
+                                <h2 class="h5 mb-2">Select a match to work faster.</h2>
+                                <p class="text-muted mb-0">Use the panel to enter scores, validate results, and see exactly what still needs attention.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+</templates>
