@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Import Tools",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "category": "Sports",
     "summary": "Wizard-driven CSV import tools for clubs, seasons, teams, players, and tournament participants",
     "description": "CSV import wizards with dry-run validation, mapping guidance, and duplicate-safe onboarding for clubs, seasons, teams, players, and tournament participants.",
@@ -16,6 +16,8 @@
         "security/ir.model.access.csv",
         "data/import_template_data.xml",
         "data/integration_contract_data.xml",
+        "data/integration_retention_cron.xml",
+        "data/integration_token_rotation_cron.xml",
         "views/import_governance_views.xml",
         "views/integration_partner_views.xml",
         "views/import_wizard_views.xml",

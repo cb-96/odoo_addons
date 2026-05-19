@@ -13,6 +13,18 @@
               action="action_federation_report_operator_checklist"
               sequence="2"/>
 
+    <menuitem id="menu_federation_report_portal_audit"
+              name="Portal Audit"
+              parent="menu_federation_reporting"
+              action="action_federation_report_portal_audit"
+              sequence="3"/>
+
+    <menuitem id="menu_federation_report_token_rotation_audit"
+              name="Token Rotation Audit"
+              parent="menu_federation_reporting"
+              action="action_federation_report_token_rotation_audit"
+              sequence="4"/>
+
     <!-- Participation Report -->
     <menuitem id="menu_federation_report_operational"
               name="Operational KPIs"
@@ -57,6 +69,20 @@
               parent="menu_federation_reporting"
               action="action_federation_report_compliance"
               sequence="30"/>
+
+    <!-- Club Compliance Summary -->
+    <menuitem id="menu_federation_report_club_compliance_summary"
+              name="Club Compliance Summary"
+              parent="menu_federation_reporting"
+              action="action_federation_report_club_compliance_summary"
+              sequence="32"/>
+
+    <!-- Referee Coverage KPI -->
+    <menuitem id="menu_federation_report_officiating_coverage"
+              name="Referee Coverage"
+              parent="menu_federation_reporting"
+              action="action_federation_report_officiating_coverage"
+              sequence="22"/>
 
     <!-- Finance Report -->
     <menuitem id="menu_federation_report_finance"

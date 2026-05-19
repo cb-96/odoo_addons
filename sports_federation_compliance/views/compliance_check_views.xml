@@ -9,6 +9,7 @@
             <form string="Compliance Check">
                 <header>
                     <button name="action_recheck" string="Recheck" type="object" class="btn-primary"/>
+                    <field name="status" widget="statusbar"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -20,7 +21,6 @@
                             <field name="requirement_id"/>
                         </group>
                         <group string="Check Details">
-                            <field name="status"/>
                             <field name="checked_on"/>
                             <field name="submission_id"/>
                         </group>
@@ -36,6 +36,7 @@
                         <field name="note" nolabel="1"/>
                     </group>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>

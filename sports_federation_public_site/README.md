@@ -48,6 +48,9 @@ export content.
 | `public_slug` | Char | Canonical public slug used in `/teams/<slug>` |
 
 Team helpers provide stable team profile URLs and public tournament links.
+Their public slug resolver accepts an extra publication domain so controller
+lookups can fail closed before rendering profile, follow, feed, or calendar
+surfaces.
 
 ### `federation.season`
 
@@ -59,7 +62,8 @@ Team helpers provide stable team profile URLs and public tournament links.
 | `public_description` | Html | Long-form season landing page content |
 
 Season helpers provide canonical season URLs, featured and recent tournament
-queries, and editorial aggregation for season landing pages.
+queries, editorial aggregation for season landing pages, and fail-closed public
+slug resolution for published-season routes.
 
 ### `federation.public.editorial.item`
 
@@ -73,7 +77,10 @@ queries, and editorial aggregation for season landing pages.
 | `body_html` | Html | Long-form editorial content |
 
 Editorial items let operators schedule season-, tournament-, or team-linked
-highlights without editing website templates.
+highlights without editing website templates. Scheduling requires a publish
+start while the item is still in draft; items can publish from draft or
+scheduled, archive from scheduled or published, and reset from scheduled or
+archived back to draft.
 
 ### `federation.standing`
 
@@ -106,7 +113,8 @@ Canonical public routes:
 
 Compatibility routes remain available for older links, including `/competitions`,
 `/competitions/archive`, numeric `/tournament/<id>` paths, numeric register/feed
-paths, and older coverage aliases.
+paths, and older coverage aliases. Team profile routes and season follow routes
+resolve through publication-scoped domains before redirects or rendering.
 
 ### `PublicFollowController`
 
@@ -140,8 +148,11 @@ Canonical follow and discovery routes:
 
 ## Publication guards
 
-- Controllers use `sudo()` only after publication and visibility checks are satisfied.
+- Controllers resolve tournaments, seasons, and team public routes through publication- and visibility-scoped queries before canonical redirects, page rendering, feed reads, or registration handling.
 - Unpublished tournaments lose public access immediately, regardless of related data still present in the database.
+- Legacy numeric compatibility routes redirect only while the tournament still satisfies the relevant public visibility guard.
+- Season slug and numeric detail routes only resolve website-published seasons.
+- Team profile, schedule, results, ICS, and feed routes only resolve teams with a published competition footprint.
 - Public results are limited to approved results.
 - Public participant lists exclude withdrawn entries.
 - Standings exposure depends on both tournament publication and the standings visibility controls.

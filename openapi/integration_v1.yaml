@@ -1,0 +1,435 @@
+openapi: 3.1.0
+info:
+  title: Sports Federation Managed Integration API
+  version: 1.0.0
+  summary: Machine-readable contract for managed partner integration routes.
+  description: |
+    Managed partner routes for contract discovery, finance-event exports, and
+    inbound delivery staging. These routes use partner header authentication and
+    return typed operator-safe error payloads for JSON responses.
+servers:
+  - url: https://example.invalid
+    description: Replace with the active federation base URL.
+tags:
+  - name: Integration Contracts
+  - name: Finance Export
+  - name: Inbound Deliveries
+components:
+  securitySchemes:
+    FederationPartnerCode:
+      type: apiKey
+      in: header
+      name: X-Federation-Partner-Code
+      description: Stable partner code assigned by the federation.
+    FederationPartnerToken:
+      type: apiKey
+      in: header
+      name: X-Federation-Partner-Token
+      description: One-time-issued shared secret for the partner.
+    FederationPartnerBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: Alternative to X-Federation-Partner-Token.
+  headers:
+    RetryAfter:
+      description: Number of seconds to wait before retrying the same route.
+      schema:
+        type: integer
+        minimum: 1
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - error_code
+      properties:
+        error:
+          type: string
+          description: Operator-safe error summary.
+        error_code:
+          type: string
+          enum:
+            - retryable_delivery
+            - access_denied
+            - configuration_error
+            - data_validation
+            - operator_input
+            - unexpected_bug
+    ContractManifestPartner:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+    ContractManifestEntry:
+      type: object
+      required:
+        - code
+        - version
+        - direction
+        - transport
+        - route_hint
+        - available
+        - subscription_state
+      properties:
+        code:
+          type: string
+        version:
+          type: string
+        direction:
+          type: string
+          enum:
+            - inbound
+            - outbound
+        transport:
+          type: string
+          enum:
+            - json
+            - csv
+            - ics
+            - backend
+        route_hint:
+          type: string
+        description:
+          type: string
+        deprecation_stage:
+          type: string
+          nullable: true
+        replacement_contract:
+          type: string
+          nullable: true
+        available:
+          type: boolean
+        required_module:
+          type: string
+          nullable: true
+        subscription_state:
+          type: string
+        last_used_on:
+          type: string
+          format: date-time
+          nullable: true
+    ContractManifestResponse:
+      type: object
+      required:
+        - partner
+        - contracts
+      properties:
+        partner:
+          $ref: '#/components/schemas/ContractManifestPartner'
+        contracts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContractManifestEntry'
+    InboundDeliveryRequest:
+      type: object
+      required:
+        - filename
+        - payload_base64
+      properties:
+        filename:
+          type: string
+          description: Original filename supplied by the partner.
+        payload_base64:
+          type: string
+          description: Base64-encoded CSV payload.
+        content_type:
+          type: string
+          description: Optional content type declaration such as text/csv.
+        notes:
+          type: string
+        source_reference:
+          type: string
+    InboundDeliveryOutcome:
+      type: string
+      enum:
+        - created
+        - checksum_reuse
+        - idempotency_replay
+      description: Whether the request created a new staged delivery or reused an existing one.
+    InboundDeliveryRecord:
+      type: object
+      required:
+        - id
+        - name
+        - partner_code
+        - contract_code
+        - state
+        - filename
+        - payload_checksum
+        - route_hint
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        partner_code:
+          type: string
+        contract_code:
+          type: string
+        state:
+          type: string
+          enum:
+            - staged
+            - previewed
+            - awaiting_approval
+            - approved
+            - processed
+            - processed_with_errors
+            - failed
+        filename:
+          type: string
+        idempotency_key:
+          type: string
+          nullable: true
+        payload_checksum:
+          type: string
+        route_hint:
+          type: string
+    InboundDeliveryResponse:
+      type: object
+      required:
+        - delivery_outcome
+        - delivery
+      properties:
+        delivery_outcome:
+          $ref: '#/components/schemas/InboundDeliveryOutcome'
+        delivery:
+          $ref: '#/components/schemas/InboundDeliveryRecord'
+security:
+  - FederationPartnerCode: []
+    FederationPartnerToken: []
+  - FederationPartnerCode: []
+    FederationPartnerBearer: []
+paths:
+  /integration/v1/contracts:
+    get:
+      tags:
+        - Integration Contracts
+      operationId: listManagedIntegrationContracts
+      summary: List subscribed managed integration contracts.
+      description: Returns the contracts currently active for the authenticated partner.
+      responses:
+        '200':
+          description: Partner contract manifest.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractManifestResponse'
+              examples:
+                default:
+                  value:
+                    partner:
+                      code: PARTNER_FINANCE
+                      name: Finance Vendor
+                    contracts:
+                      - code: finance_event_v1
+                        version: csv_v1
+                        direction: outbound
+                        transport: csv
+                        route_hint: /integration/v1/outbound/finance/events
+                        description: Finance handoff export.
+                        deprecation_stage: null
+                        replacement_contract: null
+                        available: true
+                        required_module: sports_federation_finance_bridge
+                        subscription_state: active
+                        last_used_on: '2026-04-18T07:38:47Z'
+        '401':
+          description: Invalid or missing partner credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded for this partner route.
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /integration/v1/outbound/finance/events:
+    get:
+      tags:
+        - Finance Export
+      operationId: exportPartnerFinanceEvents
+      summary: Export finance events as CSV for a subscribed partner.
+      description: Returns the current partner finance-event handoff export in CSV form.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 200
+          description: Optional bounded page size for cursor-based exports.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Resume token in `<timestamp>|<id>` format from the previous page.
+      responses:
+        '200':
+          description: Finance handoff CSV export.
+          headers:
+            X-Federation-Contract:
+              schema:
+                type: string
+                const: finance_event_v1
+            X-Federation-Contract-Version:
+              schema:
+                type: string
+            X-Federation-Partner-Code:
+              schema:
+                type: string
+            X-Federation-Export-Mode:
+              schema:
+                type: string
+                enum:
+                  - cursor_page
+              description: Present when cursor pagination is active.
+            X-Federation-Export-Count:
+              schema:
+                type: integer
+              description: Present when cursor pagination is active.
+            X-Federation-Has-More:
+              schema:
+                type: string
+                enum:
+                  - 'true'
+                  - 'false'
+              description: Present when cursor pagination is active.
+            X-Federation-Page-Limit:
+              schema:
+                type: integer
+              description: Effective bounded page size when cursor pagination is active.
+            X-Federation-Next-Cursor:
+              schema:
+                type: string
+              description: Resume token for the next page when more rows are available.
+          content:
+            text/csv:
+              schema:
+                type: string
+              example: |
+                event_id,event_code,state,handoff_state,fee_type,amount_total
+                12,FIN-00012,confirmed,ready,team_fee,125.00
+        '400':
+          description: Invalid pagination parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid or missing partner credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Finance export contract unavailable in the active database.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded for this partner route.
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /integration/v1/inbound/{contract_code}/deliveries:
+    post:
+      tags:
+        - Inbound Deliveries
+      operationId: stageInboundPartnerDelivery
+      summary: Stage an inbound partner delivery for governed import review.
+      parameters:
+        - name: contract_code
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-Federation-Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Optional idempotency key that safely reuses the original staged delivery for matching requests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InboundDeliveryRequest'
+            examples:
+              clubsCsv:
+                value:
+                  filename: clubs.csv
+                  content_type: text/csv
+                  payload_base64: bmFtZSxjb2RlCkRlbGl2ZXJ5IENsdWIsREMwMDE=
+                  notes: Weekly partner handoff.
+                  source_reference: vendor-run-2026-04-18
+      responses:
+        '201':
+          description: Delivery request accepted successfully.
+          headers:
+            X-Federation-Delivery-Outcome:
+              schema:
+                $ref: '#/components/schemas/InboundDeliveryOutcome'
+              description: Indicates whether the request created a new staged delivery or reused an existing one.
+            X-Federation-Idempotency-Key:
+              schema:
+                type: string
+              description: Echoed when the request supplied an idempotency key.
+            X-Federation-Idempotent-Replay:
+              schema:
+                type: string
+                enum:
+                  - 'true'
+                  - 'false'
+              description: Present when the request supplied an idempotency key and indicates whether that key replayed an existing delivery.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboundDeliveryResponse'
+        '400':
+          description: Invalid delivery payload or conflicting idempotency key reuse.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid or missing partner credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded for this partner route.
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected staging failure.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

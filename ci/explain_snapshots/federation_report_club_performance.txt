@@ -1,0 +1,100 @@
+# Captured at: 2026-04-18T08:35:36Z
+# Database: odoo_restore_drill
+# Season ID: 122
+# Query: SELECT * FROM federation_report_club_performance WHERE season_id = 122
+
+Subquery Scan on federation_report_club_performance  (cost=51.26..51.33 rows=1 width=208)
+  Filter: (federation_report_club_performance.season_id = 122)
+  ->  WindowAgg  (cost=51.26..51.32 rows=1 width=248)
+        Window: w1 AS (ORDER BY s.date_start, c.name, c.id ROWS UNBOUNDED PRECEDING)
+        CTE confirmed_teams
+          ->  GroupAggregate  (cost=1.15..1.17 rows=1 width=16)
+                Group Key: sr_1.season_id, sr_1.club_id
+                ->  Sort  (cost=1.15..1.15 rows=1 width=12)
+                      Sort Key: sr_1.season_id, sr_1.club_id, sr_1.team_id
+                      ->  Seq Scan on federation_season_registration sr_1  (cost=0.00..1.14 rows=1 width=12)
+                            Filter: ((state)::text = 'confirmed'::text)
+        CTE entry_stats
+          ->  GroupAggregate  (cost=3.75..4.00 rows=10 width=24)
+                Group Key: t.season_id, tm.club_id
+                ->  Sort  (cost=3.75..3.77 rows=10 width=44)
+                      Sort Key: t.season_id, tm.club_id, p.id
+                      ->  Hash Join  (cost=2.41..3.58 rows=10 width=44)
+                            Hash Cond: (p.team_id = tm.id)
+                            ->  Hash Join  (cost=1.07..2.20 rows=10 width=44)
+                                  Hash Cond: (p.tournament_id = t.id)
+                                  ->  Seq Scan on federation_tournament_participant p  (cost=0.00..1.10 rows=10 width=44)
+                                  ->  Hash  (cost=1.03..1.03 rows=3 width=8)
+                                        ->  Seq Scan on federation_tournament t  (cost=0.00..1.03 rows=3 width=8)
+                            ->  Hash  (cost=1.15..1.15 rows=15 width=8)
+                                  ->  Seq Scan on federation_team tm  (cost=0.00..1.15 rows=15 width=8)
+        CTE match_stats
+          ->  HashAggregate  (cost=18.49..19.93 rows=144 width=56)
+                Group Key: t_1.season_id, ht.club_id
+                ->  Append  (cost=2.41..12.37 rows=144 width=22)
+                      ->  Hash Join  (cost=2.41..5.83 rows=72 width=22)
+                            Hash Cond: (m.home_team_id = ht.id)
+                            ->  Hash Join  (cost=1.07..4.24 rows=72 width=22)
+                                  Hash Cond: (m.tournament_id = t_1.id)
+                                  ->  Seq Scan on federation_match m  (cost=0.00..2.72 rows=72 width=22)
+                                  ->  Hash  (cost=1.03..1.03 rows=3 width=8)
+                                        ->  Seq Scan on federation_tournament t_1  (cost=0.00..1.03 rows=3 width=8)
+                            ->  Hash  (cost=1.15..1.15 rows=15 width=8)
+                                  ->  Seq Scan on federation_team ht  (cost=0.00..1.15 rows=15 width=8)
+                      ->  Hash Join  (cost=2.41..5.83 rows=72 width=22)
+                            Hash Cond: (m_1.away_team_id = at.id)
+                            ->  Hash Join  (cost=1.07..4.24 rows=72 width=22)
+                                  Hash Cond: (m_1.tournament_id = t_2.id)
+                                  ->  Seq Scan on federation_match m_1  (cost=0.00..2.72 rows=72 width=22)
+                                  ->  Hash  (cost=1.03..1.03 rows=3 width=8)
+                                        ->  Seq Scan on federation_tournament t_2  (cost=0.00..1.03 rows=3 width=8)
+                            ->  Hash  (cost=1.15..1.15 rows=15 width=8)
+                                  ->  Seq Scan on federation_team at  (cost=0.00..1.15 rows=15 width=8)
+        CTE finance_stats
+          ->  HashAggregate  (cost=1.30..1.45 rows=15 width=16)
+                Group Key: fe.season_id, fe.club_id
+                ->  Seq Scan on federation_finance_event fe  (cost=0.00..1.15 rows=15 width=40)
+                      Filter: ((season_id IS NOT NULL) AND (club_id IS NOT NULL))
+        ->  Sort  (cost=24.71..24.72 rows=1 width=136)
+              Sort Key: s.date_start DESC, c.name, c.id
+              ->  Nested Loop Left Join  (cost=19.18..24.70 rows=1 width=136)
+                    Join Filter: ((sr.season_id = confirmed_teams.season_id) AND (cc.club_id = confirmed_teams.club_id))
+                    ->  Nested Loop Left Join  (cost=8.50..13.93 rows=1 width=128)
+                          Join Filter: ((fs.season_id = confirmed_teams.season_id) AND (fs.club_id = confirmed_teams.club_id))
+                          ->  Nested Loop Left Join  (cost=8.50..13.41 rows=1 width=120)
+                                Join Filter: ((es.season_id = confirmed_teams.season_id) AND (es.club_id = confirmed_teams.club_id))
+                                ->  Nested Loop Left Join  (cost=8.50..13.06 rows=1 width=104)
+                                      Join Filter: ((ct.season_id = confirmed_teams.season_id) AND (ct.club_id = confirmed_teams.club_id))
+                                      ->  Nested Loop  (cost=8.50..13.02 rows=1 width=96)
+                                            ->  Hash Right Join  (cost=8.37..12.34 rows=3 width=60)
+                                                  Hash Cond: ((ms.season_id = confirmed_teams.season_id) AND (ms.club_id = confirmed_teams.club_id))
+                                                  ->  CTE Scan on match_stats ms  (cost=0.00..2.88 rows=144 width=56)
+                                                  ->  Hash  (cost=8.32..8.32 rows=3 width=12)
+                                                        ->  Hash Join  (cost=6.17..8.32 rows=3 width=12)
+                                                              Hash Cond: (confirmed_teams.season_id = s.id)
+                                                              ->  HashAggregate  (cost=5.10..6.80 rows=170 width=8)
+                                                                    Group Key: confirmed_teams.season_id, confirmed_teams.club_id
+                                                                    ->  Append  (cost=0.00..4.25 rows=170 width=8)
+                                                                          ->  CTE Scan on confirmed_teams  (cost=0.00..0.02 rows=1 width=8)
+                                                                          ->  CTE Scan on entry_stats  (cost=0.00..0.20 rows=10 width=8)
+                                                                          ->  CTE Scan on match_stats  (cost=0.00..2.88 rows=144 width=8)
+                                                                          ->  CTE Scan on finance_stats  (cost=0.00..0.30 rows=15 width=8)
+                                                              ->  Hash  (cost=1.03..1.03 rows=3 width=8)
+                                                                    ->  Seq Scan on federation_season s  (cost=0.00..1.03 rows=3 width=8)
+                                            ->  Index Scan using federation_club_pkey on federation_club c  (cost=0.14..0.22 rows=1 width=36)
+                                                  Index Cond: (id = confirmed_teams.club_id)
+                                      ->  CTE Scan on confirmed_teams ct  (cost=0.00..0.02 rows=1 width=16)
+                                ->  CTE Scan on entry_stats es  (cost=0.00..0.20 rows=10 width=24)
+                          ->  CTE Scan on finance_stats fs  (cost=0.00..0.30 rows=15 width=16)
+                    ->  GroupAggregate  (cost=10.68..10.72 rows=2 width=16)
+                          Group Key: sr.season_id, cc.club_id
+                          ->  Sort  (cost=10.68..10.68 rows=2 width=12)
+                                Sort Key: sr.season_id, cc.club_id, cc.id
+                                ->  Nested Loop  (cost=4.16..10.67 rows=2 width=12)
+                                      ->  Seq Scan on federation_season_registration sr  (cost=0.00..1.14 rows=1 width=8)
+                                            Filter: ((state)::text = 'confirmed'::text)
+                                      ->  Bitmap Heap Scan on federation_compliance_check cc  (cost=4.16..9.51 rows=2 width=8)
+                                            Recheck Cond: (club_id = sr.club_id)
+                                            Filter: ((status)::text <> 'compliant'::text)
+                                            ->  Bitmap Index Scan on federation_compliance_check__club_id_index  (cost=0.00..4.16 rows=2 width=0)
+                                                  Index Cond: (club_id = sr.club_id)

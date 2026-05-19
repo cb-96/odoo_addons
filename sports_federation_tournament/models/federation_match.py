@@ -3,6 +3,15 @@ from datetime import datetime, time
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
+from ..workflow_states import (
+    MATCH_STATE_DRAFT,
+    MATCH_STATE_SCHEDULED,
+    MATCH_STATE_IN_PROGRESS,
+    MATCH_STATE_DONE,
+    MATCH_STATE_CANCELLED,
+    MATCH_STATE_SELECTION,
+)
+
 
 class FederationMatch(models.Model):
     _name = "federation.match"
@@ -45,56 +54,12 @@ class FederationMatch(models.Model):
         ondelete="set null",
     )
     round_number = fields.Integer(string="Round Number")
-    bracket_position = fields.Integer(string="Bracket Position")
-    bracket_type = fields.Selection(
-        [
-            ("winners", "Winners"),
-            ("losers", "Losers"),
-            ("consolation", "Consolation"),
-            ("placement_3rd", "3rd Place"),
-            ("placement_5th", "5th Place"),
-            ("placement_7th", "7th Place"),
-        ],
-        string="Bracket Type",
-    )
-    source_match_1_id = fields.Many2one(
-        "federation.match",
-        string="Source Match 1",
-        ondelete="set null",
-        help="Winner or loser of this match feeds into the current match.",
-    )
-    source_match_2_id = fields.Many2one(
-        "federation.match",
-        string="Source Match 2",
-        ondelete="set null",
-    )
-    source_type_1 = fields.Selection(
-        [("winner", "Winner"), ("loser", "Loser")],
-        string="Source 1 Type",
-        default="winner",
-    )
-    source_type_2 = fields.Selection(
-        [("winner", "Winner"), ("loser", "Loser")],
-        string="Source 2 Type",
-        default="winner",
-    )
-    next_match_ids = fields.One2many(
-        "federation.match",
-        compute="_compute_next_matches",
-        string="Next Matches",
-    )
     home_score = fields.Integer(string="Home Score", tracking=True)
     away_score = fields.Integer(string="Away Score", tracking=True)
     state = fields.Selection(
-        [
-            ("draft", "Draft"),
-            ("scheduled", "Scheduled"),
-            ("in_progress", "In Progress"),
-            ("done", "Done"),
-            ("cancelled", "Cancelled"),
-        ],
+        MATCH_STATE_SELECTION,
         string="Status",
-        default="draft",
+        default=MATCH_STATE_DRAFT,
         required=True,
         tracking=True,
     )
@@ -130,7 +95,9 @@ class FederationMatch(models.Model):
         Round = self.env["federation.tournament.round"]
 
         if "round_id" in vals:
-            round_record = Round.browse(vals["round_id"]) if vals["round_id"] else Round.browse([])
+            round_record = (
+                Round.browse(vals["round_id"]) if vals["round_id"] else Round.browse([])
+            )
         else:
             round_record = record.round_id if record else Round.browse([])
 
@@ -154,7 +121,11 @@ class FederationMatch(models.Model):
         else:
             schedule_time = False
 
-        schedule_date = round_record.round_date if round_record and round_record.round_date else False
+        schedule_date = (
+            round_record.round_date
+            if round_record and round_record.round_date
+            else False
+        )
         if not schedule_date and schedule_dt:
             schedule_date = schedule_dt.date()
 
@@ -163,9 +134,11 @@ class FederationMatch(models.Model):
     def _normalize_schedule_vals(self, vals, record=False):
         """Normalize schedule vals."""
         prepared_vals = dict(vals)
-        round_record, schedule_date, schedule_time, schedule_dt = self._get_schedule_context(
-            prepared_vals,
-            record=record,
+        round_record, schedule_date, schedule_time, schedule_dt = (
+            self._get_schedule_context(
+                prepared_vals,
+                record=record,
+            )
         )
 
         if "scheduled_time" in prepared_vals and not self._has_scheduled_time(
@@ -190,14 +163,24 @@ class FederationMatch(models.Model):
 
         if schedule_dt:
             if round_record and round_record.round_date:
-                schedule_dt = datetime.combine(round_record.round_date, schedule_dt.time())
+                schedule_dt = datetime.combine(
+                    round_record.round_date, schedule_dt.time()
+                )
                 prepared_vals["date_scheduled"] = schedule_dt
             prepared_vals["scheduled_time"] = self._time_to_float(schedule_dt)
             return prepared_vals
 
-        if record and "round_id" in prepared_vals and record.date_scheduled and round_record and round_record.round_date:
+        if (
+            record
+            and "round_id" in prepared_vals
+            and record.date_scheduled
+            and round_record
+            and round_record.round_date
+        ):
             current_dt = fields.Datetime.to_datetime(record.date_scheduled)
-            prepared_vals["date_scheduled"] = datetime.combine(round_record.round_date, current_dt.time())
+            prepared_vals["date_scheduled"] = datetime.combine(
+                round_record.round_date, current_dt.time()
+            )
             prepared_vals["scheduled_time"] = self._time_to_float(current_dt)
 
         return prepared_vals
@@ -251,7 +234,9 @@ class FederationMatch(models.Model):
             if rec.round_id and rec.round_id.round_date:
                 rec.scheduled_date = rec.round_id.round_date
             elif rec.date_scheduled:
-                rec.scheduled_date = fields.Datetime.to_datetime(rec.date_scheduled).date()
+                rec.scheduled_date = fields.Datetime.to_datetime(
+                    rec.date_scheduled
+                ).date()
             else:
                 rec.scheduled_date = False
 
@@ -269,11 +254,15 @@ class FederationMatch(models.Model):
 
         for rec in self:
             if not self._has_scheduled_time(rec.scheduled_time):
-                rec.with_context(skip_scheduled_time_inverse=True).date_scheduled = False
+                rec.with_context(skip_scheduled_time_inverse=True).date_scheduled = (
+                    False
+                )
                 continue
 
             schedule_date = (
-                rec.round_id.round_date if rec.round_id and rec.round_id.round_date else False
+                rec.round_id.round_date
+                if rec.round_id and rec.round_id.round_date
+                else False
             )
             if not schedule_date and rec.date_scheduled:
                 schedule_date = fields.Datetime.to_datetime(rec.date_scheduled).date()
@@ -302,7 +291,11 @@ class FederationMatch(models.Model):
     def _check_teams(self):
         """Validate teams."""
         for rec in self:
-            if rec.home_team_id and rec.away_team_id and rec.home_team_id == rec.away_team_id:
+            if (
+                rec.home_team_id
+                and rec.away_team_id
+                and rec.home_team_id == rec.away_team_id
+            ):
                 raise ValidationError("Home and away teams cannot be the same.")
 
     @api.onchange("round_id")
@@ -318,15 +311,22 @@ class FederationMatch(models.Model):
             self.group_id = self.round_id.group_id
         if self.round_id.round_date and self.date_scheduled:
             kickoff_dt = fields.Datetime.to_datetime(self.date_scheduled)
-            self.date_scheduled = datetime.combine(self.round_id.round_date, kickoff_dt.time())
+            self.date_scheduled = datetime.combine(
+                self.round_id.round_date, kickoff_dt.time()
+            )
 
-    @api.constrains("round_id", "tournament_id", "stage_id", "group_id", "date_scheduled")
+    @api.constrains(
+        "round_id", "tournament_id", "stage_id", "group_id", "date_scheduled"
+    )
     def _check_round_scope(self):
         """Validate round scope."""
         for rec in self:
             if not rec.round_id:
                 continue
-            if rec.round_id.tournament_id and rec.round_id.tournament_id != rec.tournament_id:
+            if (
+                rec.round_id.tournament_id
+                and rec.round_id.tournament_id != rec.tournament_id
+            ):
                 raise ValidationError(
                     _("A match can only use a round from the same tournament.")
                 )
@@ -342,22 +342,15 @@ class FederationMatch(models.Model):
                 scheduled_dt = fields.Datetime.to_datetime(rec.date_scheduled)
                 if scheduled_dt.date() != rec.round_id.round_date:
                     raise ValidationError(
-                        _("A scheduled match must use the same calendar date as its round.")
+                        _(
+                            "A scheduled match must use the same calendar date as its round."
+                        )
                     )
-
-    def _compute_next_matches(self):
-        """Compute next matches."""
-        for rec in self:
-            rec.next_match_ids = self.search([
-                "|",
-                ("source_match_1_id", "=", rec.id),
-                ("source_match_2_id", "=", rec.id),
-            ])
 
     def _get_result_team(self, result_type):
         """Return the winner or loser team of a completed match."""
         self.ensure_one()
-        if self.state != "done":
+        if self.state != MATCH_STATE_DONE:
             return False
         if self.home_score > self.away_score:
             winner, loser = self.home_team_id, self.away_team_id
@@ -370,30 +363,32 @@ class FederationMatch(models.Model):
     def action_schedule(self):
         """Execute the schedule action."""
         for rec in self:
-            rec.state = "scheduled"
+            rec.state = MATCH_STATE_SCHEDULED
 
     def action_start(self):
         """Execute the start action."""
         for rec in self:
-            rec.state = "in_progress"
+            rec.state = MATCH_STATE_IN_PROGRESS
 
     def action_done(self):
         """Execute the done action."""
         for rec in self:
-            rec.state = "done"
+            rec.state = MATCH_STATE_DONE
             rec._advance_bracket_teams()
 
     def action_cancel(self):
         """Execute the cancel action."""
         for rec in self:
-            rec.state = "cancelled"
+            rec.state = MATCH_STATE_CANCELLED
 
     def action_draft(self):
         """Execute the draft action."""
         for rec in self:
-            rec.state = "draft"
+            rec.state = MATCH_STATE_DRAFT
 
-    def action_create_venue_finance_event(self, fee_type_code="venue_booking", amount=None, partner=None, note=None):
+    def action_create_venue_finance_event(
+        self, fee_type_code="venue_booking", amount=None, partner=None, note=None
+    ):
         """Create a federation.finance.event for venue passthrough costs.
 
         This helper looks for a fee type with code `fee_type_code`, creates one
@@ -405,47 +400,35 @@ class FederationMatch(models.Model):
 
         for match in self:
             venue_name = ""
-            if hasattr(match, 'venue_id') and match.venue_id:
+            if hasattr(match, "venue_id") and match.venue_id:
                 venue_name = match.venue_id.name
             if not venue_name:
-                raise ValidationError("Match has no venue set; cannot create finance event.")
+                raise ValidationError(
+                    "Match has no venue set; cannot create finance event."
+                )
 
             fee_type = FeeType.search([("code", "=", fee_type_code)], limit=1)
             if not fee_type:
                 # create a sensible default fee type for venue charges
-                fee_type = FeeType.create({
-                    "name": "Venue Booking",
-                    "code": fee_type_code,
-                    "category": "other",
-                    "default_amount": amount or 0,
-                    "currency_id": self.env.company.currency_id.id,
-                })
+                fee_type = FeeType.create(
+                    {
+                        "name": "Venue Booking",
+                        "code": fee_type_code,
+                        "category": "other",
+                        "default_amount": amount or 0,
+                        "currency_id": self.env.company.currency_id.id,
+                    }
+                )
 
             note_text = note or f"Venue booking for {match.name} at {venue_name}"
             event = self.env["federation.finance.event"].create_from_source(
-                match, fee_type, amount=amount, event_type="charge", partner=partner, note=note_text
+                match,
+                fee_type,
+                amount=amount,
+                event_type="charge",
+                partner=partner,
+                note=note_text,
             )
             events |= event
 
         return events
-
-    def _advance_bracket_teams(self):
-        """After a match is done, populate next bracket matches automatically."""
-        self.ensure_one()
-        if self.home_score == self.away_score:
-            return  # draw — no automatic advancement
-
-        next_matches = self.search([
-            "|",
-            ("source_match_1_id", "=", self.id),
-            ("source_match_2_id", "=", self.id),
-        ])
-        for nm in next_matches:
-            if nm.source_match_1_id == self and not nm.home_team_id:
-                team = self._get_result_team(nm.source_type_1 or "winner")
-                if team:
-                    nm.home_team_id = team
-            if nm.source_match_2_id == self and not nm.away_team_id:
-                team = self._get_result_team(nm.source_type_2 or "winner")
-                if team:
-                    nm.away_team_id = team

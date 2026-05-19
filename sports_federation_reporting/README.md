@@ -27,6 +27,15 @@ CSV snapshots from inside Odoo.
 | `sports_federation_finance_bridge` | Finance events |
 | `sports_federation_import_tools` | Inbound delivery failures for operator checklist reporting |
 
+Audit dashboard surfaces:
+
+- `Reporting > Portal Audit` groups privileged portal create/write/call activity
+	emitted through `federation.portal.privilege`.
+- `Reporting > Token Rotation Audit` groups manager-driven integration partner
+	token rotation events emitted from the import-tools token rotation flow.
+- both dashboards read the shared `federation.audit.event` log so additional
+	audited workflows can reuse the same reporting contract later.
+
 ## Models (all SQL view-backed, `_auto = False`)
 
 ### `federation.report.participation`
@@ -90,6 +99,7 @@ Tournament-level operational KPI view.
 | `pending_finance_event_count` / `pending_finance_amount` | Integer / Float | Open finance follow-up tied to match operations |
 | `open_club_compliance_count` | Integer | Outstanding club compliance checks for participating clubs |
 | `readiness_status` | Selection | `healthy`, `attention`, or `blocked` |
+| `readiness_note` | Text | Operator-readable summary of the active readiness blockers or follow-up work |
 
 ### `federation.report.standing.reconciliation`
 
@@ -216,6 +226,25 @@ Persistent schedule for recurring application-layer report generation.
 | `generated_file` | Binary | Last generated CSV snapshot |
 | `last_row_count` | Integer | Number of exported data rows |
 
+Implementation note:
+
+- Report-type-specific row builders and back-office action metadata now live in `services/report_schedule_builders.py`.
+- Keep new schedule types in that registry so `federation.report.schedule` stays focused on cadence, CSV serialization, retention, and failure capture.
+
+### `federation.report.audit.event`
+
+Read-only audit log reporting view for privileged portal activity and
+integration token rotations.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `event_family` | Selection | `portal_privilege` or `integration_token` |
+| `event_type` / `action_name` | Char | Normalized audit classification and originating method |
+| `actor_user_id` | Many2one | User who triggered the audited action |
+| `target_model` / `target_res_id` / `target_display_name` | Char / Integer / Char | Record affected by the audited action |
+| `changed_fields` | Text | Comma-separated field names touched by the action when known |
+| `description` | Text | Operator-readable audit summary |
+
 ### `federation.report.operator.checklist`
 
 Operator-facing queue roll-up that consolidates the release-critical exception
@@ -243,6 +272,7 @@ surfaces into a single reporting menu.
 9. **Contract-tagged exports** — Authenticated CSV responses now include explicit contract and version headers for downstream consumers.
 10. **Operator checklist** — Notification failures, workflow exceptions, finance follow-up, inbound delivery failures, blocked season readiness, and scheduled report failures now surface in one menu.
 11. **Persistent schedule failure tracking** — Report schedules keep the last failure timestamp, error message, and consecutive failure count so recurring problems survive beyond transient logs.
+12. **Generated-file retention** — Scheduled report artifacts are cleared automatically after the retention window in `DATA_RETENTION_POLICY.md`, while the schedule metadata and next run remain intact.
 
 ## CSV exports
 

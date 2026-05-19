@@ -1,8 +1,8 @@
 # Sports Federation — Technical Note
 
-Last updated: 2026-04-10
+Last updated: 2026-04-21
 Owner: Federation Platform Team
-Last reviewed: 2026-04-17
+Last reviewed: 2026-04-21
 Review cadence: Every release
 
 ## Import safety hardening (2026-04-10)
@@ -34,6 +34,9 @@ operator-facing application reports.
 - `sports_federation_reporting` now includes `federation.report.operational`
     for tournament readiness KPIs across participation, standings coverage,
     match completion, finance follow-up, and participant-club compliance.
+- Operational KPI rows now include an operator-readable readiness note so the
+    list view and scheduled CSV exports expose the current blocker directly,
+    instead of forcing staff to infer it from raw counts alone.
 - A new `federation.report.standing.reconciliation` view exposes mismatches
     between confirmed participants and standings coverage, with operator-readable
     reconciliation notes.
@@ -46,6 +49,21 @@ operator-facing application reports.
 - The compliance summary report now exposes `non_compliant_count` so rejected
     or explicitly failed checks are visible alongside missing, pending, and
     expired totals.
+
+## Scheduled reporting maintainability extraction (2026-04-21)
+
+The next highest-value reporting cleanup was to separate schedule orchestration
+from per-report row assembly.
+
+- `sports_federation_reporting/services/report_schedule_builders.py` now owns
+    the scheduled-report registry: label metadata, report-row builder
+    functions, list-action XML IDs, season scoping, and any action defaults.
+- `federation.report.schedule` now keeps the stable responsibilities only:
+    cadence windows, CSV serialization, generated-file retention, and typed
+    failure capture for cron or manual runs.
+- Adding a new scheduled report type should now be a single-registry change
+    plus focused tests, instead of editing separate builder and action maps in
+    the model.
 
 ## Notification activation (2026-04-10)
 
@@ -100,7 +118,8 @@ workflow boundaries instead of leaving them as isolated checks.
     tied to valid active roster lines, do not satisfy license or registration
     rules, or the submitted squad size is outside the allowed bounds.
 - `sports_federation_rosters` extends `federation.tournament.participant` so
-    participant confirmation requires an active ready roster for the tournament
+    participant confirmation warns before the roster deadline, then requires an
+    active ready roster once that deadline is reached for the tournament
     season, with competition-specific rosters preferred over generic season
     rosters.
 - Regression coverage was added for season-aware license checks, team-season
@@ -148,6 +167,22 @@ Add unit and integration tests covering the following:
 ## Architecture and conventions
 
 This technical note documents architecture, coding conventions, workflows, and extension points for the Sports Federation Odoo 19 custom addons collection located in the `odoo/` folder. It is intended for developers, integrators, and release engineers working on federation features: tournaments, matches, rosters, refereeing, results pipelines, and public website publication.
+
+### Shared workflow state helpers (2026-04-18)
+
+Where one addon reuses the same workflow vocabulary across multiple models,
+keep the selection tuples and state-role predicates in a small plain Python
+helper module instead of repeating raw string tuples in each model.
+
+- `sports_federation_import_tools/workflow_states.py` now owns the inbound
+    delivery and import-governance lifecycle constants used by the delivery
+    model, governance job model, wizard mixin, migration backfill, and tests.
+- `sports_federation_governance/workflow_states.py` now owns the override
+    request and decision lifecycle constants used by the request, decision,
+    outcome, and test modules.
+- When new logic only needs to know the semantic role of a state, prefer a
+    helper predicate such as `is_import_job_approved(...)` over direct string
+    comparisons so future state changes stay localized.
 
 ## Table of contents
 
@@ -295,6 +330,7 @@ Public site
 
 - Public controllers use `auth='public'` and `sudo()` for reads. Only expose non-sensitive fields (no emails/phones/notes) to public templates.
 - Enforce `website_published` and the relevant visibility toggle (`show_public_results`, `show_public_standings`) before serving direct public routes.
+- When a controller must deny a hidden portal or public route with 404, raise the HTTP exception (`raise request.not_found()`) instead of returning it, so fail-closed paths stay quiet in logs and match Odoo's expected flow.
 - Render public rich text through sanitized website field rendering rather than raw `t-raw` output.
 - Keep `public_slug` unique even while the public routes remain model-bound, so publication metadata and future external references cannot collide.
 
@@ -367,6 +403,7 @@ Manifest and data maintenance
 - Keep `__manifest__.py` `version` and `data` accurate. Prefer small, focused upgrade scripts to large one-off DB migrations.
 - For breaking model changes provide a dedicated migration script (`openupgrade` style) and document steps.
 - `ci/check_migration_review.py` should pass whenever model, view, or controller ownership changes are present. Treat a passing run as evidence that migration scripts or release-note surfaces were updated in the same change set.
+- Keep `RELEASE_TRAIN.md`, `ROADMAP.md`, and `RELEASE_RUNBOOK.md` on the same active `Release train:` value so roadmap commitments, upgrade handling, and operator checklists stay synchronized.
 
 Pre/post hooks
 
@@ -377,6 +414,13 @@ Backups and rollback
 - Always perform full DB and filestore backups prior to upgrades. Test restore paths in your staging environment.
 
 ## Developer workflow: add/modify checklist
+
+Architecture decisions
+
+- Repository-level architectural choices that cut across portal trust
+    boundaries, reporting SQL views, or public route ownership live in `adr/`.
+- Update the relevant ADR in the same change set when one of those core
+    decisions materially changes.
 
 When introducing a new feature follow this minimal patch checklist:
 

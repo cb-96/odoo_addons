@@ -24,9 +24,16 @@ class FederationImportTournamentParticipantsWizard(models.TransientModel):
         self.ensure_one()
         baseline_count = self._prepare_import_execution()
         reader = self._get_csv_reader()
-        if not any(column in reader.fieldnames for column in ("tournament_code", "tournament_name")):
-            raise ValidationError("Missing required columns: tournament_code or tournament_name")
-        if not any(column in reader.fieldnames for column in ("team_code", "team_name")):
+        if not any(
+            column in reader.fieldnames
+            for column in ("tournament_code", "tournament_name")
+        ):
+            raise ValidationError(
+                "Missing required columns: tournament_code or tournament_name"
+            )
+        if not any(
+            column in reader.fieldnames for column in ("team_code", "team_name")
+        ):
             raise ValidationError("Missing required columns: team_code or team_name")
 
         line_count = 0
@@ -70,9 +77,13 @@ class FederationImportTournamentParticipantsWizard(models.TransientModel):
 
             tournament = False
             if tournament_code:
-                tournament = Tournament.search([("code", "=", tournament_code)], limit=1)
+                tournament = Tournament.search(
+                    [("code", "=", tournament_code)], limit=1
+                )
             if not tournament and tournament_name:
-                tournament = Tournament.search([("name", "=", tournament_name)], limit=1)
+                tournament = Tournament.search(
+                    [("name", "=", tournament_name)], limit=1
+                )
             if not tournament:
                 self._record_error(
                     errors,
@@ -100,10 +111,18 @@ class FederationImportTournamentParticipantsWizard(models.TransientModel):
                 error_count += 1
                 continue
 
-            unavailable_reason = tournament.get_participant_team_unavailability_reason(team)
+            unavailable_reason = tournament.get_participant_team_unavailability_reason(
+                team
+            )
             if unavailable_reason:
-                category = "duplicate_entry" if "already exists" in unavailable_reason.lower() else "ineligible_participant"
-                self._record_error(errors, error_categories, row_num, category, unavailable_reason)
+                category = (
+                    "duplicate_entry"
+                    if "already exists" in unavailable_reason.lower()
+                    else "ineligible_participant"
+                )
+                self._record_error(
+                    errors, error_categories, row_num, category, unavailable_reason
+                )
                 error_count += 1
                 continue
 
@@ -113,28 +132,31 @@ class FederationImportTournamentParticipantsWizard(models.TransientModel):
                 try:
                     seed = int(seed_value)
                 except ValueError:
-                    self._record_error(errors, error_categories, row_num, "format_error", "Seed must be an integer.")
+                    self._record_error(
+                        errors,
+                        error_categories,
+                        row_num,
+                        "format_error",
+                        "Seed must be an integer.",
+                    )
                     error_count += 1
                     continue
 
-            if not self.dry_run:
-                try:
-                    Participant.create({
+            if self._execute_row_create(
+                row_num,
+                lambda: Participant.create(
+                    {
                         "tournament_id": tournament.id,
                         "team_id": team.id,
                         "seed": seed or False,
-                    })
-                    success_count += 1
-                except ValidationError as e:
-                    category, message = self._categorize_exception(e)
-                    self._record_error(errors, error_categories, row_num, category, message)
-                    error_count += 1
-                except Exception as e:
-                    category, message = self._categorize_exception(e)
-                    self._record_error(errors, error_categories, row_num, category, message)
-                    error_count += 1
-            else:
+                    }
+                ),
+                errors,
+                error_categories,
+            ):
                 success_count += 1
+            else:
+                error_count += 1
 
         return self._finalize_import_result(
             line_count,

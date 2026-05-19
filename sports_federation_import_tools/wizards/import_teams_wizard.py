@@ -24,7 +24,9 @@ class FederationImportTeamsWizard(models.TransientModel):
         self.ensure_one()
         baseline_count = self._prepare_import_execution()
         reader = self._get_csv_reader()
-        if not any(column in reader.fieldnames for column in ("club_code", "club_name")):
+        if not any(
+            column in reader.fieldnames for column in ("club_code", "club_name")
+        ):
             raise ValidationError("Missing required columns: club_code or club_name")
         if not any(column in reader.fieldnames for column in ("team_name", "name")):
             raise ValidationError("Missing required columns: team_name or name")
@@ -87,12 +89,19 @@ class FederationImportTeamsWizard(models.TransientModel):
             if team_code:
                 existing = Team.search([("code", "=", team_code)], limit=1)
             if not existing:
-                existing = Team.search([
-                    ("club_id", "=", club.id),
-                    ("name", "=", team_name),
-                ], limit=1)
+                existing = Team.search(
+                    [
+                        ("club_id", "=", club.id),
+                        ("name", "=", team_name),
+                    ],
+                    limit=1,
+                )
             if existing:
-                duplicate_key = f"code '{team_code}'" if team_code and existing.code == team_code else f"club '{club.display_name}' + team '{team_name}'"
+                duplicate_key = (
+                    f"code '{team_code}'"
+                    if team_code and existing.code == team_code
+                    else f"club '{club.display_name}' + team '{team_name}'"
+                )
                 self._record_error(
                     errors,
                     error_categories,
@@ -103,9 +112,10 @@ class FederationImportTeamsWizard(models.TransientModel):
                 error_count += 1
                 continue
 
-            if not self.dry_run:
-                try:
-                    Team.create({
+            if self._execute_row_create(
+                row_num,
+                lambda: Team.create(
+                    {
                         "name": team_name,
                         "code": team_code or False,
                         "club_id": club.id,
@@ -113,14 +123,14 @@ class FederationImportTeamsWizard(models.TransientModel):
                         "gender": self._get_row_value(row, "gender") or "male",
                         "email": self._get_row_value(row, "email") or False,
                         "phone": self._get_row_value(row, "phone") or False,
-                    })
-                    success_count += 1
-                except Exception as e:
-                    category, message = self._categorize_exception(e)
-                    self._record_error(errors, error_categories, row_num, category, message)
-                    error_count += 1
-            else:
+                    }
+                ),
+                errors,
+                error_categories,
+            ):
                 success_count += 1
+            else:
+                error_count += 1
 
         return self._finalize_import_result(
             line_count,

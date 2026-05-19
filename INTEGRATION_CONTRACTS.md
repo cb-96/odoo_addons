@@ -9,6 +9,10 @@ This document defines the stable partner-facing contracts currently supported by
 the federation platform and the policy used to version, evolve, and deprecate
 them.
 
+Machine-readable partner route definitions live in `openapi/integration_v1.yaml`.
+Keep the OpenAPI file, this document, and the route implementations aligned in
+the same change set whenever a managed integration contract changes.
+
 ## Contract Principles
 
 - Every external export or feed must expose an explicit contract identifier.
@@ -145,10 +149,19 @@ All authenticated CSV exports expose these headers:
 - Route: `/integration/v1/outbound/finance/events`
 - Response type: `text/csv`
 - Contract: `finance_event_v1`
+- Optional query parameters:
+  - `limit` to request one bounded page of rows; defaults to `200` and caps at `500`
+  - `cursor` to resume after the last row from the previous page
+- Invalid `limit` or `cursor` values return `400` with the standard `data_validation` payload.
 - Headers:
   - `X-Federation-Contract: finance_event_v1`
   - `X-Federation-Contract-Version: <schema version>`
   - `X-Federation-Partner-Code: <partner code>`
+  - `X-Federation-Export-Mode: cursor_page` when cursor pagination is active
+  - `X-Federation-Export-Count: <row count>` when cursor pagination is active
+  - `X-Federation-Has-More: true|false` when cursor pagination is active
+  - `X-Federation-Page-Limit: <effective limit>` when cursor pagination is active
+  - `X-Federation-Next-Cursor: <timestamp>|<id>` when another page is available
 - Authentication:
   - `X-Federation-Partner-Code`
   - `X-Federation-Partner-Token`
@@ -161,19 +174,31 @@ All authenticated CSV exports expose these headers:
 - Authentication:
   - `X-Federation-Partner-Code`
   - `X-Federation-Partner-Token`
+  - optional `X-Federation-Idempotency-Key` to safely reuse the same staged delivery for matching retries
 - Request fields:
   - `filename`
   - `payload_base64`
   - optional `notes`
   - optional `source_reference`
+- Response header on every successful delivery request:
+  - `X-Federation-Delivery-Outcome: created|checksum_reuse|idempotency_replay`
+- Response headers when an idempotency key is supplied:
+  - `X-Federation-Idempotency-Key: <normalized key>`
+  - `X-Federation-Idempotent-Replay: true|false`
 - Response fields:
+  - `delivery_outcome` with `created`, `checksum_reuse`, or `idempotency_replay`
   - delivery identity and current state
   - partner and contract codes
+  - echoed `idempotency_key` when present
   - payload checksum
   - contract route hint
 - Duplicate handling:
   - the same partner, contract, and payload checksum reuse the active staged
-    delivery while it remains in preview or approval flow
+    delivery while it remains in preview or approval flow and report
+    `delivery_outcome = checksum_reuse`
+  - the same partner, contract, and idempotency key replay the original delivery
+    across all states, report `delivery_outcome = idempotency_replay`, and
+    still return `400` if the key is reused for a different payload
 
 ## Import Contracts
 
@@ -196,8 +221,9 @@ Managed inbound delivery policy:
 
 1. A subscribed partner posts a base64 payload to the inbound delivery route for
   the relevant contract.
-2. The system stages a `federation.integration.delivery` record and deduplicates
-  active resubmissions by checksum.
+2. The system stages a `federation.integration.delivery` record, deduplicates
+  active resubmissions by checksum, and can also bind an explicit idempotency
+  key to the request for safer client retries.
 3. Operators open the staged delivery in the matching import wizard for preview.
 4. Approval and live execution continue through the standard governance-job
   workflow already used for manual rollover imports.

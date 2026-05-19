@@ -25,13 +25,17 @@ class TestTeamPortalAccess(TransactionCase):
                 "code": "OPTC",
             }
         )
-        cls.user = cls.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Portal Team User",
-                "login": "portal.team.user@example.com",
-                "email": "portal.team.user@example.com",
-                "group_ids": [(6, 0, [cls.portal_group.id])],
-            }
+        cls.user = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Portal Team User",
+                    "login": "portal.team.user@example.com",
+                    "email": "portal.team.user@example.com",
+                    "group_ids": [(6, 0, [cls.portal_group.id])],
+                }
+            )
         )
         cls.env["federation.club.representative"].create(
             {
@@ -58,6 +62,20 @@ class TestTeamPortalAccess(TransactionCase):
         self.assertEqual(team.club_id, self.club)
         self.assertEqual(team.create_uid, self.user)
         self.assertEqual(team.email, "team@example.com")
+
+        audit_event = self.env["federation.audit.event"].search(
+            [
+                ("event_family", "=", "portal_privilege"),
+                ("event_type", "=", "portal_create"),
+                ("target_model", "=", "federation.team"),
+                ("target_res_id", "=", team.id),
+            ],
+            limit=1,
+        )
+        self.assertTrue(audit_event)
+        self.assertEqual(audit_event.actor_user_id, self.user)
+        self.assertEqual(audit_event.action_name, "create")
+        self.assertIn("category", audit_event.changed_fields)
 
     def test_portal_create_team_blocks_other_club(self):
         """Portal team helper should reject unowned clubs."""

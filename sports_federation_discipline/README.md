@@ -33,13 +33,13 @@ An event that occurred during a match that may trigger disciplinary action.
 | `player_id` | Many2one | Involved player |
 | `club_id` | Many2one | Involved club |
 | `referee_id` | Many2one | Reporting referee |
-| `incident_type` | Selection | yellow_card / red_card / misconduct / violence / other |
+| `incident_type` | Selection | warning / yellow_card / red_card / misconduct / violence / admin_issue / other |
 | `minute_text` | Char | Match minute (text for flexibility) |
 | `description` | Text | What happened |
 | `case_id` | Many2one | Linked disciplinary case |
 | `date_reported` | Date | When reported |
 | `reported_by_user_id` | Many2one | System user who filed it |
-| `status` | Selection | reported / under_review / resolved / dismissed |
+| `status` | Selection | new / attached / closed |
 
 ### `federation.disciplinary.case`
 
@@ -49,17 +49,19 @@ An investigation triggered by one or more incidents.
 |-------|------|-------------|
 | `name` | Char | Case title |
 | `reference` | Char | Auto-sequence reference number |
-| `state` | Selection | open / investigation / decided / closed |
+| `state` | Selection | draft / under_review / decided / appealed / closed |
 | `opened_on` / `decided_on` / `closed_on` | Date | Timeline |
 | `responsible_user_id` | Many2one | Case handler |
 | `incident_ids` | One2many | Related incidents |
 | `sanction_ids` | One2many | Resulting sanctions |
 | `suspension_ids` | One2many | Resulting suspensions |
+| `incident_count` / `sanction_count` / `suspension_count` | Integer | Dedicated stat counters for case shortcuts |
 | `subject_player_id` / `subject_club_id` / `subject_referee_id` | Many2one | Subject |
 | `summary` / `notes` | Text | Case details |
 
-- **State machine**: open → investigation → decided → closed.
+- **State machine**: draft → under_review → decided → appealed / closed, with under-review cases allowed back to draft for corrections before a decision is recorded.
 - **Auto-numbering** via `ir.sequence`.
+- **Counter labels** use distinct technical field names so the case relation tabs and their stat counters do not trigger duplicate-label warnings during module loading.
 
 ### `federation.sanction`
 
@@ -103,7 +105,7 @@ A time-bound match ban for a player.
 ## Key Behaviours
 
 1. **Incident → Case linking** — Incidents can be grouped into a case for joint handling.
-2. **Case lifecycle** — open → investigation → decided → closed with date tracking.
+2. **Case lifecycle** — draft → under_review → decided → appealed / closed with date tracking, and under-review cases can be reopened to draft before a decision is recorded.
 3. **Multiple outcomes** — A single case can produce multiple sanctions and suspensions.
 4. **Player integration** — Inherited views add discipline tabs to player forms.
 5. **Match integration** — Inherited views add incident lists to match forms.

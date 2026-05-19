@@ -18,7 +18,7 @@ class FederationPlayer(models.Model):
         string="Gender",
         tracking=True,
     )
-    nationality_id = fields.Many2one("res.country", string="Nationality")
+    nationality_id = fields.Many2one("res.country", string="Nationality", ondelete="set null")
     active = fields.Boolean(default=True)
     state = fields.Selection(
         [
@@ -49,8 +49,16 @@ class FederationPlayer(models.Model):
     license_count = fields.Integer(
         string="License Count", compute="_compute_counts", store=True
     )
+    is_eligible = fields.Boolean(
+        string="Eligible",
+        compute="_compute_is_eligible",
+        help="True if the player has at least one active license.",
+    )
 
-    _name_birthdate_unique = models.Constraint('unique (first_name, last_name, birth_date)', 'A player with the same name and birth date already exists.')
+    _name_birthdate_unique = models.Constraint(
+        "unique (first_name, last_name, birth_date)",
+        "A player with the same name and birth date already exists.",
+    )
 
     @api.depends("first_name", "last_name")
     def _compute_name(self):
@@ -65,11 +73,21 @@ class FederationPlayer(models.Model):
         for rec in self:
             rec.license_count = len(rec.license_ids)
 
+    @api.depends("license_ids.state")
+    def _compute_is_eligible(self):
+        """Compute eligibility: True if the player has at least one active license."""
+        for rec in self:
+            rec.is_eligible = any(
+                lic.state == "active" for lic in rec.license_ids
+            )
+
     def action_view_licenses(self):
         """Execute the view licenses action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('sports_federation_people.federation_player_license_action')
-        action['domain'] = [('player_id', '=', self.id)]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_people.federation_player_license_action"
+        )
+        action["domain"] = [("player_id", "=", self.id)]
         return action
 
     @api.constrains("birth_date")
@@ -105,5 +123,9 @@ class FederationPlayer(models.Model):
                 ("last_name", operator, name),
             ]
             recs = self.search(domain + args, limit=limit)
-            return recs.name_get() if hasattr(recs, 'name_get') else [(r.id, r.display_name) for r in recs]
+            return (
+                recs.name_get()
+                if hasattr(recs, "name_get")
+                else [(r.id, r.display_name) for r in recs]
+            )
         return super().name_search(name, args, operator, limit)

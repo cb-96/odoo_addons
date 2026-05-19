@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Compliance",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "category": "Sports",
     "summary": "Document requirements, submissions, and compliance checks",
     "description": "Compliance workflows for document requirements, submissions, and review checks.",

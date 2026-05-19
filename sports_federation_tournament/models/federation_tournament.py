@@ -1,6 +1,16 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
+from ..workflow_states import (
+    TOURNAMENT_STATE_DRAFT,
+    TOURNAMENT_STATE_OPEN,
+    TOURNAMENT_STATE_IN_PROGRESS,
+    TOURNAMENT_STATE_CLOSED,
+    TOURNAMENT_STATE_CANCELLED,
+    TOURNAMENT_STATES_ACTIVE,
+    TOURNAMENT_STATE_SELECTION,
+)
+
 
 class FederationTournament(models.Model):
     _name = "federation.tournament"
@@ -42,15 +52,9 @@ class FederationTournament(models.Model):
         tracking=True,
     )
     state = fields.Selection(
-        [
-            ("draft", "Draft"),
-            ("open", "Open"),
-            ("in_progress", "In Progress"),
-            ("closed", "Closed"),
-            ("cancelled", "Cancelled"),
-        ],
+        TOURNAMENT_STATE_SELECTION,
         string="Status",
-        default="draft",
+        default=TOURNAMENT_STATE_DRAFT,
         required=True,
         tracking=True,
     )
@@ -77,19 +81,25 @@ class FederationTournament(models.Model):
     )
     notes = fields.Text(string="Notes")
 
-    stage_ids = fields.One2many("federation.tournament.stage", "tournament_id", string="Stages")
+    stage_ids = fields.One2many(
+        "federation.tournament.stage", "tournament_id", string="Stages"
+    )
     participant_ids = fields.One2many(
         "federation.tournament.participant", "tournament_id", string="Participants"
     )
     match_ids = fields.One2many("federation.match", "tournament_id", string="Matches")
 
-    stage_count = fields.Integer(string="Stage Count", compute="_compute_counts", store=True)
+    stage_count = fields.Integer(
+        string="Stage Count", compute="_compute_counts", store=True
+    )
     participant_count = fields.Integer(
         string="Participant Count", compute="_compute_counts", store=True
     )
-    match_count = fields.Integer(string="Match Count", compute="_compute_counts", store=True)
+    match_count = fields.Integer(
+        string="Match Count", compute="_compute_counts", store=True
+    )
 
-    _code_unique = models.Constraint('unique (code)', 'Tournament code must be unique.')
+    _code_unique = models.Constraint("unique (code)", "Tournament code must be unique.")
 
     @api.depends("stage_ids", "participant_ids", "match_ids")
     def _compute_counts(self):
@@ -118,52 +128,73 @@ class FederationTournament(models.Model):
     def action_open(self):
         """Execute the open action."""
         invalid_tournaments = self.filtered(
-            lambda rec: rec.state != "draft" or not rec.active or not rec.season_id
+            lambda rec: rec.state != TOURNAMENT_STATE_DRAFT
+            or not rec.active
+            or not rec.season_id
         )
         if invalid_tournaments:
             raise ValidationError(
                 _("Only active draft tournaments linked to a season can be opened.")
             )
-        self.write({"state": "open"})
+        self.write({"state": TOURNAMENT_STATE_OPEN})
 
     def action_start(self):
         """Execute the start action."""
-        invalid_tournaments = self.filtered(lambda rec: rec.state != "open")
+        invalid_tournaments = self.filtered(
+            lambda rec: rec.state != TOURNAMENT_STATE_OPEN
+        )
         if invalid_tournaments:
             raise ValidationError(_("Only open tournaments can be started."))
 
         tournaments_without_stages = self.filtered(lambda rec: not rec.stage_ids)
         if tournaments_without_stages:
-            raise ValidationError(_("Add at least one stage before starting a tournament."))
+            raise ValidationError(
+                _("Add at least one stage before starting a tournament.")
+            )
 
-        self.write({"state": "in_progress"})
+        self.write({"state": TOURNAMENT_STATE_IN_PROGRESS})
 
     def action_close(self):
         """Execute the close action."""
-        invalid_tournaments = self.filtered(lambda rec: rec.state != "in_progress")
+        invalid_tournaments = self.filtered(
+            lambda rec: rec.state != TOURNAMENT_STATE_IN_PROGRESS
+        )
         if invalid_tournaments:
             raise ValidationError(_("Only tournaments in progress can be closed."))
-        self.write({"state": "closed"})
+        self.write({"state": TOURNAMENT_STATE_CLOSED})
 
     def action_cancel(self):
         """Execute the cancel action."""
         invalid_tournaments = self.filtered(
-            lambda rec: rec.state not in ("draft", "open", "in_progress")
+            lambda rec: rec.state
+            not in (
+                TOURNAMENT_STATE_DRAFT,
+                TOURNAMENT_STATE_OPEN,
+                TOURNAMENT_STATE_IN_PROGRESS,
+            )
         )
         if invalid_tournaments:
-            raise ValidationError(_("Only draft, open, or in-progress tournaments can be cancelled."))
-        self.write({"state": "cancelled"})
+            raise ValidationError(
+                _("Only draft, open, or in-progress tournaments can be cancelled.")
+            )
+        self.write({"state": TOURNAMENT_STATE_CANCELLED})
 
     def action_draft(self):
         """Execute the draft action."""
-        invalid_tournaments = self.filtered(lambda rec: rec.state != "cancelled")
+        invalid_tournaments = self.filtered(
+            lambda rec: rec.state != TOURNAMENT_STATE_CANCELLED
+        )
         if invalid_tournaments:
-            raise ValidationError(_("Only cancelled tournaments can be reset to draft."))
-        self.write({"state": "draft"})
+            raise ValidationError(
+                _("Only cancelled tournaments can be reset to draft.")
+            )
+        self.write({"state": TOURNAMENT_STATE_DRAFT})
 
     def action_archive(self):
         """Execute the archive action."""
-        active_tournaments = self.filtered(lambda rec: rec.state in ("open", "in_progress"))
+        active_tournaments = self.filtered(
+            lambda rec: rec.state in TOURNAMENT_STATES_ACTIVE
+        )
         if active_tournaments:
             raise ValidationError(
                 _("Close or cancel an operational tournament before archiving it.")
@@ -179,29 +210,37 @@ class FederationTournament(models.Model):
     def action_view_stages(self):
         """Execute the view stages action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('sports_federation_tournament.federation_tournament_stage_action')
-        action['domain'] = [('tournament_id', '=', self.id)]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_tournament.federation_tournament_stage_action"
+        )
+        action["domain"] = [("tournament_id", "=", self.id)]
         return action
 
     def action_view_participants(self):
         """Execute the view participants action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('sports_federation_tournament.federation_tournament_participant_action')
-        action['domain'] = [('tournament_id', '=', self.id)]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_tournament.federation_tournament_participant_action"
+        )
+        action["domain"] = [("tournament_id", "=", self.id)]
         return action
 
     def action_view_matches(self):
         """Execute the view matches action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('sports_federation_tournament.federation_match_action')
-        action['domain'] = [('tournament_id', '=', self.id)]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_tournament.federation_match_action"
+        )
+        action["domain"] = [("tournament_id", "=", self.id)]
         return action
 
     def _get_effective_rule_set(self):
         """Return effective rule set."""
         self.ensure_one()
         return self.rule_set_id or (
-            self.competition_id.rule_set_id if self.competition_id else self.env["federation.rule.set"]
+            self.competition_id.rule_set_id
+            if self.competition_id
+            else self.env["federation.rule.set"]
         )
 
     def _get_rule_set_allowed_team_values(self):
@@ -212,7 +251,9 @@ class FederationTournament(models.Model):
             return set()
 
         rules = rule_set.eligibility_rule_ids.filtered(
-            lambda rule: rule.eligibility_type == "gender" and rule.active and not rule.is_placeholder
+            lambda rule: rule.eligibility_type == "gender"
+            and rule.active
+            and not rule.is_placeholder
         )
         allowed = set()
         for rule in rules:
@@ -248,7 +289,9 @@ class FederationTournament(models.Model):
         snapshot = self.get_team_selection_snapshot(extra_domain=extra_domain)
         return snapshot["available_teams"]
 
-    def get_team_selection_snapshot(self, extra_domain=None, blocked_reason_by_team_id=None):
+    def get_team_selection_snapshot(
+        self, extra_domain=None, blocked_reason_by_team_id=None
+    ):
         """Return selectable teams plus explicit exclusion reasons.
 
         ``blocked_reason_by_team_id`` is used for non-eligibility exclusions,
@@ -294,12 +337,12 @@ class FederationTournament(models.Model):
         existing = self.env["federation.tournament.participant"].search(domain)
         blocked_reason = self._get_existing_participant_reason()
         return {
-            record.team_id.id: blocked_reason
-            for record in existing
-            if record.team_id
+            record.team_id.id: blocked_reason for record in existing if record.team_id
         }
 
-    def get_participant_team_selection_snapshot(self, extra_domain=None, current_participant=None):
+    def get_participant_team_selection_snapshot(
+        self, extra_domain=None, current_participant=None
+    ):
         """Return participant team selection snapshot."""
         self.ensure_one()
         return self.get_team_selection_snapshot(
@@ -309,7 +352,9 @@ class FederationTournament(models.Model):
             ),
         )
 
-    def get_participant_team_unavailability_reason(self, team, current_participant=None):
+    def get_participant_team_unavailability_reason(
+        self, team, current_participant=None
+    ):
         """Return participant team unavailability reason."""
         self.ensure_one()
         blocked_reason = self._get_participant_blocked_reason_by_team_id(

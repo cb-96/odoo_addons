@@ -75,12 +75,14 @@ class FederationMatchIncident(models.Model):
     def _check_subject_reference(self):
         """Validate subject reference."""
         for record in self:
-            if not any([
-                record.match_id,
-                record.player_id,
-                record.club_id,
-                record.referee_id,
-            ]):
+            if not any(
+                [
+                    record.match_id,
+                    record.player_id,
+                    record.club_id,
+                    record.referee_id,
+                ]
+            ):
                 raise ValidationError(
                     "At least one of Match, Player, Club, or Referee must be set."
                 )

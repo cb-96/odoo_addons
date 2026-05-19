@@ -380,7 +380,7 @@
                     </div>
                 </section>
 
-                <div t-if="tournament.can_access_public_detail() and tournament.public_pinned_announcement" class="alert alert-warning border-0 shadow-sm">
+                <div t-if="tournament.can_access_public_detail() and tournament.public_pinned_announcement" class="alert alert-warning border-0 shadow-sm" role="alert">
                     <strong class="me-2">Announcement</strong>
                     <span t-esc="tournament.public_pinned_announcement"/>
                 </div>
@@ -515,7 +515,7 @@
                         </section>
 
                         <section class="mb-4" t-if="not tournament.can_access_public_detail()">
-                            <div class="alert alert-info border-0 shadow-sm mb-0">
+                            <div class="alert alert-info border-0 shadow-sm mb-0" role="status">
                                 Public updates are not published for this tournament yet. Registration details remain available here, and schedules, standings, results, and bracket links will appear once the federation opens public release.
                             </div>
                         </section>
@@ -543,8 +543,8 @@
                                 <h1 class="h3 mb-3">Register for <t t-esc="tournament.name"/></h1>
                                 <p class="text-muted mb-4">Submit a club team through the tournament hub. Eligibility and duplicate checks are applied before the registration request is accepted.</p>
 
-                                <div t-if="error" class="alert alert-danger"><t t-esc="error"/></div>
-                                <div t-if="success" class="alert alert-success"><t t-esc="success"/></div>
+                                <div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div>
+                                <div t-if="success" class="alert alert-success" role="status"><t t-esc="success"/></div>
 
                                 <form t-if="teams" t-att-action="tournament.get_public_register_path()" method="POST">
                                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
@@ -570,7 +570,7 @@
                                     </div>
                                 </form>
 
-                                <div t-elif="not error" class="alert alert-warning mb-0">
+                                <div t-elif="not error" class="alert alert-warning mb-0" role="status">
                                     No eligible teams are available right now. Check your team setup or contact federation staff if you expected to register.
                                 </div>
                             </div>

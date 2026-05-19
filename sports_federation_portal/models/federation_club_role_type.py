@@ -50,7 +50,7 @@ class FederationClubRoleType(models.Model):
         help="Use this role for staff assigned to a specific team rather than a whole club.",
     )
 
-    _code_unique = models.Constraint('UNIQUE(code)', 'Role type code must be unique.')
+    _code_unique = models.Constraint("UNIQUE(code)", "Role type code must be unique.")
 
     @api.model
     def _get_default_role_types(self):

@@ -12,8 +12,8 @@
                     <button name="action_deactivate" string="Deactivate" type="object"
                             invisible="state != 'active'"/>
                     <button name="action_suspend" string="Suspend" type="object"
-                            invisible="state in ('suspended',)"/>
-                    <field name="state" widget="statusbar" statusbar_visible="active,inactive"/>
+                            invisible="state != 'active'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="active,suspended,inactive"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -105,7 +105,7 @@
         <field name="res_model">federation.player</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_federation_player_search"/>
-        <field name="context">{'search_default_club': 1, 'search_default_gender': 2}</field>
+        <field name="context">{'search_default_active_players': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Register your first player.

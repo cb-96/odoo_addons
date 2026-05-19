@@ -1,0 +1,81 @@
+owner: Federation Platform Team
+last_reviewed: 2026-04-18
+review_cadence: Every release
+
+modules:
+  sports_federation_base:
+    primary_owner: Federation Platform Team
+    secondary_owner: Federation Competition Operations
+    surface: Core clubs, teams, seasons, and shared registration models
+  sports_federation_competition_engine:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Deterministic scheduling services and bracket generation
+  sports_federation_compliance:
+    primary_owner: Federation Finance and Compliance
+    secondary_owner: Federation Platform Team
+    surface: Compliance requests, review queues, and evidence intake
+  sports_federation_discipline:
+    primary_owner: Federation Finance and Compliance
+    secondary_owner: Federation Competition Operations
+    surface: Disciplinary cases, sanctions, and review workflows
+  sports_federation_finance_bridge:
+    primary_owner: Federation Finance and Compliance
+    secondary_owner: Federation Platform Team
+    surface: Finance events, fees, and accounting-facing hooks
+  sports_federation_governance:
+    primary_owner: Federation Platform Team
+    secondary_owner: Federation Finance and Compliance
+    surface: Governance workflows, approvals, and shared operational controls
+  sports_federation_import_tools:
+    primary_owner: Federation Platform Team
+    secondary_owner: Federation Finance and Compliance
+    surface: CSV import wizards, managed integration contracts, and delivery staging
+  sports_federation_notifications:
+    primary_owner: Federation Platform Team
+    secondary_owner: Federation Portal and Public Experience
+    surface: Notification rules, outbound delivery, and communication hooks
+  sports_federation_officiating:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Portal and Public Experience
+    surface: Referee assignments, officiating availability, and match staffing
+  sports_federation_people:
+    primary_owner: Federation Platform Team
+    secondary_owner: Federation Competition Operations
+    surface: Player master data, licenses, and person records
+  sports_federation_portal:
+    primary_owner: Federation Portal and Public Experience
+    secondary_owner: Federation Platform Team
+    surface: Club representative portal dashboards and registration workflows
+  sports_federation_public_site:
+    primary_owner: Federation Portal and Public Experience
+    secondary_owner: Federation Competition Operations
+    surface: Public website routes, publication toggles, and SEO-facing pages
+  sports_federation_reporting:
+    primary_owner: Federation Finance and Compliance
+    secondary_owner: Federation Platform Team
+    surface: SQL-backed operational reports, exports, and operator checklists
+  sports_federation_result_control:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Portal and Public Experience
+    surface: Result approval, dispute handling, and standings publication control
+  sports_federation_rosters:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Portal and Public Experience
+    surface: Team roster management, eligibility checks, and roster workflows
+  sports_federation_rules:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Rule sets, points systems, tie-breaks, and qualification logic
+  sports_federation_standings:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Standings computation, freezing, and publication feeds
+  sports_federation_tournament:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Tournaments, stages, rounds, matches, and registrations
+  sports_federation_venues:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Portal and Public Experience
+    surface: Venue master data and schedule-level venue ownership

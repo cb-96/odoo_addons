@@ -5,7 +5,6 @@
         <field name="model">federation.match.sheet</field>
         <field name="arch" type="xml">
             <list>
-                <field name="name"/>
                 <field name="match_id"/>
                 <field name="team_id"/>
                 <field name="side"/>
@@ -22,20 +21,19 @@
             <form>
                 <header>
                     <button name="action_submit" string="Submit" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" invisible="state != 'submitted'"/>
                     <button name="action_approve" string="Approve" type="object" class="oe_highlight" invisible="state != 'submitted'"/>
-                    <button name="action_lock" string="Lock" type="object" invisible="state != 'approved'"/>
+                    <button name="action_lock" string="Lock" type="object" invisible="state != 'approved'" confirm="Locking this match sheet is irreversible. No further changes will be possible. Continue?"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,locked"/>
                 </header>
                 <sheet>
-                    <div class="oe_title">
-                        <label for="name"/>
-                        <h1><field name="name"/></h1>
-                    </div>
                     <group>
                         <group>
                             <field name="match_id"/>
-                            <field name="team_id"/>
-                            <field name="roster_id"/>
+                            <field name="match_team_ids" invisible="1"/>
+                            <field name="roster_player_ids" invisible="1"/>
+                            <field name="team_id" domain="[('id', 'in', match_team_ids)]"/>
+                            <field name="roster_id" domain="[('team_id', '=', team_id)]"/>
                             <field name="side"/>
                         </group>
                         <group>
@@ -48,15 +46,35 @@
                         </group>
                     </group>
                     <group>
-                        <field name="ready_for_submission" readonly="1"/>
-                        <field name="readiness_feedback" readonly="1" invisible="not readiness_feedback"/>
+                        <field name="ready_for_submission" invisible="1" readonly="1"/>
+                        <field name="readiness_feedback" invisible="1" readonly="1"/>
                     </group>
+                    <!-- Readiness status badge -->
+                    <div class="mt-2 mb-3">
+                        <div invisible="not ready_for_submission"
+                             class="alert alert-success d-flex align-items-center gap-2 py-2 mb-0" role="status">
+                            <i class="fa fa-check-circle" title="Ready"/>
+                            <strong>Ready for Submission</strong>
+                        </div>
+                        <div invisible="ready_for_submission"
+                             class="alert alert-warning py-2 mb-0" role="alert">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fa fa-exclamation-triangle" title="Not ready"/>
+                                <strong>Not Ready for Submission</strong>
+                            </div>
+                        </div>
+                        <div invisible="not readiness_feedback"
+                             class="alert alert-warning mt-2 mb-0" role="alert">
+                            <i class="fa fa-exclamation-triangle me-2" title="Readiness issue"/>
+                            <field name="readiness_feedback" readonly="1" nolabel="1"/>
+                        </div>
+                    </div>
                     <notebook>
                         <page string="Sheet Lines" name="sheet_lines">
                             <field name="line_ids">
                                 <list editable="bottom">
-                                    <field name="player_id"/>
-                                    <field name="roster_line_id"/>
+                                    <field name="player_id" domain="[('id', 'in', parent.roster_player_ids)]" options="{'no_create': True}"/>
+                                    <field name="roster_line_id" domain="[('roster_id', '=', parent.roster_id)]" options="{'no_create': True}"/>
                                     <field name="is_starter"/>
                                     <field name="is_substitute"/>
                                     <field name="is_captain"/>
@@ -85,7 +103,29 @@
                         </page>
                     </notebook>
                 </sheet>
+                <chatter/>
             </form>
+        </field>
+    </record>
+
+    <record id="view_federation_match_sheet_search" model="ir.ui.view">
+        <field name="name">federation.match.sheet.search</field>
+        <field name="model">federation.match.sheet</field>
+        <field name="arch" type="xml">
+            <search string="Search Match Sheets">
+                <field name="name"/>
+                <field name="match_id"/>
+                <field name="team_id"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="submitted" string="Submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <separator/>
+                <group>
+                    <filter name="match" string="Match" context="{'group_by': 'match_id'}"/>
+                    <filter name="team" string="Team" context="{'group_by': 'team_id'}"/>
+                    <filter name="state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
@@ -93,5 +133,11 @@
         <field name="name">Match Sheets</field>
         <field name="res_model">federation.match.sheet</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_federation_match_sheet_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Match sheets are created automatically for each team when a match is scheduled.
+            </p>
+        </field>
     </record>
 </odoo>

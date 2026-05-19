@@ -1,4 +1,7 @@
 from odoo import api, fields, models
+from odoo.addons.sports_federation_governance.workflow_states import (
+    OVERRIDE_REQUEST_STATE_SELECTION,
+)
 
 
 class FederationOverrideOutcome(models.Model):
@@ -13,14 +16,7 @@ class FederationOverrideOutcome(models.Model):
         ("ineffective", "Ineffective"),
         ("reversed", "Reversed"),
     ]
-    REQUEST_STATE_SELECTION = [
-        ("draft", "Draft"),
-        ("submitted", "Submitted"),
-        ("approved", "Approved"),
-        ("rejected", "Rejected"),
-        ("implemented", "Implemented"),
-        ("closed", "Closed"),
-    ]
+    REQUEST_STATE_SELECTION = OVERRIDE_REQUEST_STATE_SELECTION
 
     name = fields.Char(string="Name", compute="_compute_name", store=True)
     request_id = fields.Many2one(
@@ -58,7 +54,9 @@ class FederationOverrideOutcome(models.Model):
         prepared_vals_list = []
         for vals in vals_list:
             prepared_vals = dict(vals)
-            request = self.env["federation.override.request"].browse(prepared_vals.get("request_id"))
+            request = self.env["federation.override.request"].browse(
+                prepared_vals.get("request_id")
+            )
             if request:
                 prepared_vals.setdefault("request_state", request.state)
                 prepared_vals.setdefault("target_model", request.target_model)
@@ -73,4 +71,8 @@ class FederationOverrideOutcome(models.Model):
         for record in self:
             outcome_label = labels.get(record.outcome, record.outcome or "Outcome")
             request_label = record.request_id.display_name or "Override Request"
-            record.name = f"{request_label} - {outcome_label} - {record.outcome_on}" if record.outcome_on else f"{request_label} - {outcome_label}"
+            record.name = (
+                f"{request_label} - {outcome_label} - {record.outcome_on}"
+                if record.outcome_on
+                else f"{request_label} - {outcome_label}"
+            )

@@ -28,9 +28,15 @@ class FederationReportFinanceReconciliation(models.Model):
         ("cancelled", "Cancelled"),
     ]
 
-    finance_event_id = fields.Many2one("federation.finance.event", string="Finance Event", readonly=True)
-    fee_type_id = fields.Many2one("federation.fee.type", string="Fee Type", readonly=True)
-    event_type = fields.Selection(EVENT_TYPE_SELECTION, string="Event Type", readonly=True)
+    finance_event_id = fields.Many2one(
+        "federation.finance.event", string="Finance Event", readonly=True
+    )
+    fee_type_id = fields.Many2one(
+        "federation.fee.type", string="Fee Type", readonly=True
+    )
+    event_type = fields.Selection(
+        EVENT_TYPE_SELECTION, string="Event Type", readonly=True
+    )
     state = fields.Selection(STATE_SELECTION, string="State", readonly=True)
     created_on = fields.Datetime(string="Created On", readonly=True)
     club_id = fields.Many2one("federation.club", string="Club", readonly=True)
@@ -41,7 +47,9 @@ class FederationReportFinanceReconciliation(models.Model):
     source_model = fields.Char(string="Source Model", readonly=True)
     source_res_id = fields.Integer(string="Source Record ID", readonly=True)
     currency_id = fields.Many2one("res.currency", string="Currency", readonly=True)
-    amount = fields.Monetary(string="Amount", currency_field="currency_id", readonly=True)
+    amount = fields.Monetary(
+        string="Amount", currency_field="currency_id", readonly=True
+    )
     invoice_ref = fields.Char(string="Invoice Ref", readonly=True)
     external_ref = fields.Char(string="External Ref", readonly=True)
     age_days = fields.Integer(string="Age (Days)", readonly=True)
@@ -52,14 +60,15 @@ class FederationReportFinanceReconciliation(models.Model):
         string="SLA Status",
         readonly=True,
     )
-    follow_up_status = fields.Selection(FOLLOW_UP_SELECTION, string="Follow-up Status", readonly=True)
+    follow_up_status = fields.Selection(
+        FOLLOW_UP_SELECTION, string="Follow-up Status", readonly=True
+    )
     needs_follow_up = fields.Boolean(string="Needs Follow-up", readonly=True)
 
     def init(self):
         """Rebuild the SQL view so queue fields match the finance follow-up query."""
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute(
-            """
+        self.env.cr.execute("""
             CREATE VIEW federation_report_finance_reconciliation AS (
                 -- block: report_rows
                 SELECT
@@ -112,5 +121,4 @@ class FederationReportFinanceReconciliation(models.Model):
                 LEFT JOIN federation_referee fr ON fr.id = fe.referee_id
                 LEFT JOIN res_partner rp ON rp.id = fe.partner_id
             )
-            """
-        )
+            """)

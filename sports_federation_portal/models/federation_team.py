@@ -15,12 +15,10 @@ class FederationTeam(models.Model):
         if not club.exists():
             raise ValidationError(_("Select a valid club before creating a team."))
 
-        represented_clubs = (
-            PortalPrivilege.elevate(
-                self.env["federation.club.representative"],
-                user=user,
-            )._get_clubs_for_user(user=user)
-        )
+        represented_clubs = PortalPrivilege.elevate(
+            self.env["federation.club.representative"],
+            user=user,
+        )._get_clubs_for_user(user=user)
         if club not in represented_clubs:
             raise AccessError(_("You can only create teams for your own club."))
 

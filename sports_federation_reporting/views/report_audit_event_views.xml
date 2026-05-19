@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_federation_report_audit_event_search" model="ir.ui.view">
+        <field name="name">federation.report.audit.event.search</field>
+        <field name="model">federation.report.audit.event</field>
+        <field name="arch" type="xml">
+            <search string="Audit Events">
+                <field name="event_family"/>
+                <field name="event_type"/>
+                <field name="action_name"/>
+                <field name="actor_user_id"/>
+                <field name="target_model"/>
+                <field name="target_display_name"/>
+                <field name="event_on"/>
+                <filter name="portal_privilege" string="Portal Privilege" domain="[('event_family', '=', 'portal_privilege')]"/>
+                <filter name="integration_token" string="Token Rotations" domain="[('event_family', '=', 'integration_token')]"/>
+                <group>
+                    <filter name="group_event_type" string="Event Type" context="{'group_by': 'event_type'}"/>
+                    <filter name="group_actor" string="Actor" context="{'group_by': 'actor_user_id'}"/>
+                    <filter name="group_target_model" string="Target Model" context="{'group_by': 'target_model'}"/>
+                    <filter name="group_event_on_day" string="Day" context="{'group_by': 'event_on:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_federation_report_audit_event_list" model="ir.ui.view">
+        <field name="name">federation.report.audit.event.list</field>
+        <field name="model">federation.report.audit.event</field>
+        <field name="arch" type="xml">
+            <list string="Audit Events" create="0" edit="0" delete="0">
+                <field name="event_on"/>
+                <field name="event_family"/>
+                <field name="event_type"/>
+                <field name="action_name" optional="show"/>
+                <field name="actor_user_id"/>
+                <field name="target_model" optional="show"/>
+                <field name="target_display_name"/>
+                <field name="changed_fields" optional="show"/>
+                <field name="age_days" optional="hide"/>
+                <field name="description"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_federation_report_audit_event_pivot" model="ir.ui.view">
+        <field name="name">federation.report.audit.event.pivot</field>
+        <field name="model">federation.report.audit.event</field>
+        <field name="arch" type="xml">
+            <pivot string="Audit Events">
+                <field name="event_type" type="row"/>
+                <field name="actor_user_id" type="row"/>
+                <field name="event_on" type="col" interval="day"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_federation_report_audit_event_graph" model="ir.ui.view">
+        <field name="name">federation.report.audit.event.graph</field>
+        <field name="model">federation.report.audit.event</field>
+        <field name="arch" type="xml">
+            <graph string="Audit Events" type="bar">
+                <field name="event_type" type="row"/>
+                <field name="actor_user_id" type="col"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_federation_report_portal_audit" model="ir.actions.act_window">
+        <field name="name">Portal Audit</field>
+        <field name="res_model">federation.report.audit.event</field>
+        <field name="view_mode">list,pivot,graph</field>
+        <field name="domain">[('event_family', '=', 'portal_privilege')]</field>
+        <field name="search_view_id" ref="view_federation_report_audit_event_search"/>
+        <field name="context">{'search_default_portal_privilege': 1, 'search_default_group_event_type': 1, 'search_default_group_actor': 2}</field>
+    </record>
+
+    <record id="action_federation_report_token_rotation_audit" model="ir.actions.act_window">
+        <field name="name">Token Rotation Audit</field>
+        <field name="res_model">federation.report.audit.event</field>
+        <field name="view_mode">list,pivot,graph</field>
+        <field name="domain">[('event_family', '=', 'integration_token')]</field>
+        <field name="search_view_id" ref="view_federation_report_audit_event_search"/>
+        <field name="context">{'search_default_integration_token': 1, 'search_default_group_event_type': 1, 'search_default_group_actor': 2}</field>
+    </record>
+
+</odoo>

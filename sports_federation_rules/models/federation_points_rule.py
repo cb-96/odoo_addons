@@ -1,5 +1,4 @@
-from odoo import api, fields, models
-from odoo.exceptions import ValidationError
+from odoo import fields, models
 
 
 class FederationPointsRule(models.Model):
@@ -33,6 +32,6 @@ class FederationPointsRule(models.Model):
     )
 
     _rule_set_result_unique = models.Constraint(
-        'UNIQUE(rule_set_id, result_type)',
-        'Each result type can only appear once per rule set.',
+        "UNIQUE(rule_set_id, result_type)",
+        "Each result type can only appear once per rule set.",
     )

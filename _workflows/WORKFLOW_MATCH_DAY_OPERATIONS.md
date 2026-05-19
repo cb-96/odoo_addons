@@ -35,8 +35,11 @@ the operational sequence from pre-match preparation through to the final whistle
 3. Add **roster lines** — each line links a player and can mark captain or vice-captain responsibilities.
 4. Validate squad size and player eligibility against the rule set, including
    season registration, suspensions, and season/club-scoped license checks.
-5. Review readiness feedback and set roster status: `draft` → `active`.
-6. An active roster is the pool from which match sheets draw players.
+5. Portal roster editing only offers licenses that match the selected roster,
+   season, and player, and manually posted hidden ids are rejected by the same
+   server-side scope.
+6. Review readiness feedback and set roster status: `draft` → `active`.
+7. An active roster is the pool from which match sheets draw players.
 
 ### 2. Match Sheet Creation
 
@@ -54,10 +57,19 @@ the operational sequence from pre-match preparation through to the final whistle
 8. Validate: selected players must belong to active roster lines for the same
    team, satisfy license and registration rules for the match context, and any
    blockers are shown as readable feedback before submission.
-9. After approval, the sheet lineup is frozen; only substitution timing fields
-   remain editable until the sheet is explicitly locked.
+9. If a submitted sheet needs correction, use **Reset to Draft**, update the
+   lineup, and resubmit. Only `submitted` sheets can take this correction path.
+10. After approval, the sheet lineup is frozen; only substitution timing fields
+    remain editable until the sheet is explicitly locked.
 
 Match sheet states: `draft` → `submitted` → `approved` → `locked`.
+
+Portal workspace note:
+
+- Club representatives using the tournament workspace only see match-day tasks
+   for active tournaments (`open` or `in_progress`) and for teams inside their
+   current whole-club scope or explicit current team scope. Inactive or expired
+   representative rows do not keep match-day visibility alive.
 
 ### 3. Referee Assignment
 
@@ -166,6 +178,7 @@ Operational readiness additions:
 Roster: draft → active → closed
 
 Match Sheet: draft → submitted → approved → locked
+                          ↘ draft
 
 Referee Assignment: assigned → confirmed → done
                                           → cancelled

@@ -71,12 +71,10 @@ class FederationSeasonRegistration(models.Model):
         if not team.exists():
             raise ValidationError(_("Select a valid team before continuing."))
 
-        clubs = (
-            PortalPrivilege.elevate(
-                self.env["federation.club.representative"],
-                user=user,
-            )._get_clubs_for_user(user=user)
-        )
+        clubs = PortalPrivilege.elevate(
+            self.env["federation.club.representative"],
+            user=user,
+        )._get_clubs_for_user(user=user)
         if team.club_id not in clubs:
             raise AccessError(_("You can only register your own teams."))
 
@@ -91,9 +89,7 @@ class FederationSeasonRegistration(models.Model):
             user=user,
         )
         if existing:
-            raise ValidationError(
-                _("This team is already registered for this season.")
-            )
+            raise ValidationError(_("This team is already registered for this season."))
 
         registration = PortalPrivilege.portal_create(
             self,

@@ -16,8 +16,13 @@ def _dedupe_reasons(reasons):
 class FederationMatchSheet(models.Model):
     _name = "federation.match.sheet"
     _description = "Match Sheet"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
 
-    name = fields.Char(required=True)
+    name = fields.Char(
+        compute="_compute_name",
+        store=True,
+        readonly=False,
+    )
     match_id = fields.Many2one(
         "federation.match",
         string="Match",
@@ -45,6 +50,20 @@ class FederationMatchSheet(models.Model):
         required=True,
         ondelete="restrict",
         index=True,
+    )
+    # Computed helper used as domain source for team_id in the form view.
+    # Returns the IDs of the home and away teams on the linked match.
+    match_team_ids = fields.Many2many(
+        "federation.team",
+        compute="_compute_match_team_ids",
+        string="Match Teams",
+    )
+    # Computed helper used as domain source for player_id in sheet lines.
+    # When a roster is selected, only players on that roster are returned.
+    roster_player_ids = fields.Many2many(
+        "federation.player",
+        compute="_compute_roster_player_ids",
+        string="Roster Players",
     )
     roster_id = fields.Many2one(
         "federation.team.roster",
@@ -109,8 +128,8 @@ class FederationMatchSheet(models.Model):
     notes = fields.Text(string="Notes")
 
     _unique_match_team_side = models.Constraint(
-        'UNIQUE(match_id, team_id, side)',
-        'A match sheet already exists for this team and side in this match.',
+        "UNIQUE(match_id, team_id, side)",
+        "A match sheet already exists for this team and side in this match.",
     )
 
     @api.depends("line_ids")
@@ -118,6 +137,77 @@ class FederationMatchSheet(models.Model):
         """Compute line count."""
         for record in self:
             record.line_count = len(record.line_ids)
+
+    @api.depends("match_id", "team_id")
+    def _compute_name(self):
+        for rec in self:
+            if rec.match_id and rec.team_id:
+                rec.name = f"{rec.match_id.display_name} – {rec.team_id.display_name}"
+            elif rec.match_id:
+                rec.name = rec.match_id.display_name
+            elif rec.team_id:
+                rec.name = rec.team_id.display_name
+            elif not rec.name:
+                rec.name = _("New Match Sheet")
+
+    @api.depends("match_id", "match_id.home_team_id", "match_id.away_team_id")
+    def _compute_match_team_ids(self):
+        """Return the home and away teams of the linked match for domain filtering."""
+        for record in self:
+            if record.match_id:
+                teams = record.match_id.home_team_id | record.match_id.away_team_id
+                record.match_team_ids = teams
+            else:
+                record.match_team_ids = self.env["federation.team"]
+
+    @api.depends("roster_id", "roster_id.line_ids", "roster_id.line_ids.player_id")
+    def _compute_roster_player_ids(self):
+        for rec in self:
+            if rec.roster_id:
+                rec.roster_player_ids = rec.roster_id.line_ids.mapped("player_id")
+            else:
+                rec.roster_player_ids = self.env["federation.player"]
+
+    @api.onchange("match_id")
+    def _onchange_match_id(self):
+        """Clear team/roster when the match changes and auto-derive side when possible."""
+        if not self.match_id:
+            self.team_id = False
+            self.roster_id = False
+            return
+
+        match = self.match_id
+        # Clear team if it is no longer part of the new match
+        if self.team_id and self.team_id not in (
+            match.home_team_id | match.away_team_id
+        ):
+            self.team_id = False
+            self.roster_id = False
+
+    @api.onchange("team_id")
+    def _onchange_team_id(self):
+        """Clear roster when team changes and auto-set the side field."""
+        if not self.team_id:
+            self.roster_id = False
+            return
+
+        # Clear roster if it belongs to a different team
+        if self.roster_id and self.roster_id.team_id != self.team_id:
+            self.roster_id = False
+
+        # Auto-set side when the team unambiguously maps to one side
+        if self.match_id:
+            match = self.match_id
+            if (
+                self.team_id == match.home_team_id
+                and self.team_id != match.away_team_id
+            ):
+                self.side = "home"
+            elif (
+                self.team_id == match.away_team_id
+                and self.team_id != match.home_team_id
+            ):
+                self.side = "away"
 
     @api.depends("line_ids.entered_minute")
     def _compute_substitution_count(self):
@@ -134,9 +224,7 @@ class FederationMatchSheet(models.Model):
         for record in records:
             record._log_audit_event(
                 "match_sheet_created",
-                _(
-                    "Match sheet '%(sheet)s' created for match '%(match)s'."
-                )
+                _("Match sheet '%(sheet)s' created for match '%(match)s'.")
                 % {
                     "sheet": record.display_name,
                     "match": record.match_id.display_name,
@@ -149,12 +237,12 @@ class FederationMatchSheet(models.Model):
         if not self.env.context.get("bypass_match_sheet_lock"):
             locked_records = self.filtered(lambda rec: rec.state == "locked")
             if locked_records:
-                raise ValidationError(
-                    _("Locked match sheets cannot be modified.")
-                )
+                raise ValidationError(_("Locked match sheets cannot be modified."))
             approved_records = self.filtered(lambda rec: rec.state == "approved")
             allowed_on_approved = {"state", "notes", "locked_on", "locked_by_id"}
-            if approved_records and any(field not in allowed_on_approved for field in vals):
+            if approved_records and any(
+                field not in allowed_on_approved for field in vals
+            ):
                 raise ValidationError(
                     _(
                         "Approved match sheets cannot change their declared squad. Record substitutions on the sheet lines instead."
@@ -219,7 +307,9 @@ class FederationMatchSheet(models.Model):
         issues = []
 
         if not self.roster_id:
-            issues.append(_("Select an active roster before submitting the match sheet."))
+            issues.append(
+                _("Select an active roster before submitting the match sheet.")
+            )
         elif self.roster_id.status != "active":
             issues.append(_("The selected roster must be active before submission."))
 
@@ -287,7 +377,9 @@ class FederationMatchSheet(models.Model):
             issues = record._get_submission_issues()
             if issues:
                 raise ValidationError(
-                    _("Match sheet '%(sheet)s' is not ready for submission:\n- %(issues)s")
+                    _(
+                        "Match sheet '%(sheet)s' is not ready for submission:\n- %(issues)s"
+                    )
                     % {
                         "sheet": record.display_name,
                         "issues": "\n- ".join(issues),
@@ -301,28 +393,38 @@ class FederationMatchSheet(models.Model):
                 % {"sheet": record.display_name},
             )
 
+    def action_reset_to_draft(self):
+        """Reset a submitted match sheet back to draft for corrections."""
+        for record in self:
+            if record.state != "submitted":
+                raise ValidationError(
+                    _("Only submitted match sheets can be reset to draft.")
+                )
+        self.write({"state": "draft"})
+        for record in self:
+            record._log_audit_event(
+                "match_sheet_reset",
+                _("Match sheet '%(sheet)s' reset to draft.")
+                % {"sheet": record.display_name},
+            )
+
     def action_approve(self):
         """Execute the approve action."""
         for record in self:
             if record.state != "submitted":
-                raise ValidationError(
-                    _("Only submitted match sheets can be approved.")
-                )
+                raise ValidationError(_("Only submitted match sheets can be approved."))
         self.write({"state": "approved"})
         for record in self:
             record._log_audit_event(
                 "match_sheet_approved",
-                _("Match sheet '%(sheet)s' approved.")
-                % {"sheet": record.display_name},
+                _("Match sheet '%(sheet)s' approved.") % {"sheet": record.display_name},
             )
 
     def action_lock(self):
         """Execute the lock action."""
         for record in self:
             if record.state != "approved":
-                raise ValidationError(
-                    _("Only approved match sheets can be locked.")
-                )
+                raise ValidationError(_("Only approved match sheets can be locked."))
         self.write(
             {
                 "state": "locked",
@@ -333,292 +435,5 @@ class FederationMatchSheet(models.Model):
         for record in self:
             record._log_audit_event(
                 "match_sheet_locked",
-                _("Match sheet '%(sheet)s' locked.")
-                % {"sheet": record.display_name},
+                _("Match sheet '%(sheet)s' locked.") % {"sheet": record.display_name},
             )
-
-
-class FederationMatchSheetLine(models.Model):
-    _name = "federation.match.sheet.line"
-    _description = "Match Sheet Line"
-
-    match_sheet_id = fields.Many2one(
-        "federation.match.sheet",
-        string="Match Sheet",
-        required=True,
-        ondelete="cascade",
-        index=True,
-    )
-    player_id = fields.Many2one(
-        "federation.player",
-        string="Player",
-        required=True,
-        ondelete="restrict",
-        index=True,
-    )
-    roster_line_id = fields.Many2one(
-        "federation.team.roster.line",
-        string="Roster Line",
-        ondelete="set null",
-    )
-    is_starter = fields.Boolean(string="Is Starter", default=False)
-    is_substitute = fields.Boolean(string="Is Substitute", default=False)
-    is_captain = fields.Boolean(string="Is Captain", default=False)
-    jersey_number = fields.Char(string="Jersey Number")
-    entered_minute = fields.Integer(string="Entered Minute")
-    left_minute = fields.Integer(string="Left Minute")
-    notes = fields.Text(string="Notes")
-    eligible = fields.Boolean(
-        compute="_compute_eligible",
-        string="Eligible",
-        store=True,
-    )
-    eligibility_feedback = fields.Text(
-        compute="_compute_eligible",
-        string="Eligibility Feedback",
-        store=True,
-    )
-
-    _unique_match_sheet_player = models.Constraint(
-        'UNIQUE(match_sheet_id, player_id)',
-        'A player cannot appear twice on the same match sheet.',
-    )
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        """Create records with module-specific defaults and side effects."""
-        self._assert_parent_sheets_allow_new_lines(vals_list)
-        records = super().create(vals_list)
-        for record in records:
-            record.match_sheet_id._log_audit_event(
-                "sheet_line_added",
-                _("Player '%(player)s' added to the match sheet.")
-                % {"player": record.player_id.display_name},
-                player=record.player_id,
-            )
-        return records
-
-    def write(self, vals):
-        """Update records with module-specific side effects."""
-        self._assert_parent_sheet_line_editable(vals)
-        result = super().write(vals)
-        if {"entered_minute", "left_minute"} & set(vals):
-            for record in self:
-                minute_bits = []
-                if record.entered_minute:
-                    minute_bits.append(
-                        _("entered in minute %(minute)s")
-                        % {"minute": record.entered_minute}
-                    )
-                if record.left_minute:
-                    minute_bits.append(
-                        _("left in minute %(minute)s")
-                        % {"minute": record.left_minute}
-                    )
-                record.match_sheet_id._log_audit_event(
-                    "substitution_recorded",
-                    _("Substitution updated for '%(player)s': %(details)s.")
-                    % {
-                        "player": record.player_id.display_name,
-                        "details": ", ".join(minute_bits) or _("no minute recorded"),
-                    },
-                    player=record.player_id,
-                )
-        else:
-            tracked_fields = {
-                "player_id",
-                "roster_line_id",
-                "is_starter",
-                "is_substitute",
-                "is_captain",
-                "jersey_number",
-                "notes",
-            }
-            changed_fields = sorted(tracked_fields.intersection(vals))
-            if changed_fields:
-                field_labels = ", ".join(self._fields[field].string for field in changed_fields)
-                for record in self:
-                    record.match_sheet_id._log_audit_event(
-                        "sheet_line_updated",
-                        _("Match-sheet line for '%(player)s' updated: %(fields)s.")
-                        % {
-                            "player": record.player_id.display_name,
-                            "fields": field_labels,
-                        },
-                        player=record.player_id,
-                    )
-        return result
-
-    def unlink(self):
-        """Delete records after applying module-specific safeguards."""
-        self._assert_parent_sheet_line_editable()
-        audit_payloads = [
-            (
-                record.match_sheet_id,
-                record.player_id,
-                _("Player '%(player)s' removed from the match sheet.")
-                % {"player": record.player_id.display_name},
-            )
-            for record in self
-        ]
-        result = super().unlink()
-        for sheet, player, description in audit_payloads:
-            sheet._log_audit_event(
-                "sheet_line_removed",
-                description,
-                player=player,
-            )
-        return result
-
-    @api.depends(
-        "player_id",
-        "roster_line_id",
-        "roster_line_id.eligible",
-        "roster_line_id.eligibility_feedback",
-        "roster_line_id.status",
-        "roster_line_id.date_from",
-        "roster_line_id.date_to",
-        "match_sheet_id",
-        "match_sheet_id.roster_id",
-        "match_sheet_id.team_id",
-        "match_sheet_id.match_id",
-        "match_sheet_id.match_id.date_scheduled",
-        "match_sheet_id.match_id.tournament_id",
-    )
-    def _compute_eligible(self):
-        """Compute eligible."""
-        for record in self:
-            reasons = record._get_eligibility_reasons()
-            record.eligible = not bool(reasons)
-            record.eligibility_feedback = "\n".join(reasons) if reasons else False
-
-    def _assert_parent_sheets_allow_new_lines(self, vals_list):
-        """Handle assert parent sheets allow new lines."""
-        sheet_ids = [vals.get("match_sheet_id") for vals in vals_list if vals.get("match_sheet_id")]
-        sheets = self.env["federation.match.sheet"].browse(sheet_ids)
-        for sheet in sheets:
-            if sheet.state in ("approved", "locked"):
-                raise ValidationError(
-                    _(
-                        "Cannot add players to match sheet '%(sheet)s' once it is approved or locked."
-                    )
-                    % {"sheet": sheet.display_name}
-                )
-
-    def _assert_parent_sheet_line_editable(self, vals=None):
-        """Handle assert parent sheet line editable."""
-        for record in self:
-            if record.match_sheet_id.state == "locked":
-                raise ValidationError(
-                    _("Locked match sheets cannot be modified.")
-                )
-            if record.match_sheet_id.state == "approved":
-                allowed_fields = {"entered_minute", "left_minute", "notes"}
-                if vals is None or any(field not in allowed_fields for field in vals):
-                    raise ValidationError(
-                        _(
-                            "Approved match sheets cannot change player selection or lineup roles. Record substitutions instead."
-                        )
-                    )
-
-    @api.constrains("is_starter", "is_substitute")
-    def _check_starter_substitute(self):
-        """Validate starter substitute."""
-        for record in self:
-            if record.is_starter and record.is_substitute:
-                raise ValidationError(
-                    _("A player cannot be both a starter and a substitute.")
-                )
-
-    @api.constrains("entered_minute", "left_minute", "is_starter", "is_substitute")
-    def _check_substitution_governance(self):
-        """Validate substitution governance."""
-        for record in self:
-            entered_minute = record.entered_minute or False
-            left_minute = record.left_minute or False
-
-            if entered_minute:
-                if entered_minute <= 0:
-                    raise ValidationError(
-                        _("Entered minute must be a positive number.")
-                    )
-                if not record.is_substitute:
-                    raise ValidationError(
-                        _("Only substitute lines can record an entered minute.")
-                    )
-            if left_minute:
-                if left_minute <= 0:
-                    raise ValidationError(
-                        _("Left minute must be a positive number.")
-                    )
-                if not (record.is_starter or entered_minute):
-                    raise ValidationError(
-                        _(
-                            "Only starters or players who entered from the bench can record a left minute."
-                        )
-                    )
-            if entered_minute and left_minute:
-                if left_minute <= entered_minute:
-                    raise ValidationError(
-                        _("A player cannot leave before or at the same minute they entered.")
-                    )
-
-    @api.constrains("roster_line_id", "match_sheet_id")
-    def _check_roster_line_consistency(self):
-        """Validate roster line consistency."""
-        for record in self:
-            if record.roster_line_id and record.match_sheet_id.roster_id:
-                if record.roster_line_id.roster_id != record.match_sheet_id.roster_id:
-                    raise ValidationError(
-                        _("Roster line must belong to the match sheet's roster.")
-                    )
-
-    def _get_eligibility_reasons(self):
-        """Return eligibility reasons."""
-        self.ensure_one()
-        if not self.player_id or not self.match_sheet_id:
-            return []
-
-        sheet = self.match_sheet_id
-        reference_date = sheet._get_reference_date()
-        reasons = []
-
-        if sheet.roster_id and not self.roster_line_id:
-            reasons.append(_("Select a roster line from the chosen roster."))
-
-        if self.roster_line_id:
-            if self.roster_line_id.player_id != self.player_id:
-                reasons.append(_("Selected roster line does not belong to the chosen player."))
-            if self.roster_line_id.status != "active":
-                reasons.append(_("Selected roster line is not active."))
-            if self.roster_line_id.date_from and reference_date < self.roster_line_id.date_from:
-                reasons.append(
-                    _("Selected roster line is not active before %(date)s.")
-                    % {"date": self.roster_line_id.date_from}
-                )
-            if self.roster_line_id.date_to and reference_date > self.roster_line_id.date_to:
-                reasons.append(
-                    _("Selected roster line expired after %(date)s.")
-                    % {"date": self.roster_line_id.date_to}
-                )
-            if self.roster_line_id.team_id and self.roster_line_id.team_id != sheet.team_id:
-                reasons.append(_("Selected roster line belongs to a different team."))
-            if self.roster_line_id.eligibility_feedback:
-                reasons.extend(self.roster_line_id.eligibility_feedback.splitlines())
-
-        service = self.env.get("federation.eligibility.service")
-        rule_set = sheet._get_effective_rule_set()
-        if service is not None and rule_set:
-            context = {
-                "match_date": reference_date,
-                "tournament_id": sheet.match_id.tournament_id.id if sheet.match_id.tournament_id else None,
-                "season_id": sheet.match_id.tournament_id.season_id.id if sheet.match_id.tournament_id and sheet.match_id.tournament_id.season_id else None,
-                "team_id": sheet.team_id.id if sheet.team_id else None,
-                "club_id": sheet.team_id.club_id.id if sheet.team_id and sheet.team_id.club_id else None,
-            }
-            if self.roster_line_id and self.roster_line_id.license_id:
-                context["license_id"] = self.roster_line_id.license_id.id
-            result = service.check_player_eligibility(self.player_id, rule_set, context=context)
-            reasons.extend(result.get("reasons", []))
-
-        return _dedupe_reasons(reasons)

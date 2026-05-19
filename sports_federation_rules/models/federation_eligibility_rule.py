@@ -1,5 +1,4 @@
-from odoo import api, fields, models
-from odoo.exceptions import ValidationError
+from odoo import fields, models
 
 
 class FederationEligibilityRule(models.Model):
@@ -49,5 +48,5 @@ class FederationEligibilityRule(models.Model):
         string="Placeholder Rule",
         default=False,
         help="Mark this rule as a placeholder for future implementation. "
-             "Placeholder rules are not enforced but documented for planning.",
+        "Placeholder rules are not enforced but documented for planning.",
     )

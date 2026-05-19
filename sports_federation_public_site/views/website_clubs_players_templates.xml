@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         page_public_clubs_list  —  /clubs
+    ================================================================ -->
+    <template id="page_public_clubs_list" name="Public Clubs">
+        <t t-call="website.layout">
+            <div class="container py-4">
+
+                <div class="row mb-4">
+                    <div class="col">
+                        <h1 class="mb-1"><i class="fa fa-shield me-2"/>Clubs</h1>
+                        <p class="text-muted mb-0">Member clubs of the Sports Federation.</p>
+                    </div>
+                </div>
+
+                <div t-if="not clubs" class="alert alert-info" role="status">
+                    No clubs are published yet.
+                </div>
+
+                <div t-if="clubs" class="row g-3">
+                    <t t-foreach="clubs" t-as="club">
+                        <div class="col-md-4 col-lg-3">
+                            <a t-att-href="club.get_public_path()" class="text-decoration-none">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body text-center p-3">
+                                        <div t-if="club.logo" class="mb-2">
+                                            <img t-att-src="image_data_uri(club.logo)"
+                                                 class="rounded-circle border"
+                                                 style="width:64px;height:64px;object-fit:cover;"
+                                                 t-att-alt="club.name"/>
+                                        </div>
+                                        <div t-if="not club.logo" class="mb-2">
+                                            <span class="fa fa-shield fa-2x text-muted"/>
+                                        </div>
+                                        <div class="fw-semibold text-body" t-esc="club.name"/>
+                                        <div class="small text-muted" t-if="club.city" t-esc="club.city"/>
+                                        <div class="small text-muted mt-1">
+                                            <t t-esc="len(club.team_ids.filtered(lambda t: t.active))"/>
+                                            <t t-if="len(club.team_ids.filtered(lambda t: t.active)) == 1"> team</t>
+                                            <t t-if="len(club.team_ids.filtered(lambda t: t.active)) != 1"> teams</t>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </t>
+                </div>
+
+                <div t-if="pager" class="d-flex justify-content-center mt-4">
+                    <t t-call="portal.pager"/>
+                </div>
+
+            </div>
+        </t>
+    </template>
+
+    <!-- ================================================================
+         page_public_club_detail  —  /clubs/<slug>
+    ================================================================ -->
+    <template id="page_public_club_detail" name="Public Club Detail">
+        <t t-call="website.layout">
+            <div class="container py-4">
+
+                <nav aria-label="breadcrumb" class="mb-3">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/clubs">Clubs</a></li>
+                        <li class="breadcrumb-item active" aria-current="page" t-esc="club.name"/>
+                    </ol>
+                </nav>
+
+                <!-- Club header -->
+                <section class="card border-0 shadow-sm mb-4 overflow-hidden">
+                    <div class="card-body p-4 p-lg-5">
+                        <div class="row g-4 align-items-center">
+                            <div class="col-auto" t-if="club.logo">
+                                <img t-att-src="image_data_uri(club.logo)"
+                                     class="rounded-3 border"
+                                     style="width:120px;height:120px;object-fit:cover;"
+                                     t-att-alt="club.name"/>
+                            </div>
+                            <div class="col">
+                                <p class="text-uppercase small text-muted mb-1">Club Profile</p>
+                                <h1 class="display-6 mb-2" t-esc="club.name"/>
+                                <div class="text-muted small">
+                                    <span t-if="club.city"><i class="fa fa-map-marker me-1"/><t t-esc="club.city"/></span>
+                                    <span t-if="club.founded_date" class="ms-3"><i class="fa fa-calendar me-1"/>Est. <t t-esc="club.founded_date.year"/></span>
+                                    <span t-if="club.email" class="ms-3"><i class="fa fa-envelope me-1"/><a t-att-href="'mailto:' + club.email" t-esc="club.email"/></span>
+                                    <span t-if="club.phone" class="ms-3"><i class="fa fa-phone me-1"/><t t-esc="club.phone"/></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="row g-4">
+                    <!-- Teams -->
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header"><strong>Teams</strong></div>
+                            <div t-if="teams" class="list-group list-group-flush">
+                                <t t-foreach="teams" t-as="team">
+                                    <a t-att-href="team.get_public_path()"
+                                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                                        <div t-if="team.logo">
+                                            <img t-att-src="image_data_uri(team.logo)"
+                                                 class="rounded border"
+                                                 style="width:40px;height:40px;object-fit:cover;"
+                                                 t-att-alt="team.name"/>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold" t-esc="team.name"/>
+                                            <div class="small text-muted">
+                                                <t t-if="team.category" t-esc="dict(team._fields['category'].selection).get(team.category)"/>
+                                                <t t-if="team.gender"> · <t t-esc="dict(team._fields['gender'].selection).get(team.gender)"/></t>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </t>
+                            </div>
+                            <div t-if="not teams" class="card-body text-muted small">
+                                No active teams registered for this club.
+                            </div>
+                        </div>
+
+                        <!-- Recent tournament participation -->
+                        <div t-if="recent_participations" class="card border-0 shadow-sm mb-4">
+                            <div class="card-header"><strong>Recent Tournament Participation</strong></div>
+                            <div class="list-group list-group-flush small">
+                                <t t-foreach="recent_participations" t-as="part">
+                                    <a t-att-href="part.tournament_id.get_public_path()"
+                                       class="list-group-item list-group-item-action">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="fw-semibold" t-esc="part.tournament_id.name"/>
+                                            <span class="text-muted" t-esc="part.team_id.name"/>
+                                        </div>
+                                    </a>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact sidebar -->
+                    <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header"><strong>Contact</strong></div>
+                            <div class="card-body small">
+                                <div t-if="club.street or club.city">
+                                    <i class="fa fa-map-marker me-2 text-muted"/>
+                                    <t t-if="club.street"><t t-esc="club.street"/><br/></t>
+                                    <t t-if="club.street2"><t t-esc="club.street2"/><br/></t>
+                                    <t t-if="club.city or club.zip">
+                                        <t t-if="club.zip"><t t-esc="club.zip"/> </t>
+                                        <t t-if="club.city" t-esc="club.city"/>
+                                    </t>
+                                </div>
+                                <div t-if="club.email" class="mt-2">
+                                    <i class="fa fa-envelope me-2 text-muted"/>
+                                    <a t-att-href="'mailto:' + club.email" t-esc="club.email"/>
+                                </div>
+                                <div t-if="club.phone" class="mt-2">
+                                    <i class="fa fa-phone me-2 text-muted"/>
+                                    <t t-esc="club.phone"/>
+                                </div>
+                                <div t-if="club.website" class="mt-2">
+                                    <i class="fa fa-globe me-2 text-muted"/>
+                                    <a t-att-href="club.website" target="_blank" rel="noopener" t-esc="club.website"/>
+                                </div>
+                                <div t-if="not (club.street or club.city or club.email or club.phone or club.website)"
+                                     class="text-muted">
+                                    No contact details available.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </t>
+    </template>
+
+    <!-- ================================================================
+         page_public_players_list  —  /players
+    ================================================================ -->
+    <template id="page_public_players_list" name="Public Players">
+        <t t-call="website.layout">
+            <div class="container py-4">
+
+                <div class="row mb-4">
+                    <div class="col">
+                        <h1 class="mb-1"><i class="fa fa-user me-2"/>Players</h1>
+                        <p class="text-muted mb-0">Player profiles published by the Sports Federation.</p>
+                    </div>
+                </div>
+
+                <div t-if="not players" class="alert alert-info" role="status">
+                    No player profiles are published yet.
+                </div>
+
+                <div t-if="players" class="row g-3">
+                    <t t-foreach="players" t-as="player">
+                        <div class="col-md-4 col-lg-3">
+                            <a t-att-href="player.get_public_path()" class="text-decoration-none">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body text-center p-3">
+                                        <div t-if="player.photo" class="mb-2">
+                                            <img t-att-src="image_data_uri(player.photo)"
+                                                 class="rounded-circle border"
+                                                 style="width:64px;height:64px;object-fit:cover;"
+                                                 t-att-alt="player.name"/>
+                                        </div>
+                                        <div t-if="not player.photo" class="mb-2">
+                                            <span class="fa fa-user-circle fa-2x text-muted"/>
+                                        </div>
+                                        <div class="fw-semibold text-body" t-esc="player.name"/>
+                                        <div class="small text-muted" t-if="player.club_id" t-esc="player.club_id.name"/>
+                                        <div class="small text-muted" t-if="player.nationality_id" t-esc="player.nationality_id.name"/>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </t>
+                </div>
+
+                <div t-if="pager" class="d-flex justify-content-center mt-4">
+                    <t t-call="portal.pager"/>
+                </div>
+
+            </div>
+        </t>
+    </template>
+
+    <!-- ================================================================
+         page_public_player_detail  —  /players/<slug>
+    ================================================================ -->
+    <template id="page_public_player_detail" name="Public Player Detail">
+        <t t-call="website.layout">
+            <div class="container py-4">
+
+                <nav aria-label="breadcrumb" class="mb-3">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/players">Players</a></li>
+                        <li class="breadcrumb-item active" aria-current="page" t-esc="player.name"/>
+                    </ol>
+                </nav>
+
+                <!-- Player header -->
+                <section class="card border-0 shadow-sm mb-4 overflow-hidden">
+                    <div class="card-body p-4 p-lg-5">
+                        <div class="row g-4 align-items-center">
+                            <div class="col-auto" t-if="player.photo">
+                                <img t-att-src="image_data_uri(player.photo)"
+                                     class="rounded-3 border"
+                                     style="width:120px;height:120px;object-fit:cover;"
+                                     t-att-alt="player.name"/>
+                            </div>
+                            <div class="col-auto" t-if="not player.photo">
+                                <span class="fa fa-user-circle fa-5x text-muted"/>
+                            </div>
+                            <div class="col">
+                                <p class="text-uppercase small text-muted mb-1">Player Profile</p>
+                                <h1 class="display-6 mb-2" t-esc="player.name"/>
+                                <div class="text-muted small">
+                                    <span t-if="player.club_id">
+                                        <i class="fa fa-shield me-1"/>
+                                        <a t-att-href="player.club_id.get_public_path() if player.club_id.website_published else '#'"
+                                           t-esc="player.club_id.name"/>
+                                    </span>
+                                    <span t-if="player.nationality_id" class="ms-3">
+                                        <i class="fa fa-flag me-1"/>
+                                        <t t-esc="player.nationality_id.name"/>
+                                    </span>
+                                    <span t-if="player.gender" class="ms-3">
+                                        <t t-esc="dict(player._fields['gender'].selection).get(player.gender)"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="row g-4">
+                    <!-- Teams -->
+                    <div class="col-lg-8">
+                        <div t-if="player.team_ids" class="card border-0 shadow-sm mb-4">
+                            <div class="card-header"><strong>Current Teams</strong></div>
+                            <div class="list-group list-group-flush small">
+                                <t t-foreach="player.team_ids" t-as="team">
+                                    <a t-att-href="team.get_public_path()"
+                                       class="list-group-item list-group-item-action">
+                                        <span class="fw-semibold" t-esc="team.name"/>
+                                        <span class="text-muted ms-2" t-if="team.club_id" t-esc="team.club_id.name"/>
+                                    </a>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Licenses -->
+                        <div t-if="licenses" class="card border-0 shadow-sm mb-4">
+                            <div class="card-header"><strong>Licenses</strong></div>
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <caption class="visually-hidden">Player license records</caption>
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th scope="col">Season</th>
+                                            <th scope="col">Category</th>
+                                            <th scope="col">Valid Until</th>
+                                            <th scope="col">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="licenses" t-as="lic">
+                                            <tr>
+                                                <td><t t-esc="lic.season_id.name if lic.season_id else '—'"/></td>
+                                                <td><t t-esc="lic.category or '—'"/></td>
+                                                <td>
+                                                    <t t-if="lic.expiry_date" t-esc="lic.expiry_date" t-options='{"widget": "date"}'/>
+                                                    <span t-if="not lic.expiry_date" class="text-muted">—</span>
+                                                </td>
+                                                <td>
+                                                    <span t-attf-class="badge #{
+                                                        'bg-success' if lic.state == 'active' else
+                                                        'bg-secondary'
+                                                    }">
+                                                        <t t-esc="lic.state.capitalize()"/>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </t>
+    </template>
+
+</odoo>

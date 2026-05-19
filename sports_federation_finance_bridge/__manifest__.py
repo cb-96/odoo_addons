@@ -18,7 +18,9 @@
     ],
     "data": [
         "security/ir.model.access.csv",
+        "data/fee_type_data.xml",
         "views/fee_type_views.xml",
+        "views/fee_schedule_views.xml",
         "views/finance_event_views.xml",
         "views/season_budget_views.xml",
         "views/menu_views.xml",

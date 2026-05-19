@@ -1,0 +1,501 @@
+openapi: 3.1.0
+info:
+  title: Sports Federation Portal API
+  version: 1.0.0
+  summary: Machine-readable contract for federation portal self-service routes.
+  description: |
+    Portal routes for authenticated club representatives. These routes use
+    Odoo session-cookie authentication obtained via `/web/session/authenticate`.
+    All routes are scoped to the authenticated user's club via portal record rules.
+
+    Unauthenticated requests receive HTTP 401 or a redirect to `/web/login`.
+    Cross-club access is blocked by record rules and returns HTTP 403.
+servers:
+  - url: https://example.invalid
+    description: Replace with the active federation base URL.
+tags:
+  - name: Tournament Registration
+    description: Club self-service tournament and season registration.
+  - name: Match Sheet
+    description: Match sheet submission and retrieval.
+  - name: Portal Dashboard
+    description: Club representative dashboard data.
+  - name: Result Submission
+    description: Post-match result submission by club representatives.
+components:
+  securitySchemes:
+    OdooSession:
+      type: apiKey
+      in: cookie
+      name: session_id
+      description: |
+        Odoo session cookie obtained via POST /web/session/authenticate.
+        Example authenticate request:
+          POST /web/session/authenticate
+          Content-Type: application/json
+          {"jsonrpc":"2.0","method":"call","params":{
+            "db":"odoo","login":"user@example.com","password":"secret"}}
+        The session_id cookie in the response is used for all subsequent calls.
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - error_code
+      properties:
+        error:
+          type: string
+          description: Operator-safe error summary.
+        error_code:
+          type: string
+          enum:
+            - not_found
+            - validation_error
+            - unauthorized
+            - access_denied
+            - rate_limited
+            - unexpected_bug
+    RegistrationRequest:
+      type: object
+      required:
+        - team_id
+        - season_id
+      properties:
+        team_id:
+          type: integer
+          description: ID of the team being registered. Must belong to the user's club.
+        season_id:
+          type: integer
+          description: ID of the open season to register for.
+        notes:
+          type: string
+          nullable: true
+          description: Optional notes for the federation reviewer.
+    RegistrationResponse:
+      type: object
+      required:
+        - id
+        - state
+        - team_id
+        - season_id
+        - created_on
+      properties:
+        id:
+          type: integer
+          description: ID of the created season registration record.
+        state:
+          type: string
+          enum: [draft, submitted, confirmed, cancelled]
+        team_id:
+          type: integer
+        season_id:
+          type: integer
+        created_on:
+          type: string
+          format: date-time
+        notes:
+          type: string
+          nullable: true
+    MatchSheetPayload:
+      type: object
+      required:
+        - home_score
+        - away_score
+        - submitted_by_team_id
+      properties:
+        home_score:
+          type: integer
+          minimum: 0
+          description: Goals scored by the home team.
+        away_score:
+          type: integer
+          minimum: 0
+          description: Goals scored by the away team.
+        submitted_by_team_id:
+          type: integer
+          description: ID of the submitting team. Must be home or away team of the match.
+        notes:
+          type: string
+          nullable: true
+          description: Referee notes or match observations.
+    MatchSheetResponse:
+      type: object
+      required:
+        - match_id
+        - home_score
+        - away_score
+        - result_state
+        - submitted_on
+      properties:
+        match_id:
+          type: integer
+        home_score:
+          type: integer
+        away_score:
+          type: integer
+        result_state:
+          type: string
+          enum: [draft, submitted, verified, approved, contested]
+        submitted_on:
+          type: string
+          format: date-time
+        notes:
+          type: string
+          nullable: true
+    DashboardResponse:
+      type: object
+      required:
+        - club_id
+        - club_name
+        - upcoming_matches
+        - pending_registrations
+        - compliance_warnings
+        - pending_results
+      properties:
+        club_id:
+          type: integer
+        club_name:
+          type: string
+        upcoming_matches:
+          type: array
+          items:
+            type: object
+            required: [match_id, tournament_name, scheduled_date, venue]
+            properties:
+              match_id:
+                type: integer
+              tournament_name:
+                type: string
+              scheduled_date:
+                type: string
+                format: date-time
+                nullable: true
+              venue:
+                type: string
+                nullable: true
+        pending_registrations:
+          type: array
+          items:
+            type: object
+            required: [registration_id, team_name, season_name, state]
+            properties:
+              registration_id:
+                type: integer
+              team_name:
+                type: string
+              season_name:
+                type: string
+              state:
+                type: string
+        compliance_warnings:
+          type: array
+          description: Compliance submissions expiring within 30 days or missing.
+          items:
+            type: object
+            required: [requirement_name, expiry_date, entity_name]
+            properties:
+              requirement_name:
+                type: string
+              expiry_date:
+                type: string
+                format: date
+                nullable: true
+              entity_name:
+                type: string
+        pending_results:
+          type: array
+          description: Matches played but not yet submitted by this club.
+          items:
+            type: object
+            required: [match_id, opponent_name, played_on]
+            properties:
+              match_id:
+                type: integer
+              opponent_name:
+                type: string
+              played_on:
+                type: string
+                format: date-time
+                nullable: true
+    ResultSubmissionPayload:
+      type: object
+      required:
+        - home_score
+        - away_score
+        - submitted_by_team_id
+      properties:
+        home_score:
+          type: integer
+          minimum: 0
+        away_score:
+          type: integer
+          minimum: 0
+        submitted_by_team_id:
+          type: integer
+          description: ID of the submitting team. Must be home or away team of the match.
+        notes:
+          type: string
+          nullable: true
+    ResultSubmissionResponse:
+      type: object
+      required:
+        - match_id
+        - result_state
+        - submitted_on
+      properties:
+        match_id:
+          type: integer
+        result_state:
+          type: string
+          enum: [submitted]
+        submitted_on:
+          type: string
+          format: date-time
+paths:
+  /my/tournament/{tournament_id}/register:
+    post:
+      operationId: portalRegisterTeam
+      summary: Submit a team season-registration request
+      description: |
+        Creates a season registration for the authenticated club representative's
+        team in the specified tournament's season. The registration is created in
+        `submitted` state for federation review.
+
+        The team must belong to the authenticated user's club. Attempting to
+        register a team from another club returns HTTP 403.
+      tags:
+        - Tournament Registration
+      security:
+        - OdooSession: []
+      parameters:
+        - name: tournament_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the tournament to register for.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationRequest"
+            example:
+              team_id: 42
+              season_id: 7
+              notes: "Applying for the under-18 division."
+      responses:
+        "200":
+          description: Registration created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistrationResponse"
+        "400":
+          description: Validation error (missing field, invalid team/season combination).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated.
+        "403":
+          description: Team does not belong to the authenticated user's club.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tournament or season not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /my/match/{match_id}/sheet:
+    post:
+      operationId: portalSubmitMatchSheet
+      summary: Submit a match sheet
+      description: |
+        Submits the match sheet for a played match. The submitting team must be
+        either the home or away team of the specified match and must belong to
+        the authenticated user's club.
+
+        This action sets the match scores and transitions the result state to
+        `submitted`. The result then enters the verification pipeline.
+      tags:
+        - Match Sheet
+      security:
+        - OdooSession: []
+      parameters:
+        - name: match_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the match for which the sheet is being submitted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchSheetPayload"
+            example:
+              home_score: 3
+              away_score: 1
+              submitted_by_team_id: 42
+              notes: "Yellow card issued to player 7 (Fernandes) at 68 min."
+      responses:
+        "200":
+          description: Match sheet submitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchSheetResponse"
+        "400":
+          description: Validation error (score missing, match not in playable state).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated.
+        "403":
+          description: Team does not belong to the authenticated club.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Match not found or not accessible.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    get:
+      operationId: portalGetMatchSheet
+      summary: Retrieve match sheet and current result state
+      description: |
+        Returns the current scores and result state for the specified match.
+        The match must involve a team belonging to the authenticated user's club.
+      tags:
+        - Match Sheet
+      security:
+        - OdooSession: []
+      parameters:
+        - name: match_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Match sheet retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchSheetResponse"
+        "401":
+          description: Not authenticated.
+        "403":
+          description: Match not accessible to this club.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Match not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /my/dashboard:
+    get:
+      operationId: portalGetDashboard
+      summary: Retrieve club representative dashboard data
+      description: |
+        Returns a summary of the authenticated club representative's most
+        important pending actions: upcoming matches, pending registrations,
+        compliance warnings, and matches awaiting result submission.
+      tags:
+        - Portal Dashboard
+      security:
+        - OdooSession: []
+      responses:
+        "200":
+          description: Dashboard data retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardResponse"
+        "401":
+          description: Not authenticated.
+
+  /my/match/{match_id}/result:
+    post:
+      operationId: portalSubmitResult
+      summary: Submit a post-match result
+      description: |
+        Submits the final result for a match that has been played. This is a
+        lightweight alternative to the full match-sheet submission when only
+        scores and a note are required.
+
+        The submitting team must be either the home or away team of the specified
+        match and must belong to the authenticated user's club.
+
+        The result transitions to `submitted` state after this call and enters
+        the federation's verification pipeline.
+      tags:
+        - Result Submission
+      security:
+        - OdooSession: []
+      parameters:
+        - name: match_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResultSubmissionPayload"
+            example:
+              home_score: 2
+              away_score: 2
+              submitted_by_team_id: 55
+      responses:
+        "200":
+          description: Result submitted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResultSubmissionResponse"
+        "400":
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated.
+        "403":
+          description: Team does not belong to the authenticated club.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Match not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Result already submitted; use the match sheet endpoint to update.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"

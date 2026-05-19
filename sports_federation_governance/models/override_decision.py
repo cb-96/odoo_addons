@@ -1,4 +1,7 @@
 from odoo import fields, models
+from odoo.addons.sports_federation_governance.workflow_states import (
+    OVERRIDE_DECISION_SELECTION,
+)
 
 
 class FederationOverrideDecision(models.Model):
@@ -6,10 +9,7 @@ class FederationOverrideDecision(models.Model):
     _description = "Federation Override Decision"
     _order = "decided_on desc, id"
 
-    DECISION_SELECTION = [
-        ("approved", "Approved"),
-        ("rejected", "Rejected"),
-    ]
+    DECISION_SELECTION = OVERRIDE_DECISION_SELECTION
 
     request_id = fields.Many2one(
         "federation.override.request",

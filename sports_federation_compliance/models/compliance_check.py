@@ -5,7 +5,7 @@ from odoo.exceptions import ValidationError
 class FederationComplianceCheck(models.Model):
     _name = "federation.compliance.check"
     _description = "Federation Compliance Check"
-    _inherit = ["federation.compliance.target.mixin"]
+    _inherit = ["federation.compliance.target.mixin", "mail.thread", "mail.activity.mixin"]
     _order = "create_date desc"
 
     STATUS_SELECTION = [
@@ -85,14 +85,24 @@ class FederationComplianceCheck(models.Model):
     def _get_target_res_id(self):
         """Return target res ID."""
         self.ensure_one()
-        target_record = self._compliance_get_target_record(target_model=self.target_model)
+        target_record = self._compliance_get_target_record(
+            target_model=self.target_model
+        )
         return target_record.id if target_record else 0
 
     def _archive_current_state(self):
         """Archive current state."""
-        Archive = self.env["federation.compliance.check.archive"].with_user(self.env.user).sudo()
+        Archive = (
+            self.env["federation.compliance.check.archive"]
+            .with_user(self.env.user)
+            .sudo()
+        )
         for rec in self:
-            if not rec.target_model or not rec.requirement_id or not rec._get_target_res_id():
+            if (
+                not rec.target_model
+                or not rec.requirement_id
+                or not rec._get_target_res_id()
+            ):
                 continue
             Archive.create(
                 {
@@ -103,7 +113,9 @@ class FederationComplianceCheck(models.Model):
                     "target_res_id": rec._get_target_res_id(),
                     "target_display": rec.target_display or "Unknown",
                     "requirement_id": rec.requirement_id.id,
-                    "submission_id": rec.submission_id.id if rec.submission_id else False,
+                    "submission_id": (
+                        rec.submission_id.id if rec.submission_id else False
+                    ),
                     "status": rec.status,
                     "note": rec.note,
                 }
@@ -146,7 +158,9 @@ class FederationComplianceCheck(models.Model):
     def _compute_target_display(self):
         """Compute target display."""
         for rec in self:
-            rec.target_display = rec._compliance_get_target_display(target_model=rec.target_model)
+            rec.target_display = rec._compliance_get_target_display(
+                target_model=rec.target_model
+            )
 
     @api.constrains(
         "club_id",
@@ -167,20 +181,26 @@ class FederationComplianceCheck(models.Model):
             ]
             set_count = sum(1 for f in target_fields if f)
             if set_count == 0:
-                raise ValidationError(
-                    "Exactly one target entity must be set."
-                )
+                raise ValidationError("Exactly one target entity must be set.")
             if set_count > 1:
                 raise ValidationError(
                     "Only one target entity can be set. Multiple targets found."
                 )
 
-    @api.constrains("target_model", "club_id", "player_id", "referee_id",
-                     "venue_id", "club_representative_id")
+    @api.constrains(
+        "target_model",
+        "club_id",
+        "player_id",
+        "referee_id",
+        "venue_id",
+        "club_representative_id",
+    )
     def _check_target_matches_model(self):
         """Ensure target matches target_model."""
         for rec in self:
-            expected_target = rec._compliance_get_target_record(target_model=rec.target_model)
+            expected_target = rec._compliance_get_target_record(
+                target_model=rec.target_model
+            )
             if not expected_target:
                 raise ValidationError(
                     f"Target entity does not match target model '{rec.target_model}'."
@@ -203,10 +223,12 @@ class FederationComplianceCheck(models.Model):
             List of created/updated compliance.check records
         """
         # Find applicable requirements for this target model
-        requirements = self.env["federation.document.requirement"].search([
-            ("target_model", "=", target_model),
-            ("active", "=", True),
-        ])
+        requirements = self.env["federation.document.requirement"].search(
+            [
+                ("target_model", "=", target_model),
+                ("active", "=", True),
+            ]
+        )
 
         if not requirements:
             return []
@@ -218,7 +240,9 @@ class FederationComplianceCheck(models.Model):
             # Find existing submission for this requirement and target
             field_name = self._compliance_get_target_field_name(target_model)
             if not field_name:
-                raise ValidationError(f"Unsupported compliance target model '{target_model}'.")
+                raise ValidationError(
+                    f"Unsupported compliance target model '{target_model}'."
+                )
 
             domain = [
                 ("requirement_id", "=", requirement.id),

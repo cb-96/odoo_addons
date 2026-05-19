@@ -49,7 +49,9 @@ class TestKnockout(TransactionCase):
                 }
             )
 
-    def _generate(self, seeding="seed", bracket_size="natural", overwrite=False):
+    def _generate(
+        self, seeding="seed", bracket_size="natural", overwrite=False, seed=None
+    ):
         """Helper to generate knockout bracket."""
         options = {
             "seeding": seeding,
@@ -59,6 +61,8 @@ class TestKnockout(TransactionCase):
             "venue": "",
             "overwrite": overwrite,
         }
+        if seed is not None:
+            options["seed"] = seed
         engine = self.env["federation.competition.engine.service"]
         return engine.generate_knockout_bracket(
             self.tournament, self.stage, self.participants, options
@@ -155,6 +159,15 @@ class TestKnockout(TransactionCase):
         self.assertEqual(len(first), 7)
         second = self._generate(overwrite=True)
         self.assertEqual(len(second), 7)
+
+    def test_knockout_wizard_overwrite_warning_uses_alert_role(self):
+        """The overwrite warning should keep the Odoo alert accessibility role."""
+        view = self.env.ref(
+            "sports_federation_competition_engine.view_knockout_wizard_form"
+        )
+
+        self.assertIn('class="alert alert-warning"', view.arch_db)
+        self.assertIn('role="alert"', view.arch_db)
 
     def test_tournament_state_validation(self):
         """Cannot generate for draft tournament."""
@@ -283,3 +296,21 @@ class TestKnockout(TransactionCase):
         # First in list (Team 8) should play last (Team 1)
         match_list = [(m.home_team_id.name, m.away_team_id.name) for m in matches]
         self.assertIn(("Team 8", "Team 1"), match_list)
+
+    def test_random_seeding_deterministic_with_seed(self):
+        """Random seeding with a fixed seed produces identical bracket assignments."""
+        matches_a = self._generate(seeding="random", seed=42)
+        teams_a = [
+            (m.home_team_id.id, m.away_team_id.id)
+            for m in matches_a
+            if not m.source_match_1_id
+        ]
+        matches_b = self._generate(seeding="random", seed=42, overwrite=True)
+        teams_b = [
+            (m.home_team_id.id, m.away_team_id.id)
+            for m in matches_b
+            if not m.source_match_1_id
+        ]
+        self.assertEqual(
+            teams_a, teams_b, "Same seed must yield identical bracket slot assignments"
+        )

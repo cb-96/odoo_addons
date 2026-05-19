@@ -82,13 +82,60 @@ There is no persistent `rejected` season-registration state in the current model
 **Actor**: Federation administrator
 **Module**: `sports_federation_people`
 
-1. Create or update player records with club affiliation.
-2. Create a **player license** linked to the active season and club.
-3. License receives an auto-generated number via `ir.sequence` (`FED-LIC-XXXXX`).
-4. Set license state: `draft` → `active`.
+Player licenses are the formal proof of a player's eligibility to compete in a
+given season. Each license is scoped to one player, one season, and one club.
 
-Players must hold an active license for the current season to be eligible for
-rosters and match sheets.
+#### License Creation
+
+1. Create or locate the player record (`federation.player`) with club affiliation.
+2. Navigate to the player's **Licenses** tab and click **New**, or go to
+   **Federation → People → Player Licenses** and create from there.
+3. Fill in:
+   - **Season** (must be open)
+   - **Club** (must match the player's current club)
+   - **Issue date** and **Expiry date** (expiry must be after issue date)
+   - **Category**: `senior` | `youth` | `junior` | `cadet`
+   - Optional eligibility notes
+4. An auto-generated license number is assigned via `ir.sequence` (`FED-LIC-XXXXX`).
+
+Uniqueness constraint: one license per player per season (`player_id, season_id`).
+
+#### License State Machine
+
+```
+draft → active
+      → cancelled
+
+active → expired  (administrator-driven; no auto-expiry cron)
+       → cancelled
+```
+
+| State | Meaning |
+|-------|---------|
+| `draft` | Created but not yet validated; player is NOT eligible |
+| `active` | Validated; player is eligible to be added to rosters and match sheets |
+| `expired` | Season has passed or license manually expired; no longer eligible |
+| `cancelled` | Revoked due to ineligibility, infraction, or data error |
+
+Available actions:
+
+| Action | Transition |
+|--------|-----------|
+| `action_activate` | `draft` → `active` |
+| `action_cancel` | any → `cancelled` |
+| `action_draft` | `active` / `expired` → `draft` (for correction) |
+
+> **Note**: The system does not auto-expire licenses. Administrators must
+> manually move licenses from `active` to `expired` at season close, or archive
+> them when no longer relevant.
+
+#### License Eligibility Impact
+
+- Roster readiness check (`ready_for_activation`) blocks roster activation if any
+  roster line's player has no `active` license for the same season.
+- Match sheet readiness check applies the same rule at squad-submission time.
+- A player with a `cancelled` or `expired` license cannot appear on active
+  rosters or submitted match sheets for the relevant season.
 
 ### 7. Compliance Document Collection
 

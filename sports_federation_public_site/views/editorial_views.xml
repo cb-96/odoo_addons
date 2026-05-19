@@ -24,12 +24,22 @@
         <field name="model">federation.public.editorial.item</field>
         <field name="arch" type="xml">
             <form string="Public Editorial Item">
+                <header>
+                    <button name="action_schedule" string="Schedule" type="object" class="btn-primary"
+                            invisible="publication_state != 'draft'"/>
+                    <button name="action_publish" string="Publish Now" type="object" class="oe_highlight"
+                            invisible="publication_state not in ('draft', 'scheduled')"/>
+                    <button name="action_archive_item" string="Archive" type="object"
+                            invisible="publication_state not in ('published', 'scheduled')" confirm="Archiving will remove this item from the public site. Continue?"/>
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object"
+                            invisible="publication_state not in ('archived', 'scheduled')"/>
+                    <field name="publication_state" widget="statusbar" statusbar_visible="draft,scheduled,published"/>
+                </header>
                 <sheet>
                     <group>
                         <group>
                             <field name="name"/>
                             <field name="content_type"/>
-                            <field name="publication_state"/>
                             <field name="sequence"/>
                             <field name="active"/>
                         </group>

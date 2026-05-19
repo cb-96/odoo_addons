@@ -7,3 +7,6 @@ access_federation_season_user,federation.season.user,model_federation_season,gro
 access_federation_season_manager,federation.season.manager,model_federation_season,group_federation_manager,1,1,1,1
 access_federation_season_registration_user,federation.season.registration.user,model_federation_season_registration,group_federation_user,1,0,0,0
 access_federation_season_registration_manager,federation.season.registration.manager,model_federation_season_registration,group_federation_manager,1,1,1,1
+access_federation_request_rate_limit_system,federation.request.rate.limit.system,model_federation_request_rate_limit,base.group_system,1,1,1,1
+access_federation_audit_event_manager,federation.audit.event.manager,model_federation_audit_event,group_federation_manager,1,0,0,0
+access_federation_audit_event_system,federation.audit.event.system,model_federation_audit_event,base.group_system,1,1,1,1

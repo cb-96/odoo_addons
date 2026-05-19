@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Extend the base match sheet form view (defined in sports_federation_rosters)
+        to replace the free-text coach_name / manager_name fields with filtered
+        Many2one pickers for federation.club.representative records.
+
+        Domain logic:
+          - coach_id  → role_type with code 'coach',   club = team's club
+          - manager_id → any representative role,        club = team's club
+            (covers team managers, competition contacts, etc.)
+
+        Selecting either picker auto-fills the legacy Char field via onchange,
+        so the portal read paths continue to work unchanged.
+    -->
+
+    <record id="view_match_sheet_form_portal_coach_manager"
+            model="ir.ui.view">
+        <field name="name">federation.match.sheet.form.portal.coach.manager</field>
+        <field name="model">federation.match.sheet</field>
+        <field name="inherit_id" ref="sports_federation_rosters.view_federation_match_sheet_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Invisible relay: team's club, used by coach/manager domains below -->
+            <field name="side" position="before">
+                <field name="team_club_id" invisible="1"/>
+            </field>
+
+            <!-- Replace coach_name char with a representative picker + fallback label -->
+            <field name="coach_name" position="replace">
+                <field name="coach_id"
+                       domain="[('club_id', '=', team_club_id), ('role_type_id.code', '=', 'coach')]"
+                       placeholder="Select a coach…"
+                       options="{'no_create': True}"/>
+                <field name="coach_name"
+                       placeholder="Or type a name…"
+                       help="Free-text override if the coach is not a registered representative."/>
+            </field>
+
+            <!-- Replace manager_name char with a representative picker + fallback label -->
+            <field name="manager_name" position="replace">
+                <field name="manager_id"
+                       domain="[('club_id', '=', team_club_id)]"
+                       placeholder="Select a manager or representative…"
+                       options="{'no_create': True}"/>
+                <field name="manager_name"
+                       placeholder="Or type a name…"
+                       help="Free-text override if the manager is not a registered representative."/>
+            </field>
+
+        </field>
+    </record>
+
+</odoo>

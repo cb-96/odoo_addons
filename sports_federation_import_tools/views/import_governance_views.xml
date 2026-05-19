@@ -127,6 +127,7 @@
                         <field name="verification_summary" readonly="1" widget="text"/>
                     </group>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>

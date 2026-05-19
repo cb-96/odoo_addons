@@ -70,6 +70,8 @@ Club and team-scoped portal users now get a tournament-first workspace for activ
 - `/my/tournament-workspaces` groups visible teams by active tournament (`open` or `in_progress`).
 - each entry summarizes registration state, the preferred roster checkpoint, upcoming match-day sheet work, and done matches whose results still need follow-up.
 - `/my/tournament-workspaces/<tournament>/<team>` expands that entry into operational detail with direct links to the roster, match-day queue, and team match sheets.
+- the workspace model itself revalidates team scope and active-tournament scope through `federation.portal.privilege` before any elevated reads, so direct model or RPC callers cannot bypass the controller filters.
+- current whole-club access comes only from `portal_club_scope_ids`, while current team-scoped roles stay pinned to `portal_team_scope_ids`; historical or inactive representative rows do not widen workspace visibility.
 
 **Why add a separate workspace instead of more dashboard counters?**
 - recurring club operations are tournament-scoped, not model-scoped.
@@ -173,7 +175,7 @@ Official portal group gets:
 Manager group gets full CRUD on all new models.
 
 ### Record Rules
-Seven record rules ensure portal users can only access data belonging to their clubs. The domain `('club_id', 'in', user.representative_ids.mapped('club_id').ids)` is used consistently.
+Portal access now distinguishes between current whole-club scope and current team scope. Match-day record rules use `user.portal_club_scope_ids` for whole-club visibility and `user.portal_team_scope_ids` for assigned-team visibility so inactive or historical representative rows do not widen access.
 
 ### Controller-Level Validation
 Every write operation in the controllers:
@@ -183,6 +185,9 @@ Every write operation in the controllers:
 4. Hands the mutation to a model helper such as `federation.team._portal_create_team()`, `federation.season.registration._portal_submit_registration_request()`, or `federation.tournament.registration._portal_submit_registration_request()`.
 
 The same ownership rules are also enforced in the ORM for portal-managed registration models. That second layer matters whenever data is created from tests, server actions, imports, or future controllers.
+Roster portal helpers also revalidate roster and season-registration scope through `federation.portal.privilege` before any elevated reuse or create lookup, so team-scoped representatives cannot reach same-club rosters outside their assigned team through helper calls.
+Roster-line player submission now reuses the same portal-scoped player domain as the picker, so forged POST values cannot add inactive or wrong-gender players that the form intentionally hid.
+Roster detail, roster-line route helpers, and roster-line license submission now also resolve ids through `federation.portal.privilege`, so hidden roster, roster-line, or license ids cannot be recovered through raw elevated browse paths.
 
 ### Public Routes
 Public routes use `sudo()` to bypass ACL (since anonymous users have no federation access). They only expose:
@@ -205,6 +210,8 @@ Public routes use `sudo()` to bypass ACL (since anonymous users have no federati
 - [ ] **Tournament detail** (`/tournament/<id>`) shows participants and register button when state is `open`.
 - [ ] **Tournament registration** creates a `federation.tournament.registration` in `submitted` state.
 - [ ] **Roster portal pages** (`/my/rosters`, `/my/rosters/<id>`) show only the representative's clubs, including lock feedback and audit events.
+- [ ] **Team-scoped portal users** only see their assigned team's rosters, teams, match sheets, and workspace entries; same-club foreign-team records stay hidden.
+- [ ] **Inactive or expired representatives** lose live team, roster, match-sheet, and workspace visibility.
 - [ ] **Match-sheet portal pages** (`/my/match-sheets`, `/my/match-sheets/<id>`) show substitutions plus related result disputes and corrections.
 - [ ] **Duplicate registration** is rejected with an error message.
 - [ ] **Max participants** limit is enforced.

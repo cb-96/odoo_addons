@@ -33,6 +33,11 @@ multiple seasons and link to a rule set.
 | `state` | Selection | draft / active / closed |
 | `tournament_ids` | One2many | Tournaments under this competition |
 
+### `federation.season` extension
+
+The module extends seasons with a tournament relation and a dedicated tournament
+count stat used by the season form shortcut into related tournaments.
+
 ### `federation.tournament`
 
 A single tournament event within a competition or season.

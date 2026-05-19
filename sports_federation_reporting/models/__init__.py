@@ -11,6 +11,9 @@ from . import report_workflow_exception
 from . import report_compliance_remediation
 from . import report_season_checklist
 from . import report_planning
+from . import report_audit_event
 from . import report_snapshot
 from . import report_schedule
 from . import report_operator_checklist
+from . import report_club_compliance_summary
+from . import report_officiating_coverage

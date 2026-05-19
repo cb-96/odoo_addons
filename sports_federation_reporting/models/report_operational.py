@@ -30,22 +30,41 @@ class FederationReportOperational(models.Model):
     ]
 
     season_id = fields.Many2one("federation.season", string="Season", readonly=True)
-    tournament_id = fields.Many2one("federation.tournament", string="Tournament", readonly=True)
-    tournament_state = fields.Selection(TOURNAMENT_STATE_SELECTION, string="Tournament State", readonly=True)
+    tournament_id = fields.Many2one(
+        "federation.tournament", string="Tournament", readonly=True
+    )
+    tournament_state = fields.Selection(
+        TOURNAMENT_STATE_SELECTION, string="Tournament State", readonly=True
+    )
     date_start = fields.Date(string="Start Date", readonly=True)
     date_end = fields.Date(string="End Date", readonly=True)
     participant_count = fields.Integer(string="Participants", readonly=True)
-    confirmed_participant_count = fields.Integer(string="Confirmed Participants", readonly=True)
-    participant_confirmation_rate = fields.Float(string="Participant Confirmation %", readonly=True, digits=(16, 2))
+    confirmed_participant_count = fields.Integer(
+        string="Confirmed Participants", readonly=True
+    )
+    participant_confirmation_rate = fields.Float(
+        string="Participant Confirmation %", readonly=True, digits=(16, 2)
+    )
     match_count = fields.Integer(string="Matches", readonly=True)
     completed_match_count = fields.Integer(string="Completed Matches", readonly=True)
-    match_completion_rate = fields.Float(string="Match Completion %", readonly=True, digits=(16, 2))
+    match_completion_rate = fields.Float(
+        string="Match Completion %", readonly=True, digits=(16, 2)
+    )
     frozen_standing_count = fields.Integer(string="Frozen Standings", readonly=True)
     standing_line_coverage = fields.Integer(string="Standing Coverage", readonly=True)
-    pending_finance_event_count = fields.Integer(string="Pending Finance Events", readonly=True)
-    pending_finance_amount = fields.Float(string="Pending Finance Amount", readonly=True)
-    open_club_compliance_count = fields.Integer(string="Open Club Compliance Checks", readonly=True)
-    readiness_status = fields.Selection(STATUS_SELECTION, string="Readiness Status", readonly=True)
+    pending_finance_event_count = fields.Integer(
+        string="Pending Finance Events", readonly=True
+    )
+    pending_finance_amount = fields.Float(
+        string="Pending Finance Amount", readonly=True
+    )
+    open_club_compliance_count = fields.Integer(
+        string="Open Club Compliance Checks", readonly=True
+    )
+    readiness_status = fields.Selection(
+        STATUS_SELECTION, string="Readiness Status", readonly=True
+    )
+    readiness_note = fields.Text(string="Readiness Note", readonly=True)
 
     def init(self):
         """Rebuild the SQL view during install and upgrade.
@@ -54,8 +73,7 @@ class FederationReportOperational(models.Model):
         query blocks after schema or join changes.
         """
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute(
-            """
+        self.env.cr.execute("""
             CREATE VIEW federation_report_operational AS (
                 -- block: participant_stats
                 WITH participant_stats AS (
@@ -163,7 +181,33 @@ class FederationReportOperational(models.Model):
                           OR COALESCE(fs.pending_finance_event_count, 0) > 0
                         THEN 'attention'
                         ELSE 'healthy'
-                    END AS readiness_status
+                    END AS readiness_status,
+                    CASE
+                        WHEN COALESCE(ccs.open_club_compliance_count, 0) > 0
+                          OR COALESCE(ps.participant_count, 0) > COALESCE(ps.confirmed_participant_count, 0)
+                          OR (
+                              COALESCE(ms.match_count, 0) > 0
+                              AND COALESCE(ms.completed_match_count, 0) < COALESCE(ms.match_count, 0)
+                          )
+                          OR COALESCE(fs.pending_finance_event_count, 0) > 0
+                        THEN CONCAT_WS(
+                            ' ',
+                            CASE
+                                WHEN COALESCE(ccs.open_club_compliance_count, 0) > 0 THEN 'Participating clubs still have open compliance checks.'
+                            END,
+                            CASE
+                                WHEN COALESCE(ps.participant_count, 0) > COALESCE(ps.confirmed_participant_count, 0) THEN 'Participant confirmations are still incomplete.'
+                            END,
+                            CASE
+                                WHEN COALESCE(ms.match_count, 0) > 0
+                                  AND COALESCE(ms.completed_match_count, 0) < COALESCE(ms.match_count, 0) THEN 'Some scheduled matches are still not completed.'
+                            END,
+                            CASE
+                                WHEN COALESCE(fs.pending_finance_event_count, 0) > 0 THEN 'Pending finance events still need reconciliation.'
+                            END
+                        )
+                        ELSE 'Tournament operations are currently on track.'
+                    END AS readiness_note
                 FROM federation_tournament t
                 LEFT JOIN federation_season s ON s.id = t.season_id
                 LEFT JOIN participant_stats ps ON ps.tournament_id = t.id
@@ -172,5 +216,4 @@ class FederationReportOperational(models.Model):
                 LEFT JOIN finance_stats fs ON fs.tournament_id = t.id
                 LEFT JOIN club_compliance_stats ccs ON ccs.tournament_id = t.id
             )
-            """
-        )
+            """)

@@ -1,0 +1,292 @@
+openapi: 3.1.0
+info:
+  title: Sports Federation Public Feeds API
+  version: 1.0.0
+  summary: Machine-readable contract for public JSON and ICS feed routes.
+  description: |
+    Unauthenticated (public) routes that expose tournament data feeds and
+    calendar exports. No API key is required. Responses are cached and
+    rate-limited per caller. Slugs can substitute numeric IDs in all routes.
+servers:
+  - url: https://example.invalid
+    description: Replace with the active federation base URL.
+tags:
+  - name: Tournament Feed
+  - name: Calendar Export
+components:
+  securitySchemes:
+    NoAuth:
+      type: http
+      scheme: bearer
+      description: These routes require no authentication.
+  schemas:
+    TournamentSummary:
+      type: object
+      description: Top-level tournament metadata returned in the feed.
+      required:
+        - id
+        - name
+        - slug
+        - code
+        - state
+        - api_version
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+          nullable: true
+        code:
+          type: string
+        state:
+          type: string
+          enum: [draft, open, in_progress, closed, cancelled]
+        date_start:
+          type: string
+          format: date
+          nullable: true
+        date_end:
+          type: string
+          format: date
+          nullable: true
+        public_url:
+          type: string
+          nullable: true
+        register_url:
+          type: string
+          nullable: true
+        teams_url:
+          type: string
+          nullable: true
+        schedule_url:
+          type: string
+          nullable: true
+        results_url:
+          type: string
+          nullable: true
+        standings_url:
+          type: string
+          nullable: true
+        bracket_url:
+          type: string
+          nullable: true
+        feed_url:
+          type: string
+          nullable: true
+        schedule_ics_url:
+          type: string
+          nullable: true
+        show_public_results:
+          type: boolean
+        show_public_standings:
+          type: boolean
+        featured:
+          type: boolean
+        editorial_summary:
+          type: string
+          nullable: true
+        pinned_announcement:
+          type: string
+          nullable: true
+    ParticipantEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        team:
+          type: string
+          nullable: true
+        team_url:
+          type: string
+          nullable: true
+        club:
+          type: string
+          nullable: true
+        state:
+          type: string
+    MatchEntry:
+      type: object
+      description: Serialized match as returned by _serialize_public_match().
+      properties:
+        id:
+          type: integer
+        home_team:
+          type: string
+          nullable: true
+        away_team:
+          type: string
+          nullable: true
+        home_score:
+          type: integer
+          nullable: true
+        away_score:
+          type: integer
+          nullable: true
+        date_scheduled:
+          type: string
+          format: date-time
+          nullable: true
+        state:
+          type: string
+    ScheduleSection:
+      type: object
+      properties:
+        title:
+          type: string
+        subtitle:
+          type: string
+          nullable: true
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchEntry"
+    BracketSection:
+      type: object
+      properties:
+        title:
+          type: string
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchEntry"
+    StandingEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+          nullable: true
+        team:
+          type: string
+          nullable: true
+        team_url:
+          type: string
+          nullable: true
+        points:
+          type: number
+          nullable: true
+        wins:
+          type: integer
+          nullable: true
+        draws:
+          type: integer
+          nullable: true
+        losses:
+          type: integer
+          nullable: true
+        goals_for:
+          type: integer
+          nullable: true
+        goals_against:
+          type: integer
+          nullable: true
+    TournamentFeedResponse:
+      type: object
+      description: Full tournament data feed payload.
+      required:
+        - api_version
+        - tournament
+      properties:
+        api_version:
+          type: string
+          enum: ["v1"]
+        tournament:
+          $ref: "#/components/schemas/TournamentSummary"
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParticipantEntry"
+        schedule_sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduleSection"
+        bracket_sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/BracketSection"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchEntry"
+        standings:
+          type: array
+          items:
+            $ref: "#/components/schemas/StandingEntry"
+
+paths:
+  /api/v1/tournaments/{slug}/feed:
+    get:
+      operationId: getTournamentFeed
+      summary: Get the structured JSON feed for a published tournament.
+      tags:
+        - Tournament Feed
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Public slug or numeric ID of the tournament.
+      responses:
+        "200":
+          description: Tournament feed payload.
+          headers:
+            X-Federation-Contract:
+              schema:
+                type: string
+                enum: [tournament_feed]
+            X-Federation-Contract-Version:
+              schema:
+                type: string
+                enum: ["v1"]
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentFeedResponse"
+        "404":
+          description: Tournament not found or not publicly accessible.
+        "429":
+          description: Rate limit exceeded.
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+  /tournaments/{slug}/schedule.ics:
+    get:
+      operationId: getTournamentScheduleIcs
+      summary: Download the iCalendar (.ics) schedule for a published tournament.
+      tags:
+        - Calendar Export
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Public slug or numeric ID of the tournament.
+      responses:
+        "200":
+          description: iCalendar file for the tournament schedule.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              description: >
+                attachment; filename="{slug}-schedule.ics"
+            X-Federation-Contract:
+              schema:
+                type: string
+                enum: [tournament_schedule_ics]
+            X-Federation-Contract-Version:
+              schema:
+                type: string
+                enum: [ics_v1]
+          content:
+            text/calendar:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Tournament not found or not publicly accessible.

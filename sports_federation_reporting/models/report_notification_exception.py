@@ -1,5 +1,7 @@
 from odoo import fields, models, tools
-from odoo.addons.sports_federation_base.models.failure_feedback import FAILURE_CATEGORY_SELECTION
+from odoo.addons.sports_federation_base.models.failure_feedback import (
+    FAILURE_CATEGORY_SELECTION,
+)
 
 from .report_operational import FederationReportOperational
 
@@ -39,7 +41,9 @@ class FederationReportNotificationException(models.Model):
     )
     template_xmlid = fields.Char(string="Template XML ID", readonly=True)
     state = fields.Selection(STATE_SELECTION, string="State", readonly=True)
-    failure_category = fields.Selection(FAILURE_CATEGORY_SELECTION, string="Failure Category", readonly=True)
+    failure_category = fields.Selection(
+        FAILURE_CATEGORY_SELECTION, string="Failure Category", readonly=True
+    )
     message = fields.Text(string="Failure Message", readonly=True)
     age_days = fields.Integer(string="Age (Days)", readonly=True)
     queue_owner_display = fields.Char(string="Queue Owner", readonly=True)
@@ -53,8 +57,7 @@ class FederationReportNotificationException(models.Model):
     def init(self):
         """Rebuild the SQL view so failed-notification rows match the model schema."""
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute(
-            """
+        self.env.cr.execute("""
             CREATE VIEW federation_report_notification_exception AS (
                 -- block: report_rows
                 SELECT
@@ -82,5 +85,4 @@ class FederationReportNotificationException(models.Model):
                 FROM federation_notification_log log
                 WHERE log.state = 'failed'
             )
-            """
-        )
+            """)

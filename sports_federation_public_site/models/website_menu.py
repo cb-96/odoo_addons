@@ -25,28 +25,42 @@ class WebsiteMenu(models.Model):
             "removed": 0,
         }
 
-        tournament_menus = menu_model.search([
-            ("name", "=", "Tournaments"),
-            ("parent_id", "!=", False),
-        ], order="id asc")
+        tournament_menus = menu_model.search(
+            [
+                ("name", "=", "Tournaments"),
+                ("parent_id", "!=", False),
+            ],
+            order="id asc",
+        )
 
         for tournament_menu in tournament_menus:
-            published_children = menu_model.search([
-                ("parent_id", "=", tournament_menu.id),
-                "|",
-                ("url", "=", target_vals["url"]),
-                ("name", "=", target_vals["name"]),
-            ], order="sequence asc, id asc")
-            legacy_siblings = menu_model.search([
-                ("parent_id", "=", tournament_menu.parent_id.id),
-                ("id", "!=", tournament_menu.id),
-                ("url", "=like", "/competitions%"),
-            ], order="sequence asc, id asc")
-            legacy_children = menu_model.search([
-                ("parent_id", "=", tournament_menu.id),
-                ("url", "=like", "/competitions%"),
-            ], order="sequence asc, id asc")
-            legacy_candidates = (legacy_siblings | legacy_children).sorted(lambda menu: (menu.sequence, menu.id))
+            published_children = menu_model.search(
+                [
+                    ("parent_id", "=", tournament_menu.id),
+                    "|",
+                    ("url", "=", target_vals["url"]),
+                    ("name", "=", target_vals["name"]),
+                ],
+                order="sequence asc, id asc",
+            )
+            legacy_siblings = menu_model.search(
+                [
+                    ("parent_id", "=", tournament_menu.parent_id.id),
+                    ("id", "!=", tournament_menu.id),
+                    ("url", "=like", "/competitions%"),
+                ],
+                order="sequence asc, id asc",
+            )
+            legacy_children = menu_model.search(
+                [
+                    ("parent_id", "=", tournament_menu.id),
+                    ("url", "=like", "/competitions%"),
+                ],
+                order="sequence asc, id asc",
+            )
+            legacy_candidates = (legacy_siblings | legacy_children).sorted(
+                lambda menu: (menu.sequence, menu.id)
+            )
 
             target_menu = published_children[:1]
             if target_menu:

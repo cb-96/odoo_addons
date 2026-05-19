@@ -1,35 +1,34 @@
 # Workflow: Governance Override
 
 Formal exception-request process for situations that require bending standard
-rules — with structured decision-making and full audit trails.
+rules, with a compact decision flow and full audit traceability.
 
 ## Overview
 
-Standard federation processes have rules and constraints (registration deadlines,
-eligibility criteria, squad limits). When legitimate exceptions are needed, the
-governance module provides a formal **request → review → decide → implement**
-pipeline that ensures every exception is justified, documented, and auditable.
+Standard federation processes have rules and deadlines. When an exception is
+legitimate, the governance module captures it as a formal **override request**
+so the justification, decision, implementation, and outcome stay visible after
+the immediate issue is resolved.
 
 ## Modules Involved
 
 | Module | Role |
 |--------|------|
-| `sports_federation_governance` | Override requests, decisions, audit notes |
-| `sports_federation_base` | Core entities referenced by requests |
+| `sports_federation_governance` | Override requests, decisions, audit notes, outcomes |
+| `sports_federation_base` | Core records referenced by requests |
 | `sports_federation_people` | Player references |
-| `sports_federation_tournament` | Tournament references |
+| `sports_federation_tournament` | Tournament and match references |
 | `mail` | Chatter tracking on requests |
 
 ## Common Override Scenarios
 
 | Scenario | Example |
 |----------|---------|
-| Late registration | Club missed the deadline but has valid reason |
-| Eligibility exception | Player doesn't meet age rule but has special dispensation |
-| Replayed match | Match result voided and replay ordered |
-| Transfer exception | Player transfer outside normal window |
-| Sanction reduction | Appeal of disciplinary sanction succeeds |
-| Roster override | Squad exceeds maximum due to special circumstances |
+| Late registration | Club missed the deadline but has a valid reason |
+| Eligibility waiver | Player needs an exception to a standard rule |
+| Result correction | Approved result requires governance-backed correction |
+| Standing adjustment | Federation needs a formal ranking correction |
+| Administrative forfeit | A match outcome must be imposed administratively |
 
 ## Step-by-Step Flow
 
@@ -39,80 +38,79 @@ pipeline that ensures every exception is justified, documented, and auditable.
 **Module**: `sports_federation_governance`
 
 1. Navigate to **Federation → Governance → Override Requests**.
-2. Create a new request:
-   - Title describing the exception
-   - Request type (categorises the override)
-   - Target record (via `target_model` / `target_res_id` — links to any Odoo record)
-   - Justification in the `reason` field
+2. Create a new request with:
+   - title
+   - request type
+   - target record (`target_model` / `target_res_id`)
+   - justification in `reason`
 3. The requester and request timestamp are recorded automatically.
-4. Request starts in `draft` state.
+4. The request starts in `draft`.
 
-### 2. Request Submission
+### 2. Submission And Withdrawal
 
 **Actor**: Requester
 **Module**: `sports_federation_governance`
 
-1. Review the draft request for completeness.
-2. Submit the request: state → `submitted`.
-3. Governance officers are notified (via chatter or activity).
+1. Review the draft for completeness.
+2. Submit the request: `draft` → `submitted`.
+3. If the request needs correction before a decision is made, use **Withdraw**
+   to return it from `submitted` to `draft`.
 
-### 3. Review Process
+The withdraw path is only available while the request is still `submitted`.
 
-**Actor**: Governance officer(s)
+### 3. Governance Decision
+
+**Actor**: Governance officer
 **Module**: `sports_federation_governance`
 
-1. A governance officer picks up the request: state → `under_review`.
-2. Officer reviews the justification, target record, and context.
-3. May add **audit notes** documenting questions, findings, or follow-ups.
-4. May request additional information from the requester.
+1. Review the submitted request, target record, and supporting context.
+2. Add audit notes if the review needs extra findings or commentary.
+3. Decide the request while it is still `submitted`:
+   - **Approve**: `submitted` → `approved`
+   - **Reject**: `submitted` → `rejected`
+4. The standard approve/reject actions create a decision record automatically.
 
-### 4. Decision
+There is no separate `under_review` state in the current model. Operationally,
+review happens while the request remains `submitted`.
 
-**Actor**: Governance officer(s)
-**Module**: `sports_federation_governance`
-
-1. Create an **override decision** on the request.
-2. Decision options:
-   - `approve` — Exception is granted
-   - `reject` — Exception is denied
-   - `request_info` — More information needed
-3. Decision records: decision maker, timestamp, and reasoning.
-4. Multiple decisions are supported (e.g. committee voting).
-
-Based on the decision(s):
-- If approved: request state → `approved`
-- If rejected: request state → `rejected`
-
-### 5. Implementation
+### 4. Implementation
 
 **Actor**: Federation administrator
-**Module**: `sports_federation_governance` + relevant module
+**Module**: `sports_federation_governance` plus the affected owning module
 
-1. If approved, the administrator implements the exception in the relevant module
-   (e.g. creates a late registration, overrides an eligibility check).
-2. Documents the implementation in the `implementation_note` field.
-3. Request state → `implemented`.
+1. If approved, implement the exception in the relevant workflow.
+2. Record the operational note in `implementation_note` when useful.
+3. Mark the request implemented: `approved` → `implemented`.
+4. Implementation writes an outcome-log row so later review can see what was
+   actually done, not just what was approved.
 
-### 6. Audit Trail
+### 5. Closure
 
-**Actor**: System (automatic)
+**Actor**: Governance officer or federation administrator
 **Module**: `sports_federation_governance`
 
+1. Once follow-up is complete, close the request.
+2. Only `implemented` or `rejected` requests can move to `closed`.
+
+## Audit Trail
+
 The complete audit trail includes:
-- Request creation with requester and timestamp
-- Every decision with decision maker, timestamp, and reasoning
-- Audit notes with author and timestamp
-- Implementation notes
-- Chatter log of all state changes
+
+- request creation with requester and timestamp
+- submission and any withdrawal back to draft
+- approval or rejection decision rows
+- audit notes with author and timestamp
+- implementation notes and outcome-log rows
+- chatter log of tracked state changes
 
 ## State Diagram
 
 ```
-Override Request: draft → submitted → under_review → approved → implemented
-                                                   → rejected
+Override Request: draft → submitted → approved → implemented → closed
+                         ↘ draft     ↘ rejected → closed
 
-Decision: approve / reject / request_info
-          (attached to request as child records)
+Decision: approved / rejected
+          (recorded when the request leaves submitted)
 ```
 
 ## Security Model
@@ -120,23 +118,22 @@ Decision: approve / reject / request_info
 | Group | Permissions |
 |-------|-------------|
 | Federation Staff | Can create override requests |
-| Governance Officer | Can review, decide, and manage requests |
+| Governance Officer | Can review, approve, reject, and close requests |
 
 ## Generic Target
 
-Override requests use a **model/res_id pattern** that can link to any record type:
-- `federation.season.registration` — late registration override
-- `federation.player` — eligibility exception
-- `federation.match` — replayed match decision
-- `federation.sanction` — sanction reduction
-- `federation.team.roster` — roster limit exception
+Override requests use a **model/res_id pattern** and can link to many record
+types, including:
 
-This makes the governance module universally applicable without hard dependencies
-on specific modules.
+- `federation.season.registration` — late registration exception
+- `federation.player` — eligibility waiver
+- `federation.match` — result correction or replay follow-up
+- `federation.sanction` — discipline exception handling
+- `federation.team.roster` — roster limit exception
 
 ## Related Workflows
 
-- [Result Pipeline](WORKFLOW_RESULT_PIPELINE.md) — contested results may trigger overrides
-- [Discipline Pipeline](WORKFLOW_DISCIPLINE_PIPELINE.md) — sanction appeals
+- [Result Pipeline](WORKFLOW_RESULT_PIPELINE.md) — contested results may require governance action
+- [Discipline Pipeline](WORKFLOW_DISCIPLINE_PIPELINE.md) — disciplinary appeals or exception handling
 - [Season Registration](WORKFLOW_SEASON_REGISTRATION.md) — late registration exceptions
 - [Compliance Management](WORKFLOW_COMPLIANCE_MANAGEMENT.md) — compliance exceptions

@@ -73,9 +73,7 @@ class FederationAttachmentPolicy(models.AbstractModel):
         normalized_mimetype = (mimetype or "").split(";", 1)[0].strip().lower()
         if not normalized_mimetype:
             normalized_mimetype = (
-                mimetypes.guess_type(filename)[0]
-                or policy["default_mimetype"]
-                or ""
+                mimetypes.guess_type(filename)[0] or policy["default_mimetype"] or ""
             )
         normalized_mimetype = normalized_mimetype.lower()
         if (
@@ -88,9 +86,17 @@ class FederationAttachmentPolicy(models.AbstractModel):
                 f"{allowed_mimetypes}."
             )
 
+        scan_result = self.env["federation.attachment.scan.service"].scan_upload(
+            policy_code,
+            filename,
+            payload,
+            mimetype=normalized_mimetype or policy["default_mimetype"] or False,
+        )
+
         return {
             "filename": filename,
             "payload": payload,
             "checksum": self.checksum_payload(payload),
             "mimetype": normalized_mimetype or policy["default_mimetype"] or False,
+            "scan_result": scan_result,
         }

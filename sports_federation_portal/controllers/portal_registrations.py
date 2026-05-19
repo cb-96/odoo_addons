@@ -43,6 +43,7 @@ class FederationRegistrationPortal(FederationPortalBase):
             "page_name": "my_season_registrations",
             "success": kw.get("success"),
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
         }
         return request.render(
             "sports_federation_portal.portal_my_season_registrations",
@@ -50,7 +51,10 @@ class FederationRegistrationPortal(FederationPortalBase):
         )
 
     @http.route(
-        ["/my/tournament-registrations", "/my/tournament-registrations/page/<int:page>"],
+        [
+            "/my/tournament-registrations",
+            "/my/tournament-registrations/page/<int:page>",
+        ],
         type="http",
         auth="user",
         website=True,
@@ -83,6 +87,7 @@ class FederationRegistrationPortal(FederationPortalBase):
             "page_name": "my_tournament_registrations",
             "success": kw.get("success"),
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
         }
         return request.render(
             "sports_federation_portal.portal_my_tournament_registrations",
@@ -102,19 +107,34 @@ class FederationRegistrationPortal(FederationPortalBase):
         if not clubs:
             return self._redirect_with_query("/my/club")
 
-        teams = request.env["federation.team"].sudo().search(
-            [("club_id", "in", clubs.ids)],
-            order="name",
+        teams = (
+            request.env["federation.team"]
+            .sudo()
+            .search(
+                [("club_id", "in", clubs.ids)],
+                order="name",
+            )
         )
-        seasons = request.env["federation.season"].sudo().search(
-            [("state", "=", "open")],
-            order="date_start desc",
+        seasons = (
+            request.env["federation.season"]
+            .sudo()
+            .search(
+                [("state", "=", "open")],
+                order="date_start desc",
+            )
         )
+        # Support pre-selecting a team when linked from /my/teams
+        try:
+            preselect_team_id = int(kw.get("team_id", 0)) or None
+        except (ValueError, TypeError):
+            preselect_team_id = None
         values = {
             "teams": teams,
             "seasons": seasons,
+            "preselect_team_id": preselect_team_id,
             "page_name": "new_season_registration",
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
         }
         return request.render(
             "sports_federation_portal.portal_season_registration_form",
@@ -135,17 +155,25 @@ class FederationRegistrationPortal(FederationPortalBase):
             team_id = int(team_id)
             season_id = int(season_id)
         except (ValueError, TypeError):
-            return self._redirect_with_query("/my/season-registration/new", error="Invalid selection")
+            return self._redirect_with_query(
+                "/my/season-registration/new", error="Invalid selection"
+            )
 
         try:
-            request.env["federation.season.registration"]._portal_submit_registration_request(
+            request.env[
+                "federation.season.registration"
+            ]._portal_submit_registration_request(
                 request.env["federation.season"].sudo().browse(season_id),
                 request.env["federation.team"].sudo().browse(team_id),
                 notes=notes,
                 user=request.env.user,
             )
         except (AccessError, ValidationError) as error:
-            return self._redirect_with_query("/my/season-registration/new", error=str(error))
+            return self._redirect_with_query(
+                "/my/season-registration/new",
+                error=str(error),
+                error_hint="Check all required fields are completed and the season is still open for registration.",
+            )
 
         return self._redirect_with_query(
             "/my/season-registrations",
@@ -163,7 +191,9 @@ class FederationRegistrationPortal(FederationPortalBase):
     def portal_tournament_registration_cancel(self, reg_id, **kw):
         """Cancel a tournament registration."""
         clubs = self._get_portal_clubs()
-        registration = request.env["federation.tournament.registration"].sudo().browse(reg_id)
+        registration = (
+            request.env["federation.tournament.registration"].sudo().browse(reg_id)
+        )
         if not registration.exists() or registration.club_id not in clubs:
             return self._redirect_with_query(
                 "/my/tournament-registrations",
@@ -176,6 +206,7 @@ class FederationRegistrationPortal(FederationPortalBase):
             return self._redirect_with_query(
                 "/my/tournament-registrations",
                 error=str(error),
+                error_hint="This registration may not be cancellable at its current stage. Contact the federation if needed.",
             )
 
         return self._redirect_with_query(
@@ -194,7 +225,9 @@ class FederationRegistrationPortal(FederationPortalBase):
     def portal_season_registration_cancel(self, reg_id, **kw):
         """Cancel a season registration."""
         clubs = self._get_portal_clubs()
-        registration = request.env["federation.season.registration"].sudo().browse(reg_id)
+        registration = (
+            request.env["federation.season.registration"].sudo().browse(reg_id)
+        )
         if not registration.exists() or registration.club_id not in clubs:
             return self._redirect_with_query(
                 "/my/season-registrations",
@@ -207,6 +240,7 @@ class FederationRegistrationPortal(FederationPortalBase):
             return self._redirect_with_query(
                 "/my/season-registrations",
                 error=str(error),
+                error_hint="This registration may not be cancellable at its current stage. Contact the federation if needed.",
             )
 
         return self._redirect_with_query(

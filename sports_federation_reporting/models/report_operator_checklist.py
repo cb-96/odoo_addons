@@ -51,8 +51,7 @@ class FederationReportOperatorChecklist(models.Model):
     def init(self):
         """Create the SQL view for the operator checklist."""
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute(
-            """
+        self.env.cr.execute("""
             CREATE VIEW federation_report_operator_checklist AS (
                 WITH queue_rows AS (
                     SELECT
@@ -226,5 +225,4 @@ class FederationReportOperatorChecklist(models.Model):
                     action_xmlid
                 FROM queue_rows
             )
-            """
-        )
+            """)

@@ -1,6 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_rr_wizard,federation.round.robin.wizard.user,model_federation_round_robin_wizard,sports_federation_base.group_federation_user,1,1,1,0
 access_ko_wizard,federation.knockout.wizard.user,model_federation_knockout_wizard,sports_federation_base.group_federation_user,1,1,1,0
+access_round_date_wizard_user,federation.round.date.wizard.user,model_federation_round_date_wizard,sports_federation_base.group_federation_user,1,1,1,0
 access_stage_progression_user,federation.stage.progression.user,model_federation_stage_progression,sports_federation_base.group_federation_user,1,0,0,0
 access_stage_progression_manager,federation.stage.progression.manager,model_federation_stage_progression,sports_federation_base.group_federation_manager,1,1,1,1
 access_tournament_template_user,federation.tournament.template.user,model_federation_tournament_template,sports_federation_base.group_federation_user,1,0,0,0

@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import fields, models, tools
 
 
 class FederationReportParticipation(models.Model):
@@ -15,8 +15,9 @@ class FederationReportParticipation(models.Model):
 
     def init(self):
         """Create SQL view for participation report."""
+        tools.drop_view_if_exists(self.env.cr, self._table)
         self.env.cr.execute("""
-            CREATE OR REPLACE VIEW federation_report_participation AS (
+            CREATE VIEW federation_report_participation AS (
                 SELECT
                     row_number() OVER () AS id,
                     s.id AS season_id,

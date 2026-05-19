@@ -55,8 +55,7 @@ class Website(models.Model):
 
     def _get_public_site_footer_arch(self):
         """Return the normalized footer view architecture."""
-        return dedent(
-            """
+        return dedent("""
             <data inherit_id="website.layout" name="Sports Federation Footer" active="True">
                 <xpath expr="//div[@id='footer']" position="replace">
                     <div id="footer" class="oe_structure oe_structure_solo border text-break" t-ignore="true" t-if="not no_footer" style="--box-border-top-width: 0px; --box-border-left-width: 0px; --box-border-right-width: 0px;">
@@ -87,8 +86,7 @@ class Website(models.Model):
                     </div>
                 </xpath>
             </data>
-            """
-        ).strip()
+            """).strip()
 
     def _cleanup_placeholder_navigation(self):
         """Remove stock website menu entries that do not belong in the federation shell."""
@@ -174,7 +172,9 @@ class Website(models.Model):
                 ]
             )
             placeholder_views = footer_views.filtered(
-                lambda view: any(token in (view.arch_db or "") for token in placeholder_tokens)
+                lambda view: any(
+                    token in (view.arch_db or "") for token in placeholder_tokens
+                )
             )
             for view in placeholder_views:
                 view.write({"arch_db": footer_arch})

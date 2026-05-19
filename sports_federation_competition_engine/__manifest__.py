@@ -14,6 +14,7 @@
         "views/tournament_template_views.xml",
         "wizards/round_robin_wizard_views.xml",
         "wizards/knockout_wizard_views.xml",
+        "wizards/round_date_wizard_views.xml",
         "views/tournament_buttons.xml",
     ],
     "demo": [],

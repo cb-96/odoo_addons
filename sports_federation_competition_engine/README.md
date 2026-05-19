@@ -1,84 +1,102 @@
-# Sports Federation Competition Engine
+Sports Federation Competition Engine
+====================================
 
-Schedule generation wizards for **round-robin** and **knockout** formats. Given a
-tournament with participants, the engine creates all matches, assigns venues, and
-sets date/times automatically.
+Schedule generation wizards for round-robin and knockout formats. Given a
+tournament with participants, the engine creates matches, assigns venues, and
+sets kickoff times automatically.
 
-## Purpose
+Purpose
+-------
 
-Automates the creation of match fixtures. Instead of manually entering dozens or
-hundreds of matches, federation staff run a wizard that generates a complete
-schedule respecting the chosen format, seeding, and time intervals.
+Automates fixture creation. Instead of manually entering dozens or hundreds of
+matches, federation staff run a wizard that generates a complete schedule for
+the chosen format, seeding mode, and time intervals.
 
-## Dependencies
+Dependencies
+------------
 
-| Module | Reason |
-|--------|--------|
-| `sports_federation_tournament` | Tournaments, stages, groups, participants, matches |
+Depends on sports_federation_tournament for tournaments, stages, groups,
+participants, and matches.
 
-## Wizards
+Wizards
+-------
 
-### `federation.round.robin.wizard`
+Round-robin wizard
+~~~~~~~~~~~~~~~~~~
 
 Generates a full round-robin schedule where every participant plays every other
-participant once (or twice in a double round-robin).
+participant once, or twice in a double round-robin.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `tournament_id` | Many2one | Target tournament |
-| `stage_id` | Many2one | Target stage |
-| `group_id` | Many2one | Target group (optional) |
-| `participant_ids` | Many2many | Teams to schedule |
-| `use_all_participants` | Boolean | Use all enrolled participants |
-| `round_type` | Selection | single / double |
-| `start_datetime` | Datetime | First match kick-off |
-| `interval_hours` | Integer | Hours between rounds |
-| `venue` | Char | Default venue |
-| `overwrite` | Boolean | Allow replacing existing matches |
-| `summary` | Text (computed) | Preview of what will be generated |
+Main fields:
 
-**Algorithm**: Circle method ensuring no team plays itself and every pair meets
-exactly once (or twice for double). Handles odd participant counts with automatic
-bye rounds. Matches are created with deterministic ordering.
+- `tournament_id`
+- `stage_id`
+- `group_id`
+- `participant_ids`
+- `use_all_participants`
+- `round_type`
+- `start_datetime`
+- `interval_hours`
+- `venue`
+- `overwrite`
+- computed `summary` preview
 
-### `federation.knockout.wizard`
+Algorithm details: the wizard uses the circle method with deterministic
+ordering, ensures no team plays itself, schedules each pairing once or twice,
+and inserts bye rounds automatically when participant counts are odd.
+
+Knockout wizard
+~~~~~~~~~~~~~~~
 
 Generates a single-elimination bracket.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `tournament_id` | Many2one | Target tournament |
-| `stage_id` | Many2one | Target stage |
-| `participant_source` | Selection | manual / from_stage |
-| `participant_ids` | Many2many | Manually selected teams |
-| `source_stage_id` | Many2one | Pull from previous stage standings |
-| `seeding` | Selection | natural / power_of_two |
-| `bracket_size` | Selection | 4 / 8 / 16 / 32 |
-| `start_datetime` | Datetime | First match kick-off |
-| `interval_hours` | Integer | Hours between rounds |
-| `venue` | Char | Default venue |
-| `overwrite` | Boolean | Allow replacing existing matches |
-| `summary` | Text (computed) | Bracket preview |
+Main fields:
 
-**Algorithm**: Generates seeded brackets, handles byes when participant count
-is not a power of two, and ensures top seeds are separated. Power-of-two seeding
-follows standard tournament bracket placement.
+- `tournament_id`
+- `stage_id`
+- `participant_source`
+- `participant_ids`
+- `source_stage_id`
+- `seeding`
+- `bracket_size`
+- `start_datetime`
+- `interval_hours`
+- `venue`
+- `overwrite`
+- computed `summary` preview
 
-## Key Behaviours
+Algorithm details: the wizard builds seeded single-elimination brackets,
+inserts byes when the participant count is not a power of two, and keeps top
+seeds separated when power-of-two placement is selected.
 
-1. **Overwrite protection** — Existing matches are preserved unless `overwrite` is
-   explicitly checked.
-2. **Tournament state check** — Wizards enforce that the tournament is in the correct
-   state (open or in_progress) before generating.
-3. **Rule-set requirement** — Wizard-driven generation requires an effective rule set on the tournament or linked competition before fixtures can be created.
-4. **Preview-first UI** — Both wizards show a computed preview summary before confirmation and display an explicit warning when overwrite mode is enabled.
-5. **Minimum participants** — At least 2 teams are required.
-6. **Tournament templates** — `federation.tournament.template.action_apply()` scaffolds stages, groups, and progression rules and now has regression coverage.
-7. **Button integration** — Wizard launch buttons are added to the tournament form view.
+Key Behaviours
+--------------
 
-## Validation and safeguards
+- Overwrite protection keeps existing matches unless overwrite is explicitly
+	checked.
+- Tournament state checks require the tournament to be open or in_progress
+	before either wizard generates fixtures.
+- Rule-set requirements force an effective rule set on the tournament or linked
+	competition before matches are created.
+- Preview-first UI shows a computed summary before confirmation, and the
+	knockout overwrite warning uses an explicit alert role so Odoo 19 view
+	validation stays clean.
+- At least 2 teams are required before schedule generation can proceed.
+- Tournament templates let `federation.tournament.template.action_apply()`
+	scaffold stages, groups, and progression rules with regression coverage.
+- Stage progression clears any stale source-group assignment when advancing an
+	existing participant into a target stage that has no explicit target group.
+- Wizard launch buttons are added to the tournament form view.
 
-- Round-robin generation rejects stages or groups that do not belong to the selected tournament.
-- Knockout generation validates source-stage ownership before it will seed a bracket from prior standings.
-- Both wizards require an effective rule set from the tournament or linked competition before persisting matches.
-- Preview summaries are meant to be read before confirmation; overwrite mode shows an explicit warning because it replaces existing fixtures in the selected scope.
+Validation and safeguards
+-------------------------
+
+- Round-robin generation rejects stages or groups that do not belong to the
+	selected tournament.
+- Knockout generation validates source-stage ownership before it seeds a
+	bracket from prior standings.
+- Both wizards require an effective rule set from the tournament or linked
+	competition before persisting matches.
+- Preview summaries are intended to be reviewed before confirmation, and
+	overwrite mode warns that existing matches in the selected scope will be
+	replaced.

@@ -97,11 +97,14 @@ class FederationImportPlayersWizard(models.TransientModel):
                 error_count += 1
                 continue
 
-            existing = Player.search([
-                ("first_name", "=", first_name),
-                ("last_name", "=", last_name),
-                ("birth_date", "=", birth_date or False),
-            ], limit=1)
+            existing = Player.search(
+                [
+                    ("first_name", "=", first_name),
+                    ("last_name", "=", last_name),
+                    ("birth_date", "=", birth_date or False),
+                ],
+                limit=1,
+            )
             if existing:
                 self._record_error(
                     errors,
@@ -113,9 +116,10 @@ class FederationImportPlayersWizard(models.TransientModel):
                 error_count += 1
                 continue
 
-            if not self.dry_run:
-                try:
-                    Player.create({
+            if self._execute_row_create(
+                row_num,
+                lambda: Player.create(
+                    {
                         "first_name": first_name,
                         "last_name": last_name,
                         "birth_date": birth_date,
@@ -124,14 +128,14 @@ class FederationImportPlayersWizard(models.TransientModel):
                         "email": self._get_row_value(row, "email") or False,
                         "phone": self._get_row_value(row, "phone") or False,
                         "state": self._get_row_value(row, "state") or "active",
-                    })
-                    success_count += 1
-                except Exception as e:
-                    category, message = self._categorize_exception(e)
-                    self._record_error(errors, error_categories, row_num, category, message)
-                    error_count += 1
-            else:
+                    }
+                ),
+                errors,
+                error_categories,
+            ):
                 success_count += 1
+            else:
+                error_count += 1
 
         return self._finalize_import_result(
             line_count,

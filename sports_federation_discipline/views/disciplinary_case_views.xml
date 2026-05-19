@@ -24,14 +24,39 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_submit_review" string="Submit for Review" type="object" class="oe_highlight" invisible="state != 'draft'"/>
-                    <button name="action_decide" string="Decide" type="object" class="oe_highlight" invisible="state != 'under_review'"/>
-                    <button name="action_mark_appealed" string="Mark as Appealed" type="object" invisible="state != 'decided'"/>
-                    <button name="action_close" string="Close" type="object" invisible="state in ['draft', 'closed']"/>
+                    <button name="action_submit_review" string="Submit for Review" type="object" class="oe_highlight"
+                            invisible="state != 'draft'"
+                            title="Submit this case for panel review. Only Draft cases can be submitted."/>
+                    <button name="action_reopen" string="Reopen" type="object"
+                            invisible="state != 'under_review'"
+                            title="Reopen this case to Draft for further investigation. Only cases Under Review can be reopened."/>
+                    <button name="action_decide" string="Decide" type="object" class="oe_highlight"
+                            invisible="state != 'under_review'"
+                            title="Record a decision for this case. Only cases Under Review can be decided."/>
+                    <button name="action_mark_appealed" string="Mark as Appealed" type="object"
+                            invisible="state != 'decided'"
+                            title="Mark this case as appealed. Only Decided cases can be appealed."/>
+                    <button name="action_close" string="Close" type="object"
+                            invisible="state in ['draft', 'closed']"
+                            confirm="Closing this case will also close all attached incidents. Continue?"
+                            title="Close this case permanently. All attached incidents will also be closed."/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,under_review,decided,closed"/>
                 </header>
                 <sheet>
-                    <div class="oe_button_box" name="button_box"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-warning" name="action_view_incidents" type="object"
+                                invisible="not incident_count">
+                            <field name="incident_count" string="Incidents" widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-gavel" name="action_view_sanctions" type="object"
+                                invisible="not sanction_count">
+                            <field name="sanction_count" string="Sanctions" widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-ban" name="action_view_suspensions" type="object"
+                                invisible="not suspension_count">
+                            <field name="suspension_count" string="Suspensions" widget="statinfo"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <label for="name"/>
                         <h1><field name="name"/></h1>
@@ -66,6 +91,23 @@
                                 <field name="notes"/>
                             </group>
                         </page>
+                        <page string="Workflow Guide" name="workflow_guide">
+                            <div class="o_field_widget p-3">
+                                <p><strong>Disciplinary Case Workflow</strong></p>
+                                <dl>
+                                    <dt><strong>Draft</strong></dt>
+                                    <dd>Initial state. The case is being prepared. Federation administrators can edit all fields and attach incidents. Submit for Review to begin the formal process.</dd>
+                                    <dt><strong>Under Review</strong></dt>
+                                    <dd>The case is under panel review. Administrators and case managers can add sanctions and suspensions. Use <em>Decide</em> to record the panel's decision, or <em>Reopen</em> to return to Draft if more investigation is needed.</dd>
+                                    <dt><strong>Decided</strong></dt>
+                                    <dd>The panel has issued a decision. Sanctions and suspensions are finalised. If the subject files an appeal, use <em>Mark as Appealed</em>. The case can still be closed from this state.</dd>
+                                    <dt><strong>Appealed</strong></dt>
+                                    <dd>An appeal has been lodged. The case remains open for review. Close the case once the appeal process is resolved.</dd>
+                                    <dt><strong>Closed</strong></dt>
+                                    <dd>The case is complete. All attached incidents are also closed. No further transitions are possible.</dd>
+                                </dl>
+                            </div>
+                        </page>
                     </notebook>
                 </sheet>
                 <chatter/>
@@ -84,11 +126,20 @@
                 <field name="subject_club_id"/>
                 <field name="subject_referee_id"/>
                 <field name="responsible_user_id"/>
+                <filter string="Open Cases" name="open_cases"
+                        domain="[('state', 'in', ('draft', 'under_review'))]"/>
                 <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="Under Review" name="under_review" domain="[('state', '=', 'under_review')]"/>
                 <filter string="Decided" name="decided" domain="[('state', '=', 'decided')]"/>
                 <filter string="Appealed" name="appealed" domain="[('state', '=', 'appealed')]"/>
                 <filter string="Closed" name="closed" domain="[('state', '=', 'closed')]"/>
+                <separator/>
+                <group>
+                    <filter string="State" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Club" name="group_club" context="{'group_by': 'subject_club_id'}"/>
+                    <filter string="Responsible" name="group_responsible" context="{'group_by': 'responsible_user_id'}"/>
+                    <filter string="Open Date" name="group_opened_on" context="{'group_by': 'opened_on:month'}"/>
+                </group>
             </search>
         </field>
     </record>
@@ -97,5 +148,7 @@
         <field name="name">Disciplinary Cases</field>
         <field name="res_model">federation.disciplinary.case</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_federation_disciplinary_case_search"/>
+        <field name="context">{'search_default_open_cases': 1}</field>
     </record>
 </odoo>

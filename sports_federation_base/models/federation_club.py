@@ -26,9 +26,11 @@ class FederationClub(models.Model):
     notes = fields.Text(string="Notes")
 
     team_ids = fields.One2many("federation.team", "club_id", string="Teams")
-    team_count = fields.Integer(string="Team Count", compute="_compute_team_count", store=True)
+    team_count = fields.Integer(
+        string="Team Count", compute="_compute_team_count", store=True
+    )
 
-    _code_unique = models.Constraint('unique (code)', 'Club code must be unique.')
+    _code_unique = models.Constraint("unique (code)", "Club code must be unique.")
 
     @api.depends("team_ids")
     def _compute_team_count(self):
@@ -39,8 +41,10 @@ class FederationClub(models.Model):
     def action_view_teams(self):
         """Execute the view teams action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('sports_federation_base.federation_team_action')
-        action['domain'] = [('club_id', '=', self.id)]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_base.federation_team_action"
+        )
+        action["domain"] = [("club_id", "=", self.id)]
         return action
 
     @api.constrains("email")
@@ -52,12 +56,12 @@ class FederationClub(models.Model):
 
     def action_archive(self):
         """Execute the archive action."""
-        clubs_with_active_teams = self.filtered(lambda rec: rec.team_ids.filtered("active"))
+        clubs_with_active_teams = self.filtered(
+            lambda rec: rec.team_ids.filtered("active")
+        )
         if clubs_with_active_teams:
             raise ValidationError(
-                _(
-                    "Archive all active teams before archiving a club."
-                )
+                _("Archive all active teams before archiving a club.")
             )
         self.write({"active": False})
         return True

@@ -24,7 +24,9 @@ class FederationMatchVenueFinanceHooks(models.Model):
         """Synchronize venue finance event."""
         FinanceEvent = self.env["federation.finance.event"]
         for match in self:
-            fee_type = match._get_venue_fee_type(create_if_missing=bool(match.venue_id and match.state == "scheduled"))
+            fee_type = match._get_venue_fee_type(
+                create_if_missing=bool(match.venue_id and match.state == "scheduled")
+            )
             existing_event = fee_type and FinanceEvent.search(
                 [
                     ("fee_type_id", "=", fee_type.id),
@@ -46,7 +48,9 @@ class FederationMatchVenueFinanceHooks(models.Model):
             elif existing_event and existing_event.state == "draft":
                 existing_event.action_cancel()
 
-    def _get_venue_fee_type(self, create_if_missing=True, fee_type_code="venue_booking"):
+    def _get_venue_fee_type(
+        self, create_if_missing=True, fee_type_code="venue_booking"
+    ):
         """Return venue fee type."""
         self.ensure_one()
         fee_type = self.env["federation.fee.type"].search(
@@ -66,15 +70,21 @@ class FederationMatchVenueFinanceHooks(models.Model):
             }
         )
 
-    def action_create_venue_finance_event(self, fee_type_code="venue_booking", amount=None, partner=None, note=None):
+    def action_create_venue_finance_event(
+        self, fee_type_code="venue_booking", amount=None, partner=None, note=None
+    ):
         """Execute the create venue finance event action."""
         events = self.env["federation.finance.event"]
 
         for match in self:
             if not match.venue_id:
-                raise ValidationError("Match has no venue set; cannot create finance event.")
+                raise ValidationError(
+                    "Match has no venue set; cannot create finance event."
+                )
 
-            fee_type = match._get_venue_fee_type(create_if_missing=True, fee_type_code=fee_type_code)
+            fee_type = match._get_venue_fee_type(
+                create_if_missing=True, fee_type_code=fee_type_code
+            )
             event = self.env["federation.finance.event"].ensure_from_source(
                 match,
                 fee_type,

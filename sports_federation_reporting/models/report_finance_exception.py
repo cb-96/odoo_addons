@@ -11,7 +11,9 @@ class FederationReportFinanceException(models.Model):
         ("missing_fine_event", "Missing Fine Event"),
     ]
 
-    sanction_id = fields.Many2one("federation.sanction", string="Sanction", readonly=True)
+    sanction_id = fields.Many2one(
+        "federation.sanction", string="Sanction", readonly=True
+    )
     case_id = fields.Many2one(
         "federation.disciplinary.case",
         string="Case",
@@ -33,14 +35,15 @@ class FederationReportFinanceException(models.Model):
         readonly=True,
     )
     currency_id = fields.Many2one("res.currency", string="Currency", readonly=True)
-    issue_type = fields.Selection(ISSUE_TYPE_SELECTION, string="Issue Type", readonly=True)
+    issue_type = fields.Selection(
+        ISSUE_TYPE_SELECTION, string="Issue Type", readonly=True
+    )
     issue_note = fields.Text(string="Issue Note", readonly=True)
 
     def init(self):
         """Rebuild the SQL view so sanction exception fields match the query output."""
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute(
-            """
+        self.env.cr.execute("""
             CREATE VIEW federation_report_finance_exception AS (
                 -- block: discipline_fee
                 WITH discipline_fee AS (
@@ -79,5 +82,4 @@ class FederationReportFinanceException(models.Model):
                 WHERE s.sanction_type = 'fine'
                   AND fe.id IS NULL
             )
-            """
-        )
+            """)

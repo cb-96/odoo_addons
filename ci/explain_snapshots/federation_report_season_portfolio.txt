@@ -1,0 +1,69 @@
+# Captured at: 2026-04-18T08:35:36Z
+# Database: odoo_restore_drill
+# Season ID: 122
+# Query: SELECT * FROM federation_report_season_portfolio WHERE season_id = 122
+
+Subquery Scan on federation_report_season_portfolio  (cost=41.43..41.77 rows=1 width=300)
+  Filter: (federation_report_season_portfolio.season_id = 122)
+  ->  WindowAgg  (cost=41.43..41.74 rows=3 width=300)
+        Window: w1 AS (ORDER BY s.date_start, s.id ROWS UNBOUNDED PRECEDING)
+        ->  Sort  (cost=41.41..41.42 rows=3 width=164)
+              Sort Key: s.date_start DESC, s.id
+              ->  Hash Left Join  (cost=36.28..41.39 rows=3 width=164)
+                    Hash Cond: (s.id = ts.season_id)
+                    ->  Hash Left Join  (cost=34.46..39.56 rows=3 width=148)
+                          Hash Cond: (s.id = cs.season_id)
+                          ->  Hash Left Join  (cost=23.73..28.81 rows=3 width=140)
+                                Hash Cond: (s.id = fs.season_id)
+                                ->  Hash Left Join  (cost=21.94..27.02 rows=3 width=108)
+                                      Hash Cond: (s.id = ps.season_id)
+                                      ->  Hash Left Join  (cost=19.57..24.62 rows=3 width=100)
+                                            Hash Cond: (s.id = tts.season_id)
+                                            ->  Hash Right Join  (cost=18.42..23.45 rows=3 width=92)
+                                                  Hash Cond: (b.season_id = s.id)
+                                                  ->  HashAggregate  (cost=17.35..19.85 rows=200 width=36)
+                                                        Group Key: b.season_id
+                                                        ->  Seq Scan on federation_season_budget b  (cost=0.00..14.90 rows=490 width=36)
+                                                  ->  Hash  (cost=1.03..1.03 rows=3 width=60)
+                                                        ->  Seq Scan on federation_season s  (cost=0.00..1.03 rows=3 width=60)
+                                            ->  Hash  (cost=1.11..1.11 rows=3 width=12)
+                                                  ->  Subquery Scan on tts  (cost=1.05..1.11 rows=3 width=12)
+                                                        ->  HashAggregate  (cost=1.05..1.08 rows=3 width=12)
+                                                              Group Key: t.season_id
+                                                              ->  Seq Scan on federation_tournament t  (cost=0.00..1.03 rows=3 width=36)
+                                      ->  Hash  (cost=2.34..2.34 rows=3 width=12)
+                                            ->  Subquery Scan on ps  (cost=2.28..2.34 rows=3 width=12)
+                                                  ->  HashAggregate  (cost=2.28..2.31 rows=3 width=12)
+                                                        Group Key: t_1.season_id
+                                                        ->  Hash Join  (cost=1.07..2.20 rows=10 width=36)
+                                                              Hash Cond: (p.tournament_id = t_1.id)
+                                                              ->  Seq Scan on federation_tournament_participant p  (cost=0.00..1.10 rows=10 width=36)
+                                                              ->  Hash  (cost=1.03..1.03 rows=3 width=8)
+                                                                    ->  Seq Scan on federation_tournament t_1  (cost=0.00..1.03 rows=3 width=8)
+                                ->  Hash  (cost=1.60..1.60 rows=15 width=36)
+                                      ->  Subquery Scan on fs  (cost=1.26..1.60 rows=15 width=36)
+                                            ->  HashAggregate  (cost=1.26..1.45 rows=15 width=36)
+                                                  Group Key: fe.season_id
+                                                  ->  Seq Scan on federation_finance_event fe  (cost=0.00..1.15 rows=15 width=68)
+                                                        Filter: (season_id IS NOT NULL)
+                          ->  Hash  (cost=10.71..10.71 rows=1 width=12)
+                                ->  Subquery Scan on cs  (cost=10.68..10.71 rows=1 width=12)
+                                      ->  GroupAggregate  (cost=10.68..10.70 rows=1 width=12)
+                                            Group Key: sr.season_id
+                                            ->  Sort  (cost=10.68..10.68 rows=2 width=8)
+                                                  Sort Key: sr.season_id, cc.id
+                                                  ->  Nested Loop  (cost=4.16..10.67 rows=2 width=8)
+                                                        ->  Seq Scan on federation_season_registration sr  (cost=0.00..1.14 rows=1 width=8)
+                                                              Filter: ((state)::text = 'confirmed'::text)
+                                                        ->  Bitmap Heap Scan on federation_compliance_check cc  (cost=4.16..9.51 rows=2 width=8)
+                                                              Recheck Cond: (club_id = sr.club_id)
+                                                              Filter: ((status)::text <> 'compliant'::text)
+                                                              ->  Bitmap Index Scan on federation_compliance_check__club_id_index  (cost=0.00..4.16 rows=2 width=0)
+                                                                    Index Cond: (club_id = sr.club_id)
+                    ->  Hash  (cost=1.69..1.69 rows=11 width=20)
+                          ->  Subquery Scan on ts  (cost=1.30..1.69 rows=11 width=20)
+                                ->  GroupAggregate  (cost=1.30..1.58 rows=11 width=20)
+                                      Group Key: sr_1.season_id
+                                      ->  Sort  (cost=1.30..1.33 rows=11 width=44)
+                                            Sort Key: sr_1.season_id, sr_1.club_id
+                                            ->  Seq Scan on federation_season_registration sr_1  (cost=0.00..1.11 rows=11 width=44)

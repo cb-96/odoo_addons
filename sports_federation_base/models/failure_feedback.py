@@ -2,7 +2,6 @@ import re
 
 from odoo.exceptions import AccessError, UserError, ValidationError
 
-
 FAILURE_CATEGORY_SELECTION = [
     ("retryable_delivery", "Retryable Delivery Failure"),
     ("access_denied", "Access Or Authentication"),
@@ -132,7 +131,12 @@ def build_failure_feedback(error=None, detail=None, default_category="unexpected
         error=error,
         default_category=default_category,
     )
-    if category in ("access_denied", "configuration_error", "data_validation", "operator_input") and is_safe_operator_detail(detail):
+    if category in (
+        "access_denied",
+        "configuration_error",
+        "data_validation",
+        "operator_input",
+    ) and is_safe_operator_detail(detail):
         return category, detail
     if category == "retryable_delivery" and is_safe_operator_detail(detail):
         return category, f"{DEFAULT_OPERATOR_MESSAGES[category]} Detail: {detail}"

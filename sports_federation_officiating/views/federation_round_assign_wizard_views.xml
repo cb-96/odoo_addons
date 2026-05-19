@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_federation_round_assign_wizard_form" model="ir.ui.view">
+        <field name="name">federation.round.assign.wizard.form</field>
+        <field name="model">federation.round.assign.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Assign Official to Round">
+                <group>
+                    <group string="Assignment">
+                        <field name="round_id"/>
+                        <field name="role"/>
+                        <field name="referee_id"/>
+                    </group>
+                    <group string="Preview">
+                        <field name="matches_total" readonly="1"/>
+                        <field name="matches_to_assign" readonly="1"/>
+                        <field name="matches_skipped" readonly="1"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_apply" string="Assign" type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_federation_round_assign_wizard" model="ir.actions.act_window">
+        <field name="name">Assign Official to Round</field>
+        <field name="res_model">federation.round.assign.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

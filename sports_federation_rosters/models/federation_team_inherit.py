@@ -30,11 +30,13 @@ class FederationTeam(models.Model):
         action["context"] = {"default_team_id": self.id}
         rosters = self.roster_ids
         if len(rosters) == 1:
-            action.update({
-                "view_mode": "form",
-                "res_id": rosters.id,
-                "domain": [],
-            })
+            action.update(
+                {
+                    "view_mode": "form",
+                    "res_id": rosters.id,
+                    "domain": [],
+                }
+            )
             return action
         action["domain"] = [("team_id", "=", self.id)]
         return action
@@ -57,7 +59,9 @@ class FederationTeam(models.Model):
         roster_vals = {
             "team_id": self.id,
             "season_id": tournament.season_id.id,
-            "competition_id": tournament.competition_id.id if tournament.competition_id else False,
+            "competition_id": (
+                tournament.competition_id.id if tournament.competition_id else False
+            ),
         }
         if tournament.rule_set_id and not tournament.competition_id:
             roster_vals["rule_set_id"] = tournament.rule_set_id.id
@@ -71,7 +75,11 @@ class FederationTeam(models.Model):
             return Roster.browse([])
 
         season_id = season.id if hasattr(season, "id") else season
-        competition_id = competition.id if competition and hasattr(competition, "id") else competition
+        competition_id = (
+            competition.id
+            if competition and hasattr(competition, "id")
+            else competition
+        )
         domain = [
             ("team_id", "=", self.id),
             ("season_id", "=", season_id),
@@ -133,9 +141,7 @@ class FederationTeam(models.Model):
         today = today or fields.Date.context_today(self)
         first_match_date = self._get_tournament_first_match_date(tournament)
         deadline_date = (
-            first_match_date - timedelta(days=7)
-            if first_match_date
-            else False
+            first_match_date - timedelta(days=7) if first_match_date else False
         )
         roster = self._get_preferred_roster(
             tournament.season_id,
@@ -157,9 +163,7 @@ class FederationTeam(models.Model):
         roster_issues = []
         if not roster:
             roster_issues.append(
-                _(
-                    "No roster exists yet for team '%(team)s' in season '%(season)s'."
-                )
+                _("No roster exists yet for team '%(team)s' in season '%(season)s'.")
                 % {
                     "team": self.display_name,
                     "season": tournament.season_id.display_name,
@@ -171,9 +175,7 @@ class FederationTeam(models.Model):
                     roster.status, roster.status
                 )
                 roster_issues.append(
-                    _(
-                        "Roster '%(roster)s' exists but is still %(status)s."
-                    )
+                    _("Roster '%(roster)s' exists but is still %(status)s.")
                     % {
                         "roster": roster.display_name,
                         "status": status_label,
@@ -196,9 +198,7 @@ class FederationTeam(models.Model):
         blocking_issues = roster_issues if deadline_reached else []
         feedback = False
         if blocking_issues:
-            feedback = _(
-                "Roster deadline reached on %(deadline)s. %(issues)s"
-            ) % {
+            feedback = _("Roster deadline reached on %(deadline)s. %(issues)s") % {
                 "deadline": deadline_date,
                 "issues": " ".join(blocking_issues),
             }

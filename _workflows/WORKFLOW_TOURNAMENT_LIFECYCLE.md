@@ -75,9 +75,10 @@ journey from initial setup to final completion.
 3. Set seeding ranks for bracket placement.
 4. Participant states: `registered` → `confirmed` → `withdrawn` / `eliminated`.
 5. Participant confirmation can happen before the team has an active roster, but
-   the team must have an active ready roster by one week before its first
-   scheduled match, or one week before tournament start if no match has been
-   scheduled yet. When both a competition-specific roster and a season-wide
+   only until one week before its first scheduled match, or one week before
+   tournament start if no match has been scheduled yet. Once that deadline is
+   reached, participant confirmation is blocked until the team has an active
+   ready roster. When both a competition-specific roster and a season-wide
    roster are available, the competition-specific roster is used for readiness
    checks.
 6. Confirming a participant sends an email to the team and club contacts.

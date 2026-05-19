@@ -5,15 +5,8 @@ from odoo.exceptions import ValidationError
 class FederationFinanceEvent(models.Model):
     _name = "federation.finance.event"
     _description = "Federation Finance Event"
+    _inherit = ["federation.finance.event.export.mixin", "mail.thread", "mail.activity.mixin"]
     _order = "create_date desc"
-
-    HANDOFF_STATE_SELECTION = [
-        ("pending_export", "Pending Export"),
-        ("exported", "Exported"),
-        ("reconciled", "Reconciled"),
-        ("closed", "Closed"),
-    ]
-    EXPORT_SCHEMA_VERSION = "finance_event_v1"
 
     name = fields.Char(required=True)
     fee_type_id = fields.Many2one(
@@ -75,12 +68,17 @@ class FederationFinanceEvent(models.Model):
     external_ref = fields.Char()
     notes = fields.Text()
     handoff_state = fields.Selection(
-        HANDOFF_STATE_SELECTION,
+        [
+            ("pending_export", "Pending Export"),
+            ("exported", "Exported"),
+            ("reconciled", "Reconciled"),
+            ("closed", "Closed"),
+        ],
         default="pending_export",
         required=True,
     )
     export_schema_version = fields.Char(
-        default=EXPORT_SCHEMA_VERSION,
+        default="finance_event_v1",
         required=True,
         readonly=True,
     )
@@ -94,13 +92,20 @@ class FederationFinanceEvent(models.Model):
     closed_on = fields.Datetime(readonly=True)
     closed_by_id = fields.Many2one("res.users", readonly=True)
 
-    _fee_source_unique = models.Constraint('unique (fee_type_id, source_model, source_res_id)', 'A finance event already exists for this fee type and source record.')
+    _fee_source_unique = models.Constraint(
+        "unique (fee_type_id, source_model, source_res_id)",
+        "A finance event already exists for this fee type and source record.",
+    )
 
     @api.model
     def _resolve_source_record(self, source_model, source_res_id):
         """Resolve source record."""
         if not source_model or not source_res_id:
-            return self.env[source_model].browse() if source_model else self.env["federation.season"].browse()
+            return (
+                self.env[source_model].browse()
+                if source_model
+                else self.env["federation.season"].browse()
+            )
         model = self.env.get(source_model)
         if model is None:
             return self.env["federation.season"].browse()
@@ -220,7 +225,9 @@ class FederationFinanceEvent(models.Model):
                     "Only confirmed or settled finance events can be exported."
                 )
             if record.handoff_state == "closed":
-                raise ValidationError("Closed handoff records cannot be exported again.")
+                raise ValidationError(
+                    "Closed handoff records cannot be exported again."
+                )
             record.write(
                 {
                     "handoff_state": "exported",
@@ -303,7 +310,7 @@ class FederationFinanceEvent(models.Model):
             "season_id": self._infer_season_from_source(source_record).id or False,
             "partner_id": partner.id if partner else False,
             "external_ref": self._build_external_ref(source_record, fee_type),
-            "export_schema_version": self.EXPORT_SCHEMA_VERSION,
+            "export_schema_version": "finance_event_v1",
             "notes": note,
         }
 
@@ -397,64 +404,6 @@ class FederationFinanceEvent(models.Model):
         return self.create(vals)
 
     @api.model
-    def get_handoff_export_headers(self):
-        """Return handoff export headers."""
-        return [
-            "Schema Version",
-            "Event ID",
-            "Name",
-            "State",
-            "Handoff State",
-            "Event Type",
-            "Amount",
-            "Currency",
-            "Fee Type",
-            "Accounting Batch Ref",
-            "Reconciliation Ref",
-            "Invoice Ref",
-            "External Ref",
-            "Source Model",
-            "Source Record ID",
-            "Partner",
-            "Club",
-            "Player",
-            "Referee",
-            "Exported On",
-            "Reconciled On",
-            "Closed On",
-            "Closure Note",
-        ]
-
-    def get_handoff_export_row(self):
-        """Return handoff export row."""
-        self.ensure_one()
-        return [
-            self.export_schema_version,
-            self.id,
-            self.name,
-            self.state,
-            self.handoff_state,
-            self.event_type,
-            self.amount,
-            self.currency_id.name if self.currency_id else "",
-            self.fee_type_id.code if self.fee_type_id else "",
-            self.accounting_batch_ref or "",
-            self.reconciliation_ref or "",
-            self.invoice_ref or "",
-            self.external_ref or "",
-            self.source_model,
-            self.source_res_id,
-            self.partner_id.display_name if self.partner_id else "",
-            self.club_id.name if self.club_id else "",
-            self.player_id.display_name if self.player_id else "",
-            self.referee_id.display_name if self.referee_id else "",
-            fields.Datetime.to_string(self.exported_on) if self.exported_on else "",
-            fields.Datetime.to_string(self.reconciled_on) if self.reconciled_on else "",
-            fields.Datetime.to_string(self.closed_on) if self.closed_on else "",
-            self.closure_note or "",
-        ]
-
-    @api.model
     def create_from_source(
         self,
         source_record,
@@ -476,8 +425,18 @@ class FederationFinanceEvent(models.Model):
             note: Optional notes.
 
         Returns:
-            The created federation.finance.event record.
+            The existing or newly created federation.finance.event record.
         """
+        existing = self.search(
+            [
+                ("fee_type_id", "=", fee_type.id),
+                ("source_model", "=", source_record._name),
+                ("source_res_id", "=", source_record.id),
+            ],
+            limit=1,
+        )
+        if existing:
+            return existing
         return self.create(
             self._prepare_from_source_vals(
                 source_record,
@@ -489,3 +448,45 @@ class FederationFinanceEvent(models.Model):
                 extra_vals=extra_vals,
             )
         )
+
+    def action_create_invoice(self):
+        """Create an account.move (customer invoice) from this finance event.
+
+        Guards silently when the accounting module is not installed.
+        Raises ValidationError if an invoice already exists or the event
+        is cancelled.
+        """
+        self.ensure_one()
+        if "account.move" not in self.env:
+            return False
+        if self.invoice_ref:
+            raise ValidationError(
+                "An invoice already exists for this finance event."
+            )
+        if self.state == "cancelled":
+            raise ValidationError(
+                "Cannot create an invoice for a cancelled finance event."
+            )
+        partner = (
+            self.partner_id
+            or (self.club_id.partner_id if self.club_id else False)
+        )
+        invoice_vals = {
+            "move_type": "out_invoice",
+            "partner_id": partner.id if partner else False,
+            "invoice_line_ids": [
+                (
+                    0,
+                    0,
+                    {
+                        "name": self.name,
+                        "quantity": 1.0,
+                        "price_unit": self.amount,
+                        "currency_id": self.currency_id.id,
+                    },
+                )
+            ],
+        }
+        invoice = self.env["account.move"].sudo().create(invoice_vals)
+        self.write({"invoice_ref": str(invoice.id)})
+        return invoice

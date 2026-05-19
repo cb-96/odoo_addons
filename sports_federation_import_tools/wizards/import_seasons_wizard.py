@@ -33,7 +33,9 @@ class FederationImportSeasonsWizard(models.TransientModel):
         self.ensure_one()
         baseline_count = self._prepare_import_execution()
         reader = self._get_csv_reader()
-        self._require_columns(reader.fieldnames, ["name", "code", "date_start", "date_end"])
+        self._require_columns(
+            reader.fieldnames, ["name", "code", "date_start", "date_end"]
+        )
 
         Season = self.env["federation.season"]
         line_count = 0
@@ -51,7 +53,13 @@ class FederationImportSeasonsWizard(models.TransientModel):
             state = self._get_row_value(row, "state") or "draft"
 
             if not name or not code or not date_start_value or not date_end_value:
-                self._record_error(errors, error_categories, row_num, "missing_required_field", "Season name, code, date_start, and date_end are required.")
+                self._record_error(
+                    errors,
+                    error_categories,
+                    row_num,
+                    "missing_required_field",
+                    "Season name, code, date_start, and date_end are required.",
+                )
                 error_count += 1
                 continue
 
@@ -59,7 +67,13 @@ class FederationImportSeasonsWizard(models.TransientModel):
                 date_start = datetime.strptime(date_start_value, "%Y-%m-%d").date()
                 date_end = datetime.strptime(date_end_value, "%Y-%m-%d").date()
             except ValueError:
-                self._record_error(errors, error_categories, row_num, "format_error", "Season dates must use YYYY-MM-DD.")
+                self._record_error(
+                    errors,
+                    error_categories,
+                    row_num,
+                    "format_error",
+                    "Season dates must use YYYY-MM-DD.",
+                )
                 error_count += 1
                 continue
 
@@ -99,7 +113,13 @@ class FederationImportSeasonsWizard(models.TransientModel):
                 continue
 
             if state not in {"draft", "open", "closed", "cancelled"}:
-                self._record_error(errors, error_categories, row_num, "format_error", f"Invalid season state '{state}'.")
+                self._record_error(
+                    errors,
+                    error_categories,
+                    row_num,
+                    "format_error",
+                    f"Invalid season state '{state}'.",
+                )
                 error_count += 1
                 continue
 
@@ -107,14 +127,23 @@ class FederationImportSeasonsWizard(models.TransientModel):
             if not existing:
                 existing = Season.search([("name", "=", name)], limit=1)
             if existing:
-                duplicate_key = f"code '{code}'" if existing.code == code else f"name '{name}'"
-                self._record_error(errors, error_categories, row_num, "duplicate_entry", f"Season already exists (matched by {duplicate_key}).")
+                duplicate_key = (
+                    f"code '{code}'" if existing.code == code else f"name '{name}'"
+                )
+                self._record_error(
+                    errors,
+                    error_categories,
+                    row_num,
+                    "duplicate_entry",
+                    f"Season already exists (matched by {duplicate_key}).",
+                )
                 error_count += 1
                 continue
 
-            if not self.dry_run:
-                try:
-                    Season.create({
+            if self._execute_row_create(
+                row_num,
+                lambda: Season.create(
+                    {
                         "name": name,
                         "code": code,
                         "date_start": date_start,
@@ -122,14 +151,14 @@ class FederationImportSeasonsWizard(models.TransientModel):
                         "state": state,
                         "notes": self._get_row_value(row, "notes") or False,
                         **planning_target_values,
-                    })
-                    success_count += 1
-                except Exception as error:
-                    category, message = self._categorize_exception(error)
-                    self._record_error(errors, error_categories, row_num, category, message)
-                    error_count += 1
-            else:
+                    }
+                ),
+                errors,
+                error_categories,
+            ):
                 success_count += 1
+            else:
+                error_count += 1
 
         return self._finalize_import_result(
             line_count,

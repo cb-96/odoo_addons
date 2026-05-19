@@ -52,8 +52,7 @@ class FederationReportSeasonChecklist(models.Model):
     def init(self):
         """Rebuild the SQL view so seasonal checklist columns stay schema-safe."""
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute(
-            """
+        self.env.cr.execute("""
             CREATE VIEW federation_report_season_checklist AS (
                 -- block: season_registration_stats
                 WITH season_registration_stats AS (
@@ -154,5 +153,4 @@ class FederationReportSeasonChecklist(models.Model):
                 LEFT JOIN tournament_stats ts ON ts.season_id = s.id
                 LEFT JOIN workflow_stats ws ON ws.season_id = s.id
             )
-            """
-        )
+            """)

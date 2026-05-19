@@ -1,7 +1,7 @@
 # Integration env variables and how to apply them
 
 Owner: Federation Platform Team
-Last reviewed: 2026-04-17
+Last reviewed: 2026-04-18
 Review cadence: Every release
 
 This repository standardises external-integration configuration (SMTP, OAuth, API keys, webhooks, S3) as environment variables.
@@ -76,3 +76,24 @@ Notes:
 - Values are written as strings; boolean flags like `SMTP_USE_TLS` may need parsing (`param == 'true'` or similar).
 - Use `sudo()` when reading global parameters from code that might run in limited-permission contexts.
 - Avoid logging secrets. Treat `integration.*` parameters as sensitive.
+
+Optional upload malware scan hook
+---------------------------------
+
+Shared upload validation can call an external malware-scanning command before portal or
+partner uploads are accepted. Configure it through these system parameters:
+
+- `sports_federation.attachment_scan.command`
+- `sports_federation.attachment_scan.timeout_seconds`
+
+The configured command receives the raw upload bytes on stdin and these environment variables:
+
+- `SF_ATTACHMENT_POLICY`
+- `SF_ATTACHMENT_FILENAME`
+- `SF_ATTACHMENT_MIMETYPE`
+
+Exit code contract:
+
+- `0`: upload is clean
+- `10`: upload is infected and must be rejected
+- any other non-zero code: verification failed and the upload is rejected with a retry-later message

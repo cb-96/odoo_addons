@@ -114,7 +114,7 @@
             <form string="Integration Partner">
                 <header>
                     <button name="action_rotate_token" string="Rotate Token" type="object" class="btn-secondary"
-                            groups="sports_federation_base.group_federation_manager"/>
+                            groups="sports_federation_base.group_federation_manager" confirm="Rotating the token will invalidate the current credentials. The partner will need the new token to authenticate. Continue?"/>
                 </header>
                 <sheet>
                     <div class="alert alert-info" role="status" invisible="auth_token">
@@ -229,6 +229,7 @@
                 <field name="partner_id"/>
                 <field name="contract_id"/>
                 <field name="filename"/>
+                <field name="idempotency_key" optional="show"/>
                 <field name="state"/>
                 <field name="governance_job_id" optional="show"/>
                 <field name="line_count" optional="show"/>
@@ -256,6 +257,7 @@
                             <field name="partner_id" readonly="1"/>
                             <field name="contract_id" readonly="1"/>
                             <field name="import_template_id" readonly="1"/>
+                            <field name="idempotency_key" readonly="1"/>
                             <field name="source_reference"/>
                         </group>
                         <group>

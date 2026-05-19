@@ -7,6 +7,21 @@ from odoo.addons.portal.controllers.portal import CustomerPortal
 class FederationPortalBase(CustomerPortal):
     """Shared helpers for federation portal controllers."""
 
+    def _raise_not_found(self):
+        """Raise the framework 404 exception for hidden portal resources."""
+        raise request.not_found()
+
+    def _render_access_denied(self):
+        """Render a 403 Access Denied page for portal resources the user cannot access.
+
+        Shows a generic message without leaking record ownership or content.
+        """
+        return request.render(
+            "sports_federation_portal.portal_403_access_denied",
+            {},
+            status=403,
+        )
+
     def _prepare_portal_layout_values(self):
         """Populate shared portal personas with elevated reads for safe layout render.
 
@@ -15,16 +30,50 @@ class FederationPortalBase(CustomerPortal):
         through controlled elevated access.
         """
         values = super()._prepare_portal_layout_values()
-        representative = request.env["federation.club.representative"].sudo().search(
-            [("user_id", "=", request.env.user.id)],
-            limit=1,
+        representative = (
+            request.env["federation.club.representative"]
+            .sudo()
+            .search(
+                [("user_id", "=", request.env.user.id)],
+                limit=1,
+            )
         )
-        referee = request.env["federation.referee"].with_user(request.env.user).sudo()._portal_get_for_user(
-            user=request.env.user
+        referee = (
+            request.env["federation.referee"]
+            .with_user(request.env.user)
+            .sudo()
+            ._portal_get_for_user(user=request.env.user)
         )
         values["federation_representative"] = representative
         values["federation_club"] = representative.club_id if representative else None
         values["federation_referee"] = referee
+
+        # Count badges for portal home sidebar urgency indicators
+        if representative:
+            clubs = representative.mapped("club_id")
+            club_ids = clubs.ids
+            values["federation_pending_duties_count"] = (
+                request.env["federation.match.club.referee.duty"]
+                .sudo()
+                .search_count([
+                    ("club_id", "in", club_ids),
+                    ("state", "in", ("open", "rejected")),
+                ])
+            )
+            values["federation_pending_results_count"] = (
+                request.env["federation.match.result"]
+                .sudo()
+                .search_count([
+                    ("state", "=", "pending_approval"),
+                    "|",
+                    ("match_id.home_team_id.club_id", "in", club_ids),
+                    ("match_id.away_team_id.club_id", "in", club_ids),
+                ])
+            ) if "federation.match.result" in request.env else 0
+        else:
+            values["federation_pending_duties_count"] = 0
+            values["federation_pending_results_count"] = 0
+
         return values
 
     def _get_portal_clubs(self):

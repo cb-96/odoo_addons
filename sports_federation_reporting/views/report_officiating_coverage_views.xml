@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="view_federation_report_officiating_coverage_list" model="ir.ui.view">
+        <field name="name">federation.report.officiating.coverage.list</field>
+        <field name="model">federation.report.officiating.coverage</field>
+        <field name="arch" type="xml">
+            <list string="Referee Assignment Coverage">
+                <field name="tournament_id"/>
+                <field name="total_matches"/>
+                <field name="covered_matches"/>
+                <field name="uncovered_matches"
+                       decoration-danger="uncovered_matches > 0"/>
+                <field name="coverage_pct"
+                       decoration-danger="coverage_pct &lt; 50"
+                       decoration-warning="coverage_pct &lt; 80 and coverage_pct &gt;= 50"
+                       decoration-success="coverage_pct &gt;= 80"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Pivot View -->
+    <record id="view_federation_report_officiating_coverage_pivot" model="ir.ui.view">
+        <field name="name">federation.report.officiating.coverage.pivot</field>
+        <field name="model">federation.report.officiating.coverage</field>
+        <field name="arch" type="xml">
+            <pivot string="Referee Assignment Coverage">
+                <field name="tournament_id" type="row"/>
+                <field name="total_matches" type="measure"/>
+                <field name="covered_matches" type="measure"/>
+                <field name="uncovered_matches" type="measure"/>
+                <field name="coverage_pct" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_federation_report_officiating_coverage" model="ir.actions.act_window">
+        <field name="name">Referee Coverage</field>
+        <field name="res_model">federation.report.officiating.coverage</field>
+        <field name="view_mode">list,pivot</field>
+    </record>
+
+</odoo>

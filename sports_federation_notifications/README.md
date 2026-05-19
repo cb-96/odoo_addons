@@ -58,7 +58,7 @@ Reusable service methods callable by any module.
 | File | Content |
 |------|---------|
 | `data/mail_templates.xml` | Generic contact, registration, publication, result, standings, finance, and referee assignment templates |
-| `data/ir_cron.xml` | Daily notification scan scheduled action (inactive by default) |
+| `data/ir_cron.xml` | Daily notification scan plus daily notification-log retention cleanup |
 
 ## Key Behaviours
 
@@ -71,6 +71,7 @@ Reusable service methods callable by any module.
 7. **Scheduled scan** — Cron logs stale draft registration reminders and triggers the officiating follow-up activities above.
 8. **Failure visibility without transaction rollback** — Missing recipients or template failures create `failed` notification logs instead of blocking the business workflow.
 9. **Suspension delivery fallback** — `send_suspension_issued()` now sends a direct email and logs the outcome even when no dedicated mail template exists yet.
+10. **Retention cleanup** — Notification logs are purged automatically after their state-specific retention windows in `DATA_RETENTION_POLICY.md` expire.
 
 ## Integration configuration (env)
 

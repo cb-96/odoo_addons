@@ -100,6 +100,9 @@ before the match goes live.
 5. **Assignment state machine** — assigned → confirmed → done / cancelled.
 6. **Tournament context** — Assignments carry a computed tournament reference for
    filtering and reporting.
+7. **Odoo 19-safe view inheritance** — the match readiness stat button inherits the
+   base match form with `hasclass('oe_title')`, which avoids the platform warning
+   triggered by raw `@class` XPath selectors during module loading.
 7. **Finance bridge integration** — When `sports_federation_finance_bridge` is installed,
    assignments that reach `done` automatically create reusable reimbursement events.
 8. **Portal self-service** — When `sports_federation_portal` is installed, linked officials can review, confirm, or decline their own draft assignments through the portal.

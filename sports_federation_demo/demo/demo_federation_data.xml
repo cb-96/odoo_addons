@@ -1,0 +1,1370 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ============================================================ -->
+        <!-- CLUBS                                                         -->
+        <!-- ============================================================ -->
+        <record id="club_fc_united" model="federation.club">
+            <field name="name">FC United</field>
+            <field name="code">FCU</field>
+            <field name="city">Brussels</field>
+            <field name="email">info@fcunited.example</field>
+            <field name="phone">+32 2 100 0001</field>
+            <field name="founded_date">1998-03-15</field>
+        </record>
+
+        <record id="club_racing_stars" model="federation.club">
+            <field name="name">Racing Stars</field>
+            <field name="code">RCS</field>
+            <field name="city">Antwerp</field>
+            <field name="email">info@racingstars.example</field>
+            <field name="phone">+32 3 200 0002</field>
+            <field name="founded_date">2005-07-01</field>
+        </record>
+
+        <record id="club_athletic_city" model="federation.club">
+            <field name="name">Athletic City</field>
+            <field name="code">ATC</field>
+            <field name="city">Ghent</field>
+            <field name="email">info@athleticcity.example</field>
+            <field name="phone">+32 9 300 0003</field>
+            <field name="founded_date">2010-01-20</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- TEAMS  (2 per club)                                           -->
+        <!-- ============================================================ -->
+        <record id="team_fcu_senior_m" model="federation.team">
+            <field name="name">FC United Senior Men</field>
+            <field name="code">FCU-SM</field>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="category">senior</field>
+            <field name="gender">male</field>
+        </record>
+        <record id="team_fcu_youth_m" model="federation.team">
+            <field name="name">FC United Youth</field>
+            <field name="code">FCU-YM</field>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="category">youth</field>
+            <field name="gender">male</field>
+        </record>
+
+        <record id="team_rcs_senior_m" model="federation.team">
+            <field name="name">Racing Stars Senior Men</field>
+            <field name="code">RCS-SM</field>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="category">senior</field>
+            <field name="gender">male</field>
+        </record>
+        <record id="team_rcs_senior_w" model="federation.team">
+            <field name="name">Racing Stars Senior Women</field>
+            <field name="code">RCS-SW</field>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="category">senior</field>
+            <field name="gender">female</field>
+        </record>
+
+        <record id="team_atc_senior_m" model="federation.team">
+            <field name="name">Athletic City Senior Men</field>
+            <field name="code">ATC-SM</field>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="category">senior</field>
+            <field name="gender">male</field>
+        </record>
+        <record id="team_atc_youth_m" model="federation.team">
+            <field name="name">Athletic City Youth</field>
+            <field name="code">ATC-YM</field>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="category">youth</field>
+            <field name="gender">male</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- SEASON                                                        -->
+        <!-- ============================================================ -->
+        <record id="season_2025" model="federation.season">
+            <field name="name">Season 2025-2026</field>
+            <field name="code">S2526</field>
+            <field name="date_start">2025-09-01</field>
+            <field name="date_end">2026-06-30</field>
+            <field name="state">open</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- RULE SET                                                      -->
+        <!-- ============================================================ -->
+        <record id="ruleset_standard" model="federation.rule.set">
+            <field name="name">Standard League Rules</field>
+            <field name="code">STD-LR</field>
+            <field name="points_win">3</field>
+            <field name="points_draw">1</field>
+            <field name="points_loss">0</field>
+            <field name="squad_min_size">11</field>
+            <field name="squad_max_size">23</field>
+            <field name="seeding_mode">none</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- PLAYERS  — FC United (4)                                      -->
+        <!-- ============================================================ -->
+        <record id="player_fcu_dupont" model="federation.player">
+            <field name="first_name">Marc</field>
+            <field name="last_name">Dupont</field>
+            <field name="birth_date">1996-02-14</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_fcu_janssens" model="federation.player">
+            <field name="first_name">Lucas</field>
+            <field name="last_name">Janssens</field>
+            <field name="birth_date">1998-11-03</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_fcu_verhoeven" model="federation.player">
+            <field name="first_name">Thomas</field>
+            <field name="last_name">Verhoeven</field>
+            <field name="birth_date">2000-06-22</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_fcu_mertens" model="federation.player">
+            <field name="first_name">Kevin</field>
+            <field name="last_name">Mertens</field>
+            <field name="birth_date">1995-01-30</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="state">active</field>
+        </record>
+
+        <!-- PLAYERS  — Racing Stars (4 men + 3 women)                    -->
+        <record id="player_rcs_hermans" model="federation.player">
+            <field name="first_name">David</field>
+            <field name="last_name">Hermans</field>
+            <field name="birth_date">1997-04-18</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_rcs_claes" model="federation.player">
+            <field name="first_name">Peter</field>
+            <field name="last_name">Claes</field>
+            <field name="birth_date">1999-08-12</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_rcs_maes" model="federation.player">
+            <field name="first_name">Joris</field>
+            <field name="last_name">Maes</field>
+            <field name="birth_date">2001-03-05</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_rcs_willems" model="federation.player">
+            <field name="first_name">Anton</field>
+            <field name="last_name">Willems</field>
+            <field name="birth_date">1994-12-09</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_rcs_laurent" model="federation.player">
+            <field name="first_name">Sarah</field>
+            <field name="last_name">Laurent</field>
+            <field name="birth_date">1999-05-21</field>
+            <field name="gender">female</field>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_rcs_wouters" model="federation.player">
+            <field name="first_name">Julie</field>
+            <field name="last_name">Wouters</field>
+            <field name="birth_date">2000-09-15</field>
+            <field name="gender">female</field>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_rcs_declercq" model="federation.player">
+            <field name="first_name">Emma</field>
+            <field name="last_name">Declercq</field>
+            <field name="birth_date">2001-01-28</field>
+            <field name="gender">female</field>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="state">active</field>
+        </record>
+
+        <!-- PLAYERS  — Athletic City (4)                                  -->
+        <record id="player_atc_peeters" model="federation.player">
+            <field name="first_name">Robin</field>
+            <field name="last_name">Peeters</field>
+            <field name="birth_date">1997-07-10</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_atc_goossens" model="federation.player">
+            <field name="first_name">Sander</field>
+            <field name="last_name">Goossens</field>
+            <field name="birth_date">1998-10-02</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_atc_de_smedt" model="federation.player">
+            <field name="first_name">Yves</field>
+            <field name="last_name">De Smedt</field>
+            <field name="birth_date">2000-04-17</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_atc_van_damme" model="federation.player">
+            <field name="first_name">Bram</field>
+            <field name="last_name">Van Damme</field>
+            <field name="birth_date">1996-11-25</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="state">active</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- PLAYER LICENSES (one per player for 2025-2026 season)         -->
+        <!-- ============================================================ -->
+        <record id="lic_fcu_dupont" model="federation.player.license">
+            <field name="name">LIC-FCU-001</field>
+            <field name="player_id" ref="player_fcu_dupont"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="issue_date">2025-08-15</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+        <record id="lic_fcu_janssens" model="federation.player.license">
+            <field name="name">LIC-FCU-002</field>
+            <field name="player_id" ref="player_fcu_janssens"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="issue_date">2025-08-15</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+        <record id="lic_fcu_verhoeven" model="federation.player.license">
+            <field name="name">LIC-FCU-003</field>
+            <field name="player_id" ref="player_fcu_verhoeven"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="issue_date">2025-08-15</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+        <record id="lic_fcu_mertens" model="federation.player.license">
+            <field name="name">LIC-FCU-004</field>
+            <field name="player_id" ref="player_fcu_mertens"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="issue_date">2025-08-15</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+
+        <record id="lic_rcs_hermans" model="federation.player.license">
+            <field name="name">LIC-RCS-001</field>
+            <field name="player_id" ref="player_rcs_hermans"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="issue_date">2025-08-20</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+        <record id="lic_rcs_claes" model="federation.player.license">
+            <field name="name">LIC-RCS-002</field>
+            <field name="player_id" ref="player_rcs_claes"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="issue_date">2025-08-20</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+        <record id="lic_rcs_maes" model="federation.player.license">
+            <field name="name">LIC-RCS-003</field>
+            <field name="player_id" ref="player_rcs_maes"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="issue_date">2025-08-20</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+        <record id="lic_rcs_willems" model="federation.player.license">
+            <field name="name">LIC-RCS-004</field>
+            <field name="player_id" ref="player_rcs_willems"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="issue_date">2025-08-20</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+        <record id="lic_rcs_laurent" model="federation.player.license">
+            <field name="name">LIC-RCS-005</field>
+            <field name="player_id" ref="player_rcs_laurent"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="issue_date">2025-08-20</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+        <record id="lic_rcs_wouters" model="federation.player.license">
+            <field name="name">LIC-RCS-006</field>
+            <field name="player_id" ref="player_rcs_wouters"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="issue_date">2025-08-20</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+        <record id="lic_rcs_declercq" model="federation.player.license">
+            <field name="name">LIC-RCS-007</field>
+            <field name="player_id" ref="player_rcs_declercq"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="issue_date">2025-08-20</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+
+        <record id="lic_atc_peeters" model="federation.player.license">
+            <field name="name">LIC-ATC-001</field>
+            <field name="player_id" ref="player_atc_peeters"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="issue_date">2025-08-18</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+        <record id="lic_atc_goossens" model="federation.player.license">
+            <field name="name">LIC-ATC-002</field>
+            <field name="player_id" ref="player_atc_goossens"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="issue_date">2025-08-18</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+        <record id="lic_atc_de_smedt" model="federation.player.license">
+            <field name="name">LIC-ATC-003</field>
+            <field name="player_id" ref="player_atc_de_smedt"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="issue_date">2025-08-18</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+        <record id="lic_atc_van_damme" model="federation.player.license">
+            <field name="name">LIC-ATC-004</field>
+            <field name="player_id" ref="player_atc_van_damme"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="issue_date">2025-08-18</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">senior</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- SEASON REGISTRATIONS (3 senior-men teams)                     -->
+        <!-- ============================================================ -->
+        <record id="reg_fcu_senior_m" model="federation.season.registration">
+            <field name="season_id" ref="season_2025"/>
+            <field name="team_id" ref="team_fcu_senior_m"/>
+            <field name="registration_date">2025-08-01</field>
+            <field name="state">confirmed</field>
+        </record>
+        <record id="reg_rcs_senior_m" model="federation.season.registration">
+            <field name="season_id" ref="season_2025"/>
+            <field name="team_id" ref="team_rcs_senior_m"/>
+            <field name="registration_date">2025-08-03</field>
+            <field name="state">confirmed</field>
+        </record>
+        <record id="reg_atc_senior_m" model="federation.season.registration">
+            <field name="season_id" ref="season_2025"/>
+            <field name="team_id" ref="team_atc_senior_m"/>
+            <field name="registration_date">2025-08-05</field>
+            <field name="state">confirmed</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- COMPETITION + EDITION                                         -->
+        <!-- ============================================================ -->
+        <record id="comp_national_league" model="federation.competition">
+            <field name="name">National Senior League</field>
+            <field name="code">NSL</field>
+            <field name="competition_type">league</field>
+            <field name="rule_set_id" ref="ruleset_standard"/>
+            <field name="state">active</field>
+        </record>
+        <record id="edition_nsl_2025" model="federation.competition.edition">
+            <field name="name">National Senior League 2025-2026</field>
+            <field name="competition_id" ref="comp_national_league"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="rule_set_id" ref="ruleset_standard"/>
+            <field name="date_start">2025-09-01</field>
+            <field name="date_end">2026-06-30</field>
+            <field name="state">open</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- TOURNAMENT                                                    -->
+        <!-- ============================================================ -->
+        <record id="tournament_spring_cup" model="federation.tournament">
+            <field name="name">Spring Cup 2026</field>
+            <field name="code">SC2026</field>
+            <field name="category">senior</field>
+            <field name="gender">male</field>
+            <field name="date_start">2026-04-20</field>
+            <field name="date_end">2026-05-10</field>
+            <field name="location">Brussels National Stadium</field>
+            <field name="season_id" ref="season_2025"/>
+            <field name="edition_id" ref="edition_nsl_2025"/>
+            <field name="competition_id" ref="comp_national_league"/>
+            <field name="rule_set_id" ref="ruleset_standard"/>
+            <field name="tournament_type">multi_day</field>
+            <field name="state">open</field>
+            <field name="max_participants">4</field>
+        </record>
+
+        <!-- STAGE -->
+        <record id="stage_group" model="federation.tournament.stage">
+            <field name="name">Group Stage</field>
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="stage_type">group</field>
+            <field name="date_start">2026-04-20</field>
+            <field name="date_end">2026-05-10</field>
+        </record>
+
+        <!-- GROUP -->
+        <record id="group_a" model="federation.tournament.group">
+            <field name="name">Group A</field>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="max_participants">3</field>
+        </record>
+
+        <!-- PARTICIPANTS -->
+        <record id="part_fcu" model="federation.tournament.participant">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="team_id" ref="team_fcu_senior_m"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="seed">1</field>
+            <field name="state">confirmed</field>
+        </record>
+        <record id="part_rcs" model="federation.tournament.participant">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="team_id" ref="team_rcs_senior_m"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="seed">2</field>
+            <field name="state">confirmed</field>
+        </record>
+        <record id="part_atc" model="federation.tournament.participant">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="team_id" ref="team_atc_senior_m"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="seed">3</field>
+            <field name="state">confirmed</field>
+        </record>
+
+        <!-- ROUNDS -->
+        <record id="round_1" model="federation.tournament.round">
+            <field name="name">Round 1</field>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="sequence">1</field>
+            <field name="round_date">2026-04-24</field>
+            <field name="state">completed</field>
+        </record>
+        <record id="round_2" model="federation.tournament.round">
+            <field name="name">Round 2</field>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="sequence">2</field>
+            <field name="round_date">2026-05-01</field>
+            <field name="state">scheduled</field>
+        </record>
+        <record id="round_3" model="federation.tournament.round">
+            <field name="name">Round 3</field>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="sequence">3</field>
+            <field name="round_date">2026-05-08</field>
+            <field name="state">scheduled</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- MATCHES  (round-robin: 3 matches)                             -->
+        <!-- ============================================================ -->
+
+        <!-- Match 1: RCS vs ATC — completed -->
+        <record id="match_rcs_atc" model="federation.match">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="round_id" ref="round_1"/>
+            <field name="home_team_id" ref="team_rcs_senior_m"/>
+            <field name="away_team_id" ref="team_atc_senior_m"/>
+            <field name="date_scheduled">2026-04-24 14:00:00</field>
+            <field name="home_score">2</field>
+            <field name="away_score">1</field>
+            <field name="state">done</field>
+        </record>
+
+        <!-- Match 2: FCU vs RCS — scheduled -->
+        <record id="match_fcu_rcs" model="federation.match">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="round_id" ref="round_2"/>
+            <field name="home_team_id" ref="team_fcu_senior_m"/>
+            <field name="away_team_id" ref="team_rcs_senior_m"/>
+            <field name="date_scheduled">2026-05-01 14:00:00</field>
+            <field name="state">scheduled</field>
+        </record>
+
+        <!-- Match 3: FCU vs ATC — scheduled -->
+        <record id="match_fcu_atc" model="federation.match">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="round_id" ref="round_3"/>
+            <field name="home_team_id" ref="team_fcu_senior_m"/>
+            <field name="away_team_id" ref="team_atc_senior_m"/>
+            <field name="date_scheduled">2026-05-08 14:00:00</field>
+            <field name="state">scheduled</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- ROSTERS  (one per senior-men team)                            -->
+        <!-- ============================================================ -->
+        <record id="roster_fcu" model="federation.team.roster">
+            <field name="team_id" ref="team_fcu_senior_m"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="season_registration_id" ref="reg_fcu_senior_m"/>
+            <field name="competition_id" ref="comp_national_league"/>
+            <field name="rule_set_id" ref="ruleset_standard"/>
+            <field name="status">active</field>
+            <field name="valid_from">2025-09-01</field>
+            <field name="valid_to">2026-06-30</field>
+        </record>
+
+        <!-- FCU roster lines -->
+        <record id="rline_fcu_dupont" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_fcu"/>
+            <field name="player_id" ref="player_fcu_dupont"/>
+            <field name="license_id" ref="lic_fcu_dupont"/>
+            <field name="jersey_number">10</field>
+            <field name="is_captain" eval="True"/>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_fcu_janssens" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_fcu"/>
+            <field name="player_id" ref="player_fcu_janssens"/>
+            <field name="license_id" ref="lic_fcu_janssens"/>
+            <field name="jersey_number">7</field>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_fcu_verhoeven" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_fcu"/>
+            <field name="player_id" ref="player_fcu_verhoeven"/>
+            <field name="license_id" ref="lic_fcu_verhoeven"/>
+            <field name="jersey_number">4</field>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_fcu_mertens" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_fcu"/>
+            <field name="player_id" ref="player_fcu_mertens"/>
+            <field name="license_id" ref="lic_fcu_mertens"/>
+            <field name="jersey_number">9</field>
+            <field name="status">active</field>
+        </record>
+
+        <record id="roster_rcs" model="federation.team.roster">
+            <field name="team_id" ref="team_rcs_senior_m"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="season_registration_id" ref="reg_rcs_senior_m"/>
+            <field name="competition_id" ref="comp_national_league"/>
+            <field name="rule_set_id" ref="ruleset_standard"/>
+            <field name="status">active</field>
+            <field name="valid_from">2025-09-01</field>
+            <field name="valid_to">2026-06-30</field>
+        </record>
+
+        <!-- RCS roster lines -->
+        <record id="rline_rcs_hermans" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_rcs"/>
+            <field name="player_id" ref="player_rcs_hermans"/>
+            <field name="license_id" ref="lic_rcs_hermans"/>
+            <field name="jersey_number">11</field>
+            <field name="is_captain" eval="True"/>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_rcs_claes" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_rcs"/>
+            <field name="player_id" ref="player_rcs_claes"/>
+            <field name="license_id" ref="lic_rcs_claes"/>
+            <field name="jersey_number">5</field>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_rcs_maes" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_rcs"/>
+            <field name="player_id" ref="player_rcs_maes"/>
+            <field name="license_id" ref="lic_rcs_maes"/>
+            <field name="jersey_number">8</field>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_rcs_willems" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_rcs"/>
+            <field name="player_id" ref="player_rcs_willems"/>
+            <field name="license_id" ref="lic_rcs_willems"/>
+            <field name="jersey_number">3</field>
+            <field name="status">active</field>
+        </record>
+
+        <record id="roster_atc" model="federation.team.roster">
+            <field name="team_id" ref="team_atc_senior_m"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="season_registration_id" ref="reg_atc_senior_m"/>
+            <field name="competition_id" ref="comp_national_league"/>
+            <field name="rule_set_id" ref="ruleset_standard"/>
+            <field name="status">active</field>
+            <field name="valid_from">2025-09-01</field>
+            <field name="valid_to">2026-06-30</field>
+        </record>
+
+        <!-- ATC roster lines -->
+        <record id="rline_atc_peeters" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_atc"/>
+            <field name="player_id" ref="player_atc_peeters"/>
+            <field name="license_id" ref="lic_atc_peeters"/>
+            <field name="jersey_number">6</field>
+            <field name="is_captain" eval="True"/>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_atc_goossens" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_atc"/>
+            <field name="player_id" ref="player_atc_goossens"/>
+            <field name="license_id" ref="lic_atc_goossens"/>
+            <field name="jersey_number">2</field>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_atc_de_smedt" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_atc"/>
+            <field name="player_id" ref="player_atc_de_smedt"/>
+            <field name="license_id" ref="lic_atc_de_smedt"/>
+            <field name="jersey_number">14</field>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_atc_van_damme" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_atc"/>
+            <field name="player_id" ref="player_atc_van_damme"/>
+            <field name="license_id" ref="lic_atc_van_damme"/>
+            <field name="jersey_number">12</field>
+            <field name="status">active</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- MATCH SHEETS  (for the completed match: RCS vs ATC)           -->
+        <!-- ============================================================ -->
+        <record id="sheet_rcs_home" model="federation.match.sheet">
+            <field name="name">RCS vs ATC – Home Sheet</field>
+            <field name="match_id" ref="match_rcs_atc"/>
+            <field name="team_id" ref="team_rcs_senior_m"/>
+            <field name="roster_id" ref="roster_rcs"/>
+            <field name="side">home</field>
+            <field name="state">submitted</field>
+            <field name="coach_name">Jan Van Hoeck</field>
+        </record>
+
+        <record id="sline_rcs_hermans" model="federation.match.sheet.line">
+            <field name="match_sheet_id" ref="sheet_rcs_home"/>
+            <field name="player_id" ref="player_rcs_hermans"/>
+            <field name="roster_line_id" ref="rline_rcs_hermans"/>
+            <field name="jersey_number">11</field>
+            <field name="is_starter" eval="True"/>
+            <field name="is_captain" eval="True"/>
+        </record>
+        <record id="sline_rcs_claes" model="federation.match.sheet.line">
+            <field name="match_sheet_id" ref="sheet_rcs_home"/>
+            <field name="player_id" ref="player_rcs_claes"/>
+            <field name="roster_line_id" ref="rline_rcs_claes"/>
+            <field name="jersey_number">5</field>
+            <field name="is_starter" eval="True"/>
+        </record>
+        <record id="sline_rcs_maes" model="federation.match.sheet.line">
+            <field name="match_sheet_id" ref="sheet_rcs_home"/>
+            <field name="player_id" ref="player_rcs_maes"/>
+            <field name="roster_line_id" ref="rline_rcs_maes"/>
+            <field name="jersey_number">8</field>
+            <field name="is_starter" eval="True"/>
+        </record>
+        <record id="sline_rcs_willems" model="federation.match.sheet.line">
+            <field name="match_sheet_id" ref="sheet_rcs_home"/>
+            <field name="player_id" ref="player_rcs_willems"/>
+            <field name="roster_line_id" ref="rline_rcs_willems"/>
+            <field name="jersey_number">3</field>
+            <field name="is_substitute" eval="True"/>
+            <field name="entered_minute">62</field>
+        </record>
+
+        <record id="sheet_atc_away" model="federation.match.sheet">
+            <field name="name">RCS vs ATC – Away Sheet</field>
+            <field name="match_id" ref="match_rcs_atc"/>
+            <field name="team_id" ref="team_atc_senior_m"/>
+            <field name="roster_id" ref="roster_atc"/>
+            <field name="side">away</field>
+            <field name="state">submitted</field>
+            <field name="coach_name">Philippe Lemaire</field>
+        </record>
+
+        <record id="sline_atc_peeters" model="federation.match.sheet.line">
+            <field name="match_sheet_id" ref="sheet_atc_away"/>
+            <field name="player_id" ref="player_atc_peeters"/>
+            <field name="roster_line_id" ref="rline_atc_peeters"/>
+            <field name="jersey_number">6</field>
+            <field name="is_starter" eval="True"/>
+            <field name="is_captain" eval="True"/>
+        </record>
+        <record id="sline_atc_goossens" model="federation.match.sheet.line">
+            <field name="match_sheet_id" ref="sheet_atc_away"/>
+            <field name="player_id" ref="player_atc_goossens"/>
+            <field name="roster_line_id" ref="rline_atc_goossens"/>
+            <field name="jersey_number">2</field>
+            <field name="is_starter" eval="True"/>
+        </record>
+        <record id="sline_atc_de_smedt" model="federation.match.sheet.line">
+            <field name="match_sheet_id" ref="sheet_atc_away"/>
+            <field name="player_id" ref="player_atc_de_smedt"/>
+            <field name="roster_line_id" ref="rline_atc_de_smedt"/>
+            <field name="jersey_number">14</field>
+            <field name="is_starter" eval="True"/>
+        </record>
+        <record id="sline_atc_van_damme" model="federation.match.sheet.line">
+            <field name="match_sheet_id" ref="sheet_atc_away"/>
+            <field name="player_id" ref="player_atc_van_damme"/>
+            <field name="roster_line_id" ref="rline_atc_van_damme"/>
+            <field name="jersey_number">12</field>
+            <field name="is_substitute" eval="True"/>
+            <field name="entered_minute">71</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- ADDITIONAL CLUBS                                              -->
+        <!-- ============================================================ -->
+        <record id="club_dynamo" model="federation.club">
+            <field name="name">Dynamo FC</field>
+            <field name="code">DYN</field>
+            <field name="city">Liège</field>
+            <field name="email">info@dynamofc.example</field>
+            <field name="phone">+32 4 400 0004</field>
+            <field name="founded_date">2003-05-12</field>
+        </record>
+
+        <record id="club_belgica" model="federation.club">
+            <field name="name">Belgica United</field>
+            <field name="code">BEL</field>
+            <field name="city">Namur</field>
+            <field name="email">info@belgicaunited.example</field>
+            <field name="phone">+32 81 500 0005</field>
+            <field name="founded_date">2008-09-30</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- ADDITIONAL TEAMS                                              -->
+        <!-- ============================================================ -->
+        <record id="team_dyn_senior_m" model="federation.team">
+            <field name="name">Dynamo FC Senior Men</field>
+            <field name="code">DYN-SM</field>
+            <field name="club_id" ref="club_dynamo"/>
+            <field name="category">senior</field>
+            <field name="gender">male</field>
+        </record>
+
+        <record id="team_bel_senior_m" model="federation.team">
+            <field name="name">Belgica United Senior Men</field>
+            <field name="code">BEL-SM</field>
+            <field name="club_id" ref="club_belgica"/>
+            <field name="category">senior</field>
+            <field name="gender">male</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- ADDITIONAL PLAYERS  — FC United Youth (2)                     -->
+        <!-- ============================================================ -->
+        <record id="player_fcu_youth_adam" model="federation.player">
+            <field name="first_name">Adam</field>
+            <field name="last_name">Fontaine</field>
+            <field name="birth_date">2007-03-11</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_fcu_youth_leo" model="federation.player">
+            <field name="first_name">Léo</field>
+            <field name="last_name">Renard</field>
+            <field name="birth_date">2008-07-22</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="state">active</field>
+        </record>
+
+        <!-- ADDITIONAL PLAYERS  — Athletic City Youth (3)                 -->
+        <record id="player_atc_youth_sam" model="federation.player">
+            <field name="first_name">Sam</field>
+            <field name="last_name">Bogaert</field>
+            <field name="birth_date">2006-11-04</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_atc_youth_nico" model="federation.player">
+            <field name="first_name">Nico</field>
+            <field name="last_name">Puts</field>
+            <field name="birth_date">2007-09-16</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="state">active</field>
+        </record>
+        <record id="player_atc_youth_ben" model="federation.player">
+            <field name="first_name">Ben</field>
+            <field name="last_name">Stevens</field>
+            <field name="birth_date">2008-02-28</field>
+            <field name="gender">male</field>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="state">active</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- ADDITIONAL PLAYER LICENSES                                    -->
+        <!-- ============================================================ -->
+        <record id="lic_fcu_youth_adam" model="federation.player.license">
+            <field name="name">LIC-FCU-005</field>
+            <field name="player_id" ref="player_fcu_youth_adam"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="issue_date">2025-08-15</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">youth</field>
+        </record>
+        <record id="lic_fcu_youth_leo" model="federation.player.license">
+            <field name="name">LIC-FCU-006</field>
+            <field name="player_id" ref="player_fcu_youth_leo"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="issue_date">2025-08-15</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">youth</field>
+        </record>
+        <record id="lic_atc_youth_sam" model="federation.player.license">
+            <field name="name">LIC-ATC-005</field>
+            <field name="player_id" ref="player_atc_youth_sam"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="issue_date">2025-08-18</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">youth</field>
+        </record>
+        <record id="lic_atc_youth_nico" model="federation.player.license">
+            <field name="name">LIC-ATC-006</field>
+            <field name="player_id" ref="player_atc_youth_nico"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="issue_date">2025-08-18</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">youth</field>
+        </record>
+        <record id="lic_atc_youth_ben" model="federation.player.license">
+            <field name="name">LIC-ATC-007</field>
+            <field name="player_id" ref="player_atc_youth_ben"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="club_id" ref="club_athletic_city"/>
+            <field name="issue_date">2025-08-18</field>
+            <field name="expiry_date">2026-06-30</field>
+            <field name="state">active</field>
+            <field name="category">youth</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- ADDITIONAL SEASON REGISTRATIONS                               -->
+        <!-- ============================================================ -->
+        <record id="reg_rcs_senior_w" model="federation.season.registration">
+            <field name="season_id" ref="season_2025"/>
+            <field name="team_id" ref="team_rcs_senior_w"/>
+            <field name="registration_date">2025-08-04</field>
+            <field name="state">confirmed</field>
+        </record>
+        <record id="reg_fcu_youth_m" model="federation.season.registration">
+            <field name="season_id" ref="season_2025"/>
+            <field name="team_id" ref="team_fcu_youth_m"/>
+            <field name="registration_date">2025-08-06</field>
+            <field name="state">confirmed</field>
+        </record>
+        <record id="reg_atc_youth_m" model="federation.season.registration">
+            <field name="season_id" ref="season_2025"/>
+            <field name="team_id" ref="team_atc_youth_m"/>
+            <field name="registration_date">2025-08-07</field>
+            <field name="state">confirmed</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- TOURNAMENT: complete match_fcu_rcs and match_fcu_atc          -->
+        <!-- ============================================================ -->
+        <record id="match_fcu_rcs" model="federation.match">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="round_id" ref="round_2"/>
+            <field name="home_team_id" ref="team_fcu_senior_m"/>
+            <field name="away_team_id" ref="team_rcs_senior_m"/>
+            <field name="date_scheduled">2026-05-01 14:00:00</field>
+            <field name="home_score">1</field>
+            <field name="away_score">1</field>
+            <field name="state">done</field>
+        </record>
+        <record id="match_fcu_atc" model="federation.match">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="round_id" ref="round_3"/>
+            <field name="home_team_id" ref="team_fcu_senior_m"/>
+            <field name="away_team_id" ref="team_atc_senior_m"/>
+            <field name="date_scheduled">2026-05-08 14:00:00</field>
+            <field name="home_score">3</field>
+            <field name="away_score">0</field>
+            <field name="state">done</field>
+        </record>
+
+        <!-- 4th Group A participant: DYN-SM                              -->
+        <record id="part_dyn" model="federation.tournament.participant">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="team_id" ref="team_dyn_senior_m"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="seed">4</field>
+            <field name="state">confirmed</field>
+        </record>
+
+        <!-- Round 4 for DYN matches                                      -->
+        <record id="round_4" model="federation.tournament.round">
+            <field name="name">Round 4</field>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="sequence">4</field>
+            <field name="round_date">2026-05-15</field>
+            <field name="state">completed</field>
+        </record>
+
+        <!-- 3 completed matches involving DYN                            -->
+        <record id="match_fcu_dyn" model="federation.match">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="round_id" ref="round_4"/>
+            <field name="home_team_id" ref="team_fcu_senior_m"/>
+            <field name="away_team_id" ref="team_dyn_senior_m"/>
+            <field name="date_scheduled">2026-05-15 14:00:00</field>
+            <field name="home_score">2</field>
+            <field name="away_score">0</field>
+            <field name="state">done</field>
+        </record>
+        <record id="match_rcs_dyn" model="federation.match">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="round_id" ref="round_4"/>
+            <field name="home_team_id" ref="team_rcs_senior_m"/>
+            <field name="away_team_id" ref="team_dyn_senior_m"/>
+            <field name="date_scheduled">2026-05-15 16:00:00</field>
+            <field name="home_score">0</field>
+            <field name="away_score">2</field>
+            <field name="state">done</field>
+        </record>
+        <record id="match_atc_dyn" model="federation.match">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="round_id" ref="round_4"/>
+            <field name="home_team_id" ref="team_atc_senior_m"/>
+            <field name="away_team_id" ref="team_dyn_senior_m"/>
+            <field name="date_scheduled">2026-05-15 18:00:00</field>
+            <field name="home_score">1</field>
+            <field name="away_score">1</field>
+            <field name="state">done</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- KNOCKOUT STAGE + GROUP B                                      -->
+        <!-- ============================================================ -->
+        <record id="stage_knockout" model="federation.tournament.stage">
+            <field name="name">Knockout Stage</field>
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="stage_type">knockout</field>
+            <field name="date_start">2026-05-20</field>
+            <field name="date_end">2026-05-31</field>
+        </record>
+
+        <record id="group_b" model="federation.tournament.group">
+            <field name="name">Group B</field>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="max_participants">4</field>
+        </record>
+
+        <!-- Group B participants                                          -->
+        <record id="part_fcu_youth" model="federation.tournament.participant">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="team_id" ref="team_fcu_youth_m"/>
+            <field name="group_id" ref="group_b"/>
+            <field name="seed">1</field>
+            <field name="state">confirmed</field>
+        </record>
+        <record id="part_rcs_sw" model="federation.tournament.participant">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="team_id" ref="team_rcs_senior_w"/>
+            <field name="group_id" ref="group_b"/>
+            <field name="seed">2</field>
+            <field name="state">confirmed</field>
+        </record>
+        <record id="part_atc_youth" model="federation.tournament.participant">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="team_id" ref="team_atc_youth_m"/>
+            <field name="group_id" ref="group_b"/>
+            <field name="seed">3</field>
+            <field name="state">confirmed</field>
+        </record>
+        <record id="part_bel" model="federation.tournament.participant">
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="team_id" ref="team_bel_senior_m"/>
+            <field name="group_id" ref="group_b"/>
+            <field name="seed">4</field>
+            <field name="state">confirmed</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- ADDITIONAL ROSTERS                                            -->
+        <!-- ============================================================ -->
+        <record id="roster_rcs_sw" model="federation.team.roster">
+            <field name="team_id" ref="team_rcs_senior_w"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="season_registration_id" ref="reg_rcs_senior_w"/>
+            <field name="competition_id" ref="comp_national_league"/>
+            <field name="rule_set_id" ref="ruleset_standard"/>
+            <field name="status">active</field>
+            <field name="valid_from">2025-09-01</field>
+            <field name="valid_to">2026-06-30</field>
+        </record>
+        <!-- RCS-SW roster lines (3 women) -->
+        <record id="rline_rcs_sw_laurent" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_rcs_sw"/>
+            <field name="player_id" ref="player_rcs_laurent"/>
+            <field name="license_id" ref="lic_rcs_laurent"/>
+            <field name="jersey_number">10</field>
+            <field name="is_captain" eval="True"/>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_rcs_sw_wouters" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_rcs_sw"/>
+            <field name="player_id" ref="player_rcs_wouters"/>
+            <field name="license_id" ref="lic_rcs_wouters"/>
+            <field name="jersey_number">7</field>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_rcs_sw_declercq" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_rcs_sw"/>
+            <field name="player_id" ref="player_rcs_declercq"/>
+            <field name="license_id" ref="lic_rcs_declercq"/>
+            <field name="jersey_number">4</field>
+            <field name="status">active</field>
+        </record>
+
+        <record id="roster_fcu_youth" model="federation.team.roster">
+            <field name="team_id" ref="team_fcu_youth_m"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="season_registration_id" ref="reg_fcu_youth_m"/>
+            <field name="competition_id" ref="comp_national_league"/>
+            <field name="rule_set_id" ref="ruleset_standard"/>
+            <field name="status">active</field>
+            <field name="valid_from">2025-09-01</field>
+            <field name="valid_to">2026-06-30</field>
+        </record>
+        <!-- FCU-YM roster lines (2 youth) -->
+        <record id="rline_fcu_youth_adam" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_fcu_youth"/>
+            <field name="player_id" ref="player_fcu_youth_adam"/>
+            <field name="license_id" ref="lic_fcu_youth_adam"/>
+            <field name="jersey_number">9</field>
+            <field name="is_captain" eval="True"/>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_fcu_youth_leo" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_fcu_youth"/>
+            <field name="player_id" ref="player_fcu_youth_leo"/>
+            <field name="license_id" ref="lic_fcu_youth_leo"/>
+            <field name="jersey_number">11</field>
+            <field name="status">active</field>
+        </record>
+
+        <record id="roster_atc_youth" model="federation.team.roster">
+            <field name="team_id" ref="team_atc_youth_m"/>
+            <field name="season_id" ref="season_2025"/>
+            <field name="season_registration_id" ref="reg_atc_youth_m"/>
+            <field name="competition_id" ref="comp_national_league"/>
+            <field name="rule_set_id" ref="ruleset_standard"/>
+            <field name="status">active</field>
+            <field name="valid_from">2025-09-01</field>
+            <field name="valid_to">2026-06-30</field>
+        </record>
+        <!-- ATC-YM roster lines (3 youth) -->
+        <record id="rline_atc_youth_sam" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_atc_youth"/>
+            <field name="player_id" ref="player_atc_youth_sam"/>
+            <field name="license_id" ref="lic_atc_youth_sam"/>
+            <field name="jersey_number">8</field>
+            <field name="is_captain" eval="True"/>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_atc_youth_nico" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_atc_youth"/>
+            <field name="player_id" ref="player_atc_youth_nico"/>
+            <field name="license_id" ref="lic_atc_youth_nico"/>
+            <field name="jersey_number">5</field>
+            <field name="status">active</field>
+        </record>
+        <record id="rline_atc_youth_ben" model="federation.team.roster.line">
+            <field name="roster_id" ref="roster_atc_youth"/>
+            <field name="player_id" ref="player_atc_youth_ben"/>
+            <field name="license_id" ref="lic_atc_youth_ben"/>
+            <field name="jersey_number">3</field>
+            <field name="status">active</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- STANDINGS                                                     -->
+        <!-- ============================================================ -->
+        <record id="standing_group_a" model="federation.standing">
+            <field name="name">Group A Standing</field>
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_a"/>
+            <field name="competition_id" ref="comp_national_league"/>
+            <field name="rule_set_id" ref="ruleset_standard"/>
+            <field name="state">computed</field>
+        </record>
+
+        <record id="sline_a_fcu" model="federation.standing.line">
+            <field name="standing_id" ref="standing_group_a"/>
+            <field name="participant_id" ref="part_fcu"/>
+            <field name="rank">1</field>
+            <field name="played">3</field>
+            <field name="won">2</field>
+            <field name="drawn">1</field>
+            <field name="lost">0</field>
+            <field name="score_for">6</field>
+            <field name="score_against">1</field>
+            <field name="points">7</field>
+        </record>
+        <record id="sline_a_rcs" model="federation.standing.line">
+            <field name="standing_id" ref="standing_group_a"/>
+            <field name="participant_id" ref="part_rcs"/>
+            <field name="rank">2</field>
+            <field name="played">3</field>
+            <field name="won">1</field>
+            <field name="drawn">1</field>
+            <field name="lost">1</field>
+            <field name="score_for">3</field>
+            <field name="score_against">4</field>
+            <field name="points">4</field>
+        </record>
+        <record id="sline_a_atc" model="federation.standing.line">
+            <field name="standing_id" ref="standing_group_a"/>
+            <field name="participant_id" ref="part_atc"/>
+            <field name="rank">3</field>
+            <field name="played">3</field>
+            <field name="won">0</field>
+            <field name="drawn">1</field>
+            <field name="lost">2</field>
+            <field name="score_for">2</field>
+            <field name="score_against">5</field>
+            <field name="points">1</field>
+        </record>
+        <record id="sline_a_dyn" model="federation.standing.line">
+            <field name="standing_id" ref="standing_group_a"/>
+            <field name="participant_id" ref="part_dyn"/>
+            <field name="rank">4</field>
+            <field name="played">3</field>
+            <field name="won">1</field>
+            <field name="drawn">1</field>
+            <field name="lost">1</field>
+            <field name="score_for">3</field>
+            <field name="score_against">3</field>
+            <field name="points">4</field>
+        </record>
+
+        <record id="standing_group_b" model="federation.standing">
+            <field name="name">Group B Standing</field>
+            <field name="tournament_id" ref="tournament_spring_cup"/>
+            <field name="stage_id" ref="stage_group"/>
+            <field name="group_id" ref="group_b"/>
+            <field name="competition_id" ref="comp_national_league"/>
+            <field name="rule_set_id" ref="ruleset_standard"/>
+            <field name="state">draft</field>
+        </record>
+
+        <record id="sline_b_fcu_youth" model="federation.standing.line">
+            <field name="standing_id" ref="standing_group_b"/>
+            <field name="participant_id" ref="part_fcu_youth"/>
+            <field name="rank">1</field>
+            <field name="played">0</field>
+            <field name="points">0</field>
+        </record>
+        <record id="sline_b_rcs_sw" model="federation.standing.line">
+            <field name="standing_id" ref="standing_group_b"/>
+            <field name="participant_id" ref="part_rcs_sw"/>
+            <field name="rank">2</field>
+            <field name="played">0</field>
+            <field name="points">0</field>
+        </record>
+        <record id="sline_b_atc_youth" model="federation.standing.line">
+            <field name="standing_id" ref="standing_group_b"/>
+            <field name="participant_id" ref="part_atc_youth"/>
+            <field name="rank">3</field>
+            <field name="played">0</field>
+            <field name="points">0</field>
+        </record>
+        <record id="sline_b_bel" model="federation.standing.line">
+            <field name="standing_id" ref="standing_group_b"/>
+            <field name="participant_id" ref="part_bel"/>
+            <field name="rank">4</field>
+            <field name="played">0</field>
+            <field name="points">0</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- DOCUMENT REQUIREMENTS                                         -->
+        <!-- ============================================================ -->
+        <record id="req_player_license" model="federation.document.requirement">
+            <field name="name">Player License Certificate</field>
+            <field name="code">REQ-LIC</field>
+            <field name="target_model">federation.club</field>
+            <field name="required_for_all" eval="True"/>
+            <field name="description">Official license certificate issued by the federation for the current season.</field>
+            <field name="requires_expiry_date" eval="True"/>
+            <field name="validity_days">365</field>
+        </record>
+
+        <record id="req_player_medical" model="federation.document.requirement">
+            <field name="name">Medical Clearance Certificate</field>
+            <field name="code">REQ-MED</field>
+            <field name="target_model">federation.club</field>
+            <field name="required_for_all" eval="True"/>
+            <field name="description">Annual medical clearance confirming player fitness for competition.</field>
+            <field name="requires_expiry_date" eval="True"/>
+            <field name="validity_days">365</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- DOCUMENT SUBMISSIONS                                          -->
+        <!-- ============================================================ -->
+        <record id="sub_fcu_license" model="federation.document.submission">
+            <field name="name">FCU – Player License Certificate 2025-2026</field>
+            <field name="requirement_id" ref="req_player_license"/>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="status">approved</field>
+        </record>
+
+        <record id="sub_fcu_medical" model="federation.document.submission">
+            <field name="name">FCU – Medical Clearance 2025-2026</field>
+            <field name="requirement_id" ref="req_player_medical"/>
+            <field name="club_id" ref="club_fc_united"/>
+            <field name="status">submitted</field>
+        </record>
+
+        <record id="sub_rcs_license" model="federation.document.submission">
+            <field name="name">RCS – Player License Certificate 2025-2026</field>
+            <field name="requirement_id" ref="req_player_license"/>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="status">approved</field>
+        </record>
+
+        <record id="sub_rcs_medical" model="federation.document.submission">
+            <field name="name">RCS – Medical Clearance 2025-2026</field>
+            <field name="requirement_id" ref="req_player_medical"/>
+            <field name="club_id" ref="club_racing_stars"/>
+            <field name="status">approved</field>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- DISCIPLINARY CASES                                            -->
+        <!-- ============================================================ -->
+        <record id="case_open" model="federation.disciplinary.case">
+            <field name="name">Unsporting conduct – RCS vs ATC (Round 1)</field>
+            <field name="state">under_review</field>
+            <field name="opened_on">2026-04-25</field>
+            <field name="subject_player_id" ref="player_rcs_hermans"/>
+            <field name="subject_club_id" ref="club_racing_stars"/>
+        </record>
+
+        <record id="case_closed" model="federation.disciplinary.case">
+            <field name="name">Late registration infringement – ATC</field>
+            <field name="state">closed</field>
+            <field name="opened_on">2026-03-10</field>
+            <field name="decided_on">2026-03-20</field>
+            <field name="closed_on">2026-03-25</field>
+            <field name="subject_club_id" ref="club_athletic_city"/>
+        </record>
+
+        <!-- ============================================================ -->
+        <!-- NOTIFICATION LOGS                                             -->
+        <!-- ============================================================ -->
+        <record id="notif_reg_confirm_fcu" model="federation.notification.log">
+            <field name="name">Season registration confirmed – FC United Senior Men</field>
+            <field name="target_model">federation.season.registration</field>
+            <field name="notification_type">email</field>
+            <field name="recipient_email">info@fcunited.example</field>
+            <field name="state">sent</field>
+        </record>
+
+        <record id="notif_reg_confirm_rcs" model="federation.notification.log">
+            <field name="name">Season registration confirmed – Racing Stars Senior Men</field>
+            <field name="target_model">federation.season.registration</field>
+            <field name="notification_type">email</field>
+            <field name="recipient_email">info@racingstars.example</field>
+            <field name="state">sent</field>
+        </record>
+
+        <record id="notif_roster_active_fcu" model="federation.notification.log">
+            <field name="name">Roster activated – FC United Senior Men</field>
+            <field name="target_model">federation.team.roster</field>
+            <field name="notification_type">email</field>
+            <field name="recipient_email">info@fcunited.example</field>
+            <field name="state">sent</field>
+        </record>
+
+    </data>
+</odoo>

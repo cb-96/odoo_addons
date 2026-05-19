@@ -18,11 +18,19 @@ Table of contents
 
 Quick links
 - High-level context: `odoo/CONTEXT.md`
+- Maintainability review: `odoo/MAINTAINABILITY_REVIEW.md`
 - Technical notes: `odoo/TECHNICAL_NOTE.md`
+- Architecture decisions: `odoo/adr/README.md`
 - Route inventory: `odoo/ROUTE_INVENTORY.md`
 - Compatibility inventory: `odoo/COMPATIBILITY_INVENTORY.md`
 - Release runbook: `odoo/RELEASE_RUNBOOK.md`
+- Release train: `odoo/RELEASE_TRAIN.md`
+- Data retention policy: `odoo/DATA_RETENTION_POLICY.md`
+- Performance baselines: `odoo/PERFORMANCE_BASELINES.md`
+- Restore drill checklist: `odoo/RESTORE_VERIFICATION_CHECKLIST.md`
+- Module owners: `odoo/MODULE_OWNERS.yaml`
 - Integration contracts: `odoo/INTEGRATION_CONTRACTS.md`
+- Managed integration OpenAPI: `odoo/openapi/integration_v1.yaml`
 - Workflows: `odoo/_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md`
 - Contributor guide: `CONTRIBUTING.md`
 

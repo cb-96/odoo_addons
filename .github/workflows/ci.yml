@@ -45,13 +45,29 @@ jobs:
       - name: Check documentation freshness metadata
         run: python ci/check_doc_freshness.py
 
+      - name: Check markdown links
+        run: python ci/check_markdown_links.py
+
+      - name: Check module owner registry
+        run: python ci/check_module_owners.py
+
+      - name: Check release train metadata
+        run: python ci/check_release_train.py
+
+      - name: Check reporting EXPLAIN snapshots
+        run: python ci/check_explain_snapshots.py
+
       - name: Check migration review coverage
         run: python ci/check_migration_review.py --base-ref origin/${{ github.base_ref || 'main' }}
+
+      - name: Check OpenAPI contract docs
+        run: python ci/check_openapi_contracts.py
 
       - name: Validate CI shell scripts
         run: |
           bash -n ci/run_tests.sh
           bash -n ci/apply_env_to_ir_config.sh
+          bash -n ci/restore_backup_drill.sh
 
   odoo-tests:
     name: Odoo tests (${{ matrix.suite }})

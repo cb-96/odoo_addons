@@ -38,6 +38,7 @@
                     <separator string="Notes"/>
                     <field name="notes"/>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>

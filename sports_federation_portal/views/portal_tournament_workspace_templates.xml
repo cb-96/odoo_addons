@@ -22,12 +22,12 @@
                     </div>
                 </div>
 
-                <div t-if="not has_workspace_access" class="alert alert-warning">
+                <div t-if="not has_workspace_access" class="alert alert-warning" role="alert">
                     <i class="fa fa-info-circle me-2"/>
                     You do not currently have a club or team-scoped portal assignment for tournament operations.
                 </div>
 
-                <div t-elif="not workspace_entries" class="alert alert-info">
+                <div t-elif="not workspace_entries" class="alert alert-info" role="status">
                     <i class="fa fa-info-circle me-2"/>
                     No active tournaments currently require action for your visible teams.
                 </div>
@@ -221,13 +221,14 @@
                         <div t-if="workspace['upcoming_match_sheets']">
                             <div class="table-responsive">
                                 <table class="table table-sm align-middle mb-0">
+                                    <caption class="visually-hidden">Upcoming match-day submission tasks for this tournament workspace.</caption>
                                     <thead>
                                         <tr>
-                                            <th>Kickoff</th>
-                                            <th>Opponent</th>
-                                            <th>Sheet Status</th>
-                                            <th>Submission Readiness</th>
-                                            <th class="text-end">Action</th>
+                                            <th scope="col">Kickoff</th>
+                                            <th scope="col">Opponent</th>
+                                            <th scope="col">Sheet Status</th>
+                                            <th scope="col">Submission Readiness</th>
+                                            <th scope="col" class="text-end">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -272,13 +273,14 @@
                         <div t-if="workspace['result_follow_up_rows']">
                             <div class="table-responsive">
                                 <table class="table table-sm align-middle mb-0">
+                                    <caption class="visually-hidden">Finished matches in this tournament workspace that still need result follow-up.</caption>
                                     <thead>
                                         <tr>
-                                            <th>Match</th>
-                                            <th>Score</th>
-                                            <th>Result State</th>
-                                            <th>Latest Audit</th>
-                                            <th class="text-end">Action</th>
+                                            <th scope="col">Match</th>
+                                            <th scope="col">Score</th>
+                                            <th scope="col">Result State</th>
+                                            <th scope="col">Latest Audit</th>
+                                            <th scope="col" class="text-end">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
