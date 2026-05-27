@@ -8,6 +8,12 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
     _planner_default_unscheduled_limit = 40
     _planner_max_unscheduled_limit = 200
 
+    def _safe_int(self, raw_value, default=None):
+        try:
+            return int(raw_value)
+        except (TypeError, ValueError):
+            return default
+
     def _planner_unscheduled_limit(self, filters):
         raw_limit = (filters or {}).get(
             "unscheduled_limit", self._planner_default_unscheduled_limit
@@ -33,15 +39,17 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
         if not gamedays:
             return False
         if gameday_id:
-            target_gameday = workspace_service._resolve_gameday(int(gameday_id))
-            if target_gameday.id in gamedays.ids:
-                return target_gameday
-            target_root = workspace_service._get_planner_root_gameday(target_gameday)
-            linked_target = gamedays.filtered(
-                lambda record: record._competition_workspace_root_round() == target_root
-            )[:1]
-            if linked_target:
-                return linked_target
+            parsed_gameday_id = self._safe_int(gameday_id)
+            if parsed_gameday_id:
+                target_gameday = workspace_service._resolve_gameday(parsed_gameday_id)
+                if target_gameday.id in gamedays.ids:
+                    return target_gameday
+                target_root = workspace_service._get_planner_root_gameday(target_gameday)
+                linked_target = gamedays.filtered(
+                    lambda record: record._competition_workspace_root_round() == target_root
+                )[:1]
+                if linked_target:
+                    return linked_target
         return gamedays[:1]
 
     @api.model
@@ -56,21 +64,26 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
         unscheduled_matches = workspace_service._get_gameday_unscheduled_matches(planner_root)
 
         if filters.get("division_id"):
-            division_id = int(filters["division_id"])
-            unscheduled_matches = unscheduled_matches.filtered(
-                lambda match: match.tournament_id.id == division_id
-            )
+            division_id = self._safe_int(filters["division_id"])
+            if division_id:
+                unscheduled_matches = unscheduled_matches.filtered(
+                    lambda match: match.tournament_id.id == division_id
+                )
 
         if filters.get("round_number"):
-            unscheduled_matches = unscheduled_matches.filtered(
-                lambda match: match.round_number == int(filters["round_number"])
-            )
+            round_number = self._safe_int(filters["round_number"])
+            if round_number:
+                unscheduled_matches = unscheduled_matches.filtered(
+                    lambda match: match.round_number == round_number
+                )
         if filters.get("team_id"):
-            team_id = int(filters["team_id"])
-            unscheduled_matches = unscheduled_matches.filtered(
-                lambda match: match.home_team_id.id == team_id
-                or match.away_team_id.id == team_id
-            )
+            team_id = self._safe_int(filters["team_id"])
+            if team_id:
+                unscheduled_matches = unscheduled_matches.filtered(
+                    lambda match: match.home_team_id.id == team_id
+                    or match.away_team_id.id == team_id
+                )
+
         if filters.get("conflicts_only"):
             conflicting_match_ids = {
                 issue["record_id"]

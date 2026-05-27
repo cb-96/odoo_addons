@@ -195,6 +195,9 @@ Roles and safeguards
 - Validation payloads now include grouped blocking and warning sections,
   actionable hints, and focus metadata that the UI uses to highlight affected
   slots or matches.
+- Planner read-model inputs now tolerate malformed numeric filters
+  (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
+  selectors by ignoring invalid values instead of raising server errors.
 - Any change that touches a validated or published day reopens the linked
   gameday back to `planned` and the affected divisions back to `planning`
   before another publication pass.

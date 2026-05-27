@@ -1472,6 +1472,38 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertNotIn("team_options", payload["planner"])
         self.assertNotIn("courts", payload["planner"])
 
+    def test_gameday_planner_data_ignores_invalid_numeric_filters(self):
+        division, gameday = self._prepare_planned_division("Invalid Planner Filter Division")
+
+        planner = self.service.get_gameday_planner_data(
+            gameday.id,
+            {
+                "division_id": "not-a-number",
+                "round_number": "oops",
+                "team_id": "bad",
+            },
+        )
+
+        self.assertEqual(planner["division"]["id"], division.id)
+        self.assertEqual(planner["unscheduled_total_count"], 6)
+        self.assertEqual(planner["unscheduled_loaded_count"], 6)
+        self.assertFalse(planner["unscheduled_has_more"])
+
+    def test_workspace_payload_ignores_invalid_planner_gameday_id(self):
+        division, gameday = self._prepare_planned_division("Invalid Planner Target Division")
+
+        payload = self.service.get_competition_workspace_data(
+            self.edition.id,
+            division.id,
+            {
+                "include_planner": True,
+                "gameday_id": "invalid-gameday-id",
+            },
+        )
+
+        self.assertTrue(payload["planner"])
+        self.assertEqual(payload["planner"]["gameday"]["id"], gameday.id)
+
     def test_search_available_teams_filters_division_and_club(self):
         division, _participants = self._create_division("Search Division", 2)
         other_club = self.env["federation.club"].create({"name": "Search Club"})
