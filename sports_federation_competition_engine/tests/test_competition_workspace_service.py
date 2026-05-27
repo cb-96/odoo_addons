@@ -2322,3 +2322,33 @@ class TestCompetitionWorkspaceService(TransactionCase):
                 self.edition.id,
                 False,
             )
+
+    def test_workspace_acl_matrix_read_assign_publish(self):
+        division, gameday = self._prepare_planned_division("ACL Matrix Division")
+        match = division.match_ids[:1]
+        slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
+
+        planner_payload = self.service.with_user(
+            self.planner_user
+        ).get_competition_workspace_data(self.edition.id, division.id)
+        self.assertTrue(planner_payload.get("capabilities"))
+
+        assign_result = self.service.with_user(self.planner_user).assign_match_to_slot(
+            match.id,
+            slot.id,
+        )
+        self.assertTrue(assign_result["ok"])
+
+        with self.assertRaises(AccessError):
+            self.service.with_user(self.planner_user).publish_gameday(gameday.id)
+
+        manager_publish = self.service.with_user(self.manager_user).publish_gameday(
+            gameday.id
+        )
+        self.assertIn("ok", manager_publish)
+
+        with self.assertRaises(AccessError):
+            self.service.with_user(self.regular_user).assign_match_to_slot(
+                match.id,
+                slot.id,
+            )

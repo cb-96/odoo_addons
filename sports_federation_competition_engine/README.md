@@ -230,6 +230,9 @@ Roles and safeguards
 - Planner read-model consistency payloads now expose source metadata
   (`source_planner_root_id`, `source_planner_root_revision`) and
   `normalization_warnings` when filter or expected-revision inputs are malformed.
+- Workspace ACL regressions now include a compact matrix covering planner,
+  manager, and regular-user behavior across read, assign, and publish
+  entrypoints.
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.
