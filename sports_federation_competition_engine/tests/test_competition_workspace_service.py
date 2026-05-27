@@ -1044,6 +1044,125 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(issues["warnings"][0]["slot_id"], 7)
         self.assertEqual(issues["blocking"][1]["slot_id"], 11)
 
+    def test_workspace_extension_payload_normalizes_contract(self):
+        malformed_results = [
+            {"summary": {"a": 1}, "list_payload": [1]},
+            ["invalid-update-shape"],
+            "invalid-update-shape",
+            {"summary": {"b": 2}, "list_payload": [2]},
+        ]
+
+        with patch.object(
+            type(self.service),
+            "_workspace_extension_results",
+            return_value=malformed_results,
+        ):
+            payload = self.service._workspace_extension_payload(
+                "extend_overview_payload"
+            )
+
+        self.assertEqual(payload["summary"], {"a": 1, "b": 2})
+        self.assertEqual(payload["list_payload"], [1, 2])
+
+    def test_workspace_extension_score_components_normalize_contract(self):
+        malformed_results = [
+            [
+                {"key": "availability", "label": "Availability", "score": "80"},
+                {"key": "bad_score", "label": "Bad Score", "score": "abc"},
+                {"label": "Missing Key", "score": 75},
+            ],
+            {"key": "single_component", "score": "15.5"},
+            "invalid-result-shape",
+        ]
+
+        with patch.object(
+            type(self.service),
+            "_workspace_extension_results",
+            return_value=malformed_results,
+        ):
+            components = self.service._workspace_extension_score_components(
+                "extend_match_slot_score_components"
+            )
+
+        self.assertEqual([item["key"] for item in components], [
+            "availability",
+            "bad_score",
+            "single_component",
+        ])
+        self.assertEqual(components[0]["score"], 80)
+        self.assertEqual(components[1]["score"], 100)
+        self.assertEqual(components[2]["label"], "Single Component")
+        self.assertEqual(components[2]["score"], 16)
+
+    def test_workspace_extension_issues_isolates_hook_exceptions(self):
+        class _FailingExtension:
+            _name = "federation.competition.workspace.extension.test_failing"
+
+            def extend_match_assignment_validation(self, service, *args, **kwargs):
+                raise RuntimeError("boom")
+
+        class _WorkingExtension:
+            _name = "federation.competition.workspace.extension.test_working"
+
+            def extend_match_assignment_validation(self, service, *args, **kwargs):
+                return {
+                    "warnings": [
+                        {
+                            "code": "working_warning",
+                            "message": "Working extension still executes.",
+                        }
+                    ]
+                }
+
+        with patch.object(
+            type(self.service),
+            "_workspace_extension_models",
+            return_value=[_FailingExtension(), _WorkingExtension()],
+        ):
+            issues = self.service._workspace_extension_issues(
+                "extend_match_assignment_validation"
+            )
+
+        warning_codes = [warning["code"] for warning in issues["warnings"]]
+        self.assertIn("extension_hook_failed", warning_codes)
+        self.assertIn("working_warning", warning_codes)
+
+        failure_warning = next(
+            warning
+            for warning in issues["warnings"]
+            if warning["code"] == "extension_hook_failed"
+        )
+        self.assertEqual(
+            failure_warning["hook"],
+            "extend_match_assignment_validation",
+        )
+        self.assertEqual(
+            failure_warning["extension_model"],
+            "federation.competition.workspace.extension.test_failing",
+        )
+
+    def test_workspace_extension_payload_isolates_hook_exceptions(self):
+        class _FailingExtension:
+            _name = "federation.competition.workspace.extension.test_failing"
+
+            def extend_overview_payload(self, service, *args, **kwargs):
+                raise RuntimeError("boom")
+
+        class _WorkingExtension:
+            _name = "federation.competition.workspace.extension.test_working"
+
+            def extend_overview_payload(self, service, *args, **kwargs):
+                return {"summary": {"ok": True}}
+
+        with patch.object(
+            type(self.service),
+            "_workspace_extension_models",
+            return_value=[_FailingExtension(), _WorkingExtension()],
+        ):
+            payload = self.service._workspace_extension_payload("extend_overview_payload")
+
+        self.assertEqual(payload, {"summary": {"ok": True}})
+
     def test_gameday_planner_data_reports_stale_consistency(self):
         division, gameday = self._prepare_planned_division(
             "Planner Consistency Division"

@@ -42,15 +42,82 @@ class CompetitionWorkspaceService(models.AbstractModel):
         ]
 
     def _workspace_extension_results(self, method_name, *args, **kwargs):
+        telemetry = kwargs.pop("_telemetry", None)
+        warning_bucket = kwargs.pop("_warning_bucket", None)
         results = []
         for extension in self._workspace_extension_models():
             method = getattr(extension, method_name, None)
             if not callable(method):
                 continue
-            result = method(self, *args, **kwargs)
+            try:
+                result = method(self, *args, **kwargs)
+            except Exception as error:  # pylint: disable=broad-except
+                if isinstance(telemetry, list):
+                    telemetry.append(
+                        {
+                            "method": method_name,
+                            "extension_model": extension._name,
+                            "status": "error",
+                            "error_type": type(error).__name__,
+                        }
+                    )
+                if isinstance(warning_bucket, list):
+                    warning_bucket.append(
+                        self._workspace_extension_failure_warning(
+                            method_name,
+                            extension._name,
+                        )
+                    )
+                _logger.exception(
+                    "Workspace extension hook failed for %s on %s",
+                    method_name,
+                    extension._name,
+                )
+                continue
+
+            if isinstance(telemetry, list):
+                telemetry.append(
+                    {
+                        "method": method_name,
+                        "extension_model": extension._name,
+                        "status": "ok",
+                        "emitted": bool(result),
+                    }
+                )
             if result:
                 results.append(result)
+
+        if isinstance(telemetry, list):
+            self._log_workspace_extension_telemetry(method_name, telemetry)
         return results
+
+    def _workspace_extension_failure_warning(self, method_name, extension_model):
+        return {
+            "code": "extension_hook_failed",
+            "message": _(
+                "An extension hook failed and was ignored while computing workspace data."
+            ),
+            "hook": method_name,
+            "extension_model": extension_model,
+        }
+
+    def _log_workspace_extension_telemetry(self, method_name, telemetry):
+        if not telemetry:
+            return
+        failed = [entry for entry in telemetry if entry.get("status") == "error"]
+        if failed:
+            _logger.warning(
+                "Workspace extension telemetry for %s: %s hook(s) failed out of %s",
+                method_name,
+                len(failed),
+                len(telemetry),
+            )
+        else:
+            _logger.debug(
+                "Workspace extension telemetry for %s: %s hook(s) executed",
+                method_name,
+                len(telemetry),
+            )
 
     def _merge_workspace_payload(self, payload, update):
         merged = dict(payload or {})
@@ -65,13 +132,43 @@ class CompetitionWorkspaceService(models.AbstractModel):
 
     def _workspace_extension_payload(self, method_name, *args, **kwargs):
         payload = {}
-        for update in self._workspace_extension_results(method_name, *args, **kwargs):
-            payload = self._merge_workspace_payload(payload, update)
+        telemetry = []
+        for update in self._workspace_extension_results(
+            method_name,
+            *args,
+            _telemetry=telemetry,
+            **kwargs,
+        ):
+            normalized_update = self._normalize_workspace_extension_payload_update(
+                update,
+                method_name=method_name,
+            )
+            payload = self._merge_workspace_payload(payload, normalized_update)
         return payload
+
+    def _normalize_workspace_extension_payload_update(self, update, method_name):
+        if not update:
+            return {}
+        if not isinstance(update, dict):
+            _logger.warning(
+                "Workspace extension payload ignored for %s: expected dict, got %s",
+                method_name,
+                type(update).__name__,
+            )
+            return {}
+        return update
 
     def _workspace_extension_issues(self, method_name, *args, **kwargs):
         issues = {"blocking": [], "warnings": []}
-        for result in self._workspace_extension_results(method_name, *args, **kwargs):
+        extension_warnings = []
+        telemetry = []
+        for result in self._workspace_extension_results(
+            method_name,
+            *args,
+            _warning_bucket=extension_warnings,
+            _telemetry=telemetry,
+            **kwargs,
+        ):
             if not isinstance(result, dict):
                 _logger.warning(
                     "Workspace extension issues ignored for %s: expected dict, got %s",
@@ -93,6 +190,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
                     severity="warning",
                 )
             )
+        issues["warnings"].extend(extension_warnings)
         return issues
 
     def _safe_workspace_issue_int(self, raw_value):
@@ -177,12 +275,62 @@ class CompetitionWorkspaceService(models.AbstractModel):
 
     def _workspace_extension_score_components(self, method_name, *args, **kwargs):
         components = []
-        for result in self._workspace_extension_results(method_name, *args, **kwargs):
-            if isinstance(result, list):
-                components.extend(result)
-            elif result:
-                components.append(result)
+        telemetry = []
+        for result in self._workspace_extension_results(
+            method_name,
+            *args,
+            _telemetry=telemetry,
+            **kwargs,
+        ):
+            if isinstance(result, dict):
+                result = [result]
+            elif not isinstance(result, (list, tuple, set)):
+                _logger.warning(
+                    "Workspace extension score components ignored for %s: expected list/dict, got %s",
+                    method_name,
+                    type(result).__name__,
+                )
+                continue
+
+            for component in result:
+                normalized_component = self._normalize_workspace_extension_score_component(
+                    component,
+                    method_name=method_name,
+                )
+                if normalized_component:
+                    components.append(normalized_component)
         return components
+
+    def _normalize_workspace_extension_score_component(self, component, method_name):
+        if not isinstance(component, dict):
+            _logger.warning(
+                "Workspace extension score component ignored for %s: expected dict, got %s",
+                method_name,
+                type(component).__name__,
+            )
+            return False
+
+        key = str(component.get("key") or "").strip()
+        if not key:
+            _logger.warning(
+                "Workspace extension score component ignored for %s: missing key",
+                method_name,
+            )
+            return False
+
+        label = str(component.get("label") or "").strip() or key.replace("_", " ").title()
+        raw_score = component.get("score", 100)
+        try:
+            score = float(raw_score)
+        except (TypeError, ValueError):
+            score = 100
+        score = max(0, min(100, round(score)))
+
+        normalized = dict(component)
+        normalized["key"] = key
+        normalized["label"] = label
+        normalized["score"] = score
+        return normalized
 
     def _ensure_planner_write_revision(self, gameday, expected_planner_revision=False):
         planner_root = self._get_planner_root_gameday(gameday)

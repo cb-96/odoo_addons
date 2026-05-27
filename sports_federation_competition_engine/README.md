@@ -204,6 +204,16 @@ Roles and safeguards
 - Extension-provided validation issues are now contract-normalized before they
   enter planner validation: malformed issue payloads are ignored, identifier
   fields are coerced, and `team_ids` are normalized to integer lists.
+- Extension payload enrichments are now contract-normalized: non-dict payload
+  updates are ignored so malformed extensions cannot break workspace payload
+  assembly.
+- Extension slot-score components are now contract-normalized: components must
+  be dicts with a key, score values are coerced and clamped, and malformed
+  component shapes are skipped.
+- Extension hook execution is now fault-isolated: exceptions inside a single
+  extension hook are caught, logged, and ignored so other hooks can continue.
+  Validation hook failures emit a structured `extension_hook_failed` warning
+  payload with hook and extension model metadata.
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.
