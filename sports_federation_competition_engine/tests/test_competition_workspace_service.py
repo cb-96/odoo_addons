@@ -1600,6 +1600,66 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(division.workspace_state, "published")
         self.assertEqual(gameday.planner_state, "published")
 
+    def test_competition_republish_requires_override_reason_once_live_revision_exists(
+        self,
+    ):
+        division, _participants = self._create_division("Republish Guard Division", 2)
+        division.action_lock_team_entries()
+        self.service.generate_round_robin(division.id)
+        gameday_id = self.service.create_gameday(
+            {
+                "division_id": division.id,
+                "name": "Republish Guard Day",
+                "round_date": "2026-10-12",
+                "venue_id": self.venue.id,
+            }
+        )["gameday_id"]
+        gameday = self.env["federation.tournament.round"].browse(gameday_id)
+        self.service.generate_slots(
+            gameday.id,
+            [self.court_1.id],
+            "09:00",
+            "10:00",
+            30,
+            0,
+            [],
+            False,
+        )
+        match = division.match_ids[:1]
+        slot = gameday.slot_ids[:1]
+        self.assertTrue(
+            self.service.with_user(self.manager_user).assign_match_to_slot(match.id, slot.id)[
+                "ok"
+            ]
+        )
+
+        first_publish = self.service.with_user(self.manager_user).publish_competition_schedule(
+            self.edition.id,
+            division.id,
+        )
+        self.assertTrue(first_publish["ok"])
+
+        republish_without_reason = self.service.with_user(
+            self.manager_user
+        ).publish_competition_schedule(
+            self.edition.id,
+            division.id,
+        )
+        self.assertFalse(republish_without_reason["ok"])
+        self.assertEqual(
+            republish_without_reason["validation"]["blocking"][0]["code"],
+            "override_reason_required",
+        )
+
+        republish_with_reason = self.service.with_user(
+            self.manager_user
+        ).publish_competition_schedule(
+            self.edition.id,
+            division.id,
+            override_reason="Republished after governance confirmation.",
+        )
+        self.assertTrue(republish_with_reason["ok"])
+
     def test_published_match_cannot_be_moved_by_planner_user(self):
         division, gameday = self._prepare_planned_division("Locked Publish Division")
         match = division.match_ids[:1]

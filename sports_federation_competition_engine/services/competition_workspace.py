@@ -3383,31 +3383,31 @@ class CompetitionWorkspaceService(models.AbstractModel):
         for planner_root in planner_roots.sorted(
             lambda record: (record.round_date or fields.Date.today(), record.sequence, record.id)
         ):
-                linked_rounds = planner_root | planner_root.planner_linked_round_ids
-                linked_rounds._competition_workspace_transition_planner_state(
-                    "published",
-                    reason=_("Published from the Competition Workspace."),
-                    actor=self.env.user,
-                )
-                linked_rounds.write(
-                    {
-                        "publish_locked": True,
-                        "state": "scheduled",
-                    }
-                )
-                for slot in planner_root.slot_ids.filtered("match_id"):
-                    if slot.match_id.state == "draft":
-                        slot.match_id.action_schedule()
-                self._get_gameday_divisions(planner_root)._competition_workspace_transition_state(
-                    "published",
-                    reason=_("Published from the Competition Workspace."),
-                    actor=self.env.user,
-                )
-                self._bump_planner_revision(planner_root)
-                self._promote_schedule_revision_to_live(
-                    planner_root,
-                    override_reason=normalized_reason,
-                )
+            linked_rounds = planner_root | planner_root.planner_linked_round_ids
+            linked_rounds._competition_workspace_transition_planner_state(
+                "published",
+                reason=_("Published from the Competition Workspace."),
+                actor=self.env.user,
+            )
+            linked_rounds.write(
+                {
+                    "publish_locked": True,
+                    "state": "scheduled",
+                }
+            )
+            for slot in planner_root.slot_ids.filtered("match_id"):
+                if slot.match_id.state == "draft":
+                    slot.match_id.action_schedule()
+            self._get_gameday_divisions(planner_root)._competition_workspace_transition_state(
+                "published",
+                reason=_("Published from the Competition Workspace."),
+                actor=self.env.user,
+            )
+            self._bump_planner_revision(planner_root)
+            self._promote_schedule_revision_to_live(
+                planner_root,
+                override_reason=normalized_reason,
+            )
 
         target_competition_id = competition_id or divisions[:1].edition_id.id
         return {
