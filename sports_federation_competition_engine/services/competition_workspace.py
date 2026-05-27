@@ -437,6 +437,68 @@ class CompetitionWorkspaceService(models.AbstractModel):
         planner_root._competition_workspace_check_revision(normalized_revision)
         return planner_root
 
+    def _planner_write_conflict_payload(
+        self,
+        planner_root,
+        operation,
+        expected_planner_revision=False,
+        code="stale_planner_revision",
+        message=False,
+    ):
+        return {
+            "ok": False,
+            "validation": self._planner_blocking_validation(
+                code,
+                message
+                or _(
+                    "The planner data is stale for this write operation. Refresh and retry."
+                ),
+                record_id=planner_root.id,
+            ),
+            "conflict": {
+                "code": code,
+                "operation": operation,
+                "expected_planner_revision": expected_planner_revision or False,
+                "current_planner_revision": planner_root.planner_revision,
+            },
+        }
+
+    def _ensure_planner_write_revision_or_conflict(
+        self,
+        gameday,
+        expected_planner_revision=False,
+        operation="planner_write",
+    ):
+        planner_root = self._get_planner_root_gameday(gameday)
+        try:
+            normalized_revision = self._normalize_expected_planner_revision(
+                expected_planner_revision
+            )
+        except ValidationError:
+            return (
+                False,
+                self._planner_write_conflict_payload(
+                    planner_root,
+                    operation,
+                    expected_planner_revision=expected_planner_revision,
+                    code="invalid_planner_revision",
+                    message=_("The planner revision token is invalid."),
+                ),
+            )
+
+        try:
+            planner_root._competition_workspace_check_revision(normalized_revision)
+        except ValidationError:
+            return (
+                False,
+                self._planner_write_conflict_payload(
+                    planner_root,
+                    operation,
+                    expected_planner_revision=normalized_revision,
+                ),
+            )
+        return planner_root, False
+
     def _bump_planner_revision(self, gameday):
         planner_root = self._get_planner_root_gameday(gameday)
         planner_root._competition_workspace_bump_revision()
@@ -3438,9 +3500,13 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 idempotency_key=idempotency_key,
             )
 
-        planner_root = self._ensure_planner_write_revision(
-            slot.round_id, expected_planner_revision
+        planner_root, conflict = self._ensure_planner_write_revision_or_conflict(
+            slot.round_id,
+            expected_planner_revision,
+            operation="assign_match_to_slot",
         )
+        if conflict:
+            return conflict
         batch_key = self._idempotency_batch_key(
             idempotency_scope,
             idempotency_key=idempotency_key,
@@ -3536,9 +3602,13 @@ class CompetitionWorkspaceService(models.AbstractModel):
                     )
 
         if gameday:
-            planner_root = self._ensure_planner_write_revision(
-                gameday, expected_planner_revision
+            planner_root, conflict = self._ensure_planner_write_revision_or_conflict(
+                gameday,
+                expected_planner_revision,
+                operation="unassign_match",
             )
+            if conflict:
+                return conflict
             self._clear_redo_planner_operations(planner_root)
         self._apply_unassignment(
             match,
@@ -3572,10 +3642,13 @@ class CompetitionWorkspaceService(models.AbstractModel):
         override_reason=False,
     ):
         capabilities = self._check_access()
-        planner_root = self._ensure_planner_write_revision(
+        planner_root, conflict = self._ensure_planner_write_revision_or_conflict(
             self._resolve_gameday(gameday_id),
             expected_planner_revision,
+            operation="bulk_assign_matches",
         )
+        if conflict:
+            return conflict
         matches = self._resolve_matches(match_ids)
         if not matches:
             return {
@@ -3649,10 +3722,13 @@ class CompetitionWorkspaceService(models.AbstractModel):
         expected_planner_revision=False,
     ):
         self._check_access()
-        planner_root = self._ensure_planner_write_revision(
+        planner_root, conflict = self._ensure_planner_write_revision_or_conflict(
             self._resolve_gameday(gameday_id),
             expected_planner_revision,
+            operation="bulk_unassign_matches",
         )
+        if conflict:
+            return conflict
         matches = self._resolve_matches(match_ids)
         if not matches:
             return {
@@ -3708,10 +3784,13 @@ class CompetitionWorkspaceService(models.AbstractModel):
     @api.model
     def undo_last_planner_operation(self, gameday_id, expected_planner_revision=False):
         capabilities = self._check_access()
-        planner_root = self._ensure_planner_write_revision(
+        planner_root, conflict = self._ensure_planner_write_revision_or_conflict(
             self._resolve_gameday(gameday_id),
             expected_planner_revision,
+            operation="undo_last_planner_operation",
         )
+        if conflict:
+            return conflict
         operations = self._latest_planner_operation_group(planner_root, state="applied")
         if not operations:
             return {
@@ -3752,10 +3831,13 @@ class CompetitionWorkspaceService(models.AbstractModel):
     @api.model
     def redo_last_planner_operation(self, gameday_id, expected_planner_revision=False):
         capabilities = self._check_access()
-        planner_root = self._ensure_planner_write_revision(
+        planner_root, conflict = self._ensure_planner_write_revision_or_conflict(
             self._resolve_gameday(gameday_id),
             expected_planner_revision,
+            operation="redo_last_planner_operation",
         )
+        if conflict:
+            return conflict
         operations = self._latest_planner_operation_group(planner_root, state="undone")
         if not operations:
             return {
@@ -3826,9 +3908,13 @@ class CompetitionWorkspaceService(models.AbstractModel):
     ):
         self._check_access(require_publish=True)
         gameday = self._resolve_gameday(gameday_id)
-        planner_root = self._ensure_planner_write_revision(
-            gameday, expected_planner_revision
+        planner_root, conflict = self._ensure_planner_write_revision_or_conflict(
+            gameday,
+            expected_planner_revision,
+            operation="publish_gameday",
         )
+        if conflict:
+            return conflict
         validation = self.validate_gameday(planner_root.id)
         if validation["blocking"]:
             return {"ok": False, "validation": validation}

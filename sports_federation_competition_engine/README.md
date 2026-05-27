@@ -221,6 +221,9 @@ Roles and safeguards
 - Planner write endpoints now accept optional idempotency keys on assignment and
   unassignment paths. Replayed keys return a deterministic success payload with
   `replayed=true` and do not create duplicate planner operation rows.
+- Planner write endpoints now return a standardized conflict envelope for stale
+  or invalid revision tokens, including `code`, `operation`,
+  `expected_planner_revision`, and `current_planner_revision` metadata.
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.

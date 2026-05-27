@@ -972,13 +972,27 @@ class TestCompetitionWorkspaceService(TransactionCase):
             )["ok"]
         )
 
-        with self.assertRaises(ValidationError):
-            self.service.assign_match_to_slot(
-                match_b.id,
-                slots[1].id,
-                False,
-                stale_revision,
-            )
+        stale = self.service.assign_match_to_slot(
+            match_b.id,
+            slots[1].id,
+            False,
+            stale_revision,
+        )
+
+        self.assertFalse(stale["ok"])
+        self.assertEqual(stale["conflict"]["code"], "stale_planner_revision")
+        self.assertEqual(
+            stale["conflict"]["operation"],
+            "assign_match_to_slot",
+        )
+        self.assertEqual(
+            stale["conflict"]["expected_planner_revision"],
+            stale_revision,
+        )
+        self.assertGreater(
+            stale["conflict"]["current_planner_revision"],
+            stale_revision,
+        )
 
     def test_publish_gameday_rejects_stale_planner_revision(self):
         division, gameday = self._prepare_planned_division("Revision Publish Division")
@@ -995,11 +1009,18 @@ class TestCompetitionWorkspaceService(TransactionCase):
             )["ok"]
         )
 
-        with self.assertRaises(ValidationError):
-            self.service.with_user(self.manager_user).publish_gameday(
-                gameday.id,
-                stale_revision,
-            )
+        stale = self.service.with_user(self.manager_user).publish_gameday(
+            gameday.id,
+            stale_revision,
+        )
+
+        self.assertFalse(stale["ok"])
+        self.assertEqual(stale["conflict"]["code"], "stale_planner_revision")
+        self.assertEqual(stale["conflict"]["operation"], "publish_gameday")
+        self.assertEqual(
+            stale["conflict"]["expected_planner_revision"],
+            stale_revision,
+        )
 
     def test_assign_match_to_slot_idempotency_replays_without_duplicate_operation(self):
         division, gameday = self._prepare_planned_division("Idempotent Assign Division")
@@ -1473,13 +1494,16 @@ class TestCompetitionWorkspaceService(TransactionCase):
         match = division.match_ids[:1]
         slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
 
-        with self.assertRaises(ValidationError):
-            self.service.assign_match_to_slot(
-                match.id,
-                slot.id,
-                False,
-                "not-a-revision",
-            )
+        result = self.service.assign_match_to_slot(
+            match.id,
+            slot.id,
+            False,
+            "not-a-revision",
+        )
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["conflict"]["code"], "invalid_planner_revision")
+        self.assertEqual(result["conflict"]["operation"], "assign_match_to_slot")
 
     def test_schedule_revisions_keep_live_draft_and_superseded_versions(self):
         division, gameday = self._prepare_planned_division("Schedule Revision Division")
