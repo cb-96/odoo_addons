@@ -33,6 +33,73 @@
         </section>
     </t>
 
+    <t t-name="sports_federation_portal.TournamentOperationsActionQueue">
+        <section class="o_fed_ops_action_queue mb-4" t-if="(props.items || []).length">
+            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                <div>
+                    <h3 class="h6 mb-1">What needs action next</h3>
+                    <p class="text-muted small mb-0">Start here when you need the fastest way to move the tournament day forward.</p>
+                </div>
+                <div class="small text-muted">Alt + ↑ / Alt + ↓ moves between tasks. Ctrl/Cmd + S saves the selected task.</div>
+            </div>
+            <div class="o_fed_ops_queue_scroller">
+                <t t-foreach="props.items || []" t-as="item" t-key="item.match_id">
+                    <button type="button"
+                            class="card border-0 shadow-sm text-start o_fed_ops_queue_card"
+                            t-att-data-match-id="item.match_id"
+                            t-att-class="props.selectedMatchId === item.match_id ? 'o-active' : ''"
+                            t-on-click="onOpenMatch">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                <div class="text-uppercase small text-muted"><t t-esc="item.court_name"/> · <t t-esc="item.schedule_label"/></div>
+                                <StatusBadge t-props="{ label: item.owner_label, tone: item.tone }"/>
+                            </div>
+                            <div class="fw-semibold mb-1"><t t-esc="item.title"/></div>
+                            <div class="small mb-2"><t t-esc="item.teams_label"/></div>
+                            <div class="small text-muted"><t t-esc="item.summary"/></div>
+                        </div>
+                    </button>
+                </t>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_portal.TournamentOperationsCourtSummaries">
+        <section class="o_fed_ops_court_summaries mb-4" t-if="(props.items || []).length">
+            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                <div>
+                    <h3 class="h6 mb-1">Court status at a glance</h3>
+                    <p class="text-muted small mb-0">Blocked and delayed courts float to the front so you can see where the day is slipping.</p>
+                </div>
+            </div>
+            <div class="o_fed_ops_court_scroller">
+                <t t-foreach="props.items || []" t-as="court" t-key="court.court_key">
+                    <button type="button"
+                            class="card border-0 shadow-sm text-start o_fed_ops_court_card"
+                            t-att-data-court-key="court.court_key"
+                            t-att-class="props.activeCourtKey === court.court_key ? 'o-active' : ''"
+                            t-on-click="onSelectCourt">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                                <div>
+                                    <div class="fw-semibold"><t t-esc="court.court_name"/></div>
+                                    <div class="small text-muted" t-if="court.venue_name"><t t-esc="court.venue_name"/></div>
+                                </div>
+                                <StatusBadge t-props="{ label: court.status.label, tone: court.status.tone }"/>
+                            </div>
+                            <div class="o_fed_ops_court_metrics small text-muted">
+                                <span><strong><t t-esc="court.live_count"/></strong> live</span>
+                                <span><strong><t t-esc="court.delayed_count"/></strong> delayed</span>
+                                <span><strong><t t-esc="court.blocked_count"/></strong> blocked</span>
+                            </div>
+                            <div class="small mt-2" t-if="court.next_match_label">Next slot: <t t-esc="court.next_match_label"/></div>
+                        </div>
+                    </button>
+                </t>
+            </div>
+        </section>
+    </t>
+
     <t t-name="sports_federation_portal.TournamentOperationsFilters">
         <section class="card shadow-sm mb-4 o_fed_ops_filters">
             <div class="card-body">
@@ -164,6 +231,19 @@
                     <div class="d-flex gap-2 flex-wrap justify-content-end">
                         <StatusBadge t-props="{ label: props.match.state_label, tone: props.match.state_tone }"/>
                         <StatusBadge t-props="{ label: props.match.validation_status.label, tone: props.match.validation_status.tone }"/>
+                        <StatusBadge t-if="props.match.match_sheet_status.label &amp;&amp; props.match.match_sheet_status.key !== 'ready'"
+                                     t-props="{ label: props.match.match_sheet_status.label, tone: props.match.match_sheet_status.tone }"/>
+                    </div>
+                </div>
+
+                <div class="o_fed_ops_next_step mt-3">
+                    <div class="text-uppercase small text-muted mb-1">Next step</div>
+                    <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                        <div>
+                            <div class="fw-semibold"><t t-esc="props.match.next_step.label"/></div>
+                            <div class="small text-muted"><t t-esc="props.match.next_step.owner_label"/> · <t t-esc="props.match.schedule_status.short_label"/></div>
+                        </div>
+                        <StatusBadge t-props="{ label: props.match.schedule_status.short_label, tone: props.match.schedule_status.tone }"/>
                     </div>
                 </div>
 
@@ -190,12 +270,12 @@
             <div class="card-footer bg-transparent border-top-0">
                 <div class="d-flex gap-2 flex-wrap">
                     <button type="button"
-                            class="btn btn-primary"
+                            t-att-class="this.primaryActionClass"
                             t-on-click="onPrimaryAction">
                         <t t-esc="props.match.primary_action.label"/>
                     </button>
                     <button type="button" class="btn btn-outline-secondary" t-on-click="onSelectMatch">
-                        View details
+                        Open task
                     </button>
                 </div>
             </div>
@@ -214,6 +294,8 @@
                         </div>
                     </div>
                     <div class="d-flex gap-2 flex-wrap">
+                        <StatusBadge t-if="props.group.courtSummary"
+                                     t-props="{ label: props.group.courtSummary.status.label, tone: props.group.courtSummary.status.tone }"/>
                         <StatusBadge t-if="props.group.liveCount" t-props="{ label: props.group.liveCount + ' live', tone: 'primary' }"/>
                         <StatusBadge t-if="props.group.issueCount" t-props="{ label: props.group.issueCount + ' need attention', tone: 'danger' }"/>
                     </div>
@@ -235,18 +317,33 @@
     </t>
 
     <t t-name="sports_federation_portal.TournamentOperationsResultEntryPanel">
-        <aside class="card shadow-sm o_fed_ops_panel">
+        <aside class="card shadow-sm o_fed_ops_panel" t-att-class="props.compactLayout ? 'o-compact' : ''">
             <div class="card-header d-flex justify-content-between align-items-start gap-3">
                 <div>
-                    <div class="text-uppercase small text-muted">Fast result entry</div>
-                    <h2 class="h5 mb-1 mt-1"><t t-esc="props.match.name"/></h2>
+                    <div class="text-uppercase small text-muted">Match task panel</div>
+                    <h2 class="h5 mb-1 mt-1" id="sf_ops_panel_title"><t t-esc="props.match.name"/></h2>
                     <div class="text-muted small">
                         <t t-esc="props.match.scheduled_label or 'Kickoff not scheduled'"/>
                     </div>
+                    <div class="small text-muted mt-1" t-if="props.taskCount">Task <t t-esc="props.taskPosition"/> of <t t-esc="props.taskCount"/></div>
                 </div>
-                <button type="button" class="btn btn-outline-secondary btn-sm" t-on-click="onClosePanel">
-                    Close
-                </button>
+                <div class="d-flex gap-2 flex-wrap justify-content-end">
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            t-att-disabled="!props.canGoPrevious"
+                            t-on-click="onPreviousTask">
+                        Previous
+                    </button>
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            t-att-disabled="!props.canGoNext"
+                            t-on-click="onNextTask">
+                        Next
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" t-on-click="onClosePanel">
+                        Close
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 <div t-if="props.successMessage" class="alert alert-success" role="status">
@@ -260,6 +357,17 @@
                     <StatusBadge t-props="{ label: props.match.state_label, tone: props.match.state_tone }"/>
                     <StatusBadge t-props="{ label: props.match.result_state_label, tone: props.match.result_state_tone }"/>
                     <StatusBadge t-props="{ label: props.match.validation_status.label, tone: props.match.validation_status.tone }"/>
+                </div>
+
+                <div class="alert alert-light border o_fed_ops_panel_next_step" role="status">
+                    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                        <div>
+                            <div class="text-uppercase small text-muted mb-1">Next step</div>
+                            <div class="fw-semibold"><t t-esc="props.match.next_step.label"/></div>
+                            <div class="small text-muted"><t t-esc="props.match.next_step.owner_label"/> · <t t-esc="props.match.schedule_status.short_label"/></div>
+                        </div>
+                        <StatusBadge t-props="{ label: props.match.next_step.owner_label, tone: props.match.next_step.tone }"/>
+                    </div>
                 </div>
 
                 <div class="alert alert-warning" role="status" t-if="(props.match.attention_items || []).length">
@@ -305,6 +413,13 @@
                         <p class="small text-muted mt-3 mb-0">
                             Saving a score does not make it official. Standings only update after result approval.
                         </p>
+                    </div>
+                </div>
+
+                <div class="row g-3 small mb-3" t-if="props.match.match_sheet_status.label">
+                    <div class="col-12">
+                        <div class="text-muted text-uppercase">Team sheets</div>
+                        <div class="fw-semibold"><t t-esc="props.match.match_sheet_status.label"/></div>
                     </div>
                 </div>
 
@@ -376,7 +491,7 @@
                 <div class="d-grid gap-2">
                     <button t-if="props.match.primary_action"
                             type="button"
-                            class="btn btn-primary btn-lg"
+                            t-att-class="this.primaryActionClass"
                             t-att-data-action="props.match.primary_action.key"
                             t-att-disabled="props.savingAction"
                             t-on-click="onActionClick">
@@ -385,7 +500,7 @@
                     </button>
                     <t t-foreach="props.match.secondary_actions || []" t-as="action" t-key="action.key">
                         <button type="button"
-                                class="btn btn-outline-secondary"
+                                t-att-class="this.secondaryActionClass(action)"
                                 t-att-data-action="action.key"
                                 t-att-disabled="props.savingAction"
                                 t-on-click="onActionClick">
@@ -393,6 +508,13 @@
                             <t t-else=""><t t-esc="action.label"/></t>
                         </button>
                     </t>
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            t-att-disabled="!props.canGoNext"
+                            t-on-click="onNextTask">
+                        Next task
+                    </button>
+                    <div class="small text-muted">Shortcut: Ctrl/Cmd + S saves the main action. Alt + ↑ / Alt + ↓ moves between tasks.</div>
                 </div>
             </div>
         </aside>
@@ -480,6 +602,14 @@
                                 </button>
                             </div>
                         </div>
+                        <div class="d-flex gap-2 flex-wrap mt-3" t-if="state.data.summary.blocked_court_count || state.data.summary.delayed_court_count || state.data.summary.live_court_count">
+                            <StatusBadge t-if="state.data.summary.blocked_court_count"
+                                         t-props="{ label: state.data.summary.blocked_court_count + ' blocked court(s)', tone: 'danger' }"/>
+                            <StatusBadge t-if="state.data.summary.delayed_court_count"
+                                         t-props="{ label: state.data.summary.delayed_court_count + ' delayed court(s)', tone: 'warning' }"/>
+                            <StatusBadge t-if="state.data.summary.live_court_count"
+                                         t-props="{ label: state.data.summary.live_court_count + ' live court(s)', tone: 'primary' }"/>
+                        </div>
                         <div class="row g-3 mt-2">
                             <div class="col-6 col-lg-2">
                                 <div class="o_fed_ops_metric">
@@ -521,10 +651,22 @@
                     </div>
                 </section>
 
+                <TournamentActionQueue t-props="{
+                    items: state.data.action_queue,
+                    selectedMatchId: state.selectedMatchId,
+                    onOpenMatch: this.openQueueMatch.bind(this),
+                }"/>
+
                 <TournamentSummaryCards t-props="{
                     summary: state.data.summary,
                     activeKey: state.filters.summaryKey,
                     onSelect: this.selectSummaryCard.bind(this),
+                }"/>
+
+                <TournamentCourtSummaries t-props="{
+                    items: state.data.court_summaries,
+                    activeCourtKey: state.filters.court,
+                    onSelectCourt: this.selectCourtSummary.bind(this),
                 }"/>
 
                 <TournamentFilters t-props="{
@@ -537,7 +679,7 @@
                 }"/>
 
                 <div class="row g-4">
-                    <div class="col-12 col-xl-8 order-2 order-xl-1">
+                    <div class="col-12 col-xl-8">
                         <div t-if="!state.data.matches.length" class="card shadow-sm">
                             <div class="card-body text-center py-5">
                                 <div class="display-6 mb-3"><i class="fa fa-calendar-check-o"/></div>
@@ -567,15 +709,22 @@
                                              }"/>
                         </div>
                     </div>
-                    <div class="col-12 col-xl-4 order-1 order-xl-2">
+                    <div class="d-none d-xl-block col-xl-4">
                         <ResultEntryPanel t-if="this.selectedMatch"
                                           t-props="{
                                             match: this.selectedMatch,
                                             form: state.form,
+                                            compactLayout: false,
                                             savingAction: state.savingAction,
                                             successMessage: state.successMessage,
                                             errorMessage: state.panelError,
+                                            canGoPrevious: this.selectedTaskPosition > 1,
+                                                                                        canGoNext: this.selectedTaskPosition > 0 &amp;&amp; this.selectedTaskPosition &lt; this.actionableMatchIds.length,
+                                            taskPosition: this.selectedTaskPosition,
+                                            taskCount: this.actionableMatchIds.length,
                                             onClose: this.closePanel.bind(this),
+                                            onPreviousTask: this.selectAdjacentTask.bind(this, -1),
+                                            onNextTask: this.selectAdjacentTask.bind(this, 1),
                                             onFieldInput: this.updateFormField.bind(this),
                                             onAction: this.runAction.bind(this),
                                           }"/>
@@ -583,11 +732,34 @@
                             <div class="card-body py-5 text-center">
                                 <div class="display-6 mb-3"><i class="fa fa-hand-pointer-o"/></div>
                                 <h2 class="h5 mb-2">Select a match to work faster.</h2>
-                                <p class="text-muted mb-0">Use the panel to enter scores, validate results, and see exactly what still needs attention.</p>
+                                <p class="text-muted mb-0">Use the task panel to enter scores, validate results, and see exactly what still needs attention.</p>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <t t-if="this.selectedMatch &amp;&amp; state.compactLayout">
+                    <div class="o_fed_ops_panel_backdrop" t-on-click="closePanel"/>
+                    <div class="o_fed_ops_mobile_panel_shell">
+                        <ResultEntryPanel t-props="{
+                            match: this.selectedMatch,
+                            form: state.form,
+                            compactLayout: true,
+                            savingAction: state.savingAction,
+                            successMessage: state.successMessage,
+                            errorMessage: state.panelError,
+                            canGoPrevious: this.selectedTaskPosition > 1,
+                            canGoNext: this.selectedTaskPosition > 0 &amp;&amp; this.selectedTaskPosition &lt; this.actionableMatchIds.length,
+                            taskPosition: this.selectedTaskPosition,
+                            taskCount: this.actionableMatchIds.length,
+                            onClose: this.closePanel.bind(this),
+                            onPreviousTask: this.selectAdjacentTask.bind(this, -1),
+                            onNextTask: this.selectAdjacentTask.bind(this, 1),
+                            onFieldInput: this.updateFormField.bind(this),
+                            onAction: this.runAction.bind(this),
+                        }"/>
+                    </div>
+                </t>
             </t>
         </div>
     </t>

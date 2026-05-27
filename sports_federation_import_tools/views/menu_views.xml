@@ -3,8 +3,8 @@
 
     <!-- Imports submenu -->
     <menuitem id="menu_federation_imports"
-              name="Import Tools"
-              parent="sports_federation_base.menu_federation_root"
+              name="Imports &amp; Integrations"
+              parent="sports_federation_base.menu_federation_administration"
               sequence="10"/>
 
     <!-- Import Clubs -->

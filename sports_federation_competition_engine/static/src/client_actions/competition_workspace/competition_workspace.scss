@@ -1,0 +1,346 @@
+.o_fed_cw_action {
+    box-sizing: border-box;
+    height: 100%;
+    padding: 1.5rem;
+    background:
+        radial-gradient(circle at top left, rgba(19, 102, 146, 0.08), transparent 30%),
+        linear-gradient(180deg, #f8fafc 0%, #eef4f8 100%);
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.o_fed_cw_nav {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.o_fed_cw_metric {
+    padding: 0.75rem 0.9rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.o_fed_cw_stepper {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    gap: 0.75rem;
+}
+
+.o_fed_cw_step {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 1rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.o_fed_cw_step.o-active {
+    border-color: rgba(13, 110, 253, 0.35);
+    box-shadow: 0 0.6rem 1.4rem rgba(13, 110, 253, 0.12);
+}
+
+.o_fed_cw_step.o-complete {
+    border-color: rgba(25, 135, 84, 0.25);
+}
+
+.o_fed_cw_step_marker {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: #0d6efd;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex: 0 0 auto;
+}
+
+.o_fed_cw_step.o-complete .o_fed_cw_step_marker {
+    background: #198754;
+}
+
+.o_fed_cw_step_label {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.o_fed_cw_division_list,
+.o_fed_cw_entry_list,
+.o_fed_cw_match_stack {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.o_fed_cw_division_card,
+.o_fed_cw_entry_card,
+.o_fed_cw_match_card {
+    border-radius: 1rem;
+    background: #fff;
+}
+
+.o_fed_cw_division_card.o-active {
+    outline: 2px solid rgba(13, 110, 253, 0.25);
+}
+
+.o_fed_cw_match_card {
+    padding: 0.9rem;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 0.5rem 1.2rem rgba(15, 23, 42, 0.06);
+    cursor: grab;
+}
+
+.o_fed_cw_match_card:focus-visible {
+    outline: 2px solid rgba(13, 110, 253, 0.35);
+    outline-offset: 2px;
+}
+
+.o_fed_cw_match_card.o-assigned {
+    background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+}
+
+.o_fed_cw_match_card.o-selected {
+    border-color: rgba(13, 110, 253, 0.38);
+    box-shadow: 0 0.8rem 1.8rem rgba(13, 110, 253, 0.16);
+    background: linear-gradient(180deg, #ffffff 0%, #eef6ff 100%);
+}
+
+.o_fed_cw_match_card.o-highlighted {
+    border-color: rgba(220, 53, 69, 0.28);
+    box-shadow: 0 0.8rem 1.6rem rgba(220, 53, 69, 0.14);
+}
+
+.o_fed_cw_select_toggle {
+    min-width: 5.5rem;
+}
+
+.o_fed_cw_unscheduled {
+    min-height: 18rem;
+}
+
+.o_fed_cw_planner_layout {
+    --o_fed_cw_planner_pane_height: clamp(24rem, 68vh, 56rem);
+    display: grid;
+    grid-template-columns: minmax(18rem, 22rem) 1fr;
+    gap: 1rem;
+    align-items: start;
+}
+
+.o_fed_cw_planner_layout > * {
+    min-width: 0;
+    min-height: 0;
+}
+
+.o_fed_cw_unscheduled,
+.o_fed_cw_schedule_grid {
+    height: var(--o_fed_cw_planner_pane_height);
+    overflow: hidden;
+}
+
+.o_fed_cw_unscheduled .card-body,
+.o_fed_cw_schedule_grid .card-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+}
+
+.o_fed_cw_match_stack,
+.o_fed_cw_grid_wrapper {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.o_fed_cw_match_stack {
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.o_fed_cw_grid_wrapper {
+    max-width: 100%;
+    overflow: auto;
+}
+
+.o_fed_cw_grid {
+    display: grid;
+    gap: 0.75rem;
+    align-items: stretch;
+    min-width: 48rem;
+}
+
+.o_fed_cw_grid_head,
+.o_fed_cw_grid_time,
+.o_fed_cw_grid_time_cell,
+.o_fed_cw_slot_cell {
+    border-radius: 1rem;
+    padding: 0.85rem;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.o_fed_cw_grid_head,
+.o_fed_cw_grid_time {
+    font-weight: 700;
+}
+
+.o_fed_cw_grid_time_cell {
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.o_fed_cw_slot_cell {
+    min-height: 10rem;
+}
+
+.o_fed_cw_slot_cell.o-highlighted {
+    border-color: rgba(220, 53, 69, 0.24);
+    box-shadow: inset 0 0 0 1px rgba(220, 53, 69, 0.18);
+}
+
+.o_fed_cw_slot_cell.o-state-break {
+    background: rgba(255, 243, 205, 0.7);
+}
+
+.o_fed_cw_slot_cell.o-state-blocked,
+.o_fed_cw_slot_cell.o-state-cancelled {
+    background: rgba(248, 215, 218, 0.7);
+}
+
+.o_fed_cw_empty_slot {
+    min-height: 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    align-items: center;
+    justify-content: center;
+}
+
+.o_fed_cw_validation_panel .alert {
+    margin-bottom: 1rem;
+}
+
+.o_fed_cw_issue_group {
+    padding: 0.85rem 0;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.o_fed_cw_issue_group:first-of-type {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.o_fed_cw_issue_item + .o_fed_cw_issue_item {
+    margin-top: 0.65rem;
+}
+
+.o_fed_cw_collaboration_panel .card-body,
+.o_fed_cw_revision_panel .card-body,
+.o_fed_cw_override_reason .card-body,
+.o_fed_cw_publish_dialog .card-body {
+    border-radius: 1rem;
+}
+
+.o_fed_cw_presence_list,
+.o_fed_cw_revision_list,
+.o_fed_cw_publish_revision_list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.o_fed_cw_presence_item,
+.o_fed_cw_revision_item,
+.o_fed_cw_publish_revision_item {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.o_fed_cw_presence_item.o-same-gameday {
+    border-color: rgba(255, 193, 7, 0.45);
+    background: rgba(255, 248, 227, 0.92);
+}
+
+.o_fed_cw_publish_revision_item {
+    align-items: center;
+}
+
+.o_fed_cw_court_picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.o_fed_cw_planner_toolbar .card-body,
+.o_fed_cw_history_panel .card-body {
+    border-radius: 1rem;
+}
+
+.o_fed_cw_history_list {
+    display: grid;
+    gap: 0.85rem;
+    max-height: 18rem;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.o_fed_cw_history_item {
+    padding: 0.9rem 1rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.o_fed_cw_court_option {
+    padding: 0.65rem 0.85rem;
+}
+
+.o_fed_cw_mobile_dialog_backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.46);
+    display: flex;
+    align-items: end;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 1050;
+}
+
+.o_fed_cw_mobile_dialog {
+    width: 100%;
+    max-width: 32rem;
+    border-radius: 1.25rem 1.25rem 0 0;
+}
+
+@media (max-width: 991.98px) {
+    .o_fed_cw_planner_layout {
+        --o_fed_cw_planner_pane_height: clamp(18rem, 52vh, 36rem);
+    }
+
+    .o_fed_cw_action {
+        padding: 1rem;
+    }
+
+    .o_fed_cw_planner_layout {
+        grid-template-columns: 1fr;
+    }
+
+    .o_fed_cw_grid {
+        min-width: 38rem;
+    }
+
+    .o_fed_cw_presence_item,
+    .o_fed_cw_revision_item,
+    .o_fed_cw_publish_revision_item {
+        flex-direction: column;
+    }
+}

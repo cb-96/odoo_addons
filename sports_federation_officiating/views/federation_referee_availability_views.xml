@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_federation_referee_availability_form" model="ir.ui.view">
+        <field name="name">federation.referee.availability.form</field>
+        <field name="model">federation.referee.availability</field>
+        <field name="arch" type="xml">
+            <form string="Referee Availability">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="referee_id"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                        </group>
+                    </group>
+                    <separator string="Notes"/>
+                    <field name="note"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_federation_referee_availability_list" model="ir.ui.view">
+        <field name="name">federation.referee.availability.list</field>
+        <field name="model">federation.referee.availability</field>
+        <field name="arch" type="xml">
+            <list string="Referee Availability">
+                <field name="referee_id"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="active" optional="show"/>
+                <field name="note" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_federation_referee_availability_search" model="ir.ui.view">
+        <field name="name">federation.referee.availability.search</field>
+        <field name="model">federation.referee.availability</field>
+        <field name="arch" type="xml">
+            <search string="Search Availability">
+                <field name="referee_id"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <filter name="active" string="Active" domain="[('active', '=', True)]"/>
+                <group>
+                    <filter name="referee" string="Referee" context="{'group_by': 'referee_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="federation_referee_availability_action" model="ir.actions.act_window">
+        <field name="name">Referee Availability</field>
+        <field name="res_model">federation.referee.availability</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_federation_referee_availability_search"/>
+    </record>
+
+</odoo>

@@ -1,4 +1,40 @@
 .o_fed_ops_board {
+    .o_fed_ops_queue_scroller,
+    .o_fed_ops_court_scroller {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(16rem, 21rem);
+        gap: 1rem;
+        overflow-x: auto;
+        padding-bottom: 0.25rem;
+        scroll-snap-type: x proximity;
+    }
+
+    .o_fed_ops_queue_card,
+    .o_fed_ops_court_card {
+        border-radius: 1rem;
+        min-width: 0;
+        scroll-snap-align: start;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, outline-color 0.12s ease;
+
+        &:hover,
+        &:focus-visible {
+            transform: translateY(-1px);
+            box-shadow: 0 0.85rem 1.8rem rgba(0, 0, 0, 0.08);
+        }
+
+        &.o-active {
+            outline: 2px solid var(--bs-primary, #0d6efd);
+            background: rgba(13, 110, 253, 0.04);
+        }
+    }
+
+    .o_fed_ops_court_metrics {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
     .o_fed_ops_metric {
         border-radius: 0.75rem;
         background: var(--bs-light-bg-subtle, #f8f9fa);
@@ -58,6 +94,13 @@
             font-size: 1.35rem;
             font-weight: 700;
         }
+
+        .o_fed_ops_next_step {
+            padding: 0.85rem 1rem;
+            border-radius: 0.85rem;
+            background: linear-gradient(135deg, rgba(13, 110, 253, 0.06), rgba(13, 110, 253, 0.02));
+            border: 1px solid rgba(13, 110, 253, 0.12);
+        }
     }
 
     .o_fed_ops_panel {
@@ -70,6 +113,10 @@
             line-height: 1;
             padding-bottom: 0.25rem;
         }
+
+        .o_fed_ops_panel_next_step {
+            border-radius: 0.95rem;
+        }
     }
 
     .o_fed_ops_panel_footer {
@@ -77,11 +124,35 @@
         bottom: 0;
         z-index: 2;
     }
+
+    .o_fed_ops_panel_backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(16, 24, 40, 0.5);
+        z-index: 1050;
+    }
+
+    .o_fed_ops_mobile_panel_shell {
+        position: fixed;
+        inset: auto 0 0 0;
+        z-index: 1051;
+        padding: 0.75rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0));
+    }
+
+    .o_fed_ops_panel.o-compact {
+        position: relative;
+        top: auto;
+        margin: 0;
+        max-height: calc(100vh - 1.5rem);
+        overflow: auto;
+        border-radius: 1.25rem 1.25rem 0 0;
+        box-shadow: 0 -1rem 2rem rgba(16, 24, 40, 0.18);
+    }
 }
 
 @media (max-width: 1199.98px) {
     .o_fed_ops_board {
-        .o_fed_ops_panel {
+        .o_fed_ops_panel:not(.o-compact) {
             position: static;
         }
     }
@@ -89,6 +160,11 @@
 
 @media (max-width: 575.98px) {
     .o_fed_ops_board {
+        .o_fed_ops_queue_scroller,
+        .o_fed_ops_court_scroller {
+            grid-auto-columns: minmax(85vw, 85vw);
+        }
+
         .o_fed_ops_match_card .o_fed_ops_score {
             flex-direction: column;
             align-items: flex-start;

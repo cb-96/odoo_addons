@@ -381,6 +381,16 @@ class FederationTeamRoster(models.Model):
             user=user,
         )
 
+    def _portal_action_reopen(self, user=None):
+        """Reopen closed rosters through the portal boundary after access checks."""
+        user = user or self.env.user
+        self._portal_assert_manage_access(user=user)
+        return self.env["federation.portal.privilege"].portal_call(
+            self,
+            "action_reopen",
+            user=user,
+        )
+
 
 class FederationTeamRosterLine(models.Model):
     _inherit = "federation.team.roster.line"

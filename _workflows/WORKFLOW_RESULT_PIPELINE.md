@@ -71,6 +71,9 @@ At this point the result is entered but **not yet official**.
 7. The approver must be different from both the submitter and the verifier for the same result.
 8. Approved scores are treated as immutable until the result leaves the approved state.
 9. Home and away team / club contacts receive an approval email with the official scoreline.
+10. Match forms now surface a direct tournament handoff after verification,
+    approval, contest, or correction so staff can move immediately into
+    standings review and publication follow-up.
 
 The result is now **official** and eligible for standings computation.
 
@@ -82,7 +85,9 @@ The result is now **official** and eligible for standings computation.
 1. If a party disputes the result, click **Contest Result**.
 2. `result_state` transitions to `contested`.
 3. `result_contest_reason` is filled in with the dispute justification.
-4. The result is excluded from standings until resolved and linked non-frozen standings are recomputed automatically.
+4. The result is removed from official standings immediately
+   (`include_in_official_standings = False`), and linked non-frozen standings
+   are recomputed automatically.
 5. Home and away team / club contacts plus federation managers receive a contest notification.
 
 ### 6. Correction (Exception Path)
@@ -96,7 +101,8 @@ The result is now **official** and eligible for standings computation.
 4. `result_state` transitions to `corrected`.
 5. `result_correction_reason` is recorded.
 6. A governance override request may be filed for audit purposes.
-7. The corrected result can be edited and re-submitted through the pipeline.
+7. The corrected result stays out of official standings until it is edited,
+   re-submitted, and approved through the pipeline again.
 8. If staff need a clean restart, an approver can reset the corrected or contested result back to `draft` before re-submission.
 
 Every transition is also written to `federation.match.result.audit`, so dispute
@@ -109,10 +115,14 @@ history is preserved even after the current `result_state` moves on.
 
 1. Open the relevant standings record (tournament, stage, or group level).
 2. **Recompute standings** — only results with `include_in_official_standings = True`
-   are included. Approved and contested result transitions also trigger automatic recomputation unless the standing is frozen.
+   are included. Approval adds a result; contest, correction, and reset remove
+   it again until it returns to `approved`.
 3. Points are calculated using the rule set (win/draw/loss values).
 4. Tie-break rules are applied in sequence order.
-5. Standings states: `draft` → `computed` → `frozen`.
+5. Standings records use `draft` → `computed` → `frozen`. Public visibility is
+   controlled separately through `website_published`.
+6. Standings forms now explain whether approved results are still missing or
+   whether the next task is website publication.
 
 ### 8. Publication
 
@@ -121,8 +131,11 @@ history is preserved even after the current `result_state` moves on.
 
 1. Publish the standings record (`website_published = True`).
 2. If the tournament has `show_public_results = True`, individual match results
-   appear on the public competition page.
-3. Public pages update to reflect the latest approved data.
+   appear on the public tournament page.
+3. The tournament Website tab now shows whether standings are missing,
+   unpublished, or hidden behind the tournament visibility toggles, with a
+   direct link back to the standings list when operators need to act there.
+4. Public pages update to reflect the latest approved data.
 
 ## State Diagram
 

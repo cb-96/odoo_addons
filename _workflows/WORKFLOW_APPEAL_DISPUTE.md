@@ -3,6 +3,11 @@
 End-to-end process for raising, reviewing, and resolving a result or standing
 dispute submitted by a club representative.
 
+This workflow is intentionally a thin, requester-facing wrapper around
+`WORKFLOW_GOVERNANCE_OVERRIDE.md`, which is the canonical exception engine.
+Do not duplicate full exception mechanics here; use this workflow to describe
+club-entry and follow-up touchpoints only.
+
 ## Overview
 
 When a club representative believes a match result is incorrect or that a ruling
@@ -175,3 +180,9 @@ For result corrections that change scores:
 - [WORKFLOW_GOVERNANCE_OVERRIDE.md](WORKFLOW_GOVERNANCE_OVERRIDE.md) — Generic override request process for all exception types.
 - [WORKFLOW_RESULT_PIPELINE.md](WORKFLOW_RESULT_PIPELINE.md) — Result approval and re-approval after correction.
 - [WORKFLOW_STANDINGS_LIFECYCLE.md](WORKFLOW_STANDINGS_LIFECYCLE.md) — Freeze / unfreeze and recompute steps.
+
+Unified operator model reminder:
+
+- Raise dispute/request exception on the owning record.
+- Resolve through Governance Override.
+- Re-run result approval and standings publication recovery where needed.

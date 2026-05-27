@@ -167,6 +167,7 @@ python3 ci/check_explain_snapshots.py
 
 - Update the relevant module README for behavior or schema changes.
 - Update the matching workflow under `_workflows/` when business behavior changes.
+- Run the [Intuitiveness review checklist](INTUITIVENESS_REVIEW_CHECKLIST.md) for major UX, naming, entry-point, and state-label changes.
 - Keep `TECHNICAL_NOTE.md`, `CONTEXT.md`, `INTEGRATIONS.md`, and `STATE_AND_OWNERSHIP_MATRIX.md` aligned when the change affects their scope.
 - Update `MODULE_OWNERS.yaml` whenever a new addon is introduced or primary module ownership changes.
 - Update `RELEASE_TRAIN.md` when a change starts a new release window or needs train-level migration coordination.

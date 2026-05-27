@@ -103,10 +103,10 @@ class TournamentHubFilterMixin:
             "gender_options": [("", "All Genders")]
             + list(Tournament._fields["gender"].selection),
             "state_options": [
-                ("", "All States"),
-                ("open", "Open"),
-                ("in_progress", "In Progress"),
-                ("closed", "Closed"),
+                ("", "All Tournament Phases"),
+                ("open", "Open for entries"),
+                ("in_progress", "Happening now"),
+                ("closed", "Completed"),
                 ("cancelled", "Cancelled"),
             ],
             "seasons": request.env["federation.season"]

@@ -5,6 +5,16 @@
 ### Overview
 The `sports_federation_portal` module adds public website pages and portal flows for club representatives to register for tournaments and seasons, to work from a unified active-tournament workspace, to review operational rosters and match sheets with their audit history, and for linked match officials to respond to their own officiating assignments. It sits on top of `sports_federation_base`, `sports_federation_tournament`, `sports_federation_officiating`, `sports_federation_rosters`, and `sports_federation_result_control`, using `website` and `portal` from Odoo core.
 
+The current portal navigation intentionally treats `Club Operations Workspace`
+as the primary first step for club representatives. Portal home, My Club, and
+the tournament workspace list page now steer users into that workspace first,
+while direct queues such as Preparation Queue, Result Follow-Up Queue, or
+registration lists remain available as secondary or advanced shortcuts.
+The current portal match-day language also distinguishes the operating phases:
+the workspace and preparation queue are for pre-kick-off work, the live
+operations board is for in-progress play, and the results queue is for
+post-match follow-up.
+
 ### Key Design Decisions
 
 #### 1. Ownership Mapping Strategy
@@ -57,6 +67,7 @@ Referee assignments now support a second portal ownership path alongside club re
 - officials in `group_federation_portal_official` can see only their own referee profile and assignment records.
 - the portal exposes `/my/referee-assignments` and assignment-detail response pages.
 - officials can confirm or decline draft assignments from the portal while reusing the existing officiating readiness checks.
+- the assignments list now surfaces one explicit **Next step** (nearest pending response), plus pending/overdue counters on both portal home and the assignments page so officials can prioritize urgent confirmations without scanning every row.
 
 **Why keep this separate from club representative ownership?**
 - officials are not club-owned records and often work across unrelated clubs and tournaments.
@@ -76,7 +87,10 @@ Key design decisions:
 - All writes go through the existing result-control action methods (`action_submit_result`, `action_verify_result`, `action_approve_result`, `action_contest_result`, `action_correct_result`) rather than direct ORM writes.
 - Portal writes use `federation.portal.privilege.elevate()` so the acting user identity is preserved for audit trails and self-verification guards.
 - The Owl app uses Owl `mount()` (not the backend web-client `mountComponent`) so it works correctly inside the website/portal frontend context.
+- The Owl app mounts immediately and renders its own loading/error states; the initial JSON-RPC payload is no longer awaited before first paint, and the first load times out after 30 seconds so operators get visible retry feedback instead of a page that appears frozen.
 - The Owl app polls every 60 seconds but skips polls while the result panel is dirty or an action is in flight.
+- The payload stays server-shaped: ranked action-queue rows, court-status summaries, next-step hints, and schedule labels are computed in `federation_tournament_operations.py` from the existing match, result-control, officiating, venue, and match-sheet data instead of duplicating workflow logic in JavaScript.
+- The frontend adapts by screen size: desktop keeps a sticky side panel, while compact screens use an explicit bottom-sheet task panel and do not auto-open a match until the operator selects one.
 
 #### 8. Active Tournament Workspace (renamed from §7)
 
@@ -85,6 +99,16 @@ Club and team-scoped portal users now get a tournament-first workspace for activ
 - `/my/tournament-workspaces` groups visible teams by active tournament (`open` or `in_progress`).
 - each entry summarizes registration state, the preferred roster checkpoint, upcoming match-day sheet work, and done matches whose results still need follow-up.
 - `/my/tournament-workspaces/<tournament>/<team>` expands that entry into operational detail with direct links to the roster, match-day queue, and team match sheets.
+- portal home and My Club now present this workspace as the default day-to-day
+    starting point for club representatives.
+- direct links to match-day queues, registration queues, and live operations
+    boards remain available, but the UI now labels those paths as secondary or
+    advanced so they no longer compete with the workspace as equal-weight entry
+    points.
+- the portal now makes the phase boundary explicit: the workspace and
+    preparation queue cover pre-match work, the live operations board covers the
+    active tournament day, and the result follow-up queue covers post-match result
+    review and contest follow-up.
 - the workspace model itself revalidates team scope and active-tournament scope through `federation.portal.privilege` before any elevated reads, so direct model or RPC callers cannot bypass the controller filters.
 - current whole-club access comes only from `portal_club_scope_ids`, while current team-scoped roles stay pinned to `portal_team_scope_ids`; historical or inactive representative rows do not widen workspace visibility.
 
@@ -218,6 +242,7 @@ The same ownership rules are also enforced in the ORM for portal-managed registr
 Roster portal helpers also revalidate roster and season-registration scope through `federation.portal.privilege` before any elevated reuse or create lookup, so team-scoped representatives cannot reach same-club rosters outside their assigned team through helper calls.
 Roster-line player submission now reuses the same portal-scoped player domain as the picker, so forged POST values cannot add inactive or wrong-gender players that the form intentionally hid.
 Roster detail, roster-line route helpers, and roster-line license submission now also resolve ids through `federation.portal.privilege`, so hidden roster, roster-line, or license ids cannot be recovered through raw elevated browse paths.
+Roster state transitions now include a portal reopen helper and route (`/my/rosters/<id>/reopen`) so authorized representatives can undo premature closure while preserving roster readiness and active-uniqueness safeguards.
 
 ### Public Routes
 Public routes use `sudo()` to bypass ACL (since anonymous users have no federation access). They only expose:
@@ -256,11 +281,14 @@ Public routes use `sudo()` to bypass ACL (since anonymous users have no federati
 - [ ] **Operations board** (`/sports/tournament/<id>/operations`) opens for authorized portal and internal users.
 - [ ] **Operations board** is blocked for portal users with no tournament-scoped activity.
 - [ ] **Operations board summary cards** show correct counts for now-playing, next matches, missing results, needs validation, court issues, and completed.
+- [ ] **Operations action queue** ranks the highest-priority tournament-day tasks and selecting a queue item opens the right match task panel.
+- [ ] **Court summary strip** shows blocked, delayed, live, and result-follow-up courts in operator-friendly order.
 - [ ] **Operations board match cards** display scheduled time, teams, score, state, court, and referee.
 - [ ] **Operations board filters** filter by court, match state, result state, timeline, and team search.
 - [ ] **Result panel opens** when a match card is selected.
 - [ ] **Result save** calls backend validation; invalid score shows clear error.
 - [ ] **Saved result** updates UI without full page reload.
+- [ ] **Compact layout** opens the selected match in a bottom-sheet task panel without pushing the board overview off screen.
 - [ ] **Board refreshes** via the refresh button and auto-polls every 60 seconds when the panel is clean.
 - [ ] **Offline banner** appears when the browser loses connectivity.
 - [ ] **Portal dashboard** shows officiating cards for linked match officials.

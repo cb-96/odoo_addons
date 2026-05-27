@@ -48,6 +48,20 @@ class FederationPortalBase(CustomerPortal):
         values["federation_club"] = representative.club_id if representative else None
         values["federation_referee"] = referee
 
+        if referee and "federation.match.referee" in request.env:
+            assignment_model = request.env["federation.match.referee"].sudo()
+            assignment_domain = [("referee_id", "=", referee.id)]
+            values["federation_pending_assignment_count"] = assignment_model.search_count(
+                assignment_domain + [("state", "=", "draft")]
+            )
+            values["federation_overdue_assignment_count"] = assignment_model.search_count(
+                assignment_domain
+                + [("state", "=", "draft"), ("is_confirmation_overdue", "=", True)]
+            )
+        else:
+            values["federation_pending_assignment_count"] = 0
+            values["federation_overdue_assignment_count"] = 0
+
         # Count badges for portal home sidebar urgency indicators
         if representative:
             clubs = representative.mapped("club_id")

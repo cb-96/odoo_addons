@@ -541,6 +541,11 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
     def test_officiating_response_flow_renders_success(self):
         self.authenticate(self.official_user.login, "ignored")
 
+        list_response = self.url_open("/my/referee-assignments")
+        self.assertEqual(list_response.status_code, 200)
+        self.assertIn("Next step:", list_response.text)
+        self.assertIn("Respond now", list_response.text)
+
         detail_response = self.url_open(f"/my/referee-assignments/{self.assignment.id}")
         submit_response = self.url_open(
             f"/my/referee-assignments/{self.assignment.id}/respond",

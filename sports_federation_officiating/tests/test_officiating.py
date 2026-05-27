@@ -1,5 +1,7 @@
 """Tests for sports_federation_officiating: referees, certifications, match assignments."""
 
+import unittest
+
 from datetime import timedelta
 
 from odoo import fields
@@ -492,3 +494,232 @@ class TestMatchReferee(TransactionCase):
         issues = assignment._get_readiness_issues()
         self.assertTrue(any("certification" in i.lower() for i in issues))
         self.assertFalse(assignment.assignment_ready)
+
+    def test_availability_gap_creates_warning_without_blocking_confirmation(self):
+        """Availability windows warn when uncovered but do not invalidate readiness on their own."""
+        self.match.write({"date_scheduled": "2024-06-15 15:00:00"})
+        self.env["federation.referee.availability"].create(
+            {
+                "referee_id": self.referee.id,
+                "date_start": "2024-06-15 09:00:00",
+                "date_end": "2024-06-15 10:00:00",
+            }
+        )
+
+        assignment = self._make_assignment(self.referee)
+
+        self.assertTrue(assignment.assignment_ready)
+        self.assertTrue(assignment.assignment_has_warning)
+        self.assertIn(
+            "availability",
+            (assignment.assignment_warning_feedback or "").lower(),
+        )
+
+    def test_overlapping_assignment_blocks_confirmation(self):
+        """An overlapping assignment is allowed in draft but cannot be confirmed."""
+        self.match.write({"date_scheduled": "2024-06-15 15:00:00"})
+        other_match = self.env["federation.match"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "home_team_id": self.team_b.id,
+                "away_team_id": self.team_a.id,
+                "date_scheduled": "2024-06-15 15:00:00",
+                "state": "draft",
+            }
+        )
+        self._make_assignment(self.referee).action_confirm()
+        overlapping_assignment = self.env["federation.match.referee"].create(
+            {
+                "match_id": other_match.id,
+                "referee_id": self.referee.id,
+                "role": "assistant_1",
+            }
+        )
+
+        self.assertFalse(overlapping_assignment.assignment_ready)
+        self.assertIn(
+            "overlapping",
+            (overlapping_assignment.readiness_feedback or "").lower(),
+        )
+        with self.assertRaises(ValidationError):
+            overlapping_assignment.action_confirm()
+
+
+class TestCompetitionWorkspaceOfficiatingIntegration(TransactionCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        if cls.env.get("federation.competition.workspace.service") is None:
+            raise unittest.SkipTest("Competition Workspace is not installed in this test run.")
+        if cls.env.get("federation.venue") is None:
+            raise unittest.SkipTest("Venue planning models are not installed in this test run.")
+
+        cls.service = cls.env["federation.competition.workspace.service"]
+        cls.club = cls.env["federation.club"].create({"name": "Workspace Ref Club"})
+        cls.teams = cls.env["federation.team"]
+        for index in range(1, 5):
+            cls.teams |= cls.env["federation.team"].create(
+                {
+                    "name": f"Workspace Ref Team {index}",
+                    "club_id": cls.club.id,
+                }
+            )
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "Workspace Ref Season",
+                "date_start": "2024-01-01",
+                "date_end": "2024-12-31",
+            }
+        )
+        cls.competition_template = cls.env["federation.competition"].create(
+            {"name": "Workspace Ref Competition", "competition_type": "league"}
+        )
+        cls.edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Workspace Ref Edition",
+                "competition_id": cls.competition_template.id,
+                "season_id": cls.season.id,
+                "date_start": "2024-06-01",
+                "date_end": "2024-06-30",
+            }
+        )
+        cls.venue = cls.env["federation.venue"].create({"name": "Ref Arena"})
+        cls.court_1 = cls.env["federation.playing.area"].create(
+            {"name": "Arena Court 1", "venue_id": cls.venue.id}
+        )
+        cls.court_2 = cls.env["federation.playing.area"].create(
+            {"name": "Arena Court 2", "venue_id": cls.venue.id}
+        )
+        cls.division = cls.env["federation.tournament"].create(
+            {
+                "name": "Workspace Ref Division",
+                "edition_id": cls.edition.id,
+                "competition_id": cls.competition_template.id,
+                "season_id": cls.season.id,
+                "date_start": "2024-06-20",
+                "date_end": "2024-06-20",
+                "workspace_state": "planning",
+            }
+        )
+        stage = cls.division._workspace_get_or_create_stage()
+        cls.gameday = cls.env["federation.tournament.round"].create(
+            {
+                "name": "Ref Gameday",
+                "stage_id": stage.id,
+                "round_date": "2024-06-20",
+            }
+        )
+        cls.slot_a = cls.env["federation.match.slot"].create(
+            {
+                "round_id": cls.gameday.id,
+                "venue_id": cls.venue.id,
+                "playing_area_id": cls.court_1.id,
+                "start_datetime": "2024-06-20 15:00:00",
+                "end_datetime": "2024-06-20 15:45:00",
+            }
+        )
+        cls.slot_b = cls.env["federation.match.slot"].create(
+            {
+                "round_id": cls.gameday.id,
+                "venue_id": cls.venue.id,
+                "playing_area_id": cls.court_2.id,
+                "start_datetime": "2024-06-20 15:00:00",
+                "end_datetime": "2024-06-20 15:45:00",
+            }
+        )
+        cls.match_a = cls.env["federation.match"].create(
+            {
+                "tournament_id": cls.division.id,
+                "stage_id": stage.id,
+                "home_team_id": cls.teams[0].id,
+                "away_team_id": cls.teams[1].id,
+                "state": "draft",
+            }
+        )
+        cls.match_b = cls.env["federation.match"].create(
+            {
+                "tournament_id": cls.division.id,
+                "stage_id": stage.id,
+                "home_team_id": cls.teams[2].id,
+                "away_team_id": cls.teams[3].id,
+                "state": "draft",
+            }
+        )
+        cls.referee = cls.env["federation.referee"].create(
+            {
+                "name": "Workspace Referee",
+                "certification_level": "national",
+            }
+        )
+
+    def test_workspace_validation_flags_referee_availability_gap(self):
+        """Planner checks defer availability warnings until the gameday is published."""
+        self.env["federation.referee.availability"].create(
+            {
+                "referee_id": self.referee.id,
+                "date_start": "2024-06-20 08:00:00",
+                "date_end": "2024-06-20 10:00:00",
+            }
+        )
+        self.env["federation.match.referee"].create(
+            {
+                "match_id": self.match_a.id,
+                "referee_id": self.referee.id,
+                "role": "head",
+            }
+        )
+
+        validation = self.service.validate_match_assignment(self.match_a.id, self.slot_a.id)
+
+        self.assertFalse(validation["blocking"])
+        self.assertFalse(validation["warnings"])
+
+        self.gameday._competition_workspace_transition_planner_state("published")
+        published_validation = self.service.validate_match_assignment(
+            self.match_a.id,
+            self.slot_a.id,
+        )
+
+        self.assertEqual(
+            [issue["code"] for issue in published_validation["warnings"]],
+            ["referee_unavailable"],
+        )
+
+    def test_workspace_validation_blocks_double_booked_referee(self):
+        """Planner validation blocks double-booked referees after planning is published."""
+        self.env["federation.match.referee"].create(
+            {
+                "match_id": self.match_a.id,
+                "referee_id": self.referee.id,
+                "role": "head",
+            }
+        )
+        self.env["federation.match.referee"].create(
+            {
+                "match_id": self.match_b.id,
+                "referee_id": self.referee.id,
+                "role": "head",
+            }
+        )
+        self.service.assign_match_to_slot(self.match_a.id, self.slot_a.id)
+
+        draft_validation = self.service.validate_match_assignment(self.match_b.id, self.slot_b.id)
+        self.assertFalse(draft_validation["blocking"])
+
+        gameday_validation = self.service.validate_gameday(self.gameday.id)
+        self.assertFalse(gameday_validation["blocking"])
+        self.assertFalse(gameday_validation["warnings"])
+
+        self.gameday._competition_workspace_transition_planner_state("published")
+
+        published_gameday_validation = self.service.validate_gameday(self.gameday.id)
+        self.assertIn(
+            "officiating_not_ready",
+            {issue["code"] for issue in published_gameday_validation["warnings"]},
+        )
+
+        validation = self.service.validate_match_assignment(self.match_b.id, self.slot_b.id)
+        codes = {issue["code"] for issue in validation["blocking"]}
+
+        self.assertIn("referee_double_booked", codes)

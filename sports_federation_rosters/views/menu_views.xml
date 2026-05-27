@@ -2,7 +2,7 @@
 <odoo>
     <menuitem id="menu_federation_match_sheets"
               name="Match Sheets"
-              parent="sports_federation_tournament.menu_federation_tournament"
+              parent="sports_federation_base.menu_federation_match_day"
               action="action_federation_match_sheet"
               sequence="20"/>
 </odoo>

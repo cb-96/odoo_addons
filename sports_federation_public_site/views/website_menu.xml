@@ -10,9 +10,9 @@
         <field name="sequence" eval="50"/>
     </record>
 
-    <!-- Website submenu for published tournament coverage -->
+    <!-- Website submenu for tournament updates and archive browsing -->
     <record id="menu_website_competitions" model="website.menu">
-        <field name="name">Published Coverage</field>
+        <field name="name">Tournament Updates</field>
         <field name="url">/tournaments#published</field>
         <field name="parent_id" ref="sports_federation_public_site.menu_website_tournaments"/>
         <field name="sequence" type="int">10</field>

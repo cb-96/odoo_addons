@@ -3,20 +3,214 @@ Sports Federation Competition Engine
 
 Schedule generation wizards for round-robin and knockout formats. Given a
 tournament with participants, the engine creates matches, assigns venues, and
-sets kickoff times automatically.
+sets kickoff times automatically. It also provides the backend Competition
+Workspace for guided league planning, slot-based scheduling, and controlled
+publication.
 
 Purpose
 -------
 
 Automates fixture creation. Instead of manually entering dozens or hundreds of
 matches, federation staff run a wizard that generates a complete schedule for
-the chosen format, seeding mode, and time intervals.
+the chosen format, seeding mode, and time intervals. For staged operational
+planning, the Competition Workspace guides administrators from competition
+creation through team confirmation, round generation, gameday setup, visual slot
+planning, validation, and publication. In the current backend navigation,
+`Planning Workspace` is the primary scheduling entry point and the direct
+round-robin or knockout buttons on tournament forms are explicitly labeled as
+advanced wizard paths.
 
 Dependencies
 ------------
 
 Depends on sports_federation_tournament for tournaments, stages, groups,
-participants, and matches.
+participants, and matches. Depends on sports_federation_venues for venue and
+playing-area scheduling and on web assets for the backend Owl client action.
+
+Competition Workspace
+---------------------
+
+The Planning Workspace is a backend client action anchored on
+`federation.competition.edition`, `federation.tournament`, and
+`federation.tournament.round`.
+
+Operators reach it from the `Planning` menu bucket or from the `Open Planning
+Workspace` buttons on competition editions and divisions.
+
+In workspace and operator copy, use `season competition` for the season-specific
+`federation.competition.edition` record that holds the divisions, schedule
+planning, and publication status for one competition season. Older notes may
+still refer to this record as the `competition shell`, but that term is
+deprecated outside compatibility discussions.
+
+Guided flow
+~~~~~~~~~~~~
+
+1. Create the season competition or open an existing edition.
+  If the selected competition template already has an edition for that season,
+  the workspace reopens the existing competition instead of creating a
+  duplicate season record.
+2. Create a division and choose its planning format.
+3. Add and confirm team entries.
+  The team picker now uses server-side search with an optional club filter so
+  large catalogs stay usable on mobile and desktop.
+4. Lock the participant list.
+5. Generate unscheduled matches for single round robin, double round robin,
+  knockout, or pool-then-bracket planning.
+   Pool-then-bracket creates balanced pool play first and a linked knockout
+   stage for the configured qualifiers per pool.
+6. Create gamedays.
+  Multi-stage divisions can target a specific stage so pool work and knockout
+  work stay separate in the planner.
+  A gameday can now include one or more additional divisions from the same
+  competition when they share the same physical match day.
+7. Generate court and timeslot slots for a gameday.
+8. Open the visual planner and assign matches to slots.
+  The planner now supports selected-match bulk assign and bulk unassign,
+  quick undo and redo of recent planner actions, and a visible action history
+  panel for the active gameday. Desktop users can still drag and drop, while
+  keyboard and mobile users can select one match and assign it directly into an
+  empty slot. Dragging one already scheduled match onto another occupied slot
+  now performs a validated safe swap when both matches can trade places.
+  Stage labels stay visible on previews, gamedays, and match cards, the
+  planner shows a fairness summary for the active division, and selecting one
+  unscheduled match surfaces ranked slot suggestions backed by the current
+  planner rules. Division planning fairness rules (minimum rest and maximum
+  consecutive short-rest matches per team) can be adjusted directly in the
+  workspace after creation.
+9. Refresh or reopen the workspace without losing the current section,
+  division, gameday, or planner filters.
+10. Review blocking conflicts and warnings.
+   Validation now groups blocking and warning issues by type, includes
+   operator-facing hints, and highlights affected slots or matches in the
+   planner. When the officiating and venues addons are installed, the same
+   review step also shows officiating readiness and venue-readiness issues.
+11. Publish a gameday or the full competition schedule.
+   Publish review now shows current draft and live revision status for each
+   gameday, and managers must record a reason before forcing warnings or
+   replacing a live schedule.
+12. Maintain schedule changes with server-side guardrails.
+   The workspace tracks live, draft, and superseded schedule revisions and
+   shows active operator presence so same-gameday edits are visible before a
+   stale write reaches the server.
+
+The workspace shell scrolls vertically inside the backend action, while the
+planner grid keeps its own horizontal overflow handling. This keeps long
+timeslot lists reachable without clipping the planner to a single viewport.
+
+Key models and services
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- `federation.match.slot` stores the operational slot grid used by the visual
+  planner. A slot belongs to a gameday and may hold at most one match.
+- `federation.competition.schedule.revision` stores draft, live, and
+  superseded schedule snapshots so publication is revisioned instead of being a
+  single mutable state flip.
+- `federation.competition.workspace.presence` stores recent operator heartbeat
+  data for collaboration warnings and same-gameday edit indicators.
+- `federation.competition.planner.operation` stores recent planner actions so
+  assignment, move, unassignment, undo, and redo flows can be reviewed and
+  reversed without leaving the workspace.
+- `federation.competition.workspace.service` owns competition creation,
+  division creation, team-entry confirmation, format-aware schedule generation,
+  gameday creation, slot generation, assignment validation, bulk planner
+  actions, planner history, revisioned publication, collaboration heartbeat,
+  and payload building for the Owl action.
+- `federation.competition.workspace.validation.service` centralizes planner
+  assignment, gameday, and competition validation so the write service and the
+  read-model payload stay aligned.
+- `federation.competition.workspace.read.model.service` builds the workspace
+  payloads and can skip planner hydration until the UI explicitly opens a
+  gameday.
+- `federation.competition.workspace.extension.*` models are optional addon
+  extension points that can add validation issues, payload enrichments, score
+  components, and slot-suggestion logic without hard-coding every federation
+  rule into the core engine.
+- `federation.tournament.workspace_state` tracks the guided planning lifecycle
+  for a division without replacing the tournament lifecycle in
+  `sports_federation_tournament`.
+- `federation.tournament.round.planner_state` tracks operational gameday
+  planning and publication state.
+- `federation.tournament.round.planner_revision` increments whenever slot
+  assignments, slot grids, or publication state change so stale tabs are forced
+  to refresh before they overwrite newer planner data.
+- Shared match days reuse `federation.tournament.round` as a linked set of
+  per-division gamedays. One round owns the physical slot grid, while guest
+  divisions keep their own legal `round_id` records so match scope remains
+  inside the correct tournament and stage.
+
+Shared gamedays
+~~~~~~~~~~~~~~~
+
+- Create a shared gameday from one division and add the other participating
+  divisions in the same form.
+- The workspace creates one slot-owning root gameday plus one linked gameday
+  per extra division.
+- The visual planner shows one combined slot grid and can schedule matches from
+  all participating divisions in the same day.
+- Validation and publication always resolve through the slot-owning root
+  gameday so host and guest divisions see the same empty-slot, warning, and
+  blocking results before a manager publishes the day.
+- Match cards show their division label and the planner filters can narrow the
+  unscheduled list back down to one division when needed.
+- The planner selection toolbar can bulk-assign the current filtered
+  unscheduled set into the next open slots or bulk-unassign selected scheduled
+  matches from the active shared day.
+- A guest-division match keeps its own division round even when it is assigned
+  into a shared physical slot grid.
+
+Roles and safeguards
+~~~~~~~~~~~~~~~~~~~~
+
+- `Competition Planner` can open the workspace, prepare divisions, generate
+  rounds and slots, and plan assignments.
+- Federation managers keep full access and are the only users allowed to
+  create competitions from the workspace menu, publish schedules, or force
+  warning-only assignments.
+- Blocking validations stop unscheduled reuse of an occupied slot and prevent
+  any move that would create a team overlap across simultaneous matches.
+- When both matches are already assigned on the same planner root, the planner
+  can perform a validated safe swap across occupied slots instead of forcing an
+  unassign-first workflow.
+- Short-rest situations are warnings, not blocking errors, and require a
+  manager to force the assignment when accepted operationally.
+- Consecutive short-rest streaks are also validated using the division policy.
+  The planner warns when a placement would exceed
+  `max_consecutive_matches_per_team`.
+- Forced warning-only assignments and republishing a live schedule require a
+  manager override reason that is stored on the planner operation or schedule
+  revision.
+- Officiating readiness checks are deferred until the gameday moves beyond
+  planning (`published` and later) so planners can complete slot allocation
+  before final referee staffing decisions.
+- Planner writes carry the current `planner_revision`; stale sessions must
+  reload before they can generate slots, assign matches, unassign matches, or
+  publish a gameday.
+- The planner records assignment, move, and unassignment actions, exposes the
+  recent action history in the UI, and supports quick undo and redo on the
+  active gameday. A new planner write clears the redo branch so history stays
+  linear and auditable.
+- Planner presence heartbeats surface who else is active in the same workspace
+  and warn when another operator is editing the same gameday.
+- Validation payloads now include grouped blocking and warning sections,
+  actionable hints, and focus metadata that the UI uses to highlight affected
+  slots or matches.
+- Any change that touches a validated or published day reopens the linked
+  gameday back to `planned` and the affected divisions back to `planning`
+  before another publication pass.
+- Published gamedays lock routine schedule edits for planners.
+
+Supported workspace generation modes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- `single_round_robin` generates one full cycle of unscheduled pairings.
+- `double_round_robin` generates home-and-away pairings while keeping later
+  gameday assignment separate.
+- `knockout` generates a seeded single-elimination bracket with linked future
+  rounds and byes when needed.
+- `manual` leaves match creation outside the guided generator.
+- `pool_then_bracket` generates balanced pool rounds first, then wires a staged
+  knockout bracket for the configured qualifiers from each pool.
 
 Wizards
 -------
@@ -73,30 +267,34 @@ Key Behaviours
 --------------
 
 - Overwrite protection keeps existing matches unless overwrite is explicitly
-	checked.
+  checked.
 - Tournament state checks require the tournament to be open or in_progress
-	before either wizard generates fixtures.
+  before either wizard generates fixtures.
 - Rule-set requirements force an effective rule set on the tournament or linked
-	competition before matches are created.
+  competition before matches are created.
 - Preview-first UI shows a computed summary before confirmation, and the
-	knockout overwrite warning uses an explicit alert role so Odoo 19 view
-	validation stays clean.
+  knockout overwrite warning uses an explicit alert role so Odoo 19 view
+  validation stays clean.
 - At least 2 teams are required before schedule generation can proceed.
 - Tournament templates let `federation.tournament.template.action_apply()`
-	scaffold stages, groups, and progression rules with regression coverage.
+  scaffold stages, groups, and progression rules with regression coverage.
 - Stage progression clears any stale source-group assignment when advancing an
-	existing participant into a target stage that has no explicit target group.
+  existing participant into a target stage that has no explicit target group.
 - Wizard launch buttons are added to the tournament form view.
 
 Validation and safeguards
 -------------------------
 
 - Round-robin generation rejects stages or groups that do not belong to the
-	selected tournament.
+  selected tournament.
 - Knockout generation validates source-stage ownership before it seeds a
-	bracket from prior standings.
+  bracket from prior standings.
 - Both wizards require an effective rule set from the tournament or linked
-	competition before persisting matches.
+  competition before persisting matches.
 - Preview summaries are intended to be reviewed before confirmation, and
-	overwrite mode warns that existing matches in the selected scope will be
-	replaced.
+  overwrite mode warns that existing matches in the selected scope will be
+  replaced.
+- Workspace publication requires all blocking validation issues to be cleared
+  and restricts warning-only overrides to federation managers.
+- Slot generation enforces one match per slot and one slot start time per
+  playing area and gameday.

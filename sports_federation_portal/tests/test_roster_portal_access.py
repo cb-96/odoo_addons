@@ -501,6 +501,21 @@ class TestRosterPortalAccess(TransactionCase):
             self.env["federation.team.roster.line"].browse(line_id).exists()
         )
 
+    def test_portal_user_can_reopen_closed_roster_with_helper(self):
+        """Portal helpers should allow reopening a closed owned roster."""
+        self.roster_a._portal_action_close(user=self.user_a)
+        self.roster_a.invalidate_recordset()
+        self.assertEqual(self.roster_a.status, "closed")
+
+        self.roster_a._portal_action_reopen(user=self.user_a)
+        self.roster_a.invalidate_recordset()
+        self.assertEqual(self.roster_a.status, "active")
+
+    def test_portal_user_cannot_reopen_non_closed_roster(self):
+        """Portal reopen helper should enforce closed-state precondition."""
+        with self.assertRaises(ValidationError):
+            self.roster_a._portal_action_reopen(user=self.user_a)
+
     def test_portal_player_picker_filters_by_team_gender(self):
         """Portal line creation must enforce the same gender filter as the picker."""
         women_team = self.env["federation.team"].create(

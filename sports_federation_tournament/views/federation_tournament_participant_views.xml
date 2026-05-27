@@ -95,6 +95,9 @@
             <p class="o_view_nocontent_smiling_face">
                 Register your first tournament participant.
             </p>
+            <p>
+                Use this list after tournament registrations are accepted, then confirm each participant once roster readiness is clear.
+            </p>
         </field>
     </record>
 

@@ -92,9 +92,9 @@
 
     <menuitem id="menu_federation_public_editorial"
               name="Public Editorial"
-              parent="sports_federation_base.menu_federation_root"
+              parent="sports_federation_base.menu_federation_publication"
               action="action_federation_public_editorial_items"
-              sequence="85"
+              sequence="20"
               groups="sports_federation_base.group_federation_manager"/>
 
 </odoo>

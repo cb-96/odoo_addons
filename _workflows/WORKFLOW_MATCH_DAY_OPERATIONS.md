@@ -10,6 +10,23 @@ must be active, match sheets must be submitted with eligible players, referees
 must be assigned and confirmed, and the venue must be set. This workflow covers
 the operational sequence from pre-match preparation through to the final whistle.
 
+Primary surfaces by phase:
+
+- **Preparation** — start from the portal **Club Operations Workspace** or team
+   workspace for squad sheets and roster readiness. The **Preparation Queue** is
+   a direct shortcut when the operator already knows they only need pre-kick-off
+   tasks, and the backend **Gameday Planner** is the staff-only day-level
+   surface for slot assignment and final one-day adjustments.
+- **Live operations** — use the **Live Operations Board** at
+   `/sports/tournament/<id>/operations` once matches are underway.
+- **Result follow-up** — use the portal **Result Follow-Up Queue** after full
+   time when results still need approval, contests, or standings follow-up.
+   Backend match and tournament records are specialist follow-up surfaces, not
+   the default club starting point.
+
+Direct queues and record pages exist as shortcuts, but they should not be
+treated as equal-weight starting points for club representatives.
+
 ## Modules Involved
 
 | Module | Role |
@@ -84,12 +101,13 @@ Portal workspace note:
    - `table` — Table or desk official
 3. Each assignment has a state: `draft` (displayed as Assigned) → `confirmed` → `done` / `cancelled`.
 4. Assignments inherit a 48-hour confirmation deadline from the scheduled match time and stay visible as overdue until confirmed, cancelled, or the match closes.
-5. Confirmation is blocked if the official is inactive or their certification is missing / expired for the match date.
+5. Confirmation is blocked if the official is inactive, their certification is missing / expired for the match date, or another assignment overlaps the same match window.
 6. Matches aggregate readiness from the rule set's `referee_required_count`, confirmed assignments, overdue confirmations, and assignment-level readiness issues.
-7. Creating an assignment sends an email to the assigned referee with the role and confirmation deadline.
-8. The scheduled notification scan creates federation-manager activities for overdue confirmations and staffing shortages.
-9. SQL constraint prevents duplicate (match, referee, role) combinations.
-10. The rule set's `referee_required_count` indicates how many officials are needed.
+7. Competition Workspace validation applies these readiness rules after planning moves to `published` (and later states): double-booked officials block assignment moves while uncovered availability remains a warning.
+8. Creating an assignment sends an email to the assigned referee with the role and confirmation deadline.
+9. The scheduled notification scan creates federation-manager activities for overdue confirmations and staffing shortages.
+10. SQL constraint prevents duplicate (match, referee, role) combinations.
+11. The rule set's `referee_required_count` indicates how many officials are needed.
 
 ### 4. Venue Confirmation
 
@@ -98,6 +116,10 @@ Portal workspace note:
 
 1. Confirm the match venue is set (via `venue_id` on the match).
 2. Verify the playing area is available and suitable.
+    - Competition Workspace validation blocks slots that fall inside venue or
+       playing-area blackout and maintenance windows.
+    - Divisions can require playing-area capabilities, and mismatched courts are
+       rejected before assignment.
 3. Contact venue via stored contact details if needed.
 4. If the venue incurs passthrough costs, scheduling the match with a venue
    automatically creates or reuses a draft venue booking finance event. Staff can
@@ -127,8 +149,8 @@ Before the match starts, verify:
 | Squad sizes valid | `rules` | Within min/max from rule set |
 | Player licenses active | `people` | All listed players have active season licenses |
 | No active suspensions | `discipline` | No player on the sheet is currently suspended |
-| Referees confirmed | `officiating` | Required referee roles are filled and confirmed |
-| Venue set | `venues` | Match has a valid venue assignment |
+| Referees confirmed | `officiating` | Required referee roles are filled, confirmable, and not double-booked |
+| Venue set | `venues` | Match has a valid venue assignment that avoids blackout and capability issues |
 
 Operational traceability additions:
 
@@ -175,7 +197,7 @@ Operational readiness additions:
 ## State Diagram
 
 ```
-Roster: draft → active → closed
+Roster: draft ↔ active → closed → active
 
 Match Sheet: draft → submitted → approved → locked
                           ↘ draft
@@ -213,17 +235,33 @@ A live operations board is available at `/sports/tournament/<id>/operations` for
 
 - **Audience**: tournament organizers, court managers, result table volunteers, federation admins.
 - **Access**: portal users with provable tournament-scoped activity (registration, participant record, or visible match in club/team scope); internal federation staff via their normal Odoo session.
-- **Entry points**: "Operations Board" button on the backend tournament form; "Go to operations board" link in the tournament workspace page.
+- **Entry points**: open from the backend tournament form or from the club/team
+   workspace once preparation is complete. Do not use the board as the starting
+   surface for pre-match lineup work.
+
+Phase boundary note:
+
+- The live operations board is not the primary place for lineup preparation.
+   Stay in the Club Operations Workspace, roster pages, or preparation queue until the
+   tournament day is actively underway.
 
 ### Board sections
 
 | Section | Purpose |
 |---------|---------|
 | Tournament header | Name, venue, status, match counts, refresh button |
+| Action queue | Ranked “what should I do next?” list with court, timing, owner, and one-tap selection |
 | Summary cards | Clickable filters: Now playing, Next matches, Missing results, Needs validation, Court issues, Completed |
+| Court status strip | One card per court / playing area showing blocked, delayed, live, or result-follow-up status |
 | Match list by court | Cards grouped by playing area; each card shows teams, score, state, referee, and one primary action |
-| Result entry panel | Inline panel for fast score entry, result actions, and validation feedback |
+| Result entry panel | Sticky side panel on desktop and bottom-sheet task panel on compact screens for fast score entry and result actions |
 | Filters | Search by team name; filter by court, match state, result state, timeline, referee |
+
+Additional operator guidance:
+
+- each match card surfaces a server-computed **Next step** so volunteers do not need to infer the immediate action from raw state badges alone.
+- compact screens keep the board overview first; the task panel opens only after the operator selects a match.
+- keyboard shortcuts are available for rapid desk work: `Alt + ↑ / Alt + ↓` moves between ranked tasks and `Ctrl/Cmd + S` runs the selected panel's main action.
 
 ### How results are saved
 

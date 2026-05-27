@@ -12,6 +12,7 @@ class FederationParticipationAudit(models.Model):
             ("roster_updated", "Roster Updated"),
             ("roster_activated", "Roster Activated"),
             ("roster_closed", "Roster Closed"),
+            ("roster_reopened", "Roster Reopened"),
             ("roster_line_added", "Roster Line Added"),
             ("roster_line_updated", "Roster Line Updated"),
             ("roster_line_removed", "Roster Line Removed"),

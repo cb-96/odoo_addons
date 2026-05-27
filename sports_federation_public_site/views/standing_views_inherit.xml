@@ -9,6 +9,24 @@
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
                 <page string="Website" name="website">
+                    <div class="alert alert-info"
+                         invisible="state != 'draft'"
+                         role="status">
+                        <strong>Next step:</strong>
+                        No public table appears until approved results have been folded into this standings record.
+                    </div>
+                    <div class="alert alert-warning"
+                         invisible="state == 'draft' or website_published"
+                         role="alert">
+                        <strong>Hidden:</strong>
+                        This standings table is ready for review, but visitors cannot see it until you publish it here.
+                    </div>
+                    <div class="alert alert-success"
+                         invisible="not website_published"
+                         role="status">
+                        <strong>Public visibility:</strong>
+                        This standings table is visible on published tournament pages.
+                    </div>
                     <group>
                         <group string="Publication">
                             <field name="website_published"/>

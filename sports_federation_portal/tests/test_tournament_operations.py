@@ -269,9 +269,40 @@ class TestTournamentOperations(TransactionCase):
         self.assertEqual(payload["summary"]["now_playing_count"], 1)
         self.assertEqual(payload["summary"]["missing_result_count"], 2)
         self.assertEqual(payload["summary"]["needs_validation_count"], 1)
+        self.assertGreaterEqual(payload["summary"]["action_queue_count"], 1)
         self.assertTrue(payload["matches"])
         self.assertIn("primary_action", payload["matches"][0])
+        self.assertTrue(payload["action_queue"])
+        self.assertTrue(payload["court_summaries"])
         self.assertIn("filters", payload)
+
+    def test_payload_exposes_next_step_schedule_status_and_ranked_queue(self):
+        payload = self.tournament._operations_get_payload(user=self.manager_user)
+        matches_by_id = {match["id"]: match for match in payload["matches"]}
+
+        self.assertEqual(
+            matches_by_id[self.live_match.id]["next_step"]["key"],
+            "finish",
+        )
+        self.assertEqual(
+            matches_by_id[self.missing_result_match.id]["next_step"]["key"],
+            "submit",
+        )
+        self.assertEqual(
+            matches_by_id[self.verified_match.id]["next_step"]["key"],
+            "approve",
+        )
+        self.assertTrue(
+            matches_by_id[self.missing_result_match.id]["schedule_status"][
+                "short_label"
+            ]
+        )
+        self.assertEqual(payload["action_queue"][0]["match_id"], self.missing_result_match.id)
+        court_names = {court["court_name"] for court in payload["court_summaries"]}
+        if self.playing_area:
+            self.assertIn(self.playing_area.name, court_names)
+        else:
+            self.assertIn("Unassigned court", court_names)
 
     def test_portal_user_can_resolve_visible_tournament(self):
         visible_tournament = self.env["federation.tournament"]._operations_get_tournament_for_user(
@@ -330,8 +361,10 @@ class TestTournamentOperations(TransactionCase):
     def test_portal_scope_only_returns_visible_matches(self):
         payload = self.tournament._operations_get_payload(user=self.portal_user)
         match_ids = {match["id"] for match in payload["matches"]}
+        queue_match_ids = {item["match_id"] for item in payload["action_queue"]}
 
         self.assertIn(self.live_match.id, match_ids)
         self.assertIn(self.missing_result_match.id, match_ids)
         self.assertIn(self.verified_match.id, match_ids)
         self.assertNotIn(self.foreign_match.id, match_ids)
+        self.assertNotIn(self.foreign_match.id, queue_match_ids)

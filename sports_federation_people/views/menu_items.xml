@@ -3,7 +3,7 @@
 
     <menuitem id="menu_federation_people"
               name="People"
-              parent="sports_federation_base.menu_federation_root"
+              parent="sports_federation_base.menu_federation_setup"
               sequence="50"/>
 
     <menuitem id="menu_federation_player"

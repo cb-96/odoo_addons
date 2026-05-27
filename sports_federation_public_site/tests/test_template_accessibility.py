@@ -121,3 +121,20 @@ class TestPublicSiteTemplateAccessibility(TransactionCase):
         self._assert_tables_have_captions_and_scoped_headers(
             "website_templates", "page_competition_teams"
         )
+
+    def test_public_templates_use_human_state_labels(self):
+        disallowed_fragments = [
+            't-esc="match.state"',
+            't-esc="participant.state"',
+            "dict(tournament._fields['state'].selection).get(tournament.state)",
+            't-esc="lic.state.capitalize()"',
+        ]
+
+        for file_key, template_root in self.template_roots.items():
+            template_text = etree.tostring(template_root, encoding="unicode")
+            for fragment in disallowed_fragments:
+                self.assertNotIn(
+                    fragment,
+                    template_text,
+                    f"{file_key} should not render raw internal state values.",
+                )

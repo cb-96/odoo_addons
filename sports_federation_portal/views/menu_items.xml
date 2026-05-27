@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Add menu items under Federation > Configuration -->
+    <!-- Add menu items under Federation journey menus -->
     <menuitem id="menu_federation_club_role_type"
               name="Club Role Types"
-              parent="sports_federation_base.menu_federation_master_data"
+              parent="sports_federation_base.menu_federation_administration"
               action="action_federation_club_role_type"
               sequence="30"/>
 
     <menuitem id="menu_federation_club_representative"
               name="Club Representatives"
-              parent="sports_federation_base.menu_federation_master_data"
+              parent="sports_federation_base.menu_federation_administration"
               action="action_federation_club_representative"
               sequence="40"/>
 
     <menuitem id="menu_federation_tournament_registration_competition"
               name="Tournament Registrations"
-              parent="sports_federation_tournament.menu_federation_tournament"
+              parent="sports_federation_base.menu_federation_planning"
               action="action_federation_tournament_registration"
               sequence="15"/>
 

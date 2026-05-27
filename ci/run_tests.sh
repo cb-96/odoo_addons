@@ -316,10 +316,26 @@ for mod in "${MODULES[@]}"; do
   fi
 done
 
+TEST_CONTAINER_CMD=$(cat <<EOF
+python3 -m pip show websocket-client >/dev/null 2>&1 || python3 -m pip install --break-system-packages --no-cache-dir websocket-client==1.8.0
+if ! command -v google-chrome >/dev/null 2>&1 && ! command -v google-chrome-stable >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y wget
+  wget -q -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+  DEBIAN_FRONTEND=noninteractive apt-get install -y /tmp/google-chrome-stable_current_amd64.deb
+fi
+if command -v google-chrome-stable >/dev/null 2>&1; then
+  ln -sf "\$(command -v google-chrome-stable)" /usr/local/bin/chromium-browser
+elif command -v google-chrome >/dev/null 2>&1; then
+  ln -sf "\$(command -v google-chrome)" /usr/local/bin/chromium-browser
+fi
+exec odoo --stop-after-init --test-enable --test-tags="$TEST_TAGS" -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+EOF
+)
+
 docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run --rm \
   ci-odoo \
-  --stop-after-init --test-enable --test-tags="$TEST_TAGS" \
-  -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV" \
+  sh -lc "$TEST_CONTAINER_CMD" \
   2>&1 | tee "$RAW_LOG" || EXIT_CODE=$?
 
 # ── Parse results ────────────────────────────────────────────────────

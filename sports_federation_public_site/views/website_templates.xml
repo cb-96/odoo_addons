@@ -5,7 +5,7 @@
     <template id="page_competitions" name="Tournament Coverage">
         <t t-call="website.layout">
             <div class="container py-4">
-                <h1 class="mb-4">Published Tournament Updates</h1>
+                <h1 class="mb-4">Tournament Updates</h1>
                 <div class="row">
                     <t t-foreach="tournaments" t-as="tournament">
                         <div class="col-md-4 mb-4">
@@ -37,7 +37,7 @@
                     </t>
                 </div>
                 <div t-if="not tournaments" class="alert alert-info" role="status">
-                    No tournaments are published yet. Check back for schedules, results, and standings.
+                    No tournament updates are live yet. Check back for schedules, results, and standings.
                 </div>
             </div>
         </t>
@@ -51,13 +51,13 @@
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
                         <li class="breadcrumb-item"><a t-att-href="tournament.get_public_path()">Tournament Hub</a></li>
-                        <li class="breadcrumb-item active">Public Updates</li>
+                        <li class="breadcrumb-item active">Overview</li>
                     </ol>
                 </nav>
                 <div class="d-flex flex-wrap justify-content-between align-items-start mb-4 gap-3">
                     <div>
                         <h1 class="mb-1" t-esc="tournament.name"/>
-                        <p class="text-muted mb-0">Schedules, standings, results, and bracket updates for this tournament.</p>
+                        <p class="text-muted mb-0">Schedules, teams, results, standings, and bracket updates for this tournament.</p>
                     </div>
                     <a t-att-href="tournament.get_public_path()" class="btn btn-outline-secondary">
                         <i class="fa fa-arrow-left"/> Tournament Hub
@@ -142,7 +142,7 @@
                             <p class="text-muted">Group: <t t-esc="standing.group_id.name"/></p>
                         </t>
                         <table class="table table-striped table-hover">
-                            <caption class="visually-hidden">Published standings for this tournament.</caption>
+                            <caption class="visually-hidden">Standings currently available for this tournament.</caption>
                             <thead class="thead-dark">
                                 <tr>
                                     <th scope="col">Rank</th>
@@ -180,7 +180,7 @@
                     </div>
                 </t>
                 <div t-if="not standings" class="alert alert-info" role="status">
-                    Standings have not been published for this tournament yet.
+                    Standings are not available for this tournament yet.
                 </div>
             </div>
         </t>
@@ -203,7 +203,7 @@
                 <t t-call="sports_federation_public_site.public_tournament_subnav"/>
                 <div t-if="matches" class="table-responsive">
                     <table class="table table-striped">
-                        <caption class="visually-hidden">Published results for this tournament.</caption>
+                        <caption class="visually-hidden">Results currently available for this tournament.</caption>
                         <thead class="thead-dark">
                             <tr>
                                 <th scope="col">Date/Time</th>
@@ -247,7 +247,7 @@
                     </table>
                 </div>
                 <div t-if="not matches" class="alert alert-info" role="status">
-                    Approved results have not been published for this tournament yet.
+                    Final scores are not available for this tournament yet.
                 </div>
             </div>
         </t>
@@ -285,7 +285,7 @@
                                         <th scope="col">Home Team</th>
                                         <th scope="col">Away Team</th>
                                         <th scope="col">Venue</th>
-                                        <th scope="col">Status</th>
+                                        <th scope="col">Match Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -309,7 +309,9 @@
                                                 <t t-if="match.venue_id" t-esc="match.venue_id.name"/>
                                                 <t t-if="match.playing_area_id">(<t t-esc="match.playing_area_id.name"/>)</t>
                                             </td>
-                                            <td><span class="badge bg-secondary" t-esc="match.state"/></td>
+                                            <td>
+                                                <span class="badge bg-secondary" t-esc="match.get_public_site_state_label()"/>
+                                            </td>
                                         </tr>
                                     </t>
                                 </tbody>
@@ -318,7 +320,7 @@
                     </div>
                 </t>
                 <div t-if="not schedule_sections" class="alert alert-info" role="status">
-                    Fixtures have not been published for this tournament yet.
+                    Match times are not available for this tournament yet.
                 </div>
             </div>
         </t>
@@ -375,7 +377,7 @@
                     </t>
                 </div>
                 <div t-if="not bracket_sections" class="alert alert-info" role="status">
-                    Bracket details have not been published for this tournament yet.
+                    Bracket details are not available for this tournament yet.
                 </div>
             </div>
         </t>
@@ -391,7 +393,7 @@
                         <li class="breadcrumb-item active">Archive</li>
                     </ol>
                 </nav>
-                <h1 class="mb-4">Past Published Tournaments</h1>
+                <h1 class="mb-4">Past Tournaments</h1>
                 <div class="row">
                     <t t-foreach="tournaments" t-as="tournament">
                         <div class="col-md-4 mb-4">
@@ -402,7 +404,7 @@
                                             <t t-esc="tournament.name"/>
                                         </a>
                                     </h5>
-                                    <span class="badge bg-secondary mb-2" t-esc="tournament.state"/>
+                                    <span class="badge bg-secondary mb-2" t-esc="tournament.get_public_site_state_label()"/>
                                     <p class="card-text text-muted">
                                         <t t-if="tournament.date_start">
                                             <t t-esc="tournament.date_start.strftime('%b %d, %Y')"/>
@@ -417,7 +419,7 @@
                     </t>
                 </div>
                 <div t-if="not tournaments" class="alert alert-info" role="status">
-                    No published tournaments are archived yet.
+                    No past tournaments are available yet.
                 </div>
             </div>
         </t>
@@ -439,7 +441,7 @@
                 <h1 class="mb-4"><t t-esc="tournament.name"/> — Teams</h1>
                 <t t-call="sports_federation_public_site.public_tournament_subnav"/>
                 <table class="table table-striped" t-if="participants">
-                    <caption class="visually-hidden">Published tournament participants.</caption>
+                    <caption class="visually-hidden">Teams currently shown on this tournament hub.</caption>
                     <thead>
                         <tr>
                             <th scope="col">Team</th>
@@ -457,7 +459,7 @@
                                 <td t-esc="participant.club_id.name"/>
                                 <td>
                                     <span t-attf-class="badge bg-#{participant.state == 'confirmed' and 'success' or 'secondary'}">
-                                        <t t-esc="participant.state"/>
+                                        <t t-esc="participant.get_public_site_state_label()"/>
                                     </span>
                                 </td>
                             </tr>
@@ -465,7 +467,7 @@
                     </tbody>
                 </table>
                 <div t-if="not participants" class="alert alert-info" role="status">
-                    Teams have not been published for this tournament yet.
+                    Teams will appear here once the federation confirms the field.
                 </div>
             </div>
         </t>

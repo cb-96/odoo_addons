@@ -277,6 +277,30 @@ class FederationRosterPortal(FederationRosterPortalBase):
         return self._redirect_roster(roster, success="Roster closed.")
 
     @http.route(
+        ["/my/rosters/<int:roster_id>/reopen"],
+        type="http",
+        auth="user",
+        website=True,
+        methods=["POST"],
+        csrf=True,
+    )
+    def portal_my_roster_reopen(self, roster_id, **kw):
+        """Reopen a closed roster."""
+        try:
+            roster = self._get_portal_roster(roster_id)
+            roster._portal_action_reopen(user=request.env.user)
+        except AccessError:
+            return self._render_access_denied()
+        except ValidationError as exc:
+            return self._redirect_roster(
+                roster,
+                error=str(exc),
+                error_hint="Resolve readiness blockers before reopening this roster.",
+            )
+
+        return self._redirect_roster(roster, success="Roster reopened.")
+
+    @http.route(
         ["/my/rosters/<int:roster_id>/lines/new"],
         type="http",
         auth="user",

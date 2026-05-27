@@ -4,39 +4,75 @@ import {
     Component,
     mount,
     onMounted,
-    onWillStart,
     onWillUnmount,
     useState,
     whenReady,
 } from "@odoo/owl";
 
 const DIRECT_ACTION_KEYS = new Set(["schedule", "start", "verify", "approve"]);
+const COMPACT_LAYOUT_QUERY = "(max-width: 1199.98px)";
+const INITIAL_LOAD_TIMEOUT_MS = 30000;
 
-async function callJsonRpc(url, params = {}) {
-    const response = await fetch(url, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            id: Date.now(),
-            jsonrpc: "2.0",
-            method: "call",
-            params,
-        }),
-    });
-    const responseText = await response.text();
-    let payload;
+function buttonToneClass(tone, { outline = false, large = false } = {}) {
+    const resolvedTone = tone || "primary";
+    const classes = ["btn"];
+    if (large) {
+        classes.push("btn-lg");
+    }
+    if (outline || resolvedTone === "secondary") {
+        classes.push(`btn-outline-${resolvedTone === "dark" ? "secondary" : resolvedTone}`);
+    } else if (["warning", "info"].includes(resolvedTone)) {
+        classes.push(`btn-${resolvedTone}`, "text-dark");
+    } else {
+        classes.push(`btn-${resolvedTone}`);
+    }
+    return classes.join(" ");
+}
+
+async function callJsonRpc(url, params = {}, { timeoutMs = 0 } = {}) {
+    const controller = timeoutMs && typeof AbortController !== "undefined"
+        ? new AbortController()
+        : null;
+    const timeoutHandle = controller
+        ? window.setTimeout(() => controller.abort(), timeoutMs)
+        : null;
+
     try {
-        payload = responseText ? JSON.parse(responseText) : {};
-    } catch {
-        throw new Error("Your session expired or the server returned an unexpected response.");
+        const response = await fetch(url, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                id: Date.now(),
+                jsonrpc: "2.0",
+                method: "call",
+                params,
+            }),
+            signal: controller?.signal,
+        });
+        const responseText = await response.text();
+        let payload;
+        try {
+            payload = responseText ? JSON.parse(responseText) : {};
+        } catch {
+            throw new Error("Your session expired or the server returned an unexpected response.");
+        }
+        if (payload.error) {
+            throw new Error(payload.error.data?.message || payload.error.message || "Unexpected server error.");
+        }
+        return payload.result;
+    } catch (error) {
+        if (error?.name === "AbortError") {
+            throw new Error("Tournament operations took too long to load. Please try again.");
+        }
+        throw error;
+    } finally {
+        if (timeoutHandle) {
+            window.clearTimeout(timeoutHandle);
+        }
     }
-    if (payload.error) {
-        throw new Error(payload.error.data?.message || payload.error.message || "Unexpected server error.");
-    }
-    return payload.result;
 }
 
 class StatusBadge extends Component {
@@ -69,6 +105,24 @@ class TournamentSummaryCards extends Component {
 
     onSelectCard(ev) {
         this.props.onSelect(ev.currentTarget.dataset.key);
+    }
+}
+
+class TournamentActionQueue extends Component {
+    static template = "sports_federation_portal.TournamentOperationsActionQueue";
+    static components = { StatusBadge };
+
+    onOpenMatch(ev) {
+        this.props.onOpenMatch(Number(ev.currentTarget.dataset.matchId));
+    }
+}
+
+class TournamentCourtSummaries extends Component {
+    static template = "sports_federation_portal.TournamentOperationsCourtSummaries";
+    static components = { StatusBadge };
+
+    onSelectCourt(ev) {
+        this.props.onSelectCourt(ev.currentTarget.dataset.courtKey);
     }
 }
 
@@ -123,6 +177,10 @@ class MatchCard extends Component {
     get selectedClass() {
         return this.props.selected ? "border-primary shadow-sm" : "";
     }
+
+    get primaryActionClass() {
+        return buttonToneClass(this.props.match.primary_action?.tone || "primary");
+    }
 }
 
 class CourtMatchGroup extends Component {
@@ -146,6 +204,14 @@ class ResultEntryPanel extends Component {
         this.props.onAction(ev.currentTarget.dataset.action);
     }
 
+    onPreviousTask() {
+        this.props.onPreviousTask();
+    }
+
+    onNextTask() {
+        this.props.onNextTask();
+    }
+
     get actionKeys() {
         const match = this.props.match;
         if (!match) {
@@ -161,6 +227,14 @@ class ResultEntryPanel extends Component {
         const match = this.props.match;
         return !match.capabilities.can_edit_scores || match.result_state === "approved";
     }
+
+    get primaryActionClass() {
+        return buttonToneClass(this.props.match.primary_action?.tone || "primary", { large: true });
+    }
+
+    secondaryActionClass(action) {
+        return buttonToneClass(action.tone || "secondary", { outline: true });
+    }
 }
 
 export class TournamentOperationsApp extends Component {
@@ -169,6 +243,8 @@ export class TournamentOperationsApp extends Component {
         CourtMatchGroup,
         ResultEntryPanel,
         StatusBadge,
+        TournamentActionQueue,
+        TournamentCourtSummaries,
         TournamentFilters,
         TournamentSummaryCards,
     };
@@ -195,6 +271,7 @@ export class TournamentOperationsApp extends Component {
             formDirty: false,
             loading: true,
             offline: !navigator.onLine,
+            compactLayout: typeof window !== "undefined" && window.matchMedia(COMPACT_LAYOUT_QUERY).matches,
             refreshing: false,
             savingAction: null,
             selectedMatchId: null,
@@ -213,17 +290,52 @@ export class TournamentOperationsApp extends Component {
             this.state.offline = true;
             this.state.bannerError = "You are offline. You can review the board, but changes cannot be saved until your connection returns.";
         };
-        onWillStart(async () => {
-            await this.loadPayload();
-        });
+        this.handleResize = () => {
+            this.state.compactLayout = window.matchMedia(COMPACT_LAYOUT_QUERY).matches;
+        };
+        this.handleKeydown = (event) => {
+            const lowerKey = event.key?.toLowerCase?.() || event.key;
+            const tagName = event.target?.tagName?.toLowerCase?.() || "";
+            const isTypingTarget = ["input", "textarea", "select"].includes(tagName) || event.target?.isContentEditable;
+
+            if ((event.metaKey || event.ctrlKey) && lowerKey === "s" && this.selectedMatch && !this.state.savingAction) {
+                const actionKey = this.selectedMatch.primary_action?.key;
+                if (actionKey && actionKey !== "view") {
+                    event.preventDefault();
+                    this.runAction(actionKey);
+                }
+                return;
+            }
+            if (event.key === "Escape" && this.selectedMatch && this.state.compactLayout) {
+                event.preventDefault();
+                this.closePanel();
+                return;
+            }
+            if (isTypingTarget) {
+                return;
+            }
+            if (event.altKey && event.key === "ArrowDown") {
+                event.preventDefault();
+                this.selectAdjacentTask(1);
+            }
+            if (event.altKey && event.key === "ArrowUp") {
+                event.preventDefault();
+                this.selectAdjacentTask(-1);
+            }
+        };
         onMounted(() => {
             window.addEventListener("online", this.handleOnline);
             window.addEventListener("offline", this.handleOffline);
+            window.addEventListener("resize", this.handleResize);
+            window.addEventListener("keydown", this.handleKeydown);
+            this.loadPayload();
             this.startPolling();
         });
         onWillUnmount(() => {
             window.removeEventListener("online", this.handleOnline);
             window.removeEventListener("offline", this.handleOffline);
+            window.removeEventListener("resize", this.handleResize);
+            window.removeEventListener("keydown", this.handleKeydown);
             if (this.pollHandle) {
                 window.clearInterval(this.pollHandle);
             }
@@ -257,6 +369,32 @@ export class TournamentOperationsApp extends Component {
             return null;
         }
         return this.state.data.matches.find((match) => match.id === this.state.selectedMatchId) || null;
+    }
+
+    get actionQueue() {
+        return this.state.data?.action_queue || [];
+    }
+
+    get courtSummaries() {
+        return this.state.data?.court_summaries || [];
+    }
+
+    get actionableMatchIds() {
+        const queueIds = this.actionQueue.map((item) => item.match_id);
+        if (queueIds.length) {
+            return queueIds;
+        }
+        return this.filteredMatches
+            .filter((match) => match.needs_attention || match.primary_action?.key !== "view")
+            .map((match) => match.id);
+    }
+
+    get selectedTaskPosition() {
+        if (!this.selectedMatch) {
+            return 0;
+        }
+        const index = this.actionableMatchIds.indexOf(this.selectedMatch.id);
+        return index === -1 ? 0 : index + 1;
     }
 
     get filteredMatches() {
@@ -333,6 +471,9 @@ export class TournamentOperationsApp extends Component {
 
     get groupedMatches() {
         const groups = new Map();
+        const summaryByCourt = new Map(
+            (this.state.data?.court_summaries || []).map((summary) => [summary.court_key, summary])
+        );
         for (const match of this.filteredMatches) {
             const key = String(match.court_id || "unassigned");
             if (!groups.has(key)) {
@@ -348,6 +489,7 @@ export class TournamentOperationsApp extends Component {
         return [...groups.values()]
             .map((group) => ({
                 ...group,
+                courtSummary: summaryByCourt.get(group.key) || null,
                 liveCount: group.matches.filter((match) => match.is_now_playing).length,
                 issueCount: group.matches.filter((match) => match.needs_attention).length,
                 nextMatch: group.matches.find((match) => ["upcoming", "overdue"].includes(match.timeline_bucket)) || null,
@@ -416,7 +558,9 @@ export class TournamentOperationsApp extends Component {
             this.state.refreshing = true;
         }
         try {
-            const result = await callJsonRpc(this.props.loadUrl, {});
+            const result = await callJsonRpc(this.props.loadUrl, {}, {
+                timeoutMs: INITIAL_LOAD_TIMEOUT_MS,
+            });
             if (!result?.ok) {
                 this.handleStructuredError(result?.error, { fatal: !this.state.data });
                 return;
@@ -455,7 +599,7 @@ export class TournamentOperationsApp extends Component {
             return;
         }
         const defaultMatchId = payload.default_match_id || null;
-        if (defaultMatchId) {
+        if (defaultMatchId && !this.state.compactLayout) {
             this.selectMatch(defaultMatchId, { preserveMessages: true });
             return;
         }
@@ -507,7 +651,36 @@ export class TournamentOperationsApp extends Component {
         this.state.filters.validationIssuesOnly = false;
     }
 
-    selectMatch(matchId, { preserveMessages = false } = {}) {
+    selectCourtSummary(courtKey) {
+        this.state.filters.court = this.state.filters.court === courtKey ? "all" : courtKey;
+    }
+
+    focusPrimaryField() {
+        window.requestAnimationFrame(() => {
+            const scoreField = document.getElementById("sf_ops_home_score");
+            if (scoreField && !scoreField.disabled) {
+                scoreField.focus();
+                if (scoreField.select) {
+                    scoreField.select();
+                }
+            }
+        });
+    }
+
+    selectAdjacentTask(direction) {
+        const ids = this.actionableMatchIds;
+        if (!ids.length) {
+            return;
+        }
+        let index = ids.indexOf(this.state.selectedMatchId);
+        if (index === -1) {
+            index = direction > 0 ? -1 : 0;
+        }
+        const nextIndex = (index + direction + ids.length) % ids.length;
+        this.selectMatch(ids[nextIndex], { preserveMessages: true, focusPanel: true });
+    }
+
+    selectMatch(matchId, { preserveMessages = false, focusPanel = false } = {}) {
         if (this.state.selectedMatchId === matchId) {
             this.state.selectedMatchId = null;
             this.state.form = this._emptyForm();
@@ -526,6 +699,9 @@ export class TournamentOperationsApp extends Component {
         if (this.selectedMatch) {
             this.state.form = this._buildFormFromMatch(this.selectedMatch);
             this.state.formDirty = false;
+            if (focusPanel || this.state.compactLayout) {
+                this.focusPrimaryField();
+            }
         }
     }
 
@@ -579,9 +755,15 @@ export class TournamentOperationsApp extends Component {
                 return;
             }
             this.applyPayload(result.payload, { resetForm: true });
-            this.state.successMessage = result.message || "Update saved.";
+            const followUp = actionKey === "save_score" && this.selectedMatch?.next_step?.label
+                ? ` Next step: ${this.selectedMatch.next_step.label}.`
+                : "";
+            this.state.successMessage = `${result.message || "Update saved."}${followUp}`;
             this.state.bannerError = null;
             this.state.formDirty = false;
+            if (this.selectedMatch && this.state.compactLayout) {
+                this.focusPrimaryField();
+            }
         } catch (error) {
             this.state.panelError = !navigator.onLine
                 ? "Your connection was lost before the change was saved. Reconnect and submit again."
@@ -589,6 +771,10 @@ export class TournamentOperationsApp extends Component {
         } finally {
             this.state.savingAction = null;
         }
+    }
+
+    openQueueMatch(matchId) {
+        this.selectMatch(matchId, { preserveMessages: true, focusPanel: true });
     }
 
     async refreshBoard() {

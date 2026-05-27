@@ -79,6 +79,21 @@ class TestRosterLifecycle(TransactionCase):
         roster.action_close()
         self.assertEqual(roster.status, "closed")
 
+    def test_reopen_restores_closed_roster_to_active(self):
+        roster = self._make_roster()
+        self._add_active_line(roster, self.player1)
+        roster.action_activate()
+        roster.action_close()
+
+        roster.action_reopen()
+        self.assertEqual(roster.status, "active")
+
+    def test_reopen_requires_closed_status(self):
+        roster = self._make_roster()
+        self._add_active_line(roster, self.player1)
+        with self.assertRaises(ValidationError):
+            roster.action_reopen()
+
     def test_reopen_to_draft_from_active(self):
         roster = self._make_roster()
         self._add_active_line(roster, self.player1)

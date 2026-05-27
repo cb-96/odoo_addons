@@ -1,4 +1,5 @@
 from . import public_tournament_flags
+from . import public_status_labels
 from . import public_tournament_content
 from . import public_standings_flags
 from . import public_club_flags

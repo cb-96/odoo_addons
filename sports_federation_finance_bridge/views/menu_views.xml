@@ -4,8 +4,8 @@
     <!-- Finance submenu -->
     <menuitem id="menu_federation_finance"
               name="Finance"
-              parent="sports_federation_base.menu_federation_root"
-              sequence="80"/>
+              parent="sports_federation_base.menu_federation_administration"
+              sequence="40"/>
 
     <!-- Fee Types -->
     <menuitem id="menu_federation_fee_type"

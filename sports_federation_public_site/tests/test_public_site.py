@@ -144,6 +144,47 @@ class TestPublicSite(TransactionCase):
         self.assertTrue(self.tournament.show_public_results)
         self.assertTrue(self.tournament.show_public_standings)
 
+    def test_public_site_state_labels_are_humanized(self):
+        """Public-facing state labels should read like visitor copy."""
+        club = self.env["federation.club"].create({"name": "Label Club"})
+        home_team = self.env["federation.team"].create(
+            {
+                "name": "Label Home",
+                "club_id": club.id,
+                "code": "PLH",
+            }
+        )
+        away_team = self.env["federation.team"].create(
+            {
+                "name": "Label Away",
+                "club_id": club.id,
+                "code": "PLA",
+            }
+        )
+        participant = self.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "team_id": home_team.id,
+                "state": "confirmed",
+            }
+        )
+        match = self.env["federation.match"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "home_team_id": home_team.id,
+                "away_team_id": away_team.id,
+                "state": "done",
+            }
+        )
+
+        self.tournament.state = "open"
+
+        self.assertEqual(
+            self.tournament.get_public_site_state_label(), "Open for entries"
+        )
+        self.assertEqual(participant.get_public_site_state_label(), "Confirmed")
+        self.assertEqual(match.get_public_site_state_label(), "Final")
+
     def test_public_slug_must_be_unique(self):
         """Test that public slug must be unique."""
         self.tournament.public_slug = "shared-slug"
@@ -192,7 +233,7 @@ class TestPublicSite(TransactionCase):
 
         legacy_menu = self.env["website.menu"].browse(legacy_menu.id)
         self.assertEqual(legacy_menu.parent_id, tournament_menu)
-        self.assertEqual(legacy_menu.name, "Published Coverage")
+        self.assertEqual(legacy_menu.name, "Tournament Updates")
         self.assertEqual(legacy_menu.url, "/tournaments#published")
         self.assertTrue(legacy_menu.is_visible)
         self.assertEqual(legacy_menu.sequence, 10)
@@ -218,7 +259,7 @@ class TestPublicSite(TransactionCase):
         )
         published_menu = self.env["website.menu"].create(
             {
-                "name": "Published Coverage",
+                "name": "Tournament Updates",
                 "url": "/tournaments#published",
                 "parent_id": tournament_menu.id,
                 "sequence": 10,
@@ -251,7 +292,7 @@ class TestPublicSite(TransactionCase):
 
         published_menu = self.env["website.menu"].browse(published_menu.id)
         self.assertEqual(published_menu.parent_id, tournament_menu)
-        self.assertEqual(published_menu.name, "Published Coverage")
+        self.assertEqual(published_menu.name, "Tournament Updates")
         self.assertEqual(published_menu.url, "/tournaments#published")
         self.assertTrue(published_menu.is_visible)
         self.assertFalse(legacy_sibling.exists())
@@ -320,7 +361,7 @@ class TestPublicSite(TransactionCase):
         self.assertEqual(summary["footers_cleaned"], 1)
         self.assertIn("Sports Federation", footer_view.arch_db)
         self.assertIn(
-            "Published tournaments, schedules, results, standings", footer_view.arch_db
+            "Tournament hubs, schedules, results, standings", footer_view.arch_db
         )
         self.assertNotIn("Designed for companies", footer_view.arch_db)
 

@@ -1,7 +1,8 @@
 # Workflow: Roster Management
 
 End-to-end lifecycle for managing team rosters — from pre-season draft through
-active season use, match-day locking, and post-season closure.
+active season use, match-day locking, post-season closure, and controlled
+reopening when closure needs to be undone.
 
 ## Overview
 
@@ -133,13 +134,18 @@ Match sheet states: `draft` → `submitted` → `approved` → `locked`.
 **Module**: `sports_federation_rosters`
 
 1. When the season closes, change status: **`active` → `closed`**.
-2. Closed rosters are read-only and no longer available for new match sheets.
-3. Audit trail remains fully queryable for historical analysis.
+2. Closed rosters are removed from new match-sheet preparation flows.
+3. If closure was premature, use **Reopen** to restore
+   **`closed` → `active`**.
+4. Reopen keeps safeguards in place: the roster must still pass readiness
+   checks, and reopen is blocked if another active roster already exists in the
+   same team/season/competition scope.
+5. Audit trail remains fully queryable for historical analysis.
 
 ## State Diagrams
 
 ```
-Roster:      draft → active → closed
+Roster:      draft ↔ active → closed → active
 
 Match Sheet: draft → submitted → approved → locked
                   ↑← reset (from submitted to draft)
@@ -151,7 +157,9 @@ Match Sheet: draft → submitted → approved → locked
   view and edit **draft** roster lines for their club's teams.
 - Only licenses scoped to the roster's team and season are shown in the portal;
   server-side validation rejects any attempt to select out-of-scope records.
-- **Active** or **closed** rosters are read-only in the portal.
+- **Active** or **closed** rosters keep lineup edits read-only in the portal.
+- Authorized representatives can still use portal roster actions to close an
+   active roster or reopen a closed roster when federation policy allows it.
 
 ## Audit Trail
 

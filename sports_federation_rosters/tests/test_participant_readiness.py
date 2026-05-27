@@ -190,6 +190,23 @@ class TestParticipantReadiness(TransactionCase):
         self.assertEqual(participant.state, "confirmed")
         self.assertFalse(participant.confirmation_feedback)
 
+    def test_action_open_readiness_roster_returns_context_for_operator_handoff(self):
+        """The roster handoff action should open the participant's readiness roster."""
+        participant = self.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "team_id": self.team.id,
+            }
+        )
+
+        action = participant.action_open_readiness_roster()
+
+        self.assertEqual(action["res_model"], "federation.team.roster")
+        self.assertEqual(action["view_mode"], "form")
+        self.assertEqual(action["res_id"], participant.readiness_roster_id.id)
+        self.assertEqual(action["context"]["default_team_id"], self.team.id)
+        self.assertEqual(action["context"]["default_season_id"], self.season.id)
+
     def test_match_schedule_within_deadline_requires_ready_team_rosters(self):
         """Test that match schedule within deadline requires ready team rosters."""
         urgent_tournament = self.env["federation.tournament"].create(

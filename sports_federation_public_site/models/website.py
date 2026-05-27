@@ -64,13 +64,13 @@ class Website(models.Model):
                                 <div class="row">
                                     <div class="col-lg-6 pt24 pb24">
                                         <h4>Sports Federation</h4>
-                                        <p>Published tournaments, schedules, results, standings, and club self-service live here. Federation staff, clubs, and officials can use the website and portal to follow active competition work.</p>
+                                        <p>Tournament hubs, schedules, results, standings, and club self-service all live here. Federation staff, clubs, and officials can use the website and portal to follow active competition work.</p>
                                     </div>
                                     <div class="col-lg-3 pt24 pb24">
                                         <h5>Explore</h5>
                                         <ul class="list-unstyled">
                                             <li><a href="/tournaments">Tournaments</a></li>
-                                            <li><a href="/tournaments#published">Published Tournaments</a></li>
+                                            <li><a href="/tournaments#published">Tournament Updates</a></li>
                                             <li><a href="/seasons">Seasons</a></li>
                                             <li><a href="/my/home">Portal</a></li>
                                         </ul>

@@ -66,6 +66,8 @@
                         <div invisible="not readiness_feedback"
                              class="alert alert-warning mt-2 mb-0" role="alert">
                             <i class="fa fa-exclamation-triangle me-2" title="Readiness issue"/>
+                            <strong>Blocker list:</strong>
+                            <br/>
                             <field name="readiness_feedback" readonly="1" nolabel="1"/>
                         </div>
                     </div>

@@ -1,0 +1,882 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="sports_federation_competition_engine.CompetitionWorkspaceStatusBadge">
+        <span t-att-class="this.badgeClass"><t t-esc="props.label"/></span>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.CompetitionWorkspaceProgressStepper">
+        <div class="o_fed_cw_stepper mb-4">
+            <t t-foreach="props.steps" t-as="step" t-key="step.key">
+                <div class="o_fed_cw_step" t-att-class="this.stepClass(step)">
+                    <div class="o_fed_cw_step_marker"><t t-esc="step.label.slice(0, 1)"/></div>
+                    <div class="o_fed_cw_step_label"><t t-esc="step.label"/></div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.CompetitionWorkspaceValidationPanel">
+        <section class="card shadow-sm o_fed_cw_validation_panel" aria-live="polite">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                        <h3 class="h6 mb-1"><t t-esc="props.title || 'Validation'"/></h3>
+                        <p class="text-muted small mb-0">Blocking issues stop publication. Warnings can be forced only by a federation manager.</p>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <StatusBadge t-props="{ label: (props.validation.blocking || []).length + ' blocking', state: (props.validation.blocking || []).length ? 'blocked' : 'available' }"/>
+                        <StatusBadge t-props="{ label: (props.validation.warnings || []).length + ' warnings', state: (props.validation.warnings || []).length ? 'warning' : 'available' }"/>
+                    </div>
+                </div>
+
+                <div class="alert alert-danger" role="alert" t-if="(props.validation.blocking || []).length">
+                    <div class="fw-semibold mb-2">Blocking conflicts</div>
+                    <t t-if="(props.validation.blocking_groups || []).length">
+                        <t t-foreach="props.validation.blocking_groups || []" t-as="group" t-key="group.key">
+                            <div class="o_fed_cw_issue_group">
+                                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                    <div class="fw-semibold small"><t t-esc="group.label"/></div>
+                                    <StatusBadge t-props="{ label: group.count + ' item(s)', tone: 'danger' }"/>
+                                </div>
+                                <t t-foreach="group.issues || []" t-as="issue" t-key="issue.code + '-' + (issue.focus_record_id || issue.record_id || issue.message)">
+                                    <div class="o_fed_cw_issue_item small">
+                                        <div><t t-esc="issue.message"/></div>
+                                        <div class="text-muted mt-1" t-if="issue.hint"><t t-esc="issue.hint"/></div>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+                    </t>
+                    <t t-else="">
+                        <t t-foreach="props.validation.blocking || []" t-as="issue" t-key="issue.code + '-' + issue.record_id">
+                            <div class="small"><t t-esc="issue.message"/></div>
+                        </t>
+                    </t>
+                </div>
+
+                <div class="alert alert-warning" role="status" t-if="(props.validation.warnings || []).length">
+                    <div class="fw-semibold mb-2">Warnings</div>
+                    <t t-if="(props.validation.warning_groups || []).length">
+                        <t t-foreach="props.validation.warning_groups || []" t-as="group" t-key="group.key">
+                            <div class="o_fed_cw_issue_group">
+                                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                    <div class="fw-semibold small"><t t-esc="group.label"/></div>
+                                    <StatusBadge t-props="{ label: group.count + ' item(s)', tone: 'warning' }"/>
+                                </div>
+                                <t t-foreach="group.issues || []" t-as="issue" t-key="issue.code + '-' + (issue.focus_record_id || issue.record_id || issue.message)">
+                                    <div class="o_fed_cw_issue_item small">
+                                        <div><t t-esc="issue.message"/></div>
+                                        <div class="text-muted mt-1" t-if="issue.hint"><t t-esc="issue.hint"/></div>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+                    </t>
+                    <t t-else="">
+                        <t t-foreach="props.validation.warnings || []" t-as="issue" t-key="issue.code + '-' + issue.record_id">
+                            <div class="small"><t t-esc="issue.message"/></div>
+                        </t>
+                    </t>
+                </div>
+
+                <div class="alert alert-info" role="status" t-if="(props.validation.unscheduled_matches || []).length">
+                    <div class="fw-semibold mb-2">Unscheduled matches</div>
+                    <t t-foreach="props.validation.unscheduled_matches || []" t-as="issue" t-key="issue.match_id">
+                        <div class="small"><t t-esc="issue.message"/></div>
+                    </t>
+                </div>
+
+                <div class="text-muted small" t-if="!(props.validation.blocking || []).length and !(props.validation.warnings || []).length and !(props.validation.unscheduled_matches || []).length">
+                    No validation issues right now.
+                </div>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.CompetitionWorkspaceCollaborationPanel">
+        <section class="card shadow-sm o_fed_cw_collaboration_panel">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                        <h3 class="h6 mb-1"><t t-esc="props.title || 'Workspace presence'"/></h3>
+                        <p class="text-muted small mb-0">Recently active planners are shown here so operators can coordinate before making overlapping changes.</p>
+                    </div>
+                    <StatusBadge t-props="{ label: (props.collaboration.active_count || 0) + ' active', tone: 'info' }"/>
+                </div>
+                <div class="alert alert-warning" role="status" t-if="props.collaboration.warning_message">
+                    <t t-esc="props.collaboration.warning_message"/>
+                </div>
+                <div class="o_fed_cw_presence_list" t-if="(props.collaboration.active_users || []).length">
+                    <t t-foreach="props.collaboration.active_users || []" t-as="presence" t-key="presence.id">
+                        <div class="o_fed_cw_presence_item" t-att-class="presence.is_same_gameday ? 'o-same-gameday' : ''">
+                            <div>
+                                <div class="fw-semibold"><t t-esc="presence.user_name"/></div>
+                                <div class="small text-muted">
+                                    <t t-esc="presence.active_section"/>
+                                    <t t-if="presence.gameday_name"> · <t t-esc="presence.gameday_name"/></t>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap justify-content-end">
+                                <StatusBadge t-if="presence.is_current_user" t-props="{ label: 'You', tone: 'primary' }"/>
+                                <StatusBadge t-if="presence.is_same_gameday and !presence.is_current_user" t-props="{ label: 'Same gameday', tone: 'warning' }"/>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+                <div class="text-muted small" t-else=""><t t-esc="props.emptyMessage || 'No other planners have checked in recently.'"/></div>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.CompetitionWorkspaceRevisionSummaryPanel">
+        <section class="card shadow-sm o_fed_cw_revision_panel">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                        <h3 class="h6 mb-1"><t t-esc="props.title || 'Schedule revisions'"/></h3>
+                        <p class="text-muted small mb-0">Draft revisions can diverge from the live schedule until a manager republishes them.</p>
+                    </div>
+                    <StatusBadge t-props="{ label: ((props.revisions.recent_revisions || []).length) + ' tracked', tone: 'info' }"/>
+                </div>
+                <div class="d-flex gap-2 flex-wrap mb-3">
+                    <StatusBadge t-if="props.revisions.live_revision" t-props="{ label: 'Live R' + props.revisions.live_revision.revision_number, tone: 'success' }"/>
+                    <StatusBadge t-if="props.revisions.draft_revision" t-props="{ label: 'Draft R' + props.revisions.draft_revision.revision_number, tone: 'warning' }"/>
+                    <StatusBadge t-if="props.revisions.has_pending_draft_changes" t-props="{ label: 'Pending draft changes', tone: 'warning' }"/>
+                </div>
+                <div class="o_fed_cw_revision_list" t-if="(props.revisions.recent_revisions || []).length">
+                    <t t-foreach="props.revisions.recent_revisions || []" t-as="revision" t-key="revision.id">
+                        <div class="o_fed_cw_revision_item">
+                            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                <div>
+                                    <div class="fw-semibold"><t t-esc="revision.name"/></div>
+                                    <div class="small text-muted"><t t-esc="revision.assigned_match_count"/> matches · <t t-esc="revision.slot_count"/> slots · <t t-esc="revision.warning_count"/> warnings</div>
+                                    <div class="small text-muted mt-1" t-if="revision.override_reason"><t t-esc="revision.override_reason"/></div>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap justify-content-end">
+                                    <StatusBadge t-props="{ label: 'R' + revision.revision_number, tone: 'info' }"/>
+                                    <StatusBadge t-props="{ label: revision.state_label, tone: revision.state === 'live' ? 'success' : revision.state === 'draft' ? 'warning' : 'secondary' }"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+                <div class="text-muted small" t-else="">No schedule revisions have been recorded for this gameday yet.</div>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.CompetitionOverviewCard">
+        <section class="card shadow-sm o_fed_cw_overview_card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                        <div class="text-uppercase small text-muted">Competition Workspace</div>
+                        <h2 class="h4 mb-1 mt-1"><t t-esc="props.overview.competition_name || 'New Competition Workspace'"/></h2>
+                        <div class="text-muted small"><t t-esc="props.overview.next_action"/></div>
+                    </div>
+                    <StatusBadge t-if="props.overview.competition_state_label" t-props="{ label: props.overview.competition_state_label, state: props.overview.competition_state }"/>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6 col-xl-2"><div class="o_fed_cw_metric"><div class="text-muted small">Divisions</div><div class="h4 mb-0"><t t-esc="props.overview.division_count"/></div></div></div>
+                    <div class="col-6 col-xl-2"><div class="o_fed_cw_metric"><div class="text-muted small">Teams</div><div class="h4 mb-0"><t t-esc="props.overview.team_count"/></div></div></div>
+                    <div class="col-6 col-xl-2"><div class="o_fed_cw_metric"><div class="text-muted small">Matches</div><div class="h4 mb-0"><t t-esc="props.overview.match_count"/></div></div></div>
+                    <div class="col-6 col-xl-2"><div class="o_fed_cw_metric"><div class="text-muted small">Scheduled</div><div class="h4 mb-0"><t t-esc="props.overview.scheduled_count"/></div></div></div>
+                    <div class="col-6 col-xl-2"><div class="o_fed_cw_metric"><div class="text-muted small">Conflicts</div><div class="h4 mb-0"><t t-esc="props.overview.conflict_count"/></div></div></div>
+                    <div class="col-6 col-xl-2"><div class="o_fed_cw_metric"><div class="text-muted small">Warnings</div><div class="h4 mb-0"><t t-esc="props.overview.warning_count"/></div></div></div>
+                </div>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.CompetitionWorkspaceGenerationPreview">
+        <section class="card shadow-sm o_fed_cw_round_preview">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                    <div>
+                        <h3 class="h6 mb-1">Generated structure</h3>
+                        <p class="text-muted small mb-0"><t t-esc="props.preview.description"/></p>
+                    </div>
+                    <StatusBadge t-if="props.preview.format_label" t-props="{ label: props.preview.format_label, tone: 'info' }"/>
+                </div>
+                <div class="row g-3" t-if="(props.preview.rounds || []).length">
+                    <t t-foreach="props.preview.rounds || []" t-as="roundItem" t-key="roundItem.id || (roundItem.stage_id + '-' + roundItem.round_number)">
+                        <div class="col-12 col-xl-6">
+                            <div class="border rounded-3 p-3 h-100">
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                    <div class="fw-semibold"><t t-esc="roundItem.name"/></div>
+                                    <StatusBadge t-if="roundItem.stage_name" t-props="{ label: roundItem.stage_name, tone: roundItem.stage_type === 'knockout' ? 'primary' : 'info' }"/>
+                                </div>
+                                <t t-foreach="roundItem.matches || []" t-as="match" t-key="match.id">
+                                    <div class="small mb-1"><t t-esc="match.name"/></div>
+                                    <div class="small text-muted mb-1" t-if="match.group_name"><t t-esc="match.group_name"/></div>
+                                    <div class="small text-muted mb-1" t-if="match.bracket_position">Bracket slot <t t-esc="match.bracket_position"/></div>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+                <div class="text-muted" t-else=""><t t-esc="props.preview.empty_message"/></div>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.CompetitionWorkspaceFairnessSummaryPanel">
+        <section class="card shadow-sm o_fed_cw_fairness_panel">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                        <h3 class="h6 mb-1"><t t-esc="props.title || 'Fairness summary'"/></h3>
+                        <p class="text-muted small mb-0">Rest, court, and start-time balance update as assignments move.</p>
+                    </div>
+                    <StatusBadge t-props="{ label: (props.summary.tracked_team_count || 0) + ' teams', tone: 'info' }"/>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-4"><div class="o_fed_cw_metric"><div class="text-muted small">Rest gap</div><div class="h5 mb-0"><t t-esc="props.summary.rest_balance_gap_minutes || 0"/>m</div></div></div>
+                    <div class="col-4"><div class="o_fed_cw_metric"><div class="text-muted small">Court gap</div><div class="h5 mb-0"><t t-esc="props.summary.court_balance_gap_percent || 0"/>%</div></div></div>
+                    <div class="col-4"><div class="o_fed_cw_metric"><div class="text-muted small">Start gap</div><div class="h5 mb-0"><t t-esc="props.summary.timeslot_balance_gap_minutes || 0"/>m</div></div></div>
+                </div>
+                <div class="d-flex gap-2 flex-wrap mb-3" t-if="(props.summary.score_components || []).length">
+                    <t t-foreach="props.summary.score_components || []" t-as="component" t-key="component.key">
+                        <StatusBadge t-props="{ label: component.label + ' ' + component.score, tone: component.score >= 80 ? 'success' : component.score >= 60 ? 'warning' : 'danger' }"/>
+                    </t>
+                </div>
+                <div class="alert alert-warning small" role="status" t-if="(props.summary.warnings || []).length">
+                    <t t-foreach="props.summary.warnings || []" t-as="warning" t-key="warning.code + '-' + warning.message">
+                        <div><t t-esc="warning.message"/></div>
+                    </t>
+                </div>
+                <div class="o_fed_cw_revision_list" t-if="(props.summary.team_metrics || []).length">
+                    <t t-foreach="(props.summary.team_metrics || []).slice(0, 4)" t-as="metric" t-key="metric.team_id">
+                        <div class="o_fed_cw_revision_item">
+                            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                <div>
+                                    <div class="fw-semibold"><t t-esc="metric.team_name"/></div>
+                                    <div class="small text-muted">Court focus: <t t-esc="metric.primary_court_name || 'Mixed'"/> · Start avg <t t-esc="metric.average_start_label || '-'"/></div>
+                                </div>
+                                <div class="small text-muted text-end">Rest avg <t t-esc="metric.average_rest_gap_minutes || '-'"/>m · Court repeat <t t-esc="metric.court_repeat_percent || 0"/>%</div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.CompetitionWorkspaceSlotSuggestionPanel">
+        <section class="card shadow-sm o_fed_cw_suggestion_panel">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                        <h3 class="h6 mb-1">Suggested slots</h3>
+                        <p class="text-muted small mb-0">Select one unscheduled match to see the best open slots ranked by current planner rules.</p>
+                    </div>
+                    <StatusBadge t-props="{ label: (props.suggestions || []).length + ' options', tone: 'info' }"/>
+                </div>
+                <div class="text-muted small" t-if="props.loading">Calculating slot suggestions...</div>
+                <div class="o_fed_cw_revision_list" t-elif="(props.suggestions || []).length">
+                    <t t-foreach="props.suggestions || []" t-as="suggestion" t-key="suggestion.slot_id">
+                        <div class="o_fed_cw_revision_item">
+                            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-2">
+                                <div>
+                                    <div class="fw-semibold"><t t-esc="suggestion.court_name"/> · <t t-esc="suggestion.start_label"/>-<t t-esc="suggestion.end_label"/></div>
+                                    <div class="small text-muted"><t t-esc="suggestion.slot_name"/></div>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap justify-content-end">
+                                    <StatusBadge t-props="{ label: 'Score ' + suggestion.score, tone: suggestion.score >= 80 ? 'success' : suggestion.score >= 60 ? 'warning' : 'danger' }"/>
+                                    <StatusBadge t-if="suggestion.warning_count" t-props="{ label: suggestion.warning_count + ' warnings', tone: 'warning' }"/>
+                                </div>
+                            </div>
+                            <div class="small text-muted" t-if="(suggestion.score_components || []).length">
+                                <t t-foreach="suggestion.score_components || []" t-as="component" t-key="component.key">
+                                    <div><t t-esc="component.label"/> <t t-esc="component.score"/></div>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+                <div class="text-muted small" t-else="">Select exactly one unscheduled match to surface ranked open-slot suggestions.</div>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.DraggableMatchCard">
+        <article class="o_fed_cw_match_card" t-att-class="this.cardClass + (props.highlighted ? ' o-highlighted' : '')" t-att-draggable="props.draggable ? 'true' : undefined" tabindex="0" t-on-dragstart="onDragStart">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                <div class="fw-semibold flex-grow-1"><t t-esc="props.match.home_team_name"/> vs <t t-esc="props.match.away_team_name"/></div>
+                <div class="d-flex gap-2 align-items-start flex-wrap justify-content-end">
+                    <button type="button" class="btn btn-sm o_fed_cw_select_toggle" t-att-class="props.selected ? 'btn-primary' : 'btn-outline-secondary'" t-att-aria-pressed="props.selected ? 'true' : 'false'" t-on-click.stop="onToggleSelection">
+                        <t t-esc="props.selected ? 'Selected' : 'Select'"/>
+                    </button>
+                    <StatusBadge t-props="{ label: props.match.state_label, state: props.match.state }"/>
+                </div>
+            </div>
+            <div class="small text-muted mb-1" t-if="props.match.division_name"><t t-esc="props.match.division_name"/></div>
+            <div class="small text-muted mb-1" t-if="props.match.stage_name"><t t-esc="props.match.stage_name"/><t t-if="props.match.group_name"> · <t t-esc="props.match.group_name"/></t></div>
+            <div class="small text-muted mb-2">Round <t t-esc="props.match.round_number || '-'"/></div>
+            <div class="small text-muted mb-3" t-if="props.match.court_name">Assigned to <t t-esc="props.match.court_name"/></div>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-primary btn-sm" t-if="props.isMobile and !props.assigned" t-on-click="onAssignClick">Assign</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" t-if="props.assigned" t-on-click="onUnassignClick">Unassign</button>
+            </div>
+        </article>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.UnscheduledMatchList">
+        <section class="card shadow-sm o_fed_cw_unscheduled" t-on-drop="onDropToPool" t-on-dragover="onDragOver">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                    <div>
+                        <h3 class="h6 mb-1">Unscheduled matches</h3>
+                        <p class="text-muted small mb-0">Drag cards into a slot, or tap Assign on mobile.</p>
+                    </div>
+                    <StatusBadge t-props="{ label: (props.loadedCount || (props.matches || []).length) + ' / ' + (props.totalCount || (props.matches || []).length) + ' unscheduled', state: (props.totalCount || (props.matches || []).length) ? 'warning' : 'available' }"/>
+                </div>
+                <div class="text-muted small mb-3" t-if="(props.totalCount || 0) &gt; (props.loadedCount || (props.matches || []).length)">
+                    Showing <t t-esc="props.loadedCount || (props.matches || []).length"/> of <t t-esc="props.totalCount"/> filtered unscheduled matches.
+                </div>
+                <div class="o_fed_cw_match_stack" t-if="(props.matches || []).length">
+                    <t t-foreach="props.matches || []" t-as="match" t-key="match.id">
+                        <DraggableMatchCard t-props="{ match: match, draggable: !props.isMobile, assigned: false, highlighted: (props.highlightedMatchIds || []).includes(match.id), isMobile: props.isMobile, onDragStart: props.onDragStart, onAssign: props.onAssign, onUnassign: props.onUnassign, onToggleSelected: props.onToggleSelected, selected: props.selectedMatchIds.includes(match.id) }"/>
+                    </t>
+                </div>
+                <div class="text-muted small" t-else="">Drop an assigned card here to unassign it, or leave this empty once the day is fully planned.</div>
+                <div class="mt-3 d-flex justify-content-center" t-if="props.hasMore">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" t-att-disabled="props.loading" t-on-click="onLoadMore">
+                        <t t-esc="props.loading ? 'Loading more...' : 'Load more matches'"/>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.ScheduleGrid">
+        <section class="card shadow-sm o_fed_cw_schedule_grid">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                    <div>
+                        <h3 class="h6 mb-1">Planner grid</h3>
+                        <p class="text-muted small mb-0">Rows are timeslots, columns are courts, and each cell is a live assignment target.</p>
+                    </div>
+                    <StatusBadge t-props="{ label: props.gameday?.planner_state_label || 'Draft', state: props.gameday?.planner_state }"/>
+                </div>
+                <div class="o_fed_cw_grid_wrapper" t-if="(props.rows || []).length and (props.courts || []).length">
+                    <div class="o_fed_cw_grid" t-att-style="this.gridStyle">
+                        <div class="o_fed_cw_grid_head o_fed_cw_grid_time">Time</div>
+                        <t t-foreach="props.courts || []" t-as="court" t-key="court.id">
+                            <div class="o_fed_cw_grid_head"><t t-esc="court.name"/></div>
+                        </t>
+
+                        <t t-foreach="props.rows || []" t-as="row" t-key="row.key">
+                            <div class="o_fed_cw_grid_time_cell"><t t-esc="row.startLabel"/></div>
+                            <t t-foreach="props.courts || []" t-as="court" t-key="court.id">
+                                <div class="o_fed_cw_slot_cell"
+                                     t-att-class="this.slotCellClass(row.cells[court.id])"
+                                     t-att-data-slot-id="row.cells[court.id] ? row.cells[court.id].id : ''"
+                                     t-on-dragover="onDragOverSlot"
+                                     t-on-drop="onDropSlot">
+                                    <t t-if="row.cells[court.id]">
+                                        <div class="small text-muted mb-2"><t t-esc="row.cells[court.id].end_label"/></div>
+                                        <div class="small text-muted mb-2" t-if="row.cells[court.id].note"><t t-esc="row.cells[court.id].note"/></div>
+                                        <t t-if="row.cells[court.id].match">
+                                            <DraggableMatchCard t-props="{ match: row.cells[court.id].match, draggable: !props.isMobile, assigned: true, highlighted: (props.highlightedMatchIds || []).includes(row.cells[court.id].match.id), isMobile: props.isMobile, onDragStart: props.onDragStart, onAssign: props.onAssignTap, onUnassign: props.onUnassign, onToggleSelected: props.onToggleSelected, selected: props.selectedMatchIds.includes(row.cells[court.id].match.id) }"/>
+                                        </t>
+                                        <div class="o_fed_cw_empty_slot" t-else="">
+                                            <StatusBadge t-props="{ label: row.cells[court.id].state, state: row.cells[court.id].state }"/>
+                                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" t-if="['available', 'reserved'].includes(row.cells[court.id].state)" t-att-data-slot-id="row.cells[court.id].id" t-att-disabled="props.selectedUnscheduledCount !== 1" t-on-click="onAssignSelected">
+                                                <t t-esc="props.selectedUnscheduledCount === 1 ? 'Assign selected' : 'Select one match first'"/>
+                                            </button>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                        </t>
+                    </div>
+                </div>
+                <div class="text-muted" t-else="">Generate slots on a selected gameday to open the planner grid.</div>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.MobileAssignmentDialog">
+        <div class="o_fed_cw_mobile_dialog_backdrop" t-if="props.open">
+            <div class="o_fed_cw_mobile_dialog card shadow-lg" role="dialog" aria-modal="true" aria-label="Mobile assignment dialog">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                        <div>
+                            <div class="text-uppercase small text-muted">Mobile assignment</div>
+                            <h3 class="h6 mb-0">Choose a slot</h3>
+                        </div>
+                        <button type="button" class="btn-close" aria-label="Close" t-on-click="props.onClose"/>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Gameday</label>
+                        <select class="form-select" name="gameday_id" t-att-value="props.values.gameday_id" t-on-change="props.onFieldChange">
+                            <t t-foreach="props.gamedays || []" t-as="gameday" t-key="gameday.id">
+                                <option t-att-value="gameday.id"><t t-esc="gameday.name"/> - <t t-esc="gameday.date || 'No date'"/></option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Slot</label>
+                        <select class="form-select" name="slot_id" t-att-value="props.values.slot_id" t-on-change="props.onFieldChange">
+                            <option value="">Select a slot</option>
+                            <t t-foreach="props.slots || []" t-as="slot" t-key="slot.id">
+                                <option t-att-value="slot.id"><t t-esc="slot.court_name"/> - <t t-esc="slot.start_label"/> to <t t-esc="slot.end_label"/></option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-outline-secondary" t-on-click="props.onClose">Cancel</button>
+                        <button type="button" class="btn btn-primary" t-on-click="props.onConfirm">Assign</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.PublishScheduleDialog">
+        <section class="card shadow-sm o_fed_cw_publish_dialog">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                        <h3 class="h6 mb-1">Publish and maintain schedule</h3>
+                        <p class="text-muted small mb-0">Validate first, then publish a gameday or the full competition schedule.</p>
+                        <div class="small text-muted mt-2">
+                            <strong>Next action:</strong>
+                            Run validation, resolve blocking issues, and only force warning-only paths when a manager records an override reason.
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-outline-secondary" t-on-click="props.onValidate">Validate schedule</button>
+                        <button type="button" class="btn btn-outline-primary" t-att-disabled="props.publishing" t-on-click="props.onPublishGameday">Publish gameday</button>
+                        <button type="button" class="btn btn-primary" t-att-disabled="props.publishing" t-on-click="props.onPublishCompetition">Publish competition</button>
+                    </div>
+                </div>
+                <div class="alert alert-info" role="status">
+                    <strong>Publication checklist:</strong>
+                    <ul class="mb-0 ps-3 mt-1">
+                        <li>Blocking conflicts must be zero.</li>
+                        <li>Warning-only publication requires manager override reason.</li>
+                        <li>Republishing a live revision requires manager override reason.</li>
+                    </ul>
+                </div>
+                <div class="alert alert-warning" role="status" t-if="props.requiresReason">
+                    Managers must record a reason before publishing with warnings or replacing a live schedule revision.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Manager override reason</label>
+                    <textarea class="form-control" rows="2" t-att-value="props.overrideReason" t-on-input="props.onReasonChange" t-att-placeholder="props.requiresReason ? 'Required when warnings are forced or a live schedule is replaced.' : 'Optional context for this publication.'"/>
+                    <div class="form-text">The reason is stored on the resulting schedule revision for operators and auditors.</div>
+                </div>
+                <div class="o_fed_cw_publish_revision_list mb-3" t-if="(props.gamedays || []).length">
+                    <t t-foreach="props.gamedays || []" t-as="gameday" t-key="gameday.id">
+                        <div class="o_fed_cw_publish_revision_item">
+                            <div>
+                                <div class="fw-semibold"><t t-esc="gameday.name"/></div>
+                                <div class="small text-muted"><t t-esc="gameday.assigned_count"/> assigned · <t t-esc="gameday.slot_count"/> slots</div>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap justify-content-end">
+                                <StatusBadge t-if="gameday.schedule_revisions.live_revision" t-props="{ label: 'Live R' + gameday.schedule_revisions.live_revision.revision_number, tone: 'success' }"/>
+                                <StatusBadge t-if="gameday.schedule_revisions.draft_revision" t-props="{ label: 'Draft R' + gameday.schedule_revisions.draft_revision.revision_number, tone: 'warning' }"/>
+                                <StatusBadge t-if="gameday.schedule_revisions.has_pending_draft_changes" t-props="{ label: 'Draft pending', tone: 'warning' }"/>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+                <ValidationPanel t-props="{ title: 'Publication summary', validation: props.validation }"/>
+            </div>
+        </section>
+    </t>
+
+    <t t-name="sports_federation_competition_engine.CompetitionWorkspaceAction">
+        <div class="o_fed_cw_action">
+            <t t-if="state.loading">
+                <div class="card shadow-sm">
+                    <div class="card-body placeholder-glow">
+                        <span class="placeholder col-4 mb-3"/>
+                        <span class="placeholder col-12 mb-2"/>
+                        <span class="placeholder col-10"/>
+                    </div>
+                </div>
+            </t>
+            <t t-elif="state.error">
+                <div class="alert alert-danger" role="alert">
+                    <div class="fw-semibold mb-1">Workspace failed to load</div>
+                    <div class="small"><t t-esc="state.error"/></div>
+                </div>
+            </t>
+            <t t-else="">
+                <CompetitionOverviewCard t-props="{ overview: payload.overview }"/>
+                <ProgressStepper t-props="{ steps: this.progressSteps }"/>
+
+                <div class="o_fed_cw_nav mb-4">
+                    <button type="button" class="btn btn-outline-secondary" t-att-class="state.activeSection === 'overview' ? 'active' : ''" t-on-click="() => this.setSection('overview')">Overview</button>
+                    <button type="button" class="btn btn-outline-secondary" t-att-class="state.activeSection === 'teams' ? 'active' : ''" t-on-click="() => this.setSection('teams')">Teams</button>
+                    <button type="button" class="btn btn-outline-secondary" t-att-class="state.activeSection === 'rounds' ? 'active' : ''" t-on-click="() => this.setSection('rounds')">Rounds</button>
+                    <button type="button" class="btn btn-outline-secondary" t-att-class="state.activeSection === 'gamedays' ? 'active' : ''" t-on-click="() => this.setSection('gamedays')">Gamedays</button>
+                    <button type="button" class="btn btn-outline-secondary" t-att-class="state.activeSection === 'planner' ? 'active' : ''" t-on-click="() => this.setSection('planner')">Gameday Planner</button>
+                    <button type="button" class="btn btn-outline-secondary" t-att-class="state.activeSection === 'publish' ? 'active' : ''" t-on-click="() => this.setSection('publish')">Publish</button>
+                </div>
+
+                <t t-if="!payload.competition.id and payload.capabilities.is_manager">
+                    <section class="card shadow-sm o_fed_cw_shell_form">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                                <div>
+                                    <h2 class="h5 mb-1">Create competition</h2>
+                                    <p class="text-muted small mb-0">A season competition is the season-level container for divisions, schedules, and publication. Start from an existing template or create one inline for this season.</p>
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-12 col-lg-6"><label class="form-label fw-semibold">Competition name</label><input type="text" class="form-control" name="name" t-att-value="state.shellForm.name" t-on-input="updateShellField"/></div>
+                                <div class="col-12 col-lg-6"><label class="form-label fw-semibold">Competition template</label><select class="form-select" name="competition_id" t-att-value="state.shellForm.competition_id" t-on-change="updateShellField"><option value="">Create inline from competition name</option><t t-foreach="payload.options.competition_templates || []" t-as="option" t-key="option.id"><option t-att-value="option.id"><t t-esc="option.name"/></option></t></select></div>
+                                <div class="col-12 col-lg-4"><label class="form-label fw-semibold">Season</label><select class="form-select" name="season_id" t-att-value="state.shellForm.season_id" t-on-change="updateShellField"><option value="">Select a season</option><t t-foreach="payload.options.seasons || []" t-as="season" t-key="season.id"><option t-att-value="season.id"><t t-esc="season.name"/></option></t></select></div>
+                                <div class="col-12 col-lg-4"><label class="form-label fw-semibold">Start date</label><input type="date" class="form-control" name="date_start" t-att-value="state.shellForm.date_start" t-on-input="updateShellField"/></div>
+                                <div class="col-12 col-lg-4"><label class="form-label fw-semibold">End date</label><input type="date" class="form-control" name="date_end" t-att-value="state.shellForm.date_end" t-on-input="updateShellField"/></div>
+                            </div>
+                            <div class="mt-4 d-flex justify-content-end"><button type="button" class="btn btn-primary" t-att-disabled="state.saving or !this.canCreateCompetitionShell" t-on-click="createCompetitionShell">Create competition</button></div>
+                        </div>
+                    </section>
+                </t>
+
+                <t t-if="!payload.competition.id and !payload.capabilities.is_manager">
+                    <section class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h5 mb-1">Competition required</h2>
+                            <p class="text-muted small mb-0">A federation manager must create the season competition first. After that, planners can open the workspace from the competition or a division and continue with divisions, teams, rounds, and slot planning.</p>
+                        </div>
+                    </section>
+                </t>
+
+                <t t-if="payload.competition.id and state.activeSection === 'overview'">
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-7">
+                            <section class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                                        <div>
+                                            <h2 class="h5 mb-1">Divisions</h2>
+                                            <p class="text-muted small mb-0">Use existing tournament records as divisions inside this competition.</p>
+                                        </div>
+                                    </div>
+                                    <div class="o_fed_cw_division_list" t-if="this.divisionOptions.length">
+                                        <t t-foreach="this.divisionOptions" t-as="division" t-key="division.id">
+                                            <button type="button" class="card border-0 shadow-sm text-start o_fed_cw_division_card" t-att-data-division-id="division.id" t-att-class="state.currentDivisionId === division.id ? 'o-active' : ''" t-on-click="selectDivision">
+                                                <div class="card-body">
+                                                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                                        <div class="fw-semibold"><t t-esc="division.name"/></div>
+                                                        <StatusBadge t-props="{ label: division.workspace_state_label, state: division.workspace_state }"/>
+                                                    </div>
+                                                    <div class="small text-muted"><t t-esc="division.confirmed_participant_count"/> teams · <t t-esc="division.match_count"/> matches · <t t-esc="division.gameday_count"/> gamedays</div>
+                                                    <div class="small mt-2"><t t-esc="division.next_action"/></div>
+                                                </div>
+                                            </button>
+                                        </t>
+                                    </div>
+                                    <div class="text-muted" t-else="">Create the first division to start scheduling.</div>
+                                </div>
+                            </section>
+                        </div>
+                        <div class="col-12 col-xl-5">
+                            <section class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 mb-1">Create division</h2>
+                                    <p class="text-muted small mb-3">This creates the working tournament record used for team entries, rounds, gamedays, and matches.</p>
+                                    <div class="row g-3">
+                                        <div class="col-12"><label class="form-label fw-semibold">Division name</label><input type="text" class="form-control" name="name" t-att-value="state.divisionForm.name" t-on-input="updateDivisionField"/></div>
+                                        <div class="col-12 col-md-6"><label class="form-label fw-semibold">Format</label><select class="form-select" name="planning_format" t-att-value="state.divisionForm.planning_format" t-on-change="updateDivisionField"><option value="single_round_robin">Single Round Robin</option><option value="double_round_robin">Double Round Robin</option><option value="knockout">Knockout</option><option value="pool_then_bracket">Pool Then Bracket</option><option value="manual">Manual</option></select></div>
+                                        <div class="col-12 col-md-6"><label class="form-label fw-semibold">Minimum rest (minutes)</label><input type="number" min="0" class="form-control" name="minimum_rest_minutes" t-att-value="state.divisionForm.minimum_rest_minutes" t-on-input="updateDivisionField"/></div>
+                                        <div class="col-12 col-md-6"><label class="form-label fw-semibold">Max consecutive matches per team</label><input type="number" min="1" class="form-control" name="max_consecutive_matches_per_team" t-att-value="state.divisionForm.max_consecutive_matches_per_team" t-on-input="updateDivisionField"/></div>
+                                        <div class="col-12 col-md-6" t-if="state.divisionForm.planning_format === 'pool_then_bracket'"><label class="form-label fw-semibold">Pool count</label><input type="number" min="2" class="form-control" name="pool_count" t-att-value="state.divisionForm.pool_count" t-on-input="updateDivisionField"/></div>
+                                        <div class="col-12 col-md-6" t-if="state.divisionForm.planning_format === 'pool_then_bracket'"><label class="form-label fw-semibold">Qualifiers per pool</label><input type="number" min="1" class="form-control" name="pool_qualifier_count" t-att-value="state.divisionForm.pool_qualifier_count" t-on-input="updateDivisionField"/></div>
+                                        <div class="col-12 col-md-6"><label class="form-label fw-semibold">Category</label><select class="form-select" name="category" t-att-value="state.divisionForm.category" t-on-change="updateDivisionField"><option value="">Any</option><option value="senior">Senior</option><option value="youth">Youth</option><option value="junior">Junior</option><option value="cadet">Cadet</option><option value="mini">Mini</option></select></div>
+                                        <div class="col-12 col-md-6"><label class="form-label fw-semibold">Gender</label><select class="form-select" name="gender" t-att-value="state.divisionForm.gender" t-on-change="updateDivisionField"><option value="">Any</option><option value="male">Male</option><option value="female">Female</option><option value="mixed">Mixed</option></select></div>
+                                        <div class="col-12 col-md-6"><label class="form-label fw-semibold">Start date</label><input type="date" class="form-control" name="date_start" t-att-value="state.divisionForm.date_start" t-on-input="updateDivisionField"/></div>
+                                        <div class="col-12 col-md-6"><label class="form-label fw-semibold">End date</label><input type="date" class="form-control" name="date_end" t-att-value="state.divisionForm.date_end" t-on-input="updateDivisionField"/></div>
+                                    </div>
+                                    <div class="mt-4 d-flex justify-content-end"><button type="button" class="btn btn-primary" t-att-disabled="state.saving" t-on-click="createDivision">Create division</button></div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </t>
+
+                <t t-if="selectedDivision and state.activeSection === 'teams'">
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-4">
+                            <section class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                                        <div>
+                                            <h2 class="h5 mb-1">Add team entry</h2>
+                                            <p class="text-muted small mb-0">Reuses existing tournament participant records rather than a duplicate team-entry model.</p>
+                                        </div>
+                                        <StatusBadge t-props="{ label: selectedDivision.workspace_state_label, state: selectedDivision.workspace_state }"/>
+                                    </div>
+                                    <div class="mb-3"><label class="form-label fw-semibold">Search teams</label><input type="search" class="form-control" name="search" placeholder="Type team name" t-att-value="state.teamEntryForm.search" t-on-input="updateTeamEntryField"/><div class="form-text">Search runs server-side and excludes teams already entered in this division.</div></div>
+                                    <div class="mb-3"><label class="form-label fw-semibold">Club filter</label><select class="form-select" name="club_id" t-att-value="state.teamEntryForm.club_id" t-on-change="updateTeamEntryField"><option value="">All clubs</option><t t-foreach="state.availableClubs" t-as="club" t-key="club.id"><option t-att-value="club.id"><t t-esc="club.display_name"/></option></t></select></div>
+                                    <div class="mb-3"><label class="form-label fw-semibold">Team</label><select class="form-select" name="team_id" t-att-value="state.teamEntryForm.team_id" t-on-change="updateTeamEntryField"><option value="">Select a team</option><t t-foreach="state.availableTeams" t-as="team" t-key="team.id"><option t-att-value="team.id"><t t-esc="team.display_name"/><t t-if="team.club_name"> · <t t-esc="team.club_name"/></t></option></t></select><div class="form-text" t-if="state.teamSearchLoading">Refreshing team results...</div></div>
+                                    <div class="mb-3"><label class="form-label fw-semibold">Seed</label><input type="number" min="1" class="form-control" name="seed" t-att-value="state.teamEntryForm.seed" t-on-input="updateTeamEntryField"/></div>
+                                    <div class="d-flex gap-2 justify-content-between flex-wrap">
+                                        <button type="button" class="btn btn-outline-secondary" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="lockEntries">Lock participant list</button>
+                                        <button type="button" class="btn btn-primary" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="createTeamEntry">Add team</button>
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="card shadow-sm mt-3">
+                                <div class="card-body">
+                                    <h3 class="h6 mb-3">Planning fairness rules</h3>
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold">Minimum rest (minutes)</label>
+                                            <input type="number" min="0" class="form-control" name="minimum_rest_minutes" t-att-value="selectedDivision.minimum_rest_minutes" t-att-disabled="state.saving" t-on-change="updateDivisionPlanningRule"/>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold">Max consecutive matches per team</label>
+                                            <input type="number" min="1" class="form-control" name="max_consecutive_matches_per_team" t-att-value="selectedDivision.max_consecutive_matches_per_team" t-att-disabled="state.saving" t-on-change="updateDivisionPlanningRule"/>
+                                        </div>
+                                    </div>
+                                    <div class="form-text mt-2">Use these controls to tune no-back-to-back pressure and short-rest streak limits without leaving the workspace.</div>
+                                </div>
+                            </section>
+                        </div>
+                        <div class="col-12 col-xl-8">
+                            <section class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 mb-3">Team entries</h2>
+                                    <div class="o_fed_cw_entry_list" t-if="(selectedDivision.team_entries || []).length">
+                                        <t t-foreach="selectedDivision.team_entries || []" t-as="entry" t-key="entry.id">
+                                            <div class="card border-0 shadow-sm o_fed_cw_entry_card">
+                                                <div class="card-body d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                                    <div>
+                                                        <div class="fw-semibold"><t t-esc="entry.team_name"/></div>
+                                                        <div class="text-muted small"><t t-esc="entry.club_name || 'No club'"/> · Seed <t t-esc="entry.seed || '-'"/></div>
+                                                    </div>
+                                                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                                                        <StatusBadge t-props="{ label: entry.status_label, state: entry.status }"/>
+                                                        <button type="button" class="btn btn-outline-primary btn-sm" t-if="entry.status !== 'confirmed' and !selectedDivision.entries_locked" t-att-data-entry-id="entry.id" t-on-click="confirmTeamEntry">Confirm</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </div>
+                                    <div class="text-muted" t-else="">No team entries yet. Add and confirm teams before you lock the participant list.</div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </t>
+
+                <t t-if="selectedDivision and state.activeSection === 'rounds'">
+                    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                        <div>
+                            <h2 class="h5 mb-1"><t t-esc="this.generationSectionTitle"/></h2>
+                            <p class="text-muted small mb-0"><t t-esc="this.generationPreview.description"/></p>
+                        </div>
+                        <button type="button" class="btn btn-primary" t-if="this.generationPreview.action_label" t-att-disabled="state.saving or !selectedDivision.entries_locked or !this.generationPreview.supported" t-on-click="generateScheduleStructure"><t t-esc="this.generationActionLabel"/></button>
+                    </div>
+                    <div class="alert alert-info" role="status" t-if="!this.generationPreview.supported">
+                        <t t-esc="this.generationPreview.empty_message"/>
+                    </div>
+                    <GenerationPreview t-props="{ preview: this.generationPreview }"/>
+                </t>
+
+                <t t-if="selectedDivision and state.activeSection === 'gamedays'">
+                    <div class="row g-4">
+                        <div class="col-12 col-xl-4">
+                            <section class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 mb-3">Create gameday</h2>
+                                    <div class="mb-3"><label class="form-label fw-semibold">Name</label><input type="text" class="form-control" name="name" t-att-value="state.gamedayForm.name" t-on-input="updateGamedayField"/></div>
+                                    <div class="mb-3"><label class="form-label fw-semibold">Stage</label><select class="form-select" name="stage_id" t-att-value="state.gamedayForm.stage_id" t-on-change="updateGamedayField"><option value="">Select a stage</option><t t-foreach="this.stageOptions" t-as="stage" t-key="stage.id"><option t-att-value="stage.id"><t t-esc="stage.name"/></option></t></select></div>
+                                    <div class="mb-3"><label class="form-label fw-semibold">Date</label><input type="date" class="form-control" name="round_date" t-att-value="state.gamedayForm.round_date" t-on-input="updateGamedayField"/></div>
+                                    <div class="mb-3"><label class="form-label fw-semibold">Venue</label><select class="form-select" name="venue_id" t-att-value="state.gamedayForm.venue_id" t-on-change="updateGamedayField"><option value="">Select a venue</option><t t-foreach="payload.options.venues || []" t-as="venue" t-key="venue.id"><option t-att-value="venue.id"><t t-esc="venue.name"/></option></t></select></div>
+                                    <div class="mb-3" t-if="this.sharedDivisionOptions.length">
+                                        <label class="form-label fw-semibold">Also include divisions</label>
+                                        <div class="o_fed_cw_court_picker">
+                                            <t t-foreach="this.sharedDivisionOptions" t-as="divisionOption" t-key="divisionOption.id">
+                                                <label class="form-check form-check-inline card border-0 shadow-sm o_fed_cw_court_option">
+                                                    <input class="form-check-input" type="checkbox" t-att-value="divisionOption.id" t-att-checked="state.gamedayForm.sharedDivisionIds.includes(divisionOption.id)" t-on-change="toggleSharedDivision"/>
+                                                    <span class="form-check-label"><t t-esc="divisionOption.name"/></span>
+                                                </label>
+                                            </t>
+                                        </div>
+                                        <div class="form-text">Selected divisions share one physical planner grid for this gameday.</div>
+                                    </div>
+                                    <div class="d-flex justify-content-end"><button type="button" class="btn btn-primary" t-att-disabled="state.saving" t-on-click="createGameday">Create gameday</button></div>
+                                </div>
+                            </section>
+                        </div>
+                        <div class="col-12 col-xl-8">
+                            <section class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                                        <div>
+                                            <h2 class="h5 mb-1">Generate court and timeslot slots</h2>
+                                            <p class="text-muted small mb-0">Select a gameday, pick courts, and generate the planning grid.</p>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2 flex-wrap mb-3" t-if="(selectedDivision.gamedays || []).length">
+                                        <t t-foreach="selectedDivision.gamedays || []" t-as="gameday" t-key="gameday.id">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" t-att-data-gameday-id="gameday.id" t-att-class="state.currentGamedayId === gameday.id ? 'active' : ''" t-on-click="selectGameday"><t t-esc="gameday.name"/><t t-if="gameday.stage_name"> · <t t-esc="gameday.stage_name"/></t></button>
+                                        </t>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6"><label class="form-label fw-semibold">Start</label><input type="time" class="form-control" name="start_time" t-att-value="state.gamedayForm.start_time" t-on-input="updateGamedayField"/></div>
+                                        <div class="col-12 col-md-6"><label class="form-label fw-semibold">End</label><input type="time" class="form-control" name="end_time" t-att-value="state.gamedayForm.end_time" t-on-input="updateGamedayField"/></div>
+                                        <div class="col-12 col-md-6"><label class="form-label fw-semibold">Match duration (minutes)</label><input type="number" min="1" class="form-control" name="match_duration_minutes" t-att-value="state.gamedayForm.match_duration_minutes" t-on-input="updateGamedayField"/></div>
+                                        <div class="col-12 col-md-6"><label class="form-label fw-semibold">Buffer (minutes)</label><input type="number" min="0" class="form-control" name="buffer_minutes" t-att-value="state.gamedayForm.buffer_minutes" t-on-input="updateGamedayField"/></div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold">Courts</label>
+                                            <div class="o_fed_cw_court_picker">
+                                                <t t-foreach="state.availableCourts || []" t-as="court" t-key="court.id">
+                                                    <label class="form-check form-check-inline card border-0 shadow-sm o_fed_cw_court_option">
+                                                        <input class="form-check-input" type="checkbox" t-att-value="court.id" t-att-checked="state.gamedayForm.courtIds.includes(court.id)" t-on-change="toggleCourt"/>
+                                                        <span class="form-check-label"><t t-esc="court.display_name"/></span>
+                                                    </label>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 d-flex justify-content-end"><button type="button" class="btn btn-primary" t-att-disabled="state.saving" t-on-click="generateSlots">Generate slots</button></div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </t>
+
+                <t t-if="selectedDivision and state.activeSection === 'planner'">
+                    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                        <div>
+                            <h2 class="h5 mb-1">Gameday Planner</h2>
+                            <p class="text-muted small mb-0">Use this day-level surface after schedule structure and gamedays exist. Drag on desktop or tablet, or tap Assign on mobile to choose a slot explicitly.</p>
+                            <p class="text-muted small mb-0" t-if="this.plannerDivisionSummary">Planning divisions: <t t-esc="this.plannerDivisionSummary"/></p>
+                            <p class="text-muted small mb-0" t-if="planner and planner.gameday.stage_name">Current stage: <t t-esc="planner.gameday.stage_name"/></p>
+                            <div class="mt-2 d-flex align-items-center gap-2 flex-wrap" t-if="this.plannerPolicyBadge">
+                                <span class="badge rounded-pill" t-att-class="this.plannerPolicyBadge.className"><t t-esc="this.plannerPolicyBadge.label"/></span>
+                                <span class="text-muted small"><t t-esc="this.plannerPolicyBadge.detail"/></span>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap" t-if="(selectedDivision.gamedays || []).length">
+                            <t t-foreach="selectedDivision.gamedays || []" t-as="gameday" t-key="gameday.id">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" t-att-data-gameday-id="gameday.id" t-att-class="state.currentGamedayId === gameday.id ? 'active' : ''" t-on-click="selectGameday"><t t-esc="gameday.name"/><t t-if="gameday.stage_name"> · <t t-esc="gameday.stage_name"/></t></button>
+                            </t>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-3"><label class="form-label fw-semibold">Division</label><select class="form-select" name="divisionId" t-att-value="state.filters.divisionId" t-on-change="updateFilterField"><option value="">All divisions</option><t t-foreach="this.plannerDivisionOptions || []" t-as="divisionOption" t-key="divisionOption.id"><option t-att-value="divisionOption.id"><t t-esc="divisionOption.name"/></option></t></select></div>
+                        <div class="col-12 col-md-3"><label class="form-label fw-semibold">Round</label><select class="form-select" name="roundNumber" t-att-value="state.filters.roundNumber" t-on-change="updateFilterField"><option value="">All rounds</option><t t-foreach="this.roundOptions || []" t-as="roundItem" t-key="roundItem.round_number"><option t-att-value="roundItem.round_number"><t t-esc="roundItem.name"/></option></t></select></div>
+                        <div class="col-12 col-md-3"><label class="form-label fw-semibold">Team</label><select class="form-select" name="teamId" t-att-value="state.filters.teamId" t-on-change="updateFilterField"><option value="">All teams</option><t t-foreach="this.plannerTeamOptions || []" t-as="teamOption" t-key="teamOption.team_id + '-' + teamOption.division_id"><option t-att-value="teamOption.team_id"><t t-esc="teamOption.team_name"/> · <t t-esc="teamOption.division_name"/></option></t></select></div>
+                        <div class="col-12 col-md-3 d-flex align-items-end"><label class="form-check"><input class="form-check-input" type="checkbox" name="conflictsOnly" t-att-checked="state.filters.conflictsOnly" t-on-change="updateFilterField"/> <span class="form-check-label">Show conflicts only</span></label></div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-xl-6">
+                            <CollaborationPanel t-props="{ collaboration: this.plannerCollaboration, title: 'Planner presence', emptyMessage: 'No other planners have checked in on this competition recently.' }"/>
+                        </div>
+                        <div class="col-12 col-xl-6">
+                            <RevisionSummaryPanel t-props="{ revisions: this.plannerScheduleRevisions, title: 'Current gameday revisions' }"/>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-xl-7">
+                            <FairnessSummaryPanel t-props="{ summary: this.plannerFairnessSummary, title: 'Planner fairness' }"/>
+                        </div>
+                        <div class="col-12 col-xl-5">
+                            <SlotSuggestionPanel t-props="{ loading: state.slotSuggestions.loading, suggestions: this.slotSuggestions }"/>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm o_fed_cw_planner_toolbar mb-3">
+                        <div class="card-body d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                            <div>
+                                <div class="text-uppercase small text-muted">Planner actions</div>
+                                <div class="fw-semibold mb-1"><t t-esc="state.selectedMatchIds.length"/> match(es) selected</div>
+                                <div class="text-muted small" t-if="this.hasMixedPlannerSelection">Bulk actions need either only unscheduled matches or only assigned matches.</div>
+                                <div class="text-muted small" t-elif="this.plannerOpenSlotCount">Open slots available: <t t-esc="this.plannerOpenSlotCount"/></div>
+                                <div class="text-muted small" t-else="">No open slots are currently available on this gameday.</div>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap justify-content-end">
+                                <button type="button" class="btn btn-outline-secondary" t-att-disabled="!(this.filteredUnscheduledMatches || []).length" t-on-click="toggleFilteredSelection"><t t-esc="this.allFilteredMatchesSelected ? 'Clear filtered' : 'Select filtered'"/></button>
+                                <button type="button" class="btn btn-outline-secondary" t-att-disabled="!state.selectedMatchIds.length" t-on-click="clearPlannerSelection">Clear selection</button>
+                                <button type="button" class="btn btn-outline-primary" t-att-disabled="!this.canBulkAssignSelection" t-on-click="bulkAssignSelected">Bulk assign selected</button>
+                                <button type="button" class="btn btn-outline-primary" t-att-disabled="!this.canBulkUnassignSelection" t-on-click="bulkUnassignSelected">Bulk unassign selected</button>
+                                <button type="button" class="btn btn-outline-secondary" t-att-disabled="!(planner and planner.can_undo)" t-on-click="undoPlannerAction">Undo</button>
+                                <button type="button" class="btn btn-outline-secondary" t-att-disabled="!(planner and planner.can_redo)" t-on-click="redoPlannerAction">Redo</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <ValidationPanel t-if="state.pendingValidation" t-props="{ title: this.pendingValidationTitle, validation: state.pendingValidation.validation }"/>
+                    <div class="card shadow-sm o_fed_cw_override_reason mb-3" t-if="state.pendingValidation and this.canForcePendingAction">
+                        <div class="card-body">
+                            <label class="form-label fw-semibold">Manager override reason</label>
+                            <textarea class="form-control" rows="2" t-att-value="state.overrideReason.pending" t-on-input="updatePendingOverrideReason" placeholder="Required when forcing a warning-only planner action."/>
+                            <div class="form-text">The reason is stored on the planner operation and attached to forced assignments.</div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end mb-3" t-if="state.pendingValidation">
+                        <button type="button" class="btn btn-outline-secondary" t-on-click="clearPendingValidation">Dismiss</button>
+                        <button type="button" class="btn btn-primary" t-if="this.canForcePendingAction" t-on-click="forcePendingAssignment"><t t-esc="this.forcePendingLabel"/></button>
+                    </div>
+
+                    <div class="o_fed_cw_planner_layout">
+                        <UnscheduledMatchList t-props="{ matches: this.filteredUnscheduledMatches, highlightedMatchIds: this.plannerHighlightedMatchIds, isMobile: state.isMobile, onAssign: this.openMobileAssign.bind(this), onLoadMore: this.loadMoreUnscheduledMatches.bind(this), onUnassign: this.unassignMatch.bind(this), onDragStart: this.onDragStartMatch.bind(this), onToggleSelected: this.toggleMatchSelection.bind(this), selectedMatchIds: state.selectedMatchIds, hasMore: planner ? planner.unscheduled_has_more : false, loadedCount: planner ? planner.unscheduled_loaded_count : 0, loading: state.plannerLoading, totalCount: planner ? planner.unscheduled_total_count : 0 }"/>
+                        <ScheduleGrid t-props="{ courts: planner ? planner.courts : [], gameday: planner ? planner.gameday : false, highlightedMatchIds: this.plannerHighlightedMatchIds, highlightedSlotIds: this.plannerHighlightedSlotIds, isMobile: state.isMobile, onAssignSelected: this.assignSelectedToSlot.bind(this), onAssignTap: this.openMobileAssign.bind(this), onDropMatch: this.handleDropMatch.bind(this), onDragStart: this.onDragStartMatch.bind(this), onUnassign: this.unassignMatch.bind(this), onToggleSelected: this.toggleMatchSelection.bind(this), rows: this.plannerRows, selectedMatchIds: state.selectedMatchIds, selectedUnscheduledCount: this.selectedUnscheduledMatches.length }"/>
+                    </div>
+
+                    <section class="card shadow-sm o_fed_cw_history_panel mt-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                                <div>
+                                    <h3 class="h6 mb-1">Planner action history</h3>
+                                    <p class="text-muted small mb-0">Recent assignment, move, and unassignment actions stay visible so planners can review and reverse their last changes.</p>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <StatusBadge t-props="{ label: ((planner and planner.operation_history) ? planner.operation_history.length : 0) + ' recent', tone: 'info' }"/>
+                                    <StatusBadge t-props="{ label: (planner and planner.can_undo) ? 'undo ready' : 'no undo left', state: (planner and planner.can_undo) ? 'applied' : 'superseded' }"/>
+                                </div>
+                            </div>
+                            <div class="o_fed_cw_history_list" t-if="planner and (planner.operation_history || []).length">
+                                <t t-foreach="planner.operation_history || []" t-as="operation" t-key="operation.id">
+                                    <div class="o_fed_cw_history_item">
+                                        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                            <div>
+                                                <div class="fw-semibold mb-1"><t t-esc="operation.summary"/></div>
+                                                <div class="small text-muted"><t t-esc="operation.user_name"/> · <t t-esc="operation.created_at_label || operation.created_at"/></div>
+                                                <div class="small text-muted mt-1" t-if="operation.override_reason"><t t-esc="operation.override_reason"/></div>
+                                            </div>
+                                            <div class="d-flex gap-2 flex-wrap align-items-center justify-content-end">
+                                                <StatusBadge t-props="{ label: operation.operation_type_label, tone: operation.operation_type === 'unassign' ? 'warning' : 'info' }"/>
+                                                <StatusBadge t-props="{ label: operation.state_label, state: operation.state }"/>
+                                                <StatusBadge t-if="operation.forced" t-props="{ label: 'Forced', tone: 'warning' }"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                            <div class="text-muted small" t-else="">No planner actions have been recorded on this gameday yet.</div>
+                        </div>
+                    </section>
+
+                    <MobileAssignmentDialog t-props="{ open: state.mobileAssign.open, gamedays: this.gamedayOptions, slots: this.mobileSlotOptions, values: state.mobileAssign, onClose: this.closeMobileAssign.bind(this), onConfirm: this.confirmMobileAssign.bind(this), onFieldChange: this.updateMobileAssignField.bind(this) }"/>
+                </t>
+
+                <t t-if="selectedDivision and state.activeSection === 'publish'">
+                    <div class="row g-3">
+                        <div class="col-12 col-xl-5">
+                            <CollaborationPanel t-props="{ collaboration: this.workspaceCollaboration, title: 'Workspace presence', emptyMessage: 'No other planners are active in this competition right now.' }"/>
+                        </div>
+                        <div class="col-12 col-xl-7">
+                            <PublishScheduleDialog t-props="{ gamedays: selectedDivision.gamedays || [], overrideReason: state.overrideReason.publish, publishing: state.publishing, requiresReason: this.publishRequiresReason, validation: this.activeValidation, onReasonChange: this.updatePublishOverrideReason.bind(this), onValidate: this.validateSchedule.bind(this), onPublishGameday: this.publishGameday.bind(this), onPublishCompetition: this.publishCompetition.bind(this) }"/>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </div>
+    </t>
+
+</templates>
