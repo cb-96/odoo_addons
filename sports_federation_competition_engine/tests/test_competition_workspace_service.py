@@ -707,6 +707,111 @@ class TestCompetitionWorkspaceService(TransactionCase):
             [("09:00", "09:30"), ("09:35", "10:05"), ("10:10", "10:40")],
         )
 
+    def test_create_gameday_accepts_explicit_round_number(self):
+        division, _participants = self._create_division("Explicit Round Gameday Division", 4)
+        division.action_lock_team_entries()
+        self.service.generate_round_robin(division.id)
+
+        gameday_id = self.service.create_gameday(
+            {
+                "division_id": division.id,
+                "name": "Round 2 Gameday",
+                "round_date": "2026-10-11",
+                "round_number": 2,
+                "venue_id": self.venue.id,
+            }
+        )["gameday_id"]
+        gameday = self.env["federation.tournament.round"].browse(gameday_id)
+        planner = self.service.get_gameday_planner_data(gameday.id)
+
+        self.assertEqual(gameday.sequence, 2)
+        self.assertEqual(
+            {match["round_number"] for match in planner["unscheduled_matches"]},
+            {2},
+        )
+
+    def test_create_gameday_rejects_invalid_round_number(self):
+        division, _participants = self._create_division("Invalid Round Gameday Division", 4)
+
+        with self.assertRaises(ValidationError):
+            self.service.create_gameday(
+                {
+                    "division_id": division.id,
+                    "name": "Invalid Round",
+                    "round_date": "2026-10-11",
+                    "round_number": 0,
+                }
+            )
+
+    def test_gameday_planner_data_strictly_scopes_unscheduled_matches_by_round_number(self):
+        division, _participants = self._create_division("Strict Round Slice Division", 4)
+        division.action_lock_team_entries()
+        self.service.generate_round_robin(division.id)
+
+        gameday_id = self.service.create_gameday(
+            {
+                "division_id": division.id,
+                "name": "Round 99 Gameday",
+                "round_date": "2026-10-11",
+                "round_number": 99,
+                "venue_id": self.venue.id,
+            }
+        )["gameday_id"]
+        planner = self.service.get_gameday_planner_data(gameday_id)
+
+        self.assertEqual(planner["unscheduled_total_count"], 0)
+        self.assertEqual(planner["unscheduled_matches"], [])
+
+    def test_shared_gameday_supports_per_division_round_numbers(self):
+        host_division, _participants = self._create_division(
+            "Shared Round Host Division",
+            4,
+            team_offset=0,
+        )
+        guest_division, _participants = self._create_division(
+            "Shared Round Guest Division",
+            4,
+            team_offset=4,
+        )
+        host_division.action_lock_team_entries()
+        guest_division.action_lock_team_entries()
+        self.service.generate_round_robin(host_division.id)
+        self.service.generate_round_robin(guest_division.id)
+
+        gameday_id = self.service.create_gameday(
+            {
+                "division_id": host_division.id,
+                "name": "Shared Mixed Round Gameday",
+                "round_date": "2026-10-11",
+                "shared_division_ids": [guest_division.id],
+                "round_number": 1,
+                "shared_round_numbers": {
+                    str(guest_division.id): 2,
+                },
+                "venue_id": self.venue.id,
+            }
+        )["gameday_id"]
+        host_gameday = self.env["federation.tournament.round"].browse(gameday_id)
+        guest_gameday = guest_division.round_ids.filtered(
+            lambda round_record: round_record.planner_root_round_id == host_gameday
+        )[:1]
+        planner = self.service.get_gameday_planner_data(host_gameday.id)
+
+        self.assertEqual(host_gameday.sequence, 1)
+        self.assertEqual(guest_gameday.sequence, 2)
+        host_round_numbers = {
+            match["round_number"]
+            for match in planner["unscheduled_matches"]
+            if match["division_id"] == host_division.id
+        }
+        guest_round_numbers = {
+            match["round_number"]
+            for match in planner["unscheduled_matches"]
+            if match["division_id"] == guest_division.id
+        }
+        self.assertEqual(host_round_numbers, {1})
+        self.assertEqual(guest_round_numbers, {2})
+
     def test_assigning_two_matches_to_same_slot_is_blocked(self):
         division, gameday = self._prepare_planned_division("Double Booked Division")
         match_a, match_b = division.match_ids[:2]

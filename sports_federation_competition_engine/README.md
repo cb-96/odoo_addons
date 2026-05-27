@@ -244,6 +244,11 @@ Roles and safeguards
 - Planner unscheduled match lists are now sliced by the active gameday sequence
   (per linked division round), instead of showing every unscheduled match in the
   stage.
+- Gameday creation now supports explicit round targeting via `round_number`.
+  Shared gamedays can also provide `shared_round_numbers` to map each shared
+  division to its own round number while still sharing one planner root grid.
+- Planner unscheduled slices now stay strict to each linked gameday round number
+  (no stage-wide fallback when a selected round has no unscheduled matches).
 - Initial auto-scheduling support is available through `auto_schedule_gameday`:
   it deterministically fills open slots from the active gameday's unscheduled
   match slice, ranks feasible match-slot candidates with rest-gap and home/away

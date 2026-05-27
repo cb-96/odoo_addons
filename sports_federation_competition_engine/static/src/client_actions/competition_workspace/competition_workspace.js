@@ -265,6 +265,7 @@ export class CompetitionWorkspaceAction extends Component {
                 end_time: "17:00",
                 match_duration_minutes: "35",
                 name: "",
+                round_number: "",
                 round_date: "",
                 selected_gameday_id: params.gameday_id ? String(params.gameday_id) : "",
                 sharedDivisionIds: [],
@@ -1112,6 +1113,9 @@ export class CompetitionWorkspaceAction extends Component {
             this.state.gamedayForm.stage_id = nextPlanner.gameday.stage_id
                 ? String(nextPlanner.gameday.stage_id)
                 : "";
+            this.state.gamedayForm.round_number = nextPlanner.gameday.sequence
+                ? String(nextPlanner.gameday.sequence)
+                : "";
             this.state.plannerUnscheduledLimit = requestedLimit;
             if (nextPlanner.gameday.venue_id) {
                 this.state.gamedayForm.venue_id = String(nextPlanner.gameday.venue_id);
@@ -1533,6 +1537,9 @@ export class CompetitionWorkspaceAction extends Component {
                 [{
                     division_id: this.state.currentDivisionId,
                     name: this.state.gamedayForm.name || false,
+                    round_number: this.state.gamedayForm.round_number
+                        ? Number(this.state.gamedayForm.round_number)
+                        : false,
                     round_date: this.state.gamedayForm.round_date,
                     shared_division_ids: this.state.gamedayForm.sharedDivisionIds,
                     stage_id: this.state.gamedayForm.stage_id
@@ -1600,6 +1607,7 @@ export class CompetitionWorkspaceAction extends Component {
         this.state.filters.roundNumber = "";
         this.state.filters.teamId = "";
         this.state.gamedayForm.sharedDivisionIds = [];
+        this.state.gamedayForm.round_number = "";
         this.state.gamedayForm.stage_id = "";
         this.clearPlannerSelection();
         this.clearPendingValidation();

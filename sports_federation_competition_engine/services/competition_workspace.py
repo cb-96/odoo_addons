@@ -1173,6 +1173,72 @@ class CompetitionWorkspaceService(models.AbstractModel):
             )
         return shared_divisions.sorted(lambda record: (record.name or "", record.id))
 
+    def _normalize_round_number(self, value, label=False):
+        if value is False or value is None or value == "":
+            return False
+        try:
+            round_number = int(value)
+        except (TypeError, ValueError):
+            raise ValidationError(label or _("Round number must be a positive integer."))
+        if round_number < 1:
+            raise ValidationError(label or _("Round number must be a positive integer."))
+        return round_number
+
+    def _resolve_gameday_sequence(self, division, stage, vals):
+        round_number = self._normalize_round_number(
+            vals.get("round_number"),
+            label=_("Round number must be a positive integer."),
+        )
+        sequence_number = self._normalize_round_number(
+            vals.get("sequence"),
+            label=_("Sequence must be a positive integer."),
+        )
+        if round_number and sequence_number and round_number != sequence_number:
+            raise ValidationError(
+                _(
+                    "Round number and sequence must match when both are provided."
+                )
+            )
+        if round_number or sequence_number:
+            return round_number or sequence_number
+        return (
+            max(
+                division.round_ids.filtered(
+                    lambda round_record: round_record.stage_id == stage
+                ).mapped("sequence")
+                or [0]
+            )
+            + 1
+        )
+
+    def _resolve_shared_round_numbers(self, shared_divisions, shared_round_numbers):
+        if not shared_round_numbers:
+            return {}
+        if not isinstance(shared_round_numbers, dict):
+            raise ValidationError(
+                _("Shared round numbers must be provided as a division-to-round mapping.")
+            )
+        shared_division_ids = set(shared_divisions.ids)
+        normalized = {}
+        for division_id, round_number in shared_round_numbers.items():
+            try:
+                normalized_division_id = int(division_id)
+            except (TypeError, ValueError):
+                raise ValidationError(
+                    _("One or more shared round number entries use an invalid division id.")
+                )
+            if normalized_division_id not in shared_division_ids:
+                raise ValidationError(
+                    _(
+                        "Shared round number entries can only target selected shared divisions."
+                    )
+                )
+            normalized[normalized_division_id] = self._normalize_round_number(
+                round_number,
+                label=_("Shared round numbers must be positive integers."),
+            )
+        return normalized
+
     def _get_match_planner_round(self, gameday, match):
         linked_rounds = self._get_linked_gamedays(gameday)
         candidate_rounds = linked_rounds.filtered(
@@ -1227,11 +1293,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 stage=linked_round.stage_id if linked_round else False,
             )
             if linked_round and linked_round.sequence:
-                round_scoped_matches = division_unscheduled.filtered(
+                division_unscheduled = division_unscheduled.filtered(
                     lambda match: match.round_number == linked_round.sequence
                 )
-                if round_scoped_matches:
-                    division_unscheduled = round_scoped_matches
             matches |= division_unscheduled
         return matches.sorted(
             lambda match: (
@@ -2795,13 +2859,11 @@ class CompetitionWorkspaceService(models.AbstractModel):
             division,
             vals.get("shared_division_ids"),
         )
-        sequence = vals.get("sequence") or (
-            max(
-                division.round_ids.filtered(lambda round_record: round_record.stage_id == stage).mapped("sequence")
-                or [0]
-            )
-            + 1
+        shared_round_numbers = self._resolve_shared_round_numbers(
+            shared_divisions,
+            vals.get("shared_round_numbers"),
         )
+        sequence = self._resolve_gameday_sequence(division, stage, vals)
         round_vals = {
             "name": vals.get("name") or _("Gameday %(number)s", number=sequence),
             "stage_id": stage.id,
@@ -2818,10 +2880,14 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 shared_division,
                 stage_type=stage.stage_type,
             )
+            shared_sequence = shared_round_numbers.get(shared_division.id, sequence)
             self.env["federation.tournament.round"].create(
                 {
                     **round_vals,
+                    "name": vals.get("name")
+                    or _("Gameday %(number)s", number=shared_sequence),
                     "stage_id": shared_stage.id,
+                    "sequence": shared_sequence,
                     "planner_root_round_id": gameday.id,
                 }
             )
