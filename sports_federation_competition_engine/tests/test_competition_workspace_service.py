@@ -1431,6 +1431,14 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(
             planner["consistency"]["expected_planner_revision"], stale_revision
         )
+        self.assertEqual(
+            planner["consistency"]["source_planner_root_id"],
+            gameday.id,
+        )
+        self.assertTrue(
+            planner["consistency"]["source_planner_root_revision"]
+            >= planner["consistency"]["current_planner_revision"]
+        )
         self.assertGreater(
             planner["consistency"]["current_planner_revision"], stale_revision
         )
@@ -1455,6 +1463,30 @@ class TestCompetitionWorkspaceService(TransactionCase):
             payload["planner"]["consistency"]["invalid_expected_planner_revision"]
         )
         self.assertFalse(payload["planner"]["consistency"]["expected_planner_revision"])
+        self.assertIn(
+            "invalid_expected_planner_revision",
+            payload["planner"]["consistency"]["normalization_warnings"],
+        )
+
+    def test_gameday_planner_data_reports_filter_normalization_warnings(self):
+        division, gameday = self._prepare_planned_division(
+            "Planner Filter Consistency Division"
+        )
+
+        planner = self.service.get_gameday_planner_data(
+            gameday.id,
+            {
+                "division_id": "bad-division",
+                "round_number": "bad-round",
+                "team_id": "bad-team",
+            },
+        )
+
+        warnings = planner["consistency"]["normalization_warnings"]
+        self.assertIn("invalid_division_id_filter", warnings)
+        self.assertIn("invalid_round_number_filter", warnings)
+        self.assertIn("invalid_team_id_filter", warnings)
+        self.assertTrue(planner["consistency"]["has_normalization_warnings"])
 
     def test_merge_planner_validations_keeps_distinct_slot_conflicts(self):
         merged = self.service._merge_planner_validations(

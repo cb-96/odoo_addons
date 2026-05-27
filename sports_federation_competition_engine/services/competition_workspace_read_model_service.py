@@ -52,21 +52,43 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
                     return linked_target
         return gamedays[:1]
 
-    def _planner_consistency_payload(self, planner_root, filters):
+    def _collect_filter_int(self, filters, key, warnings, warning_code):
+        raw_value = (filters or {}).get(key)
+        if raw_value in (False, None, ""):
+            return False
+        parsed_value = self._safe_int(raw_value)
+        if parsed_value is None:
+            warnings.append(warning_code)
+            return False
+        return parsed_value
+
+    def _planner_consistency_payload(
+        self,
+        planner_root,
+        filters,
+        normalization_warnings=None,
+    ):
         filters = filters or {}
+        normalization_warnings = list(normalization_warnings or [])
         raw_expected = filters.get("expected_planner_revision")
         expected_revision = self._safe_int(raw_expected)
         has_expected = raw_expected is not None and str(raw_expected).strip() != ""
         invalid_expected = has_expected and expected_revision is None
+        if invalid_expected:
+            normalization_warnings.append("invalid_expected_planner_revision")
         is_stale = bool(
             expected_revision is not None
             and expected_revision != planner_root.planner_revision
         )
         return {
+            "source_planner_root_id": planner_root.id,
+            "source_planner_root_revision": planner_root.planner_revision,
             "current_planner_revision": planner_root.planner_revision,
             "expected_planner_revision": expected_revision if has_expected else False,
             "invalid_expected_planner_revision": invalid_expected,
             "is_stale": is_stale,
+            "normalization_warnings": sorted(set(normalization_warnings)),
+            "has_normalization_warnings": bool(normalization_warnings),
         }
 
     @api.model
@@ -79,27 +101,41 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
         planner_root = workspace_service._get_planner_root_gameday(gameday)
         division = gameday.tournament_id
         unscheduled_matches = workspace_service._get_gameday_unscheduled_matches(planner_root)
+        normalization_warnings = []
 
-        if filters.get("division_id"):
-            division_id = self._safe_int(filters["division_id"])
-            if division_id:
-                unscheduled_matches = unscheduled_matches.filtered(
-                    lambda match: match.tournament_id.id == division_id
-                )
+        division_id = self._collect_filter_int(
+            filters,
+            "division_id",
+            normalization_warnings,
+            "invalid_division_id_filter",
+        )
+        if division_id:
+            unscheduled_matches = unscheduled_matches.filtered(
+                lambda match: match.tournament_id.id == division_id
+            )
 
-        if filters.get("round_number"):
-            round_number = self._safe_int(filters["round_number"])
-            if round_number:
-                unscheduled_matches = unscheduled_matches.filtered(
-                    lambda match: match.round_number == round_number
-                )
-        if filters.get("team_id"):
-            team_id = self._safe_int(filters["team_id"])
-            if team_id:
-                unscheduled_matches = unscheduled_matches.filtered(
-                    lambda match: match.home_team_id.id == team_id
-                    or match.away_team_id.id == team_id
-                )
+        round_number = self._collect_filter_int(
+            filters,
+            "round_number",
+            normalization_warnings,
+            "invalid_round_number_filter",
+        )
+        if round_number:
+            unscheduled_matches = unscheduled_matches.filtered(
+                lambda match: match.round_number == round_number
+            )
+
+        team_id = self._collect_filter_int(
+            filters,
+            "team_id",
+            normalization_warnings,
+            "invalid_team_id_filter",
+        )
+        if team_id:
+            unscheduled_matches = unscheduled_matches.filtered(
+                lambda match: match.home_team_id.id == team_id
+                or match.away_team_id.id == team_id
+            )
 
         if filters.get("conflicts_only"):
             conflicting_match_ids = {
@@ -151,7 +187,11 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
         planner_data = {
             "gameday": workspace_service._serialize_gameday(gameday),
             "division": workspace_service._serialize_division(division),
-            "consistency": self._planner_consistency_payload(planner_root, filters),
+            "consistency": self._planner_consistency_payload(
+                planner_root,
+                filters,
+                normalization_warnings=normalization_warnings,
+            ),
             "slots": slots,
             "unscheduled_matches": [
                 workspace_service._serialize_match_card(match)

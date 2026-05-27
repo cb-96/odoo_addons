@@ -227,6 +227,9 @@ Roles and safeguards
 - Validation issue severity now follows a centralized policy (`blocking`,
   `warning`, alias support like `error`/`info`) so core and extension issues
   are grouped consistently.
+- Planner read-model consistency payloads now expose source metadata
+  (`source_planner_root_id`, `source_planner_root_revision`) and
+  `normalization_warnings` when filter or expected-revision inputs are malformed.
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.
