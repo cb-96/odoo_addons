@@ -2156,6 +2156,16 @@ class TestCompetitionWorkspaceService(TransactionCase):
 
         self.assertTrue(result["ok"])
         self.assertEqual(result["assigned_count"], 2)
+        self.assertEqual(len(result["assigned_matches"]), 2)
+        self.assertEqual(
+            {
+                "min_rest_gap_minutes",
+                "total_rest_gap_minutes",
+                "home_away_delta",
+                "slot_start",
+            },
+            set(result["assigned_matches"][0]["score"].keys()),
+        )
         scheduled_round_numbers = set(
             division.match_ids.filtered("slot_id").mapped("round_number")
         )
@@ -2229,6 +2239,10 @@ class TestCompetitionWorkspaceService(TransactionCase):
 
         self.assertTrue(result["ok"])
         self.assertEqual(result["assigned_count"], 1)
+        self.assertEqual(len(result["assigned_matches"]), 1)
+        self.assertEqual(result["assigned_matches"][0]["match_id"], preferred_match.id)
+        self.assertIn("home_away_delta", result["assigned_matches"][0]["score"])
+        self.assertIn("min_rest_gap_minutes", result["assigned_matches"][0]["score"])
         self.assertEqual(next_slot.match_id.id, preferred_match.id)
         self.assertFalse(penalized_match.slot_id)
 

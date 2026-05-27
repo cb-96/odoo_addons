@@ -3760,7 +3760,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
             gaps.append(gap_minutes)
         return min(gaps), sum(gaps)
 
-    def _auto_schedule_candidate_score(self, match, slot, team_balances):
+    def _auto_schedule_candidate_breakdown(self, match, slot, team_balances):
         home_away_delta = self._auto_schedule_home_away_delta(match, team_balances)
         min_rest_gap, total_rest_gap = self._auto_schedule_rest_gap_metrics(
             match,
@@ -3772,11 +3772,31 @@ class CompetitionWorkspaceService(models.AbstractModel):
             if slot.start_datetime
             else fields.Datetime.now()
         )
+        return {
+            "min_rest_gap_minutes": min_rest_gap,
+            "total_rest_gap_minutes": total_rest_gap,
+            "home_away_delta": home_away_delta,
+            "slot_start": fields.Datetime.to_string(slot_start),
+        }
+
+    def _auto_schedule_candidate_score(
+        self,
+        match,
+        slot,
+        team_balances,
+        breakdown=False,
+    ):
+        breakdown = breakdown or self._auto_schedule_candidate_breakdown(
+            match,
+            slot,
+            team_balances,
+        )
+        slot_start = fields.Datetime.to_datetime(breakdown["slot_start"])
         slot_rank = int(slot_start.timestamp())
         return (
-            min_rest_gap,
-            home_away_delta,
-            total_rest_gap,
+            breakdown["min_rest_gap_minutes"],
+            breakdown["home_away_delta"],
+            breakdown["total_rest_gap_minutes"],
             -slot_rank,
             -slot.id,
             -match.id,
@@ -3839,6 +3859,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 "remaining_slot_count": len(open_slots),
                 "remaining_unscheduled_count": len(unscheduled_matches),
                 "planner": self.get_gameday_planner_data(planner_root.id),
+                "assigned_matches": [],
                 "skipped": [],
             }
 
@@ -3847,6 +3868,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
         assigned_count = 0
         attempted_match_ids = set()
         skipped = []
+        assigned_matches = []
         remaining_slots = list(open_slots)
         remaining_matches = list(unscheduled_matches)
         team_balances = self._auto_schedule_team_balances(planner_root)
@@ -3858,6 +3880,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
 
             selected_candidate = False
             selected_score = False
+            selected_breakdown = False
 
             for slot in remaining_slots:
                 for match in remaining_matches:
@@ -3870,13 +3893,24 @@ class CompetitionWorkspaceService(models.AbstractModel):
                         first_issue_by_match.setdefault(match.id, validation["warnings"][0])
                         continue
 
-                    score = self._auto_schedule_candidate_score(match, slot, team_balances)
+                    breakdown = self._auto_schedule_candidate_breakdown(
+                        match,
+                        slot,
+                        team_balances,
+                    )
+                    score = self._auto_schedule_candidate_score(
+                        match,
+                        slot,
+                        team_balances,
+                        breakdown=breakdown,
+                    )
                     if not selected_candidate or score > selected_score:
                         selected_candidate = {
                             "match": match,
                             "slot": slot,
                         }
                         selected_score = score
+                        selected_breakdown = breakdown
 
             if not selected_candidate:
                 break
@@ -3894,6 +3928,15 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 selected_match,
                 selected_slot,
                 team_balances,
+            )
+            assigned_matches.append(
+                {
+                    "match_id": selected_match.id,
+                    "match_name": selected_match.display_name,
+                    "slot_id": selected_slot.id,
+                    "slot_name": selected_slot.display_name,
+                    "score": selected_breakdown or {},
+                }
             )
             remaining_matches = [
                 match for match in remaining_matches if match.id != selected_match.id
@@ -3946,6 +3989,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 self._get_gameday_unscheduled_matches(planner_root)
             ),
             "planner": self.get_gameday_planner_data(planner_root.id),
+            "assigned_matches": assigned_matches,
             "skipped": skipped,
         }
 

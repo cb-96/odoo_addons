@@ -247,7 +247,8 @@ Roles and safeguards
 - Initial auto-scheduling support is available through `auto_schedule_gameday`:
   it deterministically fills open slots from the active gameday's unscheduled
   match slice, ranks feasible match-slot candidates with rest-gap and home/away
-  balance scoring, and skips incompatible pairings with structured reasons.
+  balance scoring, returns per-assignment score breakdowns for UI inspection,
+  and skips incompatible pairings with structured reasons.
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.
