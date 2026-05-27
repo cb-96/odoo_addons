@@ -5,6 +5,16 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
     _name = "federation.competition.workspace.validation.service"
     _description = "Competition Workspace Validation Service"
 
+    _issue_severity_aliases = {
+        "blocking": "blocking",
+        "blocker": "blocking",
+        "error": "blocking",
+        "warning": "warning",
+        "warn": "warning",
+        "info": "warning",
+        "advisory": "warning",
+    }
+
     def _build_validation_result(self):
         return {
             "valid": True,
@@ -258,16 +268,38 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
             )
         ]
 
+    def normalize_issue_severity(self, severity, default="warning"):
+        normalized_default = self._issue_severity_aliases.get(default, "warning")
+        key = str(severity or "").strip().lower()
+        return self._issue_severity_aliases.get(key, normalized_default)
+
     @api.model
     def finalize_validation_result(self, result):
-        blocking = [
-            self._decorate_issue(issue, "blocking")
-            for issue in (result.get("blocking") or [])
-        ]
-        warnings = [
-            self._decorate_issue(issue, "warning")
-            for issue in (result.get("warnings") or [])
-        ]
+        blocking = []
+        warnings = []
+
+        for issue in result.get("blocking") or []:
+            severity = self.normalize_issue_severity(
+                issue.get("severity") if isinstance(issue, dict) else False,
+                default="blocking",
+            )
+            decorated = self._decorate_issue(issue, severity)
+            if severity == "blocking":
+                blocking.append(decorated)
+            else:
+                warnings.append(decorated)
+
+        for issue in result.get("warnings") or []:
+            severity = self.normalize_issue_severity(
+                issue.get("severity") if isinstance(issue, dict) else False,
+                default="warning",
+            )
+            decorated = self._decorate_issue(issue, severity)
+            if severity == "blocking":
+                blocking.append(decorated)
+            else:
+                warnings.append(decorated)
+
         result["blocking"] = blocking
         result["warnings"] = warnings
         result["blocking_groups"] = self._group_issues(blocking)

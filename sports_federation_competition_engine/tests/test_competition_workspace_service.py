@@ -1171,6 +1171,42 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(payload["summary"], {"a": 1, "b": 2})
         self.assertEqual(payload["list_payload"], [1, 2])
 
+    def test_workspace_extension_issues_normalizes_severity_policy(self):
+        extension_results = [
+            {
+                "blocking": [
+                    {
+                        "code": "blocking_demoted",
+                        "message": "Demoted to warning",
+                        "severity": "warning",
+                    }
+                ],
+                "warnings": [
+                    {
+                        "code": "warning_promoted",
+                        "message": "Promoted to blocking",
+                        "severity": "error",
+                    }
+                ],
+            }
+        ]
+
+        with patch.object(
+            type(self.service),
+            "_workspace_extension_results",
+            return_value=extension_results,
+        ):
+            issues = self.service._workspace_extension_issues(
+                "extend_match_assignment_validation"
+            )
+
+        self.assertEqual([item["code"] for item in issues["blocking"]], [
+            "warning_promoted",
+        ])
+        self.assertEqual([item["code"] for item in issues["warnings"]], [
+            "blocking_demoted",
+        ])
+
     def test_workspace_extension_score_components_normalize_contract(self):
         malformed_results = [
             [

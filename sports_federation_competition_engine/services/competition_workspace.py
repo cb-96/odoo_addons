@@ -269,20 +269,36 @@ class CompetitionWorkspaceService(models.AbstractModel):
                     type(result).__name__,
                 )
                 continue
-            issues["blocking"].extend(
-                self._normalize_workspace_extension_issue_bucket(
-                    result.get("blocking"),
-                    method_name=method_name,
-                    severity="blocking",
-                )
+            blocking_issues = self._normalize_workspace_extension_issue_bucket(
+                result.get("blocking"),
+                method_name=method_name,
+                severity="blocking",
             )
-            issues["warnings"].extend(
-                self._normalize_workspace_extension_issue_bucket(
-                    result.get("warnings"),
-                    method_name=method_name,
-                    severity="warning",
-                )
+            warning_issues = self._normalize_workspace_extension_issue_bucket(
+                result.get("warnings"),
+                method_name=method_name,
+                severity="warning",
             )
+
+            for issue in blocking_issues:
+                severity = self._validation_service().normalize_issue_severity(
+                    issue.get("severity"),
+                    default="blocking",
+                )
+                if severity == "blocking":
+                    issues["blocking"].append(issue)
+                else:
+                    issues["warnings"].append(issue)
+
+            for issue in warning_issues:
+                severity = self._validation_service().normalize_issue_severity(
+                    issue.get("severity"),
+                    default="warning",
+                )
+                if severity == "blocking":
+                    issues["blocking"].append(issue)
+                else:
+                    issues["warnings"].append(issue)
         issues["warnings"].extend(extension_warnings)
         return issues
 

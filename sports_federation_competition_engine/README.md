@@ -224,6 +224,9 @@ Roles and safeguards
 - Planner write endpoints now return a standardized conflict envelope for stale
   or invalid revision tokens, including `code`, `operation`,
   `expected_planner_revision`, and `current_planner_revision` metadata.
+- Validation issue severity now follows a centralized policy (`blocking`,
+  `warning`, alias support like `error`/`info`) so core and extension issues
+  are grouped consistently.
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.
