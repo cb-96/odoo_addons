@@ -7,7 +7,7 @@ Review cadence: Every release
 Release train: 2026.11
 
 The previous operating-period roadmap is archived in
-`ROADMAP_archive_2026-05-24.md`.
+`archive/roadmaps/ROADMAP_archive_2026-05-24.md`.
 
 This cycle narrows the roadmap to the Competition Workspace in
 `sports_federation_competition_engine`. It is based on the current workspace

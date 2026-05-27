@@ -295,6 +295,12 @@ bash addons/ci/run_tests.sh --suite competition_core
 # Run just one module (faster when iterating)
 bash addons/ci/run_tests.sh --module sports_federation_standings
 
+# Run participant readiness discovery guard (fails if post-tests are not discovered)
+bash addons/ci/run_tests.sh --suite rosters_readiness_guard
+
+# Equivalent explicit form when you need direct control
+bash addons/ci/run_tests.sh --module sports_federation_rosters --test-tags sf_rosters_participant_readiness --require-post-tests 1
+
 # Run all suites (used in final PR validation)
 bash addons/ci/run_tests.sh
 ```
@@ -319,6 +325,36 @@ the failing test name and traceback:
 ```bash
 docker logs <container-name> 2>&1 | grep -A 20 "FAIL\|ERROR"
 ```
+
+### Discovery-safe tag convention
+
+For high-risk regression suites, add an explicit class-level tag in addition to the usual install timing tags:
+
+```python
+from odoo.tests.common import TransactionCase, tagged
+
+@tagged("-at_install", "post_install", "sf_<module>_<feature>")
+class TestFeature(TransactionCase):
+    ...
+```
+
+Use lowercase snake-case tags prefixed with `sf_` (example: `sf_rosters_participant_readiness`).
+This enables deterministic CI selection and allows `--require-post-tests` gating to detect discovery regressions early.
+
+### Critical suite registry
+
+The CI runner enforces a minimum discovered post-test count for critical suites.
+This prevents false-green runs where discovery is broken and no tests execute.
+
+| Suite | Default minimum post-tests | Notes |
+|---|---|---|
+| `competition_core` | 1 | Core workflow sanity gate |
+| `portal_public_ops` | 1 | Portal/public ownership and route guard |
+| `finance_reporting` | 1 | Finance and reporting guard |
+| `release_surfaces` | 1 | Broad release surface guard |
+| `people_rosters_rules` | 1 | Domain rules and roster workflow guard |
+| `ops_and_notifications` | 1 | Operations and notification guard |
+| `rosters_readiness_guard` | 1 | Explicit tag `sf_rosters_participant_readiness` |
 
 ---
 
