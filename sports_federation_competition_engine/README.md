@@ -233,6 +233,8 @@ Roles and safeguards
 - Workspace ACL regressions now include a compact matrix covering planner,
   manager, and regular-user behavior across read, assign, and publish
   entrypoints.
+- Concurrency regressions now include deterministic interleaving checks for
+  stale revision handling on bulk-unassign and undo planner operations.
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.

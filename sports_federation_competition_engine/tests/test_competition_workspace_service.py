@@ -2352,3 +2352,40 @@ class TestCompetitionWorkspaceService(TransactionCase):
                 match.id,
                 slot.id,
             )
+
+    def test_bulk_unassign_returns_stale_conflict_after_interleaved_write(self):
+        division, gameday = self._prepare_planned_division("Bulk Stale Conflict Division")
+        matches = division.match_ids[:2]
+        slots = gameday.slot_ids.filtered(lambda record: record.state == "available")[:2]
+
+        self.assertTrue(self.service.assign_match_to_slot(matches[0].id, slots[0].id)["ok"])
+        stale_revision = gameday.planner_revision
+        self.assertTrue(self.service.assign_match_to_slot(matches[1].id, slots[1].id)["ok"])
+
+        stale = self.service.bulk_unassign_matches(
+            gameday.id,
+            [matches[0].id],
+            stale_revision,
+        )
+
+        self.assertFalse(stale["ok"])
+        self.assertEqual(stale["conflict"]["code"], "stale_planner_revision")
+        self.assertEqual(stale["conflict"]["operation"], "bulk_unassign_matches")
+
+    def test_undo_returns_stale_conflict_after_interleaved_write(self):
+        division, gameday = self._prepare_planned_division("Undo Stale Conflict Division")
+        matches = division.match_ids[:2]
+        slots = gameday.slot_ids.filtered(lambda record: record.state == "available")[:2]
+
+        self.assertTrue(self.service.assign_match_to_slot(matches[0].id, slots[0].id)["ok"])
+        stale_revision = gameday.planner_revision
+        self.assertTrue(self.service.assign_match_to_slot(matches[1].id, slots[1].id)["ok"])
+
+        stale = self.service.undo_last_planner_operation(
+            gameday.id,
+            stale_revision,
+        )
+
+        self.assertFalse(stale["ok"])
+        self.assertEqual(stale["conflict"]["code"], "stale_planner_revision")
+        self.assertEqual(stale["conflict"]["operation"], "undo_last_planner_operation")
