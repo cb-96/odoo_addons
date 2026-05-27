@@ -21,6 +21,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
     _description = "Competition Workspace Service"
 
     _pool_bracket_progression_sequence_gap = 10
+    _workspace_extension_schema_versions = (1,)
 
     def _check_access(self, require_publish=False):
         return self.env["federation.tournament"]._competition_workspace_check_access(
@@ -101,6 +102,90 @@ class CompetitionWorkspaceService(models.AbstractModel):
             "extension_model": extension_model,
         }
 
+    def _normalize_workspace_extension_schema_version(self, result, method_name):
+        if not isinstance(result, dict) or "schema_version" not in result:
+            return 1
+        try:
+            schema_version = int(result.get("schema_version"))
+        except (TypeError, ValueError):
+            _logger.warning(
+                "Workspace extension output ignored for %s: invalid schema_version %s",
+                method_name,
+                result.get("schema_version"),
+            )
+            return False
+
+        if schema_version not in self._workspace_extension_schema_versions:
+            _logger.warning(
+                "Workspace extension output ignored for %s: unsupported schema_version %s",
+                method_name,
+                schema_version,
+            )
+            return False
+        return schema_version
+
+    def _normalize_workspace_extension_payload_result(self, result, method_name):
+        schema_version = self._normalize_workspace_extension_schema_version(
+            result,
+            method_name,
+        )
+        if not schema_version:
+            return {}
+        if schema_version == 1 and isinstance(result, dict) and "schema_version" in result:
+            payload = result.get("payload")
+            if payload is None:
+                return {}
+            if isinstance(payload, dict):
+                return payload
+            _logger.warning(
+                "Workspace extension payload ignored for %s: schema payload must be dict",
+                method_name,
+            )
+            return {}
+        return result
+
+    def _normalize_workspace_extension_issue_result(self, result, method_name):
+        schema_version = self._normalize_workspace_extension_schema_version(
+            result,
+            method_name,
+        )
+        if not schema_version:
+            return {}
+        if schema_version == 1 and isinstance(result, dict) and "schema_version" in result:
+            issues = result.get("issues")
+            if issues is None:
+                return {}
+            if isinstance(issues, dict):
+                return issues
+            _logger.warning(
+                "Workspace extension issues ignored for %s: schema issues must be dict",
+                method_name,
+            )
+            return {}
+        return result
+
+    def _normalize_workspace_extension_score_result(self, result, method_name):
+        schema_version = self._normalize_workspace_extension_schema_version(
+            result,
+            method_name,
+        )
+        if not schema_version:
+            return []
+        if schema_version == 1 and isinstance(result, dict) and "schema_version" in result:
+            components = result.get("components")
+            if components is None:
+                return []
+            if isinstance(components, dict):
+                return [components]
+            if isinstance(components, (list, tuple, set)):
+                return list(components)
+            _logger.warning(
+                "Workspace extension score components ignored for %s: schema components must be list/dict",
+                method_name,
+            )
+            return []
+        return result
+
     def _log_workspace_extension_telemetry(self, method_name, telemetry):
         if not telemetry:
             return
@@ -139,6 +224,10 @@ class CompetitionWorkspaceService(models.AbstractModel):
             _telemetry=telemetry,
             **kwargs,
         ):
+            update = self._normalize_workspace_extension_payload_result(
+                update,
+                method_name,
+            )
             normalized_update = self._normalize_workspace_extension_payload_update(
                 update,
                 method_name=method_name,
@@ -169,6 +258,10 @@ class CompetitionWorkspaceService(models.AbstractModel):
             _telemetry=telemetry,
             **kwargs,
         ):
+            result = self._normalize_workspace_extension_issue_result(
+                result,
+                method_name,
+            )
             if not isinstance(result, dict):
                 _logger.warning(
                     "Workspace extension issues ignored for %s: expected dict, got %s",
@@ -282,6 +375,10 @@ class CompetitionWorkspaceService(models.AbstractModel):
             _telemetry=telemetry,
             **kwargs,
         ):
+            result = self._normalize_workspace_extension_score_result(
+                result,
+                method_name,
+            )
             if isinstance(result, dict):
                 result = [result]
             elif not isinstance(result, (list, tuple, set)):

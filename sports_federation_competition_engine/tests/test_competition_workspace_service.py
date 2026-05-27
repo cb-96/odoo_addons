@@ -1163,6 +1163,112 @@ class TestCompetitionWorkspaceService(TransactionCase):
 
         self.assertEqual(payload, {"summary": {"ok": True}})
 
+    def test_workspace_extension_payload_accepts_schema_and_legacy_shapes(self):
+        mixed_results = [
+            {"summary": {"legacy": True}},
+            {
+                "schema_version": 1,
+                "payload": {
+                    "summary": {"versioned": True},
+                    "extra": {"value": 5},
+                },
+            },
+            {"schema_version": 99, "payload": {"ignored": True}},
+        ]
+
+        with patch.object(
+            type(self.service),
+            "_workspace_extension_results",
+            return_value=mixed_results,
+        ):
+            payload = self.service._workspace_extension_payload("extend_overview_payload")
+
+        self.assertEqual(payload["summary"], {"legacy": True, "versioned": True})
+        self.assertEqual(payload["extra"], {"value": 5})
+        self.assertFalse(payload.get("ignored"))
+
+    def test_workspace_extension_issues_accepts_schema_and_legacy_shapes(self):
+        mixed_results = [
+            {
+                "warnings": [
+                    {
+                        "code": "legacy_warning",
+                        "message": "Legacy warning",
+                    }
+                ]
+            },
+            {
+                "schema_version": 1,
+                "issues": {
+                    "blocking": [
+                        {
+                            "code": "schema_blocking",
+                            "message": "Schema blocking",
+                        }
+                    ],
+                    "warnings": [
+                        {
+                            "code": "schema_warning",
+                            "message": "Schema warning",
+                        }
+                    ],
+                },
+            },
+            {
+                "schema_version": "invalid",
+                "issues": {
+                    "warnings": [
+                        {
+                            "code": "ignored",
+                            "message": "Ignored",
+                        }
+                    ]
+                },
+            },
+        ]
+
+        with patch.object(
+            type(self.service),
+            "_workspace_extension_results",
+            return_value=mixed_results,
+        ):
+            issues = self.service._workspace_extension_issues(
+                "extend_match_assignment_validation"
+            )
+
+        self.assertEqual([item["code"] for item in issues["blocking"]], ["schema_blocking"])
+        self.assertEqual(
+            [item["code"] for item in issues["warnings"]],
+            ["legacy_warning", "schema_warning"],
+        )
+
+    def test_workspace_extension_score_components_accepts_schema_and_legacy_shapes(self):
+        mixed_results = [
+            {"key": "legacy_component", "score": 70},
+            {
+                "schema_version": 1,
+                "components": [
+                    {"key": "schema_component", "score": 80},
+                    {"label": "invalid"},
+                ],
+            },
+            {"schema_version": 2, "components": [{"key": "ignored", "score": 30}]},
+        ]
+
+        with patch.object(
+            type(self.service),
+            "_workspace_extension_results",
+            return_value=mixed_results,
+        ):
+            components = self.service._workspace_extension_score_components(
+                "extend_match_slot_score_components"
+            )
+
+        self.assertEqual(
+            [item["key"] for item in components],
+            ["legacy_component", "schema_component"],
+        )
+
     def test_gameday_planner_data_reports_stale_consistency(self):
         division, gameday = self._prepare_planned_division(
             "Planner Consistency Division"

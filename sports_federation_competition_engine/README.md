@@ -214,6 +214,10 @@ Roles and safeguards
   extension hook are caught, logged, and ignored so other hooks can continue.
   Validation hook failures emit a structured `extension_hook_failed` warning
   payload with hook and extension model metadata.
+- Extension outputs now support schema-versioned contracts (`schema_version: 1`)
+  for payload enrichments (`payload`), validation issues (`issues`), and slot
+  score components (`components`) while keeping legacy shapes backward
+  compatible.
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.
