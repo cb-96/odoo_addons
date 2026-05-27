@@ -2058,9 +2058,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         )
 
         self.assertEqual(planner["division"]["id"], division.id)
-        self.assertEqual(planner["unscheduled_total_count"], 6)
+        self.assertEqual(planner["unscheduled_total_count"], 2)
         self.assertEqual(planner["unscheduled_loaded_count"], 2)
-        self.assertTrue(planner["unscheduled_has_more"])
+        self.assertFalse(planner["unscheduled_has_more"])
         self.assertEqual(len(planner["unscheduled_matches"]), 2)
 
     def test_workspace_payload_forwards_planner_filters_and_can_trim_reference_data(self):
@@ -2104,9 +2104,66 @@ class TestCompetitionWorkspaceService(TransactionCase):
         )
 
         self.assertEqual(planner["division"]["id"], division.id)
-        self.assertEqual(planner["unscheduled_total_count"], 6)
-        self.assertEqual(planner["unscheduled_loaded_count"], 6)
+        self.assertEqual(planner["unscheduled_total_count"], 2)
+        self.assertEqual(planner["unscheduled_loaded_count"], 2)
         self.assertFalse(planner["unscheduled_has_more"])
+
+    def test_gameday_planner_data_scopes_unscheduled_matches_to_gameday_sequence(self):
+        division, first_gameday = self._prepare_planned_division("Gameday Slice Division")
+        second_gameday_id = self.service.create_gameday(
+            {
+                "division_id": division.id,
+                "name": "Gameday 2",
+                "round_date": "2026-10-17",
+            }
+        )["gameday_id"]
+        second_gameday = self.env["federation.tournament.round"].browse(second_gameday_id)
+
+        first_planner = self.service.get_gameday_planner_data(first_gameday.id)
+        second_planner = self.service.get_gameday_planner_data(second_gameday.id)
+
+        self.assertEqual(
+            {match["round_number"] for match in first_planner["unscheduled_matches"]},
+            {first_gameday.sequence},
+        )
+        self.assertEqual(
+            {match["round_number"] for match in second_planner["unscheduled_matches"]},
+            {second_gameday.sequence},
+        )
+
+    def test_auto_schedule_gameday_assigns_only_active_gameday_round_slice(self):
+        division, first_gameday = self._prepare_planned_division("Auto Schedule Slice Division")
+        second_gameday_id = self.service.create_gameday(
+            {
+                "division_id": division.id,
+                "name": "Gameday 2",
+                "round_date": "2026-10-17",
+            }
+        )["gameday_id"]
+        second_gameday = self.env["federation.tournament.round"].browse(second_gameday_id)
+        self.service.generate_slots(
+            second_gameday.id,
+            [self.court_1.id, self.court_2.id],
+            "09:00",
+            "10:20",
+            30,
+            5,
+            [],
+            False,
+        )
+
+        result = self.service.auto_schedule_gameday(first_gameday.id)
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["assigned_count"], 2)
+        scheduled_round_numbers = set(
+            division.match_ids.filtered("slot_id").mapped("round_number")
+        )
+        self.assertEqual(scheduled_round_numbers, {first_gameday.sequence})
+        self.assertEqual(
+            len(second_gameday.slot_ids.filtered("match_id")),
+            0,
+        )
 
     def test_workspace_payload_ignores_invalid_planner_gameday_id(self):
         division, gameday = self._prepare_planned_division("Invalid Planner Target Division")

@@ -1222,10 +1222,17 @@ class CompetitionWorkspaceService(models.AbstractModel):
             linked_round = linked_rounds.filtered(
                 lambda round_record: round_record.tournament_id == division
             )[:1]
-            matches |= self._get_unscheduled_matches(
+            division_unscheduled = self._get_unscheduled_matches(
                 division,
                 stage=linked_round.stage_id if linked_round else False,
             )
+            if linked_round and linked_round.sequence:
+                round_scoped_matches = division_unscheduled.filtered(
+                    lambda match: match.round_number == linked_round.sequence
+                )
+                if round_scoped_matches:
+                    division_unscheduled = round_scoped_matches
+            matches |= division_unscheduled
         return matches.sorted(
             lambda match: (
                 match.stage_id.sequence if match.stage_id else 0,
@@ -3667,6 +3674,113 @@ class CompetitionWorkspaceService(models.AbstractModel):
     @api.model
     def move_match(self, match_id, target_slot_id, force=False):
         return self.assign_match_to_slot(match_id, target_slot_id, force=force)
+
+    @api.model
+    def auto_schedule_gameday(
+        self,
+        gameday_id,
+        expected_planner_revision=False,
+        max_assignments=False,
+    ):
+        capabilities = self._check_access()
+        planner_root, conflict = self._ensure_planner_write_revision_or_conflict(
+            self._resolve_gameday(gameday_id),
+            expected_planner_revision,
+            operation="auto_schedule_gameday",
+        )
+        if conflict:
+            return conflict
+
+        open_slots = list(self._get_open_planner_slots(planner_root))
+        unscheduled_matches = list(self._get_gameday_unscheduled_matches(planner_root))
+        if max_assignments:
+            try:
+                max_assignments = max(1, int(max_assignments))
+            except (TypeError, ValueError):
+                max_assignments = False
+
+        if not open_slots or not unscheduled_matches:
+            return {
+                "ok": True,
+                "assigned_count": 0,
+                "attempted_count": 0,
+                "remaining_slot_count": len(open_slots),
+                "remaining_unscheduled_count": len(unscheduled_matches),
+                "planner": self.get_gameday_planner_data(planner_root.id),
+                "skipped": [],
+            }
+
+        self._clear_redo_planner_operations(planner_root)
+        batch_key = uuid4().hex
+        assigned_count = 0
+        attempted_count = 0
+        skipped = []
+        remaining_slots = list(open_slots)
+
+        for match in unscheduled_matches:
+            if not remaining_slots:
+                break
+            if max_assignments and assigned_count >= max_assignments:
+                break
+
+            attempted_count += 1
+            selected_slot = False
+            first_issue = False
+
+            for slot in remaining_slots:
+                validation = self._validate_assignment_action(match, slot, capabilities)
+                if validation["blocking"]:
+                    if not first_issue:
+                        first_issue = validation["blocking"][0]
+                    continue
+                if validation["warnings"]:
+                    if not first_issue:
+                        first_issue = validation["warnings"][0]
+                    continue
+                selected_slot = slot
+                break
+
+            if not selected_slot:
+                issue = first_issue or {
+                    "code": "no_feasible_slot",
+                    "message": _(
+                        "No compatible open slot was found for this match on the selected gameday."
+                    ),
+                }
+                skipped.append(
+                    {
+                        "match_id": match.id,
+                        "match_name": match.display_name,
+                        "code": issue.get("code"),
+                        "message": issue.get("message"),
+                    }
+                )
+                continue
+
+            self._apply_assignment(
+                match,
+                selected_slot,
+                forced=False,
+                bump_revision=False,
+                batch_key=batch_key,
+            )
+            remaining_slots = [slot for slot in remaining_slots if slot.id != selected_slot.id]
+            assigned_count += 1
+
+        if assigned_count:
+            self._bump_planner_revision(planner_root)
+
+        return {
+            "ok": True,
+            "assigned_count": assigned_count,
+            "attempted_count": attempted_count,
+            "remaining_slot_count": len(remaining_slots),
+            "remaining_unscheduled_count": len(
+                self._get_gameday_unscheduled_matches(planner_root)
+            ),
+            "planner": self.get_gameday_planner_data(planner_root.id),
+            "skipped": skipped,
+        }
 
     @api.model
     def bulk_assign_matches(

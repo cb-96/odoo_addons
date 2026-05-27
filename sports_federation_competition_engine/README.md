@@ -241,6 +241,12 @@ Roles and safeguards
   `sf_ws_read_model_contract`, `sf_ws_write_guard_contract`,
   `sf_ws_extension_contract`, `sf_ws_concurrency_contract`, and
   `sf_ws_acl_contract` (runnable via `ci/run_tests.sh --contract-suite ...`).
+- Planner unscheduled match lists are now sliced by the active gameday sequence
+  (per linked division round), instead of showing every unscheduled match in the
+  stage.
+- Initial auto-scheduling support is available through `auto_schedule_gameday`:
+  it deterministically fills open slots from the active gameday's unscheduled
+  match slice and skips incompatible pairings with structured reasons.
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.
