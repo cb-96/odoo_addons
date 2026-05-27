@@ -1140,6 +1140,40 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(validation["blocking"][0]["focus_target"], "team")
         self.assertTrue(validation["blocking"][0]["hint"])
 
+    def test_validation_issue_signature_keeps_distinct_slots(self):
+        validation_service = self.env[
+            "federation.competition.workspace.validation.service"
+        ]
+        issues = []
+        dedupe = set()
+
+        base_issue = {
+            "code": "team_overlap",
+            "record_id": 42,
+            "match_id": 42,
+            "message": "Team already plays in this timeslot.",
+            "team_ids": [3, 1],
+        }
+
+        validation_service._append_issue(
+            issues,
+            {**base_issue, "slot_id": 10},
+            dedupe,
+        )
+        validation_service._append_issue(
+            issues,
+            {**base_issue, "slot_id": 11},
+            dedupe,
+        )
+        validation_service._append_issue(
+            issues,
+            {**base_issue, "slot_id": 10, "team_ids": [1, 3]},
+            dedupe,
+        )
+
+        self.assertEqual(len(issues), 2)
+        self.assertEqual({issue["slot_id"] for issue in issues}, {10, 11})
+
     def test_shared_gameday_assignment_keeps_match_on_its_division_round(self):
         _host_division, guest_division, host_gameday, guest_gameday = (
             self._prepare_shared_planned_divisions()

@@ -195,6 +195,9 @@ Roles and safeguards
 - Validation payloads now include grouped blocking and warning sections,
   actionable hints, and focus metadata that the UI uses to highlight affected
   slots or matches.
+- Validation issue dedupe now keys on code plus match, slot, and team context
+  so distinct slot-specific conflicts stay visible while exact duplicates are
+  collapsed.
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.

@@ -274,8 +274,22 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
         result["warning_groups"] = self._group_issues(warnings)
         return result
 
+    def _issue_signature(self, issue):
+        team_ids = issue.get("team_ids")
+        normalized_team_ids = ()
+        if isinstance(team_ids, (list, tuple, set)):
+            normalized_team_ids = tuple(sorted(team_ids))
+        return (
+            issue.get("code"),
+            issue.get("record_id"),
+            issue.get("match_id"),
+            issue.get("slot_id"),
+            issue.get("message"),
+            normalized_team_ids,
+        )
+
     def _append_issue(self, issues, issue, dedupe):
-        signature = (issue.get("code"), issue.get("record_id"), issue.get("message"))
+        signature = self._issue_signature(issue)
         if signature in dedupe:
             return
         dedupe.add(signature)
