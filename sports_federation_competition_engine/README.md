@@ -198,9 +198,16 @@ Roles and safeguards
 - Validation issue dedupe now keys on code plus match, slot, and team context
   so distinct slot-specific conflicts stay visible while exact duplicates are
   collapsed.
+- Extension-provided validation issues are now contract-normalized before they
+  enter planner validation: malformed issue payloads are ignored, identifier
+  fields are coerced, and `team_ids` are normalized to integer lists.
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.
+- Planner payloads now expose a `consistency` object with
+  `current_planner_revision`, optional `expected_planner_revision`, and
+  `is_stale` / `invalid_expected_planner_revision` flags so clients can detect
+  stale read-model snapshots before issuing write operations.
 - Any change that touches a validated or published day reopens the linked
   gameday back to `planned` and the affected divisions back to `planning`
   before another publication pass.

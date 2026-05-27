@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
@@ -998,6 +1000,93 @@ class TestCompetitionWorkspaceService(TransactionCase):
                 gameday.id,
                 stale_revision,
             )
+
+    def test_workspace_extension_issues_normalizes_contract(self):
+        malformed_results = [
+            {
+                "blocking": [
+                    {
+                        "code": "team_overlap",
+                        "message": "Team already plays in this timeslot.",
+                        "record_id": "42",
+                        "team_ids": [3, "1", "bad"],
+                    },
+                    {"message": "missing code"},
+                    "invalid-issue",
+                ],
+                "warnings": {
+                    "code": "short_rest",
+                    "message": "Short rest warning",
+                    "slot_id": "7",
+                },
+            },
+            ["invalid-result-shape"],
+            {
+                "blocking": {"code": "slot_occupied", "message": "Slot busy", "slot_id": "11"},
+                "warnings": [{"code": "", "message": "invalid warning"}],
+            },
+        ]
+
+        with patch.object(
+            type(self.service),
+            "_workspace_extension_results",
+            return_value=malformed_results,
+        ):
+            issues = self.service._workspace_extension_issues(
+                "extend_match_assignment_validation"
+            )
+
+        self.assertEqual(len(issues["blocking"]), 2)
+        self.assertEqual(len(issues["warnings"]), 1)
+        first_blocking = issues["blocking"][0]
+        self.assertEqual(first_blocking["record_id"], 42)
+        self.assertEqual(first_blocking["team_ids"], [1, 3])
+        self.assertEqual(issues["warnings"][0]["slot_id"], 7)
+        self.assertEqual(issues["blocking"][1]["slot_id"], 11)
+
+    def test_gameday_planner_data_reports_stale_consistency(self):
+        division, gameday = self._prepare_planned_division(
+            "Planner Consistency Division"
+        )
+        stale_revision = gameday.planner_revision
+        match = division.match_ids[:1]
+        slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
+
+        self.assertTrue(self.service.assign_match_to_slot(match.id, slot.id)["ok"])
+
+        planner = self.service.get_gameday_planner_data(
+            gameday.id,
+            {"expected_planner_revision": stale_revision},
+        )
+
+        self.assertTrue(planner["consistency"]["is_stale"])
+        self.assertEqual(
+            planner["consistency"]["expected_planner_revision"], stale_revision
+        )
+        self.assertGreater(
+            planner["consistency"]["current_planner_revision"], stale_revision
+        )
+
+    def test_workspace_payload_forwards_expected_planner_revision_consistency(self):
+        division, gameday = self._prepare_planned_division(
+            "Workspace Consistency Forwarding Division"
+        )
+
+        payload = self.service.get_competition_workspace_data(
+            self.edition.id,
+            division.id,
+            {
+                "include_planner": True,
+                "gameday_id": gameday.id,
+                "expected_planner_revision": "invalid-revision",
+            },
+        )
+
+        self.assertFalse(payload["planner"]["consistency"]["is_stale"])
+        self.assertTrue(
+            payload["planner"]["consistency"]["invalid_expected_planner_revision"]
+        )
+        self.assertFalse(payload["planner"]["consistency"]["expected_planner_revision"])
 
     def test_schedule_revisions_keep_live_draft_and_superseded_versions(self):
         division, gameday = self._prepare_planned_division("Schedule Revision Division")

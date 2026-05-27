@@ -1,9 +1,13 @@
 import json
+import logging
 from datetime import datetime, timedelta, time
 from uuid import uuid4
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
+
+
+_logger = logging.getLogger(__name__)
 
 
 class PlannerOperationRollback(Exception):
@@ -68,9 +72,108 @@ class CompetitionWorkspaceService(models.AbstractModel):
     def _workspace_extension_issues(self, method_name, *args, **kwargs):
         issues = {"blocking": [], "warnings": []}
         for result in self._workspace_extension_results(method_name, *args, **kwargs):
-            issues["blocking"].extend(result.get("blocking") or [])
-            issues["warnings"].extend(result.get("warnings") or [])
+            if not isinstance(result, dict):
+                _logger.warning(
+                    "Workspace extension issues ignored for %s: expected dict, got %s",
+                    method_name,
+                    type(result).__name__,
+                )
+                continue
+            issues["blocking"].extend(
+                self._normalize_workspace_extension_issue_bucket(
+                    result.get("blocking"),
+                    method_name=method_name,
+                    severity="blocking",
+                )
+            )
+            issues["warnings"].extend(
+                self._normalize_workspace_extension_issue_bucket(
+                    result.get("warnings"),
+                    method_name=method_name,
+                    severity="warning",
+                )
+            )
         return issues
+
+    def _safe_workspace_issue_int(self, raw_value):
+        try:
+            return int(raw_value)
+        except (TypeError, ValueError):
+            return False
+
+    def _normalize_workspace_extension_issue(self, issue, method_name, severity):
+        if not isinstance(issue, dict):
+            _logger.warning(
+                "Workspace extension issue ignored for %s (%s): expected dict, got %s",
+                method_name,
+                severity,
+                type(issue).__name__,
+            )
+            return False
+
+        code = str(issue.get("code") or "").strip()
+        message = str(issue.get("message") or "").strip()
+        if not code or not message:
+            _logger.warning(
+                "Workspace extension issue ignored for %s (%s): missing code/message",
+                method_name,
+                severity,
+            )
+            return False
+
+        normalized = dict(issue)
+        normalized["code"] = code
+        normalized["message"] = message
+
+        for key in ("record_id", "match_id", "slot_id", "focus_record_id", "referee_id"):
+            if key not in issue:
+                continue
+            parsed = self._safe_workspace_issue_int(issue.get(key))
+            if parsed:
+                normalized[key] = parsed
+            else:
+                normalized.pop(key, None)
+
+        team_ids = issue.get("team_ids")
+        if isinstance(team_ids, (list, tuple, set)):
+            parsed_team_ids = {
+                team_id
+                for team_id in (self._safe_workspace_issue_int(value) for value in team_ids)
+                if team_id
+            }
+            if parsed_team_ids:
+                normalized["team_ids"] = sorted(parsed_team_ids)
+            else:
+                normalized.pop("team_ids", None)
+        elif "team_ids" in normalized:
+            normalized.pop("team_ids", None)
+
+        return normalized
+
+    def _normalize_workspace_extension_issue_bucket(self, raw_issues, method_name, severity):
+        if not raw_issues:
+            return []
+        if isinstance(raw_issues, dict):
+            raw_issues = [raw_issues]
+        if not isinstance(raw_issues, (list, tuple, set)):
+            _logger.warning(
+                "Workspace extension issue bucket ignored for %s (%s): expected list/dict, got %s",
+                method_name,
+                severity,
+                type(raw_issues).__name__,
+            )
+            return []
+
+        normalized_issues = []
+        for issue in raw_issues:
+            normalized = self._normalize_workspace_extension_issue(
+                issue,
+                method_name=method_name,
+                severity=severity,
+            )
+            if normalized:
+                normalized_issues.append(normalized)
+        return normalized_issues
 
     def _workspace_extension_score_components(self, method_name, *args, **kwargs):
         components = []

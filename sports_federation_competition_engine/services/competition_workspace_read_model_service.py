@@ -52,6 +52,23 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
                     return linked_target
         return gamedays[:1]
 
+    def _planner_consistency_payload(self, planner_root, filters):
+        filters = filters or {}
+        raw_expected = filters.get("expected_planner_revision")
+        expected_revision = self._safe_int(raw_expected)
+        has_expected = raw_expected is not None and str(raw_expected).strip() != ""
+        invalid_expected = has_expected and expected_revision is None
+        is_stale = bool(
+            expected_revision is not None
+            and expected_revision != planner_root.planner_revision
+        )
+        return {
+            "current_planner_revision": planner_root.planner_revision,
+            "expected_planner_revision": expected_revision if has_expected else False,
+            "invalid_expected_planner_revision": invalid_expected,
+            "is_stale": is_stale,
+        }
+
     @api.model
     def get_gameday_planner_data(self, workspace_service, gameday_id, filters=None):
         workspace_service._check_access()
@@ -134,6 +151,7 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
         planner_data = {
             "gameday": workspace_service._serialize_gameday(gameday),
             "division": workspace_service._serialize_division(division),
+            "consistency": self._planner_consistency_payload(planner_root, filters),
             "slots": slots,
             "unscheduled_matches": [
                 workspace_service._serialize_match_card(match)
@@ -214,6 +232,11 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
                 "include_reference_data",
                 options.get("include_planner_reference_data", True),
             )
+            if "expected_planner_revision" in options:
+                planner_filters.setdefault(
+                    "expected_planner_revision",
+                    options.get("expected_planner_revision"),
+                )
             planner_target = self._resolve_planner_target(
                 workspace_service,
                 selected_division,
