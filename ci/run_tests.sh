@@ -42,6 +42,9 @@ Options:
   --list-suites       Print the available named suites.
   --keep, -k          Leave the Docker Compose stack running after the run.
   --help, -h          Show this help text.
+
+Environment:
+  CI_SKIP_BROWSER_BOOTSTRAP=1  Skip Chrome/bootstrap install for non-UI runs.
 EOF
 }
 
@@ -161,6 +164,7 @@ set +a
 : "${CI_ODOO_DB_HOST:=ci-db}"
 : "${CI_ODOO_DB_PORT:=5432}"
 : "${CI_LOG_RETENTION_RUNS:=30}"
+: "${CI_SKIP_BROWSER_BOOTSTRAP:=0}"
 
 PROJECT_NAME="$CI_PROJECT_NAME"
 
@@ -384,16 +388,18 @@ fi
 
 TEST_CONTAINER_CMD=$(cat <<EOF
 python3 -m pip show websocket-client >/dev/null 2>&1 || python3 -m pip install --break-system-packages --no-cache-dir websocket-client==1.8.0
-if ! command -v google-chrome >/dev/null 2>&1 && ! command -v google-chrome-stable >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
-  apt-get update
-  DEBIAN_FRONTEND=noninteractive apt-get install -y wget
-  wget -q -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-  DEBIAN_FRONTEND=noninteractive apt-get install -y /tmp/google-chrome-stable_current_amd64.deb
-fi
-if command -v google-chrome-stable >/dev/null 2>&1; then
-  ln -sf "\$(command -v google-chrome-stable)" /usr/local/bin/chromium-browser
-elif command -v google-chrome >/dev/null 2>&1; then
-  ln -sf "\$(command -v google-chrome)" /usr/local/bin/chromium-browser
+if [ "$CI_SKIP_BROWSER_BOOTSTRAP" != "1" ]; then
+  if ! command -v google-chrome >/dev/null 2>&1 && ! command -v google-chrome-stable >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y wget
+    wget -q -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+    DEBIAN_FRONTEND=noninteractive apt-get install -y /tmp/google-chrome-stable_current_amd64.deb
+  fi
+  if command -v google-chrome-stable >/dev/null 2>&1; then
+    ln -sf "\$(command -v google-chrome-stable)" /usr/local/bin/chromium-browser
+  elif command -v google-chrome >/dev/null 2>&1; then
+    ln -sf "\$(command -v google-chrome)" /usr/local/bin/chromium-browser
+  fi
 fi
 exec odoo --stop-after-init --test-enable --test-tags="$TEST_TAGS" -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
 EOF

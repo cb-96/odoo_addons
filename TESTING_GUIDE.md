@@ -301,6 +301,9 @@ bash addons/ci/run_tests.sh --suite rosters_readiness_guard
 # Equivalent explicit form when you need direct control
 bash addons/ci/run_tests.sh --module sports_federation_rosters --test-tags sf_rosters_participant_readiness --require-post-tests 1
 
+# Skip browser bootstrap when the run has no HttpCase/browser coverage
+CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --test-tags sf_competition_workspace --require-post-tests 1
+
 # Run all suites (used in final PR validation)
 bash addons/ci/run_tests.sh
 ```
