@@ -34,10 +34,11 @@
                     <div>
                         <strong>Warning-only for now:</strong>
                         Participant confirmation can still continue before the roster deadline, but the blocker list below must be resolved before the deadline is reached.
-                        <div t-if="confirmation_feedback" class="small mt-2" style="white-space: pre-line;">
+                        <div class="small mt-2"
+                             style="white-space: pre-line;"
+                             invisible="not confirmation_feedback">
                             <strong>Blocker list:</strong>
-                            <br/>
-                            <t t-esc="confirmation_feedback"/>
+                            <field name="confirmation_feedback" readonly="1" nolabel="1"/>
                         </div>
                         <div class="small mt-2">
                             <strong>Next action:</strong>
@@ -55,10 +56,11 @@
                     <div>
                         <strong>Blocked:</strong>
                         Participant confirmation is now blocked because the roster deadline has been reached and readiness issues remain.
-                        <div t-if="confirmation_feedback" class="small mt-2" style="white-space: pre-line;">
+                        <div class="small mt-2"
+                             style="white-space: pre-line;"
+                             invisible="not confirmation_feedback">
                             <strong>Blocker list:</strong>
-                            <br/>
-                            <t t-esc="confirmation_feedback"/>
+                            <field name="confirmation_feedback" readonly="1" nolabel="1"/>
                         </div>
                         <div class="small mt-2">
                             <strong>Next action:</strong>
