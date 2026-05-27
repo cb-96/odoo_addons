@@ -557,6 +557,107 @@ class CompetitionWorkspaceService(models.AbstractModel):
     def _normalize_override_reason(self, override_reason):
         return (override_reason or "").strip()
 
+    def _normalize_idempotency_key(self, idempotency_key=False):
+        if idempotency_key in (False, None):
+            return False
+        key = str(idempotency_key).strip()
+        if not key:
+            return False
+        if len(key) > 120:
+            raise ValidationError(_("The idempotency key is too long."))
+        return key
+
+    def _idempotency_batch_key(self, scope, idempotency_key=False):
+        key = self._normalize_idempotency_key(idempotency_key)
+        if not key:
+            return False
+        return "idem:%s:%s" % (scope, key)
+
+    def _idempotency_metadata(self, scope, idempotency_key=False, replayed=False):
+        key = self._normalize_idempotency_key(idempotency_key)
+        if not key:
+            return False
+        return {
+            "scope": scope,
+            "key": key,
+            "replayed": bool(replayed),
+        }
+
+    def _idempotency_replay_response(
+        self,
+        planner_root,
+        scope,
+        idempotency_key=False,
+    ):
+        return {
+            "ok": True,
+            "replayed": True,
+            "idempotency": self._idempotency_metadata(
+                scope,
+                idempotency_key=idempotency_key,
+                replayed=True,
+            ),
+            "planner": self.get_gameday_planner_data(planner_root.id),
+        }
+
+    def _idempotency_applied_operations(self, planner_root, scope, idempotency_key=False):
+        batch_key = self._idempotency_batch_key(scope, idempotency_key=idempotency_key)
+        if not batch_key:
+            return self._planner_operation_model().browse()
+        return self._planner_operation_model().search(
+            [
+                ("planner_root_round_id", "=", planner_root.id),
+                ("batch_key", "=", batch_key),
+                ("state", "=", "applied"),
+            ],
+            order="id asc",
+        )
+
+    def _idempotency_applied_operations_for_match(
+        self,
+        match,
+        scope,
+        idempotency_key=False,
+    ):
+        batch_key = self._idempotency_batch_key(scope, idempotency_key=idempotency_key)
+        if not batch_key:
+            return self._planner_operation_model().browse()
+        return self._planner_operation_model().search(
+            [
+                ("match_id", "=", match.id),
+                ("batch_key", "=", batch_key),
+                ("state", "=", "applied"),
+            ],
+            order="id asc",
+        )
+
+    def _assert_idempotent_assign_intent(self, operations, match, slot):
+        if not operations:
+            return False
+        if not operations.filtered(lambda operation: operation.match_id == match):
+            raise ValidationError(
+                _("The idempotency key was reused for a different match assignment request.")
+            )
+        if not operations.filtered(
+            lambda operation: operation.new_slot_id and operation.new_slot_id == slot
+        ):
+            raise ValidationError(
+                _("The idempotency key was reused for a different target slot.")
+            )
+        return True
+
+    def _assert_idempotent_unassign_intent(self, operations, match):
+        if not operations:
+            return False
+        if not operations.filtered(
+            lambda operation: operation.match_id == match
+            and operation.operation_type == "unassign"
+        ):
+            raise ValidationError(
+                _("The idempotency key was reused for a different unassign request.")
+            )
+        return True
+
     def _next_schedule_revision_number(self, planner_root):
         latest_revision = self._schedule_revision_model().search(
             [("planner_root_round_id", "=", planner_root.id)],
@@ -3319,12 +3420,30 @@ class CompetitionWorkspaceService(models.AbstractModel):
         force=False,
         expected_planner_revision=False,
         override_reason=False,
+        idempotency_key=False,
     ):
         capabilities = self._check_access()
         match = self._resolve_match(match_id)
         slot = self._resolve_slot(slot_id)
+        idempotency_scope = "assign_match_to_slot"
+        replay_operations = self._idempotency_applied_operations(
+            self._get_planner_root_gameday(slot.round_id),
+            idempotency_scope,
+            idempotency_key=idempotency_key,
+        )
+        if self._assert_idempotent_assign_intent(replay_operations, match, slot):
+            return self._idempotency_replay_response(
+                self._get_planner_root_gameday(slot.round_id),
+                idempotency_scope,
+                idempotency_key=idempotency_key,
+            )
+
         planner_root = self._ensure_planner_write_revision(
             slot.round_id, expected_planner_revision
+        )
+        batch_key = self._idempotency_batch_key(
+            idempotency_scope,
+            idempotency_key=idempotency_key,
         )
         displaced_match = self._swap_target_match(match, slot)
         validation = (
@@ -3355,6 +3474,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 displaced_match,
                 forced=force,
                 override_reason=override_reason,
+                batch_key=batch_key,
             )
         else:
             self._apply_assignment(
@@ -3362,28 +3482,81 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 slot,
                 forced=force,
                 override_reason=override_reason,
+                batch_key=batch_key,
             )
-        return {
+        response = {
             "ok": True,
             "validation": validation,
             "planner": self.get_gameday_planner_data(slot.round_id.id),
         }
+        response["idempotency"] = self._idempotency_metadata(
+            idempotency_scope,
+            idempotency_key=idempotency_key,
+            replayed=False,
+        )
+        return response
 
     @api.model
-    def unassign_match(self, match_id, expected_planner_revision=False):
+    def unassign_match(
+        self,
+        match_id,
+        expected_planner_revision=False,
+        idempotency_key=False,
+    ):
         self._check_access()
         match = self._resolve_match(match_id)
+        idempotency_scope = "unassign_match"
         gameday = match.slot_id.round_id if match.slot_id else False
+        planner_root = self._get_planner_root_gameday(gameday) if gameday else False
+        if planner_root:
+            replay_operations = self._idempotency_applied_operations(
+                planner_root,
+                idempotency_scope,
+                idempotency_key=idempotency_key,
+            )
+            if self._assert_idempotent_unassign_intent(replay_operations, match):
+                return self._idempotency_replay_response(
+                    planner_root,
+                    idempotency_scope,
+                    idempotency_key=idempotency_key,
+                )
+        else:
+            replay_operations = self._idempotency_applied_operations_for_match(
+                match,
+                idempotency_scope,
+                idempotency_key=idempotency_key,
+            )
+            if self._assert_idempotent_unassign_intent(replay_operations, match):
+                replay_root = replay_operations[:1].planner_root_round_id
+                if replay_root:
+                    return self._idempotency_replay_response(
+                        replay_root,
+                        idempotency_scope,
+                        idempotency_key=idempotency_key,
+                    )
+
         if gameday:
             planner_root = self._ensure_planner_write_revision(
                 gameday, expected_planner_revision
             )
             self._clear_redo_planner_operations(planner_root)
-        self._apply_unassignment(match)
-        return {
+        self._apply_unassignment(
+            match,
+            batch_key=self._idempotency_batch_key(
+                idempotency_scope,
+                idempotency_key=idempotency_key,
+            ),
+        )
+        response = {
             "ok": True,
             "planner": self.get_gameday_planner_data(gameday.id) if gameday else False,
         }
+        response["idempotency"] = self._idempotency_metadata(
+            idempotency_scope,
+            idempotency_key=idempotency_key,
+            replayed=False,
+        )
+        return response
 
     @api.model
     def move_match(self, match_id, target_slot_id, force=False):

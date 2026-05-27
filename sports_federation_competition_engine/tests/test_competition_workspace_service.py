@@ -1001,6 +1001,92 @@ class TestCompetitionWorkspaceService(TransactionCase):
                 stale_revision,
             )
 
+    def test_assign_match_to_slot_idempotency_replays_without_duplicate_operation(self):
+        division, gameday = self._prepare_planned_division("Idempotent Assign Division")
+        match = division.match_ids[:1]
+        slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
+        planner_root = self.service._get_planner_root_gameday(gameday)
+
+        first = self.service.assign_match_to_slot(
+            match.id,
+            slot.id,
+            idempotency_key="assign-1",
+        )
+        self.assertTrue(first["ok"])
+        self.assertFalse(first["idempotency"]["replayed"])
+
+        batch_key = "idem:assign_match_to_slot:assign-1"
+        operations = self.env["federation.competition.planner.operation"].search(
+            [
+                ("planner_root_round_id", "=", planner_root.id),
+                ("batch_key", "=", batch_key),
+                ("state", "=", "applied"),
+            ]
+        )
+        self.assertEqual(len(operations), 1)
+
+        replay = self.service.assign_match_to_slot(
+            match.id,
+            slot.id,
+            idempotency_key="assign-1",
+        )
+        self.assertTrue(replay["ok"])
+        self.assertTrue(replay["replayed"])
+
+        operations_after_replay = self.env[
+            "federation.competition.planner.operation"
+        ].search(
+            [
+                ("planner_root_round_id", "=", planner_root.id),
+                ("batch_key", "=", batch_key),
+                ("state", "=", "applied"),
+            ]
+        )
+        self.assertEqual(len(operations_after_replay), 1)
+
+    def test_unassign_match_idempotency_replays_without_duplicate_operation(self):
+        division, gameday = self._prepare_planned_division("Idempotent Unassign Division")
+        match = division.match_ids[:1]
+        slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
+        planner_root = self.service._get_planner_root_gameday(gameday)
+
+        self.assertTrue(self.service.assign_match_to_slot(match.id, slot.id)["ok"])
+
+        first = self.service.unassign_match(
+            match.id,
+            idempotency_key="unassign-1",
+        )
+        self.assertTrue(first["ok"])
+        self.assertFalse(first["idempotency"]["replayed"])
+
+        batch_key = "idem:unassign_match:unassign-1"
+        operations = self.env["federation.competition.planner.operation"].search(
+            [
+                ("planner_root_round_id", "=", planner_root.id),
+                ("batch_key", "=", batch_key),
+                ("state", "=", "applied"),
+            ]
+        )
+        self.assertEqual(len(operations), 1)
+
+        replay = self.service.unassign_match(
+            match.id,
+            idempotency_key="unassign-1",
+        )
+        self.assertTrue(replay["ok"])
+        self.assertTrue(replay["replayed"])
+
+        operations_after_replay = self.env[
+            "federation.competition.planner.operation"
+        ].search(
+            [
+                ("planner_root_round_id", "=", planner_root.id),
+                ("batch_key", "=", batch_key),
+                ("state", "=", "applied"),
+            ]
+        )
+        self.assertEqual(len(operations_after_replay), 1)
+
     def test_workspace_extension_issues_normalizes_contract(self):
         malformed_results = [
             {
