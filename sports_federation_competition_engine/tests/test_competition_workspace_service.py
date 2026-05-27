@@ -955,6 +955,7 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(division.workspace_state, "planning")
         self.assertEqual(gameday.planner_state, "planned")
 
+    @tagged("-at_install", "post_install", "sf_ws_write_guard_contract")
     def test_assign_match_rejects_stale_planner_revision(self):
         division, gameday = self._prepare_planned_division("Revision Assignment Division")
         match_a, match_b = division.match_ids[:2]
@@ -1113,6 +1114,7 @@ class TestCompetitionWorkspaceService(TransactionCase):
         )
         self.assertEqual(len(operations_after_replay), 1)
 
+    @tagged("-at_install", "post_install", "sf_ws_extension_contract")
     def test_workspace_extension_issues_normalizes_contract(self):
         malformed_results = [
             {
@@ -1474,6 +1476,7 @@ class TestCompetitionWorkspaceService(TransactionCase):
             payload["planner"]["consistency"]["normalization_warnings"],
         )
 
+    @tagged("-at_install", "post_install", "sf_ws_read_model_contract")
     def test_gameday_planner_data_reports_filter_normalization_warnings(self):
         division, gameday = self._prepare_planned_division(
             "Planner Filter Consistency Division"
@@ -2329,6 +2332,7 @@ class TestCompetitionWorkspaceService(TransactionCase):
                 False,
             )
 
+    @tagged("-at_install", "post_install", "sf_ws_acl_contract")
     def test_workspace_acl_matrix_read_assign_publish(self):
         division, gameday = self._prepare_planned_division("ACL Matrix Division")
         match = division.match_ids[:1]
@@ -2378,6 +2382,7 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(stale["conflict"]["code"], "stale_planner_revision")
         self.assertEqual(stale["conflict"]["operation"], "bulk_unassign_matches")
 
+    @tagged("-at_install", "post_install", "sf_ws_concurrency_contract")
     def test_undo_returns_stale_conflict_after_interleaved_write(self):
         division, gameday = self._prepare_planned_division("Undo Stale Conflict Division")
         matches = division.match_ids[:2]

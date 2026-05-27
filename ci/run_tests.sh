@@ -7,6 +7,7 @@
 #   bash ci/run_tests.sh --module sports_federation_base
 #   bash ci/run_tests.sh --suite portal_public_ops
 #   bash ci/run_tests.sh --module sports_federation_rosters --test-tags sf_rosters_participant_readiness --require-post-tests 1
+#   bash ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_read_model --require-post-tests 1
 #   bash ci/run_tests.sh --list-suites
 #   bash ci/run_tests.sh --keep                  # keep containers for debugging
 #
@@ -32,11 +33,13 @@ Usage:
   bash ci/run_tests.sh --suite competition_core
   bash ci/run_tests.sh --suite portal_public_ops --keep
   bash ci/run_tests.sh --module sports_federation_rosters --test-tags sf_rosters_participant_readiness --require-post-tests 1
+  bash ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_read_model --require-post-tests 1
   bash ci/run_tests.sh --list-suites
 
 Options:
   --module, -m        Add a module to the install/test list. Repeatable.
   --suite, -s         Add a named test suite. Repeatable.
+  --contract-suite, -c Select a named contract tag suite. Repeatable.
   --test-tags         Override Odoo --test-tags expression used for discovery.
   --require-post-tests Fail if discovered post-tests are below the provided minimum.
   --list-suites       Print the available named suites.
@@ -59,6 +62,40 @@ Available suites:
   people_rosters_rules   People, rosters, rules, and officiating modules
   ops_and_notifications  Discipline, governance, notifications, import_tools, and demo modules
 EOF
+}
+
+list_contract_suites() {
+  cat <<'EOF'
+Available contract suites:
+  ws_read_model      sf_ws_read_model_contract
+  ws_write_guards    sf_ws_write_guard_contract
+  ws_extensions      sf_ws_extension_contract
+  ws_concurrency     sf_ws_concurrency_contract
+  ws_acl             sf_ws_acl_contract
+EOF
+}
+
+resolve_contract_suite_tag() {
+  case "$1" in
+    ws_read_model)
+      echo "sf_ws_read_model_contract"
+      ;;
+    ws_write_guards)
+      echo "sf_ws_write_guard_contract"
+      ;;
+    ws_extensions)
+      echo "sf_ws_extension_contract"
+      ;;
+    ws_concurrency)
+      echo "sf_ws_concurrency_contract"
+      ;;
+    ws_acl)
+      echo "sf_ws_acl_contract"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
 }
 
 resolve_suite_modules() {
@@ -233,6 +270,7 @@ contains_module() {
 # ── CLI parsing ──────────────────────────────────────────────────────
 MODULES=()
 SUITES=()
+CONTRACT_SUITES=()
 CUSTOM_TEST_TAGS=""
 REQUIRE_POST_TESTS=0
 KEEP=false
@@ -246,6 +284,11 @@ while [[ $# -gt 0 ]]; do
     --suite|-s)
       [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; usage >&2; exit 1; }
       SUITES+=("$2")
+      shift 2
+      ;;
+    --contract-suite|-c)
+      [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; usage >&2; exit 1; }
+      CONTRACT_SUITES+=("$2")
       shift 2
       ;;
     --test-tags)
@@ -294,6 +337,28 @@ if [[ ${#SUITES[@]} -gt 0 ]]; then
       MODULES+=("$module")
     done <<< "$suite_modules"
   done
+fi
+
+if [[ ${#CONTRACT_SUITES[@]} -gt 0 ]]; then
+  if [[ -n "$CUSTOM_TEST_TAGS" ]]; then
+    echo "--contract-suite cannot be combined with --test-tags" >&2
+    exit 1
+  fi
+
+  contract_tags=()
+  for contract_suite in "${CONTRACT_SUITES[@]}"; do
+    if ! contract_tag="$(resolve_contract_suite_tag "$contract_suite")"; then
+      echo "Unknown contract suite: $contract_suite" >&2
+      list_contract_suites >&2
+      exit 1
+    fi
+    contract_tags+=("$contract_tag")
+  done
+
+  CUSTOM_TEST_TAGS="$(IFS=,; echo "${contract_tags[*]}")"
+  if (( REQUIRE_POST_TESTS < 1 )); then
+    REQUIRE_POST_TESTS=1
+  fi
 fi
 
 for suite in "${SUITES[@]}"; do

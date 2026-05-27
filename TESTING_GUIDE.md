@@ -304,6 +304,13 @@ bash addons/ci/run_tests.sh --module sports_federation_rosters --test-tags sf_ro
 # Skip browser bootstrap when the run has no HttpCase/browser coverage
 CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --test-tags sf_competition_workspace --require-post-tests 1
 
+# Run dedicated competition workspace contract suites
+CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_read_model
+CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_write_guards
+CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_extensions
+CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_concurrency
+CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_acl
+
 # Run all suites (used in final PR validation)
 bash addons/ci/run_tests.sh
 ```
@@ -358,6 +365,11 @@ This prevents false-green runs where discovery is broken and no tests execute.
 | `people_rosters_rules` | 1 | Domain rules and roster workflow guard |
 | `ops_and_notifications` | 1 | Operations and notification guard |
 | `rosters_readiness_guard` | 1 | Explicit tag `sf_rosters_participant_readiness` |
+| `ws_read_model` | 1 | Explicit tag `sf_ws_read_model_contract` |
+| `ws_write_guards` | 1 | Explicit tag `sf_ws_write_guard_contract` |
+| `ws_extensions` | 1 | Explicit tag `sf_ws_extension_contract` |
+| `ws_concurrency` | 1 | Explicit tag `sf_ws_concurrency_contract` |
+| `ws_acl` | 1 | Explicit tag `sf_ws_acl_contract` |
 
 ---
 

@@ -237,6 +237,10 @@ Roles and safeguards
   stale revision handling on bulk-unassign and undo planner operations.
 - Planner stale/invalid revision conflicts and extension hook failures now emit
   correlation IDs for faster support triage and log cross-referencing.
+- Dedicated contract tags now exist for competition workspace reliability slices:
+  `sf_ws_read_model_contract`, `sf_ws_write_guard_contract`,
+  `sf_ws_extension_contract`, `sf_ws_concurrency_contract`, and
+  `sf_ws_acl_contract` (runnable via `ci/run_tests.sh --contract-suite ...`).
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.
