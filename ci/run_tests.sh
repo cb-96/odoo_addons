@@ -6,6 +6,7 @@
 #   bash ci/run_tests.sh                          # test all modules
 #   bash ci/run_tests.sh --module sports_federation_base
 #   bash ci/run_tests.sh --suite portal_public_ops
+#   bash ci/run_tests.sh --module sports_federation_rosters --test-tags sf_rosters_participant_readiness --require-post-tests 1
 #   bash ci/run_tests.sh --list-suites
 #   bash ci/run_tests.sh --keep                  # keep containers for debugging
 #
@@ -17,7 +18,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.ci.yaml"
 ENV_FILE="$SCRIPT_DIR/.env"
 EXAMPLE_ENV_FILE="$SCRIPT_DIR/.env.example"
-GENERATED_CONF="$SCRIPT_DIR/odoo-ci.generated.conf"
+GENERATED_CONF="$SCRIPT_DIR/odoo-ci.generated.runtime.conf"
+
+if [[ -d "$GENERATED_CONF" ]]; then
+  GENERATED_CONF="$(mktemp "$SCRIPT_DIR/odoo-ci.generated.conf.XXXXXX")"
+fi
 
 usage() {
   cat <<'EOF'
@@ -26,11 +31,14 @@ Usage:
   bash ci/run_tests.sh --module sports_federation_base
   bash ci/run_tests.sh --suite competition_core
   bash ci/run_tests.sh --suite portal_public_ops --keep
+  bash ci/run_tests.sh --module sports_federation_rosters --test-tags sf_rosters_participant_readiness --require-post-tests 1
   bash ci/run_tests.sh --list-suites
 
 Options:
   --module, -m        Add a module to the install/test list. Repeatable.
   --suite, -s         Add a named test suite. Repeatable.
+  --test-tags         Override Odoo --test-tags expression used for discovery.
+  --require-post-tests Fail if discovered post-tests are below the provided minimum.
   --list-suites       Print the available named suites.
   --keep, -k          Leave the Docker Compose stack running after the run.
   --help, -h          Show this help text.
@@ -43,6 +51,7 @@ Available suites:
   competition_core       Base, tournament, scheduling, results, and standings critical path
   portal_public_ops      Portal ownership, public routes, compliance, standings, and venue-facing flows
   finance_reporting      Finance bridge and reporting coverage
+  rosters_readiness_guard Participant readiness regression guard with discovery enforcement
   release_surfaces       Broader portal/public, match-day, compliance, and notification release verification
   people_rosters_rules   People, rosters, rules, and officiating modules
   ops_and_notifications  Discipline, governance, notifications, import_tools, and demo modules
@@ -73,6 +82,11 @@ EOF
       cat <<'EOF'
 sports_federation_finance_bridge
 sports_federation_reporting
+EOF
+      ;;
+    rosters_readiness_guard)
+      cat <<'EOF'
+sports_federation_rosters
 EOF
       ;;
     release_surfaces)
@@ -112,6 +126,19 @@ EOF
   esac
 }
 
+for arg in "$@"; do
+  case "$arg" in
+    --list-suites)
+      list_suites
+      exit 0
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+  esac
+done
+
 if [[ -f "$ENV_FILE" ]]; then
   LOADED_ENV_FILE="$ENV_FILE"
 elif [[ -f "$EXAMPLE_ENV_FILE" ]]; then
@@ -133,6 +160,7 @@ set +a
 : "${CI_ODOO_DB_NAME:=odoo_ci_test}"
 : "${CI_ODOO_DB_HOST:=ci-db}"
 : "${CI_ODOO_DB_PORT:=5432}"
+: "${CI_LOG_RETENTION_RUNS:=30}"
 
 PROJECT_NAME="$CI_PROJECT_NAME"
 
@@ -201,6 +229,8 @@ contains_module() {
 # ── CLI parsing ──────────────────────────────────────────────────────
 MODULES=()
 SUITES=()
+CUSTOM_TEST_TAGS=""
+REQUIRE_POST_TESTS=0
 KEEP=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -212,6 +242,16 @@ while [[ $# -gt 0 ]]; do
     --suite|-s)
       [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; usage >&2; exit 1; }
       SUITES+=("$2")
+      shift 2
+      ;;
+    --test-tags)
+      [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; usage >&2; exit 1; }
+      CUSTOM_TEST_TAGS="$2"
+      shift 2
+      ;;
+    --require-post-tests)
+      [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; usage >&2; exit 1; }
+      REQUIRE_POST_TESTS="$2"
       shift 2
       ;;
     --list-suites)
@@ -234,6 +274,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if ! [[ "$REQUIRE_POST_TESTS" =~ ^[0-9]+$ ]]; then
+  echo "--require-post-tests must be a non-negative integer" >&2
+  exit 1
+fi
+
 if [[ ${#SUITES[@]} -gt 0 ]]; then
   for suite in "${SUITES[@]}"; do
     if ! suite_modules="$(resolve_suite_modules "$suite")"; then
@@ -246,6 +291,24 @@ if [[ ${#SUITES[@]} -gt 0 ]]; then
     done <<< "$suite_modules"
   done
 fi
+
+for suite in "${SUITES[@]}"; do
+  case "$suite" in
+    competition_core|portal_public_ops|finance_reporting|release_surfaces|people_rosters_rules|ops_and_notifications)
+      if (( REQUIRE_POST_TESTS < 1 )); then
+        REQUIRE_POST_TESTS=1
+      fi
+      ;;
+  esac
+  if [[ "$suite" == "rosters_readiness_guard" ]]; then
+    if [[ -z "$CUSTOM_TEST_TAGS" ]]; then
+      CUSTOM_TEST_TAGS="sf_rosters_participant_readiness"
+    fi
+    if (( REQUIRE_POST_TESTS < 1 )); then
+      REQUIRE_POST_TESTS=1
+    fi
+  fi
+done
 
 if [[ ${#MODULES[@]} -eq 0 ]]; then
   MODULES=("${ALL_MODULES[@]}")
@@ -315,6 +378,9 @@ for mod in "${MODULES[@]}"; do
     TEST_TAGS="$mod"
   fi
 done
+if [[ -n "$CUSTOM_TEST_TAGS" ]]; then
+  TEST_TAGS="$CUSTOM_TEST_TAGS"
+fi
 
 TEST_CONTAINER_CMD=$(cat <<EOF
 python3 -m pip show websocket-client >/dev/null 2>&1 || python3 -m pip install --break-system-packages --no-cache-dir websocket-client==1.8.0
@@ -340,17 +406,23 @@ docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run --rm \
 
 # ── Parse results ────────────────────────────────────────────────────
 TEST_RESULT_LINE=$(grep -F "odoo.tests.result:" "$RAW_LOG" | tail -1 || true)
+POST_TESTS_LINE=$(grep -E "[0-9]+ post-tests in" "$RAW_LOG" | tail -1 || true)
 TESTS_TOTAL="n/a"
 TESTS_PASSED="n/a"
 TESTS_FAILED="n/a"
 TESTS_ERRORS="n/a"
 DIAGNOSTIC_COUNT="n/a"
+POST_TESTS_RUN="n/a"
 
 if [[ -n "$TEST_RESULT_LINE" ]] && [[ "$TEST_RESULT_LINE" =~ :[[:space:]]*([0-9]+)[[:space:]]+failed,[[:space:]]*([0-9]+)[[:space:]]+error\(s\)[[:space:]]+of[[:space:]]+([0-9]+)[[:space:]]+tests ]]; then
   TESTS_FAILED="${BASH_REMATCH[1]}"
   TESTS_ERRORS="${BASH_REMATCH[2]}"
   TESTS_TOTAL="${BASH_REMATCH[3]}"
   TESTS_PASSED=$((TESTS_TOTAL - TESTS_FAILED - TESTS_ERRORS))
+fi
+
+if [[ -n "$POST_TESTS_LINE" ]] && [[ "$POST_TESTS_LINE" =~ ([0-9]+)[[:space:]]+post-tests[[:space:]]+in ]]; then
+  POST_TESTS_RUN="${BASH_REMATCH[1]}"
 fi
 
 : > "$ERRORS_LOG"
@@ -375,11 +447,28 @@ fi
   echo "  Tests passed:  $TESTS_PASSED"
   echo "  Tests failed:  $TESTS_FAILED"
   echo "  Test errors:   $TESTS_ERRORS"
+  echo "  Post-tests:    $POST_TESTS_RUN"
   if [[ "$DIAGNOSTIC_COUNT" != "n/a" ]]; then
     echo "  Diagnostics:   $DIAGNOSTIC_COUNT"
   fi
   echo "════════════════════════════════════════════"
 } | tee -a "$SUMMARY_LOG"
+
+if (( REQUIRE_POST_TESTS > 0 )); then
+  POST_TESTS_NUM=0
+  if [[ "$POST_TESTS_RUN" =~ ^[0-9]+$ ]]; then
+    POST_TESTS_NUM="$POST_TESTS_RUN"
+  fi
+  if (( POST_TESTS_NUM < REQUIRE_POST_TESTS )); then
+    EXIT_CODE=1
+    {
+      echo "[CI] post-test discovery gate failed"
+      echo "[CI] required post-tests: $REQUIRE_POST_TESTS"
+      echo "[CI] discovered post-tests: $POST_TESTS_NUM"
+      echo "[CI] test tags: $TEST_TAGS"
+    } | tee -a "$ERRORS_LOG" >&2
+  fi
+fi
 
 if [[ $EXIT_CODE -ne 0 ]]; then
   echo ""
@@ -393,11 +482,17 @@ if [[ "$KEEP" == "false" ]]; then
   echo ""
   echo "[CI] Tearing down containers …"
   docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" down -v --remove-orphans 2>/dev/null || true
-  rm -f "$GENERATED_CONF"
+  if [[ -f "$GENERATED_CONF" ]]; then
+    rm -f "$GENERATED_CONF"
+  fi
 else
   echo ""
   echo "[CI] --keep: containers left running (project: $PROJECT_NAME)"
   echo "     To stop: docker compose -p $PROJECT_NAME -f $COMPOSE_FILE down -v"
+fi
+
+if [[ -x "$SCRIPT_DIR/prune_ci_logs.sh" ]]; then
+  bash "$SCRIPT_DIR/prune_ci_logs.sh" "$CI_LOG_RETENTION_RUNS" >/dev/null 2>&1 || true
 fi
 
 exit "$EXIT_CODE"

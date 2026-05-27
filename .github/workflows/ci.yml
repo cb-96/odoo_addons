@@ -63,6 +63,12 @@ jobs:
       - name: Check OpenAPI contract docs
         run: python ci/check_openapi_contracts.py
 
+      - name: Check CI hygiene
+        run: python ci/check_ci_hygiene.py
+
+      - name: Report module dependency drift
+        run: python ci/check_module_dependency_drift.py
+
       - name: Validate CI shell scripts
         run: |
           bash -n ci/run_tests.sh

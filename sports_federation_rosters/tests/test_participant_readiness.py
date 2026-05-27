@@ -1,9 +1,10 @@
 from datetime import date, timedelta
 
 from odoo.exceptions import ValidationError
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 
+@tagged("-at_install", "post_install", "sf_rosters_participant_readiness")
 class TestParticipantReadiness(TransactionCase):
     @classmethod
     def setUpClass(cls):
@@ -110,6 +111,27 @@ class TestParticipantReadiness(TransactionCase):
         roster.action_activate()
         return roster
 
+    def test_discovery_sanity_guard_for_participant_readiness_suite(self):
+        """Sanity marker so discovery issues are obvious when this file is executed."""
+        participant_fields = self.env["federation.tournament.participant"]._fields
+        self.assertIn(
+            "confirmation_warning",
+            participant_fields,
+            (
+                "Participant readiness test suite executed, but expected field "
+                "'confirmation_warning' is missing. "
+                "If your run reports 0 tests instead, the issue is test discovery/tag filtering, not test logic."
+            ),
+        )
+        self.assertIn(
+            "confirmation_blocking",
+            participant_fields,
+            (
+                "Participant readiness test suite executed, but expected field "
+                "'confirmation_blocking' is missing."
+            ),
+        )
+
     def test_participant_confirm_allows_missing_roster_before_deadline(self):
         """Test that participant confirm allows missing roster before deadline."""
         participant = self.env["federation.tournament.participant"].create(
@@ -160,6 +182,48 @@ class TestParticipantReadiness(TransactionCase):
             participant.action_confirm()
 
         self.assertEqual(participant.state, "registered")
+
+    def test_participant_readiness_severity_switches_from_warning_to_blocking(self):
+        """Readiness severity should be warning-only before deadline and blocking at deadline."""
+        pre_deadline_tournament = self.env["federation.tournament"].create(
+            {
+                "name": "Participant Warning Tournament",
+                "code": "PRT-WARN",
+                "season_id": self.season.id,
+                "date_start": (self.today + timedelta(days=30)).isoformat(),
+                "rule_set_id": self.rule_set.id,
+            }
+        )
+        pre_deadline_participant = self.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": pre_deadline_tournament.id,
+                "team_id": self.team.id,
+            }
+        )
+
+        self.assertTrue(pre_deadline_participant.confirmation_warning)
+        self.assertFalse(pre_deadline_participant.confirmation_blocking)
+        self.assertTrue(pre_deadline_participant.ready_for_confirmation)
+
+        deadline_tournament = self.env["federation.tournament"].create(
+            {
+                "name": "Participant Blocking Tournament",
+                "code": "PRT-BLOCK",
+                "season_id": self.season.id,
+                "date_start": (self.today + timedelta(days=7)).isoformat(),
+                "rule_set_id": self.rule_set.id,
+            }
+        )
+        deadline_participant = self.env["federation.tournament.participant"].create(
+            {
+                "tournament_id": deadline_tournament.id,
+                "team_id": self.team.id,
+            }
+        )
+
+        self.assertFalse(deadline_participant.confirmation_warning)
+        self.assertTrue(deadline_participant.confirmation_blocking)
+        self.assertFalse(deadline_participant.ready_for_confirmation)
 
     def test_participant_confirm_succeeds_with_ready_roster_after_deadline(self):
         """Test that participant confirm succeeds after the deadline once ready."""
