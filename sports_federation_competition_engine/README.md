@@ -198,6 +198,9 @@ Roles and safeguards
 - Validation issue dedupe now keys on code plus match, slot, and team context
   so distinct slot-specific conflicts stay visible while exact duplicates are
   collapsed.
+- Write-path planner validation merges now use the same context-aware issue
+  signature so forced or batched operations do not collapse distinct conflicts
+  that happen on different slots.
 - Extension-provided validation issues are now contract-normalized before they
   enter planner validation: malformed issue payloads are ignored, identifier
   fields are coerced, and `team_ids` are normalized to integer lists.
@@ -208,6 +211,9 @@ Roles and safeguards
   `current_planner_revision`, optional `expected_planner_revision`, and
   `is_stale` / `invalid_expected_planner_revision` flags so clients can detect
   stale read-model snapshots before issuing write operations.
+- Write operations now normalize expected planner revision tokens consistently:
+  blank tokens are treated as missing, numeric tokens are coerced, and invalid
+  tokens are rejected with a clear validation error.
 - Any change that touches a validated or published day reopens the linked
   gameday back to `planned` and the affected divisions back to `planning`
   before another publication pass.

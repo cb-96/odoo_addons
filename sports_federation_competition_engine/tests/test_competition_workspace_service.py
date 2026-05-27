@@ -1088,6 +1088,88 @@ class TestCompetitionWorkspaceService(TransactionCase):
         )
         self.assertFalse(payload["planner"]["consistency"]["expected_planner_revision"])
 
+    def test_merge_planner_validations_keeps_distinct_slot_conflicts(self):
+        merged = self.service._merge_planner_validations(
+            {
+                "valid": False,
+                "blocking": [
+                    {
+                        "code": "team_overlap",
+                        "message": "Team already plays in this timeslot.",
+                        "record_id": 42,
+                        "match_id": 42,
+                        "slot_id": 10,
+                        "team_ids": [1, 3],
+                    }
+                ],
+                "warnings": [],
+                "unscheduled_matches": [],
+                "empty_slots": [],
+            },
+            {
+                "valid": False,
+                "blocking": [
+                    {
+                        "code": "team_overlap",
+                        "message": "Team already plays in this timeslot.",
+                        "record_id": 42,
+                        "match_id": 42,
+                        "slot_id": 11,
+                        "team_ids": [3, 1],
+                    }
+                ],
+                "warnings": [],
+                "unscheduled_matches": [],
+                "empty_slots": [],
+            },
+            {
+                "valid": False,
+                "blocking": [
+                    {
+                        "code": "team_overlap",
+                        "message": "Team already plays in this timeslot.",
+                        "record_id": 42,
+                        "match_id": 42,
+                        "slot_id": 10,
+                        "team_ids": [1, 3],
+                    }
+                ],
+                "warnings": [],
+                "unscheduled_matches": [],
+                "empty_slots": [],
+            },
+        )
+
+        self.assertEqual(len(merged["blocking"]), 2)
+        self.assertEqual({issue["slot_id"] for issue in merged["blocking"]}, {10, 11})
+
+    def test_assign_match_accepts_blank_expected_planner_revision_token(self):
+        division, gameday = self._prepare_planned_division("Blank Revision Token Division")
+        match = division.match_ids[:1]
+        slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
+
+        result = self.service.assign_match_to_slot(
+            match.id,
+            slot.id,
+            False,
+            "   ",
+        )
+
+        self.assertTrue(result["ok"])
+
+    def test_assign_match_rejects_invalid_expected_planner_revision_token(self):
+        division, gameday = self._prepare_planned_division("Invalid Revision Token Division")
+        match = division.match_ids[:1]
+        slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
+
+        with self.assertRaises(ValidationError):
+            self.service.assign_match_to_slot(
+                match.id,
+                slot.id,
+                False,
+                "not-a-revision",
+            )
+
     def test_schedule_revisions_keep_live_draft_and_superseded_versions(self):
         division, gameday = self._prepare_planned_division("Schedule Revision Division")
         match_a = division.match_ids[:1]

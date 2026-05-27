@@ -186,7 +186,10 @@ class CompetitionWorkspaceService(models.AbstractModel):
 
     def _ensure_planner_write_revision(self, gameday, expected_planner_revision=False):
         planner_root = self._get_planner_root_gameday(gameday)
-        planner_root._competition_workspace_check_revision(expected_planner_revision)
+        normalized_revision = self._normalize_expected_planner_revision(
+            expected_planner_revision
+        )
+        planner_root._competition_workspace_check_revision(normalized_revision)
         return planner_root
 
     def _bump_planner_revision(self, gameday):
@@ -208,6 +211,18 @@ class CompetitionWorkspaceService(models.AbstractModel):
     def _workspace_presence_model(self):
         return self.env["federation.competition.workspace.presence"]
 
+    def _normalize_expected_planner_revision(self, expected_planner_revision=False):
+        if expected_planner_revision in (False, None):
+            return False
+        if isinstance(expected_planner_revision, str):
+            expected_planner_revision = expected_planner_revision.strip()
+            if not expected_planner_revision:
+                return False
+        try:
+            return int(expected_planner_revision)
+        except (TypeError, ValueError):
+            raise ValidationError(_("The planner revision token is invalid."))
+
     def _copy_validation_result(self, validation):
         return {
             "valid": validation.get("valid", not validation.get("blocking")),
@@ -226,6 +241,20 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 "unscheduled_matches": [],
                 "empty_slots": [],
             }
+        )
+
+    def _planner_issue_signature(self, issue):
+        team_ids = issue.get("team_ids")
+        normalized_team_ids = ()
+        if isinstance(team_ids, (list, tuple, set)):
+            normalized_team_ids = tuple(sorted(team_ids))
+        return (
+            issue.get("code"),
+            issue.get("record_id"),
+            issue.get("match_id"),
+            issue.get("slot_id"),
+            issue.get("message"),
+            normalized_team_ids,
         )
 
     def _planner_override_reason_required(self, validation, message, record_id=False):
@@ -264,21 +293,13 @@ class CompetitionWorkspaceService(models.AbstractModel):
         for validation in validations:
             copied = self._copy_validation_result(validation or {})
             for issue in copied["blocking"]:
-                signature = (
-                    issue.get("code"),
-                    issue.get("record_id"),
-                    issue.get("message"),
-                )
+                signature = self._planner_issue_signature(issue)
                 if signature in blocking_seen:
                     continue
                 blocking_seen.add(signature)
                 payload["blocking"].append(issue)
             for issue in copied["warnings"]:
-                signature = (
-                    issue.get("code"),
-                    issue.get("record_id"),
-                    issue.get("message"),
-                )
+                signature = self._planner_issue_signature(issue)
                 if signature in warning_seen:
                     continue
                 warning_seen.add(signature)
