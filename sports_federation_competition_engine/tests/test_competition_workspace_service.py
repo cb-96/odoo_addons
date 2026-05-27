@@ -2165,6 +2165,95 @@ class TestCompetitionWorkspaceService(TransactionCase):
             0,
         )
 
+    def test_auto_schedule_gameday_uses_candidate_scoring(self):
+        division, _participants = self._create_division(
+            "Auto Schedule Scoring Division",
+            4,
+            minimum_rest_minutes=0,
+        )
+        division.action_lock_team_entries()
+        self.service.generate_round_robin(division.id)
+        gameday_id = self.service.create_gameday(
+            {
+                "division_id": division.id,
+                "name": "Scoring Gameday 1",
+                "round_date": "2026-10-10",
+                "venue_id": self.venue.id,
+            }
+        )["gameday_id"]
+        gameday = self.env["federation.tournament.round"].browse(gameday_id)
+        self.service.generate_slots(
+            gameday.id,
+            [self.court_1.id],
+            "09:00",
+            "11:00",
+            30,
+            0,
+            [],
+            False,
+        )
+
+        unscheduled = self.service._get_gameday_unscheduled_matches(gameday)
+        penalized_match = unscheduled[0]
+        preferred_match = unscheduled[1]
+
+        earliest_slot = gameday.slot_ids.sorted(lambda slot: slot.start_datetime)[0]
+        next_slot = gameday.slot_ids.sorted(lambda slot: slot.start_datetime)[1]
+        for slot in gameday.slot_ids - earliest_slot - next_slot:
+            slot.write({"state": "blocked"})
+
+        extra_team = self.env["federation.team"].create(
+            {
+                "name": "Auto Schedule Seed Team",
+                "club_id": self.club.id,
+            }
+        )
+        prior_match = self.env["federation.match"].create(
+            {
+                "tournament_id": division.id,
+                "home_team_id": penalized_match.home_team_id.id,
+                "away_team_id": extra_team.id,
+                "round_number": 99,
+            }
+        )
+        prior_match.write(
+            {
+                "slot_id": earliest_slot.id,
+                "round_id": gameday.id,
+                "date_scheduled": earliest_slot.start_datetime,
+            }
+        )
+        earliest_slot.write({"match_id": prior_match.id})
+
+        result = self.service.auto_schedule_gameday(gameday.id, max_assignments=1)
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["assigned_count"], 1)
+        self.assertEqual(next_slot.match_id.id, preferred_match.id)
+        self.assertFalse(penalized_match.slot_id)
+
+    def test_auto_schedule_home_away_delta_prefers_balance_improving_pairings(self):
+        division, gameday = self._prepare_planned_division("Auto Schedule Balance Division")
+        match = self.service._get_gameday_unscheduled_matches(gameday)[0]
+
+        worsening_delta = self.service._auto_schedule_home_away_delta(
+            match,
+            {
+                match.home_team_id.id: {"home": 5, "away": 1, "last_end": False},
+                match.away_team_id.id: {"home": 1, "away": 5, "last_end": False},
+            },
+        )
+        improving_delta = self.service._auto_schedule_home_away_delta(
+            match,
+            {
+                match.home_team_id.id: {"home": 1, "away": 5, "last_end": False},
+                match.away_team_id.id: {"home": 5, "away": 1, "last_end": False},
+            },
+        )
+
+        self.assertLess(worsening_delta, 0)
+        self.assertGreater(improving_delta, 0)
+
     def test_workspace_payload_ignores_invalid_planner_gameday_id(self):
         division, gameday = self._prepare_planned_division("Invalid Planner Target Division")
 

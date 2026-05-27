@@ -3675,6 +3675,138 @@ class CompetitionWorkspaceService(models.AbstractModel):
     def move_match(self, match_id, target_slot_id, force=False):
         return self.assign_match_to_slot(match_id, target_slot_id, force=force)
 
+    def _auto_schedule_team_balances(self, gameday):
+        team_balances = {}
+        divisions = self._get_gameday_divisions(gameday)
+        scheduled_matches = divisions.mapped("match_ids").filtered("slot_id").sorted(
+            lambda match: (
+                match.slot_id.start_datetime or fields.Datetime.now(),
+                match.id,
+            )
+        )
+        for match in scheduled_matches:
+            if match.home_team_id:
+                balance = team_balances.setdefault(
+                    match.home_team_id.id,
+                    {"home": 0, "away": 0, "last_end": False},
+                )
+                balance["home"] += 1
+            if match.away_team_id:
+                balance = team_balances.setdefault(
+                    match.away_team_id.id,
+                    {"home": 0, "away": 0, "last_end": False},
+                )
+                balance["away"] += 1
+
+            end_datetime = False
+            if match.slot_id and match.slot_id.end_datetime:
+                end_datetime = fields.Datetime.to_datetime(match.slot_id.end_datetime)
+            elif match.slot_id and match.slot_id.start_datetime:
+                end_datetime = fields.Datetime.to_datetime(match.slot_id.start_datetime)
+            if not end_datetime:
+                continue
+
+            for team in (match.home_team_id, match.away_team_id):
+                if not team:
+                    continue
+                balance = team_balances.setdefault(
+                    team.id,
+                    {"home": 0, "away": 0, "last_end": False},
+                )
+                if not balance["last_end"] or end_datetime > balance["last_end"]:
+                    balance["last_end"] = end_datetime
+        return team_balances
+
+    def _auto_schedule_home_away_delta(self, match, team_balances):
+        home_balance = (
+            team_balances.setdefault(
+                match.home_team_id.id,
+                {"home": 0, "away": 0, "last_end": False},
+            )
+            if match.home_team_id
+            else {"home": 0, "away": 0, "last_end": False}
+        )
+        away_balance = (
+            team_balances.setdefault(
+                match.away_team_id.id,
+                {"home": 0, "away": 0, "last_end": False},
+            )
+            if match.away_team_id
+            else {"home": 0, "away": 0, "last_end": False}
+        )
+        home_before = abs(home_balance["home"] - home_balance["away"])
+        away_before = abs(away_balance["home"] - away_balance["away"])
+        home_after = abs((home_balance["home"] + 1) - home_balance["away"])
+        away_after = abs(away_balance["home"] - (away_balance["away"] + 1))
+        return (home_before + away_before) - (home_after + away_after)
+
+    def _auto_schedule_rest_gap_metrics(self, match, slot, team_balances):
+        slot_start = (
+            fields.Datetime.to_datetime(slot.start_datetime)
+            if slot.start_datetime
+            else fields.Datetime.now()
+        )
+        gaps = []
+        for team in (match.home_team_id, match.away_team_id):
+            if not team:
+                gaps.append(120)
+                continue
+            balance = team_balances.get(team.id) or {}
+            last_end = balance.get("last_end")
+            if not last_end:
+                gaps.append(120)
+                continue
+            gap_minutes = int((slot_start - last_end).total_seconds() // 60)
+            gaps.append(gap_minutes)
+        return min(gaps), sum(gaps)
+
+    def _auto_schedule_candidate_score(self, match, slot, team_balances):
+        home_away_delta = self._auto_schedule_home_away_delta(match, team_balances)
+        min_rest_gap, total_rest_gap = self._auto_schedule_rest_gap_metrics(
+            match,
+            slot,
+            team_balances,
+        )
+        slot_start = (
+            fields.Datetime.to_datetime(slot.start_datetime)
+            if slot.start_datetime
+            else fields.Datetime.now()
+        )
+        slot_rank = int(slot_start.timestamp())
+        return (
+            min_rest_gap,
+            home_away_delta,
+            total_rest_gap,
+            -slot_rank,
+            -slot.id,
+            -match.id,
+        )
+
+    def _auto_schedule_update_team_balances(self, match, slot, team_balances):
+        end_datetime = (
+            fields.Datetime.to_datetime(slot.end_datetime)
+            if slot.end_datetime
+            else fields.Datetime.to_datetime(slot.start_datetime)
+            if slot.start_datetime
+            else fields.Datetime.now()
+        )
+        if match.home_team_id:
+            home_balance = team_balances.setdefault(
+                match.home_team_id.id,
+                {"home": 0, "away": 0, "last_end": False},
+            )
+            home_balance["home"] += 1
+            if not home_balance["last_end"] or end_datetime > home_balance["last_end"]:
+                home_balance["last_end"] = end_datetime
+        if match.away_team_id:
+            away_balance = team_balances.setdefault(
+                match.away_team_id.id,
+                {"home": 0, "away": 0, "last_end": False},
+            )
+            away_balance["away"] += 1
+            if not away_balance["last_end"] or end_datetime > away_balance["last_end"]:
+                away_balance["last_end"] = end_datetime
+
     @api.model
     def auto_schedule_gameday(
         self,
@@ -3713,40 +3845,86 @@ class CompetitionWorkspaceService(models.AbstractModel):
         self._clear_redo_planner_operations(planner_root)
         batch_key = uuid4().hex
         assigned_count = 0
-        attempted_count = 0
+        attempted_match_ids = set()
         skipped = []
         remaining_slots = list(open_slots)
+        remaining_matches = list(unscheduled_matches)
+        team_balances = self._auto_schedule_team_balances(planner_root)
+        first_issue_by_match = {}
 
-        for match in unscheduled_matches:
-            if not remaining_slots:
-                break
+        while remaining_slots and remaining_matches:
             if max_assignments and assigned_count >= max_assignments:
                 break
 
-            attempted_count += 1
-            selected_slot = False
-            first_issue = False
+            selected_candidate = False
+            selected_score = False
 
             for slot in remaining_slots:
-                validation = self._validate_assignment_action(match, slot, capabilities)
-                if validation["blocking"]:
-                    if not first_issue:
-                        first_issue = validation["blocking"][0]
-                    continue
-                if validation["warnings"]:
-                    if not first_issue:
-                        first_issue = validation["warnings"][0]
-                    continue
-                selected_slot = slot
+                for match in remaining_matches:
+                    attempted_match_ids.add(match.id)
+                    validation = self._validate_assignment_action(match, slot, capabilities)
+                    if validation["blocking"]:
+                        first_issue_by_match.setdefault(match.id, validation["blocking"][0])
+                        continue
+                    if validation["warnings"]:
+                        first_issue_by_match.setdefault(match.id, validation["warnings"][0])
+                        continue
+
+                    score = self._auto_schedule_candidate_score(match, slot, team_balances)
+                    if not selected_candidate or score > selected_score:
+                        selected_candidate = {
+                            "match": match,
+                            "slot": slot,
+                        }
+                        selected_score = score
+
+            if not selected_candidate:
                 break
 
-            if not selected_slot:
-                issue = first_issue or {
-                    "code": "no_feasible_slot",
-                    "message": _(
-                        "No compatible open slot was found for this match on the selected gameday."
-                    ),
-                }
+            selected_match = selected_candidate["match"]
+            selected_slot = selected_candidate["slot"]
+            self._apply_assignment(
+                selected_match,
+                selected_slot,
+                forced=False,
+                bump_revision=False,
+                batch_key=batch_key,
+            )
+            self._auto_schedule_update_team_balances(
+                selected_match,
+                selected_slot,
+                team_balances,
+            )
+            remaining_matches = [
+                match for match in remaining_matches if match.id != selected_match.id
+            ]
+            remaining_slots = [slot for slot in remaining_slots if slot.id != selected_slot.id]
+            assigned_count += 1
+
+        if remaining_matches:
+            limit_reached = bool(max_assignments and assigned_count >= max_assignments)
+            for match in remaining_matches:
+                if limit_reached:
+                    issue = {
+                        "code": "max_assignments_reached",
+                        "message": _(
+                            "Auto-schedule stopped after reaching the max assignment limit."
+                        ),
+                    }
+                elif not remaining_slots:
+                    issue = {
+                        "code": "no_open_slot",
+                        "message": _(
+                            "No open planner slots are left on the selected gameday."
+                        ),
+                    }
+                else:
+                    issue = first_issue_by_match.get(match.id) or {
+                        "code": "no_feasible_slot",
+                        "message": _(
+                            "No compatible open slot was found for this match on the selected gameday."
+                        ),
+                    }
                 skipped.append(
                     {
                         "match_id": match.id,
@@ -3755,17 +3933,6 @@ class CompetitionWorkspaceService(models.AbstractModel):
                         "message": issue.get("message"),
                     }
                 )
-                continue
-
-            self._apply_assignment(
-                match,
-                selected_slot,
-                forced=False,
-                bump_revision=False,
-                batch_key=batch_key,
-            )
-            remaining_slots = [slot for slot in remaining_slots if slot.id != selected_slot.id]
-            assigned_count += 1
 
         if assigned_count:
             self._bump_planner_revision(planner_root)
@@ -3773,7 +3940,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
         return {
             "ok": True,
             "assigned_count": assigned_count,
-            "attempted_count": attempted_count,
+            "attempted_count": len(attempted_match_ids),
             "remaining_slot_count": len(remaining_slots),
             "remaining_unscheduled_count": len(
                 self._get_gameday_unscheduled_matches(planner_root)
