@@ -53,6 +53,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
             try:
                 result = method(self, *args, **kwargs)
             except Exception as error:  # pylint: disable=broad-except
+                correlation_id = uuid4().hex[:12]
                 if isinstance(telemetry, list):
                     telemetry.append(
                         {
@@ -60,6 +61,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
                             "extension_model": extension._name,
                             "status": "error",
                             "error_type": type(error).__name__,
+                            "correlation_id": correlation_id,
                         }
                     )
                 if isinstance(warning_bucket, list):
@@ -67,12 +69,14 @@ class CompetitionWorkspaceService(models.AbstractModel):
                         self._workspace_extension_failure_warning(
                             method_name,
                             extension._name,
+                            correlation_id=correlation_id,
                         )
                     )
                 _logger.exception(
-                    "Workspace extension hook failed for %s on %s",
+                    "Workspace extension hook failed for %s on %s (correlation_id=%s)",
                     method_name,
                     extension._name,
+                    correlation_id,
                 )
                 continue
 
@@ -92,7 +96,12 @@ class CompetitionWorkspaceService(models.AbstractModel):
             self._log_workspace_extension_telemetry(method_name, telemetry)
         return results
 
-    def _workspace_extension_failure_warning(self, method_name, extension_model):
+    def _workspace_extension_failure_warning(
+        self,
+        method_name,
+        extension_model,
+        correlation_id=False,
+    ):
         return {
             "code": "extension_hook_failed",
             "message": _(
@@ -100,6 +109,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
             ),
             "hook": method_name,
             "extension_model": extension_model,
+            "correlation_id": correlation_id or uuid4().hex[:12],
         }
 
     def _normalize_workspace_extension_schema_version(self, result, method_name):
@@ -461,6 +471,14 @@ class CompetitionWorkspaceService(models.AbstractModel):
         code="stale_planner_revision",
         message=False,
     ):
+        correlation_id = uuid4().hex[:12]
+        _logger.warning(
+            "Planner write conflict for %s (correlation_id=%s, expected=%s, current=%s)",
+            operation,
+            correlation_id,
+            expected_planner_revision,
+            planner_root.planner_revision,
+        )
         return {
             "ok": False,
             "validation": self._planner_blocking_validation(
@@ -476,7 +494,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 "operation": operation,
                 "expected_planner_revision": expected_planner_revision or False,
                 "current_planner_revision": planner_root.planner_revision,
+                "correlation_id": correlation_id,
             },
+            "diagnostics": {"correlation_id": correlation_id},
         }
 
     def _ensure_planner_write_revision_or_conflict(

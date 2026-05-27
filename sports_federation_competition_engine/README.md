@@ -235,6 +235,8 @@ Roles and safeguards
   entrypoints.
 - Concurrency regressions now include deterministic interleaving checks for
   stale revision handling on bulk-unassign and undo planner operations.
+- Planner stale/invalid revision conflicts and extension hook failures now emit
+  correlation IDs for faster support triage and log cross-referencing.
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.

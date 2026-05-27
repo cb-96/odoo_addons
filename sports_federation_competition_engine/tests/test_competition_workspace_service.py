@@ -993,6 +993,11 @@ class TestCompetitionWorkspaceService(TransactionCase):
             stale["conflict"]["current_planner_revision"],
             stale_revision,
         )
+        self.assertTrue(stale["conflict"].get("correlation_id"))
+        self.assertEqual(
+            stale["diagnostics"]["correlation_id"],
+            stale["conflict"]["correlation_id"],
+        )
 
     def test_publish_gameday_rejects_stale_planner_revision(self):
         division, gameday = self._prepare_planned_division("Revision Publish Division")
@@ -1283,6 +1288,7 @@ class TestCompetitionWorkspaceService(TransactionCase):
             failure_warning["extension_model"],
             "federation.competition.workspace.extension.test_failing",
         )
+        self.assertTrue(failure_warning.get("correlation_id"))
 
     def test_workspace_extension_payload_isolates_hook_exceptions(self):
         class _FailingExtension:
