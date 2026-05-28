@@ -812,6 +812,55 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(host_round_numbers, {1})
         self.assertEqual(guest_round_numbers, {2})
 
+    def test_shared_gameday_supports_per_division_stage_and_round_mapping(self):
+        host_division, _participants = self._create_division(
+            "Shared Stage Host Division",
+            4,
+            team_offset=0,
+            planning_format="pool_then_bracket",
+        )
+        guest_division, _participants = self._create_division(
+            "Shared Stage Guest Division",
+            4,
+            team_offset=4,
+            planning_format="pool_then_bracket",
+        )
+        host_division.action_lock_team_entries()
+        guest_division.action_lock_team_entries()
+        self.service.generate_schedule_structure(host_division.id)
+        self.service.generate_schedule_structure(guest_division.id)
+
+        host_pool_stage = host_division._workspace_get_or_create_stage()
+        guest_knockout_stage = guest_division._workspace_get_or_create_knockout_stage()
+
+        gameday_id = self.service.create_gameday(
+            {
+                "division_id": host_division.id,
+                "name": "Shared Stage Mapping Gameday",
+                "round_date": "2026-10-11",
+                "stage_id": host_pool_stage.id,
+                "round_number": 1,
+                "shared_division_ids": [guest_division.id],
+                "shared_stage_ids": {
+                    str(guest_division.id): guest_knockout_stage.id,
+                },
+                "shared_round_numbers": {
+                    str(guest_division.id): 2,
+                },
+                "venue_id": self.venue.id,
+            }
+        )["gameday_id"]
+
+        host_gameday = self.env["federation.tournament.round"].browse(gameday_id)
+        guest_gameday = guest_division.round_ids.filtered(
+            lambda round_record: round_record.planner_root_round_id == host_gameday
+        )[:1]
+
+        self.assertEqual(host_gameday.stage_id, host_pool_stage)
+        self.assertEqual(host_gameday.sequence, 1)
+        self.assertEqual(guest_gameday.stage_id, guest_knockout_stage)
+        self.assertEqual(guest_gameday.sequence, 2)
+
     def test_assigning_two_matches_to_same_slot_is_blocked(self):
         division, gameday = self._prepare_planned_division("Double Booked Division")
         match_a, match_b = division.match_ids[:2]

@@ -705,6 +705,37 @@
                                         </div>
                                         <div class="form-text">Selected divisions share one physical planner grid for this gameday.</div>
                                     </div>
+                                    <div class="mb-3" t-if="this.selectedSharedDivisionOptions.length">
+                                        <label class="form-label fw-semibold">Shared division match scope</label>
+                                        <div class="d-flex flex-column gap-2">
+                                            <t t-foreach="this.selectedSharedDivisionOptions" t-as="divisionOption" t-key="'shared-config-' + divisionOption.id">
+                                                <div class="card border-0 shadow-sm p-2">
+                                                    <div class="small fw-semibold mb-2"><t t-esc="divisionOption.name"/></div>
+                                                    <div class="row g-2">
+                                                        <div class="col-12 col-md-6">
+                                                            <label class="form-label mb-1">Stage</label>
+                                                            <select class="form-select form-select-sm" name="stage_id" t-att-data-division-id="divisionOption.id" t-att-value="this.getSharedDivisionConfig(divisionOption.id).stage_id" t-on-change="updateSharedDivisionConfig">
+                                                                <option value="">Select stage</option>
+                                                                <t t-foreach="this.getSharedDivisionStageOptions(divisionOption.id)" t-as="stageOption" t-key="'shared-stage-' + divisionOption.id + '-' + stageOption.id">
+                                                                    <option t-att-value="stageOption.id"><t t-esc="stageOption.name"/></option>
+                                                                </t>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-12 col-md-6">
+                                                            <label class="form-label mb-1">Round</label>
+                                                            <select class="form-select form-select-sm" name="round_number" t-att-data-division-id="divisionOption.id" t-att-value="this.getSharedDivisionConfig(divisionOption.id).round_number" t-on-change="updateSharedDivisionConfig">
+                                                                <option value="">Select round</option>
+                                                                <t t-foreach="this.getSharedDivisionRoundOptions(divisionOption.id)" t-as="roundOption" t-key="'shared-round-' + divisionOption.id + '-' + roundOption.stage_id + '-' + roundOption.round_number">
+                                                                    <option t-att-value="roundOption.round_number"><t t-esc="roundOption.name"/> · #<t t-esc="roundOption.round_number"/></option>
+                                                                </t>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </t>
+                                        </div>
+                                        <div class="form-text">Each shared division can target a different stage and round on the same gameday.</div>
+                                    </div>
                                     <div class="d-flex justify-content-end"><button type="button" class="btn btn-primary" t-att-disabled="state.saving" t-on-click="createGameday">Create gameday</button></div>
                                 </div>
                             </section>

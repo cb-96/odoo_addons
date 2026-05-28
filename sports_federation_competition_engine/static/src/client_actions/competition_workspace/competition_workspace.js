@@ -268,6 +268,7 @@ export class CompetitionWorkspaceAction extends Component {
                 round_number: "",
                 round_date: "",
                 selected_gameday_id: params.gameday_id ? String(params.gameday_id) : "",
+                sharedDivisionConfig: {},
                 sharedDivisionIds: [],
                 start_time: "09:00",
                 stage_id: "",
@@ -493,6 +494,70 @@ export class CompetitionWorkspaceAction extends Component {
         return this.divisionOptions.filter(
             (division) => division.id !== this.state.currentDivisionId
         );
+    }
+
+    get selectedSharedDivisionOptions() {
+        const selected = new Set(this.state.gamedayForm.sharedDivisionIds);
+        return this.sharedDivisionOptions.filter((division) => selected.has(division.id));
+    }
+
+    getDivisionById(divisionId) {
+        return this.divisionOptions.find((division) => Number(division.id) === Number(divisionId));
+    }
+
+    getSharedDivisionConfig(divisionId) {
+        return this.state.gamedayForm.sharedDivisionConfig[String(divisionId)] || {
+            stage_id: "",
+            round_number: "",
+        };
+    }
+
+    getSharedDivisionStageOptions(divisionId) {
+        return this.getDivisionById(divisionId)?.stage_options || [];
+    }
+
+    getSharedDivisionRoundOptions(divisionId) {
+        const division = this.getDivisionById(divisionId);
+        if (!division) {
+            return [];
+        }
+        const rounds = division.rounds || [];
+        const stageId = Number(this.getSharedDivisionConfig(divisionId).stage_id || 0);
+        if (!stageId) {
+            return rounds;
+        }
+        return rounds.filter((roundItem) => Number(roundItem.stage_id) === stageId);
+    }
+
+    ensureSharedDivisionConfig(divisionId) {
+        const key = String(divisionId);
+        const current = this.getSharedDivisionConfig(divisionId);
+        const stageOptions = this.getSharedDivisionStageOptions(divisionId);
+        const selectedStageId = current.stage_id && stageOptions.some(
+            (stage) => String(stage.id) === String(current.stage_id)
+        )
+            ? String(current.stage_id)
+            : stageOptions[0]?.id
+                ? String(stageOptions[0].id)
+                : "";
+        const roundOptions = this.getSharedDivisionRoundOptions(divisionId).filter(
+            (roundItem) => !selectedStageId || String(roundItem.stage_id) === selectedStageId
+        );
+        const selectedRoundNumber = current.round_number && roundOptions.some(
+            (roundItem) => String(roundItem.round_number) === String(current.round_number)
+        )
+            ? String(current.round_number)
+            : roundOptions[0]?.round_number
+                ? String(roundOptions[0].round_number)
+                : "";
+
+        this.state.gamedayForm.sharedDivisionConfig = {
+            ...this.state.gamedayForm.sharedDivisionConfig,
+            [key]: {
+                stage_id: selectedStageId,
+                round_number: selectedRoundNumber,
+            },
+        };
     }
 
     get roundOptions() {
@@ -1344,12 +1409,48 @@ export class CompetitionWorkspaceAction extends Component {
     toggleSharedDivision(ev) {
         const divisionId = Number(ev.target.value);
         const selected = new Set(this.state.gamedayForm.sharedDivisionIds);
+        const config = { ...this.state.gamedayForm.sharedDivisionConfig };
         if (ev.target.checked) {
             selected.add(divisionId);
+            this.state.gamedayForm.sharedDivisionIds = [...selected];
+            this.state.gamedayForm.sharedDivisionConfig = config;
+            this.ensureSharedDivisionConfig(divisionId);
+            return;
         } else {
             selected.delete(divisionId);
+            delete config[String(divisionId)];
         }
         this.state.gamedayForm.sharedDivisionIds = [...selected];
+        this.state.gamedayForm.sharedDivisionConfig = config;
+    }
+
+    updateSharedDivisionConfig(ev) {
+        const divisionId = String(ev.target.dataset.divisionId || "");
+        const fieldName = ev.target.name;
+        if (!divisionId || !fieldName) {
+            return;
+        }
+        const existingConfig = this.getSharedDivisionConfig(divisionId);
+        const nextConfig = {
+            ...existingConfig,
+            [fieldName]: ev.target.value,
+        };
+        if (fieldName === "stage_id") {
+            const roundOptions = this.getSharedDivisionRoundOptions(divisionId).filter(
+                (roundItem) => String(roundItem.stage_id) === String(ev.target.value || "")
+            );
+            if (!roundOptions.some(
+                (roundItem) => String(roundItem.round_number) === String(nextConfig.round_number)
+            )) {
+                nextConfig.round_number = roundOptions[0]?.round_number
+                    ? String(roundOptions[0].round_number)
+                    : "";
+            }
+        }
+        this.state.gamedayForm.sharedDivisionConfig = {
+            ...this.state.gamedayForm.sharedDivisionConfig,
+            [divisionId]: nextConfig,
+        };
     }
 
     async createCompetitionShell() {
@@ -1531,6 +1632,17 @@ export class CompetitionWorkspaceAction extends Component {
         }
         this.state.saving = true;
         try {
+            const sharedStageIds = {};
+            const sharedRoundNumbers = {};
+            for (const divisionId of this.state.gamedayForm.sharedDivisionIds) {
+                const config = this.getSharedDivisionConfig(divisionId);
+                if (config.stage_id) {
+                    sharedStageIds[String(divisionId)] = Number(config.stage_id);
+                }
+                if (config.round_number) {
+                    sharedRoundNumbers[String(divisionId)] = Number(config.round_number);
+                }
+            }
             const result = await this.orm.call(
                 "federation.competition.workspace.service",
                 "create_gameday",
@@ -1542,6 +1654,8 @@ export class CompetitionWorkspaceAction extends Component {
                         : false,
                     round_date: this.state.gamedayForm.round_date,
                     shared_division_ids: this.state.gamedayForm.sharedDivisionIds,
+                    shared_round_numbers: sharedRoundNumbers,
+                    shared_stage_ids: sharedStageIds,
                     stage_id: this.state.gamedayForm.stage_id
                         ? Number(this.state.gamedayForm.stage_id)
                         : false,
@@ -1552,6 +1666,7 @@ export class CompetitionWorkspaceAction extends Component {
             this.state.currentGamedayId = result.gameday_id;
             this.state.gamedayForm.selected_gameday_id = String(result.gameday_id);
             this.state.gamedayForm.sharedDivisionIds = [];
+            this.state.gamedayForm.sharedDivisionConfig = {};
             this.resetPlannerPagination();
             this.persistUiState();
             this.notify("Gameday created.", "success");
@@ -1607,6 +1722,7 @@ export class CompetitionWorkspaceAction extends Component {
         this.state.filters.roundNumber = "";
         this.state.filters.teamId = "";
         this.state.gamedayForm.sharedDivisionIds = [];
+        this.state.gamedayForm.sharedDivisionConfig = {};
         this.state.gamedayForm.round_number = "";
         this.state.gamedayForm.stage_id = "";
         this.clearPlannerSelection();

@@ -1239,6 +1239,35 @@ class CompetitionWorkspaceService(models.AbstractModel):
             )
         return normalized
 
+    def _resolve_shared_stage_ids(self, shared_divisions, shared_stage_ids):
+        if not shared_stage_ids:
+            return {}
+        if not isinstance(shared_stage_ids, dict):
+            raise ValidationError(
+                _("Shared stages must be provided as a division-to-stage mapping.")
+            )
+        shared_division_ids = set(shared_divisions.ids)
+        normalized = {}
+        for division_id, stage_id in shared_stage_ids.items():
+            try:
+                normalized_division_id = int(division_id)
+            except (TypeError, ValueError):
+                raise ValidationError(
+                    _("One or more shared stage entries use an invalid division id.")
+                )
+            if normalized_division_id not in shared_division_ids:
+                raise ValidationError(
+                    _("Shared stage entries can only target selected shared divisions.")
+                )
+            shared_division = shared_divisions.filtered(
+                lambda division: division.id == normalized_division_id
+            )[:1]
+            normalized[normalized_division_id] = self._resolve_workspace_stage(
+                shared_division,
+                stage_id=stage_id,
+            )
+        return normalized
+
     def _get_match_planner_round(self, gameday, match):
         linked_rounds = self._get_linked_gamedays(gameday)
         candidate_rounds = linked_rounds.filtered(
@@ -2863,6 +2892,10 @@ class CompetitionWorkspaceService(models.AbstractModel):
             shared_divisions,
             vals.get("shared_round_numbers"),
         )
+        shared_stages = self._resolve_shared_stage_ids(
+            shared_divisions,
+            vals.get("shared_stage_ids"),
+        )
         sequence = self._resolve_gameday_sequence(division, stage, vals)
         round_vals = {
             "name": vals.get("name") or _("Gameday %(number)s", number=sequence),
@@ -2876,7 +2909,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
         }
         gameday = self.env["federation.tournament.round"].create(round_vals)
         for shared_division in shared_divisions:
-            shared_stage = self._resolve_workspace_stage(
+            shared_stage = shared_stages.get(shared_division.id) or self._resolve_workspace_stage(
                 shared_division,
                 stage_type=stage.stage_type,
             )

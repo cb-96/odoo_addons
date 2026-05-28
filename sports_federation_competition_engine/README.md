@@ -247,6 +247,8 @@ Roles and safeguards
 - Gameday creation now supports explicit round targeting via `round_number`.
   Shared gamedays can also provide `shared_round_numbers` to map each shared
   division to its own round number while still sharing one planner root grid.
+  Shared gamedays can additionally provide `shared_stage_ids` so each shared
+  division targets its own stage on that same planner root.
   In the Competition Workspace UI, this is selected through the existing
   Round options (not a separate round model).
 - Planner unscheduled slices now stay strict to each linked gameday round number

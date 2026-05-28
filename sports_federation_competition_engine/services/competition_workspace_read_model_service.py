@@ -313,7 +313,11 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
                 competition, divisions
             ),
             "divisions": [
-                workspace_service._serialize_division(division) for division in divisions
+                {
+                    **workspace_service._serialize_division(division),
+                    "rounds": workspace_service._serialize_round_preview(division),
+                }
+                for division in divisions
             ],
             "selected_division_id": selected_division.id if selected_division else False,
             "selected_division": {
