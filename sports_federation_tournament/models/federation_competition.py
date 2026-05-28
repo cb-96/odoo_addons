@@ -66,7 +66,10 @@ class FederationCompetition(models.Model):
                 )
                 if duplicate:
                     raise ValidationError(
-                        _("Competition code '%(code)s' is already in use.", code=rec.code)
+                        _(
+                            "Competition code '%(code)s' is already in use.",
+                            code=rec.code,
+                        )
                     )
 
     def _raise_if_duplicate_code(self, code, exclude_id=None):

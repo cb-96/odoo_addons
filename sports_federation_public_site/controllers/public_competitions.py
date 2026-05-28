@@ -2,6 +2,9 @@ import json
 from urllib.parse import quote_plus
 
 from odoo import http
+from odoo.addons.sports_federation_base.request_security import (
+    FederationRequestSecurityMixin,
+)
 from odoo.addons.portal.controllers.portal import pager as portal_pager
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import Response, request
@@ -9,7 +12,11 @@ from odoo.http import Response, request
 from ._filters import TournamentHubFilterMixin
 
 
-class PublicTournamentHubController(TournamentHubFilterMixin, http.Controller):
+class PublicTournamentHubController(
+    FederationRequestSecurityMixin,
+    TournamentHubFilterMixin,
+    http.Controller,
+):
 
     def _raise_not_found(self):
         """Raise the framework 404 exception for hidden public resources."""
@@ -402,10 +409,12 @@ class PublicTournamentHubController(TournamentHubFilterMixin, http.Controller):
         if not tournament.exists() or tournament.state != "open":
             return request.redirect("/tournaments")
 
-        if not request.validate_csrf(kw.get("csrf_token")):
+        try:
+            self._validate_manual_csrf(kw.get("csrf_token"))
+        except ValidationError as error:
             return self._redirect_with_error(
                 tournament.get_public_register_path(),
-                "Your session expired. Refresh the page and try again.",
+                str(error),
             )
 
         try:

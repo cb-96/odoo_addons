@@ -10,6 +10,7 @@ Verifies the correct semantics after removing the name-based unique constraint:
     (removing the race condition: the loop was only needed to avoid the name-based
     constraint, which is now gone).
 """
+
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
@@ -174,4 +175,3 @@ class TestRosterScopeUniqueness(TransactionCase):
         )
         # Both rosters have the same base name — no longer need to differ
         self.assertEqual(r1.name, r2.name)
-

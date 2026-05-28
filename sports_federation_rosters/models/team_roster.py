@@ -622,9 +622,7 @@ class FederationTeamRoster(models.Model):
         """Undo a roster closure by restoring the roster to active status."""
         for record in self:
             if record.status != "closed":
-                raise ValidationError(
-                    _("Only closed rosters can be reopened.")
-                )
+                raise ValidationError(_("Only closed rosters can be reopened."))
             issues = record._get_readiness_issues()
             if issues:
                 raise ValidationError(

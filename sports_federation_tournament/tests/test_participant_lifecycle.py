@@ -8,23 +8,29 @@ class TestParticipantLifecycle(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.season = cls.env["federation.season"].create({
-            "name": "Participant Lifecycle Season",
-            "date_start": "2025-09-01",
-            "date_end": "2026-06-30",
-        })
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "Participant Lifecycle Season",
+                "date_start": "2025-09-01",
+                "date_end": "2026-06-30",
+            }
+        )
         cls.club = cls.env["federation.club"].create({"name": "Participant Club"})
-        cls.tournament = cls.env["federation.tournament"].create({
-            "name": "Participant Test Tournament",
-            "season_id": cls.season.id,
-            "date_start": "2025-10-01",
-        })
+        cls.tournament = cls.env["federation.tournament"].create(
+            {
+                "name": "Participant Test Tournament",
+                "season_id": cls.season.id,
+                "date_start": "2025-10-01",
+            }
+        )
 
     def _make_team(self, name="ParticipantTeam"):
-        return self.env["federation.team"].create({
-            "name": name,
-            "club_id": self.club.id,
-        })
+        return self.env["federation.team"].create(
+            {
+                "name": name,
+                "club_id": self.club.id,
+            }
+        )
 
     def _make_participant(self, team=None, **kwargs):
         vals = {

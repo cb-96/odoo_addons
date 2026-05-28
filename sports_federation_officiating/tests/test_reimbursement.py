@@ -1,4 +1,5 @@
 """Tests for federation.reimbursement.request model."""
+
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase
 

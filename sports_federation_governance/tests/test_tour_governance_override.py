@@ -46,7 +46,9 @@ class TestTourGovernanceOverride(TransactionCase):
             {"name": "Governance Tour Club", "code": "GTC26"}
         )
 
-    def _make_request(self, name="Tour Override Request", request_type="late_registration"):
+    def _make_request(
+        self, name="Tour Override Request", request_type="late_registration"
+    ):
         return self.env["federation.override.request"].create(
             {
                 "name": name,
@@ -85,7 +87,9 @@ class TestTourGovernanceOverride(TransactionCase):
         self.assertEqual(request.state, OVERRIDE_REQUEST_STATE_APPROVED)
 
         # STEP 7: Implement
-        request.implementation_note = "Participant enrolled via manual override process."
+        request.implementation_note = (
+            "Participant enrolled via manual override process."
+        )
         request.action_mark_implemented()
         self.assertEqual(request.state, OVERRIDE_REQUEST_STATE_IMPLEMENTED)
 

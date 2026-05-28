@@ -551,9 +551,13 @@ class TestCompetitionWorkspaceOfficiatingIntegration(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         if cls.env.get("federation.competition.workspace.service") is None:
-            raise unittest.SkipTest("Competition Workspace is not installed in this test run.")
+            raise unittest.SkipTest(
+                "Competition Workspace is not installed in this test run."
+            )
         if cls.env.get("federation.venue") is None:
-            raise unittest.SkipTest("Venue planning models are not installed in this test run.")
+            raise unittest.SkipTest(
+                "Venue planning models are not installed in this test run."
+            )
 
         cls.service = cls.env["federation.competition.workspace.service"]
         cls.club = cls.env["federation.club"].create({"name": "Workspace Ref Club"})
@@ -670,7 +674,9 @@ class TestCompetitionWorkspaceOfficiatingIntegration(TransactionCase):
             }
         )
 
-        validation = self.service.validate_match_assignment(self.match_a.id, self.slot_a.id)
+        validation = self.service.validate_match_assignment(
+            self.match_a.id, self.slot_a.id
+        )
 
         self.assertFalse(validation["blocking"])
         self.assertFalse(validation["warnings"])
@@ -704,7 +710,9 @@ class TestCompetitionWorkspaceOfficiatingIntegration(TransactionCase):
         )
         self.service.assign_match_to_slot(self.match_a.id, self.slot_a.id)
 
-        draft_validation = self.service.validate_match_assignment(self.match_b.id, self.slot_b.id)
+        draft_validation = self.service.validate_match_assignment(
+            self.match_b.id, self.slot_b.id
+        )
         self.assertFalse(draft_validation["blocking"])
 
         gameday_validation = self.service.validate_gameday(self.gameday.id)
@@ -719,7 +727,9 @@ class TestCompetitionWorkspaceOfficiatingIntegration(TransactionCase):
             {issue["code"] for issue in published_gameday_validation["warnings"]},
         )
 
-        validation = self.service.validate_match_assignment(self.match_b.id, self.slot_b.id)
+        validation = self.service.validate_match_assignment(
+            self.match_b.id, self.slot_b.id
+        )
         codes = {issue["code"] for issue in validation["blocking"]}
 
         self.assertIn("referee_double_booked", codes)

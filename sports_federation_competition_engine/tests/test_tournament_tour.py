@@ -265,7 +265,9 @@ class TestTournamentTour(TransactionCase):
             "overwrite": False,
             "full_cycles": 1,
         }
-        rr_matches_raw = rr_service.generate(tournament, stage_rr, participants, rr_options)
+        rr_matches_raw = rr_service.generate(
+            tournament, stage_rr, participants, rr_options
+        )
         # Service may return a list or a recordset; normalise to ORM recordset.
         if isinstance(rr_matches_raw, list):
             rr_match_ids = [m.id for m in rr_matches_raw]
@@ -363,9 +365,13 @@ class TestTournamentTour(TransactionCase):
             "seeding": "seed",
             "overwrite": False,
         }
-        ko_matches_raw = ko_service.generate(tournament, stage_ko, ko_participants, ko_options)
+        ko_matches_raw = ko_service.generate(
+            tournament, stage_ko, ko_participants, ko_options
+        )
         if isinstance(ko_matches_raw, list):
-            ko_matches = self.env["federation.match"].browse([m.id for m in ko_matches_raw])
+            ko_matches = self.env["federation.match"].browse(
+                [m.id for m in ko_matches_raw]
+            )
         else:
             ko_matches = ko_matches_raw
 
@@ -529,8 +535,7 @@ class TestTournamentTour(TransactionCase):
 
         # Withdrawn team participates in zero matches
         team_ids_in_schedule = set(
-            rr_matches.mapped("home_team_id.id")
-            + rr_matches.mapped("away_team_id.id")
+            rr_matches.mapped("home_team_id.id") + rr_matches.mapped("away_team_id.id")
         )
         self.assertNotIn(
             withdrawn_team.id,
@@ -626,7 +631,9 @@ class TestTournamentTour(TransactionCase):
 
         # Verify 3 distinct rounds exist
         round_numbers = sorted(set(ko_matches.mapped("round_number")))
-        self.assertEqual(len(round_numbers), 3, "8-team KO should span exactly 3 rounds")
+        self.assertEqual(
+            len(round_numbers), 3, "8-team KO should span exactly 3 rounds"
+        )
 
         # --- play bracket round by round --------------------------------
         all_matches = self.env["federation.match"].search(

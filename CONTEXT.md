@@ -26,6 +26,7 @@ Core modules (quick)
 - `sports_federation_result_control`: Result submit/verify/approve pipeline and contest/correction flows.
 - `sports_federation_standings`: Standings computation and publishing.
 - `sports_federation_public_site` / `sports_federation_portal`: Website and portal controllers/templates.
+- `sports_federation_demo`: Deterministic demo records for onboarding walkthroughs and QA sandboxes.
 
 Key workflows (at-a-glance)
 

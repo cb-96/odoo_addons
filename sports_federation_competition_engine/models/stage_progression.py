@@ -264,7 +264,9 @@ class FederationStageProgression(models.Model):
                     )
                     if not standings:
                         continue
-                    all_entries.extend(_to_entry(ln) for ln in _extract_lines(standings))
+                    all_entries.extend(
+                        _to_entry(ln) for ln in _extract_lines(standings)
+                    )
 
             # Fallback (and no-group case): also check for stage-level standings
             # (group_id = False). This handles stages without group splits, or
@@ -281,7 +283,9 @@ class FederationStageProgression(models.Model):
                     limit=1,
                 )
                 if standings:
-                    all_entries.extend(_to_entry(ln) for ln in _extract_lines(standings))
+                    all_entries.extend(
+                        _to_entry(ln) for ln in _extract_lines(standings)
+                    )
 
             # Sort cross-group by points desc, then goal diff desc, then name asc
             all_entries.sort(key=lambda x: (-x["points"], -x["score_diff"], x["name"]))

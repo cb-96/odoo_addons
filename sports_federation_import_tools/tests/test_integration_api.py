@@ -741,7 +741,9 @@ class TestIntegrationApi(TransactionCase):
             limit=False,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers.get("X-Federation-Export-Mode"), "cursor_page")
+        self.assertEqual(
+            response.headers.get("X-Federation-Export-Mode"), "cursor_page"
+        )
 
     def test_inbound_route_rate_limits_repeat_callers(self):
         self.env["ir.config_parameter"].sudo().set_param(

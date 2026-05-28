@@ -6,6 +6,7 @@ These tests verify the business logic the portal controller relies on:
 - action_contest_result() requires a non-empty reason
 - Wrong-state transitions raise ValidationError
 """
+
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
@@ -64,8 +65,12 @@ class TestResultPortalAccess(TransactionCase):
             )
             return user
 
-        cls.user_a = _make_portal_user("Result Rep A", "result.rep.a@example.com", cls.club_a)
-        cls.user_b = _make_portal_user("Result Rep B", "result.rep.b@example.com", cls.club_b)
+        cls.user_a = _make_portal_user(
+            "Result Rep A", "result.rep.a@example.com", cls.club_a
+        )
+        cls.user_b = _make_portal_user(
+            "Result Rep B", "result.rep.b@example.com", cls.club_b
+        )
 
         # Tournament with matches
         cls.season = cls.env["federation.season"].create(
@@ -190,8 +195,7 @@ class TestResultPortalAccess(TransactionCase):
         """Mirror the controller's _assert_result_access helper."""
         clubs = user.portal_club_scope_ids
         return (
-            match.home_team_id.club_id in clubs
-            or match.away_team_id.club_id in clubs
+            match.home_team_id.club_id in clubs or match.away_team_id.club_id in clubs
         )
 
     def test_access_assertion_home_club(self):

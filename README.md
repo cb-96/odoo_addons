@@ -31,6 +31,7 @@ Quick links
 - Performance baselines: `odoo/PERFORMANCE_BASELINES.md`
 - Restore drill checklist: `odoo/RESTORE_VERIFICATION_CHECKLIST.md`
 - Module owners: `odoo/MODULE_OWNERS.yaml`
+- Demo data pack: `odoo/sports_federation_demo/README.md`
 - Integration contracts: `odoo/INTEGRATION_CONTRACTS.md`
 - Managed integration OpenAPI: `odoo/openapi/integration_v1.yaml`
 - Workflows: `odoo/_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md`

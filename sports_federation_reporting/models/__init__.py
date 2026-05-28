@@ -1,3 +1,4 @@
+from . import report_sql_helper
 from . import report_participation
 from . import report_officiating
 from . import report_compliance

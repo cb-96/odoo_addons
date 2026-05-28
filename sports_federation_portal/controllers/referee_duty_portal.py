@@ -31,9 +31,7 @@ class FederationClubRefereeDutyPortal(FederationPortalBase):
         user = user or request.env.user
         clubs = user.portal_club_scope_ids
         if duty.club_id not in clubs:
-            raise AccessError(
-                "You do not have access to this club duty."
-            )
+            raise AccessError("You do not have access to this club duty.")
         return True
 
     # ------------------------------------------------------------------

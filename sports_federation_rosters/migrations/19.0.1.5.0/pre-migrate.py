@@ -44,9 +44,5 @@ def migrate(cr, version):
     # earlier (incorrect) iteration of this migration.  Active-roster uniqueness
     # is correctly handled by the partial indexes from 19.0.1.4.0, so a
     # scope-level index blocking draft/closed duplicates must be removed.
-    cr.execute(
-        "DROP INDEX IF EXISTS federation_team_roster_unique_scope;"
-    )
-    _logger.info(
-        "19.0.1.5.0 migration: dropped scope-level unique index (if present)."
-    )
+    cr.execute("DROP INDEX IF EXISTS federation_team_roster_unique_scope;")
+    _logger.info("19.0.1.5.0 migration: dropped scope-level unique index (if present).")

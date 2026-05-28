@@ -6,6 +6,7 @@ Asserts:
   - A public_visible=True player appears in the listing and via their slug
   - A public_visible=False player does NOT appear in the listing or via slug
 """
+
 from odoo import SUPERUSER_ID, api
 from odoo.tests.common import HttpCase, tagged
 
@@ -20,23 +21,31 @@ class TestPlayerPublicPages(HttpCase):
         with cls.registry.cursor() as cr:
             env = api.Environment(cr, SUPERUSER_ID, {})
 
-            cls.pub_player_id = env["federation.player"].create(
-                {
-                    "first_name": "PlayerSmoke",
-                    "last_name": "Public",
-                    "public_visible": True,
-                    "public_slug": "player-smoke-public",
-                }
-            ).id
+            cls.pub_player_id = (
+                env["federation.player"]
+                .create(
+                    {
+                        "first_name": "PlayerSmoke",
+                        "last_name": "Public",
+                        "public_visible": True,
+                        "public_slug": "player-smoke-public",
+                    }
+                )
+                .id
+            )
 
-            cls.hidden_player_id = env["federation.player"].create(
-                {
-                    "first_name": "PlayerSmoke",
-                    "last_name": "Hidden",
-                    "public_visible": False,
-                    "public_slug": "player-smoke-hidden",
-                }
-            ).id
+            cls.hidden_player_id = (
+                env["federation.player"]
+                .create(
+                    {
+                        "first_name": "PlayerSmoke",
+                        "last_name": "Hidden",
+                        "public_visible": False,
+                        "public_slug": "player-smoke-hidden",
+                    }
+                )
+                .id
+            )
 
     def test_players_list_returns_200(self):
         res = self.url_open("/players")

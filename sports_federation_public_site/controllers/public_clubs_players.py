@@ -30,7 +30,9 @@ class PublicClubsController(http.Controller):
             page=page,
             step=step,
         )
-        clubs = Club.search(domain, order="name asc", limit=step, offset=pager["offset"])
+        clubs = Club.search(
+            domain, order="name asc", limit=step, offset=pager["offset"]
+        )
         return request.render(
             "sports_federation_public_site.page_public_clubs_list",
             {"clubs": clubs, "pager": pager, "page_name": "public_clubs"},

@@ -18,7 +18,6 @@ Key invariants verified:
 - include_in_official_standings=False excludes a match (when field present)
 """
 
-from odoo import fields
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
@@ -57,10 +56,18 @@ class TestTourStandings(TransactionCase):
             }
         )
 
-        club = cls.env["federation.club"].create({"name": "Standings Club", "code": "STD1"})
-        cls.team_a = cls.env["federation.team"].create({"name": "Team A", "club_id": club.id, "code": "STA"})
-        cls.team_b = cls.env["federation.team"].create({"name": "Team B", "club_id": club.id, "code": "STB"})
-        cls.team_c = cls.env["federation.team"].create({"name": "Team C", "club_id": club.id, "code": "STC"})
+        club = cls.env["federation.club"].create(
+            {"name": "Standings Club", "code": "STD1"}
+        )
+        cls.team_a = cls.env["federation.team"].create(
+            {"name": "Team A", "club_id": club.id, "code": "STA"}
+        )
+        cls.team_b = cls.env["federation.team"].create(
+            {"name": "Team B", "club_id": club.id, "code": "STB"}
+        )
+        cls.team_c = cls.env["federation.team"].create(
+            {"name": "Team C", "club_id": club.id, "code": "STC"}
+        )
 
         cls.pa = cls.env["federation.tournament.participant"].create(
             {"tournament_id": cls.tournament.id, "team_id": cls.team_a.id}
@@ -73,9 +80,13 @@ class TestTourStandings(TransactionCase):
         )
 
         # Determine optional result-control field presence
-        cls.has_include_flag = "include_in_official_standings" in cls.env["federation.match"]._fields
+        cls.has_include_flag = (
+            "include_in_official_standings" in cls.env["federation.match"]._fields
+        )
 
-    def _make_match(self, home, away, home_score, away_score, state="done", include=True):
+    def _make_match(
+        self, home, away, home_score, away_score, state="done", include=True
+    ):
         """Create a completed match record."""
         vals = {
             "tournament_id": self.tournament.id,
@@ -118,9 +129,9 @@ class TestTourStandings(TransactionCase):
     def test_recompute_correct_points(self):
         """Points are computed correctly: A beats B (3pts), B beats C (3pts), A draws C (1pt each)."""
         # A: 1W 1D = 4pts | B: 1W 1L = 3pts | C: 1D 1L = 1pt
-        self._make_match(self.team_a, self.team_b, 2, 1)   # A wins
-        self._make_match(self.team_b, self.team_c, 3, 0)   # B wins
-        self._make_match(self.team_a, self.team_c, 1, 1)   # draw
+        self._make_match(self.team_a, self.team_b, 2, 1)  # A wins
+        self._make_match(self.team_b, self.team_c, 3, 0)  # B wins
+        self._make_match(self.team_a, self.team_c, 1, 1)  # draw
 
         standing = self._make_standing()
         standing.action_recompute()
@@ -148,8 +159,8 @@ class TestTourStandings(TransactionCase):
     def test_tiebreak_notes_populated_for_tied_teams(self):
         """Tiebreak notes are set when two teams share the same points total."""
         # A and B both get 3pts (each wins once); C loses twice
-        self._make_match(self.team_a, self.team_c, 2, 0)   # A 3pts
-        self._make_match(self.team_b, self.team_c, 2, 0)   # B 3pts
+        self._make_match(self.team_a, self.team_c, 2, 0)  # A 3pts
+        self._make_match(self.team_b, self.team_c, 2, 0)  # B 3pts
         # A vs B: A wins — A gets 6pts, B stays 3pts — no tie between A and B,
         # but set up a proper tie: give A and B equal wins and same GD
         # Reset: use a fresh tournament to avoid cross-test interference
@@ -162,17 +173,18 @@ class TestTourStandings(TransactionCase):
                 "date_start": "2026-07-01",
             }
         )
-        p_a2 = self.env["federation.tournament.participant"].create(
+        self.env["federation.tournament.participant"].create(
             {"tournament_id": tournament2.id, "team_id": self.team_a.id}
         )
-        p_b2 = self.env["federation.tournament.participant"].create(
+        self.env["federation.tournament.participant"].create(
             {"tournament_id": tournament2.id, "team_id": self.team_b.id}
         )
-        p_c2 = self.env["federation.tournament.participant"].create(
+        self.env["federation.tournament.participant"].create(
             {"tournament_id": tournament2.id, "team_id": self.team_c.id}
         )
 
         has_flag = self.has_include_flag
+
         def _m(h, a, hs, aws):
             vals = {
                 "tournament_id": tournament2.id,
@@ -219,13 +231,19 @@ class TestTourStandings(TransactionCase):
             return self.env["federation.match"].create(vals)
 
         _m3(self.team_a, self.team_c, 2, 0)  # A 3pts, GD +2
-        _m3(self.team_b, self.team_c, 1, 0)  # B 3pts, GD +1 — tie on pts+wins, A wins on GD
+        _m3(
+            self.team_b, self.team_c, 1, 0
+        )  # B 3pts, GD +1 — tie on pts+wins, A wins on GD
         standing3 = self.env["federation.standing"].create(
-            {"name": "Tie Table", "tournament_id": tournament3.id, "rule_set_id": self.rule_set.id}
+            {
+                "name": "Tie Table",
+                "tournament_id": tournament3.id,
+                "rule_set_id": self.rule_set.id,
+            }
         )
         standing3.action_recompute()
 
-        lines = {l.participant_id.team_id: l for l in standing3.line_ids}
+        lines = {line.participant_id.team_id: line for line in standing3.line_ids}
         # B is ranked 2nd, tied on points with A but below by GD; should have tiebreak note
         b_line = lines[self.team_b]
         a_line = lines[self.team_a]
@@ -252,7 +270,7 @@ class TestTourStandings(TransactionCase):
         self._make_match(self.team_b, self.team_c, 3, 0)
         standing.with_context(force_recompute=True).action_recompute()
         self.assertEqual(standing.state, "computed")
-        lines = {l.participant_id.team_id: l for l in standing.line_ids}
+        lines = {line.participant_id.team_id: line for line in standing.line_ids}
         self.assertEqual(lines[self.team_b].played, 2)
 
     def test_unfreeze_allows_recompute(self):
@@ -275,7 +293,7 @@ class TestTourStandings(TransactionCase):
 
         standing = self._make_standing()
         standing.action_recompute()
-        lines = {l.participant_id.team_id: l for l in standing.line_ids}
+        lines = {line.participant_id.team_id: line for line in standing.line_ids}
         # A only wins 1 official match (vs B); vs C excluded
         self.assertEqual(lines[self.team_a].played, 1)
         self.assertEqual(lines[self.team_a].points, 3)

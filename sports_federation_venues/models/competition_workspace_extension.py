@@ -7,7 +7,12 @@ class CompetitionWorkspaceVenueExtension(models.AbstractModel):
 
     def _slot_blackout_windows(self, slot):
         blackout_model = self.env["federation.venue.blackout"]
-        if not slot or not slot.venue_id or not slot.start_datetime or not slot.end_datetime:
+        if (
+            not slot
+            or not slot.venue_id
+            or not slot.start_datetime
+            or not slot.end_datetime
+        ):
             return blackout_model
         return blackout_model.search(
             [
@@ -25,7 +30,9 @@ class CompetitionWorkspaceVenueExtension(models.AbstractModel):
         required_capabilities = match.tournament_id.required_playing_area_capability_ids
         if not required_capabilities or not slot.playing_area_id:
             return False
-        missing_capabilities = required_capabilities - slot.playing_area_id.capability_ids
+        missing_capabilities = (
+            required_capabilities - slot.playing_area_id.capability_ids
+        )
         if not missing_capabilities:
             return False
         return {

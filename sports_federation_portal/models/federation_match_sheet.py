@@ -161,9 +161,7 @@ class FederationMatchSheet(models.Model):
             raw = values.get("roster_id")
             if raw:
                 try:
-                    roster = (
-                        self.env["federation.team.roster"].sudo().browse(int(raw))
-                    )
+                    roster = self.env["federation.team.roster"].sudo().browse(int(raw))
                 except (ValueError, TypeError):
                     roster = self.env["federation.team.roster"].browse()
                 if roster.exists():

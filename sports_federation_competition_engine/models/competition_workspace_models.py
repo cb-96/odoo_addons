@@ -200,9 +200,7 @@ class FederationTournament(models.Model):
     def _check_planning_policy_values(self):
         for record in self:
             if (record.minimum_rest_minutes or 0) < 0:
-                raise ValidationError(
-                    _("Minimum rest must be zero or greater.")
-                )
+                raise ValidationError(_("Minimum rest must be zero or greater."))
             if (record.max_consecutive_matches_per_team or 0) < 1:
                 raise ValidationError(
                     _("Max consecutive matches per team must be at least one.")
@@ -229,9 +227,7 @@ class FederationTournament(models.Model):
         capabilities = self._competition_workspace_get_user_capabilities(user=user)
         if not capabilities["can_plan"]:
             raise AccessError(
-                _(
-                    "You do not have permission to access the Competition Workspace."
-                )
+                _("You do not have permission to access the Competition Workspace.")
             )
         if require_publish and not capabilities["can_publish"]:
             raise AccessError(
@@ -247,7 +243,10 @@ class FederationTournament(models.Model):
         desired_stage_type = (
             "knockout" if self.planning_format == "knockout" else "group"
         )
-        if self.workspace_stage_id and self.workspace_stage_id.stage_type == desired_stage_type:
+        if (
+            self.workspace_stage_id
+            and self.workspace_stage_id.stage_type == desired_stage_type
+        ):
             return self.workspace_stage_id
 
         stage = self.stage_ids.filtered(
@@ -259,11 +258,15 @@ class FederationTournament(models.Model):
 
         stage = self.env["federation.tournament.stage"].create(
             {
-                "name": _("Knockout Bracket")
-                if desired_stage_type == "knockout"
-                else _("Pool Phase")
-                if self.planning_format == "pool_then_bracket"
-                else _("League Phase"),
+                "name": (
+                    _("Knockout Bracket")
+                    if desired_stage_type == "knockout"
+                    else (
+                        _("Pool Phase")
+                        if self.planning_format == "pool_then_bracket"
+                        else _("League Phase")
+                    )
+                ),
                 "tournament_id": self.id,
                 "sequence": 10,
                 "stage_type": desired_stage_type,
@@ -527,7 +530,11 @@ class FederationTournamentRound(models.Model):
 
     def _competition_workspace_check_revision(self, expected_revision=False):
         for record in self:
-            if expected_revision is False or expected_revision is None or expected_revision == "":
+            if (
+                expected_revision is False
+                or expected_revision is None
+                or expected_revision == ""
+            ):
                 continue
             root_round = record._competition_workspace_root_round()
             try:
@@ -561,11 +568,15 @@ class FederationTournamentRound(models.Model):
             root_round = record.planner_root_round_id
             if root_round == record:
                 raise ValidationError(
-                    _("A shared planner gameday cannot point to itself as its root round.")
+                    _(
+                        "A shared planner gameday cannot point to itself as its root round."
+                    )
                 )
             if root_round.planner_root_round_id:
                 raise ValidationError(
-                    _("Shared planner gamedays can only link to a slot-owning root round.")
+                    _(
+                        "Shared planner gamedays can only link to a slot-owning root round."
+                    )
                 )
             if record.tournament_id == root_round.tournament_id:
                 raise ValidationError(
@@ -573,11 +584,19 @@ class FederationTournamentRound(models.Model):
                 )
             if record.tournament_id.edition_id != root_round.tournament_id.edition_id:
                 raise ValidationError(
-                    _("Shared planner gamedays must belong to divisions from the same competition.")
+                    _(
+                        "Shared planner gamedays must belong to divisions from the same competition."
+                    )
                 )
-            if record.round_date and root_round.round_date and record.round_date != root_round.round_date:
+            if (
+                record.round_date
+                and root_round.round_date
+                and record.round_date != root_round.round_date
+            ):
                 raise ValidationError(
-                    _("Shared planner gamedays must use the same calendar date across divisions.")
+                    _(
+                        "Shared planner gamedays must use the same calendar date across divisions."
+                    )
                 )
 
     def action_open_competition_planner(self):
@@ -589,9 +608,11 @@ class FederationTournamentRound(models.Model):
             "tag": "sports_federation_competition_engine.competition_workspace",
             "name": _("Competition Planner"),
             "params": {
-                "competition_id": self.tournament_id.edition_id.id
-                if self.tournament_id.edition_id
-                else False,
+                "competition_id": (
+                    self.tournament_id.edition_id.id
+                    if self.tournament_id.edition_id
+                    else False
+                ),
                 "division_id": self.tournament_id.id,
                 "gameday_id": self.id,
             },

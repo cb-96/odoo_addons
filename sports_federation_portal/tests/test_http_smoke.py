@@ -666,7 +666,7 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
 
     def test_portal_error_hint_displayed_on_validation_error(self):
         """Contextual error_hint text appears in the page when a ValidationError occurs."""
-        data = self._create_roster_workspace_smoke_data()
+        self._create_roster_workspace_smoke_data()
         self.authenticate(self.season_user.login, "ignored")
 
         # Hit the roster list page with an error_hint query param (simulating a

@@ -34,7 +34,9 @@ class FederationTournamentOperationsPortal(FederationPortalBase):
         if tournament:
             return tournament, False
         if not Tournament.sudo().browse(tournament_id).exists():
-            return False, self._operations_error("not_found", _("Tournament not found."))
+            return False, self._operations_error(
+                "not_found", _("Tournament not found.")
+            )
         return False, self._operations_error(
             "forbidden",
             _("You do not have access to this tournament operations page."),
@@ -112,7 +114,9 @@ class FederationTournamentOperationsPortal(FederationPortalBase):
             )
 
     @http.route(
-        ["/sports/tournament/<int:tournament_id>/operations/matches/<int:match_id>/action"],
+        [
+            "/sports/tournament/<int:tournament_id>/operations/matches/<int:match_id>/action"
+        ],
         type="jsonrpc",
         auth="user",
         methods=["POST"],
@@ -135,7 +139,11 @@ class FederationTournamentOperationsPortal(FederationPortalBase):
         except ValidationError as exc:
             return self._operations_error(
                 "validation",
-                str(exc.args[0]) if exc.args else _("We could not complete that action."),
+                (
+                    str(exc.args[0])
+                    if exc.args
+                    else _("We could not complete that action.")
+                ),
             )
         except AccessError:
             return self._operations_error(

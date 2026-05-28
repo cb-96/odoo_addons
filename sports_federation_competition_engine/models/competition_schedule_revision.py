@@ -1,7 +1,6 @@
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
-
 SCHEDULE_REVISION_STATE_SELECTION = [
     ("draft", "Draft"),
     ("validated", "Validated"),

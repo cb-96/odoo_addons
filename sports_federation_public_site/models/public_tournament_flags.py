@@ -321,8 +321,12 @@ class FederationTournament(models.Model):
         access = self.can_access_public_detail()
         empty_matches = self.env["federation.match"].browse([])
         empty_standings = self.env["federation.standing"].browse([])
-        has_public_schedule = bool(self.get_public_schedule_sections()) if access else False
-        has_public_bracket = bool(self.get_public_bracket_sections()) if access else False
+        has_public_schedule = (
+            bool(self.get_public_schedule_sections()) if access else False
+        )
+        has_public_bracket = (
+            bool(self.get_public_bracket_sections()) if access else False
+        )
         return {
             "tournament": self,
             "participants": participants,

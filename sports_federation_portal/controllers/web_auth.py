@@ -1,12 +1,16 @@
 from urllib.parse import urlencode
 
 from odoo import _, http
+from odoo.addons.sports_federation_base.request_security import (
+    FederationRequestSecurityMixin,
+)
 from odoo.addons.web.controllers.home import ensure_db
 from odoo.addons.website.controllers.main import Website
+from odoo.exceptions import ValidationError
 from odoo.http import request
 
 
-class FederationWebAuth(Website):
+class FederationWebAuth(FederationRequestSecurityMixin, Website):
     """Override the core login route to recover from stale CSRF tokens."""
 
     def _redirect_to_login(self, redirect=None, login=None, session_expired=False):
@@ -30,8 +34,9 @@ class FederationWebAuth(Website):
         """Recover gracefully when the login form is submitted with a stale CSRF token."""
         if request.httprequest.method == "POST":
             ensure_db()
-            csrf_token = kw.get("csrf_token")
-            if not csrf_token or not request.validate_csrf(csrf_token):
+            try:
+                self._validate_manual_csrf(kw.get("csrf_token"))
+            except ValidationError:
                 return self._redirect_to_login(
                     redirect=kw.get("redirect") or redirect,
                     login=(kw.get("login") or "").strip() or None,

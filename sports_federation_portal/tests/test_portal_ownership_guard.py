@@ -8,6 +8,7 @@ club by guessing their database ID.
 The suite is intentionally narrow: it proves *access denial*, not the full
 functional flows (those live in ``test_roster_portal_access.py``).
 """
+
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase
 
@@ -231,9 +232,9 @@ class TestPortalOwnershipGuard(TransactionCase):
 
     def test_portal_assert_registration_access_passes_for_own_registration(self):
         """_portal_assert_registration_access succeeds for the user's own registration."""
-        result = self.env[
-            "federation.team.roster"
-        ]._portal_assert_registration_access(self.reg_a, user=self.user_a)
+        result = self.env["federation.team.roster"]._portal_assert_registration_access(
+            self.reg_a, user=self.user_a
+        )
         self.assertTrue(result)
 
     # ------------------------------------------------------------------

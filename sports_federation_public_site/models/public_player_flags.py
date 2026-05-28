@@ -50,9 +50,7 @@ class FederationPlayer(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        return super().create(
-            [self._normalize_public_slug_vals(v) for v in vals_list]
-        )
+        return super().create([self._normalize_public_slug_vals(v) for v in vals_list])
 
     def write(self, vals):
         return super().write(self._normalize_public_slug_vals(vals))
@@ -115,12 +113,9 @@ class FederationPlayer(models.Model):
         Roster = self.env.get("federation.roster.entry")
         if Roster is None:
             return []
-        entries = (
-            Roster.sudo()
-            .search(
-                [("player_id", "=", self.id)],
-                order="id asc",
-            )
+        entries = Roster.sudo().search(
+            [("player_id", "=", self.id)],
+            order="id asc",
         )
         seasons = {}
         for entry in entries:

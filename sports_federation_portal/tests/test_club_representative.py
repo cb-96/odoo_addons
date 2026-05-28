@@ -172,7 +172,9 @@ class TestClubRepresentative(TransactionCase):
             }
         )
         # Same partner, same club, same role should fail
-        with self.assertRaises(Exception), mute_logger("odoo.sql_db"), self.cr.savepoint():
+        with self.assertRaises(Exception), mute_logger(
+            "odoo.sql_db"
+        ), self.cr.savepoint():
             self.env["federation.club.representative"].create(
                 {
                     "club_id": self.club.id,

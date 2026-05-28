@@ -92,8 +92,12 @@ class TestTourResultPipeline(TransactionCase):
                 "date_start": "2026-03-01",
             }
         )
-        club_h = cls.env["federation.club"].create({"name": "Result Home FC", "code": "RHF26"})
-        club_a = cls.env["federation.club"].create({"name": "Result Away FC", "code": "RAF26"})
+        club_h = cls.env["federation.club"].create(
+            {"name": "Result Home FC", "code": "RHF26"}
+        )
+        club_a = cls.env["federation.club"].create(
+            {"name": "Result Away FC", "code": "RAF26"}
+        )
         team_h = cls.env["federation.team"].create(
             {"name": "Result Home", "club_id": club_h.id, "code": "RTMH"}
         )

@@ -122,10 +122,9 @@ class FederationMatchClubRefereeDuty(models.Model):
     def _compute_nomination_deadline(self):
         for rec in self:
             if rec.match_id.date_scheduled:
-                rec.nomination_deadline = (
-                    fields.Datetime.to_datetime(rec.match_id.date_scheduled)
-                    - timedelta(hours=72)
-                )
+                rec.nomination_deadline = fields.Datetime.to_datetime(
+                    rec.match_id.date_scheduled
+                ) - timedelta(hours=72)
             else:
                 rec.nomination_deadline = False
 
@@ -148,7 +147,8 @@ class FederationMatchClubRefereeDuty(models.Model):
         for rec in self:
             if rec.state != "draft":
                 raise ValidationError(
-                    _("Only draft duties can be opened (record: %s).") % rec.display_name
+                    _("Only draft duties can be opened (record: %s).")
+                    % rec.display_name
                 )
             rec.write({"state": "open"})
             Dispatcher = self.env.get("federation.notification.dispatcher")
@@ -163,16 +163,15 @@ class FederationMatchClubRefereeDuty(models.Model):
         for rec in self:
             if rec.state not in ("open", "rejected"):
                 raise ValidationError(
-                    _("Only open or rejected duties can be nominated (record: %s).") % rec.display_name
+                    _("Only open or rejected duties can be nominated (record: %s).")
+                    % rec.display_name
                 )
             player = self.env["federation.player"].browse(player_id)
             if not player.exists():
                 raise ValidationError(_("Player not found."))
             if player.club_id.id != rec.club_id.id:
                 raise ValidationError(
-                    _(
-                        "Player '%(player)s' does not belong to club '%(club)s'."
-                    )
+                    _("Player '%(player)s' does not belong to club '%(club)s'.")
                     % {"player": player.display_name, "club": rec.club_id.display_name}
                 )
             rec.write(
@@ -189,7 +188,8 @@ class FederationMatchClubRefereeDuty(models.Model):
         for rec in self:
             if rec.state != "nominated":
                 raise ValidationError(
-                    _("Only nominated duties can be confirmed (record: %s).") % rec.display_name
+                    _("Only nominated duties can be confirmed (record: %s).")
+                    % rec.display_name
                 )
             if not rec.nominated_player_id:
                 raise ValidationError(
@@ -211,7 +211,8 @@ class FederationMatchClubRefereeDuty(models.Model):
         for rec in self:
             if rec.state != "nominated":
                 raise ValidationError(
-                    _("Only nominated duties can be rejected (record: %s).") % rec.display_name
+                    _("Only nominated duties can be rejected (record: %s).")
+                    % rec.display_name
                 )
             notes = (rec.notes or "").strip()
             if reason:
@@ -223,7 +224,8 @@ class FederationMatchClubRefereeDuty(models.Model):
         for rec in self:
             if rec.state == "confirmed":
                 raise ValidationError(
-                    _("Confirmed duties cannot be cancelled (record: %s).") % rec.display_name
+                    _("Confirmed duties cannot be cancelled (record: %s).")
+                    % rec.display_name
                 )
             rec.write(
                 {

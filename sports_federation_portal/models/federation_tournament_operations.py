@@ -1,6 +1,8 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
+from .tournament_operations_access import TournamentOperationsAccessMixin
+
 _TOURNAMENT_STATE_LABELS = {
     "draft": "Not ready",
     "open": "Open",
@@ -65,7 +67,7 @@ _ACTION_MESSAGES = {
 }
 
 
-class FederationTournamentOperations(models.Model):
+class FederationTournamentOperations(TournamentOperationsAccessMixin, models.Model):
     _inherit = "federation.tournament"
 
     def action_open_operations_portal(self):
@@ -97,35 +99,29 @@ class FederationTournamentOperations(models.Model):
         """Return page capabilities for the supplied user."""
         user = user or self.env.user
         access_mode = access_mode or self._operations_get_access_mode(user=user)
-        is_manager = (
-            access_mode == "internal"
-            and user.has_group("sports_federation_base.group_federation_manager")
+        is_manager = access_mode == "internal" and user.has_group(
+            "sports_federation_base.group_federation_manager"
         )
         can_edit_scores = is_manager or (
             access_mode == "internal"
             and (
-                user.has_group("sports_federation_result_control.group_result_validator")
+                user.has_group(
+                    "sports_federation_result_control.group_result_validator"
+                )
                 or user.has_group(
                     "sports_federation_result_control.group_result_approver"
                 )
             )
         )
-        can_verify = (
-            access_mode == "internal"
-            and user.has_group("sports_federation_result_control.group_result_validator")
+        can_verify = access_mode == "internal" and user.has_group(
+            "sports_federation_result_control.group_result_validator"
         )
-        can_approve = (
-            access_mode == "portal"
-            or (
-                access_mode == "internal"
-                and user.has_group(
-                    "sports_federation_result_control.group_result_approver"
-                )
-            )
-        )
-        can_correct = (
+        can_approve = access_mode == "portal" or (
             access_mode == "internal"
             and user.has_group("sports_federation_result_control.group_result_approver")
+        )
+        can_correct = access_mode == "internal" and user.has_group(
+            "sports_federation_result_control.group_result_approver"
         )
         return {
             "access_mode": access_mode,
@@ -254,7 +250,9 @@ class FederationTournamentOperations(models.Model):
                 user=user,
                 order="date_scheduled asc, id asc",
             )
-        return Match.with_user(user).search(base_domain, order="date_scheduled asc, id asc")
+        return Match.with_user(user).search(
+            base_domain, order="date_scheduled asc, id asc"
+        )
 
     def _operations_get_match_for_user(self, match_id, user=None):
         """Resolve one match inside the board access boundary."""
@@ -326,7 +324,11 @@ class FederationTournamentOperations(models.Model):
         if result_state == "verified":
             return {"key": "approval", "label": _("Needs approval"), "tone": "info"}
         if result_state == "submitted":
-            return {"key": "validation", "label": _("Needs validation"), "tone": "warning"}
+            return {
+                "key": "validation",
+                "label": _("Needs validation"),
+                "tone": "warning",
+            }
         if result_state == "corrected":
             return {"key": "resubmit", "label": _("Corrected"), "tone": "warning"}
         return {"key": "draft", "label": _("Not sent"), "tone": "secondary"}
@@ -446,9 +448,7 @@ class FederationTournamentOperations(models.Model):
             }
 
         draft_count = len(sheets.filtered(lambda sheet: sheet.state == "draft"))
-        submitted_count = len(
-            sheets.filtered(lambda sheet: sheet.state == "submitted")
-        )
+        submitted_count = len(sheets.filtered(lambda sheet: sheet.state == "submitted"))
         ready_count = len(
             sheets.filtered(lambda sheet: sheet.state in ("approved", "locked"))
         )
@@ -481,7 +481,9 @@ class FederationTournamentOperations(models.Model):
         }
 
     @api.model
-    def _operations_get_next_step(self, match, actions, schedule_status, match_sheet_status):
+    def _operations_get_next_step(
+        self, match, actions, schedule_status, match_sheet_status
+    ):
         """Return the clearest next operator action for one match."""
         pre_match_urgency = 6 if schedule_status["is_due_soon"] else 18
         pre_match_gate = match.state in ("draft", "scheduled")
@@ -506,7 +508,11 @@ class FederationTournamentOperations(models.Model):
                 "urgency_weight": pre_match_urgency,
             }
 
-        if pre_match_gate and "playing_area_id" in match._fields and not match.playing_area_id:
+        if (
+            pre_match_gate
+            and "playing_area_id" in match._fields
+            and not match.playing_area_id
+        ):
             return {
                 "key": "assign_court",
                 "label": _("Assign court"),
@@ -544,8 +550,7 @@ class FederationTournamentOperations(models.Model):
 
         if (
             pre_match_gate
-            and
-            "missing_referees_count" in match._fields
+            and "missing_referees_count" in match._fields
             and match.missing_referees_count
         ):
             return {
@@ -558,8 +563,7 @@ class FederationTournamentOperations(models.Model):
 
         if (
             pre_match_gate
-            and
-            "overdue_referee_confirmation_count" in match._fields
+            and "overdue_referee_confirmation_count" in match._fields
             and match.overdue_referee_confirmation_count
         ):
             return {
@@ -655,7 +659,9 @@ class FederationTournamentOperations(models.Model):
             "key": "complete",
             "label": _("No urgent action"),
             "tone": "success" if match.result_state == "approved" else "secondary",
-            "owner_label": _("Complete") if match.result_state == "approved" else _("Watchlist"),
+            "owner_label": (
+                _("Complete") if match.result_state == "approved" else _("Watchlist")
+            ),
             "urgency_weight": 90,
         }
 
@@ -667,41 +673,73 @@ class FederationTournamentOperations(models.Model):
             capabilities["can_edit_scores"] and match.result_state != "approved"
         )
         if capabilities["can_manage_match_state"] and match.state == "draft":
-            actions.append({"key": "schedule", "label": _("Schedule match"), "tone": "secondary"})
+            actions.append(
+                {"key": "schedule", "label": _("Schedule match"), "tone": "secondary"}
+            )
         if capabilities["can_manage_match_state"] and match.state == "scheduled":
-            actions.append({"key": "start", "label": _("Start match"), "tone": "primary"})
+            actions.append(
+                {"key": "start", "label": _("Start match"), "tone": "primary"}
+            )
         if capabilities["can_manage_match_state"] and match.state == "in_progress":
-            actions.append({"key": "finish", "label": _("Mark finished"), "tone": "primary"})
+            actions.append(
+                {"key": "finish", "label": _("Mark finished"), "tone": "primary"}
+            )
         if (
             capabilities["can_submit_result"]
             and match.state == "done"
             and match.result_state in ("draft", "corrected")
         ):
-            actions.append({"key": "submit", "label": _("Send for check"), "tone": "primary"})
+            actions.append(
+                {"key": "submit", "label": _("Send for check"), "tone": "primary"}
+            )
         if capabilities["can_verify_result"] and match.result_state == "submitted":
-            actions.append({"key": "verify", "label": _("Check result"), "tone": "warning"})
+            actions.append(
+                {"key": "verify", "label": _("Check result"), "tone": "warning"}
+            )
         if capabilities["can_approve_result"] and match.result_state == "verified":
-            actions.append({"key": "approve", "label": _("Make official"), "tone": "success"})
+            actions.append(
+                {"key": "approve", "label": _("Make official"), "tone": "success"}
+            )
         if has_score_entry:
             actions.append(
                 {
                     "key": "save_score",
-                    "label": _("Save score")
-                    if match.state in ("in_progress", "done")
-                    else _("Enter score"),
+                    "label": (
+                        _("Save score")
+                        if match.state in ("in_progress", "done")
+                        else _("Enter score")
+                    ),
                     "tone": "secondary",
                 }
             )
-        if (
-            capabilities["can_contest_result"]
-            and match.result_state in ("submitted", "verified", "approved")
+        if capabilities["can_contest_result"] and match.result_state in (
+            "submitted",
+            "verified",
+            "approved",
         ):
-            actions.append({"key": "contest", "label": _("Send to review"), "tone": "danger"})
-        if capabilities["can_correct_result"] and match.result_state in ("contested", "approved"):
-            actions.append({"key": "correct", "label": _("Update result"), "tone": "warning"})
+            actions.append(
+                {"key": "contest", "label": _("Send to review"), "tone": "danger"}
+            )
+        if capabilities["can_correct_result"] and match.result_state in (
+            "contested",
+            "approved",
+        ):
+            actions.append(
+                {"key": "correct", "label": _("Update result"), "tone": "warning"}
+            )
         if capabilities["can_reset_result"] and match.result_state != "draft":
-            actions.append({"key": "reset_to_draft", "label": _("Reset to draft"), "tone": "secondary"})
-        primary_action = actions[0] if actions else {"key": "view", "label": _("View"), "tone": "secondary"}
+            actions.append(
+                {
+                    "key": "reset_to_draft",
+                    "label": _("Reset to draft"),
+                    "tone": "secondary",
+                }
+            )
+        primary_action = (
+            actions[0]
+            if actions
+            else {"key": "view", "label": _("View"), "tone": "secondary"}
+        )
         return {
             "primary_action": primary_action,
             "secondary_actions": actions[1:],
@@ -753,12 +791,19 @@ class FederationTournamentOperations(models.Model):
         )
         is_now_playing = match.state == "in_progress"
         is_completed = match.state == "done"
-        is_missing_result = is_completed and match.result_state in ("draft", "corrected")
+        is_missing_result = is_completed and match.result_state in (
+            "draft",
+            "corrected",
+        )
         needs_validation = match.result_state in ("submitted", "verified")
         has_validation_issue = match.result_state == "contested"
         Venue = self.env.get("federation.venue")
         PlayingArea = self.env.get("federation.playing.area")
-        venue = match.venue_id if "venue_id" in match._fields else (Venue.browse([]) if Venue else False)
+        venue = (
+            match.venue_id
+            if "venue_id" in match._fields
+            else (Venue.browse([]) if Venue else False)
+        )
         playing_area = (
             match.playing_area_id
             if "playing_area_id" in match._fields
@@ -780,7 +825,10 @@ class FederationTournamentOperations(models.Model):
         )
         primary_referee = sorted_assignments[:1]
         officiating_issues = []
-        if "official_readiness_issues" in match._fields and match.official_readiness_issues:
+        if (
+            "official_readiness_issues" in match._fields
+            and match.official_readiness_issues
+        ):
             officiating_issues = [
                 line.strip()
                 for line in match.official_readiness_issues.splitlines()
@@ -854,10 +902,16 @@ class FederationTournamentOperations(models.Model):
                 match.result_state,
                 match.result_state,
             ),
-            "result_state_tone": _RESULT_STATE_TONES.get(match.result_state, "secondary"),
+            "result_state_tone": _RESULT_STATE_TONES.get(
+                match.result_state, "secondary"
+            ),
             "validation_status": validation_status,
-            "home_team_name": match.home_team_id.display_name if match.home_team_id else _("TBD"),
-            "away_team_name": match.away_team_id.display_name if match.away_team_id else _("TBD"),
+            "home_team_name": (
+                match.home_team_id.display_name if match.home_team_id else _("TBD")
+            ),
+            "away_team_name": (
+                match.away_team_id.display_name if match.away_team_id else _("TBD")
+            ),
             "home_score": match.home_score,
             "away_score": match.away_score,
             "has_score": has_score,
@@ -867,26 +921,30 @@ class FederationTournamentOperations(models.Model):
             "venue_name": venue_name,
             "court_id": playing_area.id if playing_area else False,
             "court_name": court_name,
-            "referee_name": primary_referee.referee_id.name if primary_referee else False,
-            "referee_summary": ", ".join(
-                assignment.referee_id.name
-                for assignment in sorted_assignments[:3]
-                if assignment.referee_id
-            )
-            if sorted_assignments
-            else False,
+            "referee_name": (
+                primary_referee.referee_id.name if primary_referee else False
+            ),
+            "referee_summary": (
+                ", ".join(
+                    assignment.referee_id.name
+                    for assignment in sorted_assignments[:3]
+                    if assignment.referee_id
+                )
+                if sorted_assignments
+                else False
+            ),
             "referee_assignments": [
                 {
                     "id": assignment.id,
                     "name": assignment.referee_id.name,
                     "role": assignment.role,
-                    "role_label": dict(
-                        assignment._fields["role"].selection
-                    ).get(assignment.role, assignment.role),
+                    "role_label": dict(assignment._fields["role"].selection).get(
+                        assignment.role, assignment.role
+                    ),
                     "state": assignment.state,
-                    "state_label": dict(
-                        assignment._fields["state"].selection
-                    ).get(assignment.state, assignment.state),
+                    "state_label": dict(assignment._fields["state"].selection).get(
+                        assignment.state, assignment.state
+                    ),
                 }
                 for assignment in sorted_assignments
             ],
@@ -907,41 +965,55 @@ class FederationTournamentOperations(models.Model):
             ),
             "official_readiness_issues": officiating_issues,
             "result_submitted_by_name": (
-                match.result_submitted_by_id.name if match.result_submitted_by_id else False
+                match.result_submitted_by_id.name
+                if match.result_submitted_by_id
+                else False
             ),
             "result_submitted_on": (
-                self._operations_format_datetime_parts(match.result_submitted_on)["label"]
+                self._operations_format_datetime_parts(match.result_submitted_on)[
+                    "label"
+                ]
                 if match.result_submitted_on
                 else False
             ),
             "result_verified_by_name": (
-                match.result_verified_by_id.name if match.result_verified_by_id else False
+                match.result_verified_by_id.name
+                if match.result_verified_by_id
+                else False
             ),
             "result_verified_on": (
-                self._operations_format_datetime_parts(match.result_verified_on)["label"]
+                self._operations_format_datetime_parts(match.result_verified_on)[
+                    "label"
+                ]
                 if match.result_verified_on
                 else False
             ),
             "result_approved_by_name": (
-                match.result_approved_by_id.name if match.result_approved_by_id else False
+                match.result_approved_by_id.name
+                if match.result_approved_by_id
+                else False
             ),
             "result_approved_on": (
-                self._operations_format_datetime_parts(match.result_approved_on)["label"]
+                self._operations_format_datetime_parts(match.result_approved_on)[
+                    "label"
+                ]
                 if match.result_approved_on
                 else False
             ),
             "result_contest_reason": match.result_contest_reason or False,
             "result_correction_reason": match.result_correction_reason or False,
-            "latest_audit_description": latest_audit.description if latest_audit else False,
+            "latest_audit_description": (
+                latest_audit.description if latest_audit else False
+            ),
             "latest_audit_reason": latest_audit.reason if latest_audit else False,
             "timeline_bucket": (
                 "current"
                 if is_now_playing
-                else "completed"
-                if is_completed
-                else "overdue"
-                if is_overdue
-                else "upcoming"
+                else (
+                    "completed"
+                    if is_completed
+                    else "overdue" if is_overdue else "upcoming"
+                )
             ),
             "is_now_playing": is_now_playing,
             "is_completed": is_completed,
@@ -962,10 +1034,14 @@ class FederationTournamentOperations(models.Model):
     @api.model
     def _operations_build_summary(self, serialized_matches):
         """Return aggregate summary counters."""
-        actionable_matches = [match for match in serialized_matches if match["state"] != "cancelled"]
+        actionable_matches = [
+            match for match in serialized_matches if match["state"] != "cancelled"
+        ]
         return {
             "match_count": len(serialized_matches),
-            "completed_count": sum(1 for match in actionable_matches if match["is_completed"]),
+            "completed_count": sum(
+                1 for match in actionable_matches if match["is_completed"]
+            ),
             "missing_result_count": sum(
                 1 for match in actionable_matches if match["is_missing_result"]
             ),
@@ -1031,9 +1107,11 @@ class FederationTournamentOperations(models.Model):
                 "court_name": match["court_name"],
                 "schedule_label": match["schedule_status"]["short_label"],
                 "action_label": match["primary_action"]["label"],
-                "summary": match["attention_items"][0]
-                if match["attention_items"]
-                else match["validation_status"]["label"],
+                "summary": (
+                    match["attention_items"][0]
+                    if match["attention_items"]
+                    else match["validation_status"]["label"]
+                ),
             }
             for match in queue_matches[:8]
         ]
@@ -1065,17 +1143,19 @@ class FederationTournamentOperations(models.Model):
                 },
             )
             summary["live_count"] += 1 if match["is_now_playing"] else 0
-            summary["delayed_count"] += 1 if match["schedule_status"]["is_overdue"] else 0
+            summary["delayed_count"] += (
+                1 if match["schedule_status"]["is_overdue"] else 0
+            )
             summary["blocked_count"] += 1 if match["is_blocked"] else 0
             summary["missing_result_count"] += 1 if match["is_missing_result"] else 0
             summary["needs_validation_count"] += 1 if match["needs_validation"] else 0
-            if (
-                not summary["next_match_label"]
-                and match["timeline_bucket"] in ("upcoming", "overdue")
+            if not summary["next_match_label"] and match["timeline_bucket"] in (
+                "upcoming",
+                "overdue",
             ):
-                summary["next_match_label"] = match["scheduled_time_label"] or match[
-                    "scheduled_label"
-                ]
+                summary["next_match_label"] = (
+                    match["scheduled_time_label"] or match["scheduled_label"]
+                )
 
         court_summaries = []
         for summary in grouped.values():
@@ -1187,9 +1267,7 @@ class FederationTournamentOperations(models.Model):
                     if court["status"]["key"] == "delayed"
                 ),
                 "live_court_count": sum(
-                    1
-                    for court in court_summaries
-                    if court["status"]["key"] == "live"
+                    1 for court in court_summaries if court["status"]["key"] == "live"
                 ),
                 "action_queue_count": len(action_queue),
             }
@@ -1254,33 +1332,13 @@ class FederationTournamentOperations(models.Model):
             user=user,
             access_mode=access_mode,
         )
-        PortalPrivilege = self.env["federation.portal.privilege"]
         portal_scope_domain = self._operations_get_portal_match_scope_domain(user=user)
-
-        def portal_write(write_values):
-            return PortalPrivilege.portal_write(
-                match,
-                write_values,
-                scope_domain=portal_scope_domain,
-                user=user,
-            )
-
-        def portal_call(method_name):
-            return PortalPrivilege.portal_call(
-                match,
-                method_name,
-                scope_domain=portal_scope_domain,
-                user=user,
-            )
-
-        def internal_write(write_values):
-            return match.with_user(user).write(write_values)
-
-        def internal_call(method_name):
-            return getattr(match.with_user(user), method_name)()
-
-        writer = portal_write if access_mode == "portal" else internal_write
-        caller = portal_call if access_mode == "portal" else internal_call
+        writer, caller = self._operations_get_action_handlers(
+            match,
+            access_mode,
+            portal_scope_domain,
+            user,
+        )
         action_key = action_key or "save_score"
 
         if action_key == "save_score":
@@ -1381,5 +1439,7 @@ class FederationTournamentOperations(models.Model):
                 )
             caller("action_reset_result_to_draft")
         else:
-            raise ValidationError(_("This action is not available from the operations board."))
+            raise ValidationError(
+                _("This action is not available from the operations board.")
+            )
         return _(_ACTION_MESSAGES.get(action_key, "Update saved."))

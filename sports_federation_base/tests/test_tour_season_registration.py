@@ -14,7 +14,6 @@ Key invariants verified:
 - Season can be closed from 'open'
 """
 
-from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 from odoo.tools.misc import mute_logger
 
@@ -83,7 +82,9 @@ class TestTourSeasonRegistration(TransactionCase):
         self.assertEqual(reg.state, "confirmed")
 
         # STEP 7: Duplicate registration (same team + season) is rejected
-        with self.assertRaises(Exception), mute_logger("odoo.sql_db"), self.cr.savepoint():
+        with self.assertRaises(Exception), mute_logger(
+            "odoo.sql_db"
+        ), self.cr.savepoint():
             self.env["federation.season.registration"].create(
                 {
                     "season_id": self.season.id,

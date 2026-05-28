@@ -1,4 +1,4 @@
-from odoo import fields, models, tools
+from odoo import fields, models
 
 
 class FederationReportOfficiating(models.Model):
@@ -14,8 +14,9 @@ class FederationReportOfficiating(models.Model):
 
     def init(self):
         """Create SQL view for officiating report."""
-        tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute("""
+        self.env["federation.report.sql.helper"].recreate_view(
+            self._table,
+            """
             CREATE VIEW federation_report_officiating AS (
                 SELECT
                     row_number() OVER () AS id,
@@ -29,4 +30,5 @@ class FederationReportOfficiating(models.Model):
                 WHERE r.active = TRUE
                 GROUP BY r.id, r.certification_level
             )
-        """)
+            """,
+        )

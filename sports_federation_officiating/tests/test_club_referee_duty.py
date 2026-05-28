@@ -3,7 +3,7 @@
 from datetime import timedelta
 
 from odoo import fields
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
 
@@ -15,8 +15,12 @@ class TestClubRefereeDutyBase(TransactionCase):
         super().setUpClass()
 
         # Clubs and teams
-        cls.club_a = cls.env["federation.club"].create({"name": "Club Alpha", "code": "CALP"})
-        cls.club_b = cls.env["federation.club"].create({"name": "Club Beta", "code": "CBET"})
+        cls.club_a = cls.env["federation.club"].create(
+            {"name": "Club Alpha", "code": "CALP"}
+        )
+        cls.club_b = cls.env["federation.club"].create(
+            {"name": "Club Beta", "code": "CBET"}
+        )
 
         cls.team_a = cls.env["federation.team"].create(
             {"name": "Team Alpha", "club_id": cls.club_a.id, "code": "TALP"}
@@ -231,7 +235,9 @@ class TestClubRefereeDutyDeadline(TestClubRefereeDutyBase):
         """nomination_deadline is 72 h before match.date_scheduled."""
         duty = self._make_duty()
         self.assertTrue(duty.nomination_deadline)
-        expected = fields.Datetime.to_datetime(self.match.date_scheduled) - timedelta(hours=72)
+        expected = fields.Datetime.to_datetime(self.match.date_scheduled) - timedelta(
+            hours=72
+        )
         self.assertEqual(duty.nomination_deadline, expected)
 
     def test_is_deadline_overdue_false_for_future_match(self):

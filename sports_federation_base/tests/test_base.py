@@ -25,7 +25,9 @@ class TestFederationClub(TransactionCase):
 
     def test_club_code_unique(self):
         """Test that club code unique."""
-        with self.assertRaises(Exception), mute_logger("odoo.sql_db"), self.cr.savepoint():
+        with self.assertRaises(Exception), mute_logger(
+            "odoo.sql_db"
+        ), self.cr.savepoint():
             self.env["federation.club"].create(
                 {
                     "name": "Duplicate Code Club",
@@ -110,7 +112,9 @@ class TestFederationTeam(TransactionCase):
 
     def test_team_code_unique(self):
         """Test that team code unique."""
-        with self.assertRaises(Exception), mute_logger("odoo.sql_db"), self.cr.savepoint():
+        with self.assertRaises(Exception), mute_logger(
+            "odoo.sql_db"
+        ), self.cr.savepoint():
             self.env["federation.team"].create(
                 {
                     "name": "Other Team",
@@ -344,7 +348,9 @@ class TestFederationSeasonRegistration(TransactionCase):
                 "team_id": self.team.id,
             }
         )
-        with self.assertRaises(Exception), mute_logger("odoo.sql_db"), self.cr.savepoint():
+        with self.assertRaises(Exception), mute_logger(
+            "odoo.sql_db"
+        ), self.cr.savepoint():
             self.env["federation.season.registration"].create(
                 {
                     "season_id": self.season.id,
