@@ -55,7 +55,7 @@
                         <div class="small text-uppercase text-muted">Match</div>
                         <strong t-esc="match.name or 'Fixture'"/>
                     </div>
-                    <span class="badge text-bg-light" t-esc="match.state"/>
+                    <span class="badge text-bg-light" t-esc="match.get_public_site_state_label()"/>
                 </div>
                 <div class="small text-muted mb-3">
                     <t t-if="match.date_scheduled">
@@ -150,7 +150,7 @@
                             </select>
                         </div>
                         <div class="col-lg-2">
-                            <label class="form-label" for="hub_state">State</label>
+                            <label class="form-label" for="hub_state">Tournament Phase</label>
                             <select id="hub_state" name="state" class="form-select">
                                 <t t-foreach="state_options" t-as="state_option">
                                     <option t-att-value="state_option[0]" t-att-selected="filters['state'] == state_option[0] and 'selected' or None" t-esc="state_option[1]"/>
@@ -236,7 +236,7 @@
 
                 <section id="published" class="mb-5" t-if="featured_public_tournaments">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h2 class="h4 mb-0">Featured Published Tournaments</h2>
+                        <h2 class="h4 mb-0">Featured Tournaments</h2>
                         <span class="text-muted small">Editor-curated tournament updates</span>
                     </div>
                     <div class="row g-4">
@@ -273,7 +273,7 @@
 
                 <section id="published-archive" class="mb-5" t-if="archived_public_tournaments">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h2 class="h4 mb-0">Past Published Tournaments</h2>
+                        <h2 class="h4 mb-0">Past Tournaments</h2>
                         <span class="text-muted small">Completed tournaments with preserved public updates</span>
                     </div>
                     <div class="row g-3">
@@ -306,7 +306,7 @@
                                     <div class="card-body d-flex flex-column">
                                         <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                                             <a t-att-href="tournament.get_public_path()" class="h5 text-decoration-none mb-0" t-esc="tournament.name"/>
-                                            <span class="badge text-bg-light" t-esc="dict(tournament._fields['state'].selection).get(tournament.state)"/>
+                                            <span class="badge text-bg-light" t-esc="tournament.get_public_site_state_label()"/>
                                         </div>
                                         <div class="small text-muted mb-2">
                                             <t t-if="tournament.date_start" t-esc="tournament.date_start" t-options='{"widget": "date"}'/>
@@ -317,7 +317,7 @@
                                             <t t-if="tournament.location"> • <span t-esc="tournament.location"/></t>
                                             <t t-if="tournament.max_participants"> • <span t-esc="tournament.participant_count"/> / <span t-esc="tournament.max_participants"/> participants</t>
                                         </div>
-                                        <p class="mb-3 flex-grow-1" t-esc="tournament.public_editorial_summary or tournament.notes or 'Registration, schedules, and public updates live here.'"/>
+                                        <p class="mb-3 flex-grow-1" t-esc="tournament.public_editorial_summary or tournament.notes or 'Entries, schedules, and live updates all live here.'"/>
                                         <div class="d-flex flex-wrap gap-2 mt-auto">
                                             <a t-att-href="tournament.get_public_path()" class="btn btn-sm btn-primary">Overview</a>
                                             <a t-if="tournament.can_access_public_detail() and tournament.get_public_schedule_sections()" t-att-href="tournament.get_public_schedule_path()" class="btn btn-sm btn-outline-secondary">Schedule</a>
@@ -356,7 +356,7 @@
                             <div class="col-lg-8">
                                 <p class="text-uppercase small mb-2 opacity-75">Tournament Overview</p>
                                 <h1 class="display-6 mb-3" t-esc="tournament.name"/>
-                                <p class="lead mb-3" t-esc="tournament.public_editorial_summary or 'Registration, schedule, standings, results, and publication all flow through this tournament hub.'"/>
+                                <p class="lead mb-3" t-esc="tournament.public_editorial_summary or 'Entries, schedules, live updates, and final tables all live in this tournament hub.'"/>
                                 <div class="d-flex flex-wrap gap-3 small">
                                     <span t-if="tournament.date_start"><i class="fa fa-calendar me-1"/><t t-esc="tournament.date_start" t-options='{"widget": "date"}'/></span>
                                     <span t-if="tournament.date_end">to <t t-esc="tournament.date_end" t-options='{"widget": "date"}'/></span>
@@ -456,7 +456,7 @@
                                                    t-esc="participant.team_id.name"/>
                                                 <span t-else="" class="h6 d-block mb-1" t-esc="participant.team_id.name"/>
                                                 <div class="small text-muted mb-2" t-esc="participant.club_id.name"/>
-                                                <span class="badge text-bg-light" t-esc="participant.state"/>
+                                                <span class="badge text-bg-light" t-esc="participant.get_public_site_state_label()"/>
                                             </div>
                                         </div>
                                     </div>
@@ -466,6 +466,40 @@
                     </div>
 
                     <div class="col-xl-4">
+                        <section class="mb-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h2 class="h5 mb-3">Public updates in this hub</h2>
+                                    <ul class="list-unstyled small mb-0">
+                                        <li class="d-flex justify-content-between align-items-center mb-2">
+                                            <span>Overview and team list</span>
+                                            <span class="badge text-bg-success">Live now</span>
+                                        </li>
+                                        <li class="d-flex justify-content-between align-items-center mb-2">
+                                            <span>Schedule</span>
+                                            <span t-if="tournament.get_public_schedule_sections()" class="badge text-bg-success">Live now</span>
+                                            <span t-else="" class="badge text-bg-secondary">Coming later</span>
+                                        </li>
+                                        <li class="d-flex justify-content-between align-items-center mb-2">
+                                            <span>Results</span>
+                                            <span t-if="tournament.show_public_results" class="badge text-bg-success">Live now</span>
+                                            <span t-else="" class="badge text-bg-secondary">Coming later</span>
+                                        </li>
+                                        <li class="d-flex justify-content-between align-items-center mb-2">
+                                            <span>Standings</span>
+                                            <span t-if="tournament.show_public_standings" class="badge text-bg-success">Live now</span>
+                                            <span t-else="" class="badge text-bg-secondary">Coming later</span>
+                                        </li>
+                                        <li class="d-flex justify-content-between align-items-center">
+                                            <span>Bracket</span>
+                                            <span t-if="tournament.has_public_bracket()" class="badge text-bg-success">Live now</span>
+                                            <span t-else="" class="badge text-bg-secondary">Not in use yet</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+
                         <section class="mb-4" t-if="tournament.can_access_public_detail() and public_standings">
                             <div class="card border-0 shadow-sm">
                                 <div class="card-body">
@@ -499,8 +533,8 @@
                                 <div class="card-body">
                                     <h2 class="h5 mb-3">Quick Facts</h2>
                                     <dl class="row small mb-0">
-                                        <dt class="col-5">State</dt>
-                                        <dd class="col-7" t-esc="dict(tournament._fields['state'].selection).get(tournament.state)"/>
+                                        <dt class="col-5">Current Phase</dt>
+                                        <dd class="col-7" t-esc="tournament.get_public_site_state_label()"/>
                                         <dt class="col-5">Type</dt>
                                         <dd class="col-7" t-esc="dict(tournament._fields['tournament_type'].selection).get(tournament.tournament_type)"/>
                                         <dt class="col-5" t-if="tournament.category">Category</dt>
@@ -516,7 +550,7 @@
 
                         <section class="mb-4" t-if="not tournament.can_access_public_detail()">
                             <div class="alert alert-info border-0 shadow-sm mb-0" role="status">
-                                Public updates are not published for this tournament yet. Registration details remain available here, and schedules, standings, results, and bracket links will appear once the federation opens public release.
+                                Public match updates are not live for this tournament yet. Registration details remain available here, and the schedule, standings, results, and bracket tabs will appear once the federation opens them.
                             </div>
                         </section>
                     </div>
@@ -621,7 +655,7 @@
                                     <t t-if="team.category"> • <span t-esc="dict(team._fields['category'].selection).get(team.category)"/></t>
                                     <t t-if="team.gender"> • <span t-esc="dict(team._fields['gender'].selection).get(team.gender)"/></t>
                                 </p>
-                                <p class="mb-0" t-esc="team.notes or 'This team appears on published tournament pages, schedules, and standings.'"/>
+                                <p class="mb-0" t-esc="team.notes or 'This team appears across tournament hubs, schedules, and standings.'"/>
                             </div>
                         </div>
                     </div>
@@ -660,7 +694,7 @@
                         <section class="mb-4" t-if="public_tournaments">
                             <div class="card border-0 shadow-sm">
                                 <div class="card-body">
-                                    <h2 class="h5 mb-3">Published Tournaments</h2>
+                                    <h2 class="h5 mb-3">Tournament Hubs</h2>
                                     <div class="list-group list-group-flush small">
                                         <t t-foreach="public_tournaments" t-as="tournament">
                                             <a t-att-href="tournament.get_public_path()" class="list-group-item list-group-item-action px-0">

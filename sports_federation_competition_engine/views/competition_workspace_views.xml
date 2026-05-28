@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_competition_workspace" model="ir.actions.client">
+        <field name="name">Planning Workspace</field>
+        <field name="tag">sports_federation_competition_engine.competition_workspace</field>
+    </record>
+
+    <record id="view_federation_competition_edition_form_workspace" model="ir.ui.view">
+        <field name="name">federation.competition.edition.form.workspace</field>
+        <field name="model">federation.competition.edition</field>
+        <field name="inherit_id" ref="sports_federation_tournament.view_federation_competition_edition_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_competition_workspace"
+                        string="Planning Workspace"
+                        type="object"
+                        class="btn-primary"
+                        invisible="id == False"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_federation_tournament_form_workspace" model="ir.ui.view">
+        <field name="name">federation.tournament.form.workspace</field>
+        <field name="model">federation.tournament</field>
+        <field name="inherit_id" ref="sports_federation_tournament.view_federation_tournament_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_competition_workspace"
+                        string="Planning Workspace"
+                        type="object"
+                        class="btn-primary"
+                        invisible="id == False"/>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                 <div class="border rounded p-3 bg-info-subtle d-flex justify-content-between align-items-start gap-3"
+                     invisible="state not in ('open', 'in_progress')"
+                     role="status">
+                    <div>
+                        <strong>Primary planning path:</strong>
+                        Use Planning Workspace to lock entries, generate matches, create gamedays, and assign slots.
+                        Keep the advanced round-robin and knockout wizards for specialist or recovery-only schedule generation.
+                    </div>
+                    <button name="action_open_competition_workspace"
+                            string="Open Planning Workspace"
+                            type="object"
+                            class="btn btn-link p-0 text-nowrap"/>
+                </div>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Planning Workspace" name="competition_workspace">
+                    <div class="border rounded p-3 bg-body-tertiary mb-3" role="note">
+                        This page is the canonical scheduling surface. Build the schedule here first, then use a gameday planner for one-day setup and the live operations board once play begins.
+                    </div>
+                    <group>
+                        <group string="Guided Planning">
+                            <field name="workspace_state"/>
+                            <field name="planning_format"/>
+                            <field name="entries_locked" readonly="1"/>
+                            <field name="minimum_rest_minutes"/>
+                            <field name="workspace_stage_id"/>
+                        </group>
+                        <group string="Planner Summary">
+                            <field name="participant_count" readonly="1"/>
+                            <field name="match_count" readonly="1"/>
+                            <field name="round_ids" widget="many2many_tags" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_federation_tournament_round_form_workspace" model="ir.ui.view">
+        <field name="name">federation.tournament.round.form.workspace</field>
+        <field name="model">federation.tournament.round</field>
+        <field name="inherit_id" ref="sports_federation_tournament.view_federation_tournament_round_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_competition_planner"
+                        string="Gameday Planner"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="id == False"/>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <div class="border rounded p-3 bg-info-subtle" role="status">
+                    <strong>Preparation phase:</strong>
+                    Use the gameday planner to assign slots and finalize one day of play before operators switch to the live operations board for in-progress matches and result handling.
+                </div>
+            </xpath>
+            <xpath expr="//group[.//field[@name='round_date']]" position="inside">
+                <field name="planner_state"/>
+                <field name="publish_locked"/>
+                <field name="slot_count" readonly="1"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Planner Slots" name="planner_slots">
+                    <field name="slot_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="playing_area_id"/>
+                            <field name="start_datetime"/>
+                            <field name="end_datetime"/>
+                            <field name="match_id"/>
+                            <field name="state"/>
+                            <field name="note"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <menuitem id="menu_competition_workspace"
+              name="Planning Workspace"
+              parent="sports_federation_base.menu_federation_planning"
+              action="action_competition_workspace"
+              sequence="5"
+              groups="sports_federation_competition_engine.group_federation_competition_planner,sports_federation_base.group_federation_manager"/>
+
+</odoo>

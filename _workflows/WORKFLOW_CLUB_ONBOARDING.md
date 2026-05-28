@@ -11,6 +11,11 @@ Onboarding spans four areas: master-data setup, compliance document collection,
 finance details, and portal access for the club representative. These steps can
 run partly in parallel once the club record exists.
 
+Use this workflow as the primary new-club journey. Compliance, finance, and
+season-registration workflows support it, but they should not be presented as
+separate equal-weight starting points when staff are onboarding a brand-new
+club.
+
 ## Modules Involved
 
 | Module | Role |

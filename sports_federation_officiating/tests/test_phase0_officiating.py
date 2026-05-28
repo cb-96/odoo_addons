@@ -5,7 +5,7 @@ from odoo.tests.common import TransactionCase
 
 
 class TestPhase0MatchRefereeConflict(TransactionCase):
-    """Conflict detection: same referee on two same-day matches."""
+    """Conflict detection: same referee on overlapping matches."""
 
     @classmethod
     def setUpClass(cls):
@@ -49,7 +49,7 @@ class TestPhase0MatchRefereeConflict(TransactionCase):
                 "tournament_id": cls.tournament.id,
                 "home_team_id": team_b.id,
                 "away_team_id": team_c.id,
-                "date_scheduled": "2026-06-10 18:00:00",
+                "date_scheduled": "2026-06-10 15:00:00",
             }
         )
         cls.match_other_day = cls.env["federation.match"].create(
@@ -65,22 +65,25 @@ class TestPhase0MatchRefereeConflict(TransactionCase):
         )
 
     def test_conflict_same_day_raises(self):
-        """Assigning the same referee to two same-day matches raises ValidationError."""
-        self.env["federation.match.referee"].create(
+        """Overlapping assignments stay draftable but cannot be confirmed together."""
+        first_assignment = self.env["federation.match.referee"].create(
             {
                 "match_id": self.match_1.id,
                 "referee_id": self.referee.id,
                 "role": "head",
             }
         )
+        first_assignment.action_confirm()
+        second_assignment = self.env["federation.match.referee"].create(
+            {
+                "match_id": self.match_2.id,
+                "referee_id": self.referee.id,
+                "role": "head",
+            }
+        )
+        self.assertFalse(second_assignment.assignment_ready)
         with self.assertRaises(ValidationError):
-            self.env["federation.match.referee"].create(
-                {
-                    "match_id": self.match_2.id,
-                    "referee_id": self.referee.id,
-                    "role": "head",
-                }
-            )
+            second_assignment.action_confirm()
 
     def test_different_day_allowed(self):
         """Assigning the same referee to matches on different days is allowed."""

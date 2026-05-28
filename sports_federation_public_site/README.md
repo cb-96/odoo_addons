@@ -145,6 +145,7 @@ Canonical follow and discovery routes:
 12. Season discovery and editorial planning: published seasons aggregate featured tournaments, recent tournaments, and live editorial items with publication windows.
 13. Automatic menu cleanup: module installs and upgrades normalize stale `/competitions` website menus into the Tournaments submenu and remove leftover duplicates.
 14. Shared privileged-write boundary: website registration POST routes validate HTTP input and then reuse the same tournament registration helper as the portal layer.
+15. Publication handoff guidance: tournament and standings Website tabs now explain whether visibility is blocked by tournament publication, missing standings, unpublished standings, or disabled standings toggles, with direct links back to standings when operators need to act there.
 
 ## Publication guards
 

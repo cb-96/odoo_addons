@@ -123,6 +123,9 @@ bash addons/ci/run_tests.sh --suite competition_core
 # Run a single module
 bash addons/ci/run_tests.sh --module sports_federation_standings
 
+# Run participant readiness discovery guard
+bash addons/ci/run_tests.sh --suite rosters_readiness_guard
+
 # List all named suites
 bash addons/ci/run_tests.sh --list-suites
 ```

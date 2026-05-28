@@ -35,7 +35,8 @@ class FederationOfficiatingPortal(http.Controller):
         Assignment = (
             request.env["federation.match.referee"].with_user(request.env.user).sudo()
         )
-        domain = Assignment._portal_get_domain(user=request.env.user)
+        base_domain = Assignment._portal_get_domain(user=request.env.user)
+        domain = list(base_domain)
         filter_map = {
             "upcoming": [
                 ("match_kickoff", "!=", False),
@@ -61,6 +62,22 @@ class FederationOfficiatingPortal(http.Controller):
             offset=pager["offset"],
             order="match_kickoff asc, id asc",
         )
+        pending_domain = base_domain + [("state", "=", "draft")]
+        pending_assignments = Assignment.search(
+            pending_domain,
+            order="match_kickoff asc, id asc",
+        )
+        overdue_assignments = pending_assignments.filtered("is_confirmation_overdue")
+        next_pending_assignment = pending_assignments.sorted(
+            key=lambda assignment: (
+                0 if assignment.is_confirmation_overdue else 1,
+                assignment.confirmation_deadline
+                or assignment.match_kickoff
+                or fields.Datetime.now(),
+                assignment.match_kickoff or fields.Datetime.now(),
+                assignment.id,
+            )
+        )[:1]
         values = {
             "referee": referee,
             "assignments": assignments,
@@ -68,6 +85,9 @@ class FederationOfficiatingPortal(http.Controller):
             "filterby": filterby,
             "page_name": "my_referee_assignments",
             "now": fields.Datetime.now(),
+            "pending_count": len(pending_assignments),
+            "overdue_count": len(overdue_assignments),
+            "next_pending_assignment": next_pending_assignment,
         }
         return request.render(
             "sports_federation_portal.portal_my_referee_assignments",

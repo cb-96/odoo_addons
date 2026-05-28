@@ -51,6 +51,27 @@
                             <field name="computed_on"/>
                         </group>
                     </group>
+                    <div class="alert alert-info"
+                         invisible="state != 'draft'"
+                         role="status">
+                        <strong>Next step:</strong>
+                        Standings stay empty until approved results are included in official standings for this tournament.
+                    </div>
+                    <div class="alert alert-warning"
+                         invisible="state != 'draft'"
+                         role="alert">
+                        <strong>Blocker list:</strong>
+                        <ul class="mb-0 ps-3 mt-1">
+                            <li>No approved results are currently feeding this standings table.</li>
+                            <li>Contested or corrected results are excluded until reapproved.</li>
+                        </ul>
+                    </div>
+                    <div class="alert alert-info"
+                         invisible="state not in ('computed', 'frozen')"
+                         role="status">
+                        <strong>Next step:</strong>
+                        Review the table here, then use the Website tab when you are ready to make it public.
+                    </div>
                     <notebook>
                         <page string="Standings Table" name="lines">
                             <field name="line_ids" readonly="1">
@@ -140,6 +161,9 @@
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Standings are recomputed after match results are approved.
+            </p>
+            <p>
+                Blockers are unresolved results; next action is to clear disputes or approval gaps, then publish from the Website tab when visibility is required.
             </p>
         </field>
     </record>

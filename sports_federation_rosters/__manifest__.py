@@ -21,6 +21,7 @@
         "security/ir.model.access.csv",
         "views/team_roster_views.xml",
         "views/match_sheet_views.xml",
+        "views/season_registration_views_inherit.xml",
         "views/tournament_participant_views_inherit.xml",
         "views/team_views_inherit.xml",
         "views/player_views_inherit.xml",

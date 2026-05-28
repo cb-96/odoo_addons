@@ -1,4 +1,7 @@
 from . import test_round_robin
+from . import test_competition_workspace_service
+from . import test_competition_workspace_contract_tags
+from . import test_competition_workspace_http_smoke
 from . import test_knockout
 from . import test_tournament_template
 from . import test_simulate_tournament

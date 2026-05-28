@@ -9,11 +9,11 @@
             <xpath expr="//header" position="inside">
                 <button name="action_apply_template" string="Apply Template" type="object"
                         class="btn-secondary" invisible="state != 'draft' or not template_id"/>
-                <button name="%(action_round_robin_wizard)d" string="Generate Round-Robin" type="action"
-                        class="btn-primary" invisible="state not in ('open', 'in_progress')"
+                <button name="%(action_round_robin_wizard)d" string="Advanced: Round-Robin Wizard" type="action"
+                    class="btn-secondary" invisible="state not in ('open', 'in_progress')"
                         context="{'default_tournament_id': id}"/>
-                <button name="%(action_knockout_wizard)d" string="Generate Knockout" type="action"
-                        class="btn-primary" invisible="state not in ('open', 'in_progress')"
+                <button name="%(action_knockout_wizard)d" string="Advanced: Knockout Wizard" type="action"
+                    class="btn-secondary" invisible="state not in ('open', 'in_progress')"
                         context="{'default_tournament_id': id}"/>
             </xpath>
             <xpath expr="//field[@name='rule_set_id']" position="after">

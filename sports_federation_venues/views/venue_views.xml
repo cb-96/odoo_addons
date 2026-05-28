@@ -11,6 +11,9 @@
                         <button name="action_view_playing_areas" type="object" class="oe_stat_button" icon="fa-th">
                             <field name="playing_area_count" string="Playing Areas" widget="statinfo"/>
                         </button>
+                        <button name="action_view_blackout_windows" type="object" class="oe_stat_button" icon="fa-calendar-times-o">
+                            <field name="blackout_window_count" string="Constraint Windows" widget="statinfo"/>
+                        </button>
                     </div>
                     <div class="oe_title">
                         <h1>
@@ -43,6 +46,18 @@
                                     <field name="code"/>
                                     <field name="capacity"/>
                                     <field name="surface_type"/>
+                                    <field name="capability_ids" widget="many2many_tags" optional="hide"/>
+                                    <field name="active"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Constraint Windows" name="constraint_windows">
+                            <field name="blackout_window_ids" context="{'default_venue_id': id}">
+                                <list editable="bottom">
+                                    <field name="closure_type"/>
+                                    <field name="playing_area_id"/>
+                                    <field name="date_start"/>
+                                    <field name="date_end"/>
                                     <field name="active"/>
                                 </list>
                             </field>
@@ -122,6 +137,7 @@
                 <field name="code"/>
                 <field name="capacity"/>
                 <field name="surface_type"/>
+                <field name="capability_ids" widget="many2many_tags" optional="hide"/>
                 <field name="active"/>
             </list>
         </field>
@@ -146,6 +162,7 @@
                         </group>
                         <group>
                             <field name="surface_type"/>
+                            <field name="capability_ids" widget="many2many_tags"/>
                             <field name="active"/>
                         </group>
                     </group>
@@ -164,6 +181,7 @@
                 <field name="name"/>
                 <field name="venue_id"/>
                 <field name="code"/>
+                <field name="capability_ids"/>
                 <filter name="indoor" string="Indoor" domain="[('surface_type', '=', 'indoor')]"/>
                 <filter name="outdoor" string="Outdoor" domain="[('surface_type', '=', 'outdoor')]"/>
                 <separator/>
@@ -171,6 +189,117 @@
                     <filter name="venue" string="Venue" context="{'group_by': 'venue_id'}"/>
                     <filter name="surface_type" string="Surface Type" context="{'group_by': 'surface_type'}"/>
                 </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_federation_playing_area_capability" model="ir.actions.act_window">
+        <field name="name">Playing Area Capabilities</field>
+        <field name="res_model">federation.playing.area.capability</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_federation_playing_area_capability_list" model="ir.ui.view">
+        <field name="name">federation.playing.area.capability.list</field>
+        <field name="model">federation.playing.area.capability</field>
+        <field name="arch" type="xml">
+            <list string="Playing Area Capabilities">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_federation_playing_area_capability_form" model="ir.ui.view">
+        <field name="name">federation.playing.area.capability.form</field>
+        <field name="model">federation.playing.area.capability</field>
+        <field name="arch" type="xml">
+            <form string="Playing Area Capability">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                        </group>
+                        <group>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <field name="description"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_federation_playing_area_capability_search" model="ir.ui.view">
+        <field name="name">federation.playing.area.capability.search</field>
+        <field name="model">federation.playing.area.capability</field>
+        <field name="arch" type="xml">
+            <search string="Search Playing Area Capabilities">
+                <field name="name"/>
+                <field name="code"/>
+                <filter name="active" string="Active" domain="[('active', '=', True)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_federation_venue_blackout" model="ir.actions.act_window">
+        <field name="name">Constraint Windows</field>
+        <field name="res_model">federation.venue.blackout</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_federation_venue_blackout_list" model="ir.ui.view">
+        <field name="name">federation.venue.blackout.list</field>
+        <field name="model">federation.venue.blackout</field>
+        <field name="arch" type="xml">
+            <list string="Constraint Windows">
+                <field name="name"/>
+                <field name="venue_id"/>
+                <field name="playing_area_id" optional="hide"/>
+                <field name="closure_type"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_federation_venue_blackout_form" model="ir.ui.view">
+        <field name="name">federation.venue.blackout.form</field>
+        <field name="model">federation.venue.blackout</field>
+        <field name="arch" type="xml">
+            <form string="Constraint Window">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="venue_id"/>
+                            <field name="playing_area_id"/>
+                            <field name="closure_type"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <field name="note"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_federation_venue_blackout_search" model="ir.ui.view">
+        <field name="name">federation.venue.blackout.search</field>
+        <field name="model">federation.venue.blackout</field>
+        <field name="arch" type="xml">
+            <search string="Search Constraint Windows">
+                <field name="venue_id"/>
+                <field name="playing_area_id"/>
+                <filter name="blackout" string="Blackouts" domain="[('closure_type', '=', 'blackout')]"/>
+                <filter name="maintenance" string="Maintenance" domain="[('closure_type', '=', 'maintenance')]"/>
+                <filter name="active" string="Active" domain="[('active', '=', True)]"/>
             </search>
         </field>
     </record>

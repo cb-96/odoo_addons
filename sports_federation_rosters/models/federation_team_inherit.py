@@ -134,6 +134,7 @@ class FederationTeam(models.Model):
                 "first_match_date": False,
                 "deadline_date": False,
                 "deadline_reached": False,
+                "has_issues": False,
                 "blocking_issues": [],
                 "feedback": False,
             }
@@ -216,6 +217,7 @@ class FederationTeam(models.Model):
             "first_match_date": first_match_date,
             "deadline_date": deadline_date,
             "deadline_reached": deadline_reached,
+            "has_issues": bool(roster_issues),
             "blocking_issues": blocking_issues,
             "feedback": feedback,
         }

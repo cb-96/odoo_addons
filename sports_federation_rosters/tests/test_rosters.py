@@ -410,11 +410,15 @@ class TestRosters(TransactionCase):
             }
         )
         roster.action_activate()
+        roster.action_close()
+        roster.action_reopen()
 
         event_types = roster.audit_event_ids.mapped("event_type")
         self.assertIn("roster_created", event_types)
         self.assertIn("roster_line_added", event_types)
         self.assertIn("roster_activated", event_types)
+        self.assertIn("roster_closed", event_types)
+        self.assertIn("roster_reopened", event_types)
 
     # ------------------------------------------------------------------
     # Unique active roster constraint
@@ -545,3 +549,33 @@ class TestRosters(TransactionCase):
         )
         roster_b.action_activate()  # must NOT raise
         self.assertEqual(roster_b.status, "active")
+
+    def test_reopen_closed_roster_blocked_when_another_active_exists(self):
+        """Reopening should respect the single-active-roster-per-scope rule."""
+        roster_a = self.env["federation.team.roster"].create(
+            {
+                "team_id": self.team.id,
+                "season_id": self.season.id,
+                "competition_id": self.competition.id,
+            }
+        )
+        self.env["federation.team.roster.line"].create(
+            {"roster_id": roster_a.id, "player_id": self.player1.id}
+        )
+        roster_a.action_activate()
+        roster_a.action_close()
+
+        roster_b = self.env["federation.team.roster"].create(
+            {
+                "team_id": self.team.id,
+                "season_id": self.season.id,
+                "competition_id": self.competition.id,
+            }
+        )
+        self.env["federation.team.roster.line"].create(
+            {"roster_id": roster_b.id, "player_id": self.player2.id}
+        )
+        roster_b.action_activate()
+
+        with self.assertRaises(ValidationError):
+            roster_a.action_reopen()

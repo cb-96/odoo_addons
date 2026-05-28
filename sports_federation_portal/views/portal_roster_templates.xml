@@ -99,7 +99,7 @@
                                 <td><t t-esc="roster.name"/></td>
                                 <td><t t-esc="roster.team_id.display_name"/></td>
                                 <td><t t-esc="roster.season_id.display_name"/></td>
-                                <td><t t-esc="dict(roster._fields['status'].selection).get(roster.status)"/></td>
+                                <td><t t-esc="roster.get_portal_status_label()"/></td>
                                 <td>
                                     <span t-if="roster.match_day_locked" class="badge text-bg-warning">Locked</span>
                                     <span t-if="not roster.match_day_locked" class="badge text-bg-success">Editable</span>
@@ -163,7 +163,7 @@
                                     <tr><th>Season</th><td><t t-esc="roster.season_id.display_name"/></td></tr>
                                     <tr t-if="roster.competition_id"><th>Competition</th><td><t t-esc="roster.competition_id.name"/></td></tr>
                                     <tr t-if="roster.season_registration_id"><th>Registration</th><td><t t-esc="roster.season_registration_id.name"/></td></tr>
-                                    <tr><th>Status</th><td><t t-esc="dict(roster._fields['status'].selection).get(roster.status)"/></td></tr>
+                                    <tr><th>Status</th><td><t t-esc="roster.get_portal_status_label()"/></td></tr>
                                     <tr><th>Players</th><td><t t-esc="roster.line_count"/></td></tr>
                                 </table>
                             </div>
@@ -175,6 +175,10 @@
                                 <h5 class="card-title">Operational Status</h5>
                                 <div t-if="roster.readiness_feedback" class="alert alert-warning mb-3" role="alert">
                                     <t t-esc="roster.readiness_feedback"/>
+                                </div>
+                                <div t-if="roster.status == 'closed'" class="alert alert-info mb-3" role="status">
+                                    <strong>Roster is closed:</strong>
+                                    This roster is excluded from new match-sheet preparation while closed. Reopen it to restore active use.
                                 </div>
                                 <div t-if="roster.match_day_lock_feedback" class="alert alert-info mb-0" role="status">
                                     <t t-esc="roster.match_day_lock_feedback"/>
@@ -203,6 +207,13 @@
                                           class="d-inline">
                                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                         <button type="submit" class="btn btn-outline-danger btn-sm">Close Roster</button>
+                                    </form>
+                                    <form t-if="roster.status == 'closed'"
+                                          t-attf-action="/my/rosters/#{roster.id}/reopen"
+                                          method="POST"
+                                          class="d-inline">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <button type="submit" class="btn btn-outline-primary btn-sm">Reopen Roster</button>
                                     </form>
                                 </div>
                             </div>
@@ -332,7 +343,7 @@
                                 <table class="table table-sm mb-0">
                                     <tr><th>Team</th><td><t t-esc="roster.team_id.display_name"/></td></tr>
                                     <tr><th>Season</th><td><t t-esc="roster.season_id.display_name"/></td></tr>
-                                    <tr><th>Status</th><td><t t-esc="dict(roster._fields['status'].selection).get(roster.status)"/></td></tr>
+                                    <tr><th>Status</th><td><t t-esc="roster.get_portal_status_label()"/></td></tr>
                                     <tr><th>Players</th><td><t t-esc="roster.line_count"/></td></tr>
                                 </table>
                             </div>
@@ -449,7 +460,7 @@
                                         <t t-foreach="available_licenses" t-as="license">
                                             <option t-att-value="license.id"
                                                     t-att-selected="line and line.license_id == license and 'selected' or None">
-                                                <t t-esc="license.player_id.display_name"/> - <t t-esc="license.name"/> (<t t-esc="dict(license._fields['state'].selection).get(license.state)"/>)
+                                                <t t-esc="license.player_id.display_name"/> - <t t-esc="license.name"/> (<t t-esc="license.get_portal_state_label()"/>)
                                             </option>
                                         </t>
                                     </select>
@@ -513,7 +524,7 @@
 
                 <div class="table-responsive">
                 <table class="table">
-                    <caption class="visually-hidden">Match sheets available for match-day preparation.</caption>
+                    <caption class="visually-hidden">Match sheets available for pre-kick-off preparation.</caption>
                     <thead>
                         <tr>
                             <th scope="col">Sheet</th>
@@ -530,7 +541,7 @@
                                 <td><t t-esc="sheet.name"/></td>
                                 <td><t t-esc="sheet.match_id.display_name"/></td>
                                 <td><t t-esc="sheet.team_id.name"/></td>
-                                <td><t t-esc="dict(sheet._fields['state'].selection).get(sheet.state)"/></td>
+                                <td><t t-esc="sheet.get_portal_state_label()"/></td>
                                 <td>
                                     <span t-if="sheet.ready_for_submission" class="badge text-bg-success">Ready</span>
                                     <span t-if="not sheet.ready_for_submission" class="badge text-bg-warning">Attention</span>
@@ -587,8 +598,8 @@
                                         <t t-if="sheet.roster_id"><t t-esc="sheet.roster_id.name"/></t>
                                         <span t-if="not sheet.roster_id" class="text-warning">Not linked</span>
                                     </td></tr>
-                                    <tr><th>State</th><td><t t-esc="dict(sheet._fields['state'].selection).get(sheet.state)"/></td></tr>
-                                    <tr><th>Result State</th><td><t t-esc="dict(sheet.match_id._fields['result_state'].selection).get(sheet.match_id.result_state)"/></td></tr>
+                                    <tr><th>State</th><td><t t-esc="sheet.get_portal_state_label()"/></td></tr>
+                                    <tr><th>Result State</th><td><t t-esc="sheet.match_id.get_portal_result_state_label()"/></td></tr>
                                     <tr><th>Substitutions</th><td><t t-esc="sheet.substitution_count"/></td></tr>
                                 </table>
                             </div>
@@ -627,7 +638,7 @@
                                                     <option t-att-value="roster.id"
                                                             t-att-selected="sheet.roster_id and sheet.roster_id.id == roster.id and 'selected' or None">
                                                         <t t-esc="roster.name"/>
-                                                        (<t t-esc="dict(roster._fields['status'].selection).get(roster.status)"/>)
+                                                        (<t t-esc="roster.get_portal_status_label()"/>)
                                                     </option>
                                                 </t>
                                             </select>
@@ -891,25 +902,32 @@
         </t>
     </template>
 
-    <template id="portal_my_match_day" name="My Match Day">
+    <template id="portal_my_match_day" name="Preparation Queue">
         <t t-call="portal.portal_layout">
             <div class="container py-4">
                 <div class="row mb-3">
                     <div class="col">
-                        <h2><i class="fa fa-calendar-check-o me-2"/>My Match Day</h2>
+                        <h2><i class="fa fa-calendar-check-o me-2"/>Preparation Queue</h2>
+                        <p class="text-muted mb-0">
+                            This is the direct pre-kick-off queue. Start in the Club Operations Workspace when you need tournament context, then use this list to finish remaining squad sheets and readiness checks.
+                        </p>
+                        <div class="small text-muted mt-2">
+                            <strong>Next action:</strong>
+                            open each sheet with attention status and clear its blocker list before submission.
+                        </div>
                     </div>
                 </div>
 
                 <div class="table-responsive">
                 <table class="table">
-                    <caption class="visually-hidden">Match-day preparation queue for the current portal representative.</caption>
+                    <caption class="visually-hidden">Preparation queue for the current portal representative.</caption>
                     <thead>
                         <tr>
                             <th scope="col">Kickoff</th>
                             <th scope="col">Match</th>
                             <th scope="col">Team</th>
                             <th scope="col">Sheet State</th>
-                            <th scope="col">Readiness</th>
+                            <th scope="col">Blocker List</th>
                             <th scope="col">Actions</th>
                         </tr>
                     </thead>
@@ -921,11 +939,13 @@
                                 </td>
                                 <td><t t-esc="sheet.match_id.display_name"/></td>
                                 <td><t t-esc="sheet.team_id.name"/></td>
-                                <td><t t-esc="dict(sheet._fields['state'].selection).get(sheet.state)"/></td>
+                                <td><t t-esc="sheet.get_portal_state_label()"/></td>
                                 <td>
                                     <span t-if="sheet.ready_for_submission" class="badge text-bg-success">Ready</span>
                                     <span t-if="not sheet.ready_for_submission" class="badge text-bg-warning">Attention</span>
                                     <div t-if="sheet.readiness_feedback" class="small text-muted mt-1">
+                                        <strong>Blocker list:</strong>
+                                        <br/>
                                         <t t-esc="sheet.readiness_feedback"/>
                                     </div>
                                 </td>
@@ -939,7 +959,7 @@
                 </div>
 
                 <div t-if="not match_day_sheets" class="text-center py-4">
-                    <p class="text-muted">No scheduled match-day sheets are currently assigned to you.</p>
+                    <p class="text-muted">No preparation tasks are currently assigned to you.</p>
                 </div>
 
                 <t t-if="pager">

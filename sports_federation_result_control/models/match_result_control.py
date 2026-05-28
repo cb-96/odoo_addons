@@ -108,6 +108,21 @@ class FederationMatchResultControl(models.Model):
                 if standing.state != "frozen":
                     standing.action_recompute()
 
+    def action_open_tournament(self):
+        """Open the owning tournament so operators can continue the next step."""
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_tournament.federation_tournament_action"
+        )
+        action.update(
+            {
+                "view_mode": "form",
+                "res_id": self.tournament_id.id,
+                "domain": [],
+            }
+        )
+        return action
+
     def _log_result_audit(
         self, event_type, description, from_state, to_state, reason=False
     ):
@@ -248,6 +263,10 @@ class FederationMatchResultControl(models.Model):
             if Dispatcher is not None:
                 Dispatcher.send_result_contested(rec)
         self._recompute_related_standings()
+
+    def action_raise_dispute_request_exception(self):
+        """Unified operator entrypoint for dispute/exception requests on results."""
+        return self.action_contest_result()
 
     def action_correct_result(self):
         """Correct a contested or approved result."""

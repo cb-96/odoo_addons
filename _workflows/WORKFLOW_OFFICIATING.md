@@ -12,6 +12,11 @@ match, they receive an automated notification. If the assignment is not
 confirmed before the deadline, the system flags it as overdue and optionally
 sends an alert to the referee coordinator.
 
+This is a specialist coordinator workflow, not the primary day-to-day starting
+surface for club representatives. Club operators should usually encounter
+officiating readiness through the phase-specific workspaces and alerts rather
+than begin from officiating lists.
+
 ## Modules Involved
 
 | Module | Role |
@@ -163,10 +168,11 @@ Certification: active=True  (valid, current)
 |----------|---------|
 | No active certification at required level? | `assignment_ready = False`; readiness feedback lists reason |
 | Confirmation deadline passed, still `draft`? | `is_confirmation_overdue = True`; flagged in dashboard |
+| Another assignment overlaps the same match window? | `assignment_ready = False`; confirmation is blocked until the clash is resolved |
 | Match cancelled? | Coordinator cancels all assignments; `cancelled_on` recorded |
 | Referee deactivated (`active = False`)? | All future assignments blocked; `assignment_ready = False` |
 
-## Referee Availability & Self-Service
+## Referee Availability & Self-Service (Specialist / Planned)
 
 > **Note**: The availability model is a planned feature. The fields and steps
 > below describe the intended design; the `federation.referee.availability`
@@ -204,10 +210,13 @@ When the coordinator assigns a referee to a match:
    do not block creation).
 4. If no availability records exist for a referee, no conflict check is
    performed and no warning is raised.
-
-The assignment engine does **not** prevent double-booking across matches: if
-a referee is already assigned to another match that overlaps, the coordinator
-sees this via the `assignment_count` field and the referee's assignment list.
+5. If the referee is already assigned to another match that overlaps the same
+   assignment window, the draft assignment can still be recorded for follow-up,
+   but `assignment_ready` becomes `False` and confirmation is blocked until the
+   clash is resolved.
+6. When `sports_federation_competition_engine` is installed, the Competition
+   Workspace reuses the same officiating checks so double-booking blocks planner
+   readiness while uncovered availability remains visible as a warning.
 
 ### Portal Accept / Decline Flow
 
@@ -218,6 +227,9 @@ After an assignment is created in `draft` state and the referee receives the
 assignment notification:
 
 1. Referee opens the notification or navigates to **My Assignments** in the portal.
+   - The portal assignments list highlights one explicit **Next step** action
+     (nearest pending response) and shows pending/overdue counters so officials
+     can prioritize urgent confirmations first.
 2. Views the match date, venue, and role.
 3. Clicks **Confirm** or **Decline**:
    - **Confirm**: assignment state `draft → confirmed`.

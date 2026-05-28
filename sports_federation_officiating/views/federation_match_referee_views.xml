@@ -30,6 +30,8 @@
                             <field name="referee_id"/>
                             <field name="assignment_ready" readonly="1"/>
                             <field name="readiness_feedback" readonly="1" invisible="not readiness_feedback"/>
+                            <field name="assignment_has_warning" readonly="1"/>
+                            <field name="assignment_warning_feedback" readonly="1" invisible="not assignment_warning_feedback"/>
                             <field name="assigned_on" readonly="1"/>
                             <field name="confirmed_on" readonly="1" invisible="not confirmed_on"/>
                             <field name="completed_on" readonly="1" invisible="not completed_on"/>
@@ -57,6 +59,7 @@
                 <field name="confirmation_deadline" optional="show"/>
                 <field name="is_confirmation_overdue" optional="show"/>
                 <field name="assignment_ready" optional="hide"/>
+                <field name="assignment_has_warning" optional="show"/>
                 <field name="state"/>
             </list>
         </field>

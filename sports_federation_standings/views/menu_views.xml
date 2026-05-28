@@ -2,7 +2,7 @@
 <odoo>
     <menuitem id="menu_federation_standings"
               name="Standings"
-              parent="sports_federation_tournament.menu_federation_tournament"
+              parent="sports_federation_base.menu_federation_publication"
               action="action_federation_standing"
-              sequence="40"/>
+              sequence="10"/>
 </odoo>

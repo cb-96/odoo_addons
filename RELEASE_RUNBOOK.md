@@ -4,7 +4,7 @@ Last updated: 2026-04-30
 Owner: Federation Platform Team
 Last reviewed: 2026-04-30
 Review cadence: Every release
-Release train: 2026.05
+Release train: 2026.11
 
 This runbook is the canonical operator checklist for promoting the federation
 stack with repeatable verification, upgrade, and rollback steps.

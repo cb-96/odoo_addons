@@ -42,6 +42,18 @@
                             <field name="rule_set_id"/>
                         </group>
                     </group>
+                    <div class="alert alert-info d-flex justify-content-between align-items-start gap-3"
+                         invisible="edition_count"
+                         role="status">
+                        <div>
+                            <strong>Next step:</strong>
+                            Define the default rules here first, then create a season-specific edition when you are ready to run this competition.
+                        </div>
+                        <button name="action_view_editions"
+                                string="Open Editions"
+                                type="object"
+                                class="btn btn-link p-0 text-nowrap"/>
+                    </div>
                     <notebook>
                         <page string="Description" name="description">
                             <field name="description"/>
@@ -100,6 +112,9 @@
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Define your first competition template.
+            </p>
+            <p>
+                Use templates for default rules, then create an edition for the season you are actually running.
             </p>
         </field>
     </record>

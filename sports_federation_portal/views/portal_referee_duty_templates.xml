@@ -64,7 +64,7 @@
                                             'confirmed': 'bg-success',
                                             'rejected': 'bg-danger',
                                         }.get(duty.state, 'bg-secondary')">
-                                            <t t-esc="dict(duty._fields['state'].selection).get(duty.state, duty.state).capitalize()"/>
+                                            <t t-esc="duty.get_portal_state_label()"/>
                                         </span>
                                     </td>
                                     <td class="text-end">
@@ -134,7 +134,7 @@
                                     'confirmed': 'bg-success',
                                     'rejected': 'bg-danger',
                                 }.get(duty.state, 'bg-secondary')">
-                                    <t t-esc="dict(duty._fields['state'].selection).get(duty.state, duty.state).capitalize()"/>
+                                    <t t-esc="duty.get_portal_state_label()"/>
                                 </span>
                             </dd>
                             <dt class="col-sm-4">Nomination Deadline</dt>

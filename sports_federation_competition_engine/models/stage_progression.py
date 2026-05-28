@@ -152,6 +152,18 @@ class FederationStageProgression(models.Model):
             # keep_rank: already sorted by rank
 
             Participant = self.env["federation.tournament.participant"]
+            existing_target_participants = Participant.search(
+                [
+                    ("tournament_id", "=", rec.tournament_id.id),
+                    ("stage_id", "=", rec.target_stage_id.id),
+                    (
+                        "group_id",
+                        "=",
+                        rec.target_group_id.id if rec.target_group_id else False,
+                    ),
+                ]
+            )
+            next_seed = max(existing_target_participants.mapped("seed") or [0]) + 1
             for idx, entry in enumerate(qualified):
                 team = entry["team"]
                 # Find existing participant or create
@@ -165,7 +177,7 @@ class FederationStageProgression(models.Model):
                 vals = {
                     "stage_id": rec.target_stage_id.id,
                     "group_id": rec.target_group_id.id or False,
-                    "seed": idx + 1,
+                    "seed": next_seed + idx,
                     "state": "confirmed",
                 }
                 if existing:

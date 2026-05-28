@@ -9,6 +9,51 @@
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
                 <page string="Website" name="website">
+                    <div class="border rounded p-3 bg-info-subtle"
+                         role="status">
+                        <strong>Publication checklist:</strong>
+                        <ul class="mb-0 ps-3 mt-1">
+                            <li>Tournament page is published.</li>
+                            <li>Standings are reviewed and, when needed, published.</li>
+                            <li>Result disputes or governance exceptions are resolved before public republish.</li>
+                        </ul>
+                    </div>
+                    <div class="border rounded p-3 bg-warning-subtle"
+                         invisible="website_published"
+                         role="alert">
+                        <strong>Publication blocked:</strong>
+                        Public visitors cannot see this tournament until the tournament page itself is published here.
+                    </div>
+                    <div class="border rounded p-3 bg-info-subtle d-flex justify-content-between align-items-start gap-3"
+                         invisible="not website_published or standing_count or not show_public_standings"
+                         role="status">
+                        <div>
+                            <strong>Next step:</strong>
+                            The tournament page is live, but standings are not ready yet. Approve results or review the standings record before turning on public standings.
+                        </div>
+                        <button name="action_view_standings"
+                                string="Open Standings"
+                                type="object"
+                                class="btn btn-link p-0 text-nowrap"/>
+                    </div>
+                    <div class="border rounded p-3 bg-warning-subtle d-flex justify-content-between align-items-start gap-3"
+                         invisible="not website_published or not standing_count or show_public_standings"
+                         role="alert">
+                        <div>
+                            <strong>Hidden:</strong>
+                            Standings exist, but visitors still cannot see them. Review the table, then enable Show Public Standings when you want it visible.
+                        </div>
+                        <button name="action_view_standings"
+                                string="Open Standings"
+                                type="object"
+                                class="btn btn-link p-0 text-nowrap"/>
+                    </div>
+                    <div class="border rounded p-3 bg-success-subtle"
+                         invisible="not website_published or not show_public_standings"
+                         role="status">
+                        <strong>Public visibility:</strong>
+                        The tournament hub is live and visitors can open the public standings link.
+                    </div>
                     <group>
                         <group string="Publication">
                             <field name="website_published"/>

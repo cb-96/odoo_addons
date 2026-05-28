@@ -69,6 +69,14 @@ class FederationMatchReferee(models.Model):
         compute="_compute_assignment_readiness",
         string="Readiness Feedback",
     )
+    assignment_has_warning = fields.Boolean(
+        compute="_compute_assignment_readiness",
+        string="Has Warning",
+    )
+    assignment_warning_feedback = fields.Text(
+        compute="_compute_assignment_readiness",
+        string="Assignment Warnings",
+    )
     notes = fields.Text(string="Notes")
 
     _match_referee_role_unique = models.Constraint(
@@ -76,40 +84,82 @@ class FederationMatchReferee(models.Model):
         "A referee can only be assigned once per role per match.",
     )
 
-    @api.constrains("match_id", "referee_id", "state")
-    def _check_no_same_day_conflict(self):
-        """Raise if the referee has another active assignment on the same calendar day."""
-        for rec in self:
-            if rec.state == "cancelled":
-                continue
-            match_date = rec.match_id.date_scheduled
-            if not match_date:
-                continue
-            match_day = match_date.date()
-            other_assignments = self.search(
-                [
-                    ("referee_id", "=", rec.referee_id.id),
-                    ("match_id", "!=", rec.match_id.id),
-                    ("state", "!=", "cancelled"),
-                    ("id", "!=", rec.id),
-                ]
+    def _assignment_window(self, match=False, start_dt=False, end_dt=False):
+        self.ensure_one()
+        if start_dt:
+            return (
+                fields.Datetime.to_datetime(start_dt),
+                fields.Datetime.to_datetime(end_dt) if end_dt else fields.Datetime.to_datetime(start_dt),
             )
-            for other in other_assignments:
-                if (
-                    other.match_id.date_scheduled
-                    and other.match_id.date_scheduled.date() == match_day
-                ):
-                    raise ValidationError(
-                        _(
-                            "Referee %(name)s is already assigned to %(match)s on %(date)s. "
-                            "Remove the conflicting assignment first."
-                        )
-                        % {
-                            "name": rec.referee_id.name,
-                            "match": other.match_id.display_name,
-                            "date": match_day,
-                        }
-                    )
+
+        match = match or self.match_id
+        if not match:
+            return False, False
+
+        slot = match.slot_id if "slot_id" in match._fields else False
+        start_value = slot.start_datetime if slot and slot.start_datetime else match.date_scheduled
+        if not start_value:
+            return False, False
+        end_value = (
+            slot.end_datetime
+            if slot and slot.end_datetime
+            else fields.Datetime.to_datetime(start_value) + timedelta(minutes=1)
+        )
+        return (
+            fields.Datetime.to_datetime(start_value),
+            fields.Datetime.to_datetime(end_value) if end_value else fields.Datetime.to_datetime(start_value),
+        )
+
+    @staticmethod
+    def _windows_overlap(start_a, end_a, start_b, end_b):
+        if not start_a or not start_b:
+            return False
+        end_a = end_a or start_a
+        end_b = end_b or start_b
+        return not (end_a <= start_b or end_b <= start_a)
+
+    def _get_overlapping_assignments(self, start_dt=False, end_dt=False):
+        self.ensure_one()
+        target_start, target_end = self._assignment_window(
+            start_dt=start_dt,
+            end_dt=end_dt,
+        )
+        if not target_start or not self.referee_id:
+            return self.browse([])
+
+        other_assignments = self.search(
+            [
+                ("referee_id", "=", self.referee_id.id),
+                ("match_id", "!=", self.match_id.id),
+                ("state", "!=", "cancelled"),
+                ("id", "!=", self.id),
+            ]
+        )
+        return other_assignments.filtered(
+            lambda other: self._windows_overlap(
+                target_start,
+                target_end,
+                *other._assignment_window(),
+            )
+        )
+
+    def _window_is_covered_by_availability(self, start_dt=False, end_dt=False):
+        self.ensure_one()
+        availability_records = self.referee_id.availability_ids.filtered("active")
+        if not availability_records:
+            return True
+        target_start, target_end = self._assignment_window(
+            start_dt=start_dt,
+            end_dt=end_dt,
+        )
+        if not target_start:
+            return True
+        return bool(
+            availability_records.filtered(
+                lambda availability: availability.date_start <= target_start
+                and availability.date_end >= (target_end or target_start)
+            )
+        )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -129,14 +179,24 @@ class FederationMatchReferee(models.Model):
         "referee_id.certification_ids.active",
         "referee_id.certification_ids.issue_date",
         "referee_id.certification_ids.expiry_date",
+        "referee_id.availability_ids.active",
+        "referee_id.availability_ids.date_start",
+        "referee_id.availability_ids.date_end",
+        "referee_id.match_assignment_ids.state",
+        "referee_id.match_assignment_ids.match_id.date_scheduled",
         "state",
     )
     def _compute_assignment_readiness(self):
         """Compute assignment readiness."""
         for record in self:
             issues = record._get_readiness_issues()
+            warnings = record._get_assignment_warnings()
             record.assignment_ready = not bool(issues)
             record.readiness_feedback = "\n".join(issues) if issues else False
+            record.assignment_has_warning = bool(warnings)
+            record.assignment_warning_feedback = (
+                "\n".join(warnings) if warnings else False
+            )
 
             if record.match_id.date_scheduled:
                 scheduled_at = fields.Datetime.to_datetime(
@@ -185,7 +245,26 @@ class FederationMatchReferee(models.Model):
                     "Referee certification is missing or expired for the scheduled match date."
                 )
             )
+        overlaps = self._get_overlapping_assignments()
+        if overlaps:
+            issues.append(
+                _(
+                    "Referee is already assigned to %(count)s overlapping match(es).",
+                    count=len(overlaps),
+                )
+            )
         return issues
+
+    def _get_assignment_warnings(self, start_dt=False, end_dt=False):
+        """Return non-blocking assignment warnings."""
+        self.ensure_one()
+        warnings = []
+        if not self._window_is_covered_by_availability(
+            start_dt=start_dt,
+            end_dt=end_dt,
+        ):
+            warnings.append(_("No availability record covers this match slot."))
+        return warnings
 
     def action_confirm(self):
         """Execute the confirm action."""
@@ -302,6 +381,8 @@ class FederationMatchRefereeExtension(models.Model):
         "referee_assignment_ids.is_confirmation_overdue",
         "referee_assignment_ids.assignment_ready",
         "referee_assignment_ids.readiness_feedback",
+        "referee_assignment_ids.assignment_has_warning",
+        "referee_assignment_ids.assignment_warning_feedback",
     )
     def _compute_officiating_readiness(self):
         """Compute officiating readiness."""
@@ -392,6 +473,27 @@ class FederationMatchRefereeExtension(models.Model):
             )
 
         return issues
+
+    def _get_officiating_warnings(self):
+        """Return non-blocking officiating warnings."""
+        self.ensure_one()
+        warnings = []
+        role_labels = dict(
+            self.env["federation.match.referee"]._fields["role"].selection
+        )
+        warning_assignments = self.referee_assignment_ids.filtered(
+            lambda assignment: assignment.state != "cancelled"
+            and assignment.assignment_has_warning
+        )
+        for assignment in warning_assignments:
+            warnings.append(
+                _("%(role)s: %(issues)s")
+                % {
+                    "role": role_labels.get(assignment.role, assignment.role),
+                    "issues": assignment.assignment_warning_feedback,
+                }
+            )
+        return warnings
 
     def action_view_referee_assignments(self):
         """Execute the view referee assignments action."""

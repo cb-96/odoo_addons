@@ -279,6 +279,14 @@ class TestResultControl(TransactionCase):
         self.assertIn("verified", event_types)
         self.assertIn("approved", event_types)
 
+    def test_action_open_tournament_returns_owner_form(self):
+        """Operators should be able to jump from result control back to the tournament."""
+        action = self.match.action_open_tournament()
+
+        self.assertEqual(action["res_model"], "federation.tournament")
+        self.assertEqual(action["view_mode"], "form")
+        self.assertEqual(action["res_id"], self.tournament.id)
+
     def test_contest_and_correction_reasons_are_audited(self):
         """Test that contest and correction reasons are audited."""
         self.match.with_user(self.submitter_user).action_submit_result()

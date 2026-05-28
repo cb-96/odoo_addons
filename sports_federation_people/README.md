@@ -48,12 +48,14 @@ multiple licenses across seasons, but only one active license per season applies
 - `season_id`: Many2one to the covered season.
 - `club_id`: Many2one to the club at time of issue.
 - `issue_date` / `expiry_date`: Date validity window.
-- `state`: Selection with `draft`, `active`, `expired`, or `revoked`.
+- `state`: Selection with `draft`, `active`, `expired`, or `cancelled`.
 - `category`: Selection for license category such as amateur or professional.
 - `eligibility_notes`: Text eligibility remarks.
 - `notes`: Additional notes.
 
 - License numbers generated via `ir.sequence`.
+- Operator-facing copy should use `cancelled` for invalidated licenses. Older
+   notes may still say `revoked`, but that is compatibility-only wording.
 
 ## Data Files
 

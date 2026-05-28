@@ -3,6 +3,13 @@
 Formal exception-request process for situations that require bending standard
 rules, with a compact decision flow and full audit traceability.
 
+Canonical scope:
+
+- This is the single exception engine for disputes, waivers, overrides, and
+   publication recovery decisions.
+- Other workflows should reference this document instead of re-describing
+   decision mechanics.
+
 ## Overview
 
 Standard federation processes have rules and deadlines. When an exception is
@@ -137,3 +144,15 @@ types, including:
 - [Discipline Pipeline](WORKFLOW_DISCIPLINE_PIPELINE.md) — disciplinary appeals or exception handling
 - [Season Registration](WORKFLOW_SEASON_REGISTRATION.md) — late registration exceptions
 - [Compliance Management](WORKFLOW_COMPLIANCE_MANAGEMENT.md) — compliance exceptions
+
+## Unified Recovery Model
+
+When operational data has already been published, handle exceptions in one
+consistent operator model:
+
+1. Raise dispute/request exception from the owning record.
+2. Approve or reject through Governance Override.
+3. If approved, implement the owning-record correction.
+4. Re-run result and standings pipeline as needed.
+5. Recover publication state by republishing the affected standings/tournament
+   surfaces.

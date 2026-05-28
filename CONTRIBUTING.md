@@ -26,6 +26,7 @@ Run targeted suites for the main maintained flows:
 bash ./ci/run_tests.sh --suite competition_core
 bash ./ci/run_tests.sh --suite portal_public_ops
 bash ./ci/run_tests.sh --suite finance_reporting
+bash ./ci/run_tests.sh --suite rosters_readiness_guard
 ```
 
 Run an individual module when you only need a narrow slice:
@@ -54,6 +55,9 @@ python3 ci/check_module_owners.py
 python3 ci/check_openapi_contracts.py
 python3 ci/check_release_train.py
 python3 ci/check_explain_snapshots.py
+python3 ci/check_ci_hygiene.py
+python3 ci/check_module_dependency_drift.py
+bash ci/prune_ci_logs.sh 30
 ```
 
 ## CI/CD Pipeline
@@ -68,6 +72,7 @@ suite that covers the area you changed:
 | `competition_core` | Base, tournament, scheduling, results, standings critical path |
 | `portal_public_ops` | Portal ownership, public routes, compliance, standings, venue-facing flows |
 | `finance_reporting` | Finance bridge and reporting coverage |
+| `rosters_readiness_guard` | Participant readiness regression and discovery gate |
 | `release_surfaces` | Broader portal/public, match-day, compliance, notification release verification |
 | `people_rosters_rules` | People, rosters, rules, and officiating modules |
 | `ops_and_notifications` | Discipline, governance, notifications, import_tools, demo modules |
@@ -161,12 +166,14 @@ python3 ci/check_module_owners.py
 python3 ci/check_openapi_contracts.py
 python3 ci/check_release_train.py
 python3 ci/check_explain_snapshots.py
+python3 ci/check_module_dependency_drift.py
 ```
 
 ## Documentation expectations
 
 - Update the relevant module README for behavior or schema changes.
 - Update the matching workflow under `_workflows/` when business behavior changes.
+- Run the [Intuitiveness review checklist](INTUITIVENESS_REVIEW_CHECKLIST.md) for major UX, naming, entry-point, and state-label changes.
 - Keep `TECHNICAL_NOTE.md`, `CONTEXT.md`, `INTEGRATIONS.md`, and `STATE_AND_OWNERSHIP_MATRIX.md` aligned when the change affects their scope.
 - Update `MODULE_OWNERS.yaml` whenever a new addon is introduced or primary module ownership changes.
 - Update `RELEASE_TRAIN.md` when a change starts a new release window or needs train-level migration coordination.

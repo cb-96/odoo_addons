@@ -25,9 +25,10 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_set_draft" string="Reset to Draft" type="object" class="oe_highlight" invisible="status != 'active'"/>
+                    <button name="action_set_draft" string="Return to Draft" type="object" class="oe_highlight" invisible="status != 'active'"/>
                     <button name="action_activate" string="Activate" type="object" class="oe_highlight" invisible="status != 'draft'"/>
                     <button name="action_close" string="Close" type="object" invisible="status != 'active'"/>
+                    <button name="action_reopen" string="Reopen" type="object" class="oe_highlight" invisible="status != 'closed'"/>
                     <field name="status" widget="statusbar" statusbar_visible="draft,active,closed"/>
                 </header>
                 <sheet>
@@ -69,6 +70,30 @@
                             <field name="match_day_lock_feedback" invisible="1" readonly="1"/>
                         </group>
                     </group>
+                    <div class="alert alert-info"
+                         invisible="status != 'draft'"
+                         role="status">
+                        <strong>Next step:</strong>
+                        Add or update roster lines until readiness turns green, then activate this roster for match-day use.
+                    </div>
+                    <div class="alert alert-success"
+                         invisible="status != 'active'"
+                         role="status">
+                        <strong>Roster is live:</strong>
+                        This roster can be used for match sheets. Use Return to Draft only when you need controlled lineup changes.
+                    </div>
+                    <div class="alert alert-warning d-flex justify-content-between align-items-start gap-3"
+                         invisible="status != 'closed'"
+                         role="alert">
+                        <div>
+                            <strong>Roster is closed:</strong>
+                            This roster is not used for new match-sheet preparation while closed. Use Reopen to restore it as the active roster.
+                        </div>
+                        <button name="action_reopen"
+                                string="Reopen Roster"
+                                type="object"
+                                class="btn btn-link p-0 text-nowrap"/>
+                    </div>
                     <!-- Readiness status badges -->
                     <div class="row mt-2 mb-3">
                         <div class="col-md-6">
@@ -87,6 +112,8 @@
                             <div invisible="not readiness_feedback"
                                  class="alert alert-warning mt-2 mb-0" role="alert">
                                 <i class="fa fa-exclamation-triangle me-2" title="Readiness issue"/>
+                                <strong>Blocker list:</strong>
+                                <br/>
                                 <field name="readiness_feedback" readonly="1" nolabel="1"/>
                             </div>
                         </div>
@@ -104,6 +131,8 @@
                             <div invisible="not match_day_lock_feedback"
                                  class="alert alert-warning mt-2 mb-0" role="alert">
                                 <i class="fa fa-lock me-2" title="Lock reason"/>
+                                <strong>Blocker list:</strong>
+                                <br/>
                                 <field name="match_day_lock_feedback" readonly="1" nolabel="1"/>
                             </div>
                         </div>

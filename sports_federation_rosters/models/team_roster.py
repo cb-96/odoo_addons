@@ -617,3 +617,27 @@ class FederationTeamRoster(models.Model):
                 "roster_closed",
                 _("Roster '%(roster)s' closed.") % {"roster": record.display_name},
             )
+
+    def action_reopen(self):
+        """Undo a roster closure by restoring the roster to active status."""
+        for record in self:
+            if record.status != "closed":
+                raise ValidationError(
+                    _("Only closed rosters can be reopened.")
+                )
+            issues = record._get_readiness_issues()
+            if issues:
+                raise ValidationError(
+                    _("Roster '%(roster)s' cannot be reopened yet:\n- %(issues)s")
+                    % {
+                        "roster": record.display_name,
+                        "issues": "\n- ".join(issues),
+                    }
+                )
+        self.write({"status": "active"})
+        for record in self:
+            record._log_audit_event(
+                "roster_reopened",
+                _("Roster '%(roster)s' reopened and restored to active.")
+                % {"roster": record.display_name},
+            )

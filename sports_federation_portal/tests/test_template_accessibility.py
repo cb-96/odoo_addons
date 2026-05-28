@@ -174,3 +174,23 @@ class TestPortalTemplateAccessibility(TransactionCase):
             "portal_tournament_workspace_templates",
             "portal_my_tournament_workspace_detail",
         )
+
+    def test_portal_templates_use_human_state_labels(self):
+        views_dir = Path(__file__).resolve().parents[1] / "views"
+        disallowed_fragments = [
+            "dict(tournament._fields['state'].selection).get(tournament.state)",
+            "dict(reg._fields['state'].selection).get(reg.state)",
+            "dict(sheet._fields['state'].selection).get(sheet.state)",
+            "dict(match._fields['result_state'].selection).get(match.result_state)",
+            't-esc="match.result_state.capitalize()"',
+            "dict(duty._fields['state'].selection).get(duty.state, duty.state).capitalize()",
+        ]
+
+        for template_file in views_dir.glob("*.xml"):
+            template_text = template_file.read_text(encoding="utf-8")
+            for fragment in disallowed_fragments:
+                self.assertNotIn(
+                    fragment,
+                    template_text,
+                    f"{template_file.name} should not render raw internal state values.",
+                )

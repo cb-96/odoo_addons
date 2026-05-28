@@ -55,7 +55,7 @@ _Last updated: 2026-04-28 (Phase 4 refresh)_
 
 Largest complexity hotspots by line count (production code only):
 
-- [sports_federation_public_site/models/public_flags.py](sports_federation_public_site/models/public_flags.py) — 1 001 lines.
+- [sports_federation_public_site/models](sports_federation_public_site/models) — public visibility flags were split across multiple model files.
 - [sports_federation_rosters/models/team_roster.py](sports_federation_rosters/models/team_roster.py) — 585 lines.
 - [sports_federation_reporting/models/report_schedule.py](sports_federation_reporting/models/report_schedule.py) — 319 lines.
 - [sports_federation_reporting/models/report_operational.py](sports_federation_reporting/models/report_operational.py) — 219 lines.
@@ -333,7 +333,7 @@ Recommendation:
 ## Roadmap Link
 
 The replacement operating-period roadmap is in [ROADMAP.md](ROADMAP.md).
-The prior roadmap has been archived in [ROADMAP_archive_2026-04-17.md](ROADMAP_archive_2026-04-17.md).
+The prior roadmap has been archived in [archive/roadmaps/ROADMAP_archive_2026-04-17.md](archive/roadmaps/ROADMAP_archive_2026-04-17.md).
 
 ## Review Limits
 

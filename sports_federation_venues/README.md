@@ -38,7 +38,9 @@ Fields:
 - ``capacity`` (Integer): Total spectator capacity.
 - ``equipment_notes`` (Text): Available equipment.
 - ``playing_area_ids`` (One2many): Courts, pitches, and other playable areas.
+- ``blackout_window_ids`` (One2many): Venue or playing-area blackout windows.
 - ``playing_area_count`` (Integer): Stat-button counter.
+- ``blackout_window_count`` (Integer): Stat-button counter.
 - ``notes`` (Text): General notes.
 - ``active`` (Boolean): Whether the venue is in use.
 
@@ -55,14 +57,43 @@ Fields:
 - ``capacity`` (Integer): Surface-specific capacity.
 - ``surface_type`` (Selection): ``grass``, ``artificial``, ``indoor``,
   ``clay``, or ``other``.
+- ``capability_ids`` (Many2many): Capability tags such as lighting,
+  streaming, or sport-specific equipment.
 - ``active`` (Boolean): Whether the area is available.
 - ``notes`` (Text): Remarks.
+
+``federation.playing.area.capability``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A reusable tag that describes what a playing area can support.
+
+Fields:
+
+- ``name`` (Char): Capability label.
+- ``code`` (Char): Stable short code.
+- ``description`` (Text): Optional operator notes.
+
+``federation.venue.blackout``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A closure or blackout window that makes a venue or one playing area unavailable.
+
+Fields:
+
+- ``name`` (Char): Operator-facing label.
+- ``venue_id`` (Many2one): Affected venue.
+- ``playing_area_id`` (Many2one): Optional specific playing area.
+- ``date_start`` / ``date_end`` (Datetime): Closed interval.
+- ``reason`` (Selection): ``blackout``, ``maintenance``, or ``other``.
+- ``notes`` (Text): Optional scheduling notes.
 
 Inherited Extensions
 --------------------
 
 - ``federation.tournament`` gains ``venue_id`` and ``venue_notes`` for
-  tournament-wide venue planning notes.
+  tournament-wide venue planning notes plus
+  ``required_playing_area_capability_ids`` for divisions that need specific
+  courts.
 - ``federation.tournament.stage`` surfaces linked ``round_ids`` so stage admins
   can plan sequence, date, and venue directly on rounds.
 - ``federation.tournament.round`` gains ``venue_id`` alongside the base
@@ -77,6 +108,10 @@ Key Behaviours
 - **Structured addresses**: venues store full addresses with country
   references.
 - **Multi-area venues**: a sports complex can have several pitches or courts.
+- **Constraint windows**: venues can declare blackout or maintenance windows at
+  venue or playing-area level.
+- **Capability tags**: playing areas can advertise the operational capabilities
+  they support, and divisions can require matching capabilities.
 - **Round-owned schedule planning**: administrators can create stage rounds up
   front and assign a date and venue to each one without duplicating scheduling
   concepts.
@@ -85,6 +120,10 @@ Key Behaviours
   venue or date combinations.
 - **Duplicate-pairing guardrails**: teams in the same category cannot play the
   same opponent more than once inside the same round.
+- **Competition Workspace integration**: when
+  ``sports_federation_competition_engine`` is installed, blackout windows,
+  maintenance closures, and capability mismatches feed planner validation and
+  venue-readiness summaries.
 - **Finance bridge integration**: when ``sports_federation_finance_bridge`` is
   installed, scheduling a match with a venue automatically creates or reuses a
   draft venue-booking charge for passthrough settlement.

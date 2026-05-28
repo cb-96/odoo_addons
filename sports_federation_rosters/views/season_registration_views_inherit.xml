@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_federation_season_registration_form_roster_handoff" model="ir.ui.view">
+        <field name="name">federation.season.registration.form.roster.handoff</field>
+        <field name="model">federation.season.registration</field>
+        <field name="inherit_id" ref="sports_federation_base.view_federation_season_registration_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='notes']" position="before">
+                <div class="alert alert-info"
+                     invisible="state != 'draft'"
+                     role="status">
+                    <strong>Next step:</strong>
+                    Review the team and season scope here, then confirm the registration when the team is accepted for this season.
+                </div>
+                <div class="alert alert-warning"
+                     invisible="state != 'draft'"
+                     role="alert">
+                    <strong>Blocker list:</strong>
+                    <ul class="mb-0 ps-3 mt-1">
+                        <li>Team and season must be set before confirmation.</li>
+                        <li>Only confirmed season registrations can hand off to roster readiness.</li>
+                    </ul>
+                </div>
+                <div class="alert alert-info d-flex justify-content-between align-items-start gap-3"
+                     invisible="state != 'confirmed' or not team_id"
+                     role="status">
+                    <div>
+                        <strong>Next step:</strong>
+                        This team is cleared for the season. Open Team Rosters to prepare the squad for the selected competition and rule set before tournament confirmation.
+                    </div>
+                    <button name="action_open_team_rosters"
+                            string="Open Team Rosters"
+                            type="object"
+                            class="btn btn-link p-0 text-nowrap"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

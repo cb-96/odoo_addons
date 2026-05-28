@@ -737,6 +737,56 @@ class TestPublicApiRateLimits(TransactionCase):
                 "state": "confirmed",
             }
         )
+
+        # Ensure roster-deadline checks pass when creating scheduled matches.
+        player_a = cls.env["federation.player"].create(
+            {
+                "first_name": "Rate",
+                "last_name": "Limit A",
+                "gender": "male",
+                "club_id": cls.club.id,
+                "team_ids": [(4, cls.team_a.id)],
+            }
+        )
+        roster_a = cls.env["federation.team.roster"].create(
+            {
+                "name": "Rate Limit Team A Roster",
+                "team_id": cls.team_a.id,
+                "season_id": cls.season.id,
+            }
+        )
+        cls.env["federation.team.roster.line"].create(
+            {
+                "roster_id": roster_a.id,
+                "player_id": player_a.id,
+            }
+        )
+        roster_a.action_activate()
+
+        player_b = cls.env["federation.player"].create(
+            {
+                "first_name": "Rate",
+                "last_name": "Limit B",
+                "gender": "male",
+                "club_id": cls.club.id,
+                "team_ids": [(4, cls.team_b.id)],
+            }
+        )
+        roster_b = cls.env["federation.team.roster"].create(
+            {
+                "name": "Rate Limit Team B Roster",
+                "team_id": cls.team_b.id,
+                "season_id": cls.season.id,
+            }
+        )
+        cls.env["federation.team.roster.line"].create(
+            {
+                "roster_id": roster_b.id,
+                "player_id": player_b.id,
+            }
+        )
+        roster_b.action_activate()
+
         cls.env["federation.match"].create(
             {
                 "tournament_id": cls.tournament.id,

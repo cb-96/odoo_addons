@@ -10,7 +10,7 @@ set -euo pipefail
 PROJECT_NAME="${1:-sf_ci}"
 COMPOSE_FILE="${2:-ci/docker-compose.ci.yaml}"
 LOADED_ENV_FILE="${3:-ci/.env}"
-GENERATED_CONF="${4:-ci/odoo-ci.generated.conf}"
+GENERATED_CONF="${4:-ci/odoo-ci.generated.runtime.conf}"
 CONTAINER_CONF="/etc/odoo/odoo.conf"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

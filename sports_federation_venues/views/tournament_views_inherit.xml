@@ -9,6 +9,7 @@
             <xpath expr="//field[@name='rule_set_id']" position="after">
                 <field name="venue_id"/>
                 <field name="venue_notes"/>
+                <field name="required_playing_area_capability_ids" widget="many2many_tags" optional="hide"/>
             </xpath>
         </field>
     </record>

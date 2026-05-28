@@ -185,6 +185,9 @@ Key Behaviours
 - **Match-day locking**: submitted and approved sheet activity locks roster
    scope changes and the referenced roster lines so historical lineups remain
    defensible.
+- **Undoable closure**: closing a roster is no longer terminal. Federation
+   staff can reopen a closed roster back to active when closure was premature,
+   while active-roster uniqueness and readiness checks still apply.
 - **Substitution governance**: approved sheets can record ``entered_minute``
    and ``left_minute`` values while still blocking lineup changes after
    approval.
@@ -198,6 +201,10 @@ Key Behaviours
    confirmed and grouped without a ready roster before the deadline, but once
    the one-week deadline is reached operators cannot confirm participants or
    schedule matches until an active ready roster exists.
+- **Guided roster handoff**: confirmed season registrations now open the roster
+   list with the relevant team, season, competition, and rule-set context, and
+   participant forms expose the current roster deadline plus an `Open Team
+   Roster` handoff when readiness work is the next blocker.
 - **Team-linked roster checks**: team roster lookup and tournament deadline
    assessment are owned by the team model so roster compliance follows the team
    rather than being treated as a separate participant-only concern.

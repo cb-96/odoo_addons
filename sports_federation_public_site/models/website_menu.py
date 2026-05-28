@@ -8,7 +8,7 @@ class WebsiteMenu(models.Model):
     def _get_public_site_coverage_menu_values(self):
         """Return public site coverage menu values."""
         return {
-            "name": "Published Coverage",
+            "name": "Tournament Updates",
             "url": "/tournaments#published",
             "sequence": 10,
             "is_visible": True,

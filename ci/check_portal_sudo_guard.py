@@ -33,20 +33,20 @@ EXCLUDED_FILES = {"portal_privilege.py"}
 
 # Patterns that indicate a safe ownership scope check
 SAFE_PATTERNS = [
-    re.compile(r"_portal_"),          # any _portal_* model method
+    re.compile(r"_portal_"),  # any _portal_* model method
     re.compile(r"portal_privilege"),  # explicit privilege boundary
     re.compile(r"_assert_portal_owns"),
     re.compile(r"portal_assert_in_domain"),
-    re.compile(r"clubs\.ids"),        # club scope variable used in domain
-    re.compile(r"clubs\s*="),         # club scope being derived
-    re.compile(r'"club_id"'),         # club_id domain filter
+    re.compile(r"clubs\.ids"),  # club scope variable used in domain
+    re.compile(r"clubs\s*="),  # club scope being derived
+    re.compile(r'"club_id"'),  # club_id domain filter
     re.compile(r"'club_id'"),
-    re.compile(r'"team_id"'),         # team_id domain filter
+    re.compile(r'"team_id"'),  # team_id domain filter
     re.compile(r"'team_id'"),
-    re.compile(r'"user_id"'),         # user-scoped representative lookup
+    re.compile(r'"user_id"'),  # user-scoped representative lookup
     re.compile(r"'user_id'"),
     re.compile(r"user\.id"),
-    re.compile(r"scope_domain"),      # explicit scope domain variable
+    re.compile(r"scope_domain"),  # explicit scope domain variable
     re.compile(r"portal_club_scope"),
     re.compile(r"portal_team_scope"),
 ]
@@ -96,7 +96,9 @@ def main() -> int:
             all_violations[py_file] = violations
 
     if not all_violations:
-        print("[sudo-guard] OK — all portal .sudo() calls have an ownership scope check.")
+        print(
+            "[sudo-guard] OK — all portal .sudo() calls have an ownership scope check."
+        )
         return 0
 
     print(

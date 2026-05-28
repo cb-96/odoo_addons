@@ -40,6 +40,8 @@ fi
 
 black_exit=0
 flake8_exit=0
+ci_hygiene_exit=0
+dependency_drift_exit=0
 
 echo "[lint] Running Black across the repository"
 black --check --exclude '/(\.git|__pycache__|\.venv|ci/logs)/' . || black_exit=$?
@@ -47,16 +49,24 @@ black --check --exclude '/(\.git|__pycache__|\.venv|ci/logs)/' . || black_exit=$
 echo "[lint] Running Flake8 across the repository"
 flake8 . || flake8_exit=$?
 
+echo "[lint] Running CI hygiene checks"
+python3 ci/check_ci_hygiene.py || ci_hygiene_exit=$?
+
+echo "[lint] Reporting module dependency drift"
+python3 ci/check_module_dependency_drift.py || dependency_drift_exit=$?
+
 echo
 echo "[lint] Summary"
 echo "  Black exit code:  $black_exit"
 echo "  Flake8 exit code: $flake8_exit"
+echo "  CI hygiene exit code: $ci_hygiene_exit"
+echo "  Dependency drift report exit code: $dependency_drift_exit"
 
-if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 ) ]]; then
+if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 ) ]]; then
     exit 1
 fi
 
-if [[ $black_exit -ne 0 || $flake8_exit -ne 0 ]]; then
+if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 ]]; then
     echo "[lint] Repository-wide report found issues."
 else
     echo "[lint] Repository-wide report is clean."

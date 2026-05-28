@@ -22,7 +22,7 @@
                         invisible="result_state != 'submitted'"/>
                 <button name="action_approve_result" string="Approve Result" type="object" class="btn-primary"
                         invisible="result_state != 'verified'"/>
-                <button name="action_contest_result" string="Contest Result" type="object" class="btn-warning"
+                <button name="action_raise_dispute_request_exception" string="Raise Dispute / Request Exception" type="object" class="btn-warning"
                         invisible="result_state not in ('submitted', 'verified', 'approved')"/>
                 <button name="action_correct_result" string="Correct Result" type="object"
                         invisible="result_state not in ('contested', 'approved')"/>
@@ -33,6 +33,52 @@
             <xpath expr="//sheet/group[2]" position="after">
                 <div class="alert alert-info py-1 px-2 small" invisible="state != 'done'" role="status">
                     Match complete — use Result Status above to track the approval pipeline.
+                </div>
+                <div class="alert alert-info py-2 px-3"
+                     invisible="result_state != 'verified'"
+                     role="status">
+                    <strong>Next step:</strong>
+                    Approve this result to include it in official standings for the related tournament.
+                </div>
+                <div class="alert alert-success d-flex justify-content-between align-items-start gap-3"
+                     invisible="result_state != 'approved'"
+                     role="status">
+                    <div>
+                        <strong>Next step:</strong>
+                        Official standings have been recomputed. Use this publication checklist before public release:
+                        <ul class="mb-0 ps-3 mt-2">
+                            <li>Review standings table changes.</li>
+                            <li>Publish or republish standings visibility.</li>
+                            <li>Confirm tournament Website visibility settings.</li>
+                        </ul>
+                    </div>
+                    <button name="action_open_tournament"
+                            string="Open Tournament"
+                            type="object"
+                            class="btn btn-link p-0 text-nowrap"/>
+                </div>
+                <div class="alert alert-warning d-flex justify-content-between align-items-start gap-3"
+                     invisible="result_state not in ('contested', 'corrected')"
+                     role="alert">
+                    <div>
+                        <strong>Blocked:</strong>
+                        Contested or corrected results are removed from official standings until they are resubmitted and approved again.
+                        <div class="small mt-2">
+                            <strong>Blocker list:</strong>
+                            <ul class="mb-0 ps-3 mt-1">
+                                <li>Result is not currently official for standings.</li>
+                                <li>Any published standings may need rollback or republish after correction.</li>
+                            </ul>
+                        </div>
+                        <div class="small mt-2">
+                            <strong>Next action:</strong>
+                            Resolve the dispute workflow, then resubmit, verify, and approve this result.
+                        </div>
+                    </div>
+                    <button name="action_open_tournament"
+                            string="Open Tournament"
+                            type="object"
+                            class="btn btn-link p-0 text-nowrap"/>
                 </div>
                 <group string="Result Control">
                     <group string="Approval Trail">
@@ -47,9 +93,9 @@
                         <field name="include_in_official_standings"/>
                     </group>
                 </group>
-                <group string="Contest / Correction">
+                  <group string="Dispute / Correction">
                     <field name="result_contest_reason"
-                           placeholder="Required before contesting a result."
+                          placeholder="Required before raising a dispute or exception request."
                            invisible="result_state not in ('submitted', 'verified', 'approved', 'contested')"/>
                     <field name="result_correction_reason"
                            placeholder="Required before correcting a result."

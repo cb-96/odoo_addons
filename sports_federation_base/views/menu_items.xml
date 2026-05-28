@@ -6,9 +6,34 @@
               web_icon="sports_federation_base,static/description/icon.png"
               sequence="100"/>
 
-    <menuitem id="menu_federation_master_data"
-              name="Master Data"
+    <menuitem id="menu_federation_setup"
+              name="Setup"
               parent="menu_federation_root"
+              sequence="10"/>
+
+    <menuitem id="menu_federation_planning"
+              name="Planning"
+              parent="menu_federation_root"
+              sequence="20"/>
+
+    <menuitem id="menu_federation_match_day"
+              name="Match Day"
+              parent="menu_federation_root"
+              sequence="30"/>
+
+    <menuitem id="menu_federation_publication"
+              name="Publication"
+              parent="menu_federation_root"
+              sequence="40"/>
+
+    <menuitem id="menu_federation_administration"
+              name="Administration"
+              parent="menu_federation_root"
+              sequence="50"/>
+
+    <menuitem id="menu_federation_master_data"
+              name="Core Records"
+              parent="menu_federation_setup"
               sequence="10"/>
 
     <menuitem id="menu_federation_club"
@@ -25,18 +50,18 @@
 
     <menuitem id="menu_federation_season"
               name="Seasons"
-              parent="menu_federation_root"
+              parent="menu_federation_setup"
               action="federation_season_action"
               sequence="20"/>
 
     <menuitem id="menu_federation_registration"
-              name="Registrations"
-              parent="menu_federation_root"
+              name="Season Registrations"
+              parent="menu_federation_setup"
               action="federation_season_registration_action"
               sequence="30"/>
     <menuitem id="menu_federation_competitions"
-              name="Competitions"
-              parent="menu_federation_root"
-              sequence="25"/>
+              name="Competition Setup"
+              parent="menu_federation_setup"
+              sequence="40"/>
 
 </odoo>

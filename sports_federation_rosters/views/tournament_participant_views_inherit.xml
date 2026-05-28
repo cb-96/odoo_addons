@@ -6,11 +6,72 @@
         <field name="inherit_id" ref="sports_federation_tournament.view_federation_tournament_participant_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='registration_date']" position="after">
+                <field name="ready_for_confirmation" readonly="1" invisible="1"/>
+                <field name="confirmation_blocking" readonly="1" invisible="1"/>
+                <field name="confirmation_warning" readonly="1" invisible="1"/>
                 <field name="roster_deadline_date" readonly="1"/>
                 <field name="readiness_roster_id" readonly="1"/>
                 <field name="confirmation_feedback"
                        readonly="1"
                        invisible="not confirmation_feedback"/>
+            </xpath>
+            <xpath expr="//field[@name='notes']" position="before">
+                <div class="alert alert-success d-flex justify-content-between align-items-start gap-3"
+                     invisible="not team_id or not tournament_id or confirmation_blocking or confirmation_warning"
+                     role="status">
+                    <div>
+                        <strong>Next step:</strong>
+                        The roster handoff is ready. Open the linked roster if you want to review players before confirming this participant.
+                    </div>
+                    <button name="action_open_readiness_roster"
+                            string="Open Team Roster"
+                            type="object"
+                            class="btn btn-link p-0 text-nowrap"/>
+                </div>
+                <div class="alert alert-warning d-flex justify-content-between align-items-start gap-3"
+                     invisible="not team_id or not tournament_id or not confirmation_warning"
+                     role="status">
+                    <div>
+                        <strong>Warning-only for now:</strong>
+                        Participant confirmation can still continue before the roster deadline, but the blocker list below must be resolved before the deadline is reached.
+                        <div class="small mt-2"
+                             style="white-space: pre-line;"
+                             invisible="not confirmation_feedback">
+                            <strong>Blocker list:</strong>
+                            <field name="confirmation_feedback" readonly="1" nolabel="1"/>
+                        </div>
+                        <div class="small mt-2">
+                            <strong>Next action:</strong>
+                            Open the readiness roster and clear the listed issues ahead of the deadline.
+                        </div>
+                    </div>
+                    <button name="action_open_readiness_roster"
+                            string="Open Team Roster"
+                            type="object"
+                            class="btn btn-link p-0 text-nowrap"/>
+                </div>
+                <div class="alert alert-warning d-flex justify-content-between align-items-start gap-3"
+                     invisible="not team_id or not tournament_id or not confirmation_blocking"
+                     role="alert">
+                    <div>
+                        <strong>Blocked:</strong>
+                        Participant confirmation is now blocked because the roster deadline has been reached and readiness issues remain.
+                        <div class="small mt-2"
+                             style="white-space: pre-line;"
+                             invisible="not confirmation_feedback">
+                            <strong>Blocker list:</strong>
+                            <field name="confirmation_feedback" readonly="1" nolabel="1"/>
+                        </div>
+                        <div class="small mt-2">
+                            <strong>Next action:</strong>
+                            Open the readiness roster, clear the blockers, then return here to confirm.
+                        </div>
+                    </div>
+                    <button name="action_open_readiness_roster"
+                            string="Open Team Roster"
+                            type="object"
+                            class="btn btn-link p-0 text-nowrap"/>
+                </div>
             </xpath>
         </field>
     </record>

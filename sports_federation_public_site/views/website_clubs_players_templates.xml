@@ -45,7 +45,7 @@
                                 </div>
                             </a>
                         </div>
-                    </t>
+                            </t>
                 </div>
 
                 <div t-if="pager" class="d-flex justify-content-center mt-4">
@@ -324,7 +324,7 @@
                                                         'bg-success' if lic.state == 'active' else
                                                         'bg-secondary'
                                                     }">
-                                                        <t t-esc="lic.state.capitalize()"/>
+                                                        <t t-esc="lic.get_public_site_state_label()"/>
                                                     </span>
                                                 </td>
                                             </tr>

@@ -13,6 +13,37 @@
                     </div>
                 </div>
 
+                <div class="alert alert-info d-flex flex-wrap justify-content-between align-items-center gap-2" role="status" t-if="next_pending_assignment">
+                    <div>
+                        <strong>Next step:</strong>
+                        respond to
+                        <strong><t t-esc="next_pending_assignment.match_id.display_name"/></strong>
+                        <t t-if="next_pending_assignment.confirmation_deadline">
+                            before
+                            <t t-esc="next_pending_assignment.confirmation_deadline" t-options='{"widget": "datetime"}'/>
+                        </t>
+                        <span t-if="overdue_count" class="badge text-bg-danger ms-2">
+                            <t t-esc="overdue_count"/> overdue
+                        </span>
+                    </div>
+                    <a t-attf-href="/my/referee-assignments/#{next_pending_assignment.id}" class="btn btn-primary btn-sm">
+                        Respond now
+                    </a>
+                </div>
+
+                <div class="alert alert-success" role="status" t-if="not next_pending_assignment and pending_count == 0">
+                    No pending responses. Keep an eye on upcoming assignments.
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap mb-3">
+                    <span class="badge text-bg-warning" t-if="pending_count">
+                        <t t-esc="pending_count"/> pending response
+                    </span>
+                    <span class="badge text-bg-danger" t-if="overdue_count">
+                        <t t-esc="overdue_count"/> overdue
+                    </span>
+                </div>
+
                 <div class="d-flex gap-2 flex-wrap mb-3">
                     <a t-attf-href="/my/referee-assignments?filterby=upcoming"
                        t-att-class="'btn btn-sm %s' % ('btn-primary' if filterby == 'upcoming' else 'btn-outline-primary')">Upcoming</a>
@@ -40,7 +71,7 @@
                         </thead>
                         <tbody>
                             <t t-foreach="assignments" t-as="assignment">
-                                <tr>
+                                <tr t-att-class="'table-danger' if assignment.is_confirmation_overdue and assignment.state == 'draft' else ''">
                                     <td>
                                         <strong><t t-esc="assignment.match_id.display_name"/></strong>
                                     </td>
@@ -51,15 +82,17 @@
                                     </td>
                                     <td>
                                         <t t-if="assignment.confirmation_deadline" t-esc="assignment.confirmation_deadline" t-options='{"widget": "datetime"}'/>
+                                        <span t-if="assignment.is_confirmation_overdue and assignment.state == 'draft'" class="badge text-bg-danger ms-1">Overdue</span>
                                     </td>
                                     <td>
                                         <span class="badge"
                                               t-att-class="'badge text-bg-warning' if assignment.state == 'draft' else ('badge text-bg-success' if assignment.state == 'confirmed' else ('badge text-bg-secondary' if assignment.state == 'done' else 'badge text-bg-danger'))">
-                                            <t t-esc="dict(assignment._fields['state'].selection).get(assignment.state)"/>
+                                            <t t-esc="assignment.get_portal_state_label()"/>
                                         </span>
                                     </td>
                                     <td class="text-end">
-                                        <a t-attf-href="/my/referee-assignments/#{assignment.id}" class="btn btn-sm btn-outline-primary">Open</a>
+                                        <a t-attf-href="/my/referee-assignments/#{assignment.id}" class="btn btn-sm btn-outline-primary" t-if="assignment.state == 'draft'">Respond</a>
+                                        <a t-attf-href="/my/referee-assignments/#{assignment.id}" class="btn btn-sm btn-outline-primary" t-else="">Open</a>
                                     </td>
                                 </tr>
                             </t>
@@ -94,6 +127,15 @@
                     <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
 
+                <div class="alert alert-info" role="status" t-if="assignment.state == 'draft' and not assignment.is_confirmation_overdue">
+                    <strong>Next step:</strong>
+                    confirm this assignment if you are available, or decline with a short reason so the coordinator can replace you.
+                </div>
+                <div class="alert alert-danger" role="alert" t-if="assignment.state == 'draft' and assignment.is_confirmation_overdue">
+                    <strong>Response overdue:</strong>
+                    this assignment has passed its confirmation deadline. Reply now so the coordinator can resolve coverage.
+                </div>
+
                 <div class="row g-4">
                     <div class="col-lg-7">
                         <div class="card">
@@ -126,7 +168,7 @@
                                     </tr>
                                     <tr>
                                         <th>Status</th>
-                                        <td><t t-esc="dict(assignment._fields['state'].selection).get(assignment.state)"/></td>
+                                        <td><t t-esc="assignment.get_portal_state_label()"/></td>
                                     </tr>
                                     <tr t-if="assignment.notes">
                                         <th>Assignment Notes</th>

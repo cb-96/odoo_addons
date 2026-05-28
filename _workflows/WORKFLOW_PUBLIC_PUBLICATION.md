@@ -11,6 +11,11 @@ tournament, control which result and standing surfaces are visible, and can add
 editorial content around seasons, tournaments, or teams without editing website
 templates.
 
+Readiness handoff for publication should reuse the canonical chain from
+registration through approved standings. Publication surfaces should add only
+the final publication checklist, not duplicate every upstream prerequisite
+explanation.
+
 ## Modules Involved
 
 | Module | Role |
@@ -50,6 +55,11 @@ Then configure the public-site fields on the tournament:
 The first transition from unpublished to published sends the tournament
 publication notification to participating club and team contacts.
 
+The tournament Website tab now also surfaces the next unmet prerequisite
+directly on the form: whether the tournament itself is still unpublished,
+whether standings do not exist yet, or whether standings exist but are not yet
+published or visible.
+
 ### 2. Standings And Results Visibility
 
 **Actor**: Federation administrator
@@ -58,6 +68,10 @@ publication notification to participating club and team contacts.
 1. Publish the standings record itself with `website_published = True`.
 2. Optionally set `public_title` for the public standings page.
 3. Remember the public results page only shows approved results.
+4. Use the standings form and the tournament Website tab together for the final
+  handoff: standings pages explain whether approved results are still pending,
+  while the tournament Website tab explains whether the public blocker is the
+  standings record or the tournament visibility toggles.
 4. Public participant lists exclude withdrawn tournament participants.
 
 ### 3. Editorial Publication Workflow
@@ -159,6 +173,15 @@ As the tournament progresses:
 | Tournament standings visibility enabled | Optional | `public_site` |
 | Editorial item linked to season/tournament/team | Yes, for editorial content | `public_site` |
 | Editorial item publish window valid | Yes, when scheduling | `public_site` |
+
+## Exception and Recovery Model
+
+- Governance Override is the canonical exception engine when an operator needs
+  an approved exception path.
+- If results are disputed or corrected after publication, treat public
+  visibility as a recovery loop: rollback visibility if required, resolve the
+  dispute and approval chain, then republish standings/tournament surfaces from
+  the owning records.
 
 ## Access Control
 

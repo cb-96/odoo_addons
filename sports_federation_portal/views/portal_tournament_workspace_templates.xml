@@ -6,10 +6,10 @@
             <div class="container py-4">
                 <div class="row mb-4 align-items-end">
                     <div class="col-lg-8">
-                        <h2><i class="fa fa-sitemap me-2"/>Active Tournament Workspace</h2>
+                        <h2><i class="fa fa-sitemap me-2"/>Club Operations Workspace</h2>
                         <p class="text-muted mb-0">
-                            Review registration status, roster checkpoints, match-day submission work,
-                            and result-side follow-up for your visible teams.
+                            Start here to review registration status, roster checkpoints, and pre-kick-off tasks for your visible teams.
+                            Move to the live operations board once matches begin, then use result follow-up after full time.
                         </p>
                     </div>
                     <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
@@ -17,7 +17,7 @@
                             <i class="fa fa-trophy me-1"/> Registration Queue
                         </a>
                         <a href="/my/match-day" class="btn btn-outline-secondary btn-sm">
-                            <i class="fa fa-clipboard me-1"/> Match Day
+                            <i class="fa fa-clipboard me-1"/> Preparation Queue
                         </a>
                     </div>
                 </div>
@@ -50,7 +50,7 @@
                                             </div>
                                         </div>
                                         <span class="badge rounded-pill text-bg-dark">
-                                            <t t-esc="dict(tournament._fields['state'].selection).get(tournament.state)"/>
+                                            <t t-esc="tournament.get_portal_state_label()"/>
                                         </span>
                                     </div>
 
@@ -81,32 +81,40 @@
                                     <div class="row g-3 mb-3">
                                         <div class="col-sm-6">
                                             <div class="border rounded p-3 h-100">
-                                                <div class="text-muted small text-uppercase">Match-Day Sheets</div>
+                                                <div class="text-muted small text-uppercase">Preparation Queue</div>
                                                 <div class="display-6"><t t-esc="len(workspace['upcoming_match_sheets'])"/></div>
                                                 <p class="small text-muted mb-0">
-                                                    <t t-esc="workspace['pending_match_day_count']"/> still in draft.
+                                                    <t t-esc="workspace['pending_match_day_count']"/> sheets still need pre-match work.
                                                 </p>
                                             </div>
                                         </div>
                                         <div class="col-sm-6">
                                             <div class="border rounded p-3 h-100">
-                                                <div class="text-muted small text-uppercase">Result Follow-Up</div>
+                                                <div class="text-muted small text-uppercase">Result Follow-Up Queue</div>
                                                 <div class="display-6"><t t-esc="workspace['result_follow_up_count']"/></div>
                                                 <p class="small text-muted mb-0">Done matches still waiting for result closure.</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="mt-auto d-flex gap-2 flex-wrap">
-                                        <a t-attf-href="/my/tournament-workspaces/#{tournament.id}/#{team.id}" class="btn btn-primary btn-sm">
-                                            Open Workspace
-                                        </a>
-                                        <a href="/my/match-day" class="btn btn-outline-secondary btn-sm">
-                                            Match Day
-                                        </a>
-                                        <a t-if="workspace['roster']" t-attf-href="/my/rosters/#{workspace['roster'].id}" class="btn btn-outline-secondary btn-sm">
-                                            View Roster
-                                        </a>
+                                     <div class="mt-auto">
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <a t-attf-href="/my/tournament-workspaces/#{tournament.id}/#{team.id}" class="btn btn-primary btn-sm">
+                                                Open Team Workspace
+                                            </a>
+                                        </div>
+                                        <div class="small text-muted mt-2 mb-1">Direct phase shortcuts</div>
+                                        <div class="d-flex gap-3 flex-wrap align-items-center">
+                                            <a t-attf-href="/sports/tournament/#{tournament.id}/operations" class="link-secondary small text-decoration-none">
+                                                <i class="fa fa-tasks me-1"/>Live Operations Board
+                                            </a>
+                                            <a href="/my/match-day" class="link-secondary small text-decoration-none">
+                                                <i class="fa fa-clipboard me-1"/>Preparation Queue
+                                            </a>
+                                            <a t-if="workspace['roster']" t-attf-href="/my/rosters/#{workspace['roster'].id}" class="link-secondary small text-decoration-none">
+                                                <i class="fa fa-users me-1"/>Roster
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -129,7 +137,7 @@
                 <div class="row mb-4 align-items-end">
                     <div class="col-lg-8">
                         <a href="/my/tournament-workspaces" class="text-decoration-none small text-muted">
-                            <i class="fa fa-chevron-left me-1"/> Back to workspace
+                            <i class="fa fa-chevron-left me-1"/> Back to Club Operations Workspace
                         </a>
                         <h2 class="mt-2 mb-1"><t t-esc="tournament.name"/></h2>
                         <p class="text-muted mb-0">
@@ -137,16 +145,24 @@
                             <t t-if="workspace['club']"> · <t t-esc="workspace['club'].name"/></t>
                         </p>
                     </div>
-                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                     <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
                         <span class="badge rounded-pill text-bg-dark me-2">
-                            <t t-esc="dict(tournament._fields['state'].selection).get(tournament.state)"/>
+                            <t t-esc="tournament.get_portal_state_label()"/>
                         </span>
+                        <a t-attf-href="/sports/tournament/#{tournament.id}/operations" class="btn btn-outline-primary btn-sm me-2">
+                            <i class="fa fa-tasks me-1"/> Live Operations Board
+                        </a>
                         <t t-if="workspace['roster']">
-                            <a t-attf-href="/my/rosters/#{workspace['roster'].id}" class="btn btn-outline-primary btn-sm">
+                            <a t-attf-href="/my/rosters/#{workspace['roster'].id}" class="btn btn-outline-secondary btn-sm">
                                 <i class="fa fa-users me-1"/> Roster
                             </a>
                         </t>
                     </div>
+                </div>
+
+                <div class="alert alert-info mb-4" role="status">
+                    <strong>Phase split:</strong>
+                    prepare lineups and readiness here before kick-off, use the live operations board only during play, and move to the result follow-up queue after the match ends.
                 </div>
 
                 <div class="row g-3 mb-4">
@@ -167,14 +183,14 @@
                                     <dd class="col-sm-8">
                                         <t t-if="workspace['tournament_registration']">
                                             <t t-esc="workspace['tournament_registration'].name"/>
-                                            · <t t-esc="dict(workspace['tournament_registration']._fields['state'].selection).get(workspace['tournament_registration'].state)"/>
+                                            · <t t-esc="workspace['tournament_registration'].get_portal_state_label()"/>
                                         </t>
                                         <t t-else="">No request linked</t>
                                     </dd>
                                     <dt class="col-sm-4">Participant</dt>
                                     <dd class="col-sm-8">
                                         <t t-if="workspace['participant']">
-                                            <t t-esc="dict(workspace['participant']._fields['state'].selection).get(workspace['participant'].state)"/>
+                                            <t t-esc="workspace['participant'].get_portal_state_label()"/>
                                         </t>
                                         <t t-else="">Not yet created</t>
                                     </dd>
@@ -213,15 +229,15 @@
                 <div class="card mb-4">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
-                            <h4 class="card-title mb-0">Match-Day Submission Tracking</h4>
+                            <h4 class="card-title mb-0">Preparation Queue</h4>
                             <a href="/my/match-day" class="btn btn-outline-secondary btn-sm">
-                                <i class="fa fa-clipboard me-1"/> Open Match-Day Queue
+                                <i class="fa fa-clipboard me-1"/> Preparation Queue
                             </a>
                         </div>
                         <div t-if="workspace['upcoming_match_sheets']">
                             <div class="table-responsive">
                                 <table class="table table-sm align-middle mb-0">
-                                    <caption class="visually-hidden">Upcoming match-day submission tasks for this tournament workspace.</caption>
+                                    <caption class="visually-hidden">Upcoming preparation tasks for this tournament workspace.</caption>
                                     <thead>
                                         <tr>
                                             <th scope="col">Kickoff</th>
@@ -240,7 +256,7 @@
                                                 <td><t t-esc="opponent.display_name if opponent else 'TBD'"/></td>
                                                 <td>
                                                     <span class="badge text-bg-light border">
-                                                        <t t-esc="dict(sheet._fields['state'].selection).get(sheet.state)"/>
+                                                        <t t-esc="sheet.get_portal_state_label()"/>
                                                     </span>
                                                 </td>
                                                 <td>
@@ -257,7 +273,7 @@
                             </div>
                         </div>
                         <div t-else="" class="text-muted">
-                            No scheduled match-day sheets are currently pending for this team in the tournament.
+                            No scheduled preparation tasks are currently pending for this team in the tournament.
                         </div>
                     </div>
                 </div>
@@ -302,7 +318,7 @@
                                                 </td>
                                                 <td>
                                                     <span class="badge text-bg-light border">
-                                                        <t t-esc="dict(match._fields['result_state'].selection).get(match.result_state)"/>
+                                                        <t t-esc="match.get_portal_result_state_label()"/>
                                                     </span>
                                                 </td>
                                                 <td>
