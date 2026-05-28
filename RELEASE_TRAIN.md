@@ -4,7 +4,7 @@ Last updated: 2026-04-18
 Owner: Federation Platform Team
 Last reviewed: 2026-04-18
 Review cadence: Every release
-Release train: 2026.04
+Release train: 2026.11
 
 This document defines the repository-wide release cadence so roadmap updates,
 upgrade notes, and operator runbooks refer to the same operating window.
