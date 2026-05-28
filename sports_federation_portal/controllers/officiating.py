@@ -63,11 +63,21 @@ class FederationOfficiatingPortal(http.Controller):
             order="match_kickoff asc, id asc",
         )
         pending_domain = base_domain + [("state", "=", "draft")]
-        next_pending_assignment = Assignment.search(
+        pending_assignments = Assignment.search(
             pending_domain,
-            limit=1,
-            order="is_confirmation_overdue desc, confirmation_deadline asc, match_kickoff asc, id asc",
+            order="match_kickoff asc, id asc",
         )
+        overdue_assignments = pending_assignments.filtered("is_confirmation_overdue")
+        next_pending_assignment = pending_assignments.sorted(
+            key=lambda assignment: (
+                0 if assignment.is_confirmation_overdue else 1,
+                assignment.confirmation_deadline
+                or assignment.match_kickoff
+                or fields.Datetime.now(),
+                assignment.match_kickoff or fields.Datetime.now(),
+                assignment.id,
+            )
+        )[:1]
         values = {
             "referee": referee,
             "assignments": assignments,
@@ -75,10 +85,8 @@ class FederationOfficiatingPortal(http.Controller):
             "filterby": filterby,
             "page_name": "my_referee_assignments",
             "now": fields.Datetime.now(),
-            "pending_count": Assignment.search_count(pending_domain),
-            "overdue_count": Assignment.search_count(
-                pending_domain + [("is_confirmation_overdue", "=", True)]
-            ),
+            "pending_count": len(pending_assignments),
+            "overdue_count": len(overdue_assignments),
             "next_pending_assignment": next_pending_assignment,
         }
         return request.render(

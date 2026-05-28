@@ -51,12 +51,12 @@ class FederationPortalBase(CustomerPortal):
         if referee and "federation.match.referee" in request.env:
             assignment_model = request.env["federation.match.referee"].sudo()
             assignment_domain = [("referee_id", "=", referee.id)]
-            values["federation_pending_assignment_count"] = assignment_model.search_count(
+            pending_assignments = assignment_model.search(
                 assignment_domain + [("state", "=", "draft")]
             )
-            values["federation_overdue_assignment_count"] = assignment_model.search_count(
-                assignment_domain
-                + [("state", "=", "draft"), ("is_confirmation_overdue", "=", True)]
+            values["federation_pending_assignment_count"] = len(pending_assignments)
+            values["federation_overdue_assignment_count"] = len(
+                pending_assignments.filtered("is_confirmation_overdue")
             )
         else:
             values["federation_pending_assignment_count"] = 0
