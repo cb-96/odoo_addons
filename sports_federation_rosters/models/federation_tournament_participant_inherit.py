@@ -47,11 +47,14 @@ class FederationTournamentParticipant(models.Model):
         """Compute confirmation readiness."""
         for record in self:
             assessment = record._get_roster_assessment()
+            has_issues = bool(
+                assessment.get("has_issues") or assessment["blocking_issues"]
+            )
             blocking_issues = bool(assessment["blocking_issues"])
             deadline_reached = bool(assessment["deadline_reached"])
-            record.ready_for_confirmation = not bool(assessment["blocking_issues"])
-            record.confirmation_blocking = blocking_issues and deadline_reached
-            record.confirmation_warning = blocking_issues and not deadline_reached
+            record.ready_for_confirmation = not blocking_issues
+            record.confirmation_blocking = has_issues and deadline_reached
+            record.confirmation_warning = has_issues and not deadline_reached
             record.roster_deadline_date = assessment["deadline_date"] or False
             record.readiness_roster_id = (
                 assessment["roster"].id if assessment["roster"] else False
