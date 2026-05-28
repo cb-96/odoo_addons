@@ -69,7 +69,9 @@ class ResUsers(models.Model):
         """Compute portal scope IDs."""
         for rec in self:
             current_reps = rec.representative_ids.filtered("is_current")
-            rec.portal_club_scope_ids = current_reps.filtered(lambda rep: not rep.team_id).mapped("club_id")
+            rec.portal_club_scope_ids = current_reps.filtered(
+                lambda rep: not rep.team_id
+            ).mapped("club_id")
             rec.portal_team_scope_ids = current_reps.mapped("team_id")
 
     def action_view_federation_representatives(self):

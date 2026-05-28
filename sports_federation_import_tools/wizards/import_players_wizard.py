@@ -97,11 +97,14 @@ class FederationImportPlayersWizard(models.TransientModel):
                 error_count += 1
                 continue
 
-            existing = Player.search([
-                ("first_name", "=", first_name),
-                ("last_name", "=", last_name),
-                ("birth_date", "=", birth_date or False),
-            ], limit=1)
+            existing = Player.search(
+                [
+                    ("first_name", "=", first_name),
+                    ("last_name", "=", last_name),
+                    ("birth_date", "=", birth_date or False),
+                ],
+                limit=1,
+            )
             if existing:
                 self._record_error(
                     errors,
@@ -115,16 +118,18 @@ class FederationImportPlayersWizard(models.TransientModel):
 
             if self._execute_row_create(
                 row_num,
-                lambda: Player.create({
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "birth_date": birth_date,
-                    "club_id": club.id if club else False,
-                    "gender": self._get_row_value(row, "gender") or False,
-                    "email": self._get_row_value(row, "email") or False,
-                    "phone": self._get_row_value(row, "phone") or False,
-                    "state": self._get_row_value(row, "state") or "active",
-                }),
+                lambda: Player.create(
+                    {
+                        "first_name": first_name,
+                        "last_name": last_name,
+                        "birth_date": birth_date,
+                        "club_id": club.id if club else False,
+                        "gender": self._get_row_value(row, "gender") or False,
+                        "email": self._get_row_value(row, "email") or False,
+                        "phone": self._get_row_value(row, "phone") or False,
+                        "state": self._get_row_value(row, "state") or "active",
+                    }
+                ),
                 errors,
                 error_categories,
             ):

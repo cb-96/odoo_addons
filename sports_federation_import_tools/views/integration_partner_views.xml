@@ -114,7 +114,7 @@
             <form string="Integration Partner">
                 <header>
                     <button name="action_rotate_token" string="Rotate Token" type="object" class="btn-secondary"
-                            groups="sports_federation_base.group_federation_manager"/>
+                            groups="sports_federation_base.group_federation_manager" confirm="Rotating the token will invalidate the current credentials. The partner will need the new token to authenticate. Continue?"/>
                 </header>
                 <sheet>
                     <div class="alert alert-info" role="status" invisible="auth_token">

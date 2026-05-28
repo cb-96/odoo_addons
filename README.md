@@ -18,10 +18,13 @@ Table of contents
 
 Quick links
 - High-level context: `odoo/CONTEXT.md`
+- Maintainability review: `odoo/MAINTAINABILITY_REVIEW.md`
 - Technical notes: `odoo/TECHNICAL_NOTE.md`
 - Architecture decisions: `odoo/adr/README.md`
 - Route inventory: `odoo/ROUTE_INVENTORY.md`
 - Compatibility inventory: `odoo/COMPATIBILITY_INVENTORY.md`
+- Documentation lifecycle: `odoo/DOC_LIFECYCLE.md`
+- Roadmap archive index: `odoo/ROADMAP_ARCHIVE_INDEX.md`
 - Release runbook: `odoo/RELEASE_RUNBOOK.md`
 - Release train: `odoo/RELEASE_TRAIN.md`
 - Data retention policy: `odoo/DATA_RETENTION_POLICY.md`
@@ -109,6 +112,7 @@ cp ci/.env.example ci/.env
 bash ./ci/run_tests.sh --module sports_federation_standings
 bash ./ci/run_tests.sh --suite competition_core
 bash ./ci/run_tests.sh --suite portal_public_ops
+bash ./ci/run_tests.sh --suite rosters_readiness_guard
 ```
 
 Validate CI helper scripts before pushing changes:
@@ -116,6 +120,8 @@ Validate CI helper scripts before pushing changes:
 ```bash
 bash -n ci/run_tests.sh
 bash -n ci/apply_env_to_ir_config.sh
+python3 ci/check_ci_hygiene.py
+bash ci/prune_ci_logs.sh 30
 ```
 
 Notes and tips

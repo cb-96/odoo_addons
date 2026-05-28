@@ -174,16 +174,19 @@ All authenticated CSV exports expose these headers:
 - Authentication:
   - `X-Federation-Partner-Code`
   - `X-Federation-Partner-Token`
-  - optional `X-Federation-Idempotency-Key` to replay the same staging request safely
+  - optional `X-Federation-Idempotency-Key` to safely reuse the same staged delivery for matching retries
 - Request fields:
   - `filename`
   - `payload_base64`
   - optional `notes`
   - optional `source_reference`
+- Response header on every successful delivery request:
+  - `X-Federation-Delivery-Outcome: created|checksum_reuse|idempotency_replay`
 - Response headers when an idempotency key is supplied:
   - `X-Federation-Idempotency-Key: <normalized key>`
   - `X-Federation-Idempotent-Replay: true|false`
 - Response fields:
+  - `delivery_outcome` with `created`, `checksum_reuse`, or `idempotency_replay`
   - delivery identity and current state
   - partner and contract codes
   - echoed `idempotency_key` when present
@@ -191,9 +194,11 @@ All authenticated CSV exports expose these headers:
   - contract route hint
 - Duplicate handling:
   - the same partner, contract, and payload checksum reuse the active staged
-    delivery while it remains in preview or approval flow
+    delivery while it remains in preview or approval flow and report
+    `delivery_outcome = checksum_reuse`
   - the same partner, contract, and idempotency key replay the original delivery
-    across all states, but reusing a key for a different payload returns `400`
+    across all states, report `delivery_outcome = idempotency_replay`, and
+    still return `400` if the key is reused for a different payload
 
 ## Import Contracts
 

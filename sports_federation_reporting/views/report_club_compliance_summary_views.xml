@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="view_federation_report_club_compliance_summary_list" model="ir.ui.view">
+        <field name="name">federation.report.club.compliance.summary.list</field>
+        <field name="model">federation.report.club.compliance.summary</field>
+        <field name="arch" type="xml">
+            <list string="Club Compliance Summary">
+                <field name="club_id"/>
+                <field name="total_checks"/>
+                <field name="compliant_count"/>
+                <field name="non_compliant_count"
+                       decoration-danger="non_compliant_count > 0"/>
+                <field name="missing_count"
+                       decoration-warning="missing_count > 0"/>
+                <field name="pending_count"/>
+                <field name="expired_count"
+                       decoration-warning="expired_count > 0"/>
+                <field name="compliance_rate"
+                       decoration-danger="compliance_rate &lt; 50"
+                       decoration-warning="compliance_rate &lt; 80 and compliance_rate &gt;= 50"
+                       decoration-success="compliance_rate &gt;= 80"/>
+                <field name="remediation_queue_size"
+                       decoration-warning="remediation_queue_size > 0"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Pivot View -->
+    <record id="view_federation_report_club_compliance_summary_pivot" model="ir.ui.view">
+        <field name="name">federation.report.club.compliance.summary.pivot</field>
+        <field name="model">federation.report.club.compliance.summary</field>
+        <field name="arch" type="xml">
+            <pivot string="Club Compliance Summary">
+                <field name="club_id" type="row"/>
+                <field name="total_checks" type="measure"/>
+                <field name="compliant_count" type="measure"/>
+                <field name="non_compliant_count" type="measure"/>
+                <field name="compliance_rate" type="measure"/>
+                <field name="remediation_queue_size" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_federation_report_club_compliance_summary" model="ir.actions.act_window">
+        <field name="name">Club Compliance Summary</field>
+        <field name="res_model">federation.report.club.compliance.summary</field>
+        <field name="view_mode">list,pivot</field>
+    </record>
+
+</odoo>

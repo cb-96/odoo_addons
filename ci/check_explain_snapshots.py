@@ -6,7 +6,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SNAPSHOT_DIR = REPO_ROOT / "ci" / "explain_snapshots"
 EXPECTED_SNAPSHOTS = {
@@ -42,7 +41,9 @@ def main() -> int:
         content = path.read_text(encoding="utf-8")
         for header in REQUIRED_HEADERS:
             if header not in content:
-                failures.append(f"{path.relative_to(REPO_ROOT)} is missing header '{header}'")
+                failures.append(
+                    f"{path.relative_to(REPO_ROOT)} is missing header '{header}'"
+                )
         if not any(operator in content for operator in operators):
             failures.append(
                 f"{path.relative_to(REPO_ROOT)} does not contain any expected heavy-plan operators: {', '.join(operators)}"

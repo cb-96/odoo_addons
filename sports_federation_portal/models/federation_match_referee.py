@@ -1,5 +1,5 @@
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import ValidationError
 
 
 class FederationMatchReferee(models.Model):
@@ -42,18 +42,23 @@ class FederationMatchReferee(models.Model):
         invalid = self.filtered(lambda assignment: assignment.state != "draft")
         if invalid:
             raise ValidationError(
-                _("Only newly assigned officiating requests can be confirmed from the portal.")
+                _(
+                    "Only newly assigned officiating requests can be confirmed from the portal."
+                )
             )
         prepared_note = (response_note or "").strip()
+        scope_domain = self._portal_get_domain(user=user)
         if prepared_note:
             self.env["federation.portal.privilege"].portal_write(
                 self,
                 {"response_note": prepared_note},
+                scope_domain=scope_domain,
                 user=user,
             )
         return self.env["federation.portal.privilege"].portal_call(
             self,
             "action_confirm",
+            scope_domain=scope_domain,
             user=user,
         )
 
@@ -64,7 +69,9 @@ class FederationMatchReferee(models.Model):
         invalid = self.filtered(lambda assignment: assignment.state != "draft")
         if invalid:
             raise ValidationError(
-                _("Only newly assigned officiating requests can be declined from the portal.")
+                _(
+                    "Only newly assigned officiating requests can be declined from the portal."
+                )
             )
         prepared_note = (response_note or "").strip()
         if not prepared_note:
@@ -74,10 +81,12 @@ class FederationMatchReferee(models.Model):
         self.env["federation.portal.privilege"].portal_write(
             self,
             {"response_note": prepared_note},
+            scope_domain=self._portal_get_domain(user=user),
             user=user,
         )
         return self.env["federation.portal.privilege"].portal_call(
             self,
             "action_cancel",
+            scope_domain=self._portal_get_domain(user=user),
             user=user,
         )

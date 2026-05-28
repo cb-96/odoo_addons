@@ -20,7 +20,7 @@
     <record id="rule_team_portal_own" model="ir.rule">
         <field name="name">Portal: own teams only</field>
         <field name="model_id" ref="sports_federation_base.model_federation_team"/>
-        <field name="domain_force">['|', ('id', 'in', user.portal_team_scope_ids.ids), ('club_id', 'in', user.portal_club_scope_ids.ids or user.represented_club_ids.ids)]</field>
+        <field name="domain_force">['|', ('id', 'in', user.portal_team_scope_ids.ids), ('club_id', 'in', user.portal_club_scope_ids.ids)]</field>
         <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
     </record>
 
@@ -55,49 +55,56 @@
     <record id="rule_match_portal_own" model="ir.rule">
         <field name="name">Portal: own matches only</field>
         <field name="model_id" ref="sports_federation_tournament.model_federation_match"/>
-        <field name="domain_force">['|', '|', ('home_team_id', 'in', user.portal_team_scope_ids.ids), ('away_team_id', 'in', user.portal_team_scope_ids.ids), '|', ('home_team_id.club_id', 'in', user.portal_club_scope_ids.ids or user.represented_club_ids.ids), ('away_team_id.club_id', 'in', user.portal_club_scope_ids.ids or user.represented_club_ids.ids)]</field>
+        <field name="domain_force">['|', '|', ('home_team_id', 'in', user.portal_team_scope_ids.ids), ('away_team_id', 'in', user.portal_team_scope_ids.ids), '|', ('home_team_id.club_id', 'in', user.portal_club_scope_ids.ids), ('away_team_id.club_id', 'in', user.portal_club_scope_ids.ids)]</field>
         <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
     </record>
 
     <record id="rule_team_roster_portal_own" model="ir.rule">
         <field name="name">Portal: own team rosters only</field>
         <field name="model_id" ref="sports_federation_rosters.model_federation_team_roster"/>
-        <field name="domain_force">['|', ('team_id', 'in', user.portal_team_scope_ids.ids), ('club_id', 'in', user.portal_club_scope_ids.ids or user.represented_club_ids.ids)]</field>
+        <field name="domain_force">['|', ('team_id', 'in', user.portal_team_scope_ids.ids), ('club_id', 'in', user.portal_club_scope_ids.ids)]</field>
         <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
     </record>
 
     <record id="rule_team_roster_line_portal_own" model="ir.rule">
         <field name="name">Portal: own roster lines only</field>
         <field name="model_id" ref="sports_federation_rosters.model_federation_team_roster_line"/>
-        <field name="domain_force">['|', ('roster_id.team_id', 'in', user.portal_team_scope_ids.ids), ('roster_id.club_id', 'in', user.portal_club_scope_ids.ids or user.represented_club_ids.ids)]</field>
+        <field name="domain_force">['|', ('roster_id.team_id', 'in', user.portal_team_scope_ids.ids), ('roster_id.club_id', 'in', user.portal_club_scope_ids.ids)]</field>
         <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
     </record>
 
     <record id="rule_match_sheet_portal_own" model="ir.rule">
         <field name="name">Portal: own match sheets only</field>
         <field name="model_id" ref="sports_federation_rosters.model_federation_match_sheet"/>
-        <field name="domain_force">['|', ('team_id', 'in', user.portal_team_scope_ids.ids), ('team_id.club_id', 'in', user.portal_club_scope_ids.ids or user.represented_club_ids.ids)]</field>
+        <field name="domain_force">['|', ('team_id', 'in', user.portal_team_scope_ids.ids), ('team_id.club_id', 'in', user.portal_club_scope_ids.ids)]</field>
         <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
     </record>
 
     <record id="rule_match_sheet_line_portal_own" model="ir.rule">
         <field name="name">Portal: own match sheet lines only</field>
         <field name="model_id" ref="sports_federation_rosters.model_federation_match_sheet_line"/>
-        <field name="domain_force">['|', ('match_sheet_id.team_id', 'in', user.portal_team_scope_ids.ids), ('match_sheet_id.team_id.club_id', 'in', user.portal_club_scope_ids.ids or user.represented_club_ids.ids)]</field>
+        <field name="domain_force">['|', ('match_sheet_id.team_id', 'in', user.portal_team_scope_ids.ids), ('match_sheet_id.team_id.club_id', 'in', user.portal_club_scope_ids.ids)]</field>
         <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
     </record>
 
     <record id="rule_participation_audit_portal_own" model="ir.rule">
         <field name="name">Portal: own participation audit only</field>
         <field name="model_id" ref="sports_federation_rosters.model_federation_participation_audit"/>
-        <field name="domain_force">['|', ('team_id', 'in', user.portal_team_scope_ids.ids), ('team_id.club_id', 'in', user.portal_club_scope_ids.ids or user.represented_club_ids.ids)]</field>
+        <field name="domain_force">['|', ('team_id', 'in', user.portal_team_scope_ids.ids), ('team_id.club_id', 'in', user.portal_club_scope_ids.ids)]</field>
         <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
     </record>
 
     <record id="rule_match_result_audit_portal_own" model="ir.rule">
         <field name="name">Portal: own result audit only</field>
         <field name="model_id" ref="sports_federation_result_control.model_federation_match_result_audit"/>
-        <field name="domain_force">['|', '|', ('match_id.home_team_id', 'in', user.portal_team_scope_ids.ids), ('match_id.away_team_id', 'in', user.portal_team_scope_ids.ids), '|', ('match_id.home_team_id.club_id', 'in', user.portal_club_scope_ids.ids or user.represented_club_ids.ids), ('match_id.away_team_id.club_id', 'in', user.portal_club_scope_ids.ids or user.represented_club_ids.ids)]</field>
+        <field name="domain_force">['|', '|', ('match_id.home_team_id', 'in', user.portal_team_scope_ids.ids), ('match_id.away_team_id', 'in', user.portal_team_scope_ids.ids), '|', ('match_id.home_team_id.club_id', 'in', user.portal_club_scope_ids.ids), ('match_id.away_team_id.club_id', 'in', user.portal_club_scope_ids.ids)]</field>
+        <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
+    </record>
+
+    <record id="rule_club_referee_duty_portal_own" model="ir.rule">
+        <field name="name">Portal: own club referee duties only</field>
+        <field name="model_id" ref="sports_federation_officiating.model_federation_match_club_referee_duty"/>
+        <field name="domain_force">[('club_id', 'in', user.portal_club_scope_ids.ids)]</field>
         <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
     </record>
 

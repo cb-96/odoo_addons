@@ -27,7 +27,9 @@ class FederationTournament(models.Model):
     def _compute_registration_request_count(self):
         """Compute registration request count."""
         for tournament in self:
-            tournament.registration_request_count = len(tournament.registration_request_ids)
+            tournament.registration_request_count = len(
+                tournament.registration_request_ids
+            )
 
     def action_view_registration_requests(self):
         """Execute the view registration requests action."""
@@ -45,19 +47,49 @@ class FederationTournament(models.Model):
         user = user or self.env.user
         club_scope = user.portal_club_scope_ids
         team_scope = user.portal_team_scope_ids
-        represented_clubs = user.represented_club_ids
         if team_scope and club_scope:
-            return ["|", ("id", "in", team_scope.ids), ("club_id", "in", club_scope.ids)]
+            return [
+                "|",
+                ("id", "in", team_scope.ids),
+                ("club_id", "in", club_scope.ids),
+            ]
         if team_scope:
             return [("id", "in", team_scope.ids)]
-        if represented_clubs:
-            return [("club_id", "in", represented_clubs.ids)]
+        if club_scope:
+            return [("club_id", "in", club_scope.ids)]
         return [("id", "=", False)]
 
     @api.model
     def _portal_has_workspace_access(self, user=None):
         """Handle the portal-specific has workspace access flow."""
         return self._portal_get_workspace_team_domain(user=user) != [("id", "=", False)]
+
+    @api.model
+    def _portal_get_workspace_tournament_domain(self):
+        """Return the active tournament domain for portal workspace reads."""
+        return [("state", "in", self._portal_workspace_active_states)]
+
+    def _portal_assert_workspace_access(self, team, user=None):
+        """Recheck team and tournament scope before elevated workspace reads."""
+        self.ensure_one()
+        user = user or self.env.user
+        PortalPrivilege = self.env["federation.portal.privilege"]
+        tournament = PortalPrivilege.portal_assert_in_domain(
+            self,
+            self._portal_get_workspace_tournament_domain(),
+            _("You can only access active tournament workspaces."),
+            user=user,
+        )
+        team = PortalPrivilege.portal_assert_in_domain(
+            team,
+            self._portal_get_workspace_team_domain(user=user),
+            _(
+                "You can only access tournament workspaces for your assigned teams or clubs."
+            ),
+            user=user,
+        )
+        team.ensure_one()
+        return tournament, team
 
     def _portal_get_registration_checkpoint(self, registration, participant):
         """Handle the portal-specific get registration checkpoint flow."""
@@ -191,49 +223,52 @@ class FederationTournament(models.Model):
 
     def _portal_get_workspace_entry(self, team, user=None):
         """Handle the portal-specific get workspace entry flow."""
-        self.ensure_one()
         user = user or self.env.user
+        PortalPrivilege = self.env["federation.portal.privilege"]
+        tournament, team = self._portal_assert_workspace_access(team, user=user)
 
-        Registration = self.env["federation.tournament.registration"].with_user(user).sudo()
-        Participant = self.env["federation.tournament.participant"].with_user(user).sudo()
         TeamRoster = self.env["federation.team.roster"]
-        MatchSheet = self.env["federation.match.sheet"].with_user(user).sudo()
-        Match = self.env["federation.match"].with_user(user).sudo()
-
-        registration = Registration.search(
+        registration = PortalPrivilege.portal_search(
+            self.env["federation.tournament.registration"],
             [
-                ("tournament_id", "=", self.id),
+                ("tournament_id", "=", tournament.id),
                 ("team_id", "=", team.id),
                 ("state", "!=", "cancelled"),
             ],
             order="create_date desc, id desc",
             limit=1,
+            user=user,
         )
-        participant = Participant.search(
+        participant = PortalPrivilege.portal_search(
+            self.env["federation.tournament.participant"],
             [
-                ("tournament_id", "=", self.id),
+                ("tournament_id", "=", tournament.id),
                 ("team_id", "=", team.id),
             ],
             order="id desc",
             limit=1,
+            user=user,
         )
         roster = TeamRoster._portal_get_preferred_roster_for_tournament(
-            self,
+            tournament,
             team,
             user=user,
         )
-        upcoming_match_sheets = MatchSheet.search(
+        upcoming_match_sheets = PortalPrivilege.portal_search(
+            self.env["federation.match.sheet"],
             [
-                ("match_id.tournament_id", "=", self.id),
+                ("match_id.tournament_id", "=", tournament.id),
                 ("team_id", "=", team.id),
                 ("match_id.state", "in", ("draft", "scheduled", "in_progress")),
                 ("match_kickoff", "!=", False),
             ],
             order="match_kickoff asc, id asc",
+            user=user,
         )
-        result_follow_up_matches = Match.search(
+        result_follow_up_matches = PortalPrivilege.portal_search(
+            self.env["federation.match"],
             [
-                ("tournament_id", "=", self.id),
+                ("tournament_id", "=", tournament.id),
                 "|",
                 ("home_team_id", "=", team.id),
                 ("away_team_id", "=", team.id),
@@ -241,12 +276,15 @@ class FederationTournament(models.Model):
                 ("result_state", "in", self._portal_workspace_result_follow_up_states),
             ],
             order="date_scheduled desc, id desc",
+            user=user,
         )
-        result_follow_up_sheets = MatchSheet.search(
+        result_follow_up_sheets = PortalPrivilege.portal_search(
+            self.env["federation.match.sheet"],
             [
                 ("match_id", "in", result_follow_up_matches.ids),
                 ("team_id", "=", team.id),
-            ]
+            ],
+            user=user,
         )
         follow_up_sheet_by_match_id = {
             sheet.match_id.id: sheet for sheet in result_follow_up_sheets
@@ -260,17 +298,17 @@ class FederationTournament(models.Model):
         ]
 
         return {
-            "tournament": self,
+            "tournament": tournament,
             "team": team,
             "club": team.club_id,
             "tournament_registration": registration,
             "participant": participant,
-            "registration_checkpoint": self._portal_get_registration_checkpoint(
+            "registration_checkpoint": tournament._portal_get_registration_checkpoint(
                 registration,
                 participant,
             ),
             "roster": roster,
-            "roster_checkpoint": self._portal_get_roster_checkpoint(roster),
+            "roster_checkpoint": tournament._portal_get_roster_checkpoint(roster),
             "upcoming_match_sheets": upcoming_match_sheets,
             "pending_match_day_count": len(
                 upcoming_match_sheets.filtered(lambda sheet: sheet.state == "draft")
@@ -294,23 +332,26 @@ class FederationTournament(models.Model):
     def _portal_get_workspace_entry_for_user(self, tournament_id, team_id, user=None):
         """Handle the portal-specific get workspace entry for user flow."""
         user = user or self.env.user
+        PortalPrivilege = self.env["federation.portal.privilege"]
         team_domain = self._portal_get_workspace_team_domain(user=user)
         if team_domain == [("id", "=", False)]:
             return False
 
-        team = self.env["federation.team"].with_user(user).sudo().search(
+        team = PortalPrivilege.portal_search(
+            self.env["federation.team"],
             team_domain + [("id", "=", team_id)],
             limit=1,
+            user=user,
         )
         if not team:
             return False
 
-        tournament = self.with_user(user).sudo().search(
-            [
-                ("id", "=", tournament_id),
-                ("state", "in", self._portal_workspace_active_states),
-            ],
+        tournament = PortalPrivilege.portal_search(
+            self,
+            self._portal_get_workspace_tournament_domain()
+            + [("id", "=", tournament_id)],
             limit=1,
+            user=user,
         )
         if not tournament:
             return False
@@ -324,53 +365,68 @@ class FederationTournament(models.Model):
     def _portal_get_workspace_entries(self, user=None):
         """Handle the portal-specific get workspace entries flow."""
         user = user or self.env.user
+        PortalPrivilege = self.env["federation.portal.privilege"]
         team_domain = self._portal_get_workspace_team_domain(user=user)
         if team_domain == [("id", "=", False)]:
             return []
 
-        teams = self.env["federation.team"].with_user(user).sudo().search(team_domain)
+        teams = PortalPrivilege.portal_search(
+            self.env["federation.team"],
+            team_domain,
+            user=user,
+        )
         if not teams:
             return []
 
         team_ids = set(teams.ids)
-        active_tournaments = self.with_user(user).sudo().search(
-            [("state", "in", self._portal_workspace_active_states)]
+        active_tournaments = PortalPrivilege.portal_search(
+            self,
+            self._portal_get_workspace_tournament_domain(),
+            user=user,
         )
         if not active_tournaments:
             return []
 
         active_tournament_ids = active_tournaments.ids
         team_by_id = {team.id: team for team in teams}
-        tournament_by_id = {tournament.id: tournament for tournament in active_tournaments}
+        tournament_by_id = {
+            tournament.id: tournament for tournament in active_tournaments
+        }
 
         pair_keys = set()
 
-        registrations = self.env["federation.tournament.registration"].with_user(user).sudo().search(
+        registrations = PortalPrivilege.portal_search(
+            self.env["federation.tournament.registration"],
             [
                 ("team_id", "in", list(team_ids)),
                 ("tournament_id", "in", active_tournament_ids),
                 ("state", "!=", "cancelled"),
-            ]
+            ],
+            user=user,
         )
         for registration in registrations:
             pair_keys.add((registration.tournament_id.id, registration.team_id.id))
 
-        participants = self.env["federation.tournament.participant"].with_user(user).sudo().search(
+        participants = PortalPrivilege.portal_search(
+            self.env["federation.tournament.participant"],
             [
                 ("team_id", "in", list(team_ids)),
                 ("tournament_id", "in", active_tournament_ids),
-            ]
+            ],
+            user=user,
         )
         for participant in participants:
             pair_keys.add((participant.tournament_id.id, participant.team_id.id))
 
-        matches = self.env["federation.match"].with_user(user).sudo().search(
+        matches = PortalPrivilege.portal_search(
+            self.env["federation.match"],
             [
                 ("tournament_id", "in", active_tournament_ids),
                 "|",
                 ("home_team_id", "in", list(team_ids)),
                 ("away_team_id", "in", list(team_ids)),
-            ]
+            ],
+            user=user,
         )
         for match in matches:
             if match.home_team_id.id in team_ids:

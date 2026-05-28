@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 
@@ -52,7 +52,46 @@ class FederationCompetition(models.Model):
     )
     notes = fields.Text(string="Notes")
 
-    _code_unique = models.Constraint('unique (code)', 'Competition code must be unique.')
+    _code_unique = models.Constraint(
+        "unique (code)", "Competition code must be unique."
+    )
+
+    @api.constrains("code")
+    def _check_code_unique(self):
+        for rec in self:
+            if rec.code:
+                duplicate = self.search(
+                    [("code", "=", rec.code), ("id", "!=", rec.id)],
+                    limit=1,
+                )
+                if duplicate:
+                    raise ValidationError(
+                        _("Competition code '%(code)s' is already in use.", code=rec.code)
+                    )
+
+    def _raise_if_duplicate_code(self, code, exclude_id=None):
+        """Pre-insert/write check that raises ValidationError before DB constraint fires."""
+        if not code:
+            return
+        domain = [("code", "=", code)]
+        if exclude_id:
+            domain.append(("id", "!=", exclude_id))
+        if self.search(domain, limit=1):
+            raise ValidationError(
+                _("Competition code '%(code)s' is already in use.", code=code)
+            )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._raise_if_duplicate_code(vals.get("code"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if "code" in vals:
+            for rec in self:
+                self._raise_if_duplicate_code(vals["code"], exclude_id=rec.id)
+        return super().write(vals)
 
     @api.depends("edition_ids")
     def _compute_edition_count(self):
@@ -78,6 +117,8 @@ class FederationCompetition(models.Model):
     def action_view_editions(self):
         """Execute the view editions action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('sports_federation_tournament.federation_competition_edition_action')
-        action['domain'] = [('competition_id', '=', self.id)]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_tournament.federation_competition_edition_action"
+        )
+        action["domain"] = [("competition_id", "=", self.id)]
         return action

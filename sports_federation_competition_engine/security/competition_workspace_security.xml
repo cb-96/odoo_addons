@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="group_federation_competition_planner" model="res.groups">
+        <field name="name">Competition Planner</field>
+        <field name="implied_ids" eval="[(4, ref('sports_federation_base.group_federation_user'))]"/>
+    </record>
+
+</odoo>

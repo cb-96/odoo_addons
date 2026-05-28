@@ -12,11 +12,13 @@ class FederationParticipationAudit(models.Model):
             ("roster_updated", "Roster Updated"),
             ("roster_activated", "Roster Activated"),
             ("roster_closed", "Roster Closed"),
+            ("roster_reopened", "Roster Reopened"),
             ("roster_line_added", "Roster Line Added"),
             ("roster_line_updated", "Roster Line Updated"),
             ("roster_line_removed", "Roster Line Removed"),
             ("match_sheet_created", "Match Sheet Created"),
             ("match_sheet_submitted", "Match Sheet Submitted"),
+            ("match_sheet_reset", "Match Sheet Reset to Draft"),
             ("match_sheet_approved", "Match Sheet Approved"),
             ("match_sheet_locked", "Match Sheet Locked"),
             ("sheet_line_added", "Match Sheet Line Added"),
@@ -45,13 +47,13 @@ class FederationParticipationAudit(models.Model):
     match_sheet_id = fields.Many2one(
         "federation.match.sheet",
         string="Match Sheet",
-        ondelete="cascade",
+        ondelete="set null",
         index=True,
     )
     match_id = fields.Many2one(
         "federation.match",
         string="Match",
-        ondelete="set null",
+        ondelete="cascade",
         index=True,
     )
     player_id = fields.Many2one(

@@ -46,8 +46,10 @@ class CompetitionEngineService(models.AbstractModel):
             name = "Auto: " + " / ".join(name_parts)
 
         # Search for existing standing for the same tournament/stage/group
-        domain = [("tournament_id", "=", tournament.id if tournament else False),
-                  ("name", "=", name)]
+        domain = [
+            ("tournament_id", "=", tournament.id if tournament else False),
+            ("name", "=", name),
+        ]
         if stage:
             domain.append(("stage_id", "=", stage.id))
         else:

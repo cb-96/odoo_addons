@@ -16,4 +16,20 @@
         </field>
     </record>
 
+    <record id="view_federation_club_form_inherit_public_site" model="ir.ui.view">
+        <field name="name">federation.club.form.inherit.public.site</field>
+        <field name="model">federation.club</field>
+        <field name="inherit_id" ref="sports_federation_base.view_federation_club_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Website">
+                    <group>
+                        <field name="website_published"/>
+                        <field name="public_slug"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>

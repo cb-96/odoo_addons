@@ -1,7 +1,9 @@
 import json
 
 from odoo import SUPERUSER_ID, api
-from odoo.addons.sports_federation_base.tests.route_inventory import load_route_inventory
+from odoo.addons.sports_federation_base.tests.route_inventory import (
+    load_route_inventory,
+)
 from odoo.tests.common import HttpCase, tagged
 
 

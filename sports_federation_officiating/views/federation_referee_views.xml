@@ -16,6 +16,10 @@
                                 class="oe_stat_button" icon="fa-futbol-o">
                             <field name="assignment_count" widget="statinfo" string="Assignments"/>
                         </button>
+                        <button name="action_view_availability" type="object"
+                                class="oe_stat_button" icon="fa-calendar">
+                            <field name="availability_count" widget="statinfo" string="Availability"/>
+                        </button>
                     </div>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
                             invisible="active"/>
@@ -35,6 +39,15 @@
                     </group>
                     <separator string="Notes"/>
                     <field name="notes"/>
+                    <separator string="Availability"/>
+                    <field name="availability_ids" context="{'default_referee_id': id}">
+                        <list editable="bottom">
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="note"/>
+                            <field name="active" optional="show"/>
+                        </list>
+                    </field>
                 </sheet>
                 <chatter/>
             </form>
@@ -50,6 +63,7 @@
                 <field name="email"/>
                 <field name="phone"/>
                 <field name="certification_level"/>
+                <field name="availability_count" optional="show"/>
                 <field name="certification_count"/>
                 <field name="assignment_count"/>
             </list>
@@ -63,6 +77,13 @@
             <search string="Search Referees">
                 <field name="name"/>
                 <field name="email"/>
+                <separator/>
+                <filter name="has_certification" string="Has Certification"
+                        domain="[('certification_ids', '!=', False)]"/>
+                <filter name="national_plus" string="National or Above"
+                        domain="[('certification_level', 'in', ['national', 'international'])]"/>
+                <filter name="regional_plus" string="Regional or Above"
+                        domain="[('certification_level', 'in', ['regional', 'national', 'international'])]"/>
                 <separator/>
                 <group>
                     <filter name="level" string="Certification Level" context="{'group_by': 'certification_level'}"/>

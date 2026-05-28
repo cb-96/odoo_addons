@@ -5,6 +5,7 @@ from odoo.exceptions import ValidationError
 class FederationPlayerLicense(models.Model):
     _name = "federation.player.license"
     _description = "Player License"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "issue_date desc, id"
 
     name = fields.Char(string="License Number", required=True, copy=False)
@@ -17,7 +18,9 @@ class FederationPlayerLicense(models.Model):
     club_id = fields.Many2one(
         "federation.club", string="Club", required=True, ondelete="restrict"
     )
-    issue_date = fields.Date(string="Issue Date", required=True, default=fields.Date.context_today)
+    issue_date = fields.Date(
+        string="Issue Date", required=True, default=fields.Date.context_today
+    )
     expiry_date = fields.Date(string="Expiry Date", required=True)
     state = fields.Selection(
         [
@@ -42,7 +45,10 @@ class FederationPlayerLicense(models.Model):
     eligibility_notes = fields.Text(string="Eligibility Notes")
     notes = fields.Text(string="Notes")
 
-    _player_season_unique = models.Constraint('unique (player_id, season_id)', 'A player can only have one license per season.')
+    _player_season_unique = models.Constraint(
+        "unique (player_id, season_id)",
+        "A player can only have one license per season.",
+    )
 
     @api.constrains("issue_date", "expiry_date")
     def _check_dates(self):

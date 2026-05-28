@@ -17,7 +17,9 @@ class FederationRosterPortal(FederationRosterPortalBase):
     )
     def portal_my_rosters(self, page=1, **kw):
         """List rosters visible to the current user."""
-        Roster = request.env["federation.team.roster"].with_user(request.env.user).sudo()
+        Roster = (
+            request.env["federation.team.roster"].with_user(request.env.user).sudo()
+        )
         domain = Roster._portal_get_scope_domain(user=request.env.user)
         if domain == [("id", "=", False)]:
             return self._redirect_with_query("/my/club")
@@ -57,6 +59,7 @@ class FederationRosterPortal(FederationRosterPortalBase):
             "page_name": "my_rosters",
             "success": kw.get("success"),
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
         }
         return request.render("sports_federation_portal.portal_my_rosters", values)
 
@@ -70,8 +73,11 @@ class FederationRosterPortal(FederationRosterPortalBase):
     )
     def portal_my_roster_create(self, registration_id, **kw):
         """Create a roster for a confirmed season registration."""
-        registration = request.env["federation.season.registration"].with_user(request.env.user).sudo().browse(
-            registration_id
+        registration = (
+            request.env["federation.season.registration"]
+            .with_user(request.env.user)
+            .sudo()
+            .browse(registration_id)
         )
         if not registration.exists():
             return self._redirect_with_query(
@@ -80,12 +86,18 @@ class FederationRosterPortal(FederationRosterPortalBase):
             )
 
         try:
-            roster = request.env["federation.team.roster"]._portal_create_roster_for_registration(
+            roster = request.env[
+                "federation.team.roster"
+            ]._portal_create_roster_for_registration(
                 registration,
                 user=request.env.user,
             )
         except (AccessError, ValidationError) as exc:
-            return self._redirect_with_query("/my/rosters", error=str(exc))
+            return self._redirect_with_query(
+                "/my/rosters",
+                error=str(exc),
+                error_hint="Ensure the registration is confirmed and a roster has not already been created for this team.",
+            )
 
         return self._redirect_roster(
             roster,
@@ -103,7 +115,7 @@ class FederationRosterPortal(FederationRosterPortalBase):
         try:
             roster = self._get_portal_roster(roster_id)
         except AccessError:
-            return request.not_found()
+            return self._render_access_denied()
 
         can_manage_roster = False
         portal_manage_error = False
@@ -118,6 +130,7 @@ class FederationRosterPortal(FederationRosterPortalBase):
             "page_name": "my_rosters",
             "success": kw.get("success"),
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
             "can_manage_roster": can_manage_roster,
             "can_edit_roster": can_manage_roster and roster.status != "closed",
             "portal_manage_error": portal_manage_error,
@@ -140,14 +153,19 @@ class FederationRosterPortal(FederationRosterPortalBase):
             roster = self._get_portal_roster(roster_id)
             roster._portal_assert_manage_access(user=request.env.user)
         except AccessError:
-            return request.not_found()
+            return self._render_access_denied()
         except ValidationError as exc:
-            return self._redirect_roster(roster, error=str(exc))
+            return self._redirect_roster(
+                roster,
+                error=str(exc),
+                error_hint="You may not have the required access to edit this roster.",
+            )
 
         values = {
             "roster": roster,
             "page_name": "my_rosters",
             "error": kw.get("error"),
+            "error_hint": kw.get("error_hint"),
         }
         return request.render(
             "sports_federation_portal.portal_my_roster_edit",
@@ -176,11 +194,12 @@ class FederationRosterPortal(FederationRosterPortalBase):
                 },
             )
         except AccessError:
-            return request.not_found()
+            return self._render_access_denied()
         except ValidationError as exc:
             return self._redirect_with_query(
                 f"/my/rosters/{roster_id}/edit",
                 error=str(exc),
+                error_hint="Review the roster details and try again.",
             )
 
         return self._redirect_roster(roster, success="Roster updated.")
@@ -199,9 +218,13 @@ class FederationRosterPortal(FederationRosterPortalBase):
             roster = self._get_portal_roster(roster_id)
             roster._portal_action_activate(user=request.env.user)
         except AccessError:
-            return request.not_found()
+            return self._render_access_denied()
         except ValidationError as exc:
-            return self._redirect_roster(roster, error=str(exc))
+            return self._redirect_roster(
+                roster,
+                error=str(exc),
+                error_hint="Ensure all required fields are complete before activating the roster.",
+            )
 
         return self._redirect_roster(roster, success="Roster activated.")
 
@@ -219,9 +242,13 @@ class FederationRosterPortal(FederationRosterPortalBase):
             roster = self._get_portal_roster(roster_id)
             roster._portal_action_set_draft(user=request.env.user)
         except AccessError:
-            return request.not_found()
+            return self._render_access_denied()
         except ValidationError as exc:
-            return self._redirect_roster(roster, error=str(exc))
+            return self._redirect_roster(
+                roster,
+                error=str(exc),
+                error_hint="The roster cannot be moved to draft at its current stage.",
+            )
 
         return self._redirect_roster(roster, success="Roster set back to draft.")
 
@@ -239,11 +266,39 @@ class FederationRosterPortal(FederationRosterPortalBase):
             roster = self._get_portal_roster(roster_id)
             roster._portal_action_close(user=request.env.user)
         except AccessError:
-            return request.not_found()
+            return self._render_access_denied()
         except ValidationError as exc:
-            return self._redirect_roster(roster, error=str(exc))
+            return self._redirect_roster(
+                roster,
+                error=str(exc),
+                error_hint="Ensure the roster has been submitted before closing.",
+            )
 
         return self._redirect_roster(roster, success="Roster closed.")
+
+    @http.route(
+        ["/my/rosters/<int:roster_id>/reopen"],
+        type="http",
+        auth="user",
+        website=True,
+        methods=["POST"],
+        csrf=True,
+    )
+    def portal_my_roster_reopen(self, roster_id, **kw):
+        """Reopen a closed roster."""
+        try:
+            roster = self._get_portal_roster(roster_id)
+            roster._portal_action_reopen(user=request.env.user)
+        except AccessError:
+            return self._render_access_denied()
+        except ValidationError as exc:
+            return self._redirect_roster(
+                roster,
+                error=str(exc),
+                error_hint="Resolve readiness blockers before reopening this roster.",
+            )
+
+        return self._redirect_roster(roster, success="Roster reopened.")
 
     @http.route(
         ["/my/rosters/<int:roster_id>/lines/new"],
@@ -267,9 +322,13 @@ class FederationRosterPortal(FederationRosterPortalBase):
                 user=request.env.user,
             )
         except AccessError:
-            return request.not_found()
+            return self._render_access_denied()
         except ValidationError as exc:
-            return self._redirect_roster(roster, error=str(exc))
+            return self._redirect_roster(
+                roster,
+                error=str(exc),
+                error_hint="You may not have the required access to manage this roster.",
+            )
 
         return self._render_roster_line_form(
             roster,
@@ -278,6 +337,7 @@ class FederationRosterPortal(FederationRosterPortalBase):
             available_players=available_players,
             available_licenses=available_licenses,
             error=kw.get("error"),
+            error_hint=kw.get("error_hint"),
         )
 
     @http.route(
@@ -298,11 +358,12 @@ class FederationRosterPortal(FederationRosterPortalBase):
                 user=request.env.user,
             )
         except AccessError:
-            return request.not_found()
+            return self._render_access_denied()
         except ValidationError as exc:
             return self._redirect_with_query(
                 f"/my/rosters/{roster_id}/lines/new",
                 error=str(exc),
+                error_hint="Verify the player is eligible and not already listed on this roster.",
             )
 
         return self._redirect_roster(roster, success="Player added to roster.")
@@ -333,9 +394,13 @@ class FederationRosterPortal(FederationRosterPortalBase):
                 player=line.player_id,
             )
         except AccessError:
-            return request.not_found()
+            return self._render_access_denied()
         except ValidationError as exc:
-            return self._redirect_roster(roster, error=str(exc))
+            return self._redirect_roster(
+                roster,
+                error=str(exc),
+                error_hint="You may not have the required access to edit this roster line.",
+            )
 
         return self._render_roster_line_form(
             roster,
@@ -344,6 +409,7 @@ class FederationRosterPortal(FederationRosterPortalBase):
             page_title="Edit Roster Player",
             available_licenses=available_licenses,
             error=kw.get("error"),
+            error_hint=kw.get("error_hint"),
         )
 
     @http.route(
@@ -361,11 +427,12 @@ class FederationRosterPortal(FederationRosterPortalBase):
             line = self._get_portal_roster_line(roster, line_id)
             line._portal_update_line(values=kw, user=request.env.user)
         except AccessError:
-            return request.not_found()
+            return self._render_access_denied()
         except ValidationError as exc:
             return self._redirect_with_query(
                 f"/my/rosters/{roster_id}/lines/{line_id}/edit",
                 error=str(exc),
+                error_hint="Review the player details and try again.",
             )
 
         return self._redirect_roster(roster, success="Roster line updated.")
@@ -385,8 +452,12 @@ class FederationRosterPortal(FederationRosterPortalBase):
             line = self._get_portal_roster_line(roster, line_id)
             line._portal_delete_line(user=request.env.user)
         except AccessError:
-            return request.not_found()
+            return self._render_access_denied()
         except ValidationError as exc:
-            return self._redirect_roster(roster, error=str(exc))
+            return self._redirect_roster(
+                roster,
+                error=str(exc),
+                error_hint="The player could not be removed. Contact the federation if the issue persists.",
+            )
 
         return self._redirect_roster(roster, success="Roster line removed.")

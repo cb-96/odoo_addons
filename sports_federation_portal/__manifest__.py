@@ -1,13 +1,14 @@
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.3.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
 Portal and website flows for sports federation club representatives.
 
-Provides club representative ownership, portal dashboards, and season or
-tournament registration workflows on top of the federation base modules.
+Provides club representative ownership, portal dashboards, season and
+tournament registration workflows, and the live tournament operations board
+on top of the federation base modules.
 """,
     "author": "Sports Federation",
     "website": "",
@@ -16,6 +17,7 @@ tournament registration workflows on top of the federation base modules.
         "website",
         "portal",
         "sports_federation_base",
+        "sports_federation_people",
         "sports_federation_tournament",
         "sports_federation_officiating",
         "sports_federation_rosters",
@@ -36,14 +38,25 @@ tournament registration workflows on top of the federation base modules.
         "views/federation_season_registration_views.xml",
         "views/federation_tournament_registration_views.xml",
         "views/federation_tournament_views.xml",
+        "views/federation_match_sheet_views.xml",
         "views/federation_club_representative_portal_views.xml",
         "views/portal_templates.xml",
         "views/portal_officiating_templates.xml",
         "views/portal_tournament_workspace_templates.xml",
+        "views/portal_tournament_operations_templates.xml",
         "views/portal_roster_templates.xml",
+        "views/portal_result_templates.xml",
+        "views/portal_referee_duty_templates.xml",
         "views/menu_items.xml",
         "views/website_menus.xml",
     ],
+    "assets": {
+        "web.assets_frontend": [
+            "sports_federation_portal/static/src/components/tournament_operations/tournament_operations.js",
+            "sports_federation_portal/static/src/components/tournament_operations/tournament_operations.xml",
+            "sports_federation_portal/static/src/components/tournament_operations/tournament_operations.scss",
+        ],
+    },
     "demo": [],
     "installable": True,
     "application": False,

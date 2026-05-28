@@ -7,6 +7,7 @@ this model automatically creates a ``federation.finance.event`` if a
 This enables clubs and the federation to track per-match financial obligations
 (e.g., referee reimbursements) without manual data entry.
 """
+
 from odoo import fields, models
 
 

@@ -44,25 +44,22 @@ Overall assessment:
 
 ## Review Signals
 
-- 19 custom addons.
-- 252 Python files.
-- 132 XML files.
-- 66 test files.
-- 14 controller files.
-- 178 `sudo()` usages in Python.
-- 51 `with_user(user).sudo()` patterns.
-- 24 `auth="public"` route declarations.
-- 7 `csrf=False` declarations.
-- 10 `except Exception` occurrences.
+_Last updated: 2026-04-28 (Phase 4 refresh)_
 
-Largest complexity hotspots by line count:
+- 20 custom addons.
+- 328 Python files (47 195 lines).
+- 138 XML files (13 591 lines).
+- 59 test files (19 413 test lines).
+- `except Exception` occurrences: 7 (all with `build_failure_feedback` / `is_safe_operator_detail` sanitization; notifications and import handlers).
+- `auth="public"` route declarations: 24.
 
-- [sports_federation_reporting/models/report_operational.py](sports_federation_reporting/models/report_operational.py) — 968 lines.
-- [sports_federation_rosters/models/team_roster.py](sports_federation_rosters/models/team_roster.py) — 907 lines.
-- [sports_federation_public_site/models/public_flags.py](sports_federation_public_site/models/public_flags.py) — 747 lines.
-- [sports_federation_reporting/models/report_schedule.py](sports_federation_reporting/models/report_schedule.py) — 648 lines.
-- [sports_federation_portal/controllers/rosters.py](sports_federation_portal/controllers/rosters.py) — 575 lines.
-- [sports_federation_public_site/controllers/public_competitions.py](sports_federation_public_site/controllers/public_competitions.py) — 517 lines.
+Largest complexity hotspots by line count (production code only):
+
+- [sports_federation_public_site/models](sports_federation_public_site/models) — public visibility flags were split across multiple model files.
+- [sports_federation_rosters/models/team_roster.py](sports_federation_rosters/models/team_roster.py) — 585 lines.
+- [sports_federation_reporting/models/report_schedule.py](sports_federation_reporting/models/report_schedule.py) — 319 lines.
+- [sports_federation_reporting/models/report_operational.py](sports_federation_reporting/models/report_operational.py) — 219 lines.
+- [sports_federation_public_site/controllers/public_competitions.py](sports_federation_public_site/controllers/public_competitions.py) — 734 lines.
 
 ## Findings
 
@@ -336,7 +333,7 @@ Recommendation:
 ## Roadmap Link
 
 The replacement operating-period roadmap is in [ROADMAP.md](ROADMAP.md).
-The prior roadmap has been archived in [ROADMAP_archive_2026-04-17.md](ROADMAP_archive_2026-04-17.md).
+The prior roadmap has been archived in [archive/roadmaps/ROADMAP_archive_2026-04-17.md](archive/roadmaps/ROADMAP_archive_2026-04-17.md).
 
 ## Review Limits
 

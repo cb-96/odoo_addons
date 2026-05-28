@@ -7,6 +7,7 @@ from odoo.exceptions import ValidationError
 class FederationTournamentParticipant(models.Model):
     _name = "federation.tournament.participant"
     _description = "Tournament Participant"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "name"
 
     name = fields.Char(string="Name", compute="_compute_name", store=True)
@@ -31,7 +32,11 @@ class FederationTournamentParticipant(models.Model):
         compute="_compute_team_selection",
     )
     club_id = fields.Many2one(
-        "federation.club", string="Club", related="team_id.club_id", store=True, readonly=True
+        "federation.club",
+        string="Club",
+        related="team_id.club_id",
+        store=True,
+        readonly=True,
     )
     stage_id = fields.Many2one(
         "federation.tournament.stage", string="Stage", ondelete="set null"
@@ -53,9 +58,67 @@ class FederationTournamentParticipant(models.Model):
         default="registered",
         required=True,
     )
+
+    _team_tournament_unique = models.Constraint(
+        "unique (team_id, tournament_id)",
+        "A team can only participate once per tournament.",
+    )
     notes = fields.Text(string="Notes")
 
-    _team_tournament_unique = models.Constraint('unique (team_id, tournament_id)', 'A team can only participate once per tournament.')
+    @api.constrains("team_id", "tournament_id")
+    def _check_unique_team_per_tournament(self):
+        for rec in self:
+            if rec.tournament_id and rec.team_id:
+                duplicate = self.search(
+                    [
+                        ("tournament_id", "=", rec.tournament_id.id),
+                        ("team_id", "=", rec.team_id.id),
+                        ("id", "!=", rec.id),
+                    ],
+                    limit=1,
+                )
+                if duplicate:
+                    raise ValidationError(
+                        _(
+                            "Team '%(team)s' is already registered in tournament '%(tournament)s'.",
+                            team=rec.team_id.name,
+                            tournament=rec.tournament_id.name,
+                        )
+                    )
+
+    def _raise_if_duplicate_team(self, team_id, tournament_id, exclude_id=None):
+        """Pre-insert/write check that raises ValidationError before DB constraint fires."""
+        if not team_id or not tournament_id:
+            return
+        domain = [("tournament_id", "=", tournament_id), ("team_id", "=", team_id)]
+        if exclude_id:
+            domain.append(("id", "!=", exclude_id))
+        if self.search(domain, limit=1):
+            team = self.env["federation.team"].browse(team_id)
+            tournament = self.env["federation.tournament"].browse(tournament_id)
+            raise ValidationError(
+                _(
+                    "Team '%(team)s' is already registered in tournament '%(tournament)s'.",
+                    team=team.name,
+                    tournament=tournament.name,
+                )
+            )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._raise_if_duplicate_team(
+                vals.get("team_id"), vals.get("tournament_id")
+            )
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if "team_id" in vals or "tournament_id" in vals:
+            for rec in self:
+                team_id = vals.get("team_id", rec.team_id.id)
+                tournament_id = vals.get("tournament_id", rec.tournament_id.id)
+                self._raise_if_duplicate_team(team_id, tournament_id, exclude_id=rec.id)
+        return super().write(vals)
 
     @api.depends("team_id", "tournament_id")
     def _compute_name(self):
@@ -78,8 +141,10 @@ class FederationTournamentParticipant(models.Model):
                 continue
 
             rec.eligible_team_ids = rec.tournament_id.search_eligible_teams()
-            selection_snapshot = rec.tournament_id.get_participant_team_selection_snapshot(
-                current_participant=rec
+            selection_snapshot = (
+                rec.tournament_id.get_participant_team_selection_snapshot(
+                    current_participant=rec
+                )
             )
             rec.available_team_ids = selection_snapshot["available_teams"]
             rec.excluded_team_feedback_html = rec._render_excluded_team_feedback_html(
@@ -92,9 +157,7 @@ class FederationTournamentParticipant(models.Model):
             return False
 
         intro = escape(
-            _(
-                "Only teams that can currently be selected appear in the Team dropdown."
-            )
+            _("Only teams that can currently be selected appear in the Team dropdown.")
         )
         items = "".join(
             "<li><strong>{team}</strong> ({club}): {reason}</li>".format(
@@ -118,7 +181,11 @@ class FederationTournamentParticipant(models.Model):
     def _onchange_tournament_id(self):
         """Handle onchange tournament ID."""
         domain = [("id", "in", self.available_team_ids.ids)]
-        if self.team_id and self.tournament_id and self.team_id not in self.available_team_ids:
+        if (
+            self.team_id
+            and self.tournament_id
+            and self.team_id not in self.available_team_ids
+        ):
             warning = {
                 "title": _("Ineligible Team"),
                 "message": self._get_team_unavailability_reason(self.team_id),

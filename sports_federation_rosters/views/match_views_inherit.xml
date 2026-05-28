@@ -5,12 +5,10 @@
         <field name="model">federation.match</field>
         <field name="inherit_id" ref="sports_federation_tournament.view_federation_match_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//div[hasclass('oe_title')]" position="before">
-                <div class="oe_button_box" name="button_box">
-                    <button name="action_view_match_sheets" type="object" class="oe_stat_button" icon="fa-file-text-o">
-                        <field name="match_sheet_count" string="Sheets" widget="statinfo"/>
-                    </button>
-                </div>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_match_sheets" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                    <field name="match_sheet_count" string="Sheets" widget="statinfo"/>
+                </button>
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Match Sheets" name="match_sheets">

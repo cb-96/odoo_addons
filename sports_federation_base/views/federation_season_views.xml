@@ -29,6 +29,20 @@
                                 icon="fa-pencil-square-o">
                             <field name="registration_count" widget="statinfo" string="Registrations"/>
                         </button>
+                        <button name="action_view_confirmed_registrations"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-check-circle"
+                                invisible="not confirmed_registration_count">
+                            <field name="confirmed_registration_count" widget="statinfo" string="Confirmed"/>
+                        </button>
+                        <button name="action_view_pending_registrations"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-clock-o"
+                                invisible="not pending_registration_count">
+                            <field name="pending_registration_count" widget="statinfo" string="Pending"/>
+                        </button>
                     </div>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
                             invisible="active"/>
@@ -53,6 +67,36 @@
                             <field name="target_participant_count"/>
                         </group>
                     </group>
+                    <div class="alert alert-info"
+                         invisible="state != 'draft'"
+                         role="status">
+                        <strong>Setup order:</strong>
+                        Define the season dates and planning targets here, then open the season when clubs can start submitting teams.
+                    </div>
+                    <div class="alert alert-info d-flex justify-content-between align-items-start gap-3"
+                         invisible="state != 'open' or registration_count"
+                         role="status">
+                        <div>
+                            <strong>Next step:</strong>
+                            The season is open but no teams are registered yet. Collect season registrations first, then confirm them before planning competitions and rosters.
+                        </div>
+                        <button name="action_view_registrations"
+                                string="Open Registrations"
+                                type="object"
+                                class="btn btn-link p-0 text-nowrap"/>
+                    </div>
+                    <div class="alert alert-warning d-flex justify-content-between align-items-start gap-3"
+                         invisible="state != 'open' or not pending_registration_count"
+                         role="alert">
+                        <div>
+                            <strong>Attention:</strong>
+                            Some season registrations are still waiting for review. Confirm them before expecting teams and downstream rosters to be ready.
+                        </div>
+                        <button name="action_view_pending_registrations"
+                                string="Review Pending"
+                                type="object"
+                                class="btn btn-link p-0 text-nowrap"/>
+                    </div>
                     <separator string="Notes"/>
                     <field name="notes"/>
                 </sheet>
@@ -100,13 +144,16 @@
     </record>
 
     <record id="federation_season_action" model="ir.actions.act_window">
-        <field name="name">Federation Seasons</field>
+        <field name="name">Seasons</field>
         <field name="res_model">federation.season</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_federation_season_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first federation season.
+            </p>
+            <p>
+                Start with dates and planning targets, then open the season so clubs can submit registrations.
             </p>
         </field>
     </record>

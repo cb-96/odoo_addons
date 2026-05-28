@@ -63,6 +63,12 @@ jobs:
       - name: Check OpenAPI contract docs
         run: python ci/check_openapi_contracts.py
 
+      - name: Check CI hygiene
+        run: python ci/check_ci_hygiene.py
+
+      - name: Report module dependency drift
+        run: python ci/check_module_dependency_drift.py
+
       - name: Validate CI shell scripts
         run: |
           bash -n ci/run_tests.sh
@@ -145,6 +151,36 @@ jobs:
           append_if_set "ALLOWED_HOSTS" "$ALLOWED_HOSTS"
 
       - name: Run Odoo module tests
+        run: |
+          chmod +x ci/run_tests.sh
+          bash ./ci/run_tests.sh --suite ${{ matrix.suite }}
+
+  odoo-integration-matrix:
+    name: Odoo integration matrix (${{ matrix.suite }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - people_rosters_rules
+          - ops_and_notifications
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify Docker Compose availability
+        run: docker compose version
+
+      - name: Prepare CI environment file
+        run: |
+          cp ci/.env.example ci/.env
+          password="$(openssl rand -hex 16)"
+          sed -i "s/^CI_PROJECT_NAME=.*/CI_PROJECT_NAME=sf_ci_${GITHUB_RUN_ID}_matrix/" ci/.env
+          sed -i "s/^CI_POSTGRES_PASSWORD=.*/CI_POSTGRES_PASSWORD=${password}/" ci/.env
+
+      - name: Run integration matrix suite
         run: |
           chmod +x ci/run_tests.sh
           bash ./ci/run_tests.sh --suite ${{ matrix.suite }}

@@ -145,6 +145,13 @@ components:
           type: string
         source_reference:
           type: string
+    InboundDeliveryOutcome:
+      type: string
+      enum:
+        - created
+        - checksum_reuse
+        - idempotency_replay
+      description: Whether the request created a new staged delivery or reused an existing one.
     InboundDeliveryRecord:
       type: object
       required:
@@ -187,8 +194,11 @@ components:
     InboundDeliveryResponse:
       type: object
       required:
+        - delivery_outcome
         - delivery
       properties:
+        delivery_outcome:
+          $ref: '#/components/schemas/InboundDeliveryOutcome'
         delivery:
           $ref: '#/components/schemas/InboundDeliveryRecord'
 security:
@@ -358,7 +368,7 @@ paths:
           required: false
           schema:
             type: string
-          description: Optional idempotency key that replays the original delivery response for matching requests.
+          description: Optional idempotency key that safely reuses the original staged delivery for matching requests.
       requestBody:
         required: true
         content:
@@ -375,8 +385,12 @@ paths:
                   source_reference: vendor-run-2026-04-18
       responses:
         '201':
-          description: Delivery staged successfully.
+          description: Delivery request accepted successfully.
           headers:
+            X-Federation-Delivery-Outcome:
+              schema:
+                $ref: '#/components/schemas/InboundDeliveryOutcome'
+              description: Indicates whether the request created a new staged delivery or reused an existing one.
             X-Federation-Idempotency-Key:
               schema:
                 type: string
@@ -387,7 +401,7 @@ paths:
                 enum:
                   - 'true'
                   - 'false'
-              description: Indicates whether the idempotent request replayed an existing delivery.
+              description: Present when the request supplied an idempotency key and indicates whether that key replayed an existing delivery.
           content:
             application/json:
               schema:

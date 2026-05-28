@@ -1,8 +1,18 @@
 from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 
 
 class FederationTournamentParticipant(models.Model):
     _inherit = "federation.tournament.participant"
+
+    confirmation_blocking = fields.Boolean(
+        compute="_compute_confirmation_readiness",
+        string="Confirmation Blocking",
+    )
+    confirmation_warning = fields.Boolean(
+        compute="_compute_confirmation_readiness",
+        string="Confirmation Warning",
+    )
 
     ready_for_confirmation = fields.Boolean(
         compute="_compute_confirmation_readiness",
@@ -37,9 +47,18 @@ class FederationTournamentParticipant(models.Model):
         """Compute confirmation readiness."""
         for record in self:
             assessment = record._get_roster_assessment()
-            record.ready_for_confirmation = not bool(assessment["blocking_issues"])
+            has_issues = bool(
+                assessment.get("has_issues") or assessment["blocking_issues"]
+            )
+            blocking_issues = bool(assessment["blocking_issues"])
+            deadline_reached = bool(assessment["deadline_reached"])
+            record.ready_for_confirmation = not blocking_issues
+            record.confirmation_blocking = has_issues and deadline_reached
+            record.confirmation_warning = has_issues and not deadline_reached
             record.roster_deadline_date = assessment["deadline_date"] or False
-            record.readiness_roster_id = assessment["roster"].id if assessment["roster"] else False
+            record.readiness_roster_id = (
+                assessment["roster"].id if assessment["roster"] else False
+            )
             record.confirmation_feedback = assessment["feedback"]
 
     def _get_readiness_roster(self):
@@ -91,7 +110,68 @@ class FederationTournamentParticipant(models.Model):
             self._ensure_linked_roster()
         return result
 
+    def _get_confirmation_deadline_errors(self):
+        """Return operator-facing confirmation blockers once the roster deadline hits."""
+        errors = []
+        for record in self:
+            assessment = record._get_roster_assessment()
+            if assessment["blocking_issues"]:
+                feedback = assessment["feedback"] or "; ".join(
+                    assessment["blocking_issues"]
+                )
+                errors.append(
+                    _("%(team)s: %(feedback)s")
+                    % {
+                        "team": record.team_id.display_name or record.display_name,
+                        "feedback": feedback,
+                    }
+                )
+        return errors
+
+    def action_open_readiness_roster(self):
+        """Open the roster that controls this participant's confirmation readiness."""
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_rosters.action_federation_team_roster"
+        )
+        domain = []
+        context = {}
+        if self.team_id:
+            domain.append(("team_id", "=", self.team_id.id))
+            context["default_team_id"] = self.team_id.id
+
+        season = self.tournament_id.season_id
+        if season:
+            domain.append(("season_id", "=", season.id))
+            context["default_season_id"] = season.id
+
+        if self.tournament_id.competition_id:
+            domain.append(("competition_id", "=", self.tournament_id.competition_id.id))
+            context["default_competition_id"] = self.tournament_id.competition_id.id
+
+        roster = self._get_readiness_roster()
+        if roster:
+            action.update(
+                {
+                    "view_mode": "form",
+                    "res_id": roster.id,
+                    "domain": [],
+                }
+            )
+        else:
+            action["domain"] = domain
+        action["context"] = context
+        return action
+
     def action_confirm(self):
         """Execute the confirm action."""
         self._ensure_linked_roster()
+        deadline_errors = self._get_confirmation_deadline_errors()
+        if deadline_errors:
+            raise ValidationError(
+                _(
+                    "Participants cannot be confirmed after the roster deadline until each team has an active ready roster:\n- %(errors)s"
+                )
+                % {"errors": "\n- ".join(deadline_errors)}
+            )
         return super().action_confirm()

@@ -1,5 +1,7 @@
 from odoo import SUPERUSER_ID, api
-from odoo.addons.sports_federation_base.models.failure_feedback import build_failure_feedback
+from odoo.addons.sports_federation_base.models.failure_feedback import (
+    build_failure_feedback,
+)
 from odoo.addons.sports_federation_import_tools.workflow_states import (
     IMPORT_JOB_ERROR_STATES,
     INBOUND_DELIVERY_FAILURE_REVIEW_STATES,
@@ -25,11 +27,17 @@ def _job_default_category(job):
 def migrate(cr, version):
     """Backfill typed failure metadata for deliveries and import jobs."""
     env = api.Environment(cr, SUPERUSER_ID, {})
-    deliveries = env["federation.integration.delivery"].sudo().search([
-        ("failure_category", "=", False),
-        ("result_message", "!=", False),
-        ("state", "in", INBOUND_DELIVERY_FAILURE_REVIEW_STATES),
-    ])
+    deliveries = (
+        env["federation.integration.delivery"]
+        .sudo()
+        .search(
+            [
+                ("failure_category", "=", False),
+                ("result_message", "!=", False),
+                ("state", "in", INBOUND_DELIVERY_FAILURE_REVIEW_STATES),
+            ]
+        )
+    )
     for delivery in deliveries:
         failure_category, operator_message = build_failure_feedback(
             detail=delivery.result_message,
@@ -42,12 +50,22 @@ def migrate(cr, version):
             }
         )
 
-    jobs = env["federation.import.job"].sudo().search([
-        ("failure_category", "=", False),
-        ("state", "in", IMPORT_JOB_ERROR_STATES),
-    ])
+    jobs = (
+        env["federation.import.job"]
+        .sudo()
+        .search(
+            [
+                ("failure_category", "=", False),
+                ("state", "in", IMPORT_JOB_ERROR_STATES),
+            ]
+        )
+    )
     for job in jobs:
-        detail = job.rejection_reason or job.execution_result_message or job.preview_result_message
+        detail = (
+            job.rejection_reason
+            or job.execution_result_message
+            or job.preview_result_message
+        )
         if not detail:
             continue
         failure_category, operator_message = build_failure_feedback(

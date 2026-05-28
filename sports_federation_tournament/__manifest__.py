@@ -24,6 +24,7 @@ with rule-set support and workflow state management.
         "views/federation_competition_edition_views.xml",
         "views/federation_competition_views.xml",
         "views/federation_season_registration_views_inherit.xml",
+        "views/federation_season_views_inherit.xml",
         "views/menu_items.xml",
     ],
     "demo": [],

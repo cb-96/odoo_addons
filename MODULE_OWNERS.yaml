@@ -19,6 +19,10 @@ modules:
     primary_owner: Federation Finance and Compliance
     secondary_owner: Federation Competition Operations
     surface: Disciplinary cases, sanctions, and review workflows
+  sports_federation_demo:
+    primary_owner: Federation Platform Team
+    secondary_owner: Federation Competition Operations
+    surface: Demo-only sample federation data and onboarding fixtures
   sports_federation_finance_bridge:
     primary_owner: Federation Finance and Compliance
     secondary_owner: Federation Platform Team

@@ -1,6 +1,7 @@
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError
 from datetime import date, timedelta
+from odoo.tools.misc import mute_logger
 
 
 class TestClubRepresentative(TransactionCase):
@@ -12,12 +13,16 @@ class TestClubRepresentative(TransactionCase):
         super().setUpClass()
         # Create a club
         cls.club = cls.env["federation.club"].create({"name": "Test Club"})
-        cls.user = cls.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Club Representative Test User",
-                "login": "club.representative.test.user@example.com",
-                "email": "club.representative.test.user@example.com",
-            }
+        cls.user = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Club Representative Test User",
+                    "login": "club.representative.test.user@example.com",
+                    "email": "club.representative.test.user@example.com",
+                }
+            )
         )
         # Create partners
         cls.partner1 = cls.env["res.partner"].create({"name": "John Doe"})
@@ -33,12 +38,8 @@ class TestClubRepresentative(TransactionCase):
         cls.role_safeguarding = cls.env.ref(
             "sports_federation_portal.role_type_safeguarding_contact"
         )
-        cls.role_president = cls.env.ref(
-            "sports_federation_portal.role_type_president"
-        )
-        cls.role_other = cls.env.ref(
-            "sports_federation_portal.role_type_other"
-        )
+        cls.role_president = cls.env.ref("sports_federation_portal.role_type_president")
+        cls.role_other = cls.env.ref("sports_federation_portal.role_type_other")
 
     def test_create_multiple_representatives(self):
         """Test creating multiple representatives for one club."""
@@ -171,7 +172,7 @@ class TestClubRepresentative(TransactionCase):
             }
         )
         # Same partner, same club, same role should fail
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception), mute_logger("odoo.sql_db"), self.cr.savepoint():
             self.env["federation.club.representative"].create(
                 {
                     "club_id": self.club.id,
@@ -218,7 +219,9 @@ class TestClubRepresentative(TransactionCase):
                 "role_type_id": self.role_finance.id,
             }
         )
-        clubs = self.env["federation.club.representative"]._get_clubs_for_user(self.user)
+        clubs = self.env["federation.club.representative"]._get_clubs_for_user(
+            self.user
+        )
         self.assertEqual(len(clubs), 2)
         self.assertIn(self.club, clubs)
         self.assertIn(club2, clubs)
@@ -228,21 +231,29 @@ class TestClubRepresentative(TransactionCase):
         official_group = self.env.ref(
             "sports_federation_portal.group_federation_portal_official"
         )
-        official_user = self.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Non Club Portal User",
-                "login": "non.club.portal.user@example.com",
-                "email": "non.club.portal.user@example.com",
-                "group_ids": [(6, 0, [official_group.id])],
-            }
+        official_user = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Non Club Portal User",
+                    "login": "non.club.portal.user@example.com",
+                    "email": "non.club.portal.user@example.com",
+                    "group_ids": [(6, 0, [official_group.id])],
+                }
+            )
         )
 
-        clubs = self.env["federation.club.representative"].with_user(
-            official_user
-        )._get_clubs_for_user()
-        club_scope = self.env["federation.club.representative"].with_user(
-            official_user
-        )._get_club_scope_for_user()
+        clubs = (
+            self.env["federation.club.representative"]
+            .with_user(official_user)
+            ._get_clubs_for_user()
+        )
+        club_scope = (
+            self.env["federation.club.representative"]
+            .with_user(official_user)
+            ._get_club_scope_for_user()
+        )
 
         self.assertFalse(clubs)
         self.assertFalse(club_scope)

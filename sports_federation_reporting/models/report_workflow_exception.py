@@ -17,7 +17,9 @@ class FederationReportWorkflowException(models.Model):
     ]
 
     season_id = fields.Many2one("federation.season", string="Season", readonly=True)
-    tournament_id = fields.Many2one("federation.tournament", string="Tournament", readonly=True)
+    tournament_id = fields.Many2one(
+        "federation.tournament", string="Tournament", readonly=True
+    )
     match_id = fields.Many2one("federation.match", string="Match", readonly=True)
     override_request_id = fields.Many2one(
         "federation.override.request",
@@ -52,8 +54,7 @@ class FederationReportWorkflowException(models.Model):
     def init(self):
         """Rebuild the SQL view so workflow backlog rows match the declared fields."""
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute(
-            """
+        self.env.cr.execute("""
             CREATE VIEW federation_report_workflow_exception AS (
                 -- block: queue
                 WITH queue AS (
@@ -175,5 +176,4 @@ class FederationReportWorkflowException(models.Model):
                 LEFT JOIN res_users ru ON ru.id = queue.responsible_user_id
                 LEFT JOIN res_partner rp ON rp.id = ru.partner_id
             )
-            """
-        )
+            """)

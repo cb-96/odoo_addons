@@ -15,3 +15,5 @@ from . import report_audit_event
 from . import report_snapshot
 from . import report_schedule
 from . import report_operator_checklist
+from . import report_club_compliance_summary
+from . import report_officiating_coverage

@@ -1,3 +1,5 @@
+from . import import_wizard_csv_mixin
+from . import import_wizard_governance_mixin
 from . import import_wizard_mixin
 from . import import_clubs_wizard
 from . import import_players_wizard

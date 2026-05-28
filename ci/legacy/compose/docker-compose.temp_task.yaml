@@ -1,0 +1,15 @@
+services:
+  ci-db:
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+      POSTGRES_DB: postgres
+  ci-odoo:
+    environment:
+      CI_POSTGRES_USER: odoo
+      CI_POSTGRES_PASSWORD: odoo
+      CI_ODOO_DB_HOST: ci-db
+      CI_ODOO_DB_PORT: 5432
+    volumes:
+      - /home/cedric/odoo/addons/ci/test_config.conf:/etc/odoo/odoo.conf:ro
+    command: ["--no-http", "--stop-after-init", "--test-enable", "-d", "test_comp_workspace_phase2", "-i", "sports_federation_competition_engine", "--test-tags", "sports_federation_competition_engine"]

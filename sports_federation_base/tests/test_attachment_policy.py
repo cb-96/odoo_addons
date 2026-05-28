@@ -1,7 +1,9 @@
 import subprocess
 from unittest.mock import patch
 
-from odoo.addons.sports_federation_base.exceptions import AttachmentScanVerificationError
+from odoo.addons.sports_federation_base.exceptions import (
+    AttachmentScanVerificationError,
+)
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
@@ -87,7 +89,9 @@ class TestFederationAttachmentPolicy(TransactionCase):
         with patch.object(
             type(scanner),
             "_run_external_hook",
-            side_effect=ValidationError("Uploaded files failed the federation malware scan."),
+            side_effect=ValidationError(
+                "Uploaded files failed the federation malware scan."
+            ),
         ):
             with self.assertRaises(ValidationError) as error:
                 self.env["federation.attachment.policy"].validate_upload(
@@ -106,7 +110,9 @@ class TestFederationAttachmentPolicy(TransactionCase):
             "/usr/local/bin/fake-attachment-scan",
         )
 
-        with patch("odoo.addons.sports_federation_base.models.attachment_scan_service.subprocess.run") as mocked_run:
+        with patch(
+            "odoo.addons.sports_federation_base.models.attachment_scan_service.subprocess.run"
+        ) as mocked_run:
             mocked_run.return_value = subprocess.CompletedProcess(
                 args=["/usr/local/bin/fake-attachment-scan"],
                 returncode=0,
@@ -143,7 +149,9 @@ class TestFederationAttachmentPolicy(TransactionCase):
             "/usr/local/bin/fake-attachment-scan",
         )
 
-        with patch("odoo.addons.sports_federation_base.models.attachment_scan_service.subprocess.run") as mocked_run:
+        with patch(
+            "odoo.addons.sports_federation_base.models.attachment_scan_service.subprocess.run"
+        ) as mocked_run:
             mocked_run.return_value = subprocess.CompletedProcess(
                 args=["/usr/local/bin/fake-attachment-scan"],
                 returncode=10,
@@ -168,7 +176,9 @@ class TestFederationAttachmentPolicy(TransactionCase):
             "/usr/local/bin/fake-attachment-scan",
         )
 
-        with patch("odoo.addons.sports_federation_base.models.attachment_scan_service.subprocess.run") as mocked_run:
+        with patch(
+            "odoo.addons.sports_federation_base.models.attachment_scan_service.subprocess.run"
+        ) as mocked_run:
             mocked_run.return_value = subprocess.CompletedProcess(
                 args=["/usr/local/bin/fake-attachment-scan"],
                 returncode=2,

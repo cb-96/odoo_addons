@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Form View -->
+    <record id="view_federation_reimbursement_request_form" model="ir.ui.view">
+        <field name="name">federation.reimbursement.request.form</field>
+        <field name="model">federation.reimbursement.request</field>
+        <field name="arch" type="xml">
+            <form string="Reimbursement Request">
+                <header>
+                    <button name="action_submit" string="Submit" type="object"
+                            class="oe_highlight"
+                            invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object"
+                            class="oe_highlight"
+                            groups="sports_federation_base.group_federation_manager"
+                            invisible="state != 'submitted'"/>
+                    <button name="action_mark_paid" string="Mark as Paid" type="object"
+                            class="oe_highlight"
+                            groups="sports_federation_base.group_federation_manager"
+                            invisible="state != 'approved'"/>
+                    <button name="action_cancel" string="Cancel" type="object"
+                            invisible="state in ('paid', 'cancelled')"/>
+                    <button name="action_reset_draft" string="Reset to Draft" type="object"
+                            invisible="state != 'cancelled'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,approved,paid"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="referee_id"/>
+                            <field name="match_id"/>
+                        </group>
+                        <group>
+                            <field name="amount"/>
+                            <field name="currency_id"/>
+                        </group>
+                    </group>
+                    <group string="Payment">
+                        <field name="payment_ref"
+                               invisible="state not in ('approved', 'paid')"/>
+                        <field name="paid_on" invisible="state != 'paid'"/>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- List View -->
+    <record id="view_federation_reimbursement_request_list" model="ir.ui.view">
+        <field name="name">federation.reimbursement.request.list</field>
+        <field name="model">federation.reimbursement.request</field>
+        <field name="arch" type="xml">
+            <list string="Reimbursement Requests"
+                  decoration-muted="state == 'cancelled'"
+                  decoration-success="state == 'paid'">
+                <field name="name"/>
+                <field name="referee_id"/>
+                <field name="match_id"/>
+                <field name="amount"/>
+                <field name="currency_id"/>
+                <field name="state"/>
+                <field name="payment_ref" optional="hide"/>
+                <field name="paid_on" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_federation_reimbursement_request_search" model="ir.ui.view">
+        <field name="name">federation.reimbursement.request.search</field>
+        <field name="model">federation.reimbursement.request</field>
+        <field name="arch" type="xml">
+            <search string="Search Reimbursement Requests">
+                <field name="name"/>
+                <field name="referee_id"/>
+                <field name="match_id"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="submitted" string="Submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <filter name="paid" string="Paid" domain="[('state', '=', 'paid')]"/>
+                <separator/>
+                <group>
+                    <filter name="referee" string="Referee"
+                            context="{'group_by': 'referee_id'}"/>
+                    <filter name="state" string="Status"
+                            context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="federation_reimbursement_request_action" model="ir.actions.act_window">
+        <field name="name">Reimbursement Requests</field>
+        <field name="res_model">federation.reimbursement.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_federation_reimbursement_request_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No reimbursement requests yet. Create one to track referee expenses.
+            </p>
+        </field>
+    </record>
+
+    <!-- Server Action: Export for Bank Transfer -->
+    <record id="action_reimbursement_export_bank_transfer" model="ir.actions.server">
+        <field name="name">Export for Bank Transfer</field>
+        <field name="model_id" ref="model_federation_reimbursement_request"/>
+        <field name="binding_model_id" ref="model_federation_reimbursement_request"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_export_bank_transfer_csv()</field>
+    </record>
+
+</odoo>

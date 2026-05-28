@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_federation_match_club_referee_duty_form" model="ir.ui.view">
+        <field name="name">federation.match.club.referee.duty.form</field>
+        <field name="model">federation.match.club.referee.duty</field>
+        <field name="arch" type="xml">
+            <form string="Club Referee Duty">
+                <header>
+                    <button name="action_open" string="Open" type="object"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_confirm" string="Confirm" type="object"
+                            class="btn-primary"
+                            invisible="state != 'nominated'"/>
+                    <button name="action_reject" string="Reject" type="object"
+                            class="btn-secondary"
+                            invisible="state != 'nominated'"/>
+                    <button name="action_cancel" string="Reset to Draft" type="object"
+                            invisible="state == 'confirmed'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,open,nominated,confirmed,rejected"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Duty">
+                            <field name="match_id"/>
+                            <field name="club_id"/>
+                            <field name="role"/>
+                            <field name="nomination_deadline" readonly="1"/>
+                            <field name="is_deadline_overdue" readonly="1"/>
+                        </group>
+                        <group string="Nomination">
+                            <field name="nominated_player_id"
+                                   invisible="state in ('draft', 'open')"
+                                   readonly="state in ('confirmed',)"/>
+                            <field name="nominated_by_id" readonly="1"
+                                   invisible="not nominated_by_id"/>
+                            <field name="nominated_on" readonly="1"
+                                   invisible="not nominated_on"/>
+                            <field name="assignment_id" readonly="1"
+                                   invisible="not assignment_id"/>
+                        </group>
+                    </group>
+                    <separator string="Notes"/>
+                    <field name="notes"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_federation_match_club_referee_duty_list" model="ir.ui.view">
+        <field name="name">federation.match.club.referee.duty.list</field>
+        <field name="model">federation.match.club.referee.duty</field>
+        <field name="arch" type="xml">
+            <list string="Club Referee Duties"
+                  decoration-danger="is_deadline_overdue and state not in ('confirmed',)">
+                <field name="match_id"/>
+                <field name="club_id"/>
+                <field name="role"/>
+                <field name="nomination_deadline" optional="show"/>
+                <field name="is_deadline_overdue" optional="show" invisible="1"/>
+                <field name="nominated_player_id" optional="show"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_federation_match_club_referee_duty_search" model="ir.ui.view">
+        <field name="name">federation.match.club.referee.duty.search</field>
+        <field name="model">federation.match.club.referee.duty</field>
+        <field name="arch" type="xml">
+            <search string="Club Referee Duties">
+                <field name="match_id"/>
+                <field name="club_id"/>
+                <filter string="Draft" name="filter_draft" domain="[('state','=','draft')]"/>
+                <filter string="Open" name="filter_open" domain="[('state','=','open')]"/>
+                <filter string="Nominated" name="filter_nominated" domain="[('state','=','nominated')]"/>
+                <filter string="Confirmed" name="filter_confirmed" domain="[('state','=','confirmed')]"/>
+                <filter string="Rejected" name="filter_rejected" domain="[('state','=','rejected')]"/>
+                <group>
+                    <filter string="Club" name="group_club" context="{'group_by': 'club_id'}"/>
+                    <filter string="Match" name="group_match" context="{'group_by': 'match_id'}"/>
+                    <filter string="State" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="federation_match_club_referee_duty_action" model="ir.actions.act_window">
+        <field name="name">Club Referee Duties</field>
+        <field name="res_model">federation.match.club.referee.duty</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_federation_match_club_referee_duty_search"/>
+    </record>
+
+</odoo>

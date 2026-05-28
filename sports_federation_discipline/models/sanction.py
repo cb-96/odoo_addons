@@ -54,14 +54,16 @@ class FederationSanction(models.Model):
     def _check_subject(self):
         """Validate subject."""
         for record in self:
-            has_subject = any([
-                record.player_id,
-                record.club_id,
-                record.referee_id,
-                record.case_id.subject_player_id,
-                record.case_id.subject_club_id,
-                record.case_id.subject_referee_id,
-            ])
+            has_subject = any(
+                [
+                    record.player_id,
+                    record.club_id,
+                    record.referee_id,
+                    record.case_id.subject_player_id,
+                    record.case_id.subject_club_id,
+                    record.case_id.subject_referee_id,
+                ]
+            )
             if not has_subject:
                 raise ValidationError(
                     "Sanction must have a subject (Player, Club, or Referee) "

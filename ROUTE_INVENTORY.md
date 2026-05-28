@@ -23,7 +23,9 @@ cannot drift without test coverage.
 | Route | Owner Module | Controller Entry Point | Downstream Model / Service | Notes |
 |---|---|---|---|---|
 | `GET /web/login` | `sports_federation_portal` | `FederationWebsiteLogin.web_login` | Website login wrapper | Preserves website context and recovers stale-CSRF submissions with a guided retry message. |
+| `GET /sports/tournament/<id>/operations` | `sports_federation_portal` | `FederationTournamentOperationsPortal.portal_tournament_operations_page` | `federation.tournament._operations_get_payload` | Owl-powered tournament-day operations board with server-side access scoping and fast result actions. |
 | `POST /my/teams/new` | `sports_federation_portal` | `FederationClubPortal.portal_my_teams_create` | `federation.team._portal_create_team` | Portal club ownership is validated before the privileged create. |
+| `POST /my/players/new` | `sports_federation_portal` | `FederationClubPortal.portal_my_players_create` | `federation.player._portal_create_player` | Portal club ownership is validated before the privileged create; triggers optional member registration finance event. |
 | `POST /my/season-registration/new` | `sports_federation_portal` | `FederationRegistrationPortal.portal_season_registration_submit` | `federation.season.registration._portal_submit_registration_request` | Submits season registrations through the shared ORM entry point. |
 | `POST /my/referee-assignments/<id>/respond` | `sports_federation_portal` | `FederationOfficiatingPortal.portal_my_referee_assignment_respond` | `federation.match.referee._portal_action_confirm` / `_portal_action_decline` | Official self-service confirm / decline flow. |
 | `POST /tournaments/<slug>/register` | `sports_federation_public_site` | `PublicTournamentHubController.tournament_register_submit` | `federation.tournament.registration._portal_submit_registration_request` | Shared registration helper used by both public-site and portal flows. |

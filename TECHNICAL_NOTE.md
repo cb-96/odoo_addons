@@ -1,9 +1,257 @@
 # Sports Federation — Technical Note
 
-Last updated: 2026-04-10
+Last updated: 2026-05-26
 Owner: Federation Platform Team
-Last reviewed: 2026-04-17
+Last reviewed: 2026-05-25
 Review cadence: Every release
+
+## Canonical terminology and workflow authority (2026-05-27)
+
+- Use actor-facing business terms in workflows, menu labels, and helper copy.
+    Keep raw model names in technical references only.
+- Keep one authoritative source per state family. Secondary workflows should
+    link back instead of restating the full lifecycle.
+
+### Canonical terms
+
+- Competition template: reusable `federation.competition` definition shared
+    across seasons.
+- Season competition: season-scoped `federation.competition.edition` record.
+    Use this instead of `competition shell` or `edition` in operator-facing copy.
+- Division: operational `federation.tournament` record planned, staffed, and
+    published inside one season competition.
+- Tournament page: visitor-facing name for a published division on the public
+    website. Public copy may say `tournament` where federation operations copy
+    says `division`.
+- Round: logical pairing or bracket round, not the dated match day.
+- Gameday: dated `federation.tournament.round` used for venues, slots, and
+    one-day preparation.
+- Planning Workspace: primary season-competition and division scheduling
+    surface.
+- Gameday Planner: day-level slot assignment and readiness surface.
+- Registration: enrolment request. Qualify it as season registration or
+    tournament registration when needed.
+- Participant: confirmed team entry inside a division.
+- Publication: public visibility controlled through `website_published` and the
+    relevant visibility toggles. Not every public surface needs a dedicated
+    `published` workflow state.
+
+### Authoritative state references
+
+- Result officiality: `draft -> submitted -> verified -> approved`, with
+    `contested` and `corrected` removing the result from official standings until
+    it is resubmitted and approved again. Source:
+    `sports_federation_result_control/models/match_result_control.py` and
+    `WORKFLOW_RESULT_PIPELINE.md`.
+- Standings lifecycle: `draft -> computed -> frozen`. Public visibility is
+    separate through `website_published`; there is no dedicated published
+    standings state. Source: `sports_federation_standings/models/standing.py` and
+    `sports_federation_standings/README.md`.
+- Player license lifecycle: `draft -> active -> expired` or `cancelled`, with
+    `action_draft()` available for controlled correction. Use `cancelled` in
+    operator copy; older `revoked` wording is compatibility-only. Source:
+    `sports_federation_people/models/federation_player_license.py` and
+    `WORKFLOW_PLAYER_LICENSE.md`.
+- Public tournament routes: `/tournaments/...` is the canonical public route
+    family. `/competitions...` and numeric routes are compatibility paths only
+    and should not be used in normal operator guidance. Source:
+    `sports_federation_public_site/controllers/public_competitions.py` and
+    `WORKFLOW_PUBLIC_PUBLICATION.md`.
+
+## Navigation baseline (2026-05-25)
+
+- Federation backend navigation is now grouped by operator journey instead of a
+    flat addon list: `Setup`, `Planning`, `Match Day`, `Publication`, and
+    `Administration`.
+- `Planning Workspace` is the primary backend scheduling entry point. Legacy
+    round-robin and knockout generators remain available on tournament records,
+    but the UI now labels them as advanced wizard paths.
+- Club representatives now land on `Club Operations Workspace` as the primary
+    portal start for registrations, rosters, match-day submissions, and result
+    follow-up. Direct queues still exist, but the UI frames them as secondary or
+    advanced paths.
+- Match-day portal labels now reinforce one phase at a time: `Preparation Queue`
+    for pre-kick-off work, `Live Operations Board` for in-progress play, and
+    `Result Follow-Up Queue` for post-match review. Match sheets and raw match
+    records remain direct-access specialist surfaces rather than peer home
+    destinations.
+
+## Guided setup and cross-module handoffs (2026-05-25)
+
+- `sports_federation_base` and `sports_federation_tournament` now use inline
+    banner guidance and richer action help on season, competition,
+    competition-edition, and tournament forms so empty states describe the next
+    valid setup action instead of leaving operators on unexplained lists.
+- `sports_federation_rosters` adds direct operator handoffs from confirmed
+    season registrations into scoped team rosters and from tournament
+    participants into the roster used for readiness checks. The participant form
+    now exposes the roster deadline, current readiness feedback, and the
+    preferred readiness roster in the same place where confirmation can block.
+- `sports_federation_result_control` adds a tournament handoff on match forms so
+    verified, approved, contested, and corrected results can direct staff back
+    to the owning tournament when the next task is standings review or public
+    follow-up rather than another score edit.
+- `sports_federation_standings` and `sports_federation_public_site` now make
+    publication prerequisites visible from the forms themselves: standings pages
+    explain whether approved results are still missing or whether publication is
+    the next step, while tournament and standings Website tabs differentiate
+    between unpublished tournaments, unpublished standings, and hidden
+    standings, with direct links back to the relevant standings action.
+
+Canonical readiness and handoff chain:
+
+1. Season registration confirmation
+2. Tournament participant confirmation
+3. Roster and match-day readiness
+4. Result approval
+5. Standings review/recompute
+6. Tournament and standings publication
+
+Blocking vs warning-only standard:
+
+- Blocking: current step cannot proceed until resolved.
+- Warning-only: current step can proceed, but follow-up is required; manager
+    override reason is mandatory where configured (for example publication
+    overrides in Competition Workspace).
+
+Exception and publication recovery standard:
+
+- Governance Override is the canonical exception engine.
+- After disputed/corrected outcomes, use one recovery loop: resolve exception,
+    restore result/standings officiality, then republish affected public surfaces.
+
+## Canonical planning and match-day flows (2026-05-25)
+
+- `sports_federation_competition_engine` now frames `Planning Workspace` as the
+    canonical scheduling surface on competition editions and tournaments. The
+    classic round-robin and knockout wizards remain available, but the UI now
+    positions them as advanced or recovery-only tools when a federation needs a
+    direct format-specific generation path.
+- `federation.tournament.round` now exposes `Gameday Planner` as the day-level
+    preparation surface. That keeps slot assignment and one-day readiness work
+    separate from both season-wide schedule building and live tournament-day
+    operations.
+- `sports_federation_portal` now names three distinct club-operator phases:
+    match-day preparation in the workspace or preparation queue, live play in
+    the live operations board, and result follow-up in the results queue. Those
+    portal surfaces now explain when operators should move from one phase to the
+    next instead of presenting the routes as equal-weight peers.
+
+## Competition Workspace planning flow (2026-05-25)
+
+`sports_federation_competition_engine` now includes a guided backend
+Competition Workspace for season competition setup, format-aware generation,
+and slot-based scheduling.
+
+### Phase completion snapshot
+
+- Phase 0 through Phase 3 of the Competition Workspace roadmap are now in the
+    implemented baseline.
+- The delivered baseline covers shared-gameday validation through the planner
+    root, split orchestration and validation services, stale-write protection,
+    planner history and safe swaps, scalable planner payload loading,
+    revisioned publication, manager override reasons, operator presence,
+    accessible planner interactions, officiating-aware and venue-aware
+    validation, fairness analytics, stage-aware multi-stage planning, and live
+    extension-backed slot suggestions.
+
+- `federation.competition.edition` is the season-specific competition record
+    exposed by the workspace menu and form buttons. Operator-facing guidance
+    should call this the season competition. Older technical notes may still
+    mention `competition shell`, but that term is deprecated outside
+    compatibility discussions.
+- `federation.tournament` remains the persistent division record and now carries
+    workspace-oriented fields such as `workspace_state`, `planning_format`,
+    `entries_locked`, `minimum_rest_minutes`, `workspace_stage_id`, and planner
+    helper relations to gamedays and slots.
+- `federation.tournament.round` is reused as the gameday object, with
+    `planner_state`, `publish_locked`, and slot relations that feed the visual
+    planner. Shared match days now link one slot-owning root round to one guest
+    round per extra division, so a single physical planner grid can serve
+    multiple divisions without breaking `federation.match.round_id` scope.
+- `federation.match.slot` is the only new persistent model introduced for the
+    workspace. It materializes court/time slots, keeps slot-to-match assignment
+    unique, and allows the planner to separate round-robin pairing generation
+    from operational venue scheduling.
+- `federation.competition.schedule.revision` now keeps draft, live, and
+    superseded schedule snapshots so publication is revisioned instead of being
+    a single mutable schedule state.
+- `federation.competition.workspace.presence` stores recent operator heartbeat
+    data so the UI can show same-workspace and same-gameday collaboration
+    indicators.
+- `federation.competition.workspace.service` centralizes the end-to-end flow:
+    create the season competition, create divisions, create and confirm team
+    entries, lock entries, generate unscheduled single round robin, double
+    round robin, knockout, or pool-then-bracket structures, create stage-aware
+    gamedays, generate slots, validate assignments, build fairness summaries,
+    return ranked slot suggestions, track planner history, maintain draft and
+    live schedule revisions, publish gamedays, publish the overall schedule,
+    and build the Owl payloads. When a manager selects a competition template
+    that already has an edition for the chosen season, the workspace reopens
+    that existing season competition instead of attempting a duplicate edition.
+    `manual` remains available for planner-led match entry, and addon
+    extensions register under `federation.competition.workspace.extension.*`
+    to add validation, payload, and scoring rules.
+- `sports_federation_officiating` now contributes workspace validation and
+    payload extension rules so double-booked referee assignments block planner
+    readiness and uncovered availability remains visible as a warning.
+- `sports_federation_venues` now contributes workspace validation and payload
+    extension rules for venue blackout windows, maintenance closures, and
+    playing-area capability requirements.
+- The backend client action is implemented as an Owl action loaded through
+    `web.assets_backend`. It provides guided sections for overview, team entry,
+    round generation, gameday setup, planner assignment, and publication. When
+    the workspace is opened without a selected competition, federation managers
+    can create one directly and planners see an instruction to continue from an
+    existing competition or division. Shared gamedays expose combined
+    participating-division metadata, mixed unscheduled match cards, planner
+    filters for division and team selection, grouped validation panels,
+    revision summaries, collaboration warnings, keyboard/mobile assignment
+    controls, validated safe swaps across occupied slots, stage-aware previews,
+    fairness summaries, and ranked slot suggestions.
+- Access is role-aware: `group_federation_competition_planner` can plan, while
+    federation managers retain the only create, publish, and force-override
+    capabilities.
+
+## Portal/public intuitiveness baseline (2026-05-26)
+
+- `sports_federation_portal/models/portal_status_labels.py` now centralizes
+    human-facing labels for tournament, registration, participant, match,
+    result-state, sheet, officiating assignment, duty, player, and license
+    states.
+- Portal templates now render state labels via model helper methods instead of
+    direct selection dictionaries or raw `state`/`result_state` values.
+- `sports_federation_public_site/models/public_status_labels.py` now includes
+    public-facing license state labels so club/player public pages avoid raw
+    internal status rendering.
+- Regression guards in portal/public template accessibility tests now block
+    reintroduction of raw internal state render fragments.
+- Intuitiveness governance now includes
+    `INTUITIVENESS_REVIEW_CHECKLIST.md`, referenced by
+    `CONTRIBUTING.md` for major UX and terminology changes.
+
+Validation policy
+
+- Slot occupancy conflicts and team overlap conflicts are blocking.
+- A slot occupancy conflict remains blocking for unscheduled matches, but two
+    already scheduled matches on the same planner root can swap slots when both
+    post-swap validations pass.
+- Short-rest checks use `minimum_rest_minutes` on the division and surface as
+    warnings, not blocking errors.
+- Warning-only assignment overrides and republishing a live schedule require a
+    manager reason that is stored on the planner operation or schedule
+    revision.
+- Validation payloads now include grouped conflict sections, resolution hints,
+    and focus metadata so the UI can highlight the affected slots and matches.
+- Published gamedays protect routine schedule edits for planners.
+- Regression coverage now verifies single and double round-robin generation,
+    knockout generation, locked entry requirements, manager-only competition
+    creation, create-competition input validation, slot generation, blocking
+    overlap rules, short-rest warnings, assignment consistency, publish guards,
+    workspace access control, shared-gameday assignment and planner payload
+    rules, revisioned publication, collaboration heartbeat summaries, grouped
+    validation payloads, and a browser smoke path that creates a competition
+    through the Owl client action.
 
 ## Import safety hardening (2026-04-10)
 
@@ -34,6 +282,9 @@ operator-facing application reports.
 - `sports_federation_reporting` now includes `federation.report.operational`
     for tournament readiness KPIs across participation, standings coverage,
     match completion, finance follow-up, and participant-club compliance.
+- Operational KPI rows now include an operator-readable readiness note so the
+    list view and scheduled CSV exports expose the current blocker directly,
+    instead of forcing staff to infer it from raw counts alone.
 - A new `federation.report.standing.reconciliation` view exposes mismatches
     between confirmed participants and standings coverage, with operator-readable
     reconciliation notes.
@@ -46,6 +297,21 @@ operator-facing application reports.
 - The compliance summary report now exposes `non_compliant_count` so rejected
     or explicitly failed checks are visible alongside missing, pending, and
     expired totals.
+
+## Scheduled reporting maintainability extraction (2026-04-21)
+
+The next highest-value reporting cleanup was to separate schedule orchestration
+from per-report row assembly.
+
+- `sports_federation_reporting/services/report_schedule_builders.py` now owns
+    the scheduled-report registry: label metadata, report-row builder
+    functions, list-action XML IDs, season scoping, and any action defaults.
+- `federation.report.schedule` now keeps the stable responsibilities only:
+    cadence windows, CSV serialization, generated-file retention, and typed
+    failure capture for cron or manual runs.
+- Adding a new scheduled report type should now be a single-registry change
+    plus focused tests, instead of editing separate builder and action maps in
+    the model.
 
 ## Notification activation (2026-04-10)
 
@@ -100,7 +366,8 @@ workflow boundaries instead of leaving them as isolated checks.
     tied to valid active roster lines, do not satisfy license or registration
     rules, or the submitted squad size is outside the allowed bounds.
 - `sports_federation_rosters` extends `federation.tournament.participant` so
-    participant confirmation requires an active ready roster for the tournament
+    participant confirmation warns before the roster deadline, then requires an
+    active ready roster once that deadline is reached for the tournament
     season, with competition-specific rosters preferred over generic season
     rosters.
 - Regression coverage was added for season-aware license checks, team-season
@@ -306,11 +573,13 @@ Portal patterns
 - Use a dedicated `federation.club.representative` model to map `res.users` → `federation.club` for portal ownership and record rules.
 - Controllers must perform ownership validation (`_get_clubs_for_user()`) before writes. Record rules are enforcement, controllers are defense-in-depth.
 - ORM-level ownership constraints should mirror controller checks for portal-created registrations so bypassing a controller does not widen access.
+- The tournament operations board (`/sports/tournament/<id>/operations`) extends these patterns with an Owl frontend. Portal access requires provable tournament-scoped activity (registration, participant, or visible match). Writes delegate to existing result-control action methods. The Owl app uses standalone `mount()` from `@odoo/owl`, not the backend webclient `mountComponent`, since it runs inside the website/portal frontend context. It mounts immediately so the board can render its own loading and error states, applies a 30-second timeout to the first payload fetch, and relies on a server-side payload that includes ranked action-queue rows, court summaries, next-step hints, and schedule labels so the browser stays presentation-focused.
 
 Public site
 
 - Public controllers use `auth='public'` and `sudo()` for reads. Only expose non-sensitive fields (no emails/phones/notes) to public templates.
 - Enforce `website_published` and the relevant visibility toggle (`show_public_results`, `show_public_standings`) before serving direct public routes.
+- When a controller must deny a hidden portal or public route with 404, raise the HTTP exception (`raise request.not_found()`) instead of returning it, so fail-closed paths stay quiet in logs and match Odoo's expected flow.
 - Render public rich text through sanitized website field rendering rather than raw `t-raw` output.
 - Keep `public_slug` unique even while the public routes remain model-bound, so publication metadata and future external references cannot collide.
 

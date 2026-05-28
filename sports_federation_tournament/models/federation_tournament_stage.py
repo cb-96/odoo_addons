@@ -5,6 +5,7 @@ from odoo.exceptions import ValidationError
 class FederationTournamentStage(models.Model):
     _name = "federation.tournament.stage"
     _description = "Tournament Stage"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "sequence, id"
 
     name = fields.Char(string="Stage Name", required=True)
@@ -27,13 +28,29 @@ class FederationTournamentStage(models.Model):
     date_end = fields.Date(string="End Date")
     notes = fields.Text(string="Notes")
 
-    group_ids = fields.One2many("federation.tournament.group", "stage_id", string="Groups")
-    round_ids = fields.One2many("federation.tournament.round", "stage_id", string="Rounds")
+    rule_set_id = fields.Many2one(
+        "federation.rule.set",
+        string="Rule Set",
+        help="Optional stage-specific rule set. Overrides the tournament-level rule set when set.",
+    )
+
+    group_ids = fields.One2many(
+        "federation.tournament.group", "stage_id", string="Groups"
+    )
+    round_ids = fields.One2many(
+        "federation.tournament.round", "stage_id", string="Rounds"
+    )
     match_ids = fields.One2many("federation.match", "stage_id", string="Matches")
 
-    group_count = fields.Integer(string="Group Count", compute="_compute_counts", store=True)
-    round_count = fields.Integer(string="Round Count", compute="_compute_counts", store=True)
-    match_count = fields.Integer(string="Match Count", compute="_compute_counts", store=True)
+    group_count = fields.Integer(
+        string="Group Count", compute="_compute_counts", store=True
+    )
+    round_count = fields.Integer(
+        string="Round Count", compute="_compute_counts", store=True
+    )
+    match_count = fields.Integer(
+        string="Match Count", compute="_compute_counts", store=True
+    )
 
     @api.depends("group_ids", "round_ids", "match_ids")
     def _compute_counts(self):
@@ -53,20 +70,26 @@ class FederationTournamentStage(models.Model):
     def action_view_groups(self):
         """Execute the view groups action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('sports_federation_tournament.federation_tournament_group_action')
-        action['domain'] = [('stage_id', '=', self.id)]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_tournament.federation_tournament_group_action"
+        )
+        action["domain"] = [("stage_id", "=", self.id)]
         return action
 
     def action_view_rounds(self):
         """Execute the view rounds action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('sports_federation_tournament.federation_tournament_round_action')
-        action['domain'] = [('stage_id', '=', self.id)]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_tournament.federation_tournament_round_action"
+        )
+        action["domain"] = [("stage_id", "=", self.id)]
         return action
 
     def action_view_matches(self):
         """Execute the view matches action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('sports_federation_tournament.federation_match_action')
-        action['domain'] = [('stage_id', '=', self.id)]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_tournament.federation_match_action"
+        )
+        action["domain"] = [("stage_id", "=", self.id)]
         return action

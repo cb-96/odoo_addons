@@ -1,5 +1,4 @@
-from odoo import api, fields, models
-from odoo.exceptions import ValidationError
+from odoo import fields, models
 
 
 class FederationTieBreakRule(models.Model):
@@ -39,6 +38,6 @@ class FederationTieBreakRule(models.Model):
     )
 
     _rule_set_type_unique = models.Constraint(
-        'UNIQUE(rule_set_id, tie_break_type)',
-        'Each tie-break type can only appear once per rule set.',
+        "UNIQUE(rule_set_id, tie_break_type)",
+        "Each tie-break type can only appear once per rule set.",
     )

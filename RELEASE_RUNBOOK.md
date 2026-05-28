@@ -1,10 +1,10 @@
 # Release Runbook
 
-Last updated: 2026-04-17
+Last updated: 2026-04-30
 Owner: Federation Platform Team
-Last reviewed: 2026-04-17
+Last reviewed: 2026-04-30
 Review cadence: Every release
-Release train: 2026.04
+Release train: 2026.11
 
 This runbook is the canonical operator checklist for promoting the federation
 stack with repeatable verification, upgrade, and rollback steps.
@@ -158,6 +158,46 @@ Verify these operator checkpoints immediately after the upgrade:
 5. Trigger one scheduled report manually from Federation > Reporting > Report
    Schedules if the release touched reporting code.
 
+## Integration Partner Token Rotation
+
+After any release that modifies integration partner credentials, or on a
+scheduled rotation cycle, rotate partner tokens using the following procedure:
+
+**When to rotate:**
+- After upgrading `sports_federation_import_tools` (any release that changed
+  token storage, authentication, or the integration controller surface).
+- When the `token_rotation_required` flag is set to `True` on a partner record
+  (visible in Federation > Import Tools > Integration Partners).
+- On a periodic schedule — at minimum once per year or whenever a partner
+  personnel change occurs.
+
+**How to rotate (back-office procedure):**
+
+1. Open **Federation > Import Tools > Integration Partners**.
+2. Filter for partners where **Token Rotation Required** is checked, or where
+   **Last Rotated On** is older than the rotation policy window.
+3. For each partner, open the form and click **Rotate Token** (requires
+   Federation Manager group). Confirm the dialog.
+4. The wizard reveals the new raw token **once** (it cannot be retrieved again).
+   Copy it immediately and deliver it to the partner over a secure channel
+   (not email in plain text).
+5. The `token_rotation_required` flag clears automatically after a successful
+   rotation.
+
+**After a migration from plaintext storage:**
+
+If `sports_federation_import_tools` was upgraded from a version prior to
+`19.0.1.2.0`, existing plaintext tokens were hashed in place and flagged for
+rotation by the post-migration script. Partners with `Token Rotation Required`
+set to `True` are still functional (their hashed token verifies correctly)
+but should be rotated and re-issued at the next opportunity.
+
+**Verification:**
+
+After rotation, ask the partner to make one authenticated test call and confirm
+a `200 OK` response to `/integration/v1/contracts`. A `401` response with
+`access_denied` indicates the token was not delivered correctly.
+
 ## Rollback
 
 If the upgrade must be rolled back:
@@ -180,3 +220,44 @@ docker compose up -d odoo
 ```
 
 Adjust database names and paths to match the selected backup directory.
+
+---
+
+## Upgrade Path Notes (per release train)
+
+This section records DB migrations, new `ir.config_parameter` keys, deprecated
+field removals, and module install order changes introduced in each release.
+Add a subsection here for every release train that makes schema or behavioural
+changes. Reference `COMPATIBILITY_INVENTORY.md` for route retirement dates.
+
+### Release 2026.05
+
+**DB migrations**: None.
+
+**New `ir.config_parameter` keys**:
+
+| Key | Purpose | Default |
+|---|---|---|
+| `sports_federation.rate_limit.<scope>.limit` | Per-scope rate-limit ceiling override | See `_POLICIES` in `request_rate_limit.py` |
+| `sports_federation.rate_limit.<scope>.window_seconds` | Per-scope window override | See `_POLICIES` |
+
+**Deprecated field removals**: None.
+
+**Module install order changes**: None. Default install order (tier 1 → 2 → 3 → 4)
+is unchanged; see `DEPLOYMENT_GUIDE.md`.
+
+**Behaviour changes**:
+
+- Rate-limit policies are now overridable at runtime via `ir.config_parameter`
+  without a code deployment. See `openapi/ERROR_CODES.md` for per-scope limits.
+- Integration partner tokens are now stored hashed. Existing plaintext tokens
+  were migrated in place and flagged `token_rotation_required = True`. Rotate
+  all partner tokens within one release cycle.
+
+**Scheduled actions to verify**:
+
+| Action | Expected state after upgrade |
+|---|---|
+| `Federation: GC Rate Limit Buckets` | Active, interval 1 hour |
+| `Federation: GC Staged Deliveries` | Active, interval 1 day |
+| `Federation: Expire Player Licenses` | Active, interval 1 day |

@@ -7,7 +7,15 @@ class FederationPortalPrivilege(models.AbstractModel):
     _description = "Federation Portal Privilege Boundary"
 
     @api.model
-    def _log_portal_audit(self, event_type, description, records, user=None, action_name=False, changed_fields=False):
+    def _log_portal_audit(
+        self,
+        event_type,
+        description,
+        records,
+        user=None,
+        action_name=False,
+        changed_fields=False,
+    ):
         """Capture one audit row per portal-managed target record."""
         audit_model = self.env.get("federation.audit.event")
         if audit_model is None:
@@ -44,8 +52,15 @@ class FederationPortalPrivilege(models.AbstractModel):
         return created_records
 
     @api.model
-    def portal_write(self, records, values, user=None):
+    def portal_write(self, records, values, scope_domain=None, user=None):
         """Write through the shared portal privilege boundary."""
+        if scope_domain is None:
+            raise AccessError(
+                _(
+                    "Portal write operations must provide an explicit ownership scope domain."
+                )
+            )
+        self._assert_portal_owns(records, scope_domain, user=user)
         privileged_records = self.elevate(records, user=user)
         result = privileged_records.write(values)
         if result:
@@ -60,8 +75,23 @@ class FederationPortalPrivilege(models.AbstractModel):
         return result
 
     @api.model
-    def portal_call(self, records, method_name, *args, user=None, **kwargs):
+    def portal_call(
+        self,
+        records,
+        method_name,
+        *args,
+        scope_domain=None,
+        user=None,
+        **kwargs,
+    ):
         """Call a record method through the shared portal privilege boundary."""
+        if scope_domain is None:
+            raise AccessError(
+                _(
+                    "Portal call operations must provide an explicit ownership scope domain."
+                )
+            )
+        self._assert_portal_owns(records, scope_domain, user=user)
         privileged_records = self.elevate(records, user=user)
         result = getattr(privileged_records, method_name)(*args, **kwargs)
         self._log_portal_audit(
@@ -79,6 +109,15 @@ class FederationPortalPrivilege(models.AbstractModel):
         return self.elevate(model_env, user=user).search(domain, **kwargs)
 
     @api.model
+    def portal_search_by_id(
+        self, model_env, record_id, domain=None, user=None, **kwargs
+    ):
+        """Resolve one record id only when it matches the expected portal domain."""
+        domain = list(domain or [])
+        domain.append(("id", "=", record_id))
+        return self.portal_search(model_env, domain, user=user, limit=1, **kwargs)
+
+    @api.model
     def portal_search_count(self, model_env, domain, user=None, **kwargs):
         """Count records through the shared portal privilege boundary."""
         return self.elevate(model_env, user=user).search_count(domain, **kwargs)
@@ -91,7 +130,25 @@ class FederationPortalPrivilege(models.AbstractModel):
             raise AccessError(access_message)
 
         privileged_records = self.elevate(records, user=user)
-        allowed_count = privileged_records.search_count(list(domain) + [("id", "in", records.ids)])
+        allowed_count = privileged_records.search_count(
+            list(domain) + [("id", "in", records.ids)]
+        )
         if allowed_count != len(records):
             raise AccessError(access_message)
         return privileged_records
+
+    @api.model
+    def _assert_portal_owns(self, records, scope_domain, user=None):
+        """Assert the user's portal scope includes all supplied records.
+
+        Convenience wrapper around :meth:`portal_assert_in_domain` that
+        provides a consistent default access-denied message, so callers do not
+        need to craft their own message text.  Use this as the canonical
+        ownership assertion at every portal privilege boundary.
+        """
+        return self.portal_assert_in_domain(
+            records,
+            scope_domain,
+            _("You do not have access to this record."),
+            user=user,
+        )

@@ -1,4 +1,6 @@
-from odoo.addons.sports_federation_base.tests.route_inventory import load_route_inventory
+from odoo.addons.sports_federation_base.tests.route_inventory import (
+    load_route_inventory,
+)
 from odoo.tests.common import TransactionCase
 
 
@@ -18,9 +20,6 @@ class TestRouteInventory(TransactionCase):
         )
 
     def test_route_inventory_has_unique_http_entries(self):
-        routes = [
-            (entry["method"], entry["path"])
-            for entry in load_route_inventory()
-        ]
+        routes = [(entry["method"], entry["path"]) for entry in load_route_inventory()]
 
         self.assertEqual(len(routes), len(set(routes)))

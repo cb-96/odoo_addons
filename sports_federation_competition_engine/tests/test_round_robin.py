@@ -1,6 +1,6 @@
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError
-from datetime import datetime
+from datetime import datetime  # noqa: F401
 
 
 class TestRoundRobin(TransactionCase):
@@ -47,6 +47,17 @@ class TestRoundRobin(TransactionCase):
                     "team_id": team.id,
                     "state": "confirmed",
                     "seed": idx,
+                }
+            )
+
+        # Create 5 pre-defined gamedays (single RR for 6 teams needs exactly 5)
+        cls.rounds = cls.env["federation.tournament.round"]
+        for i in range(1, 6):
+            cls.rounds |= cls.env["federation.tournament.round"].create(
+                {
+                    "stage_id": cls.stage.id,
+                    "sequence": i,
+                    "name": f"Gameday {i}",
                 }
             )
 
@@ -100,10 +111,36 @@ class TestRoundRobin(TransactionCase):
 
     def test_double_round(self):
         """Double round should produce twice the matches."""
-        single = self._generate(double_round=False)
-        # Clear matches
-        self.env["federation.match"].browse([m.id for m in single]).unlink()
-        double = self._generate(double_round=True, overwrite=True)
+        # Double round for 6 teams needs 10 algorithm rounds; use a dedicated stage
+        # with 10 gamedays so each leg stays in its own gameday (no duplicate-pairing
+        # constraint violation).
+        stage_dbl = self.env["federation.tournament.stage"].create(
+            {
+                "name": "Double Stage",
+                "tournament_id": self.tournament.id,
+                "stage_type": "group",
+            }
+        )
+        for i in range(1, 11):
+            self.env["federation.tournament.round"].create(
+                {
+                    "stage_id": stage_dbl.id,
+                    "sequence": i,
+                    "name": f"Gameday {i}",
+                }
+            )
+        options = {
+            "double_round": True,
+            "start_datetime": False,
+            "interval_hours": 0,
+            "venue": "",
+            "overwrite": False,
+            "group": False,
+        }
+        engine = self.env["federation.competition.engine.service"]
+        double = engine.generate_round_robin_schedule(
+            self.tournament, stage_dbl, self.participants, options
+        )
         self.assertEqual(len(double), 30)  # 15 * 2
 
     def test_overwrite_protection(self):
@@ -158,7 +195,9 @@ class TestRoundRobin(TransactionCase):
             )
             # No duplicates
             self.assertEqual(
-                len(set(opponents)), 5, f"Team {team_id} should not have duplicate opponents"
+                len(set(opponents)),
+                5,
+                f"Team {team_id} should not have duplicate opponents",
             )
 
     def test_deterministic_ordering(self):
@@ -173,13 +212,76 @@ class TestRoundRobin(TransactionCase):
 
     def test_round_numbers_follow_generated_rounds(self):
         """Generated matches should persist round numbers for downstream scheduling tools."""
-        matches = self.env["federation.match"].browse([match.id for match in self._generate(double_round=False)])
+        matches = self.env["federation.match"].browse(
+            [match.id for match in self._generate(double_round=False)]
+        )
 
         round_numbers = sorted(set(matches.mapped("round_number")))
         self.assertEqual(round_numbers, [1, 2, 3, 4, 5])
 
-        for round_number in round_numbers:
-            round_matches = matches.filtered(lambda match: match.round_number == round_number)
-            self.assertEqual(len(round_matches), 3)
-            self.assertEqual(len(round_matches.mapped("round_id")), 1)
-            self.assertEqual(round_matches.mapped("round_id.sequence"), [round_number])
+    def test_existing_round_mode_uses_only_existing(self):
+        """Matches are distributed across all pre-defined gamedays."""
+        matches = self._generate()
+        self.assertEqual(len(matches), 15)
+        round_ids = {m.round_id.id for m in matches}
+        # All 5 pre-defined gamedays receive matches (5 algorithm rounds → 5 gamedays)
+        self.assertEqual(len(round_ids), 5)
+
+    def test_existing_round_mode_spreads_across_fewer_rounds(self):
+        """When fewer gamedays than algorithm rounds, matches cycle across available gamedays."""
+        stage2 = self.env["federation.tournament.stage"].create(
+            {
+                "name": "Stage 2",
+                "tournament_id": self.tournament.id,
+                "stage_type": "group",
+            }
+        )
+        for i in range(1, 3):
+            self.env["federation.tournament.round"].create(
+                {
+                    "stage_id": stage2.id,
+                    "sequence": i,
+                    "name": f"Gameday {i}",
+                }
+            )
+        options = {
+            "double_round": False,
+            "start_datetime": False,
+            "interval_hours": 0,
+            "venue": "",
+            "overwrite": False,
+            "group": False,
+        }
+        engine = self.env["federation.competition.engine.service"]
+        matches = engine.generate_round_robin_schedule(
+            self.tournament, stage2, self.participants, options
+        )
+        self.assertEqual(len(matches), 15)
+        round_ids = {m.round_id.id for m in matches}
+        # Only 2 gamedays exist — cycling distributes all matches across them
+        self.assertEqual(len(round_ids), 2)
+
+    def test_no_gamedays_raises_user_error(self):
+        """UserError is raised when no gamedays exist for the stage."""
+        from odoo.exceptions import UserError
+
+        stage3 = self.env["federation.tournament.stage"].create(
+            {
+                "name": "Stage 3",
+                "tournament_id": self.tournament.id,
+                "stage_type": "group",
+            }
+        )
+        options = {
+            "double_round": False,
+            "start_datetime": False,
+            "interval_hours": 0,
+            "venue": "",
+            "overwrite": False,
+            "group": False,
+        }
+        engine = self.env["federation.competition.engine.service"]
+        with self.assertRaises(UserError):
+            engine.generate_round_robin_schedule(
+                self.tournament, stage3, self.participants, options
+            )

@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Website submenu for published tournament coverage -->
+    <!-- Top-level Tournaments website menu.  Owned by public_site so the
+         public hub works without sports_federation_portal installed.
+         sports_federation_portal adds its own portal sub-items separately. -->
+    <record id="menu_website_tournaments" model="website.menu">
+        <field name="name">Tournaments</field>
+        <field name="url">/tournaments</field>
+        <field name="sequence" eval="50"/>
+    </record>
+
+    <!-- Website submenu for tournament updates and archive browsing -->
     <record id="menu_website_competitions" model="website.menu">
-        <field name="name">Published Coverage</field>
+        <field name="name">Tournament Updates</field>
         <field name="url">/tournaments#published</field>
-        <field name="parent_id" ref="sports_federation_portal.menu_website_tournaments"/>
+        <field name="parent_id" ref="sports_federation_public_site.menu_website_tournaments"/>
         <field name="sequence" type="int">10</field>
     </record>
 

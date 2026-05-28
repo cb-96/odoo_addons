@@ -17,27 +17,93 @@ class FederationTeamRoster(models.Model):
         club_scope = user.portal_club_scope_ids
         team_scope = user.portal_team_scope_ids
         if team_scope and club_scope:
-            return ["|", ("team_id", "in", team_scope.ids), ("club_id", "in", club_scope.ids)]
+            return [
+                "|",
+                ("team_id", "in", team_scope.ids),
+                ("club_id", "in", club_scope.ids),
+            ]
         if team_scope:
             return [("team_id", "in", team_scope.ids)]
-        represented_clubs = user.represented_club_ids
-        if represented_clubs:
-            return [("club_id", "in", represented_clubs.ids)]
+        if club_scope:
+            return [("club_id", "in", club_scope.ids)]
         return [("id", "=", False)]
 
     @api.model
-    def _portal_get_represented_clubs(self, user=None):
-        """Resolve represented clubs through the shared privilege boundary.
+    def _portal_get_registration_scope_domain(self, user=None):
+        """Return the exact season-registration domain the portal may reuse.
 
-        The read is elevated so controllers can reuse the result for ownership
-        checks while keeping create and write attribution tied to the portal
-        user.
+        Roster helpers use this to revalidate season-registration ownership
+        before any elevated roster lookup or creation step.
         """
         user = user or self.env.user
-        return self.env["federation.portal.privilege"].elevate(
-            self.env["federation.club.representative"],
+        club_scope = user.portal_club_scope_ids
+        team_scope = user.portal_team_scope_ids
+        if team_scope and club_scope:
+            return [
+                "|",
+                ("team_id", "in", team_scope.ids),
+                ("club_id", "in", club_scope.ids),
+            ]
+        if team_scope:
+            return [("team_id", "in", team_scope.ids)]
+        if club_scope:
+            return [("club_id", "in", club_scope.ids)]
+        return [("id", "=", False)]
+
+    def _portal_assert_scope_access(self, user=None):
+        """Revalidate roster scope before elevated portal reads or writes."""
+        user = user or self.env.user
+        team_scope = user.portal_team_scope_ids
+        club_scope = user.portal_club_scope_ids
+        if not club_scope and not team_scope:
+            raise AccessError(_("You do not have portal access to team rosters."))
+
+        for roster in self:
+            if team_scope and roster.team_id in team_scope:
+                continue
+            if club_scope and roster.club_id in club_scope:
+                continue
+            raise AccessError(
+                _("You can only access rosters for your assigned teams or clubs.")
+            )
+        return self.env["federation.portal.privilege"].elevate(self, user=user)
+
+    @api.model
+    def _portal_assert_registration_access(self, season_registration, user=None):
+        """Revalidate season-registration scope before elevated roster reuse."""
+        user = user or self.env.user
+        scope_domain = self._portal_get_registration_scope_domain(user=user)
+        if scope_domain == [("id", "=", False)]:
+            raise AccessError(
+                _("You do not have portal access to season registrations.")
+            )
+        registration = self.env["federation.portal.privilege"].portal_assert_in_domain(
+            season_registration,
+            scope_domain,
+            _(
+                "You can only access season registrations for your assigned teams or clubs."
+            ),
             user=user,
-        )._get_clubs_for_user(user=user)
+        )
+        registration.ensure_one()
+        return registration
+
+    @api.model
+    def _portal_find_confirmed_registration(self, team, season, user=None):
+        """Look up a confirmed registration only inside the caller's scope."""
+        user = user or self.env.user
+        return self.env["federation.portal.privilege"].portal_search(
+            self.env["federation.season.registration"],
+            self._portal_get_registration_scope_domain(user=user)
+            + [
+                ("team_id", "=", team.id),
+                ("season_id", "=", season.id),
+                ("state", "=", "confirmed"),
+            ],
+            user=user,
+            order="id desc",
+            limit=1,
+        )
 
     @api.model
     def _portal_get_confirmed_registrations(self, user=None):
@@ -47,17 +113,14 @@ class FederationTeamRoster(models.Model):
         safe empty state without leaking registrations from other clubs.
         """
         user = user or self.env.user
-        scope_domain = self._portal_get_scope_domain(user=user)
+        scope_domain = self._portal_get_registration_scope_domain(user=user)
         if scope_domain == [("id", "=", False)]:
             return self.env["federation.season.registration"]
-        return (
-            self.env["federation.season.registration"]
-            .with_user(user)
-            .sudo()
-            .search(
-                scope_domain + [("state", "=", "confirmed")],
-                order="season_id desc, team_id, id desc",
-            )
+        return self.env["federation.portal.privilege"].portal_search(
+            self.env["federation.season.registration"],
+            scope_domain + [("state", "=", "confirmed")],
+            user=user,
+            order="season_id desc, team_id, id desc",
         )
 
     def _portal_get_confirmed_registration(self, user=None):
@@ -68,21 +131,16 @@ class FederationTeamRoster(models.Model):
         """
         self.ensure_one()
         user = user or self.env.user
-        if self.season_registration_id and self.season_registration_id.state == "confirmed":
-            return self.season_registration_id
-        return (
-            self.env["federation.season.registration"]
-            .with_user(user)
-            .sudo()
-            .search(
-                [
-                    ("team_id", "=", self.team_id.id),
-                    ("season_id", "=", self.season_id.id),
-                    ("state", "=", "confirmed"),
-                ],
-                order="id desc",
-                limit=1,
-            )
+        roster = self._portal_assert_scope_access(user=user)
+        if (
+            roster.season_registration_id
+            and roster.season_registration_id.state == "confirmed"
+        ):
+            return roster.season_registration_id
+        return self._portal_find_confirmed_registration(
+            roster.team_id,
+            roster.season_id,
+            user=user,
         )
 
     @api.model
@@ -105,7 +163,12 @@ class FederationTeamRoster(models.Model):
         if tournament.season_id:
             domain.append(("season_id", "=", tournament.season_id.id))
 
-        rosters = self.with_user(user).sudo().search(domain, order="id desc")
+        rosters = self.env["federation.portal.privilege"].portal_search(
+            self.env["federation.team.roster"],
+            domain,
+            user=user,
+            order="id desc",
+        )
         if not rosters:
             return rosters
 
@@ -139,25 +202,16 @@ class FederationTeamRoster(models.Model):
         has been confirmed.
         """
         user = user or self.env.user
-        club_scope = user.portal_club_scope_ids
-        team_scope = user.portal_team_scope_ids
-        represented_clubs = user.represented_club_ids
-        if not represented_clubs and not team_scope:
-            raise AccessError(
-                _("You are not assigned as a club representative.")
-            )
-        for record in self:
-            if record.team_id in team_scope:
+        privileged_rosters = self._portal_assert_scope_access(user=user)
+        for record in privileged_rosters:
+            if (
+                record.season_registration_id
+                and record.season_registration_id.state == "confirmed"
+            ):
                 continue
-            if club_scope and record.club_id in club_scope:
-                continue
-            if not team_scope and record.club_id in represented_clubs:
-                continue
-            if record.club_id not in represented_clubs:
-                raise AccessError(
-                    _("You can only manage rosters for your own club.")
-                )
-            if not record._portal_get_confirmed_registration(user=user):
+            if not self._portal_find_confirmed_registration(
+                record.team_id, record.season_id, user=user
+            ):
                 raise ValidationError(
                     _(
                         "This roster can only be managed in the portal after the team's season registration has been confirmed."
@@ -166,7 +220,9 @@ class FederationTeamRoster(models.Model):
         return True
 
     @api.model
-    def _portal_get_primary_roster_for_registration(self, season_registration, user=None):
+    def _portal_get_primary_roster_for_registration(
+        self, season_registration, user=None
+    ):
         """Reuse an existing portal roster before creating a new season baseline.
 
         The portal first looks for a roster already linked to the confirmed
@@ -174,48 +230,48 @@ class FederationTeamRoster(models.Model):
         team and season.
         """
         user = user or self.env.user
-        season_registration.ensure_one()
-        roster = (
-            self.with_user(user)
-            .sudo()
-            .search(
-                [("season_registration_id", "=", season_registration.id)],
-                order="id desc",
-                limit=1,
-            )
+        season_registration = self._portal_assert_registration_access(
+            season_registration,
+            user=user,
+        )
+        roster_scope_domain = self._portal_get_scope_domain(user=user)
+        roster = self.env["federation.portal.privilege"].portal_search(
+            self.env["federation.team.roster"],
+            roster_scope_domain
+            + [("season_registration_id", "=", season_registration.id)],
+            user=user,
+            order="id desc",
+            limit=1,
         )
         if roster:
             return roster
-        return (
-            self.with_user(user)
-            .sudo()
-            .search(
-                [
-                    ("team_id", "=", season_registration.team_id.id),
-                    ("season_id", "=", season_registration.season_id.id),
-                    ("competition_id", "=", False),
-                ],
-                order="id desc",
-                limit=1,
-            )
+        return self.env["federation.portal.privilege"].portal_search(
+            self.env["federation.team.roster"],
+            roster_scope_domain
+            + [
+                ("team_id", "=", season_registration.team_id.id),
+                ("season_id", "=", season_registration.season_id.id),
+                ("competition_id", "=", False),
+            ],
+            user=user,
+            order="id desc",
+            limit=1,
         )
 
     @api.model
     def _portal_create_roster_for_registration(self, season_registration, user=None):
         """Create or reuse the roster that a confirmed registration should edit.
 
-        Ownership is checked against represented clubs first. Existing rosters
-        are linked back to the confirmed registration when that can be done
-        without mutating a match-day locked record.
+        Portal scope is revalidated on the season registration first. Existing
+        rosters are linked back to the confirmed registration when that can be
+        done without mutating a match-day locked record.
         """
         user = user or self.env.user
         PortalPrivilege = self.env["federation.portal.privilege"]
-        season_registration = PortalPrivilege.elevate(season_registration, user=user)
-        clubs = self._portal_get_represented_clubs(user=user)
-        if season_registration.club_id not in clubs:
-            raise AccessError(
-                _("You can only create rosters for your own club.")
-            )
+        season_registration = self._portal_assert_registration_access(
+            season_registration,
+            user=user,
+        )
         if season_registration.state != "confirmed":
             raise ValidationError(
                 _(
@@ -231,6 +287,7 @@ class FederationTeamRoster(models.Model):
                 PortalPrivilege.portal_write(
                     roster,
                     {"season_registration_id": season_registration.id},
+                    scope_domain=self._portal_get_scope_domain(user=user),
                     user=user,
                 )
             return roster
@@ -284,9 +341,7 @@ class FederationTeamRoster(models.Model):
         self._portal_assert_manage_access(user=user)
         closed_rosters = self.filtered(lambda roster: roster.status == "closed")
         if closed_rosters:
-            raise ValidationError(
-                _("Closed rosters cannot be edited in the portal.")
-            )
+            raise ValidationError(_("Closed rosters cannot be edited in the portal."))
 
         prepared = self._portal_prepare_roster_write_values(values=values)
         if not prepared:
@@ -294,6 +349,7 @@ class FederationTeamRoster(models.Model):
         return self.env["federation.portal.privilege"].portal_write(
             self,
             prepared,
+            scope_domain=self._portal_get_scope_domain(user=user),
             user=user,
         )
 
@@ -304,6 +360,7 @@ class FederationTeamRoster(models.Model):
         return self.env["federation.portal.privilege"].portal_call(
             self,
             "action_activate",
+            scope_domain=self._portal_get_scope_domain(user=user),
             user=user,
         )
 
@@ -314,6 +371,7 @@ class FederationTeamRoster(models.Model):
         return self.env["federation.portal.privilege"].portal_call(
             self,
             "action_set_draft",
+            scope_domain=self._portal_get_scope_domain(user=user),
             user=user,
         )
 
@@ -324,6 +382,18 @@ class FederationTeamRoster(models.Model):
         return self.env["federation.portal.privilege"].portal_call(
             self,
             "action_close",
+            scope_domain=self._portal_get_scope_domain(user=user),
+            user=user,
+        )
+
+    def _portal_action_reopen(self, user=None):
+        """Reopen closed rosters through the portal boundary after access checks."""
+        user = user or self.env.user
+        self._portal_assert_manage_access(user=user)
+        return self.env["federation.portal.privilege"].portal_call(
+            self,
+            "action_reopen",
+            scope_domain=self._portal_get_scope_domain(user=user),
             user=user,
         )
 
@@ -332,16 +402,14 @@ class FederationTeamRosterLine(models.Model):
     _inherit = "federation.team.roster.line"
 
     @api.model
-    def _portal_get_available_players(self, roster, user=None):
-        """Return only players the caller may legally add to the selected roster.
-
-        Team-scoped users are constrained to players already linked to that
-        team, while club-scoped users may also pick club players not yet linked
-        to the team.
-        """
+    def _portal_get_available_player_domain(self, roster, user=None):
+        """Return the exact player domain shared by the picker and write path."""
         user = user or self.env.user
         roster._portal_assert_manage_access(user=user)
-        if roster.team_id in user.portal_team_scope_ids and roster.club_id not in user.portal_club_scope_ids:
+        if (
+            roster.team_id in user.portal_team_scope_ids
+            and roster.club_id not in user.portal_club_scope_ids
+        ):
             domain = [
                 ("team_ids", "in", roster.team_id.ids),
                 ("active", "=", True),
@@ -355,16 +423,30 @@ class FederationTeamRosterLine(models.Model):
             ]
         if roster.team_id.gender in ("male", "female"):
             domain.append(("gender", "=", roster.team_id.gender))
-        return (
-            self.env["federation.player"]
-            .with_user(user)
-            .sudo()
-            .search(domain, order="last_name, first_name, id")
+        already_on_roster = roster.sudo().line_ids.player_id.ids
+        if already_on_roster:
+            domain.append(("id", "not in", already_on_roster))
+        return domain
+
+    @api.model
+    def _portal_get_available_players(self, roster, user=None):
+        """Return only players the caller may legally add to the selected roster.
+
+        Team-scoped users are constrained to players already linked to that
+        team, while club-scoped users may also pick club players not yet linked
+        to the team.
+        """
+        user = user or self.env.user
+        return self.env["federation.portal.privilege"].portal_search(
+            self.env["federation.player"],
+            self._portal_get_available_player_domain(roster, user=user),
+            user=user,
+            order="last_name, first_name, id",
         )
 
     @api.model
-    def _portal_get_available_licenses(self, roster, user=None, player=None):
-        """Return licenses that match the roster club, season, and optional player."""
+    def _portal_get_available_license_domain(self, roster, user=None, player=None):
+        """Return the exact license domain shared by the picker and write path."""
         user = user or self.env.user
         roster._portal_assert_manage_access(user=user)
         domain = [
@@ -373,11 +455,21 @@ class FederationTeamRosterLine(models.Model):
         ]
         if player:
             domain.append(("player_id", "=", player.id))
-        return (
-            self.env["federation.player.license"]
-            .with_user(user)
-            .sudo()
-            .search(domain, order="player_id, issue_date desc, id desc")
+        return domain
+
+    @api.model
+    def _portal_get_available_licenses(self, roster, user=None, player=None):
+        """Return licenses that match the roster club, season, and optional player."""
+        user = user or self.env.user
+        return self.env["federation.portal.privilege"].portal_search(
+            self.env["federation.player.license"],
+            self._portal_get_available_license_domain(
+                roster,
+                user=user,
+                player=player,
+            ),
+            user=user,
+            order="player_id, issue_date desc, id desc",
         )
 
     @api.model
@@ -390,9 +482,11 @@ class FederationTeamRosterLine(models.Model):
         """
         user = user or self.env.user
         values = values or {}
-        selected_from_form = player is None
+        PortalPrivilege = self.env["federation.portal.privilege"]
 
-        if not player:
+        if player:
+            player = PortalPrivilege.elevate(player, user=user).exists()
+        else:
             player_id = values.get("player_id")
             if not player_id:
                 raise ValidationError(_("Select a player."))
@@ -400,26 +494,15 @@ class FederationTeamRosterLine(models.Model):
                 player_id = int(player_id)
             except (TypeError, ValueError) as exc:
                 raise ValidationError(_("Select a valid player.")) from exc
-            player = (
-                self.env["federation.player"]
-                .with_user(user)
-                .sudo()
-                .browse(player_id)
+            player = PortalPrivilege.portal_search_by_id(
+                self.env["federation.player"],
+                player_id,
+                self._portal_get_available_player_domain(roster, user=user),
+                user=user,
             )
 
-        if not player.exists():
+        if not player:
             raise ValidationError(_("Select a valid player."))
-
-        if selected_from_form:
-            if roster.team_id in user.portal_team_scope_ids and roster.club_id not in user.portal_club_scope_ids:
-                if roster.team_id not in player.team_ids:
-                    raise ValidationError(
-                        _("You can only roster players already assigned to the selected team.")
-                    )
-            elif player.club_id != roster.club_id and roster.team_id not in player.team_ids:
-                raise ValidationError(
-                    _("You can only roster players who belong to your club.")
-                )
 
         return player
 
@@ -439,18 +522,17 @@ class FederationTeamRosterLine(models.Model):
             license_id = int(license_id)
         except (TypeError, ValueError) as exc:
             raise ValidationError(_("Select a valid license.")) from exc
-        license_record = (
-            self.env["federation.player.license"]
-            .with_user(user)
-            .sudo()
-            .browse(license_id)
+        license_record = self.env["federation.portal.privilege"].portal_search_by_id(
+            self.env["federation.player.license"],
+            license_id,
+            self._portal_get_available_license_domain(
+                roster,
+                user=user,
+                player=player,
+            ),
+            user=user,
         )
-        if (
-            not license_record.exists()
-            or license_record.player_id != player
-            or license_record.club_id != roster.club_id
-            or license_record.season_id != roster.season_id
-        ):
+        if not license_record:
             raise ValidationError(
                 _(
                     "The selected license must belong to the chosen player, your club, and the roster season."
@@ -507,12 +589,8 @@ class FederationTeamRosterLine(models.Model):
         user = user or self.env.user
         roster._portal_assert_manage_access(user=user)
         if roster.status == "closed":
-            raise ValidationError(
-                _("Closed rosters cannot be edited in the portal.")
-            )
-        prepared = self._portal_prepare_line_values(
-            roster, values=values, user=user
-        )
+            raise ValidationError(_("Closed rosters cannot be edited in the portal."))
+        prepared = self._portal_prepare_line_values(roster, values=values, user=user)
         prepared["roster_id"] = roster.id
         return self.env["federation.portal.privilege"].portal_create(
             self,
@@ -525,9 +603,7 @@ class FederationTeamRosterLine(models.Model):
         user = user or self.env.user
         self.mapped("roster_id")._portal_assert_manage_access(user=user)
         if any(line.roster_id.status == "closed" for line in self):
-            raise ValidationError(
-                _("Closed rosters cannot be edited in the portal.")
-            )
+            raise ValidationError(_("Closed rosters cannot be edited in the portal."))
         for line in self:
             prepared = self._portal_prepare_line_values(
                 line.roster_id,
@@ -538,6 +614,7 @@ class FederationTeamRosterLine(models.Model):
             self.env["federation.portal.privilege"].portal_write(
                 line,
                 prepared,
+                scope_domain=[("roster_id", "=", line.roster_id.id)],
                 user=user,
             )
         return True
@@ -547,11 +624,10 @@ class FederationTeamRosterLine(models.Model):
         user = user or self.env.user
         self.mapped("roster_id")._portal_assert_manage_access(user=user)
         if any(line.roster_id.status == "closed" for line in self):
-            raise ValidationError(
-                _("Closed rosters cannot be edited in the portal.")
-            )
+            raise ValidationError(_("Closed rosters cannot be edited in the portal."))
         return self.env["federation.portal.privilege"].portal_call(
             self,
             "unlink",
+            scope_domain=[("roster_id", "in", self.mapped("roster_id").ids)],
             user=user,
         )

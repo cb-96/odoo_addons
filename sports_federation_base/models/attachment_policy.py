@@ -73,9 +73,7 @@ class FederationAttachmentPolicy(models.AbstractModel):
         normalized_mimetype = (mimetype or "").split(";", 1)[0].strip().lower()
         if not normalized_mimetype:
             normalized_mimetype = (
-                mimetypes.guess_type(filename)[0]
-                or policy["default_mimetype"]
-                or ""
+                mimetypes.guess_type(filename)[0] or policy["default_mimetype"] or ""
             )
         normalized_mimetype = normalized_mimetype.lower()
         if (

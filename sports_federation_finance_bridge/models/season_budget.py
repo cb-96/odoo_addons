@@ -32,13 +32,17 @@ class FederationSeasonBudget(models.Model):
         compute="_compute_actual_metrics",
         readonly=True,
     )
-    actual_event_count = fields.Integer(compute="_compute_actual_metrics", readonly=True)
+    actual_event_count = fields.Integer(
+        compute="_compute_actual_metrics", readonly=True
+    )
     variance_amount = fields.Monetary(
         currency_field="currency_id",
         compute="_compute_actual_metrics",
         readonly=True,
     )
-    variance_pct = fields.Float(compute="_compute_actual_metrics", readonly=True, digits=(16, 2))
+    variance_pct = fields.Float(
+        compute="_compute_actual_metrics", readonly=True, digits=(16, 2)
+    )
     notes = fields.Text()
 
     _season_fee_unique = models.Constraint(
@@ -81,7 +85,9 @@ class FederationSeasonBudget(models.Model):
             record.actual_event_count = metric.get("count", 0)
             record.variance_amount = actual_amount - (record.budget_amount or 0.0)
             if record.budget_amount:
-                record.variance_pct = (record.variance_amount / record.budget_amount) * 100
+                record.variance_pct = (
+                    record.variance_amount / record.budget_amount
+                ) * 100
             else:
                 record.variance_pct = 0.0
 

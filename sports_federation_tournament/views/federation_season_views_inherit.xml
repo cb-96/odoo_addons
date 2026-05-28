@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_federation_season_form_tournament_buttons" model="ir.ui.view">
+        <field name="name">federation.season.form.tournament.buttons</field>
+        <field name="model">federation.season</field>
+        <field name="inherit_id" ref="sports_federation_base.view_federation_season_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_tournaments"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-trophy">
+                    <field name="tournament_count" widget="statinfo" string="Tournaments"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

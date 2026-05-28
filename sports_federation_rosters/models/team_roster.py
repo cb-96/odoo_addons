@@ -81,8 +81,19 @@ class FederationTeamRoster(models.Model):
         related="team_id.club_id",
         store=True,
     )
-    min_players_required = fields.Integer(string="Min Players Required")
-    max_players_allowed = fields.Integer(string="Max Players Allowed")
+    min_players_required = fields.Integer(
+        string="Min Players Required",
+        help="Minimum number of eligible active players the squad must contain before"
+        " this roster can be activated. Overrides the rule-set squad_min_size for"
+        " this specific roster. Leave 0 to use the rule-set default.",
+    )
+    max_players_allowed = fields.Integer(
+        string="Max Players Allowed",
+        help="Maximum number of players that may be registered on this roster."
+        " This is a season/competition squad registration cap, not a per-match"
+        " selection limit. Overrides the rule-set squad_max_size for this specific"
+        " roster. Leave 0 to use the rule-set default.",
+    )
     ready_for_activation = fields.Boolean(
         compute="_compute_readiness",
         string="Ready For Activation",
@@ -116,10 +127,13 @@ class FederationTeamRoster(models.Model):
         string="Audit Events",
     )
 
-    _unique_team_season_competition_name = models.Constraint(
-        'UNIQUE(team_id, season_id, competition_id, name)',
-        'A roster with this name already exists for this team, season, and competition.',
-    )
+    # NOTE (v19.0.1.5.0): The old UNIQUE(team_id, season_id, competition_id, name)
+    # constraint was dropped.  Multiple rosters per scope in non-active statuses
+    # (draft, closed) are valid — e.g. the "close old roster, create new one"
+    # workflow.  Only one ACTIVE roster per scope is allowed, enforced by:
+    #   1. _assert_unique_active_roster() Python check in write()
+    #   2. DB partial unique indexes from migration 19.0.1.4.0
+    #      (federation_team_roster_unique_active_no_comp / _with_comp)
 
     def _build_generated_name(self, team, season, competition=False):
         """Build generated name."""
@@ -149,7 +163,11 @@ class FederationTeamRoster(models.Model):
             team = record.team_id if record else Team.browse([])
 
         if "season_id" in vals:
-            season = Season.browse(vals["season_id"]) if vals["season_id"] else Season.browse([])
+            season = (
+                Season.browse(vals["season_id"])
+                if vals["season_id"]
+                else Season.browse([])
+            )
         else:
             season = record.season_id if record else Season.browse([])
 
@@ -165,29 +183,18 @@ class FederationTeamRoster(models.Model):
         return team, season, competition
 
     def _get_generated_name(self, vals=None, record=False):
-        """Return generated name."""
-        team, season, competition = self._resolve_scope_for_name(vals=vals, record=record)
+        """Return a generated display name for this roster scope.
+
+        Since the scope uniqueness constraint (v19.0.1.5.0) prevents more than
+        one roster per (team, season, competition), a collision-avoidance loop
+        is no longer needed.  We simply return the base name for the scope.
+        """
+        team, season, competition = self._resolve_scope_for_name(
+            vals=vals, record=record
+        )
         if not team or not season:
             return False
-
-        base_name = self._build_generated_name(team, season, competition)
-        scope_domain = [
-            ("team_id", "=", team.id),
-            ("season_id", "=", season.id),
-            ("competition_id", "=", competition.id if competition else False),
-        ]
-        if record and record.id:
-            scope_domain.append(("id", "!=", record.id))
-
-        name = base_name
-        suffix = 2
-        while self.search_count(scope_domain + [("name", "=", name)]):
-            name = _("%(base)s (%(suffix)s)") % {
-                "base": base_name,
-                "suffix": suffix,
-            }
-            suffix += 1
-        return name
+        return self._build_generated_name(team, season, competition)
 
     @api.onchange("team_id", "season_id", "competition_id")
     def _onchange_scope_fields(self):
@@ -248,7 +255,9 @@ class FederationTeamRoster(models.Model):
     )
     def _compute_match_day_lock(self):
         """Compute match day lock."""
-        state_labels = dict(self.env["federation.match.sheet"]._fields["state"].selection)
+        state_labels = dict(
+            self.env["federation.match.sheet"]._fields["state"].selection
+        )
         for record in self:
             locking_sheets = record._get_locking_match_sheets()
             record.match_day_locked = bool(locking_sheets)
@@ -318,6 +327,7 @@ class FederationTeamRoster(models.Model):
     def write(self, vals):
         """Update records with module-specific side effects."""
         self._assert_scope_editable_for_match_day(vals)
+        self._assert_unique_active_roster(vals)
         if not vals.get("rule_set_id") and vals.get("competition_id"):
             competition = self.env["federation.competition"].browse(
                 vals["competition_id"]
@@ -330,7 +340,9 @@ class FederationTeamRoster(models.Model):
             vals.pop("name")
 
         scope_fields = {"team_id", "season_id", "competition_id"}
-        if (scope_fields.intersection(vals) or force_generated_name) and "name" not in vals:
+        if (
+            scope_fields.intersection(vals) or force_generated_name
+        ) and "name" not in vals:
             result = True
             for record in self:
                 record_vals = dict(vals)
@@ -338,7 +350,9 @@ class FederationTeamRoster(models.Model):
                     vals=record_vals,
                     record=record,
                 )
-                result = super(FederationTeamRoster, record).write(record_vals) and result
+                result = (
+                    super(FederationTeamRoster, record).write(record_vals) and result
+                )
         else:
             result = super().write(vals)
         tracked_fields = {
@@ -355,7 +369,9 @@ class FederationTeamRoster(models.Model):
         }
         changed_fields = sorted(tracked_fields.intersection(vals))
         if changed_fields:
-            field_labels = ", ".join(self._fields[field].string for field in changed_fields)
+            field_labels = ", ".join(
+                self._fields[field].string for field in changed_fields
+            )
             for record in self:
                 record._log_audit_event(
                     "roster_updated",
@@ -403,7 +419,9 @@ class FederationTeamRoster(models.Model):
             lambda sheet: sheet.state in ("submitted", "approved", "locked")
         )
 
-    def _log_audit_event(self, event_type, description, player=False, match_sheet=False):
+    def _log_audit_event(
+        self, event_type, description, player=False, match_sheet=False
+    ):
         """Handle log audit event."""
         Audit = self.env.get("federation.participation.audit")
         if Audit is None:
@@ -418,6 +436,38 @@ class FederationTeamRoster(models.Model):
                 player=player,
             )
         return True
+
+    def _assert_unique_active_roster(self, vals):
+        """Raise ValidationError if activating would create a duplicate active roster."""
+        if vals.get("status") != "active":
+            return
+        for record in self:
+            team_id = vals.get("team_id", record.team_id.id)
+            season_id = vals.get("season_id", record.season_id.id)
+            competition_id = vals.get(
+                "competition_id",
+                record.competition_id.id if record.competition_id else False,
+            )
+            duplicate = self.search(
+                [
+                    ("team_id", "=", team_id),
+                    ("season_id", "=", season_id),
+                    ("competition_id", "=", competition_id),
+                    ("status", "=", "active"),
+                    ("id", "!=", record.id),
+                ],
+                limit=1,
+            )
+            if duplicate:
+                raise ValidationError(
+                    _(
+                        "Team '%(team)s' already has an active roster for this season/competition: '%(duplicate)s'."
+                    )
+                    % {
+                        "team": record.team_id.display_name,
+                        "duplicate": duplicate.display_name,
+                    }
+                )
 
     def _assert_scope_editable_for_match_day(self, vals):
         """Handle assert scope editable for match day."""
@@ -456,7 +506,11 @@ class FederationTeamRoster(models.Model):
         today = fields.Date.context_today(self)
         if self.valid_from and self.valid_from > today:
             return self.valid_from
-        if self.season_id and self.season_id.date_start and self.season_id.date_start > today:
+        if (
+            self.season_id
+            and self.season_id.date_start
+            and self.season_id.date_start > today
+        ):
             return self.season_id.date_start
         return today
 
@@ -464,8 +518,12 @@ class FederationTeamRoster(models.Model):
         """Return required player bounds."""
         self.ensure_one()
         rule_set = self._get_effective_rule_set()
-        min_required = self.min_players_required or (rule_set.squad_min_size if rule_set else 0)
-        max_allowed = self.max_players_allowed or (rule_set.squad_max_size if rule_set else 0)
+        min_required = self.min_players_required or (
+            rule_set.squad_min_size if rule_set else 0
+        )
+        max_allowed = self.max_players_allowed or (
+            rule_set.squad_max_size if rule_set else 0
+        )
         return min_required, max_allowed
 
     def _get_readiness_issues(self, reference_date=None):
@@ -476,13 +534,11 @@ class FederationTeamRoster(models.Model):
 
         if self.valid_from and reference_date < self.valid_from:
             issues.append(
-                _("Roster is not valid yet on %(date)s.")
-                % {"date": self.valid_from}
+                _("Roster is not valid yet on %(date)s.") % {"date": self.valid_from}
             )
         if self.valid_to and reference_date > self.valid_to:
             issues.append(
-                _("Roster expired before %(date)s.")
-                % {"date": reference_date}
+                _("Roster expired before %(date)s.") % {"date": reference_date}
             )
 
         active_lines = self.line_ids.filtered(lambda line: line.status == "active")
@@ -562,347 +618,26 @@ class FederationTeamRoster(models.Model):
                 _("Roster '%(roster)s' closed.") % {"roster": record.display_name},
             )
 
-
-class FederationTeamRosterLine(models.Model):
-    _name = "federation.team.roster.line"
-    _description = "Team Roster Line"
-
-    roster_id = fields.Many2one(
-        "federation.team.roster",
-        string="Roster",
-        required=True,
-        ondelete="cascade",
-        index=True,
-    )
-    player_id = fields.Many2one(
-        "federation.player",
-        string="Player",
-        required=True,
-        ondelete="restrict",
-        index=True,
-    )
-    status = fields.Selection(
-        [
-            ("active", "Active"),
-            ("inactive", "Inactive"),
-            ("suspended", "Suspended"),
-            ("removed", "Removed"),
-        ],
-        default="active",
-        required=True,
-    )
-    date_from = fields.Date(string="Date From")
-    date_to = fields.Date(string="Date To")
-    jersey_number = fields.Char(string="Jersey Number")
-    is_captain = fields.Boolean(string="Is Captain", default=False)
-    is_vice_captain = fields.Boolean(string="Is Vice Captain", default=False)
-    notes = fields.Text(string="Notes")
-    license_id = fields.Many2one(
-        "federation.player.license",
-        string="License",
-        ondelete="set null",
-    )
-    eligible = fields.Boolean(
-        compute="_compute_eligible",
-        string="Eligible",
-        store=True,
-    )
-    eligibility_feedback = fields.Text(
-        compute="_compute_eligible",
-        string="Eligibility Feedback",
-        store=True,
-    )
-    team_id = fields.Many2one(
-        "federation.team",
-        string="Team",
-        related="roster_id.team_id",
-        store=True,
-    )
-    season_id = fields.Many2one(
-        "federation.season",
-        string="Season",
-        related="roster_id.season_id",
-        store=True,
-    )
-    competition_id = fields.Many2one(
-        "federation.competition",
-        string="Competition",
-        related="roster_id.competition_id",
-        store=True,
-    )
-
-    _unique_roster_player_date_from = models.Constraint(
-        'UNIQUE(roster_id, player_id, date_from)',
-        'A roster line for this player with this start date already exists.',
-    )
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        """Create records with module-specific defaults and side effects."""
-        records = super().create(vals_list)
-        records._validate_player_eligibility()
-        for record in records:
-            record.roster_id._log_audit_event(
-                "roster_line_added",
-                _("Player '%(player)s' added to the roster.")
-                % {"player": record.player_id.display_name},
-                player=record.player_id,
-            )
-        return records
-
-    def write(self, vals):
-        """Update records with module-specific side effects."""
-        self._assert_not_locked_for_match_day(vals)
-        result = super().write(vals)
-        self._validate_player_eligibility()
-        tracked_fields = {
-            "player_id",
-            "status",
-            "date_from",
-            "date_to",
-            "jersey_number",
-            "is_captain",
-            "is_vice_captain",
-            "license_id",
-            "notes",
-        }
-        changed_fields = sorted(tracked_fields.intersection(vals))
-        if changed_fields:
-            field_labels = ", ".join(self._fields[field].string for field in changed_fields)
-            for record in self:
-                record.roster_id._log_audit_event(
-                    "roster_line_updated",
-                    _("Roster line for '%(player)s' updated: %(fields)s.")
-                    % {
-                        "player": record.player_id.display_name,
-                        "fields": field_labels,
-                    },
-                    player=record.player_id,
-                )
-        return result
-
-    def unlink(self):
-        """Delete records after applying module-specific safeguards."""
-        self._assert_not_locked_for_match_day()
-        audit_payloads = [
-            (
-                record.roster_id,
-                record.player_id,
-                _("Player '%(player)s' removed from the roster.")
-                % {"player": record.player_id.display_name},
-            )
-            for record in self
-        ]
-        result = super().unlink()
-        for roster, player, description in audit_payloads:
-            roster._log_audit_event(
-                "roster_line_removed",
-                description,
-                player=player,
-            )
-        return result
-
-    @api.depends(
-        "status",
-        "date_from",
-        "date_to",
-        "player_id",
-        "player_id.gender",
-        "player_id.state",
-        "player_id.birth_date",
-        "license_id",
-        "license_id.state",
-        "license_id.issue_date",
-        "license_id.expiry_date",
-        "license_id.season_id",
-        "license_id.club_id",
-        "roster_id",
-        "roster_id.team_id",
-        "roster_id.team_id.gender",
-        "roster_id.season_id",
-        "roster_id.club_id",
-        "roster_id.competition_id",
-        "roster_id.rule_set_id",
-    )
-    def _compute_eligible(self):
-        """Compute eligible."""
+    def action_reopen(self):
+        """Undo a roster closure by restoring the roster to active status."""
         for record in self:
-            reasons = record._get_eligibility_reasons()
-            record.eligible = not bool(reasons)
-            record.eligibility_feedback = "\n".join(reasons) if reasons else False
-
-    @api.constrains("date_from", "date_to")
-    def _check_dates(self):
-        """Validate dates."""
-        for record in self:
-            if record.date_from and record.date_to:
-                if record.date_to < record.date_from:
-                    raise ValidationError(
-                        _("Date To cannot be before Date From.")
-                    )
-
-    @api.constrains("is_captain", "roster_id", "status")
-    def _check_single_captain(self):
-        """Validate single captain."""
-        for record in self:
-            if record.is_captain and record.status == "active":
-                domain = [
-                    ("roster_id", "=", record.roster_id.id),
-                    ("is_captain", "=", True),
-                    ("status", "=", "active"),
-                    ("id", "!=", record.id),
-                ]
-                if self.search_count(domain) > 0:
-                    raise ValidationError(
-                        _("Only one active captain is allowed per roster.")
-                    )
-
-    @api.constrains("is_vice_captain", "roster_id", "status")
-    def _check_single_vice_captain(self):
-        """Validate single vice captain."""
-        for record in self:
-            if record.is_vice_captain and record.status == "active":
-                domain = [
-                    ("roster_id", "=", record.roster_id.id),
-                    ("is_vice_captain", "=", True),
-                    ("status", "=", "active"),
-                    ("id", "!=", record.id),
-                ]
-                if self.search_count(domain) > 0:
-                    raise ValidationError(
-                        _("Only one active vice captain is allowed per roster.")
-                    )
-
-    @api.constrains("player_id", "roster_id")
-    def _check_player_eligibility_rules(self):
-        """Validate player eligibility rules."""
-        self._validate_player_eligibility()
-
-    def _get_eligibility_context(self, reference_date=None):
-        """Return eligibility context."""
-        self.ensure_one()
-        roster = self.roster_id
-        context = {"match_date": reference_date or roster._get_reference_date()}
-        if roster.season_id:
-            context["season_id"] = roster.season_id.id
-        if roster.club_id:
-            context["club_id"] = roster.club_id.id
-        if roster.team_id:
-            context["team_id"] = roster.team_id.id
-        if roster.competition_id:
-            context["competition_id"] = roster.competition_id.id
-        if self.license_id:
-            context["license_id"] = self.license_id.id
-        return context
-
-    def _get_locking_match_sheet_lines(self):
-        """Return locking match sheet lines."""
-        self.ensure_one()
-        return self.env["federation.match.sheet.line"].search(
-            [
-                ("roster_line_id", "=", self.id),
-                ("match_sheet_id.state", "in", ("submitted", "approved", "locked")),
-            ]
-        )
-
-    def _assert_not_locked_for_match_day(self, vals=None):
-        """Handle assert not locked for match day."""
-        if self.env.context.get("bypass_match_day_lock"):
-            return
-        protected_fields = {
-            "player_id",
-            "status",
-            "date_from",
-            "date_to",
-            "jersey_number",
-            "is_captain",
-            "is_vice_captain",
-            "license_id",
-        }
-        if vals is not None and not protected_fields.intersection(vals):
-            return
-        for record in self:
-            locking_lines = record._get_locking_match_sheet_lines()
-            if locking_lines:
-                sheet_names = ", ".join(locking_lines.mapped("match_sheet_id").mapped("display_name"))
+            if record.status != "closed":
                 raise ValidationError(
-                    _(
-                        "Roster line for player '%(player)s' is locked because it already appears on live match sheet(s): %(sheets)s."
-                    )
+                    _("Only closed rosters can be reopened.")
+                )
+            issues = record._get_readiness_issues()
+            if issues:
+                raise ValidationError(
+                    _("Roster '%(roster)s' cannot be reopened yet:\n- %(issues)s")
                     % {
-                        "player": record.player_id.display_name,
-                        "sheets": sheet_names,
+                        "roster": record.display_name,
+                        "issues": "\n- ".join(issues),
                     }
                 )
-
-    def _get_eligibility_reasons(self, reference_date=None):
-        """Return eligibility reasons."""
-        self.ensure_one()
-        player = self.player_id
-        roster = self.roster_id
-        if not player or not roster:
-            return []
-
-        reference_date = reference_date or roster._get_reference_date()
-        reasons = []
-        team = roster.team_id
-
-        if self.status != "active":
-            reasons.append(_("Roster line is not active."))
-        if self.date_from and reference_date < self.date_from:
-            reasons.append(
-                _("Player is not active on this roster before %(date)s.")
-                % {"date": self.date_from}
-            )
-        if self.date_to and reference_date > self.date_to:
-            reasons.append(
-                _("Player is no longer active on this roster after %(date)s.")
-                % {"date": self.date_to}
-            )
-
-        if team and team.gender in ("male", "female"):
-            if not player.gender:
-                reasons.append(
-                    _(
-                        "Player '%(player)s' must have a gender set to join team '%(team)s'."
-                    )
-                    % {"player": player.display_name, "team": team.display_name}
-                )
-            elif player.gender != team.gender:
-                reasons.append(
-                    _(
-                        "Player '%(player)s' (%(player_gender)s) is not eligible for team '%(team)s' (%(team_gender)s)."
-                    )
-                    % {
-                        "player": player.display_name,
-                        "player_gender": player.gender,
-                        "team": team.display_name,
-                        "team_gender": team.gender,
-                    }
-                )
-
-        Service = self.env.get("federation.eligibility.service")
-        rule_set = roster._get_effective_rule_set()
-        if Service is not None and rule_set:
-            result = Service.check_player_eligibility(
-                player,
-                rule_set,
-                context=self._get_eligibility_context(reference_date=reference_date),
-            )
-            reasons.extend(result.get("reasons", []))
-
-        return _dedupe_reasons(reasons)
-
-    def _validate_player_eligibility(self):
-        """Validate direct team compatibility and rule-set eligibility."""
+        self.write({"status": "active"})
         for record in self:
-            reasons = record._get_eligibility_reasons()
-            if not reasons:
-                continue
-            raise ValidationError(
-                _("Player '%(player)s' is not eligible for this roster: %(reasons)s")
-                % {
-                    "player": record.player_id.display_name,
-                    "reasons": "; ".join(reasons),
-                }
+            record._log_audit_event(
+                "roster_reopened",
+                _("Roster '%(roster)s' reopened and restored to active.")
+                % {"roster": record.display_name},
             )

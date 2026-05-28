@@ -5,12 +5,20 @@ import json
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from odoo.addons.sports_federation_base.exceptions import AttachmentScanVerificationError
+from odoo.addons.sports_federation_base.exceptions import (
+    AttachmentScanVerificationError,
+)
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import TransactionCase
 
+from odoo.addons.sports_federation_import_tools.controllers.integration_api_auth_mixin import (
+    FederationIntegrationApiAuthMixin,
+)
 from odoo.addons.sports_federation_import_tools.controllers.integration_api import (
     FederationIntegrationApi,
+)
+from odoo.addons.sports_federation_import_tools.controllers.integration_api_response_mixin import (
+    FederationIntegrationApiResponseMixin,
 )
 
 
@@ -45,7 +53,9 @@ class TestIntegrationApi(TransactionCase):
         )
         cls.raw_token = cls.partner._issue_auth_token()
 
-    def _make_request(self, headers=None, params=None, json_payload=None, remote_addr="198.51.100.20"):
+    def _make_request(
+        self, headers=None, params=None, json_payload=None, remote_addr="198.51.100.20"
+    ):
         return SimpleNamespace(
             httprequest=SimpleNamespace(
                 headers=headers or {},
@@ -69,10 +79,18 @@ class TestIntegrationApi(TransactionCase):
             params=params or {},
             env=SimpleNamespace(
                 get=lambda model_name: (
-                    finance_event_service if model_name == "federation.finance.event" else None
+                    finance_event_service
+                    if model_name == "federation.finance.event"
+                    else None
                 )
             ),
         )
+
+    def test_integration_api_controller_composes_split_helpers(self):
+        self.assertIsInstance(self.controller, FederationIntegrationApiAuthMixin)
+        self.assertIsInstance(self.controller, FederationIntegrationApiResponseMixin)
+        self.assertTrue(hasattr(self.controller, "_get_credentials"))
+        self.assertTrue(hasattr(self.controller, "_json_error_response"))
 
     def test_get_credentials_accepts_custom_headers(self):
         request_stub = self._make_request(
@@ -241,10 +259,20 @@ class TestIntegrationApi(TransactionCase):
 
         self.assertEqual(response.status_code, 201)
         payload = json.loads(response.get_data(as_text=True))
-        self.assertEqual(response.headers.get("X-Federation-Idempotency-Key"), "delivery-001")
-        self.assertEqual(response.headers.get("X-Federation-Idempotent-Replay"), "false")
+        self.assertEqual(
+            response.headers.get("X-Federation-Delivery-Outcome"), "created"
+        )
+        self.assertEqual(
+            response.headers.get("X-Federation-Idempotency-Key"), "delivery-001"
+        )
+        self.assertEqual(
+            response.headers.get("X-Federation-Idempotent-Replay"), "false"
+        )
+        self.assertEqual(payload["delivery_outcome"], "created")
         self.assertEqual(payload["delivery"]["idempotency_key"], "delivery-001")
-        delivery = self.env["federation.integration.delivery"].browse(payload["delivery"]["id"])
+        delivery = self.env["federation.integration.delivery"].browse(
+            payload["delivery"]["id"]
+        )
         self.assertEqual(delivery.idempotency_key, "delivery-001")
 
     def test_inbound_route_returns_400_for_conflicting_idempotency_key(self):
@@ -332,9 +360,72 @@ class TestIntegrationApi(TransactionCase):
         second_payload = json.loads(second_response.get_data(as_text=True))
         self.assertEqual(first_response.status_code, 201)
         self.assertEqual(second_response.status_code, 201)
-        self.assertEqual(first_response.headers.get("X-Federation-Idempotent-Replay"), "false")
-        self.assertEqual(second_response.headers.get("X-Federation-Idempotent-Replay"), "true")
-        self.assertEqual(first_payload["delivery"]["id"], second_payload["delivery"]["id"])
+        self.assertEqual(
+            first_response.headers.get("X-Federation-Delivery-Outcome"), "created"
+        )
+        self.assertEqual(
+            second_response.headers.get("X-Federation-Delivery-Outcome"),
+            "idempotency_replay",
+        )
+        self.assertEqual(
+            first_response.headers.get("X-Federation-Idempotent-Replay"), "false"
+        )
+        self.assertEqual(
+            second_response.headers.get("X-Federation-Idempotent-Replay"), "true"
+        )
+        self.assertEqual(first_payload["delivery_outcome"], "created")
+        self.assertEqual(second_payload["delivery_outcome"], "idempotency_replay")
+        self.assertEqual(
+            first_payload["delivery"]["id"], second_payload["delivery"]["id"]
+        )
+
+    def test_inbound_route_exposes_checksum_reuse_without_idempotency_key(self):
+        request_stub = self._make_request(
+            headers={
+                "X-Federation-Partner-Code": self.partner.code,
+                "X-Federation-Partner-Token": self.raw_token,
+            },
+            json_payload={
+                "filename": "clubs.csv",
+                "payload_base64": "bmFtZTtjb2RlCkR1cGxpY2F0ZSBDbHViO0RVUDAwMQ==",
+                "content_type": "text/csv",
+                "source_reference": "batch-403",
+            },
+        )
+
+        with patch(
+            "odoo.addons.sports_federation_import_tools.controllers.integration_api.request",
+            request_stub,
+        ):
+            first_response = self.controller.integration_stage_inbound_delivery(
+                self.inbound_contract.code
+            )
+
+        with patch(
+            "odoo.addons.sports_federation_import_tools.controllers.integration_api.request",
+            request_stub,
+        ):
+            second_response = self.controller.integration_stage_inbound_delivery(
+                self.inbound_contract.code
+            )
+
+        first_payload = json.loads(first_response.get_data(as_text=True))
+        second_payload = json.loads(second_response.get_data(as_text=True))
+        self.assertEqual(first_response.status_code, 201)
+        self.assertEqual(second_response.status_code, 201)
+        self.assertEqual(
+            first_response.headers.get("X-Federation-Delivery-Outcome"), "created"
+        )
+        self.assertEqual(
+            second_response.headers.get("X-Federation-Delivery-Outcome"),
+            "checksum_reuse",
+        )
+        self.assertIsNone(second_response.headers.get("X-Federation-Idempotent-Replay"))
+        self.assertEqual(first_payload["delivery_outcome"], "created")
+        self.assertEqual(second_payload["delivery_outcome"], "checksum_reuse")
+        self.assertEqual(
+            first_payload["delivery"]["id"], second_payload["delivery"]["id"]
+        )
 
     def test_contracts_route_rate_limits_repeat_callers(self):
         self.env["ir.config_parameter"].sudo().set_param(
@@ -400,15 +491,31 @@ class TestIntegrationApi(TransactionCase):
 
     def test_finance_events_route_supports_cursor_pagination(self):
         newest = Mock()
-        newest.get_handoff_export_row.return_value = ["finance_event_v1", "301", "Newest API Export Event"]
+        newest.get_handoff_export_row.return_value = [
+            "finance_event_v1",
+            "301",
+            "Newest API Export Event",
+        ]
         middle = Mock()
-        middle.get_handoff_export_row.return_value = ["finance_event_v1", "300", "Middle API Export Event"]
+        middle.get_handoff_export_row.return_value = [
+            "finance_event_v1",
+            "300",
+            "Middle API Export Event",
+        ]
         oldest = Mock()
-        oldest.get_handoff_export_row.return_value = ["finance_event_v1", "299", "Oldest API Export Event"]
+        oldest.get_handoff_export_row.return_value = [
+            "finance_event_v1",
+            "299",
+            "Oldest API Export Event",
+        ]
         finance_service = Mock()
         finance_service.EXPORT_SCHEMA_VERSION = "finance_event_v1"
         finance_service.sudo.return_value = finance_service
-        finance_service.get_handoff_export_headers.return_value = ["Version", "Id", "Name"]
+        finance_service.get_handoff_export_headers.return_value = [
+            "Version",
+            "Id",
+            "Name",
+        ]
         finance_service.get_handoff_export_batch.side_effect = [
             {
                 "events": [newest, middle],
@@ -444,9 +551,13 @@ class TestIntegrationApi(TransactionCase):
         ):
             first_response = self.controller.integration_finance_events()
 
-        first_rows = list(csv.reader(io.StringIO(first_response.get_data(as_text=True))))
+        first_rows = list(
+            csv.reader(io.StringIO(first_response.get_data(as_text=True)))
+        )
         self.assertEqual(first_response.status_code, 200)
-        self.assertEqual(first_response.headers.get("X-Federation-Export-Mode"), "cursor_page")
+        self.assertEqual(
+            first_response.headers.get("X-Federation-Export-Mode"), "cursor_page"
+        )
         self.assertEqual(first_response.headers.get("X-Federation-Export-Count"), "2")
         self.assertEqual(first_response.headers.get("X-Federation-Has-More"), "true")
         self.assertEqual(first_rows[1][1], "301")
@@ -473,7 +584,9 @@ class TestIntegrationApi(TransactionCase):
         ):
             second_response = self.controller.integration_finance_events()
 
-        second_rows = list(csv.reader(io.StringIO(second_response.get_data(as_text=True))))
+        second_rows = list(
+            csv.reader(io.StringIO(second_response.get_data(as_text=True)))
+        )
         self.assertEqual(second_response.status_code, 200)
         self.assertEqual(second_response.headers.get("X-Federation-Has-More"), "false")
         self.assertIsNone(second_response.headers.get("X-Federation-Next-Cursor"))
@@ -485,7 +598,9 @@ class TestIntegrationApi(TransactionCase):
         finance_service.get_handoff_export_batch.side_effect = ValidationError(
             "Finance event export limits must be positive integers."
         )
-        request_stub = self._make_finance_request(finance_service, params={"limit": "0"})
+        request_stub = self._make_finance_request(
+            finance_service, params={"limit": "0"}
+        )
 
         with patch(
             "odoo.addons.sports_federation_import_tools.controllers.integration_api.request",
@@ -538,11 +653,19 @@ class TestIntegrationApi(TransactionCase):
 
     def test_finance_events_route_reports_effective_page_limit(self):
         event = Mock()
-        event.get_handoff_export_row.return_value = ["finance_event_v1", "501", "Bounded Export"]
+        event.get_handoff_export_row.return_value = [
+            "finance_event_v1",
+            "501",
+            "Bounded Export",
+        ]
         finance_service = Mock()
         finance_service.EXPORT_SCHEMA_VERSION = "finance_event_v1"
         finance_service.sudo.return_value = finance_service
-        finance_service.get_handoff_export_headers.return_value = ["Version", "Id", "Name"]
+        finance_service.get_handoff_export_headers.return_value = [
+            "Version",
+            "Id",
+            "Name",
+        ]
         finance_service.get_handoff_export_batch.return_value = {
             "events": [event],
             "count": 1,
@@ -550,7 +673,9 @@ class TestIntegrationApi(TransactionCase):
             "has_more": False,
             "next_cursor": False,
         }
-        request_stub = self._make_finance_request(finance_service, params={"limit": "999"})
+        request_stub = self._make_finance_request(
+            finance_service, params={"limit": "999"}
+        )
 
         with patch(
             "odoo.addons.sports_federation_import_tools.controllers.integration_api.request",
@@ -572,6 +697,51 @@ class TestIntegrationApi(TransactionCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers.get("X-Federation-Page-Limit"), "500")
+
+    def test_finance_events_route_uses_cursor_batch_when_no_params_are_supplied(self):
+        event = Mock()
+        event.get_handoff_export_row.return_value = [
+            "finance_event_v1",
+            "777",
+            "Default Paged Export",
+        ]
+        finance_service = Mock()
+        finance_service.EXPORT_SCHEMA_VERSION = "finance_event_v1"
+        finance_service.sudo.return_value = finance_service
+        finance_service.get_handoff_export_headers.return_value = [
+            "Version",
+            "Id",
+            "Name",
+        ]
+        finance_service.get_handoff_export_batch.return_value = {
+            "events": [event],
+            "count": 1,
+            "limit": 200,
+            "has_more": False,
+            "next_cursor": False,
+        }
+        request_stub = self._make_finance_request(finance_service)
+
+        with patch(
+            "odoo.addons.sports_federation_import_tools.controllers.integration_api.request",
+            request_stub,
+        ), patch.object(
+            self.controller,
+            "_rate_limit_response",
+            return_value=False,
+        ), patch.object(
+            self.controller,
+            "_authenticate",
+            return_value=(SimpleNamespace(code=self.partner.code), None),
+        ):
+            response = self.controller.integration_finance_events()
+
+        finance_service.get_handoff_export_batch.assert_called_once_with(
+            cursor=False,
+            limit=False,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("X-Federation-Export-Mode"), "cursor_page")
 
     def test_inbound_route_rate_limits_repeat_callers(self):
         self.env["ir.config_parameter"].sudo().set_param(

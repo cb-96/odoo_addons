@@ -2,16 +2,16 @@
 <odoo>
     <data>
 
-    <!-- Administration submenu -->
-    <menuitem id="menu_federation_administration"
-              name="Administration"
-              parent="sports_federation_base.menu_federation_root"
-              sequence="100"/>
+    <!-- Notifications submenu -->
+    <menuitem id="menu_federation_notifications"
+              name="Notifications"
+              parent="sports_federation_base.menu_federation_administration"
+              sequence="30"/>
 
     <!-- Notification Logs -->
     <menuitem id="menu_federation_notification_log"
               name="Notification Logs"
-              parent="menu_federation_administration"
+              parent="menu_federation_notifications"
               action="action_federation_notification_log"
               sequence="10"/>
 

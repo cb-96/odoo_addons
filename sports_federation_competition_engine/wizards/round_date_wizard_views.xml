@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_federation_round_date_wizard_form" model="ir.ui.view">
+        <field name="name">federation.round.date.wizard.form</field>
+        <field name="model">federation.round.date.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Set Kickoff Dates">
+                <group>
+                    <field name="stage_id"/>
+                    <field name="round_id"/>
+                    <field name="date_scheduled"/>
+                </group>
+                <footer>
+                    <button name="action_apply" type="object" string="Apply"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Inherit stage form: add "Set Kickoff Dates" smart button -->
+    <record id="view_federation_tournament_stage_form_inherit_date_wizard"
+            model="ir.ui.view">
+        <field name="name">federation.tournament.stage.form.inherit.date_wizard</field>
+        <field name="model">federation.tournament.stage</field>
+        <field name="inherit_id"
+               ref="sports_federation_tournament.view_federation_tournament_stage_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_round_date_wizard" type="object"
+                        class="oe_stat_button" icon="fa-calendar">
+                    <span class="o_stat_text">Set Kickoff Dates</span>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit round form: add "Set Kickoff Dates" button in header -->
+    <record id="view_federation_tournament_round_form_inherit_date_wizard"
+            model="ir.ui.view">
+        <field name="name">federation.tournament.round.form.inherit.date_wizard</field>
+        <field name="model">federation.tournament.round</field>
+        <field name="inherit_id"
+               ref="sports_federation_tournament.view_federation_tournament_round_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_round_date_wizard" type="object"
+                        string="Set Kickoff Dates" class="btn-secondary"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

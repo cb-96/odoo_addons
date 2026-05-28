@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Governance",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "category": "Sports",
     "summary": "Controlled override requests, decisions, and audit notes for federation governance",
     "description": "Governance workflows for override requests, decisions, and audit notes.",

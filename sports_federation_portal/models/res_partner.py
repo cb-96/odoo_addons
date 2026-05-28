@@ -22,9 +22,7 @@ class ResPartner(models.Model):
     def _compute_federation_representative_count(self):
         """Compute federation representative count."""
         for rec in self:
-            rec.federation_representative_count = len(
-                rec.federation_representative_ids
-            )
+            rec.federation_representative_count = len(rec.federation_representative_ids)
 
     def action_view_federation_representatives(self):
         """Open the representative roles list for this partner."""

@@ -27,7 +27,7 @@ teams, and players receive licenses that certify their eligibility to compete.
 **Actor**: Federation administrator
 **Module**: `sports_federation_base`
 
-1. Navigate to **Federation → Configuration → Seasons**.
+1. Open the **Seasons** screen from the backend setup area.
 2. Create a new season with name, code, and date range (e.g. "2025-2026").
 3. Set the season state to **open**.
 
@@ -39,7 +39,7 @@ rosters, and licenses throughout the year.
 **Actor**: Federation administrator
 **Module**: `sports_federation_base`
 
-1. Navigate to **Federation → Registrations → Season Registrations**.
+1. Open the **Season Registrations** screen from the backend setup area.
 2. Create registration records (one per team) or let clubs self-register via the portal.
 3. Each registration links a team and its club to an open season.
 
@@ -65,6 +65,10 @@ Registration states: `draft` → `submitted` → `confirmed` / `cancelled`.
 2. Verify club ownership, season status, and any federation prerequisites.
 3. **Confirm** the registration or **reject** it back to `draft` with a rejection reason.
 4. Confirmed teams are eligible to enrol players and proceed into competition operations.
+5. The season and registration forms now surface that same order of operations
+  inline: draft seasons point operators toward registrations, open seasons warn
+  when registrations are still missing or pending, and confirmed registrations
+  expose a direct **Open Team Rosters** handoff for the next operational step.
 
 There is no persistent `rejected` season-registration state in the current model. Rejection is represented by the record returning to `draft` while keeping `rejection_reason` for follow-up.
 
@@ -76,19 +80,53 @@ There is no persistent `rejected` season-registration state in the current model
 1. Under each confirmed club registration, create or confirm teams for the season.
 2. Teams inherit the club's season registration scope.
 3. Teams become available for tournament participation and roster creation.
+4. When roster preparation is the next task, use **Open Team Rosters** from the
+  confirmed registration. The action opens the roster list with the current
+  team, season, competition, and rule-set context prefilled.
 
 ### 6. Player Registration & Licensing
 
 **Actor**: Federation administrator
 **Module**: `sports_federation_people`
 
-1. Create or update player records with club affiliation.
-2. Create a **player license** linked to the active season and club.
-3. License receives an auto-generated number via `ir.sequence` (`FED-LIC-XXXXX`).
-4. Set license state: `draft` → `active`.
+Player licenses are the formal proof of a player's eligibility to compete in a
+given season. Each license is scoped to one player, one season, and one club.
 
-Players must hold an active license for the current season to be eligible for
-rosters and match sheets.
+#### License Creation
+
+1. Create or locate the player record (`federation.player`) with club affiliation.
+2. Navigate to the player's **Licenses** tab and click **New**, or go to
+   **Federation → People → Player Licenses** and create from there.
+3. Fill in:
+   - **Season** (must be open)
+   - **Club** (must match the player's current club)
+   - **Issue date** and **Expiry date** (expiry must be after issue date)
+   - **Category**: `senior` | `youth` | `junior` | `cadet`
+   - Optional eligibility notes
+4. An auto-generated license number is assigned via `ir.sequence` (`FED-LIC-XXXXX`).
+
+Uniqueness constraint: one license per player per season (`player_id, season_id`).
+
+#### License Status Rules
+
+The full player-license lifecycle is authoritative in
+[WORKFLOW_PLAYER_LICENSE.md](WORKFLOW_PLAYER_LICENSE.md).
+
+For season-registration work, the relevant operator rule is simpler:
+
+- Only an `active` license satisfies roster and match-sheet readiness.
+- `expired` or `cancelled` licenses block readiness until a valid license
+  exists or the record is corrected and reactivated.
+- The system does not auto-expire licenses. Administrators manage expiry or
+  cancellation explicitly.
+
+#### License Eligibility Impact
+
+- Roster readiness check (`ready_for_activation`) blocks roster activation if any
+  roster line's player has no `active` license for the same season.
+- Match sheet readiness check applies the same rule at squad-submission time.
+- A player with a `cancelled` or `expired` license cannot appear on active
+  rosters or submitted match sheets for the relevant season.
 
 ### 7. Compliance Document Collection
 
@@ -129,7 +167,7 @@ Registration: draft → submitted → confirmed
                                  ↘ draft (via rejection)
 
 License: draft → active → expired
-                        → revoked
+                        → cancelled
 ```
 
 ## Key Decision Points

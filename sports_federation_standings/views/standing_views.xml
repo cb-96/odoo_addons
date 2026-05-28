@@ -25,13 +25,13 @@
                 <header>
                     <button name="action_recompute" string="Recompute" type="object" class="oe_highlight" groups="sports_federation_base.group_federation_manager" invisible="state == 'frozen'"/>
                     <button name="action_recompute" string="Force Recompute" type="object" class="oe_highlight" groups="sports_federation_base.group_federation_manager" context="{'force_recompute': True}" invisible="state != 'frozen'"/>
-                    <button name="action_freeze" string="Freeze" type="object" groups="sports_federation_base.group_federation_manager" invisible="state != 'computed'"/>
+                    <button name="action_freeze" string="Freeze" type="object" groups="sports_federation_base.group_federation_manager" invisible="state != 'computed'" confirm="Freezing the standing may trigger stage progressions. Continue?"/>
                     <button name="action_unfreeze" string="Unfreeze" type="object" groups="sports_federation_base.group_federation_manager" invisible="state != 'frozen'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,computed,frozen"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-                        <button name="action_view_lines" type="object" class="oe_stat_button" icon="fa-list" invisible="not line_count">
+                        <button name="action_view_lines" type="object" class="oe_stat_button" icon="fa-list">
                             <field name="line_count" string="Lines" widget="statinfo"/>
                         </button>
                     </div>
@@ -39,23 +39,45 @@
                         <label for="name"/>
                         <h1><field name="name"/></h1>
                     </div>
+                    <group string="Context">
+                        <field name="tournament_id" readonly="1"/>
+                        <field name="stage_id" readonly="1"/>
+                        <field name="group_id" readonly="1"/>
+                    </group>
                     <group>
-                        <group>
-                            <field name="tournament_id"/>
-                            <field name="stage_id"/>
-                            <field name="group_id"/>
-                        </group>
                         <group>
                             <field name="competition_id"/>
                             <field name="rule_set_id"/>
                             <field name="computed_on"/>
                         </group>
                     </group>
+                    <div class="alert alert-info"
+                         invisible="state != 'draft'"
+                         role="status">
+                        <strong>Next step:</strong>
+                        Standings stay empty until approved results are included in official standings for this tournament.
+                    </div>
+                    <div class="alert alert-warning"
+                         invisible="state != 'draft'"
+                         role="alert">
+                        <strong>Blocker list:</strong>
+                        <ul class="mb-0 ps-3 mt-1">
+                            <li>No approved results are currently feeding this standings table.</li>
+                            <li>Contested or corrected results are excluded until reapproved.</li>
+                        </ul>
+                    </div>
+                    <div class="alert alert-info"
+                         invisible="state not in ('computed', 'frozen')"
+                         role="status">
+                        <strong>Next step:</strong>
+                        Review the table here, then use the Website tab when you are ready to make it public.
+                    </div>
                     <notebook>
-                        <page string="Lines" name="lines">
+                        <page string="Standings Table" name="lines">
                             <field name="line_ids" readonly="1">
                                 <list>
                                     <field name="rank"/>
+                                    <field name="rank_badge" string="Medal"/>
                                     <field name="team_id"/>
                                     <field name="played"/>
                                     <field name="won"/>
@@ -88,6 +110,7 @@
         <field name="arch" type="xml">
             <list>
                 <field name="rank"/>
+                <field name="rank_badge" string="Medal"/>
                 <field name="team_id"/>
                 <field name="club_id"/>
                 <field name="played"/>
@@ -106,10 +129,43 @@
         </field>
     </record>
 
+    <record id="view_federation_standing_search" model="ir.ui.view">
+        <field name="name">federation.standing.search</field>
+        <field name="model">federation.standing</field>
+        <field name="arch" type="xml">
+            <search string="Search Standings">
+                <field name="name"/>
+                <field name="tournament_id"/>
+                <field name="stage_id"/>
+                <field name="competition_id"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="computed" string="Computed" domain="[('state', '=', 'computed')]"/>
+                <filter name="frozen" string="Frozen" domain="[('state', '=', 'frozen')]"/>
+                <separator/>
+                <group>
+                    <filter name="tournament" string="Tournament" context="{'group_by': 'tournament_id'}"/>
+                    <filter name="stage" string="Stage" context="{'group_by': 'stage_id'}"/>
+                    <filter name="competition" string="Competition" context="{'group_by': 'competition_id'}"/>
+                    <filter name="state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
     <record id="action_federation_standing" model="ir.actions.act_window">
         <field name="name">Standings</field>
         <field name="res_model">federation.standing</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_federation_standing_search"/>
+        <field name="context">{"search_default_tournament": 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Standings are recomputed after match results are approved.
+            </p>
+            <p>
+                Blockers are unresolved results; next action is to clear disputes or approval gaps, then publish from the Website tab when visibility is required.
+            </p>
+        </field>
     </record>
 
     <record id="action_federation_standing_line" model="ir.actions.act_window">

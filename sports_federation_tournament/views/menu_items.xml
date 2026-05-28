@@ -5,24 +5,23 @@
               name="Competition Templates"
               parent="sports_federation_base.menu_federation_competitions"
               action="federation_competition_action"
-              sequence="20"/>
+              sequence="10"/>
 
     <menuitem id="menu_federation_competition_edition"
               name="Competition Editions"
               parent="sports_federation_base.menu_federation_competitions"
               action="federation_competition_edition_action"
-              sequence="25"/>
+              sequence="20"/>
 
     <menuitem id="menu_federation_tournament"
-              name="Divisions / Tournaments"
-              parent="sports_federation_base.menu_federation_competitions"
-              action="federation_tournament_action"
-              sequence="40"/>
+              name="Planning Records (Advanced)"
+              parent="sports_federation_base.menu_federation_planning"
+              sequence="20"/>
 
     <menuitem id="menu_federation_tournament_config"
-              name="Configuration"
+              name="Advanced Structure"
               parent="menu_federation_tournament"
-              sequence="10"/>
+              sequence="40"/>
 
     <menuitem id="menu_federation_tournament_stages"
               name="Stages"
@@ -37,15 +36,15 @@
               sequence="20"/>
 
     <menuitem id="menu_federation_matches"
-              name="Matches"
+              name="Match Records (Advanced)"
               parent="menu_federation_tournament"
               action="federation_match_action"
               sequence="30"/>
 
     <menuitem id="menu_federation_tournament_list"
-              name="Tournament List"
+              name="Divisions &amp; Tournaments"
               parent="menu_federation_tournament"
               action="federation_tournament_action"
-              sequence="1"/>
+              sequence="10"/>
 
 </odoo>

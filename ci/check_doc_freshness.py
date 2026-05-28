@@ -6,10 +6,10 @@ from pathlib import Path
 import re
 import sys
 
-
 ROOT = Path(__file__).resolve().parents[1]
 TRACKED_DOCS = [
     "CODE_REVIEW_REPORT.md",
+    "MAINTAINABILITY_REVIEW.md",
     "ROADMAP.md",
     "TECHNICAL_NOTE.md",
     "CONTEXT.md",
@@ -63,7 +63,9 @@ def main() -> int:
         metadata = read_metadata(path)
         for field in REQUIRED_FIELDS:
             if not metadata.get(field):
-                failures.append(f"{rel_path}: missing '{field}:' metadata near the top of the file")
+                failures.append(
+                    f"{rel_path}: missing '{field}:' metadata near the top of the file"
+                )
 
         last_reviewed = metadata.get("Last reviewed")
         if last_reviewed and not DATE_PATTERN.match(last_reviewed):

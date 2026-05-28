@@ -1,7 +1,7 @@
 # Odoo 19 — Sports Federation Addons (quick context)
 
 Owner: Federation Platform Team
-Last reviewed: 2026-04-17
+Last reviewed: 2026-05-25
 Review cadence: Every release
 
 Purpose
@@ -19,7 +19,7 @@ Core modules (quick)
 
 - `sports_federation_base`: Master data — clubs, teams, seasons, registrations, base security groups.
 - `sports_federation_tournament`: Competitions, tournaments, stages, groups, participants, matches and match lifecycle.
-- `sports_federation_competition_engine`: Scheduling algorithms and wizards (round-robin, knockout).
+- `sports_federation_competition_engine`: Scheduling algorithms, wizards, and the backend Competition Workspace for guided division planning and slot-based scheduling.
 - `sports_federation_people`: Player master data and licensing.
 - `sports_federation_rosters`: Season rosters and match-sheet management.
 - `sports_federation_officiating`: Referee registry and assignments.
@@ -32,7 +32,7 @@ Key workflows (at-a-glance)
 - Tournament lifecycle — competition setup, participant enrolment, stage progression, schedule generation, completion. See `odoo/_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md`.
 - Match-day operations — roster checks, referee confirmation, match execution, incident logging. See `odoo/_workflows/WORKFLOW_MATCH_DAY_OPERATIONS.md`.
 - Result pipeline — submit → verify → approve (with contested/corrected exceptions). See `odoo/_workflows/WORKFLOW_RESULT_PIPELINE.md`.
-- Public publication — `website_published` toggles, public slugs, and safe public pages for competitions and standings. See `odoo/_workflows/WORKFLOW_PUBLIC_PUBLICATION.md`.
+- Public publication — `website_published` toggles, public slugs, and safe public pages for tournaments and standings. See `odoo/_workflows/WORKFLOW_PUBLIC_PUBLICATION.md`.
 
 Developer quick-start (most common tasks)
 
@@ -68,6 +68,44 @@ The competition engine and related modules received several new models to suppor
 - `sports_federation_tournament/models/federation_match.py` — bracket/linking fields and auto-advance wiring for knockout flows.
 
 See `odoo/TECHNICAL_NOTE.md` → "New competition models and behaviours (2026-04-07)" for details.
+
+Recent additions (2026-05-25)
+
+- `sports_federation_competition_engine/models/competition_workspace_models.py` — guided planning fields on competition editions, divisions, and gamedays, plus backend entrypoints to open the workspace.
+- `sports_federation_competition_engine/models/competition_schedule_revision.py` — persistent live, draft, and superseded publication snapshots for each planner root gameday.
+- `sports_federation_competition_engine/models/competition_workspace_presence.py` — active-operator heartbeat records for collaboration warnings and same-gameday edit indicators.
+- `sports_federation_competition_engine/models/federation_match_slot.py` — persistent `federation.match.slot` records for court and time-slot planning.
+- `sports_federation_competition_engine/services/competition_workspace.py` — server-side workflow orchestration, planner payloads, safe-swap-aware assignment validation, collaboration heartbeat, revisioned publication guards, pool-then-bracket planning, fairness summaries, and ranked slot suggestions.
+- `sports_federation_competition_engine/static/src/client_actions/competition_workspace/` — Owl backend client action for role-aware, mobile-friendly scheduling with grouped validation, presence, stage-aware planning controls, fairness visibility, and slot suggestions.
+- `sports_federation_venues/models/competition_workspace_extension.py` — venue blackout, maintenance, and playing-area capability validation plus venue-readiness summaries for the Competition Workspace.
+- `sports_federation_officiating/models/competition_workspace_extension.py` — officiating readiness validation, uncovered-availability warnings, and double-booking blocks for Competition Workspace planning.
+- `sports_federation_base/views/menu_items.xml` and related addon menu files — backend navigation now uses journey-first buckets (`Setup`, `Planning`, `Match Day`, `Publication`, `Administration`), with Planning Workspace as the primary scheduling entry point.
+- `sports_federation_portal/views/portal_templates.xml` and `portal_tournament_workspace_templates.xml` — club representatives now start from a clearly primary Club Operations Workspace, while direct queues remain available as secondary or advanced links.
+- `sports_federation_base`, `sports_federation_tournament`, `sports_federation_rosters`, `sports_federation_result_control`, `sports_federation_standings`, and `sports_federation_public_site` form views now surface inline next-step guidance and direct cross-module handoffs, including season-registration-to-roster, participant-to-roster, result-to-tournament, and tournament-to-standings/publication flows.
+- `sports_federation_competition_engine` and `sports_federation_portal` now expose a clearer phase model for scheduling and match day: Planning Workspace is the primary schedule-building surface, Gameday Planner is the one-day preparation surface, Live Operations Board is for in-progress play, and portal result pages are the result follow-up surface.
+
+See `odoo/TECHNICAL_NOTE.md` → "Competition Workspace planning flow (2026-05-25)" for details.
+See `odoo/TECHNICAL_NOTE.md` → "Guided setup and cross-module handoffs (2026-05-25)" for the Phase 2 intuitiveness baseline.
+See `odoo/TECHNICAL_NOTE.md` → "Canonical planning and match-day flows (2026-05-25)" for the Phase 3 intuitiveness baseline.
+
+Recent additions (2026-05-26)
+
+- `sports_federation_portal/models/portal_status_labels.py` introduces shared
+	portal-facing state label helpers so operational pages stop leaking raw model
+	values.
+- `sports_federation_public_site/models/public_status_labels.py` now includes
+	player license labels for club/player public pages.
+- Portal and public templates now consistently render state labels through
+	helper methods (`get_portal_state_label`,
+	`get_portal_result_state_label`, `get_public_site_state_label`).
+- Template accessibility tests in `sports_federation_portal` and
+	`sports_federation_public_site` now include regression checks that forbid raw
+	state rendering fragments.
+- `INTUITIVENESS_REVIEW_CHECKLIST.md` now defines the lightweight governance
+	gate for major naming, entry-point, and UX-state changes.
+
+See `odoo/TECHNICAL_NOTE.md` → "Portal/public intuitiveness baseline
+(2026-05-26)" for details.
 
 Priority 0 hardening snapshot (2026-04-10)
 

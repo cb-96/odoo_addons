@@ -104,6 +104,13 @@ class FederationOverrideRequest(models.Model):
                 raise ValidationError("Only draft requests can be submitted.")
             record.state = OVERRIDE_REQUEST_STATE_SUBMITTED
 
+    def action_withdraw(self):
+        """Withdraw a submitted request back to draft."""
+        for record in self:
+            if not is_override_request_submitted(record.state):
+                raise ValidationError("Only submitted requests can be withdrawn.")
+            record.state = OVERRIDE_REQUEST_STATE_DRAFT
+
     def action_approve(self):
         """Approve the request and create decision record."""
         for record in self:
@@ -111,10 +118,12 @@ class FederationOverrideRequest(models.Model):
                 raise ValidationError("Only submitted requests can be approved.")
             record.state = OVERRIDE_REQUEST_STATE_APPROVED
             # Create decision record
-            self.env["federation.override.decision"].create({
-                "request_id": record.id,
-                "decision": OVERRIDE_REQUEST_STATE_APPROVED,
-            })
+            self.env["federation.override.decision"].create(
+                {
+                    "request_id": record.id,
+                    "decision": OVERRIDE_REQUEST_STATE_APPROVED,
+                }
+            )
 
     def action_reject(self):
         """Reject the request and create decision record."""
@@ -123,26 +132,35 @@ class FederationOverrideRequest(models.Model):
                 raise ValidationError("Only submitted requests can be rejected.")
             record.state = OVERRIDE_REQUEST_STATE_REJECTED
             # Create decision record
-            self.env["federation.override.decision"].create({
-                "request_id": record.id,
-                "decision": OVERRIDE_REQUEST_STATE_REJECTED,
-            })
+            self.env["federation.override.decision"].create(
+                {
+                    "request_id": record.id,
+                    "decision": OVERRIDE_REQUEST_STATE_REJECTED,
+                }
+            )
 
     def action_mark_implemented(self):
         """Mark the request as implemented."""
         for record in self:
             if not is_override_request_approved(record.state):
-                raise ValidationError("Only approved requests can be marked as implemented.")
+                raise ValidationError(
+                    "Only approved requests can be marked as implemented."
+                )
             record.state = OVERRIDE_REQUEST_STATE_IMPLEMENTED
-            self.env["federation.override.outcome"].create({
-                "request_id": record.id,
-                "outcome": OVERRIDE_REQUEST_STATE_IMPLEMENTED,
-                "note": record.implementation_note or "Override marked as implemented.",
-            })
+            self.env["federation.override.outcome"].create(
+                {
+                    "request_id": record.id,
+                    "outcome": OVERRIDE_REQUEST_STATE_IMPLEMENTED,
+                    "note": record.implementation_note
+                    or "Override marked as implemented.",
+                }
+            )
 
     def action_close(self):
         """Close the request."""
         for record in self:
             if record.state not in OVERRIDE_REQUEST_CLOSABLE_STATES:
-                raise ValidationError("Only implemented or rejected requests can be closed.")
+                raise ValidationError(
+                    "Only implemented or rejected requests can be closed."
+                )
             record.state = OVERRIDE_REQUEST_STATE_CLOSED

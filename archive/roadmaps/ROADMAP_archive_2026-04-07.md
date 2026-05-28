@@ -13,11 +13,11 @@ Top-level sequence
 
 Quick code signals (recent / already implemented)
 
-- `sports_federation_venues` — adds `federation.gameday` to bundle matches by venue/day and helper `find_or_create`. See [odoo/sports_federation_venues/models](sports_federation_venues/models).
-- `sports_federation_tournament` — materialised rounds: `federation.tournament.round`. See [odoo/sports_federation_tournament/models](sports_federation_tournament/models).
-- `federation.match` extensions — bracket/linking fields and `action_done()` wiring so knockout brackets auto-advance winners. See [odoo/sports_federation_tournament/models/federation_match.py](sports_federation_tournament/models/federation_match.py).
-- `sports_federation_competition_engine` — new progression and template models: `federation.stage.progression` and `federation.tournament.template`; services updated for per-round scheduling and full-bracket construction. See [odoo/sports_federation_competition_engine/models](sports_federation_competition_engine/models) and [odoo/sports_federation_competition_engine/services](sports_federation_competition_engine/services).
-- `sports_federation_standings` — cross-group ranking helper and `generate_standings()` delegator; standings freeze can trigger `auto_advance` progressions. See [odoo/sports_federation_standings/models/standing.py](sports_federation_standings/models/standing.py).
+- `sports_federation_venues` — adds `federation.gameday` to bundle matches by venue/day and helper `find_or_create`. See [odoo/sports_federation_venues/models](../../sports_federation_venues/models).
+- `sports_federation_tournament` — materialised rounds: `federation.tournament.round`. See [odoo/sports_federation_tournament/models](../../sports_federation_tournament/models).
+- `federation.match` extensions — bracket/linking fields and `action_done()` wiring so knockout brackets auto-advance winners. See [odoo/sports_federation_tournament/models/federation_match.py](../../sports_federation_tournament/models/federation_match.py).
+- `sports_federation_competition_engine` — new progression and template models: `federation.stage.progression` and `federation.tournament.template`; services updated for per-round scheduling and full-bracket construction. See [odoo/sports_federation_competition_engine/models](../../sports_federation_competition_engine/models) and [odoo/sports_federation_competition_engine/services](../../sports_federation_competition_engine/services).
+- `sports_federation_standings` — cross-group ranking helper and `generate_standings()` delegator; standings freeze can trigger `auto_advance` progressions. See [odoo/sports_federation_standings/models/standing.py](../../sports_federation_standings/models/standing.py).
 - Finance passthrough helpers — match-level helper `action_create_venue_finance_event()` to create venue-related finance events (bridge to `sports_federation_finance_bridge`).
 
 What this means for the roadmap

@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import fields, models, tools
 
 
 class FederationReportFinance(models.Model):
@@ -7,20 +7,27 @@ class FederationReportFinance(models.Model):
     _auto = False
     _order = "fee_type_id, state"
 
-    fee_type_id = fields.Many2one("federation.fee.type", string="Fee Type", readonly=True)
-    state = fields.Selection([
-        ("draft", "Draft"),
-        ("confirmed", "Confirmed"),
-        ("settled", "Settled"),
-        ("cancelled", "Cancelled"),
-    ], string="State", readonly=True)
+    fee_type_id = fields.Many2one(
+        "federation.fee.type", string="Fee Type", readonly=True
+    )
+    state = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("confirmed", "Confirmed"),
+            ("settled", "Settled"),
+            ("cancelled", "Cancelled"),
+        ],
+        string="State",
+        readonly=True,
+    )
     event_count = fields.Integer(string="Events", readonly=True)
     total_amount = fields.Float(string="Total Amount", readonly=True)
 
     def init(self):
         """Create SQL view for finance report."""
+        tools.drop_view_if_exists(self.env.cr, self._table)
         self.env.cr.execute("""
-            CREATE OR REPLACE VIEW federation_report_finance AS (
+            CREATE VIEW federation_report_finance AS (
                 SELECT
                     row_number() OVER () AS id,
                     fe.fee_type_id,

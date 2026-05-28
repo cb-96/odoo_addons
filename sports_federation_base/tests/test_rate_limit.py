@@ -34,7 +34,9 @@ class TestFederationRequestRateLimit(TransactionCase):
 
         initial_time = datetime(2026, 4, 18, 12, 0, 0)
         rolled_time = initial_time + timedelta(seconds=61)
-        with patch.object(type(service), "_get_now", side_effect=[initial_time, rolled_time]):
+        with patch.object(
+            type(service), "_get_now", side_effect=[initial_time, rolled_time]
+        ):
             first = service.consume("public_team_feed", "ip:198.51.100.11")
             second = service.consume("public_team_feed", "ip:198.51.100.11")
 

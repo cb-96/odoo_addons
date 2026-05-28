@@ -5,6 +5,7 @@ from odoo.exceptions import UserError, ValidationError
 class FederationStageProgression(models.Model):
     _name = "federation.stage.progression"
     _description = "Stage Progression Rule"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "sequence, id"
 
     name = fields.Char(string="Name", compute="_compute_name", store=True)
@@ -132,6 +133,7 @@ class FederationStageProgression(models.Model):
     def action_execute(self):
         """Execute the progression: read standings and advance teams."""
         import random as _random
+
         for rec in self:
             if rec.state == "executed":
                 raise UserError("This progression rule has already been executed.")
@@ -144,31 +146,49 @@ class FederationStageProgression(models.Model):
             if rec.seeding_method == "random":
                 _random.shuffle(qualified)
             elif rec.seeding_method == "reseed":
-                qualified.sort(key=lambda x: (-x["points"], -x["score_diff"], x["name"]))
+                qualified.sort(
+                    key=lambda x: (-x["points"], -x["score_diff"], x["name"])
+                )
             # keep_rank: already sorted by rank
 
             Participant = self.env["federation.tournament.participant"]
+            existing_target_participants = Participant.search(
+                [
+                    ("tournament_id", "=", rec.tournament_id.id),
+                    ("stage_id", "=", rec.target_stage_id.id),
+                    (
+                        "group_id",
+                        "=",
+                        rec.target_group_id.id if rec.target_group_id else False,
+                    ),
+                ]
+            )
+            next_seed = max(existing_target_participants.mapped("seed") or [0]) + 1
             for idx, entry in enumerate(qualified):
                 team = entry["team"]
                 # Find existing participant or create
-                existing = Participant.search([
-                    ("tournament_id", "=", rec.tournament_id.id),
-                    ("team_id", "=", team.id),
-                ], limit=1)
+                existing = Participant.search(
+                    [
+                        ("tournament_id", "=", rec.tournament_id.id),
+                        ("team_id", "=", team.id),
+                    ],
+                    limit=1,
+                )
                 vals = {
                     "stage_id": rec.target_stage_id.id,
-                    "seed": idx + 1,
+                    "group_id": rec.target_group_id.id or False,
+                    "seed": next_seed + idx,
                     "state": "confirmed",
                 }
-                if rec.target_group_id:
-                    vals["group_id"] = rec.target_group_id.id
                 if existing:
                     existing.write(vals)
                 else:
-                    vals.update({
-                        "tournament_id": rec.tournament_id.id,
-                        "team_id": team.id,
-                    })
+                    vals.update(
+                        {
+                            "tournament_id": rec.tournament_id.id,
+                            "team_id": team.id,
+                        }
+                    )
                     Participant.create(vals)
 
             rec.state = "executed"
@@ -183,50 +203,86 @@ class FederationStageProgression(models.Model):
 
         if self.source_group_id:
             # Single group — read standings for that group
-            standings = Standing.search([
-                ("tournament_id", "=", self.tournament_id.id),
-                ("stage_id", "=", self.source_stage_id.id),
-                ("group_id", "=", self.source_group_id.id),
-                ("state", "in", ("computed", "frozen")),
-            ], limit=1)
+            standings = Standing.search(
+                [
+                    ("tournament_id", "=", self.tournament_id.id),
+                    ("stage_id", "=", self.source_stage_id.id),
+                    ("group_id", "=", self.source_group_id.id),
+                    ("state", "in", ("computed", "frozen")),
+                ],
+                limit=1,
+            )
             if not standings:
                 return []
             lines = standings.line_ids.filtered(
-                lambda l: self.rank_from <= l.rank <= self.rank_to
+                lambda ln: self.rank_from <= ln.rank <= self.rank_to
             ).sorted("rank")
-            return [{
-                "team": l.team_id,
-                "rank": l.rank,
-                "points": l.points,
-                "score_diff": l.score_diff,
-                "name": l.team_id.name,
-            } for l in lines]
+            return [
+                {
+                    "team": ln.team_id,
+                    "rank": ln.rank,
+                    "points": ln.points,
+                    "score_diff": ln.score_diff,
+                    "name": ln.team_id.name,
+                }
+                for ln in lines
+            ]
         else:
-            # Cross-group: collect the specified rank range across ALL groups in the stage
-            groups = self.env["federation.tournament.group"].search([
-                ("stage_id", "=", self.source_stage_id.id),
-            ])
-            all_entries = []
-            for group in groups:
-                standings = Standing.search([
-                    ("tournament_id", "=", self.tournament_id.id),
+            # Cross-group: collect the specified rank range across ALL groups in the stage.
+            # Also handles the no-group case (standings with group_id = False).
+            groups = self.env["federation.tournament.group"].search(
+                [
                     ("stage_id", "=", self.source_stage_id.id),
-                    ("group_id", "=", group.id),
-                    ("state", "in", ("computed", "frozen")),
-                ], limit=1)
-                if not standings:
-                    continue
-                lines = standings.line_ids.filtered(
-                    lambda l: self.rank_from <= l.rank <= self.rank_to
+                ]
+            )
+            all_entries = []
+
+            def _extract_lines(standing_rec):
+                return standing_rec.line_ids.filtered(
+                    lambda ln: self.rank_from <= ln.rank <= self.rank_to
                 ).sorted("rank")
-                for l in lines:
-                    all_entries.append({
-                        "team": l.team_id,
-                        "rank": l.rank,
-                        "points": l.points,
-                        "score_diff": l.score_diff,
-                        "name": l.team_id.name,
-                    })
-            # Sort cross-group by points desc, then goal diff desc, then goals for desc
+
+            def _to_entry(ln):
+                return {
+                    "team": ln.team_id,
+                    "rank": ln.rank,
+                    "points": ln.points,
+                    "score_diff": ln.score_diff,
+                    "name": ln.team_id.name,
+                }
+
+            if groups:
+                for group in groups:
+                    standings = Standing.search(
+                        [
+                            ("tournament_id", "=", self.tournament_id.id),
+                            ("stage_id", "=", self.source_stage_id.id),
+                            ("group_id", "=", group.id),
+                            ("state", "in", ("computed", "frozen")),
+                        ],
+                        limit=1,
+                    )
+                    if not standings:
+                        continue
+                    all_entries.extend(_to_entry(ln) for ln in _extract_lines(standings))
+
+            # Fallback (and no-group case): also check for stage-level standings
+            # (group_id = False). This handles stages without group splits, or
+            # tournaments where standings were computed at stage level rather than
+            # group level.
+            if not all_entries:
+                standings = Standing.search(
+                    [
+                        ("tournament_id", "=", self.tournament_id.id),
+                        ("stage_id", "=", self.source_stage_id.id),
+                        ("group_id", "=", False),
+                        ("state", "in", ("computed", "frozen")),
+                    ],
+                    limit=1,
+                )
+                if standings:
+                    all_entries.extend(_to_entry(ln) for ln in _extract_lines(standings))
+
+            # Sort cross-group by points desc, then goal diff desc, then name asc
             all_entries.sort(key=lambda x: (-x["points"], -x["score_diff"], x["name"]))
             return all_entries

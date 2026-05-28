@@ -28,7 +28,9 @@ class FederationSeason(models.Model):
     target_club_count = fields.Integer(string="Target Clubs", default=0)
     target_team_count = fields.Integer(string="Target Teams", default=0)
     target_tournament_count = fields.Integer(string="Target Tournaments", default=0)
-    target_participant_count = fields.Integer(string="Target Tournament Participants", default=0)
+    target_participant_count = fields.Integer(
+        string="Target Tournament Participants", default=0
+    )
     notes = fields.Text(string="Notes")
 
     registration_ids = fields.One2many(
@@ -37,20 +39,58 @@ class FederationSeason(models.Model):
     registration_count = fields.Integer(
         string="Registration Count", compute="_compute_registration_count", store=True
     )
+    confirmed_registration_count = fields.Integer(
+        string="Confirmed Registrations",
+        compute="_compute_registration_count",
+        store=True,
+    )
+    pending_registration_count = fields.Integer(
+        string="Pending Registrations",
+        compute="_compute_registration_count",
+        store=True,
+    )
 
-    _code_unique = models.Constraint('unique (code)', 'Season code must be unique.')
+    _code_unique = models.Constraint("unique (code)", "Season code must be unique.")
 
-    @api.depends("registration_ids")
+    @api.depends("registration_ids", "registration_ids.state")
     def _compute_registration_count(self):
-        """Compute registration count."""
+        """Compute total, confirmed, and pending registration counts."""
         for rec in self:
             rec.registration_count = len(rec.registration_ids)
+            rec.confirmed_registration_count = len(
+                rec.registration_ids.filtered(lambda r: r.state == "confirmed")
+            )
+            rec.pending_registration_count = len(
+                rec.registration_ids.filtered(lambda r: r.state == "draft")
+            )
 
     def action_view_registrations(self):
         """Execute the view registrations action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('sports_federation_base.federation_season_registration_action')
-        action['domain'] = [('season_id', '=', self.id)]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_base.federation_season_registration_action"
+        )
+        action["domain"] = [("season_id", "=", self.id)]
+        return action
+
+    def action_view_confirmed_registrations(self):
+        """Open confirmed registrations for this season."""
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_base.federation_season_registration_action"
+        )
+        action["domain"] = [("season_id", "=", self.id), ("state", "=", "confirmed")]
+        action["display_name"] = _("Confirmed Registrations")
+        return action
+
+    def action_view_pending_registrations(self):
+        """Open draft/pending registrations for this season."""
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_base.federation_season_registration_action"
+        )
+        action["domain"] = [("season_id", "=", self.id), ("state", "=", "draft")]
+        action["display_name"] = _("Pending Registrations")
         return action
 
     @api.constrains("date_start", "date_end")
@@ -76,11 +116,15 @@ class FederationSeason(models.Model):
                 rec.target_participant_count,
             ]
             if any(value < 0 for value in target_values):
-                raise ValidationError(_("Planning target values must be zero or greater."))
+                raise ValidationError(
+                    _("Planning target values must be zero or greater.")
+                )
 
     def action_open(self):
         """Execute the open action."""
-        invalid_seasons = self.filtered(lambda rec: rec.state != "draft" or not rec.active)
+        invalid_seasons = self.filtered(
+            lambda rec: rec.state != "draft" or not rec.active
+        )
         if invalid_seasons:
             raise ValidationError(_("Only active draft seasons can be opened."))
         self.write({"state": "open"})
@@ -110,7 +154,9 @@ class FederationSeason(models.Model):
         """Execute the archive action."""
         active_seasons = self.filtered(lambda rec: rec.state == "open")
         if active_seasons:
-            raise ValidationError(_("Close or cancel an open season before archiving it."))
+            raise ValidationError(
+                _("Close or cancel an open season before archiving it.")
+            )
         self.write({"active": False})
         return True
 

@@ -9,7 +9,6 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 GLOBAL_REVIEW_FILES = {
     "TECHNICAL_NOTE.md",
@@ -32,7 +31,7 @@ def _normalize_repo_path(path_text: str) -> str:
     if not path:
         return ""
     if path.startswith("addons/"):
-        path = path[len("addons/"):]
+        path = path[len("addons/") :]
     return path.lstrip("./")
 
 
@@ -59,8 +58,14 @@ def _changed_files_from_git(base_ref: str | None, head_ref: str) -> list[str]:
         check=False,
     )
     if result.returncode != 0:
-        raise SystemExit(result.stderr.strip() or "Unable to resolve changed files from git.")
-    return [_normalize_repo_path(line) for line in result.stdout.splitlines() if _normalize_repo_path(line)]
+        raise SystemExit(
+            result.stderr.strip() or "Unable to resolve changed files from git."
+        )
+    return [
+        _normalize_repo_path(line)
+        for line in result.stdout.splitlines()
+        if _normalize_repo_path(line)
+    ]
 
 
 def _find_sensitive_changes(changed_files: list[str]) -> dict[str, set[str]]:
@@ -76,7 +81,9 @@ def _find_sensitive_changes(changed_files: list[str]) -> dict[str, set[str]]:
     return sensitive
 
 
-def _has_review_evidence(module_name: str, surfaces: set[str], changed_files: set[str]) -> bool:
+def _has_review_evidence(
+    module_name: str, surfaces: set[str], changed_files: set[str]
+) -> bool:
     if changed_files & GLOBAL_REVIEW_FILES:
         return True
     if f"{module_name}/README.md" in changed_files:
@@ -91,7 +98,9 @@ def _has_review_evidence(module_name: str, surfaces: set[str], changed_files: se
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-ref", help="Explicit git base ref for diff collection.")
-    parser.add_argument("--head-ref", default="HEAD", help="Git head ref for diff collection.")
+    parser.add_argument(
+        "--head-ref", default="HEAD", help="Git head ref for diff collection."
+    )
     parser.add_argument(
         "--files",
         nargs="*",
@@ -99,7 +108,11 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    changed_files = [_normalize_repo_path(path) for path in (args.files or []) if _normalize_repo_path(path)]
+    changed_files = [
+        _normalize_repo_path(path)
+        for path in (args.files or [])
+        if _normalize_repo_path(path)
+    ]
     if not changed_files:
         changed_files = _changed_files_from_git(args.base_ref, args.head_ref)
     if not changed_files:
@@ -112,7 +125,9 @@ def main() -> int:
     for module_name, surfaces in sorted(sensitive_changes.items()):
         if _has_review_evidence(module_name, surfaces, changed_file_set):
             continue
-        surface_labels = ", ".join(SENSITIVE_SURFACES[surface] for surface in sorted(surfaces))
+        surface_labels = ", ".join(
+            SENSITIVE_SURFACES[surface] for surface in sorted(surfaces)
+        )
         failures.append(
             f"- {module_name}: changed {surface_labels} without touching a migration script, module README, "
             "TECHNICAL_NOTE.md, RELEASE_RUNBOOK.md, RELEASE_TRAIN.md, or the route inventory docs."

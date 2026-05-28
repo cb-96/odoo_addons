@@ -113,8 +113,8 @@ class FederationTournamentRegistration(models.Model):
     )
 
     _team_tournament_unique = models.Constraint(
-        'UNIQUE(team_id, tournament_id)',
-        'A team can only submit one registration request per tournament.',
+        "UNIQUE(team_id, tournament_id)",
+        "A team can only submit one registration request per tournament.",
     )
 
     @api.model_create_multi
@@ -125,9 +125,12 @@ class FederationTournamentRegistration(models.Model):
 
         for vals in vals_list:
             if vals.get("name", "New") == "New":
-                vals["name"] = self.env["ir.sequence"].sudo().next_by_code(
-                    "federation.tournament.registration"
-                ) or "New"
+                vals["name"] = (
+                    self.env["ir.sequence"]
+                    .sudo()
+                    .next_by_code("federation.tournament.registration")
+                    or "New"
+                )
         return super().create(vals_list)
 
     @api.depends("tournament_id", "team_id")
@@ -176,9 +179,7 @@ class FederationTournamentRegistration(models.Model):
             return False
 
         intro = escape(
-            _(
-                "Only teams that can currently be selected appear in the Team dropdown."
-            )
+            _("Only teams that can currently be selected appear in the Team dropdown.")
         )
         items = "".join(
             "<li><strong>{team}</strong> ({club}): {reason}</li>".format(
@@ -199,7 +200,9 @@ class FederationTournamentRegistration(models.Model):
         return self.tournament_id.get_team_eligibility_error(team)
 
     @api.model
-    def _portal_submit_registration_request(self, tournament, team, notes=None, user=None):
+    def _portal_submit_registration_request(
+        self, tournament, team, notes=None, user=None
+    ):
         """Create and submit a portal-managed tournament registration request."""
         user = user or self.env.user
         PortalPrivilege = self.env["federation.portal.privilege"]
@@ -212,12 +215,10 @@ class FederationTournamentRegistration(models.Model):
         if not team.exists():
             raise ValidationError(_("Select a valid team before continuing."))
 
-        clubs = (
-            PortalPrivilege.elevate(
-                self.env["federation.club.representative"],
-                user=user,
-            )._get_clubs_for_user(user=user)
-        )
+        clubs = PortalPrivilege.elevate(
+            self.env["federation.club.representative"],
+            user=user,
+        )._get_clubs_for_user(user=user)
         if team.club_id not in clubs:
             raise AccessError(_("You can only register your own teams."))
 
@@ -268,14 +269,26 @@ class FederationTournamentRegistration(models.Model):
             },
             user=user,
         )
-        PortalPrivilege.portal_call(registration, "action_submit", user=user)
+        PortalPrivilege.portal_call(
+            registration,
+            "action_submit",
+            scope_domain=[
+                ("team_id", "=", team.id),
+                ("tournament_id", "=", tournament.id),
+            ],
+            user=user,
+        )
         return registration
 
     @api.onchange("tournament_id")
     def _onchange_tournament_id(self):
         """Handle onchange tournament ID."""
         domain = [("id", "in", self.available_team_ids.ids)]
-        if self.team_id and self.tournament_id and self.team_id not in self.available_team_ids:
+        if (
+            self.team_id
+            and self.tournament_id
+            and self.team_id not in self.available_team_ids
+        ):
             warning = {
                 "title": _("Ineligible Team"),
                 "message": self._get_team_unavailability_reason(self.team_id),

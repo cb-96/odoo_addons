@@ -22,6 +22,9 @@ class FederationTournamentRound(models.Model):
         for round_record in self.filtered(lambda rec: rec.venue_id):
             for match in round_record.match_ids:
                 match_vals = {"venue_id": round_record.venue_id.id}
-                if match.playing_area_id and match.playing_area_id.venue_id != round_record.venue_id:
+                if (
+                    match.playing_area_id
+                    and match.playing_area_id.venue_id != round_record.venue_id
+                ):
                     match_vals["playing_area_id"] = False
                 match.write(match_vals)

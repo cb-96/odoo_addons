@@ -1,3 +1,4 @@
+from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase
 
 
@@ -61,29 +62,41 @@ class TestTournamentWorkspace(TransactionCase):
             }
         )
 
-        cls.user_a = cls.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Workspace User A",
-                "login": "workspace.a@example.com",
-                "email": "workspace.a@example.com",
-                "group_ids": [(6, 0, [cls.portal_group.id])],
-            }
+        cls.user_a = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Workspace User A",
+                    "login": "workspace.a@example.com",
+                    "email": "workspace.a@example.com",
+                    "group_ids": [(6, 0, [cls.portal_group.id])],
+                }
+            )
         )
-        cls.user_b = cls.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Workspace User B",
-                "login": "workspace.b@example.com",
-                "email": "workspace.b@example.com",
-                "group_ids": [(6, 0, [cls.portal_group.id])],
-            }
+        cls.user_b = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Workspace User B",
+                    "login": "workspace.b@example.com",
+                    "email": "workspace.b@example.com",
+                    "group_ids": [(6, 0, [cls.portal_group.id])],
+                }
+            )
         )
-        cls.coach_user = cls.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Workspace Coach",
-                "login": "workspace.coach@example.com",
-                "email": "workspace.coach@example.com",
-                "group_ids": [(6, 0, [cls.portal_group.id])],
-            }
+        cls.coach_user = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Workspace Coach",
+                    "login": "workspace.coach@example.com",
+                    "email": "workspace.coach@example.com",
+                    "group_ids": [(6, 0, [cls.portal_group.id])],
+                }
+            )
         )
 
         cls.env["federation.club.representative"].create(
@@ -145,6 +158,17 @@ class TestTournamentWorkspace(TransactionCase):
                 "gender": "male",
             }
         )
+        cls.closed_tournament = cls.env["federation.tournament"].create(
+            {
+                "name": "Workspace Closed Tournament",
+                "code": "WSCT",
+                "season_id": cls.season.id,
+                "date_start": "2025-08-01",
+                "state": "closed",
+                "category": "senior",
+                "gender": "male",
+            }
+        )
 
         cls.open_registration = cls.env["federation.tournament.registration"].create(
             {
@@ -165,6 +189,16 @@ class TestTournamentWorkspace(TransactionCase):
         cls.live_registration.action_submit()
         cls.live_registration.action_confirm()
         cls.participant = cls.live_registration.participant_id
+
+        cls.competition_roster = cls.participant._get_readiness_roster()
+        cls.roster_line = cls.env["federation.team.roster.line"].create(
+            {
+                "roster_id": cls.competition_roster.id,
+                "player_id": cls.player_a.id,
+                "status": "active",
+            }
+        )
+        cls.competition_roster.action_activate()
         cls.participant.action_confirm()
 
         cls.generic_roster = cls.env["federation.team.roster"].create(
@@ -174,30 +208,19 @@ class TestTournamentWorkspace(TransactionCase):
                 "season_id": cls.season.id,
             }
         )
-        cls.competition_roster = cls.env["federation.team.roster"].create(
-            {
-                "name": "Workspace Competition Roster",
-                "team_id": cls.team_a.id,
-                "season_id": cls.season.id,
-                "competition_id": cls.competition.id,
-            }
-        )
-        cls.roster_line = cls.env["federation.team.roster.line"].create(
-            {
-                "roster_id": cls.competition_roster.id,
-                "player_id": cls.player_a.id,
-            }
-        )
-        cls.competition_roster.action_activate()
 
-        cls.future_match = cls.env["federation.match"].create(
-            {
-                "tournament_id": cls.live_tournament.id,
-                "home_team_id": cls.team_a.id,
-                "away_team_id": cls.team_b.id,
-                "date_scheduled": "2025-07-10 18:00:00",
-                "state": "scheduled",
-            }
+        cls.future_match = (
+            cls.env["federation.match"]
+            .with_context(skip_auto_match_sheets=True)
+            .create(
+                {
+                    "tournament_id": cls.live_tournament.id,
+                    "home_team_id": cls.team_a.id,
+                    "away_team_id": cls.team_b.id,
+                    "date_scheduled": "2025-07-10 18:00:00",
+                    "state": "scheduled",
+                }
+            )
         )
         cls.future_sheet = cls.env["federation.match.sheet"].create(
             {
@@ -217,17 +240,21 @@ class TestTournamentWorkspace(TransactionCase):
             }
         )
 
-        cls.past_match = cls.env["federation.match"].create(
-            {
-                "tournament_id": cls.live_tournament.id,
-                "home_team_id": cls.team_a.id,
-                "away_team_id": cls.team_b.id,
-                "date_scheduled": "2025-07-05 18:00:00",
-                "state": "done",
-                "home_score": 2,
-                "away_score": 1,
-                "result_state": "submitted",
-            }
+        cls.past_match = (
+            cls.env["federation.match"]
+            .with_context(skip_auto_match_sheets=True)
+            .create(
+                {
+                    "tournament_id": cls.live_tournament.id,
+                    "home_team_id": cls.team_a.id,
+                    "away_team_id": cls.team_b.id,
+                    "date_scheduled": "2025-07-05 18:00:00",
+                    "state": "done",
+                    "home_score": 2,
+                    "away_score": 1,
+                    "result_state": "submitted",
+                }
+            )
         )
         cls.past_sheet = cls.env["federation.match.sheet"].create(
             {
@@ -288,24 +315,48 @@ class TestTournamentWorkspace(TransactionCase):
         self.assertEqual(live_entry["pending_match_day_count"], 1)
         self.assertEqual(len(live_entry["upcoming_match_sheets"]), 1)
         self.assertEqual(live_entry["result_follow_up_count"], 1)
-        self.assertEqual(live_entry["result_follow_up_rows"][0]["match"], self.past_match)
-        self.assertEqual(live_entry["result_follow_up_rows"][0]["sheet"], self.past_sheet)
+        self.assertEqual(
+            live_entry["result_follow_up_rows"][0]["match"], self.past_match
+        )
+        self.assertEqual(
+            live_entry["result_follow_up_rows"][0]["sheet"], self.past_sheet
+        )
 
     def test_workspace_entry_lookup_enforces_portal_scope(self):
         """Test that workspace entry lookup enforces portal scope."""
-        own_entry = self.env["federation.tournament"]._portal_get_workspace_entry_for_user(
+        own_entry = self.env[
+            "federation.tournament"
+        ]._portal_get_workspace_entry_for_user(
             self.live_tournament.id,
             self.team_a.id,
             user=self.user_a,
         )
         self.assertTrue(own_entry)
 
-        other_team_entry = self.env["federation.tournament"]._portal_get_workspace_entry_for_user(
+        other_team_entry = self.env[
+            "federation.tournament"
+        ]._portal_get_workspace_entry_for_user(
             self.live_tournament.id,
             self.team_b.id,
             user=self.user_a,
         )
         self.assertFalse(other_team_entry)
+
+    def test_workspace_entry_builder_blocks_direct_cross_team_access(self):
+        """Test that direct workspace reads still enforce the caller's team scope."""
+        with self.assertRaises(AccessError):
+            self.live_tournament._portal_get_workspace_entry(
+                self.team_b,
+                user=self.user_a,
+            )
+
+    def test_workspace_entry_builder_blocks_closed_tournaments(self):
+        """Test that direct workspace reads stay limited to active tournaments."""
+        with self.assertRaises(AccessError):
+            self.closed_tournament._portal_get_workspace_entry(
+                self.team_a,
+                user=self.user_a,
+            )
 
     def test_team_scoped_coach_only_sees_assigned_team_workspaces(self):
         """Test that team scoped coach only sees assigned team workspaces."""

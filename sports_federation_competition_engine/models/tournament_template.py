@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import fields, models
 from odoo.exceptions import UserError
 
 
@@ -25,7 +25,9 @@ class FederationTournamentTemplate(models.Model):
         """Apply the template to a tournament: create stages, groups, and progressions."""
         self.ensure_one()
         if tournament.stage_ids:
-            raise UserError("Tournament already has stages. Clear them first or create a new tournament.")
+            raise UserError(
+                "Tournament already has stages. Clear them first or create a new tournament."
+            )
 
         Stage = self.env["federation.tournament.stage"]
         Group = self.env["federation.tournament.group"]
@@ -33,37 +35,43 @@ class FederationTournamentTemplate(models.Model):
 
         stage_map = {}  # line sequence → created stage record
         for line in self.line_ids.sorted("sequence"):
-            stage = Stage.create({
-                "name": line.stage_name,
-                "tournament_id": tournament.id,
-                "sequence": line.sequence,
-                "stage_type": line.stage_type,
-            })
+            stage = Stage.create(
+                {
+                    "name": line.stage_name,
+                    "tournament_id": tournament.id,
+                    "sequence": line.sequence,
+                    "stage_type": line.stage_type,
+                }
+            )
             stage_map[line.id] = stage
 
             for g in range(line.group_count):
-                Group.create({
-                    "name": f"Group {chr(65 + g)}",
-                    "stage_id": stage.id,
-                    "sequence": g + 1,
-                    "max_participants": line.teams_per_group or 0,
-                })
+                Group.create(
+                    {
+                        "name": f"Group {chr(65 + g)}",
+                        "stage_id": stage.id,
+                        "sequence": g + 1,
+                        "max_participants": line.teams_per_group or 0,
+                    }
+                )
 
         # Create progression rules
         for rule in self.progression_ids.sorted("sequence"):
             source = stage_map.get(rule.source_line_id.id)
             target = stage_map.get(rule.target_line_id.id)
             if source and target:
-                Progression.create({
-                    "tournament_id": tournament.id,
-                    "source_stage_id": source.id,
-                    "target_stage_id": target.id,
-                    "rank_from": rule.rank_from,
-                    "rank_to": rule.rank_to,
-                    "seeding_method": rule.seeding_method,
-                    "auto_advance": rule.auto_advance,
-                    "sequence": rule.sequence,
-                })
+                Progression.create(
+                    {
+                        "tournament_id": tournament.id,
+                        "source_stage_id": source.id,
+                        "target_stage_id": target.id,
+                        "rank_from": rule.rank_from,
+                        "rank_to": rule.rank_to,
+                        "seeding_method": rule.seeding_method,
+                        "auto_advance": rule.auto_advance,
+                        "sequence": rule.sequence,
+                    }
+                )
 
         return stage_map
 

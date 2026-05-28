@@ -7,7 +7,6 @@ import re
 import sys
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TRAIN_FILES = [
     "RELEASE_TRAIN.md",
@@ -40,10 +39,14 @@ def main() -> int:
         metadata = _read_metadata(path)
         train_value = metadata.get("Release train", "")
         if not train_value:
-            failures.append(f"{rel_path}: missing 'Release train:' metadata near the top of the file")
+            failures.append(
+                f"{rel_path}: missing 'Release train:' metadata near the top of the file"
+            )
             continue
         if not TRAIN_PATTERN.match(train_value):
-            failures.append(f"{rel_path}: release train must use YYYY.MM, found '{train_value}'")
+            failures.append(
+                f"{rel_path}: release train must use YYYY.MM, found '{train_value}'"
+            )
             continue
         train_values[rel_path] = train_value
 
@@ -51,7 +54,9 @@ def main() -> int:
     if len(unique_trains) > 1:
         failures.append(
             "Release train metadata must match across release surfaces: "
-            + ", ".join(f"{path}={train}" for path, train in sorted(train_values.items()))
+            + ", ".join(
+                f"{path}={train}" for path, train in sorted(train_values.items())
+            )
         )
 
     if failures:

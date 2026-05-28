@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="portal_tournament_operations_page" name="Tournament Operations">
+        <t t-call="portal.portal_layout">
+            <div class="container py-4">
+                <div class="row mb-4 align-items-end">
+                    <div class="col-lg-8">
+                        <a href="/my/tournament-workspaces" class="text-decoration-none small text-muted">
+                            <i class="fa fa-chevron-left me-1"/> Back to Club Operations Workspace
+                        </a>
+                        <h2 class="mt-2 mb-1">
+                            <i class="fa fa-tasks me-2"/>
+                            Live Operations Board
+                        </h2>
+                        <p class="text-muted mb-0">
+                            <strong><t t-esc="tournament.name"/></strong>
+                            <t t-if="tournament.location"> · <t t-esc="tournament.location"/></t>
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <span class="badge rounded-pill text-bg-dark me-2">
+                            <t t-esc="tournament.get_portal_state_label()"/>
+                        </span>
+                        <a href="/my/tournament-workspaces" class="btn btn-outline-secondary btn-sm">
+                            <i class="fa fa-sitemap me-1"/> Club Operations Workspace
+                        </a>
+                    </div>
+                </div>
+
+                <div class="alert alert-info" role="status">
+                    <strong>Use this during play:</strong>
+                    stay in the Club Operations Workspace or preparation queue for roster and sheet preparation, switch here once matches are live, and return to the result follow-up queue after full time if a score still needs review.
+                </div>
+
+                <noscript>
+                    <div class="alert alert-warning" role="alert">
+                        JavaScript is required to use the live operations board.
+                    </div>
+                </noscript>
+
+                <div id="sf_tournament_operations_root"
+                     class="o_fed_tournament_operations_root"
+                     t-att-data-load-url="operations_load_path"
+                     t-att-data-action-url-template="operations_action_path_template"
+                     t-att-data-poll-interval-ms="operations_poll_interval_ms"
+                     t-att-data-tournament-id="tournament.id">
+                    <div class="alert alert-info mb-0" role="status">
+                        <i class="fa fa-circle-o-notch me-2"/>
+                        Loading tournament operations…
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>

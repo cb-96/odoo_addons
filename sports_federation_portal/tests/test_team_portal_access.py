@@ -25,13 +25,17 @@ class TestTeamPortalAccess(TransactionCase):
                 "code": "OPTC",
             }
         )
-        cls.user = cls.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Portal Team User",
-                "login": "portal.team.user@example.com",
-                "email": "portal.team.user@example.com",
-                "group_ids": [(6, 0, [cls.portal_group.id])],
-            }
+        cls.user = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Portal Team User",
+                    "login": "portal.team.user@example.com",
+                    "email": "portal.team.user@example.com",
+                    "group_ids": [(6, 0, [cls.portal_group.id])],
+                }
+            )
         )
         cls.env["federation.club.representative"].create(
             {

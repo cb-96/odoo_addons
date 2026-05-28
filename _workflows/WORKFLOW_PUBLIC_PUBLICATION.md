@@ -1,137 +1,202 @@
 # Workflow: Public Publication
 
-Publishing tournament information, standings, and results to the public website.
+Publishing tournaments, standings, schedules, and editorial coverage to the
+public website.
 
 ## Overview
 
-The federation's public website allows fans, club officials, and media to view
-competition information without logging in. This workflow covers how tournament
-data is made publicly accessible through opt-in publication flags, publication identifiers,
-and public page controllers.
+The federation website exposes published competition coverage without requiring
+login. Publication is slug-first and tournament-first: operators publish a
+tournament, control which result and standing surfaces are visible, and can add
+editorial content around seasons, tournaments, or teams without editing website
+templates.
+
+Readiness handoff for publication should reuse the canonical chain from
+registration through approved standings. Publication surfaces should add only
+the final publication checklist, not duplicate every upstream prerequisite
+explanation.
 
 ## Modules Involved
 
 | Module | Role |
 |--------|------|
-| `sports_federation_public_site` | Publication fields, website controllers, templates |
-| `sports_federation_tournament` | Tournament and match data |
+| `sports_federation_public_site` | Publication fields, editorial items, website controllers, templates |
+| `sports_federation_tournament` | Tournament, match, and participant data |
 | `sports_federation_standings` | Standings data |
-| `sports_federation_result_control` | Approved results |
-| `sports_federation_notifications` | Publication emails to participating clubs/teams |
-| `sports_federation_venues` | Venue information on match pages |
+| `sports_federation_result_control` | Approved results only |
+| `sports_federation_notifications` | Tournament-publication emails |
+| `sports_federation_venues` | Venue data on schedule pages |
 | `website` | Odoo website framework |
 
 ## Step-by-Step Flow
 
-### 1. Tournament Preparation
+### 1. Tournament Publication Setup
 
 **Actor**: Federation administrator
 **Module**: `sports_federation_public_site`
 
 Before publishing, ensure the tournament has:
-1. A completed setup with stages, groups, and matches.
-2. At least some matches completed with approved results.
-3. Computed standings (for standings pages).
 
-### 2. Publication Configuration
+1. a completed setup with matches and public-facing text
+2. approved results if the results page should be visible
+3. computed standings if the standings page should be visible
+
+Then configure the public-site fields on the tournament:
+
+- `website_published`
+- `public_slug`
+- `public_description`
+- `public_featured`
+- `public_editorial_summary`
+- `public_pinned_announcement`
+- `show_public_results`
+- `show_public_standings`
+
+The first transition from unpublished to published sends the tournament
+publication notification to participating club and team contacts.
+
+The tournament Website tab now also surfaces the next unmet prerequisite
+directly on the form: whether the tournament itself is still unpublished,
+whether standings do not exist yet, or whether standings exist but are not yet
+published or visible.
+
+### 2. Standings And Results Visibility
 
 **Actor**: Federation administrator
+**Modules**: `sports_federation_standings`, `sports_federation_result_control`
+
+1. Publish the standings record itself with `website_published = True`.
+2. Optionally set `public_title` for the public standings page.
+3. Remember the public results page only shows approved results.
+4. Use the standings form and the tournament Website tab together for the final
+  handoff: standings pages explain whether approved results are still pending,
+  while the tournament Website tab explains whether the public blocker is the
+  standings record or the tournament visibility toggles.
+4. Public participant lists exclude withdrawn tournament participants.
+
+### 3. Editorial Publication Workflow
+
+**Actor**: Federation administrator or communications staff
 **Module**: `sports_federation_public_site`
 
-1. Open the tournament record.
-2. Configure public-site fields:
-   - `website_published` — Set to `True` to make visible.
-   - `public_slug` — URL-friendly public identifier (e.g. `national-league-2025`). Keep it unique across tournaments.
-   - `public_description` — Rich-text HTML description for the public page.
-   - `show_public_results` — Toggle match results visibility.
-   - `show_public_standings` — Toggle standings visibility.
-3. When `website_published` changes from `False` to `True`, the notification
-   dispatcher emails the participating club and team contacts so publication is
-   visible outside the back office.
+Editorial items can be anchored to a season, tournament, or team and use the
+state machine below:
 
-### 3. Standings Publication
+`draft` → `scheduled` → `published` → `archived`
 
-**Actor**: Federation administrator
-**Module**: `sports_federation_standings`
+Operator actions:
 
-1. Ensure standings are computed and verified.
-2. Set `website_published = True` on the standings record.
-3. Optionally set `public_title` for display.
+1. **Schedule** — allowed only from `draft`, and only when `publish_start` is set.
+2. **Publish Now** — allowed from `draft` or `scheduled`.
+3. **Archive** — allowed from `scheduled` or `published`.
+4. **Reset to Draft** — allowed from `scheduled` or `archived`.
+
+Statusbar behavior:
+
+- The form statusbar shows the active publication pipeline:
+  `draft`, `scheduled`, `published`.
+- `archived` is still a real record state, but operators reach it and leave it
+  through explicit actions and search filters rather than as a visible statusbar
+  stop.
+
+Visibility guards:
+
+- Editorial items must be `active`.
+- `draft` and `archived` items are never public.
+- `scheduled` and `published` items are only public inside the
+  `publish_start` / `publish_end` window.
 
 ### 4. Public Pages Go Live
 
 **Actor**: System (automatic)
 **Module**: `sports_federation_public_site`
 
-Once published, the following pages become available:
+Canonical public surfaces include:
 
 | URL | Content |
 |-----|---------|
-| `/competitions` | List of all published tournaments |
-| `/competitions/<tournament>` | Tournament detail page with description |
-| `/competitions/<tournament>/standings` | Standings table (if enabled) |
-| `/competitions/<tournament>/results` | Match results (if enabled, only approved) |
-| `/competitions/<tournament>/schedule` | Upcoming fixtures |
+| `/tournaments` | Main tournament hub with featured, live, recent, and archived sections |
+| `/tournaments/<slug>` | Canonical tournament overview page |
+| `/tournaments/<slug>/teams` | Published participant list excluding withdrawn entries |
+| `/tournaments/<slug>/standings` | Public standings page when enabled |
+| `/tournaments/<slug>/results` | Approved public results when enabled |
+| `/tournaments/<slug>/schedule` | Upcoming fixtures |
+| `/tournaments/<slug>/bracket` | Public bracket view when bracket data exists |
+| `/tournaments/<slug>/schedule.ics` | Tournament schedule calendar export |
+| `/api/v1/tournaments/<slug>/feed` | Stable v1 JSON feed |
+| `/seasons/<slug>` | Season landing page with editorial and tournament aggregation |
+| `/teams/<slug>` | Public team profile page |
+| `/teams/<slug>/schedule` | Team-centric grouped upcoming schedule |
+| `/teams/<slug>/results` | Team-centric recent approved results |
+| `/teams/<slug>/schedule.ics` | Team schedule calendar export |
+| `/api/v1/teams/<slug>/feed` | Stable v1 team follow feed |
 
-All routes use `auth="public"` — no login required.
+Older `/competitions` and numeric routes remain as compatibility paths, but the
+authoritative public URLs are the slug-based `/tournaments/...` routes.
+Compatibility routes only redirect while the tournament still matches the
+relevant publication guard; unpublished tournaments fail closed instead of
+resolving through direct slug or numeric paths. Season detail routes apply the
+same fail-closed rule for both `/seasons/<slug>` and numeric `/season/<id>`
+compatibility paths, and team profile/follow routes only resolve teams that
+still have a published competition footprint.
 
-### 5. Content Updates
+### 5. Ongoing Updates
 
 **Actor**: Federation administrator
 
 As the tournament progresses:
-1. New match results are approved via the result pipeline.
-2. Standings are recomputed and published.
-3. Public pages automatically reflect the latest approved data.
-4. Schedule pages show upcoming fixtures.
-5. Publication emails are only sent on the publish transition itself; later
-   content updates reuse the live public pages instead of re-emailing everyone.
 
-### 6. End-of-Season
+1. Approved results automatically feed the public result surfaces.
+2. Recomputed standings refresh public tables.
+3. Featured, live, recent, and archived hub sections update from current data.
+4. Publication emails are only sent on the publish transition itself, not on
+   every later content change.
+
+### 6. Archive And Removal
 
 **Actor**: Federation administrator
 
-1. After the tournament concludes, final standings and results remain published.
-2. To remove from public view, set `website_published = False`.
-3. Historical tournament pages can remain for archival purposes.
+1. Published tournaments in `closed` or `cancelled` move into the public archive
+   sections while `website_published` remains enabled.
+2. Setting `website_published = False` removes public access immediately.
+3. Editorial items can be archived without unpublishing the tournament itself.
 
 ## Publication Checklist
 
 | Item | Required | Module |
 |------|----------|--------|
-| Tournament exists with matches | Yes | `tournament` |
-| Results approved | Yes (for results page) | `result_control` |
-| Standings computed & published | Yes (for standings page) | `standings` |
-| `website_published = True` on tournament | Yes | `public_site` |
+| Tournament exists and is website-published | Yes | `public_site` |
 | `public_slug` set and unique | Yes | `public_site` |
-| `show_public_results` toggled | Optional | `public_site` |
-| `show_public_standings` toggled | Optional | `public_site` |
-| Standing records published | Yes (for standings page) | `standings` |
+| Approved results available | Yes, for results page | `result_control` |
+| Tournament results visibility enabled | Optional | `public_site` |
+| Standings record website-published | Yes, for standings page | `standings` |
+| Tournament standings visibility enabled | Optional | `public_site` |
+| Editorial item linked to season/tournament/team | Yes, for editorial content | `public_site` |
+| Editorial item publish window valid | Yes, when scheduling | `public_site` |
 
-## Page Templates
+## Exception and Recovery Model
 
-The module provides QWeb website templates for:
-- **Competition list** — Card/grid layout of published tournaments
-- **Tournament detail** — Name, description, dates, and navigation
-- **Standings table** — Ranked table with points, wins, draws, losses, goal stats
-- **Results page** — Completed match list with scores
-- **Schedule page** — Upcoming match list with dates and venues
-
-All templates are responsive and follow Odoo website styling conventions.
+- Governance Override is the canonical exception engine when an operator needs
+  an approved exception path.
+- If results are disputed or corrected after publication, treat public
+  visibility as a recovery loop: rollback visibility if required, resolve the
+  dispute and approval chain, then republish standings/tournament surfaces from
+  the owning records.
 
 ## Access Control
 
 | Access | Level |
 |--------|-------|
 | Public pages | No authentication required |
-| Publication settings | Federation administrator only |
-| Data changes | Only by backend users through standard modules |
+| Publication settings and editorial actions | Federation administrator or owning backend staff |
+| Data changes | Backend users only |
 
-Public pages are **read-only snapshots** of backend data. Visitors cannot modify
-any data through the public site.
+Public pages are read-only snapshots. Controllers resolve tournament, season,
+and team records through publication- and visibility-scoped queries before
+redirects, rendering, or feed and registration reads.
 
 ## Related Workflows
 
-- [Tournament Lifecycle](WORKFLOW_TOURNAMENT_LIFECYCLE.md) — tournament must exist and have data
-- [Result Pipeline](WORKFLOW_RESULT_PIPELINE.md) — results must be approved before publication
-- [Season Registration](WORKFLOW_SEASON_REGISTRATION.md) — registered clubs appear in tournament pages
+- [Tournament Lifecycle](WORKFLOW_TOURNAMENT_LIFECYCLE.md) — tournament setup and closure
+- [Result Pipeline](WORKFLOW_RESULT_PIPELINE.md) — result approval before publication
+- [Season Registration](WORKFLOW_SEASON_REGISTRATION.md) — published seasons and club context

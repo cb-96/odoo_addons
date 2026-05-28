@@ -1,12 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Website menu: Tournaments -->
-    <record id="menu_website_tournaments" model="website.menu">
-        <field name="name">Tournaments</field>
-        <field name="url">/tournaments</field>
-        <field name="sequence" eval="50"/>
-    </record>
+    <!-- NOTE: The Tournaments top-level website menu is defined in
+         sports_federation_public_site (menu_website_tournaments).
+         Portal sub-items reference it from that module. -->
 
     <!-- Backend menu for portal module -->
     <menuitem id="menu_federation_portal_root"

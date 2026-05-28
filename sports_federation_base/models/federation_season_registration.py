@@ -1,5 +1,4 @@
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
 
 
 class FederationSeasonRegistration(models.Model):
@@ -10,13 +9,25 @@ class FederationSeasonRegistration(models.Model):
 
     name = fields.Char(string="Reference", readonly=True, copy=False, default="New")
     season_id = fields.Many2one(
-        "federation.season", string="Season", required=True, tracking=True, ondelete="cascade"
+        "federation.season",
+        string="Season",
+        required=True,
+        tracking=True,
+        ondelete="cascade",
     )
     team_id = fields.Many2one(
-        "federation.team", string="Team", required=True, tracking=True, ondelete="cascade"
+        "federation.team",
+        string="Team",
+        required=True,
+        tracking=True,
+        ondelete="cascade",
     )
     club_id = fields.Many2one(
-        "federation.club", string="Club", related="team_id.club_id", store=True, readonly=True
+        "federation.club",
+        string="Club",
+        related="team_id.club_id",
+        store=True,
+        readonly=True,
     )
     division = fields.Char(string="Division / Competition")
     registration_date = fields.Date(
@@ -35,7 +46,9 @@ class FederationSeasonRegistration(models.Model):
     )
     notes = fields.Text(string="Notes")
 
-    _team_season_unique = models.Constraint('unique (team_id, season_id)', 'A team can only register once per season.')
+    _team_season_unique = models.Constraint(
+        "unique (team_id, season_id)", "A team can only register once per season."
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -45,9 +58,12 @@ class FederationSeasonRegistration(models.Model):
 
         for vals in vals_list:
             if vals.get("name", "New") == "New":
-                vals["name"] = self.env["ir.sequence"].sudo().next_by_code(
-                    "federation.season.registration"
-                ) or "New"
+                vals["name"] = (
+                    self.env["ir.sequence"]
+                    .sudo()
+                    .next_by_code("federation.season.registration")
+                    or "New"
+                )
         return super().create(vals_list)
 
     def action_confirm(self):

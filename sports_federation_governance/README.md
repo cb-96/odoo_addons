@@ -39,7 +39,7 @@ A formal request to override a standard process.
 | `audit_note_ids` | One2many | Audit trail entries |
 | `outcome_ids` | One2many | Post-decision outcome log |
 
-- **State machine**: draft → submitted → approved / rejected → implemented → closed.
+- **State machine**: draft → submitted → approved / rejected → implemented → closed, with submitted requests withdrawable back to draft before a decision is recorded.
 
 ### `federation.override.decision`
 
@@ -88,8 +88,9 @@ follow-up review.
 
 ## Key Behaviours
 
-1. **Formal request lifecycle** — Every exception starts as a draft request and
-   follows a structured approval flow.
+1. **Formal request lifecycle** — Every exception starts as a draft request,
+   can be withdrawn back to draft while still submitted, and otherwise follows
+   a structured approval flow.
 2. **Multi-decision support** — Multiple governance officers can weigh in on a
    single request.
 3. **Audit trail** — All decisions and notes are timestamped and attributed.

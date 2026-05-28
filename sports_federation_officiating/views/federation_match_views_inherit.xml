@@ -6,12 +6,14 @@
         <field name="model">federation.match</field>
         <field name="inherit_id" ref="sports_federation_tournament.view_federation_match_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//sheet/div[@class='oe_title']" position="before">
-                <div class="oe_button_box" name="button_box">
-                    <button name="action_view_referee_assignments" type="object" class="oe_stat_button" icon="fa-gavel" invisible="not referee_assignment_count">
-                        <field name="referee_assignment_count" string="Officials" widget="statinfo"/>
-                    </button>
-                </div>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <!-- Always visible: allows assignment even when count is zero -->
+                <button name="action_view_referee_assignments" type="object" class="oe_stat_button" icon="fa-gavel">
+                    <field name="referee_assignment_count" string="Officials" widget="statinfo"/>
+                </button>
+                <button name="action_view_club_referee_duties" type="object" class="oe_stat_button" icon="fa-users">
+                    <field name="club_duty_pending_count" string="Club Duties" widget="statinfo"/>
+                </button>
             </xpath>
             <xpath expr="//sheet/group[2]" position="after">
                 <group string="Officiating Readiness">
@@ -29,6 +31,39 @@
                 <group string="Officiating Issues">
                     <field name="official_readiness_issues" readonly="1" invisible="not official_readiness_issues"/>
                 </group>
+            </xpath>
+            <!-- Officials notebook page: inline assignment management -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Officials" name="officials">
+                    <button name="%(sports_federation_officiating.action_federation_round_assign_wizard)d"
+                            string="Assign Role to Round" type="action" class="btn-secondary mb-2"/>
+                    <field name="referee_assignment_ids">
+                        <list editable="bottom"
+                              decoration-danger="is_confirmation_overdue and state == 'draft'"
+                              decoration-success="state == 'confirmed'"
+                              decoration-muted="state == 'cancelled'">
+                            <field name="referee_id"/>
+                            <field name="role"/>
+                            <field name="state"/>
+                            <field name="assignment_ready" optional="hide"/>
+                            <field name="confirmation_deadline" optional="show"/>
+                            <field name="is_confirmation_overdue" column_invisible="1"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="Club Duties" name="club_duties">
+                    <field name="club_referee_duty_ids">
+                        <list editable="bottom"
+                              decoration-danger="is_deadline_overdue and state not in ('confirmed',)">
+                            <field name="club_id"/>
+                            <field name="role"/>
+                            <field name="state"/>
+                            <field name="nominated_player_id" optional="show"/>
+                            <field name="nomination_deadline" optional="show"/>
+                            <field name="is_deadline_overdue" column_invisible="1"/>
+                        </list>
+                    </field>
+                </page>
             </xpath>
         </field>
     </record>

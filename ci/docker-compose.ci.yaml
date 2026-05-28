@@ -35,6 +35,6 @@ services:
       PASSWORD: ${CI_POSTGRES_PASSWORD}
     volumes:
       - ../:/mnt/extra-addons:ro
-      - ./odoo-ci.generated.conf:/etc/odoo/odoo.conf:ro
+      - ./odoo-ci.generated.runtime.conf:/etc/odoo/odoo.conf:ro
     # No HTTP – headless test runner; stop after init + test
     command: ["--no-http", "--stop-after-init", "--test-enable"]

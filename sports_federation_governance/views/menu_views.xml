@@ -4,8 +4,8 @@
     <!-- Governance submenu -->
     <menuitem id="menu_federation_governance"
               name="Governance"
-              parent="sports_federation_base.menu_federation_root"
-              sequence="90"/>
+              parent="sports_federation_base.menu_federation_administration"
+              sequence="50"/>
 
     <!-- Override Requests -->
     <menuitem id="menu_federation_override_request"

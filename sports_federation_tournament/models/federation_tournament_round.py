@@ -74,8 +74,16 @@ class FederationTournamentRound(models.Model):
         for vals in vals_list:
             prepared_vals = dict(vals)
             if not prepared_vals.get("name"):
-                stage = Stage.browse(prepared_vals.get("stage_id")) if prepared_vals.get("stage_id") else Stage.browse([])
-                group = Group.browse(prepared_vals.get("group_id")) if prepared_vals.get("group_id") else Group.browse([])
+                stage = (
+                    Stage.browse(prepared_vals.get("stage_id"))
+                    if prepared_vals.get("stage_id")
+                    else Stage.browse([])
+                )
+                group = (
+                    Group.browse(prepared_vals.get("group_id"))
+                    if prepared_vals.get("group_id")
+                    else Group.browse([])
+                )
                 prepared_vals["name"] = self._build_default_name(
                     stage,
                     prepared_vals.get("sequence") or 1,
@@ -96,13 +104,18 @@ class FederationTournamentRound(models.Model):
         """Synchronize match dates from round."""
         for rec in self.filtered(lambda round_rec: round_rec.round_date):
             for match in rec.match_ids.filtered(
-                lambda round_match: round_match._has_scheduled_time(round_match.scheduled_time)
+                lambda round_match: round_match._has_scheduled_time(
+                    round_match.scheduled_time
+                )
             ):
                 target_dt = datetime.combine(
                     rec.round_date,
                     match._float_to_time(match.scheduled_time),
                 )
-                if not match.date_scheduled or fields.Datetime.to_datetime(match.date_scheduled) != target_dt:
+                if (
+                    not match.date_scheduled
+                    or fields.Datetime.to_datetime(match.date_scheduled) != target_dt
+                ):
                     match.write({"date_scheduled": target_dt})
 
     @api.onchange("stage_id", "group_id", "sequence")
@@ -110,7 +123,9 @@ class FederationTournamentRound(models.Model):
         """Handle onchange scope defaults."""
         for rec in self:
             if not rec.name:
-                rec.name = self._build_default_name(rec.stage_id, rec.sequence or 1, rec.group_id)
+                rec.name = self._build_default_name(
+                    rec.stage_id, rec.sequence or 1, rec.group_id
+                )
 
     @api.constrains("sequence", "stage_id", "group_id")
     def _check_sequence(self):
@@ -127,7 +142,9 @@ class FederationTournamentRound(models.Model):
             ]
             if self.search_count(domain):
                 raise ValidationError(
-                    _("Round sequence must be unique within the same stage and group scope.")
+                    _(
+                        "Round sequence must be unique within the same stage and group scope."
+                    )
                 )
 
     @api.model
@@ -155,13 +172,19 @@ class FederationTournamentRound(models.Model):
             if not round_record.name and values.get("name"):
                 write_vals["name"] = values["name"]
             for field_name in ("round_date", "venue_id"):
-                if field_name in values and field_name in round_record._fields and not round_record[field_name]:
+                if (
+                    field_name in values
+                    and field_name in round_record._fields
+                    and not round_record[field_name]
+                ):
                     write_vals[field_name] = values[field_name]
             if write_vals:
                 round_record.write(write_vals)
             return round_record
 
-        create_vals = {key: value for key, value in values.items() if key in self._fields}
+        create_vals = {
+            key: value for key, value in values.items() if key in self._fields
+        }
         return self.create(create_vals)
 
     def action_schedule(self):

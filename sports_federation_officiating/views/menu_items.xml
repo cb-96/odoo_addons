@@ -3,19 +3,19 @@
 
     <menuitem id="menu_federation_officiating"
               name="Officiating"
-              parent="sports_federation_base.menu_federation_root"
-              sequence="60"/>
+              parent="sports_federation_base.menu_federation_match_day"
+              sequence="20"/>
 
     <menuitem id="menu_federation_referee"
               name="Referees"
               parent="menu_federation_officiating"
               action="federation_referee_action"
-              sequence="10"/>
+              sequence="30"/>
 
     <menuitem id="menu_federation_officiating_config"
               name="Configuration"
               parent="menu_federation_officiating"
-              sequence="20"/>
+              sequence="50"/>
 
     <menuitem id="menu_federation_referee_certification"
               name="Certifications"
@@ -27,6 +27,18 @@
               name="Match Assignments"
               parent="menu_federation_officiating"
               action="federation_match_referee_action"
-              sequence="30"/>
+              sequence="10"/>
+
+    <menuitem id="menu_federation_match_club_referee_duty"
+              name="Club Duties"
+              parent="menu_federation_officiating"
+              action="federation_match_club_referee_duty_action"
+              sequence="20"/>
+
+    <menuitem id="menu_federation_reimbursement_request"
+              name="Reimbursements"
+              parent="menu_federation_officiating"
+              action="federation_reimbursement_request_action"
+              sequence="40"/>
 
 </odoo>

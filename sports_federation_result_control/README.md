@@ -78,3 +78,4 @@ Immutable result-workflow timeline for a match.
 6. **Auto recomputation** — Approve, contest, correct, and reset actions recompute linked non-frozen standings automatically.
 7. **Approved score immutability** — Home and away scores cannot be edited while a result remains approved.
 8. **Corrected resubmission** — A corrected result is expected to re-enter the pipeline through `submitted` before it becomes official again.
+9. **Guided standings handoff** — Match forms now direct operators back to the owning tournament when the next task is standings review, standings publication, or public follow-up rather than another score edit.

@@ -10,10 +10,12 @@
                 <header>
                     <button name="action_submit" string="Submit" type="object" class="btn-primary"
                             invisible="state != 'draft'"/>
+                    <button name="action_withdraw" string="Withdraw" type="object"
+                            invisible="state != 'submitted'"/>
                     <button name="action_approve" string="Approve" type="object" class="btn-success"
                             invisible="state != 'submitted'"/>
                     <button name="action_reject" string="Reject" type="object" class="btn-danger"
-                            invisible="state != 'submitted'"/>
+                            invisible="state != 'submitted'" confirm="Are you sure you want to reject this override request?"/>
                     <button name="action_mark_implemented" string="Implement" type="object" class="btn-secondary"
                             invisible="state != 'approved'"/>
                     <button name="action_close" string="Close" type="object"
@@ -39,9 +41,14 @@
                     <group string="Reason">
                         <field name="reason" nolabel="1"/>
                     </group>
-                    <group string="Implementation" invisible="state not in ('approved', 'implemented')">
-                        <field name="implementation_note" nolabel="1"/>
+                    <group string="Implementation">
+                        <field name="implementation_note" nolabel="1"
+                               readonly="state not in ('approved', 'implemented')"
+                               placeholder="Add implementation notes once this request is approved."/>
                     </group>
+                    <div class="text-muted small ps-3 pb-2" invisible="state in ('approved', 'implemented')">
+                        This field unlocks after the request is approved.
+                    </div>
                     <notebook>
                         <page string="Decisions" name="decisions">
                             <field name="decision_ids">

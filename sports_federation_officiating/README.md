@@ -93,13 +93,22 @@ before the match goes live.
 2. **Role-based assignment** — Each match can have multiple referees in distinct
    roles.
 3. **Confirmation governance** — assignments expose a 48-hour confirmation deadline,
-   overdue status, and block confirmation when the referee is inactive or lacks a
-   valid certification window for the match.
+   overdue status, and block confirmation when the referee is inactive, lacks a
+   valid certification window for the match, or is already double-booked in an
+   overlapping assignment window.
 4. **Match readiness visibility** — matches show confirmed counts, shortages, overdue
    confirmations, and aggregated officiating issues in the form and list views.
-5. **Assignment state machine** — assigned → confirmed → done / cancelled.
-6. **Tournament context** — Assignments carry a computed tournament reference for
+5. **Competition Workspace integration** — When
+   `sports_federation_competition_engine` is installed, officiating readiness
+   feeds planner validation and publish summaries. Double-booked referee
+   assignments block readiness, while uncovered availability remains visible as
+   a warning.
+6. **Assignment state machine** — assigned → confirmed → done / cancelled.
+7. **Tournament context** — Assignments carry a computed tournament reference for
    filtering and reporting.
-7. **Finance bridge integration** — When `sports_federation_finance_bridge` is installed,
+8. **Odoo 19-safe view inheritance** — the match readiness stat button inherits the
+   base match form with `hasclass('oe_title')`, which avoids the platform warning
+   triggered by raw `@class` XPath selectors during module loading.
+9. **Finance bridge integration** — When `sports_federation_finance_bridge` is installed,
    assignments that reach `done` automatically create reusable reimbursement events.
-8. **Portal self-service** — When `sports_federation_portal` is installed, linked officials can review, confirm, or decline their own draft assignments through the portal.
+10. **Portal self-service** — When `sports_federation_portal` is installed, linked officials can review, confirm, or decline their own draft assignments through the portal.

@@ -9,8 +9,13 @@
                 <field name="season_id"/>
                 <field name="tournament_id"/>
                 <field name="readiness_status"/>
+                <field name="readiness_note"/>
                 <filter name="blocked" string="Blocked" domain="[('readiness_status', '=', 'blocked')]"/>
                 <filter name="attention" string="Attention" domain="[('readiness_status', '=', 'attention')]"/>
+                <filter name="open_compliance" string="Open Compliance" domain="[('open_club_compliance_count', '>', 0)]"/>
+                <filter name="participant_gaps" string="Participant Gaps" domain="[('participant_count', '>', 0), ('participant_confirmation_rate', '&lt;', 100)]"/>
+                <filter name="unfinished_matches" string="Unfinished Matches" domain="[('match_count', '>', 0), ('match_completion_rate', '&lt;', 100)]"/>
+                <filter name="pending_finance" string="Pending Finance" domain="[('pending_finance_event_count', '>', 0)]"/>
                 <group>
                     <filter name="group_season" string="Season" context="{'group_by': 'season_id'}"/>
                     <filter name="group_status" string="Status" context="{'group_by': 'readiness_status'}"/>
@@ -39,6 +44,7 @@
                 <field name="pending_finance_amount"/>
                 <field name="open_club_compliance_count"/>
                 <field name="readiness_status"/>
+                <field name="readiness_note"/>
             </list>
         </field>
     </record>

@@ -16,8 +16,12 @@ class FederationReportComplianceRemediation(models.Model):
         ("expired", "Expired"),
     ]
 
-    submission_id = fields.Many2one("federation.document.submission", string="Submission", readonly=True)
-    requirement_id = fields.Many2one("federation.document.requirement", string="Requirement", readonly=True)
+    submission_id = fields.Many2one(
+        "federation.document.submission", string="Submission", readonly=True
+    )
+    requirement_id = fields.Many2one(
+        "federation.document.requirement", string="Requirement", readonly=True
+    )
     target_model = fields.Char(string="Target Model", readonly=True)
     target_display = fields.Char(string="Target", readonly=True)
     status = fields.Selection(STATUS_SELECTION, string="Status", readonly=True)
@@ -37,8 +41,7 @@ class FederationReportComplianceRemediation(models.Model):
     def init(self):
         """Rebuild the SQL view so remediation queue fields track the query output."""
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute(
-            """
+        self.env.cr.execute("""
             CREATE VIEW federation_report_compliance_remediation AS (
                 -- block: queue
                 WITH queue AS (
@@ -130,5 +133,4 @@ class FederationReportComplianceRemediation(models.Model):
                 LEFT JOIN res_users ru ON ru.id = queue.reviewer_id
                 LEFT JOIN res_partner rp ON rp.id = ru.partner_id
             )
-            """
-        )
+            """)

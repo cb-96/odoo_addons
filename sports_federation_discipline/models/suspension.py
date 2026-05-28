@@ -5,6 +5,7 @@ from odoo.exceptions import ValidationError
 class FederationSuspension(models.Model):
     _name = "federation.suspension"
     _description = "Suspension"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "date_start desc, id desc"
 
     name = fields.Char(required=True)
@@ -42,17 +43,18 @@ class FederationSuspension(models.Model):
         for record in self:
             if record.date_end and record.date_start:
                 if record.date_end < record.date_start:
-                    raise ValidationError(
-                        "End date must be on or after start date."
-                    )
+                    raise ValidationError("End date must be on or after start date.")
 
     def action_activate(self):
-        """Execute the activate action."""
+        """Activate the suspension and mark the affected player as suspended."""
         records_to_activate = self.filtered(lambda record: record.state != "active")
         if not records_to_activate:
             return
 
         records_to_activate.write({"state": "active"})
+
+        for record in records_to_activate:
+            record.player_id.action_suspend()
 
         dispatcher = self.env.get("federation.notification.dispatcher")
         if dispatcher is not None:
@@ -60,6 +62,29 @@ class FederationSuspension(models.Model):
                 dispatcher.send_suspension_issued(record)
 
     def action_cancel(self):
-        """Execute the cancel action."""
+        """Cancel the suspension and restore the player's state if no other active suspensions remain."""
         for record in self:
             record.state = "cancelled"
+            record._maybe_restore_player_state()
+
+    def action_expire(self):
+        """Mark the suspension as expired and restore the player's state if eligible."""
+        records_to_expire = self.filtered(lambda record: record.state == "active")
+        records_to_expire.write({"state": "expired"})
+        for record in records_to_expire:
+            record._maybe_restore_player_state()
+
+    def _maybe_restore_player_state(self):
+        """Restore the player to active if they have no remaining active suspensions."""
+        self.ensure_one()
+        player = self.player_id
+        active_suspensions = self.env["federation.suspension"].search(
+            [
+                ("player_id", "=", player.id),
+                ("state", "=", "active"),
+                ("id", "!=", self.id),
+            ],
+            limit=1,
+        )
+        if not active_suspensions:
+            player.action_activate()

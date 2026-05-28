@@ -32,6 +32,8 @@
                             <field name="tournament_id"/>
                             <field name="sequence"/>
                             <field name="stage_type"/>
+                            <field name="rule_set_id"
+                                   placeholder="Inherits from tournament if not set"/>
                         </group>
                         <group string="Schedule">
                             <field name="date_start"/>
@@ -41,6 +43,7 @@
                     <separator string="Notes"/>
                     <field name="notes"/>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>

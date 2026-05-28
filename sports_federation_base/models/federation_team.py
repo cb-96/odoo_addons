@@ -12,7 +12,11 @@ class FederationTeam(models.Model):
     code = fields.Char(string="Code", copy=False)
     active = fields.Boolean(default=True)
     club_id = fields.Many2one(
-        "federation.club", string="Club", required=True, tracking=True, ondelete="cascade"
+        "federation.club",
+        string="Club",
+        required=True,
+        tracking=True,
+        ondelete="cascade",
     )
     category = fields.Selection(
         [
@@ -43,7 +47,7 @@ class FederationTeam(models.Model):
         string="Registration Count", compute="_compute_registration_count", store=True
     )
 
-    _code_unique = models.Constraint('unique (code)', 'Team code must be unique.')
+    _code_unique = models.Constraint("unique (code)", "Team code must be unique.")
 
     @api.depends("name", "gender")
     def _compute_display_name(self):
@@ -57,9 +61,7 @@ class FederationTeam(models.Model):
             base_name = rec.name or _("New")
             gender_label = gender_labels.get(rec.gender)
             rec.display_name = (
-                "%s (%s)" % (base_name, gender_label)
-                if gender_label
-                else base_name
+                "%s (%s)" % (base_name, gender_label) if gender_label else base_name
             )
 
     @api.depends("registration_ids")
@@ -71,8 +73,10 @@ class FederationTeam(models.Model):
     def action_view_registrations(self):
         """Execute the view registrations action."""
         self.ensure_one()
-        action = self.env['ir.actions.act_window']._for_xml_id('sports_federation_base.federation_season_registration_action')
-        action['domain'] = [('team_id', '=', self.id)]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_base.federation_season_registration_action"
+        )
+        action["domain"] = [("team_id", "=", self.id)]
         return action
 
     @api.model
@@ -82,13 +86,19 @@ class FederationTeam(models.Model):
         if name:
             domain = ["|", ("name", operator, name), ("code", operator, name)]
             recs = self.search(domain + args, limit=limit)
-            return recs.name_get() if hasattr(recs, 'name_get') else [(r.id, r.display_name) for r in recs]
+            return (
+                recs.name_get()
+                if hasattr(recs, "name_get")
+                else [(r.id, r.display_name) for r in recs]
+            )
         return super().name_search(name, args, operator, limit)
 
     def action_archive(self):
         """Execute the archive action."""
         teams_with_active_registrations = self.filtered(
-            lambda rec: rec.registration_ids.filtered(lambda registration: registration.state != "cancelled")
+            lambda rec: rec.registration_ids.filtered(
+                lambda registration: registration.state != "cancelled"
+            )
         )
         if teams_with_active_registrations:
             raise ValidationError(

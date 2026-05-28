@@ -79,6 +79,12 @@ class TestStageProgressionWorkflow(TransactionCase):
                 "auto_advance": True,
             }
         )
+        cls.round_robin_group = cls.env["federation.tournament.group"].create(
+            {
+                "name": "Round Robin Group A",
+                "stage_id": cls.round_robin_stage.id,
+            }
+        )
 
     def _create_done_match(self, home_team, away_team, home_score, away_score):
         """Exercise create done match."""
@@ -128,3 +134,63 @@ class TestStageProgressionWorkflow(TransactionCase):
         self.assertEqual(advanced.mapped("seed"), [1, 2])
         self.assertEqual(set(advanced.mapped("state")), {"confirmed"})
         self.assertEqual(self.progression.state, "executed")
+
+    def test_execute_clears_source_group_when_target_group_is_empty(self):
+        """Advancing into a stage without target groups should clear the old group."""
+        self.participants.write({"group_id": self.round_robin_group.id})
+
+        standing = self.env["federation.standing"].create(
+            {
+                "name": "Group A Standing",
+                "tournament_id": self.tournament.id,
+                "stage_id": self.round_robin_stage.id,
+                "group_id": self.round_robin_group.id,
+                "state": "frozen",
+            }
+        )
+        self.env["federation.standing.line"].create(
+            [
+                {
+                    "standing_id": standing.id,
+                    "participant_id": self.participants[0].id,
+                    "rank": 1,
+                    "points": 9,
+                    "score_for": 6,
+                    "score_against": 1,
+                },
+                {
+                    "standing_id": standing.id,
+                    "participant_id": self.participants[1].id,
+                    "rank": 2,
+                    "points": 6,
+                    "score_for": 4,
+                    "score_against": 2,
+                },
+            ]
+        )
+
+        progression = self.env["federation.stage.progression"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "source_stage_id": self.round_robin_stage.id,
+                "source_group_id": self.round_robin_group.id,
+                "target_stage_id": self.knockout_stage.id,
+                "rank_from": 1,
+                "rank_to": 2,
+                "seeding_method": "keep_rank",
+            }
+        )
+
+        progression.action_execute()
+
+        advanced = self.env["federation.tournament.participant"].search(
+            [
+                ("tournament_id", "=", self.tournament.id),
+                ("stage_id", "=", self.knockout_stage.id),
+            ],
+            order="seed asc, id asc",
+        )
+
+        self.assertEqual(len(advanced), 2)
+        self.assertEqual(advanced.mapped("team_id"), self.teams[:2])
+        self.assertFalse(advanced.mapped("group_id"))

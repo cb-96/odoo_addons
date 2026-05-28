@@ -3,7 +3,11 @@ from datetime import timedelta
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
-from .public_flags import _ics_escape, _ics_format_datetime, _slugify_public_text
+from .public_tournament_flags import (
+    _ics_escape,
+    _ics_format_datetime,
+    _slugify_public_text,
+)
 
 
 class FederationSeason(models.Model):
@@ -54,12 +58,17 @@ class FederationSeason(models.Model):
         return f"{_slugify_public_text(self._get_public_slug_seed())}-{self.id}"
 
     @api.model
-    def resolve_public_slug(self, slug_value):
+    def resolve_public_slug(self, slug_value, extra_domain=None):
         """Resolve public slug."""
         if not slug_value:
             return self.browse([])
 
-        explicit = self.sudo().search([("public_slug", "=", slug_value)], limit=1)
+        extra_domain = list(extra_domain or [])
+
+        explicit = self.sudo().search(
+            [("public_slug", "=", slug_value)] + extra_domain,
+            limit=1,
+        )
         if explicit:
             return explicit
 
@@ -67,8 +76,11 @@ class FederationSeason(models.Model):
         if not tail.isdigit():
             return self.browse([])
 
-        record = self.sudo().browse(int(tail))
-        if record.exists() and record.get_public_slug_value() == slug_value:
+        record = self.sudo().search(
+            [("id", "=", int(tail))] + extra_domain,
+            limit=1,
+        )
+        if record and record.get_public_slug_value() == slug_value:
             return record
         return self.browse([])
 
@@ -118,7 +130,9 @@ class FederationSeason(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         """Create records with module-specific defaults and side effects."""
-        return super().create([self._normalize_public_slug_vals(vals) for vals in vals_list])
+        return super().create(
+            [self._normalize_public_slug_vals(vals) for vals in vals_list]
+        )
 
     def write(self, vals):
         """Update records with module-specific side effects."""
@@ -168,8 +182,14 @@ class FederationPublicEditorialItem(models.Model):
     def _check_publish_window(self):
         """Validate publish window."""
         for record in self:
-            if record.publish_start and record.publish_end and record.publish_end < record.publish_start:
-                raise ValidationError("Publish end cannot be earlier than publish start.")
+            if (
+                record.publish_start
+                and record.publish_end
+                and record.publish_end < record.publish_start
+            ):
+                raise ValidationError(
+                    "Publish end cannot be earlier than publish start."
+                )
 
     @api.constrains("season_id", "tournament_id", "team_id")
     def _check_public_target_anchor(self):
@@ -180,13 +200,49 @@ class FederationPublicEditorialItem(models.Model):
                     "Editorial items must be linked to a season, tournament, or team."
                 )
 
+    def action_schedule(self):
+        """Schedule the editorial item for publication."""
+        for record in self:
+            if record.publication_state != "draft":
+                raise ValidationError("Only draft items can be scheduled.")
+            if not record.publish_start:
+                raise ValidationError("Set a publish start date before scheduling.")
+            record.publication_state = "scheduled"
+
+    def action_publish(self):
+        """Publish the editorial item immediately."""
+        for record in self:
+            if record.publication_state not in ("draft", "scheduled"):
+                raise ValidationError("Only draft or scheduled items can be published.")
+            record.publication_state = "published"
+
+    def action_archive_item(self):
+        """Archive a published or scheduled editorial item."""
+        for record in self:
+            if record.publication_state not in ("published", "scheduled"):
+                raise ValidationError(
+                    "Only published or scheduled items can be archived."
+                )
+            record.publication_state = "archived"
+
+    def action_reset_to_draft(self):
+        """Reset an archived or scheduled item back to draft."""
+        for record in self:
+            if record.publication_state not in ("archived", "scheduled"):
+                raise ValidationError(
+                    "Only archived or scheduled items can be reset to draft."
+                )
+            record.publication_state = "draft"
+
     def can_access_publicly(self, reference_dt=None):
         """Return whether access publicly is allowed."""
         self.ensure_one()
         if not self.active or self.publication_state in ("draft", "archived"):
             return False
 
-        reference_dt = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now())
+        reference_dt = fields.Datetime.to_datetime(
+            reference_dt or fields.Datetime.now()
+        )
         if self.publish_start and self.publish_start > reference_dt:
             return False
         if self.publish_end and self.publish_end < reference_dt:
@@ -218,7 +274,9 @@ class FederationPublicEditorialItem(models.Model):
         if team:
             domain.append(("team_id", "=", team.id))
 
-        items = self.sudo().search(domain, order="publish_start desc, sequence asc, id desc")
+        items = self.sudo().search(
+            domain, order="publish_start desc, sequence asc, id desc"
+        )
         now = fields.Datetime.now()
         items = items.filtered(lambda item: item.can_access_publicly(reference_dt=now))
         return items[:limit] if limit else items
@@ -325,9 +383,13 @@ class FederationTeamPublicFollow(models.Model):
         for match in self.get_public_upcoming_matches().filtered("date_scheduled"):
             start_dt = fields.Datetime.to_datetime(match.date_scheduled)
             end_dt = start_dt + timedelta(hours=1)
-            opponent = match.away_team_id if match.home_team_id == self else match.home_team_id
+            opponent = (
+                match.away_team_id if match.home_team_id == self else match.home_team_id
+            )
             summary = f"{self.name} vs {opponent.name if opponent else 'TBD'}"
-            description_parts = [match.tournament_id.name] if match.tournament_id else [self.name]
+            description_parts = (
+                [match.tournament_id.name] if match.tournament_id else [self.name]
+            )
             if match.round_id:
                 description_parts.append(match.round_id.name)
             if match.stage_id:
@@ -402,8 +464,16 @@ class FederationTeamPublicFollow(models.Model):
                     "standing": line.standing_id.public_title or line.standing_id.name,
                     "rank": line.rank,
                     "points": line.points,
-                    "tournament": line.standing_id.tournament_id.name if line.standing_id.tournament_id else None,
-                    "tournament_url": line.standing_id.tournament_id.get_public_path() if line.standing_id.tournament_id else None,
+                    "tournament": (
+                        line.standing_id.tournament_id.name
+                        if line.standing_id.tournament_id
+                        else None
+                    ),
+                    "tournament_url": (
+                        line.standing_id.tournament_id.get_public_path()
+                        if line.standing_id.tournament_id
+                        else None
+                    ),
                 }
                 for line in self.get_public_standing_lines(limit=12)
             ],

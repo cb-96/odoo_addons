@@ -11,7 +11,17 @@ class Website(models.Model):
         websites = self.sudo()
         if websites:
             return websites
-        return self.env["website"].sudo().search([])
+        website_id = self.env.context.get("website_id")
+        if website_id:
+            scoped = self.env["website"].sudo().browse(int(website_id)).exists()
+            if scoped:
+                return scoped
+
+        current_website = self.env["website"].get_current_website()
+        if current_website:
+            return current_website.sudo()
+
+        return self.env["website"].sudo().search([], limit=1)
 
     def _get_public_site_brand_name(self):
         """Return the canonical public-site brand name."""
@@ -55,8 +65,7 @@ class Website(models.Model):
 
     def _get_public_site_footer_arch(self):
         """Return the normalized footer view architecture."""
-        return dedent(
-            """
+        return dedent("""
             <data inherit_id="website.layout" name="Sports Federation Footer" active="True">
                 <xpath expr="//div[@id='footer']" position="replace">
                     <div id="footer" class="oe_structure oe_structure_solo border text-break" t-ignore="true" t-if="not no_footer" style="--box-border-top-width: 0px; --box-border-left-width: 0px; --box-border-right-width: 0px;">
@@ -65,13 +74,13 @@ class Website(models.Model):
                                 <div class="row">
                                     <div class="col-lg-6 pt24 pb24">
                                         <h4>Sports Federation</h4>
-                                        <p>Published tournaments, schedules, results, standings, and club self-service live here. Federation staff, clubs, and officials can use the website and portal to follow active competition work.</p>
+                                        <p>Tournament hubs, schedules, results, standings, and club self-service all live here. Federation staff, clubs, and officials can use the website and portal to follow active competition work.</p>
                                     </div>
                                     <div class="col-lg-3 pt24 pb24">
                                         <h5>Explore</h5>
                                         <ul class="list-unstyled">
                                             <li><a href="/tournaments">Tournaments</a></li>
-                                            <li><a href="/tournaments#published">Published Tournaments</a></li>
+                                            <li><a href="/tournaments#published">Tournament Updates</a></li>
                                             <li><a href="/seasons">Seasons</a></li>
                                             <li><a href="/my/home">Portal</a></li>
                                         </ul>
@@ -87,8 +96,7 @@ class Website(models.Model):
                     </div>
                 </xpath>
             </data>
-            """
-        ).strip()
+            """).strip()
 
     def _cleanup_placeholder_navigation(self):
         """Remove stock website menu entries that do not belong in the federation shell."""
@@ -174,7 +182,9 @@ class Website(models.Model):
                 ]
             )
             placeholder_views = footer_views.filtered(
-                lambda view: any(token in (view.arch_db or "") for token in placeholder_tokens)
+                lambda view: any(
+                    token in (view.arch_db or "") for token in placeholder_tokens
+                )
             )
             for view in placeholder_views:
                 view.write({"arch_db": footer_arch})
