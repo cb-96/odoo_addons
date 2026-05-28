@@ -67,11 +67,15 @@ Guided flow
 7. Generate court and timeslot slots for a gameday.
 8. Open the visual planner and assign matches to slots.
   The planner now supports selected-match bulk assign and bulk unassign,
+  a dedicated unassign-all action with a confirmation prompt,
   quick undo and redo of recent planner actions, and a visible action history
   panel for the active gameday. Desktop users can still drag and drop, while
   keyboard and mobile users can select one match and assign it directly into an
   empty slot. Dragging one already scheduled match onto another occupied slot
   now performs a validated safe swap when both matches can trade places.
+  Planner UI actions are grouped by intent (selection, scheduling, destructive),
+  report live selection and busy-state feedback, and support `Esc` to quickly
+  clear planner selection during high-volume scheduling edits.
   Stage labels stay visible on previews, gamedays, and match cards, the
   planner shows a fairness summary for the active division, and selecting one
   unscheduled match surfaces ranked slot suggestions backed by the current
@@ -237,10 +241,16 @@ Roles and safeguards
   stale revision handling on bulk-unassign and undo planner operations.
 - Planner stale/invalid revision conflicts and extension hook failures now emit
   correlation IDs for faster support triage and log cross-referencing.
+- Destructive planner and publication actions now use an in-workspace
+  confirmation dialog instead of browser-native confirms, keeping operator
+  context and keyboard focus inside the client action.
 - Dedicated contract tags now exist for competition workspace reliability slices:
   `sf_ws_read_model_contract`, `sf_ws_write_guard_contract`,
   `sf_ws_extension_contract`, `sf_ws_concurrency_contract`, and
   `sf_ws_acl_contract` (runnable via `ci/run_tests.sh --contract-suite ...`).
+- Frontend helper regressions for planner busy-state and keyboard-clear behavior
+  are now covered by `static/tests/competition_workspace_ui_tests.js` and
+  loaded through `web.qunit_suite_tests`.
 - Planner unscheduled match lists are now sliced by the active gameday sequence
   (per linked division round), instead of showing every unscheduled match in the
   stage.
@@ -253,11 +263,23 @@ Roles and safeguards
   Round options (not a separate round model).
 - Planner unscheduled slices now stay strict to each linked gameday round number
   (no stage-wide fallback when a selected round has no unscheduled matches).
-- Initial auto-scheduling support is available through `auto_schedule_gameday`:
-  it deterministically fills open slots from the active gameday's unscheduled
-  match slice, ranks feasible match-slot candidates with rest-gap and home/away
-  balance scoring, returns per-assignment score breakdowns for UI inspection,
-  and skips incompatible pairings with structured reasons.
+- Auto-scheduling is available through `auto_schedule_gameday` with a full
+  fairness-driven rollout:
+  - deterministic base fill from the active gameday unscheduled slice;
+  - weighted global fairness objective (rest variance, home/away imbalance,
+    and timeslot variance);
+  - warning-aware ranking that prefers warning-free placements while still
+    allowing warning-only placements;
+  - configurable solver modes (`heuristic`, `hybrid`, `advanced`) and repair
+    controls (`enable_repair`, `repair_step_limit`, and fairness `weights`);
+  - bounded augmentation search (`enable_augmentation`,
+    `augmentation_step_limit`) that can re-route already scheduled matches into
+    open slots to unlock otherwise stuck unscheduled matches before giving up;
+  - bounded post-fill repair pass (swap in `hybrid`; swap + move in `advanced`)
+    to improve global fairness without breaking hard constraints;
+  - expanded diagnostics: per-assignment objective penalties/components,
+    `fairness_before`, `fairness_after`, `fairness_delta`, `augmentation`, `repair`, and
+    `auto_schedule_config` payloads, plus `skipped_reason_summary`.
 - Planner read-model inputs now tolerate malformed numeric filters
   (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
   selectors by ignoring invalid values instead of raising server errors.

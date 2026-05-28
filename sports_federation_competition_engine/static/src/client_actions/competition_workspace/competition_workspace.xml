@@ -435,6 +435,27 @@
         </div>
     </t>
 
+    <t t-name="sports_federation_competition_engine.CompetitionWorkspaceActionConfirmDialog">
+        <div class="o_fed_cw_mobile_dialog_backdrop" t-if="props.open">
+            <div class="o_fed_cw_mobile_dialog card shadow-lg" role="dialog" aria-modal="true" aria-label="Action confirmation dialog">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                        <div>
+                            <div class="text-uppercase small text-muted">Confirm action</div>
+                            <h3 class="h6 mb-0"><t t-esc="props.title || 'Please confirm'"/></h3>
+                        </div>
+                        <button type="button" class="btn-close" aria-label="Close" t-on-click="props.onClose"/>
+                    </div>
+                    <p class="mb-3"><t t-esc="props.message"/></p>
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-outline-secondary" t-on-click="props.onClose">Cancel</button>
+                        <button type="button" class="btn" t-att-class="props.confirmClass || 'btn-primary'" t-on-click="props.onConfirm"><t t-esc="props.confirmLabel || 'Confirm'"/></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
     <t t-name="sports_federation_competition_engine.PublishScheduleDialog">
         <section class="card shadow-sm o_fed_cw_publish_dialog">
             <div class="card-body">
@@ -453,6 +474,7 @@
                         <button type="button" class="btn btn-primary" t-att-disabled="props.publishing" t-on-click="props.onPublishCompetition">Publish competition</button>
                     </div>
                 </div>
+                <div class="text-muted small mb-3" aria-live="polite" t-if="props.publishing">Publishing in progress...</div>
                 <div class="alert alert-info" role="status">
                     <strong>Publication checklist:</strong>
                     <ul class="mb-0 ps-3 mt-1">
@@ -510,13 +532,13 @@
                 <CompetitionOverviewCard t-props="{ overview: payload.overview }"/>
                 <ProgressStepper t-props="{ steps: this.progressSteps }"/>
 
-                <div class="o_fed_cw_nav mb-4">
-                    <button type="button" class="btn btn-outline-secondary" t-att-class="state.activeSection === 'overview' ? 'active' : ''" t-on-click="() => this.setSection('overview')">Overview</button>
-                    <button type="button" class="btn btn-outline-secondary" t-att-class="state.activeSection === 'teams' ? 'active' : ''" t-on-click="() => this.setSection('teams')">Teams</button>
-                    <button type="button" class="btn btn-outline-secondary" t-att-class="state.activeSection === 'rounds' ? 'active' : ''" t-on-click="() => this.setSection('rounds')">Rounds</button>
-                    <button type="button" class="btn btn-outline-secondary" t-att-class="state.activeSection === 'gamedays' ? 'active' : ''" t-on-click="() => this.setSection('gamedays')">Gamedays</button>
-                    <button type="button" class="btn btn-outline-secondary" t-att-class="state.activeSection === 'planner' ? 'active' : ''" t-on-click="() => this.setSection('planner')">Gameday Planner</button>
-                    <button type="button" class="btn btn-outline-secondary" t-att-class="state.activeSection === 'publish' ? 'active' : ''" t-on-click="() => this.setSection('publish')">Publish</button>
+                <div class="o_fed_cw_nav mb-4" role="tablist" aria-label="Competition workspace sections">
+                    <button type="button" class="btn btn-outline-secondary" role="tab" t-att-aria-selected="state.activeSection === 'overview' ? 'true' : 'false'" t-att-class="state.activeSection === 'overview' ? 'active' : ''" t-on-click="() => this.setSection('overview')">Overview</button>
+                    <button type="button" class="btn btn-outline-secondary" role="tab" t-att-aria-selected="state.activeSection === 'teams' ? 'true' : 'false'" t-att-class="state.activeSection === 'teams' ? 'active' : ''" t-on-click="() => this.setSection('teams')">Teams</button>
+                    <button type="button" class="btn btn-outline-secondary" role="tab" t-att-aria-selected="state.activeSection === 'rounds' ? 'true' : 'false'" t-att-class="state.activeSection === 'rounds' ? 'active' : ''" t-on-click="() => this.setSection('rounds')">Rounds</button>
+                    <button type="button" class="btn btn-outline-secondary" role="tab" t-att-aria-selected="state.activeSection === 'gamedays' ? 'true' : 'false'" t-att-class="state.activeSection === 'gamedays' ? 'active' : ''" t-on-click="() => this.setSection('gamedays')">Gamedays</button>
+                    <button type="button" class="btn btn-outline-secondary" role="tab" t-att-aria-selected="state.activeSection === 'planner' ? 'true' : 'false'" t-att-class="state.activeSection === 'planner' ? 'active' : ''" t-on-click="() => this.setSection('planner')">Gameday Planner</button>
+                    <button type="button" class="btn btn-outline-secondary" role="tab" t-att-aria-selected="state.activeSection === 'publish' ? 'true' : 'false'" t-att-class="state.activeSection === 'publish' ? 'active' : ''" t-on-click="() => this.setSection('publish')">Publish</button>
                 </div>
 
                 <t t-if="!payload.competition.id and payload.capabilities.is_manager">
@@ -618,9 +640,12 @@
                                     <div class="mb-3"><label class="form-label fw-semibold">Club filter</label><select class="form-select" name="club_id" t-att-value="state.teamEntryForm.club_id" t-on-change="updateTeamEntryField"><option value="">All clubs</option><t t-foreach="state.availableClubs" t-as="club" t-key="club.id"><option t-att-value="club.id"><t t-esc="club.display_name"/></option></t></select></div>
                                     <div class="mb-3"><label class="form-label fw-semibold">Team</label><select class="form-select" name="team_id" t-att-value="state.teamEntryForm.team_id" t-on-change="updateTeamEntryField"><option value="">Select a team</option><t t-foreach="state.availableTeams" t-as="team" t-key="team.id"><option t-att-value="team.id"><t t-esc="team.display_name"/><t t-if="team.club_name"> · <t t-esc="team.club_name"/></t></option></t></select><div class="form-text" t-if="state.teamSearchLoading">Refreshing team results...</div></div>
                                     <div class="mb-3"><label class="form-label fw-semibold">Seed</label><input type="number" min="1" class="form-control" name="seed" t-att-value="state.teamEntryForm.seed" t-on-input="updateTeamEntryField"/></div>
-                                    <div class="d-flex gap-2 justify-content-between flex-wrap">
-                                        <button type="button" class="btn btn-outline-secondary" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="lockEntries">Lock participant list</button>
-                                        <button type="button" class="btn btn-primary" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="createTeamEntry">Add team</button>
+                                    <div class="o_fed_cw_section_actions" t-att-aria-busy="state.saving ? 'true' : 'false'">
+                                        <div class="d-flex gap-2 flex-wrap justify-content-end o_fed_cw_toolbar_group">
+                                            <button type="button" class="btn btn-outline-secondary" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="lockEntries">Lock participant list</button>
+                                            <button type="button" class="btn btn-primary" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="createTeamEntry">Add team</button>
+                                        </div>
+                                        <div class="small text-muted" aria-live="polite" t-if="state.saving">Saving team updates...</div>
                                     </div>
                                 </div>
                             </section>
@@ -823,21 +848,34 @@
                     </div>
 
                     <div class="card shadow-sm o_fed_cw_planner_toolbar mb-3">
-                        <div class="card-body d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                        <div class="card-body d-flex justify-content-between align-items-start gap-3 flex-wrap" t-att-aria-busy="this.plannerBusy ? 'true' : 'false'">
                             <div>
                                 <div class="text-uppercase small text-muted">Planner actions</div>
                                 <div class="fw-semibold mb-1"><t t-esc="state.selectedMatchIds.length"/> match(es) selected</div>
+                                <div class="text-muted small" t-if="this.plannerBusy">Saving planner changes...</div>
                                 <div class="text-muted small" t-if="this.hasMixedPlannerSelection">Bulk actions need either only unscheduled matches or only assigned matches.</div>
                                 <div class="text-muted small" t-elif="this.plannerOpenSlotCount">Open slots available: <t t-esc="this.plannerOpenSlotCount"/></div>
                                 <div class="text-muted small" t-else="">No open slots are currently available on this gameday.</div>
+                                <div class="text-muted small" t-if="this.plannerAssignedMatchCount">Assigned on this gameday: <t t-esc="this.plannerAssignedMatchCount"/></div>
+                                <div class="small text-muted" t-if="state.selectedMatchIds.length">Selected unscheduled: <t t-esc="this.selectedUnscheduledMatches.length"/> · selected assigned: <t t-esc="this.selectedAssignedMatches.length"/></div>
+                                <div class="small text-muted">Press Esc to clear selection.</div>
+                                <div class="visually-hidden" aria-live="polite"><t t-esc="this.plannerSelectionSummary"/></div>
                             </div>
-                            <div class="d-flex gap-2 flex-wrap justify-content-end">
-                                <button type="button" class="btn btn-outline-secondary" t-att-disabled="!(this.filteredUnscheduledMatches || []).length" t-on-click="toggleFilteredSelection"><t t-esc="this.allFilteredMatchesSelected ? 'Clear filtered' : 'Select filtered'"/></button>
-                                <button type="button" class="btn btn-outline-secondary" t-att-disabled="!state.selectedMatchIds.length" t-on-click="clearPlannerSelection">Clear selection</button>
-                                <button type="button" class="btn btn-outline-primary" t-att-disabled="!this.canBulkAssignSelection" t-on-click="bulkAssignSelected">Bulk assign selected</button>
-                                <button type="button" class="btn btn-outline-primary" t-att-disabled="!this.canBulkUnassignSelection" t-on-click="bulkUnassignSelected">Bulk unassign selected</button>
-                                <button type="button" class="btn btn-outline-secondary" t-att-disabled="!(planner and planner.can_undo)" t-on-click="undoPlannerAction">Undo</button>
-                                <button type="button" class="btn btn-outline-secondary" t-att-disabled="!(planner and planner.can_redo)" t-on-click="redoPlannerAction">Redo</button>
+                            <div class="o_fed_cw_toolbar_actions">
+                                <div class="d-flex gap-2 flex-wrap justify-content-end o_fed_cw_toolbar_group">
+                                    <button type="button" class="btn btn-outline-secondary" t-att-disabled="!(this.filteredUnscheduledMatches || []).length or this.plannerBusy" t-on-click="toggleFilteredSelection"><t t-esc="this.allFilteredMatchesSelected ? 'Clear filtered' : 'Select filtered'"/></button>
+                                    <button type="button" class="btn btn-outline-secondary" t-att-disabled="!state.selectedMatchIds.length or this.plannerBusy" t-on-click="clearPlannerSelection">Clear selection</button>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap justify-content-end o_fed_cw_toolbar_group">
+                                    <button type="button" class="btn btn-primary" t-att-disabled="!this.canAutoSchedule" t-on-click="autoScheduleGameday">Auto-schedule</button>
+                                    <button type="button" class="btn btn-outline-primary" t-att-disabled="!this.canBulkAssignSelection" t-on-click="bulkAssignSelected">Bulk assign selected</button>
+                                    <button type="button" class="btn btn-outline-primary" t-att-disabled="!this.canBulkUnassignSelection" t-on-click="bulkUnassignSelected">Bulk unassign selected</button>
+                                    <button type="button" class="btn btn-outline-secondary" t-att-disabled="!(planner and planner.can_undo) or this.plannerBusy" t-on-click="undoPlannerAction">Undo</button>
+                                    <button type="button" class="btn btn-outline-secondary" t-att-disabled="!(planner and planner.can_redo) or this.plannerBusy" t-on-click="redoPlannerAction">Redo</button>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap justify-content-end o_fed_cw_toolbar_group o-destructive">
+                                    <button type="button" class="btn btn-outline-danger" t-att-disabled="!this.canUnassignAllMatches" t-on-click="requestUnassignAllMatches">Unassign all</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -903,10 +941,12 @@
                             <CollaborationPanel t-props="{ collaboration: this.workspaceCollaboration, title: 'Workspace presence', emptyMessage: 'No other planners are active in this competition right now.' }"/>
                         </div>
                         <div class="col-12 col-xl-7">
-                            <PublishScheduleDialog t-props="{ gamedays: selectedDivision.gamedays || [], overrideReason: state.overrideReason.publish, publishing: state.publishing, requiresReason: this.publishRequiresReason, validation: this.activeValidation, onReasonChange: this.updatePublishOverrideReason.bind(this), onValidate: this.validateSchedule.bind(this), onPublishGameday: this.publishGameday.bind(this), onPublishCompetition: this.publishCompetition.bind(this) }"/>
+                            <PublishScheduleDialog t-props="{ gamedays: selectedDivision.gamedays || [], overrideReason: state.overrideReason.publish, publishing: state.publishing, requiresReason: this.publishRequiresReason, validation: this.activeValidation, onReasonChange: this.updatePublishOverrideReason.bind(this), onValidate: this.validateSchedule.bind(this), onPublishGameday: this.requestPublishGameday.bind(this), onPublishCompetition: this.requestPublishCompetition.bind(this) }"/>
                         </div>
                     </div>
                 </t>
+
+                <ActionConfirmDialog t-props="{ open: state.confirmDialog.open, title: state.confirmDialog.title, message: state.confirmDialog.message, confirmLabel: state.confirmDialog.confirmLabel, confirmClass: this.confirmationDialogToneClass, onClose: this.closeConfirmDialog.bind(this), onConfirm: this.confirmPendingAction.bind(this) }"/>
             </t>
         </div>
     </t>

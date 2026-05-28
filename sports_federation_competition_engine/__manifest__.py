@@ -30,6 +30,9 @@
             "sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.xml",
             "sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.scss",
         ],
+        "web.qunit_suite_tests": [
+            "sports_federation_competition_engine/static/tests/competition_workspace_ui_tests.js",
+        ],
     },
     "demo": [],
     "installable": True,

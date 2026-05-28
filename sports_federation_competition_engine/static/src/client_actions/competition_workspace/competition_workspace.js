@@ -7,6 +7,34 @@ import { Component, onMounted, onWillStart, onWillUnmount, useState } from "@odo
 const MOBILE_QUERY = "(max-width: 991.98px)";
 const UI_STATE_STORAGE_KEY = "sports_federation_competition_engine.competition_workspace.ui_state";
 
+export function isPlannerBusyState({ saving = false, plannerLoading = false, publishing = false } = {}) {
+    return Boolean(saving || plannerLoading || publishing);
+}
+
+export function formatPlannerSelectionSummary({
+    selectedCount = 0,
+    unscheduledCount = 0,
+    assignedCount = 0,
+} = {}) {
+    if (!selectedCount) {
+        return "No matches selected.";
+    }
+    return `${selectedCount} selected: ${unscheduledCount} unscheduled and ${assignedCount} assigned.`;
+}
+
+export function shouldHandlePlannerEscape({
+    key,
+    activeSection,
+    selectedCount = 0,
+    hasPendingValidation = false,
+} = {}) {
+    return Boolean(
+        key === "Escape"
+        && activeSection === "planner"
+        && (selectedCount > 0 || hasPendingValidation)
+    );
+}
+
 function badgeClass(tone) {
     const resolvedTone = tone || "secondary";
     if (["warning", "info"].includes(resolvedTone)) {
@@ -220,6 +248,10 @@ class PublishScheduleDialog extends Component {
     static components = { StatusBadge, ValidationPanel };
 }
 
+class ActionConfirmDialog extends Component {
+    static template = "sports_federation_competition_engine.CompetitionWorkspaceActionConfirmDialog";
+}
+
 export class CompetitionWorkspaceAction extends Component {
     static template = "sports_federation_competition_engine.CompetitionWorkspaceAction";
     static components = {
@@ -228,6 +260,7 @@ export class CompetitionWorkspaceAction extends Component {
         FairnessSummaryPanel,
         GenerationPreview,
         MobileAssignmentDialog,
+        ActionConfirmDialog,
         ProgressStepper,
         PublishScheduleDialog,
         RevisionSummaryPanel,
@@ -287,6 +320,14 @@ export class CompetitionWorkspaceAction extends Component {
             currentGamedayId: params.gameday_id || restoredState.gamedayId || false,
             payload: null,
             pendingValidation: null,
+            confirmDialog: {
+                action: false,
+                confirmLabel: "Confirm",
+                message: "",
+                open: false,
+                title: "Please confirm",
+                tone: "primary",
+            },
             plannerLoading: false,
             plannerPageSize: 40,
             plannerUnscheduledLimit: 40,
@@ -335,12 +376,29 @@ export class CompetitionWorkspaceAction extends Component {
         this.handleResize = () => {
             this.state.isMobile = window.matchMedia(MOBILE_QUERY).matches;
         };
+        this.handlePlannerKeydown = (event) => {
+            const shouldHandleEscape = shouldHandlePlannerEscape({
+                key: event.key,
+                activeSection: this.state.activeSection,
+                selectedCount: this.state.selectedMatchIds.length,
+                hasPendingValidation: Boolean(this.state.pendingValidation),
+            });
+            if (!shouldHandleEscape) {
+                return;
+            }
+            this.clearPlannerSelection();
+            if (this.state.pendingValidation) {
+                this.clearPendingValidation();
+            }
+            this.notify("Planner selection cleared.", "info");
+        };
 
         onWillStart(async () => {
             await this.loadInitialData();
         });
         onMounted(() => {
             window.addEventListener("resize", this.handleResize);
+            window.addEventListener("keydown", this.handlePlannerKeydown);
             if (typeof window !== "undefined") {
                 this.heartbeatTimer = window.setInterval(() => {
                     this.refreshCollaboration({ silent: true });
@@ -349,6 +407,7 @@ export class CompetitionWorkspaceAction extends Component {
         });
         onWillUnmount(() => {
             window.removeEventListener("resize", this.handleResize);
+            window.removeEventListener("keydown", this.handlePlannerKeydown);
             if (this.heartbeatTimer) {
                 window.clearInterval(this.heartbeatTimer);
             }
@@ -873,6 +932,13 @@ export class CompetitionWorkspaceAction extends Component {
         );
     }
 
+    get plannerAssignedMatchCount() {
+        return (this.planner?.slots || []).reduce(
+            (count, slot) => (slot.match?.id ? count + 1 : count),
+            0
+        );
+    }
+
     get plannerOpenSlotCount() {
         return (this.planner?.slots || []).filter(
             (slot) => !slot.match && ["available", "reserved"].includes(slot.state)
@@ -893,11 +959,32 @@ export class CompetitionWorkspaceAction extends Component {
         );
     }
 
+    get plannerBusy() {
+        return isPlannerBusyState({
+            saving: this.state.saving,
+            plannerLoading: this.state.plannerLoading,
+            publishing: this.state.publishing,
+        });
+    }
+
+    get plannerSelectionSummary() {
+        return formatPlannerSelectionSummary({
+            selectedCount: this.state.selectedMatchIds.length,
+            unscheduledCount: this.selectedUnscheduledMatches.length,
+            assignedCount: this.selectedAssignedMatches.length,
+        });
+    }
+
+    get confirmationDialogToneClass() {
+        return this.state.confirmDialog.tone === "danger" ? "btn-danger" : "btn-primary";
+    }
+
     get canBulkAssignSelection() {
         return Boolean(
             this.selectedUnscheduledMatches.length
             && !this.selectedAssignedMatches.length
             && this.state.currentGamedayId
+            && !this.plannerBusy
         );
     }
 
@@ -906,6 +993,24 @@ export class CompetitionWorkspaceAction extends Component {
             this.selectedAssignedMatches.length
             && !this.selectedUnscheduledMatches.length
             && this.state.currentGamedayId
+            && !this.plannerBusy
+        );
+    }
+
+    get canUnassignAllMatches() {
+        return Boolean(
+            this.state.currentGamedayId
+            && this.plannerAssignedMatchCount
+            && !this.plannerBusy
+        );
+    }
+
+    get canAutoSchedule() {
+        return Boolean(
+            this.state.currentGamedayId
+            && (this.filteredUnscheduledMatches || []).length
+            && this.plannerOpenSlotCount
+            && !this.plannerBusy
         );
     }
 
@@ -958,6 +1063,13 @@ export class CompetitionWorkspaceAction extends Component {
 
     resetPlannerPagination() {
         this.state.plannerUnscheduledLimit = this.state.plannerPageSize;
+    }
+
+    resetPlannerFilters() {
+        this.state.filters.divisionId = "";
+        this.state.filters.roundNumber = "";
+        this.state.filters.teamId = "";
+        this.state.filters.conflictsOnly = false;
     }
 
     buildPlannerRpcFilters({ includeReferenceData = true, unscheduledLimit } = {}) {
@@ -1667,6 +1779,7 @@ export class CompetitionWorkspaceAction extends Component {
             this.state.gamedayForm.selected_gameday_id = String(result.gameday_id);
             this.state.gamedayForm.sharedDivisionIds = [];
             this.state.gamedayForm.sharedDivisionConfig = {};
+            this.resetPlannerFilters();
             this.resetPlannerPagination();
             this.persistUiState();
             this.notify("Gameday created.", "success");
@@ -1718,9 +1831,7 @@ export class CompetitionWorkspaceAction extends Component {
         const divisionId = Number(ev.currentTarget.dataset.divisionId || 0);
         this.state.currentDivisionId = divisionId;
         this.state.currentGamedayId = false;
-        this.state.filters.divisionId = "";
-        this.state.filters.roundNumber = "";
-        this.state.filters.teamId = "";
+        this.resetPlannerFilters();
         this.state.gamedayForm.sharedDivisionIds = [];
         this.state.gamedayForm.sharedDivisionConfig = {};
         this.state.gamedayForm.round_number = "";
@@ -1742,6 +1853,7 @@ export class CompetitionWorkspaceAction extends Component {
         const gamedayId = Number(ev.currentTarget.dataset.gamedayId || 0);
         this.clearPlannerSelection();
         this.clearPendingValidation();
+        this.resetPlannerFilters();
         this.resetPlannerPagination();
         await this.loadPlanner(gamedayId);
     }
@@ -1773,8 +1885,72 @@ export class CompetitionWorkspaceAction extends Component {
         }
     }
 
+    openConfirmDialog({ action, title, message, confirmLabel = "Confirm", tone = "primary" }) {
+        this.state.confirmDialog = {
+            action,
+            confirmLabel,
+            message,
+            open: true,
+            title,
+            tone,
+        };
+    }
+
+    closeConfirmDialog() {
+        this.state.confirmDialog = {
+            action: false,
+            confirmLabel: "Confirm",
+            message: "",
+            open: false,
+            title: "Please confirm",
+            tone: "primary",
+        };
+    }
+
+    async confirmPendingAction() {
+        const action = this.state.confirmDialog.action;
+        this.closeConfirmDialog();
+        if (action === "publish_gameday") {
+            await this.publishGameday();
+            return;
+        }
+        if (action === "publish_competition") {
+            await this.publishCompetition();
+            return;
+        }
+        if (action === "unassign_all") {
+            await this.unassignAllMatches();
+        }
+    }
+
+    requestPublishGameday() {
+        if (!this.state.currentGamedayId || this.state.publishing) {
+            return;
+        }
+        this.openConfirmDialog({
+            action: "publish_gameday",
+            title: "Publish gameday",
+            message: "Publish this gameday and lock routine edits?",
+            confirmLabel: "Publish gameday",
+            tone: "primary",
+        });
+    }
+
+    requestPublishCompetition() {
+        if (this.state.publishing) {
+            return;
+        }
+        this.openConfirmDialog({
+            action: "publish_competition",
+            title: "Publish competition",
+            message: "Publish the competition schedule and lock routine edits?",
+            confirmLabel: "Publish competition",
+            tone: "primary",
+        });
+    }
+
     async publishGameday() {
-        if (!this.state.currentGamedayId || !window.confirm("Publish this gameday and lock routine edits?")) {
+        if (!this.state.currentGamedayId) {
             return;
         }
         this.state.publishing = true;
@@ -1802,7 +1978,7 @@ export class CompetitionWorkspaceAction extends Component {
     }
 
     async publishCompetition() {
-        if (!window.confirm("Publish the competition schedule and lock routine edits?")) {
+        if (!this.state.currentCompetitionId && !this.state.currentDivisionId) {
             return;
         }
         this.state.publishing = true;
@@ -1837,6 +2013,10 @@ export class CompetitionWorkspaceAction extends Component {
     }
 
     async assignMatch(matchId, slotId, force = false, overrideReason = false) {
+        if (this.state.saving) {
+            return;
+        }
+        this.state.saving = true;
         try {
             const resolvedOverrideReason = overrideReason || (force
                 ? this.state.overrideReason.pending.trim()
@@ -1880,10 +2060,16 @@ export class CompetitionWorkspaceAction extends Component {
             this.notify("Match assignment saved.", "success");
         } catch (error) {
             this.notify(error.message || "The match could not be assigned.", "danger");
+        } finally {
+            this.state.saving = false;
         }
     }
 
     async unassignMatch(matchId) {
+        if (this.state.saving) {
+            return;
+        }
+        this.state.saving = true;
         try {
             await this.orm.call(
                 "federation.competition.workspace.service",
@@ -1902,6 +2088,8 @@ export class CompetitionWorkspaceAction extends Component {
             this.notify("Match unassigned.", "success");
         } catch (error) {
             this.notify(error.message || "The match could not be unassigned.", "danger");
+        } finally {
+            this.state.saving = false;
         }
     }
 
@@ -1913,6 +2101,10 @@ export class CompetitionWorkspaceAction extends Component {
         if (!this.state.currentGamedayId || !matchIds.length) {
             return;
         }
+        if (this.state.saving) {
+            return;
+        }
+        this.state.saving = true;
         try {
             const resolvedOverrideReason = overrideReason || (force
                 ? this.state.overrideReason.pending.trim()
@@ -1955,6 +2147,8 @@ export class CompetitionWorkspaceAction extends Component {
             this.notify(`${result.operation_count || matchIds.length} match(es) assigned.`, "success");
         } catch (error) {
             this.notify(error.message || "Bulk assignment failed.", "danger");
+        } finally {
+            this.state.saving = false;
         }
     }
 
@@ -1981,6 +2175,10 @@ export class CompetitionWorkspaceAction extends Component {
         if (!this.state.currentGamedayId || !matchIds.length) {
             return;
         }
+        if (this.state.saving) {
+            return;
+        }
+        this.state.saving = true;
         try {
             const result = await this.orm.call(
                 "federation.competition.workspace.service",
@@ -2010,6 +2208,121 @@ export class CompetitionWorkspaceAction extends Component {
             this.notify(`${result.operation_count || matchIds.length} match(es) unassigned.`, "success");
         } catch (error) {
             this.notify(error.message || "Bulk unassignment failed.", "danger");
+        } finally {
+            this.state.saving = false;
+        }
+    }
+
+    requestUnassignAllMatches() {
+        if (!this.state.currentGamedayId || !this.plannerAssignedMatchCount) {
+            return;
+        }
+        if (this.state.saving) {
+            return;
+        }
+        this.openConfirmDialog({
+            action: "unassign_all",
+            title: "Unassign all matches",
+            message: `Unassign all ${this.plannerAssignedMatchCount} assigned match(es) on this gameday?`,
+            confirmLabel: "Unassign all",
+            tone: "danger",
+        });
+    }
+
+    async unassignAllMatches() {
+        if (!this.state.currentGamedayId || !this.plannerAssignedMatchCount || this.state.saving) {
+            return;
+        }
+        this.state.saving = true;
+        try {
+            const result = await this.orm.call(
+                "federation.competition.workspace.service",
+                "unassign_all_matches",
+                [this.state.currentGamedayId, this.currentPlannerRevision]
+            );
+            if (!result.ok) {
+                this.state.pendingValidation = {
+                    action: "unassign_all",
+                    allowForce: false,
+                    title: "Unassign all review",
+                    validation: result.validation,
+                };
+                this.notify("Unassign all could not be completed.", "warning");
+                return;
+            }
+            this.clearPlannerSelection();
+            this.state.pendingValidation = null;
+            await this.loadWorkspace({
+                competitionId: this.state.currentCompetitionId,
+                divisionId: this.state.currentDivisionId,
+                gamedayId: this.state.currentGamedayId,
+                includePlannerReferenceData: false,
+                unscheduledLimit: this.state.plannerUnscheduledLimit,
+            });
+            this.notify(`${result.operation_count || 0} match(es) unassigned.`, "success");
+        } catch (error) {
+            this.notify(error.message || "Unassign all failed.", "danger");
+        } finally {
+            this.state.saving = false;
+        }
+    }
+
+    async autoScheduleGameday() {
+        if (!this.state.currentGamedayId) {
+            return;
+        }
+        this.state.saving = true;
+        try {
+            const result = await this.orm.call(
+                "federation.competition.workspace.service",
+                "auto_schedule_gameday",
+                [
+                    this.state.currentGamedayId,
+                    this.currentPlannerRevision,
+                    false,
+                ]
+            );
+            if (!result.ok) {
+                this.state.pendingValidation = {
+                    action: "auto_schedule",
+                    allowForce: false,
+                    title: "Auto-schedule review",
+                    validation: result.validation,
+                };
+                this.notify(
+                    result.validation?.blocking?.[0]?.message
+                        || "Auto-schedule could not be completed.",
+                    "warning"
+                );
+                return;
+            }
+
+            this.clearPlannerSelection();
+            this.state.pendingValidation = null;
+            await this.loadWorkspace({
+                competitionId: this.state.currentCompetitionId,
+                divisionId: this.state.currentDivisionId,
+                gamedayId: this.state.currentGamedayId,
+                includePlannerReferenceData: false,
+                unscheduledLimit: this.state.plannerUnscheduledLimit,
+            });
+
+            const assignedCount = Number(result.assigned_count || 0);
+            const skippedCount = Number((result.skipped || []).length || 0);
+            const skippedSummary = (result.skipped_reason_summary || [])
+                .map((item) => `${item.code}: ${item.count}`)
+                .join(", ");
+            this.notify(
+                `Auto-schedule assigned ${assignedCount} match(es)`
+                + (skippedCount
+                    ? `, skipped ${skippedCount}${skippedSummary ? ` (${skippedSummary})` : ""}.`
+                    : "."),
+                assignedCount ? "success" : "warning"
+            );
+        } catch (error) {
+            this.notify(error.message || "Auto-schedule failed.", "danger");
+        } finally {
+            this.state.saving = false;
         }
     }
 
@@ -2017,6 +2330,10 @@ export class CompetitionWorkspaceAction extends Component {
         if (!this.state.currentGamedayId) {
             return;
         }
+        if (this.state.saving) {
+            return;
+        }
+        this.state.saving = true;
         try {
             const result = await this.orm.call(
                 "federation.competition.workspace.service",
@@ -2045,6 +2362,8 @@ export class CompetitionWorkspaceAction extends Component {
             this.notify("Last planner action undone.", "success");
         } catch (error) {
             this.notify(error.message || "Undo failed.", "danger");
+        } finally {
+            this.state.saving = false;
         }
     }
 
@@ -2052,6 +2371,10 @@ export class CompetitionWorkspaceAction extends Component {
         if (!this.state.currentGamedayId) {
             return;
         }
+        if (this.state.saving) {
+            return;
+        }
+        this.state.saving = true;
         try {
             const result = await this.orm.call(
                 "federation.competition.workspace.service",
@@ -2080,6 +2403,8 @@ export class CompetitionWorkspaceAction extends Component {
             this.notify("Last planner action redone.", "success");
         } catch (error) {
             this.notify(error.message || "Redo failed.", "danger");
+        } finally {
+            this.state.saving = false;
         }
     }
 
