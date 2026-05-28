@@ -3,6 +3,7 @@ from unittest.mock import patch
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
+from odoo.tools.misc import mute_logger
 
 
 @tagged("-at_install", "post_install", "sf_competition_workspace")
@@ -1822,7 +1823,7 @@ class TestCompetitionWorkspaceService(TransactionCase):
         Revision = self.env["federation.competition.schedule.revision"]
         existing_revision_number = gameday.schedule_draft_revision_id.revision_number
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception), mute_logger("odoo.sql_db"), self.cr.savepoint():
             Revision.create(
                 {
                     "name": "Revision 1 Duplicate",

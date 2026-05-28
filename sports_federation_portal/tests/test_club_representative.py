@@ -1,6 +1,7 @@
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError
 from datetime import date, timedelta
+from odoo.tools.misc import mute_logger
 
 
 class TestClubRepresentative(TransactionCase):
@@ -171,7 +172,7 @@ class TestClubRepresentative(TransactionCase):
             }
         )
         # Same partner, same club, same role should fail
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception), mute_logger("odoo.sql_db"), self.cr.savepoint():
             self.env["federation.club.representative"].create(
                 {
                     "club_id": self.club.id,

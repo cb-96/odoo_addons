@@ -11,7 +11,17 @@ class Website(models.Model):
         websites = self.sudo()
         if websites:
             return websites
-        return self.env["website"].sudo().search([])
+        website_id = self.env.context.get("website_id")
+        if website_id:
+            scoped = self.env["website"].sudo().browse(int(website_id)).exists()
+            if scoped:
+                return scoped
+
+        current_website = self.env["website"].get_current_website()
+        if current_website:
+            return current_website.sudo()
+
+        return self.env["website"].sudo().search([], limit=1)
 
     def _get_public_site_brand_name(self):
         """Return the canonical public-site brand name."""

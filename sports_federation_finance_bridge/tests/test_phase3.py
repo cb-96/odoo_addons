@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase
+from odoo.tools.misc import mute_logger
 
 
 class TestFeeSchedule(TransactionCase):
@@ -58,7 +59,7 @@ class TestFeeSchedule(TransactionCase):
     def test_unique_constraint_prevents_duplicate(self):
         """Uniqueness constraint prevents two rows for the same combination."""
         self._make_schedule(category="senior", gender="female", amount=50.0)
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception), mute_logger("odoo.sql_db"), self.cr.savepoint():
             self._make_schedule(category="senior", gender="female", amount=60.0)
 
     def test_negative_amount_raises(self):

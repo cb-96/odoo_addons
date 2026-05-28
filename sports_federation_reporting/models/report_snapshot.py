@@ -76,22 +76,31 @@ class FederationReportSnapshot(models.Model):
             ]
         )
         sanction_exposure = finance_exception_model.search_count([])
-        compliance_rows = compliance_model.search([])
-        compliance_pending = sum(
-            row.pending_count + row.expired_count + row.non_compliant_count
-            for row in compliance_rows
+        compliance_group = compliance_model.read_group(
+            [],
+            [
+                "pending_count:sum",
+                "expired_count:sum",
+                "non_compliant_count:sum",
+            ],
+            [],
+        )
+        compliance_summary = compliance_group[0] if compliance_group else {}
+        compliance_pending = int(
+            (compliance_summary.get("pending_count_sum") or 0)
+            + (compliance_summary.get("expired_count_sum") or 0)
+            + (compliance_summary.get("non_compliant_count_sum") or 0)
         )
         finance_follow_up = finance_follow_up_model.search_count(
             [
                 ("needs_follow_up", "=", True),
             ]
         )
-        season_rows = season_checklist_model.search([])
-        blocked_seasons = len(
-            season_rows.filtered(lambda row: row.checklist_status == "blocked")
+        blocked_seasons = season_checklist_model.search_count(
+            [("checklist_status", "=", "blocked")]
         )
-        attention_seasons = len(
-            season_rows.filtered(lambda row: row.checklist_status == "attention")
+        attention_seasons = season_checklist_model.search_count(
+            [("checklist_status", "=", "attention")]
         )
         seasonal_readiness = blocked_seasons + attention_seasons
 

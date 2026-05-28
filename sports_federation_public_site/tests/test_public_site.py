@@ -1,4 +1,5 @@
 from odoo.tests import TransactionCase
+from odoo.tools.misc import mute_logger
 
 
 class TestPublicSite(TransactionCase):
@@ -188,7 +189,7 @@ class TestPublicSite(TransactionCase):
     def test_public_slug_must_be_unique(self):
         """Test that public slug must be unique."""
         self.tournament.public_slug = "shared-slug"
-        with self.assertRaises(Exception), self.cr.savepoint():
+        with self.assertRaises(Exception), mute_logger("odoo.sql_db"), self.cr.savepoint():
             self.env["federation.tournament"].create(
                 {
                     "name": "Other Tournament",

@@ -101,7 +101,7 @@ class TestTourFinanceLifecycle(TransactionCase):
         self.assertEqual(event2.state, "cancelled")
 
         # Cancelled events cannot be settled
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError):
             event2.action_settle()
 
         # STEP 5: create_from_source() — idempotent
