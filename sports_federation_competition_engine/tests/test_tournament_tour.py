@@ -113,6 +113,45 @@ class TestTournamentTour(TransactionCase):
             a = max(0, a - 1)
         return h, a
 
+    def _ensure_ready_roster(self, team, season):
+        """Guarantee an active roster exists so schedule guards pass."""
+        roster = self.env["federation.team.roster"].search(
+            [("team_id", "=", team.id), ("season_id", "=", season.id)],
+            limit=1,
+        )
+        if not roster:
+            roster = self.env["federation.team.roster"].create(
+                {
+                    "team_id": team.id,
+                    "season_id": season.id,
+                }
+            )
+
+        active_line_count = self.env["federation.team.roster.line"].search_count(
+            [("roster_id", "=", roster.id), ("status", "=", "active")]
+        )
+        if not active_line_count:
+            player = self.env["federation.player"].create(
+                {
+                    "first_name": f"Tour{team.id}",
+                    "last_name": "Roster",
+                    "gender": "male",
+                    "club_id": team.club_id.id,
+                }
+            )
+            self.env["federation.team.roster.line"].create(
+                {
+                    "roster_id": roster.id,
+                    "player_id": player.id,
+                    "status": "active",
+                }
+            )
+
+        if roster.status != "active":
+            roster.action_activate()
+
+        return roster
+
     # ------------------------------------------------------------------
     # Tour
     # ------------------------------------------------------------------
@@ -559,6 +598,9 @@ class TestTournamentTour(TransactionCase):
             participants |= p
 
         self.assertEqual(len(participants), 8)
+
+        for team in eight_teams:
+            self._ensure_ready_roster(team, self.season)
 
         # --- generate knockout bracket ----------------------------------
         ko_service = self.env["federation.knockout.service"]

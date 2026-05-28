@@ -1,4 +1,6 @@
-from odoo.exceptions import ValidationError
+from unittest.mock import patch
+
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase
 
 
@@ -196,7 +198,7 @@ class TestCreateInvoice(TransactionCase):
             {"name": "Invoice Club", "code": "IVC"}
         )
 
-    def _make_event(self, amount=200.0):
+    def _make_event(self, amount=200.0, source_res_id=None):
         return self.env["federation.finance.event"].create(
             {
                 "name": "Test Invoice Event",
@@ -205,7 +207,7 @@ class TestCreateInvoice(TransactionCase):
                 "amount": amount,
                 "currency_id": self.env.company.currency_id.id,
                 "source_model": "federation.season",
-                "source_res_id": self.season.id,
+                "source_res_id": source_res_id or self.season.id,
                 "club_id": self.club.id,
             }
         )
@@ -256,3 +258,37 @@ class TestCreateInvoice(TransactionCase):
         event.action_cancel()
         with self.assertRaises(ValidationError):
             event.action_create_invoice()
+
+    def test_batch_create_invoices_reports_validation_failures(self):
+        """Batch helper raises one user-facing error summary on per-record failures."""
+        event_ok = self._make_event(amount=100.0)
+        second_season = self.env["federation.season"].create(
+            {
+                "name": "Invoice Batch Test Season",
+                "code": "ITSB2026",
+                "date_start": "2026-01-01",
+                "date_end": "2026-12-31",
+            }
+        )
+        event_failed = self._make_event(amount=120.0, source_res_id=second_season.id)
+
+        with patch.object(
+            type(event_failed),
+            "action_create_invoice",
+            autospec=True,
+            side_effect=[True, ValidationError("Invoice already exists")],
+        ):
+            with self.assertRaises(UserError):
+                (event_ok | event_failed).action_batch_create_invoices()
+
+    def test_batch_create_invoices_returns_true_when_no_failures(self):
+        """Batch helper returns True when all eligible records are handled cleanly."""
+        event = self._make_event(amount=90.0)
+        with patch.object(
+            type(event),
+            "action_create_invoice",
+            autospec=True,
+            return_value=True,
+        ):
+            result = event.action_batch_create_invoices()
+        self.assertTrue(result)

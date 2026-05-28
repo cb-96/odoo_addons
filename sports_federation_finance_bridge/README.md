@@ -77,6 +77,9 @@ An individual financial occurrence.
 7. **Season intelligence support** — finance events infer a season scope from
   their source record whenever possible so reporting and budget views can roll
   up actuals without duplicate data entry.
+8. **Operator-safe batch invoicing** — list-view "Create Invoices" now reports
+  per-event failures instead of silently skipping exceptions, so reconciliation
+  issues are visible immediately.
 
 ### `federation.season.budget`
 

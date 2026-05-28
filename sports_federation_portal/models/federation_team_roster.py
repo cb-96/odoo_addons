@@ -287,6 +287,7 @@ class FederationTeamRoster(models.Model):
                 PortalPrivilege.portal_write(
                     roster,
                     {"season_registration_id": season_registration.id},
+                    scope_domain=self._portal_get_scope_domain(user=user),
                     user=user,
                 )
             return roster
@@ -348,6 +349,7 @@ class FederationTeamRoster(models.Model):
         return self.env["federation.portal.privilege"].portal_write(
             self,
             prepared,
+            scope_domain=self._portal_get_scope_domain(user=user),
             user=user,
         )
 
@@ -358,6 +360,7 @@ class FederationTeamRoster(models.Model):
         return self.env["federation.portal.privilege"].portal_call(
             self,
             "action_activate",
+            scope_domain=self._portal_get_scope_domain(user=user),
             user=user,
         )
 
@@ -368,6 +371,7 @@ class FederationTeamRoster(models.Model):
         return self.env["federation.portal.privilege"].portal_call(
             self,
             "action_set_draft",
+            scope_domain=self._portal_get_scope_domain(user=user),
             user=user,
         )
 
@@ -378,6 +382,7 @@ class FederationTeamRoster(models.Model):
         return self.env["federation.portal.privilege"].portal_call(
             self,
             "action_close",
+            scope_domain=self._portal_get_scope_domain(user=user),
             user=user,
         )
 
@@ -388,6 +393,7 @@ class FederationTeamRoster(models.Model):
         return self.env["federation.portal.privilege"].portal_call(
             self,
             "action_reopen",
+            scope_domain=self._portal_get_scope_domain(user=user),
             user=user,
         )
 
@@ -608,6 +614,7 @@ class FederationTeamRosterLine(models.Model):
             self.env["federation.portal.privilege"].portal_write(
                 line,
                 prepared,
+                scope_domain=[("roster_id", "=", line.roster_id.id)],
                 user=user,
             )
         return True
@@ -621,5 +628,6 @@ class FederationTeamRosterLine(models.Model):
         return self.env["federation.portal.privilege"].portal_call(
             self,
             "unlink",
+            scope_domain=[("roster_id", "in", self.mapped("roster_id").ids)],
             user=user,
         )

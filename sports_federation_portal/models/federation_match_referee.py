@@ -47,15 +47,18 @@ class FederationMatchReferee(models.Model):
                 )
             )
         prepared_note = (response_note or "").strip()
+        scope_domain = self._portal_get_domain(user=user)
         if prepared_note:
             self.env["federation.portal.privilege"].portal_write(
                 self,
                 {"response_note": prepared_note},
+                scope_domain=scope_domain,
                 user=user,
             )
         return self.env["federation.portal.privilege"].portal_call(
             self,
             "action_confirm",
+            scope_domain=scope_domain,
             user=user,
         )
 
@@ -78,10 +81,12 @@ class FederationMatchReferee(models.Model):
         self.env["federation.portal.privilege"].portal_write(
             self,
             {"response_note": prepared_note},
+            scope_domain=self._portal_get_domain(user=user),
             user=user,
         )
         return self.env["federation.portal.privilege"].portal_call(
             self,
             "action_cancel",
+            scope_domain=self._portal_get_domain(user=user),
             user=user,
         )

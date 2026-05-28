@@ -22,7 +22,7 @@ class FederationMatchVenueFinanceHooks(models.Model):
 
     def _sync_venue_finance_event(self):
         """Synchronize venue finance event."""
-        FinanceEvent = self.env["federation.finance.event"]
+        FinanceEvent = self.env["federation.finance.event"].sudo()
         for match in self:
             fee_type = match._get_venue_fee_type(
                 create_if_missing=bool(match.venue_id and match.state == "scheduled")
@@ -38,7 +38,7 @@ class FederationMatchVenueFinanceHooks(models.Model):
 
             if match.state == "scheduled" and match.venue_id and fee_type:
                 FinanceEvent.ensure_from_source(
-                    match,
+                    match.sudo(),
                     fee_type,
                     amount=fee_type.default_amount,
                     event_type="charge",
@@ -53,14 +53,15 @@ class FederationMatchVenueFinanceHooks(models.Model):
     ):
         """Return venue fee type."""
         self.ensure_one()
-        fee_type = self.env["federation.fee.type"].search(
+        FeeType = self.env["federation.fee.type"].sudo()
+        fee_type = FeeType.search(
             [("code", "=", fee_type_code)],
             limit=1,
         )
         if fee_type or not create_if_missing:
             return fee_type
 
-        return self.env["federation.fee.type"].create(
+        return FeeType.create(
             {
                 "name": "Venue Booking",
                 "code": fee_type_code,

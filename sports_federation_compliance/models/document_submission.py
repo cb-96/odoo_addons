@@ -327,7 +327,12 @@ class FederationDocumentSubmission(models.Model):
             "reviewer_id": False,
             "reviewed_on": False,
         }
-        PortalPrivilege.portal_write(submission, write_vals, user=user)
+        PortalPrivilege.portal_write(
+            submission,
+            write_vals,
+            scope_domain=[("id", "=", submission.id)],
+            user=user,
+        )
         return submission
 
     @api.model
@@ -381,6 +386,7 @@ class FederationDocumentSubmission(models.Model):
             PortalPrivilege.portal_write(
                 submission,
                 {"attachment_ids": [(6, 0, existing_attachment_ids + attachment_ids)]},
+                scope_domain=[("id", "=", submission.id)],
                 user=user,
             )
         return submission.attachment_ids
@@ -419,6 +425,7 @@ class FederationDocumentSubmission(models.Model):
         self.env["federation.portal.privilege"].portal_call(
             submission,
             "action_submit",
+            scope_domain=[("id", "=", submission.id)],
             user=user,
         )
         return submission

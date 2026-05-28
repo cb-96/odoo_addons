@@ -1817,6 +1817,48 @@ class TestCompetitionWorkspaceService(TransactionCase):
             planner_data["gameday"]["schedule_revisions"]["draft_revision"]
         )
 
+    def test_schedule_revision_numbers_must_be_unique_per_planner_root(self):
+        _, gameday = self._prepare_planned_division("Revision Constraint Division")
+        Revision = self.env["federation.competition.schedule.revision"]
+        existing_revision_number = gameday.schedule_draft_revision_id.revision_number
+
+        with self.assertRaises(Exception):
+            Revision.create(
+                {
+                    "name": "Revision 1 Duplicate",
+                    "planner_root_round_id": gameday.id,
+                    "edition_id": gameday.tournament_id.edition_id.id,
+                    "revision_number": existing_revision_number,
+                    "state": "draft",
+                }
+            )
+
+    def test_only_one_live_schedule_revision_is_allowed_per_planner_root(self):
+        _, gameday = self._prepare_planned_division("Single Live Revision Division")
+        Revision = self.env["federation.competition.schedule.revision"]
+        first_live_number = gameday.schedule_draft_revision_id.revision_number + 1
+
+        Revision.create(
+            {
+                "name": "Live Revision 1",
+                "planner_root_round_id": gameday.id,
+                "edition_id": gameday.tournament_id.edition_id.id,
+                "revision_number": first_live_number,
+                "state": "live",
+            }
+        )
+
+        with self.assertRaises(ValidationError):
+            Revision.create(
+                {
+                    "name": "Live Revision 2",
+                    "planner_root_round_id": gameday.id,
+                    "edition_id": gameday.tournament_id.edition_id.id,
+                    "revision_number": first_live_number + 1,
+                    "state": "live",
+                }
+            )
+
     def test_workspace_presence_reports_same_gameday_editors(self):
         division, gameday = self._prepare_planned_division("Presence Division")
 

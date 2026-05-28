@@ -1,5 +1,5 @@
-from odoo import api, fields, models
-from odoo.exceptions import ValidationError
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError, ValidationError
 
 
 class FederationFinanceEvent(models.Model):
@@ -490,3 +490,33 @@ class FederationFinanceEvent(models.Model):
         invoice = self.env["account.move"].sudo().create(invoice_vals)
         self.write({"invoice_ref": str(invoice.id)})
         return invoice
+
+    def action_batch_create_invoices(self):
+        """Create invoices for eligible finance events and report failures.
+
+        This server-side helper is used by the list-view server action so
+        operators get a clear error summary instead of silent skips.
+        """
+        failures = []
+        for event in self:
+            if event.invoice_ref or event.state == "cancelled":
+                continue
+            try:
+                event.action_create_invoice()
+            except ValidationError as error:
+                failures.append(f"{event.display_name}: {error}")
+            except Exception as error:  # pylint: disable=broad-except
+                failures.append(
+                    _("%(event)s: unexpected error (%(error)s)")
+                    % {
+                        "event": event.display_name,
+                        "error": error,
+                    }
+                )
+
+        if failures:
+            raise UserError(
+                _("Some invoices could not be created:\n%(details)s")
+                % {"details": "\n".join(failures)}
+            )
+        return True

@@ -175,9 +175,11 @@ class FederationMatchSheet(models.Model):
                 prepared["roster_id"] = False
 
         if prepared:
+            scope_domain = self._portal_get_domain(user=user)
             self.env["federation.portal.privilege"].portal_write(
                 self,
                 prepared,
+                scope_domain=scope_domain,
                 user=user,
             )
         return True
@@ -217,7 +219,12 @@ class FederationMatchSheet(models.Model):
                 lambda ln: ln.player_id.id not in submitted
             )
             if to_remove:
-                Privilege.portal_call(to_remove, "unlink", user=user)
+                Privilege.portal_call(
+                    to_remove,
+                    "unlink",
+                    scope_domain=[("match_sheet_id", "=", sheet.id)],
+                    user=user,
+                )
 
             # Add or update selected players
             for player_id, data in submitted.items():
@@ -238,6 +245,7 @@ class FederationMatchSheet(models.Model):
                             "is_captain": is_captain,
                             "jersey_number": jersey_number,
                         },
+                        scope_domain=[("match_sheet_id", "=", sheet.id)],
                         user=user,
                     )
                 else:
@@ -268,5 +276,6 @@ class FederationMatchSheet(models.Model):
         return self.env["federation.portal.privilege"].portal_call(
             drafts,
             "action_submit",
+            scope_domain=self._portal_get_domain(user=user),
             user=user,
         )

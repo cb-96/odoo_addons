@@ -698,6 +698,51 @@ class TestIntegrationApi(TransactionCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers.get("X-Federation-Page-Limit"), "500")
 
+    def test_finance_events_route_uses_cursor_batch_when_no_params_are_supplied(self):
+        event = Mock()
+        event.get_handoff_export_row.return_value = [
+            "finance_event_v1",
+            "777",
+            "Default Paged Export",
+        ]
+        finance_service = Mock()
+        finance_service.EXPORT_SCHEMA_VERSION = "finance_event_v1"
+        finance_service.sudo.return_value = finance_service
+        finance_service.get_handoff_export_headers.return_value = [
+            "Version",
+            "Id",
+            "Name",
+        ]
+        finance_service.get_handoff_export_batch.return_value = {
+            "events": [event],
+            "count": 1,
+            "limit": 200,
+            "has_more": False,
+            "next_cursor": False,
+        }
+        request_stub = self._make_finance_request(finance_service)
+
+        with patch(
+            "odoo.addons.sports_federation_import_tools.controllers.integration_api.request",
+            request_stub,
+        ), patch.object(
+            self.controller,
+            "_rate_limit_response",
+            return_value=False,
+        ), patch.object(
+            self.controller,
+            "_authenticate",
+            return_value=(SimpleNamespace(code=self.partner.code), None),
+        ):
+            response = self.controller.integration_finance_events()
+
+        finance_service.get_handoff_export_batch.assert_called_once_with(
+            cursor=False,
+            limit=False,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("X-Federation-Export-Mode"), "cursor_page")
+
     def test_inbound_route_rate_limits_repeat_callers(self):
         self.env["ir.config_parameter"].sudo().set_param(
             "sports_federation.rate_limit.integration_inbound_deliveries.limit",

@@ -184,6 +184,26 @@ class TestPortalOwnershipGuard(TransactionCase):
                 self.roster_b, scope_a, user=self.user_a
             )
 
+    def test_portal_write_requires_explicit_scope_domain(self):
+        """portal_write must fail closed when callers omit a scope domain."""
+        PortalPrivilege = self.env["federation.portal.privilege"]
+        with self.assertRaises(AccessError):
+            PortalPrivilege.portal_write(
+                self.roster_a,
+                {"notes": "Scoped write required"},
+                user=self.user_a,
+            )
+
+    def test_portal_call_requires_explicit_scope_domain(self):
+        """portal_call must fail closed when callers omit a scope domain."""
+        PortalPrivilege = self.env["federation.portal.privilege"]
+        with self.assertRaises(AccessError):
+            PortalPrivilege.portal_call(
+                self.roster_a,
+                "name_get",
+                user=self.user_a,
+            )
+
     # ------------------------------------------------------------------
     # _portal_assert_scope_access — model-level ownership assertion
     # ------------------------------------------------------------------

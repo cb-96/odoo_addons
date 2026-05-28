@@ -52,8 +52,15 @@ class FederationPortalPrivilege(models.AbstractModel):
         return created_records
 
     @api.model
-    def portal_write(self, records, values, user=None):
+    def portal_write(self, records, values, scope_domain=None, user=None):
         """Write through the shared portal privilege boundary."""
+        if scope_domain is None:
+            raise AccessError(
+                _(
+                    "Portal write operations must provide an explicit ownership scope domain."
+                )
+            )
+        self._assert_portal_owns(records, scope_domain, user=user)
         privileged_records = self.elevate(records, user=user)
         result = privileged_records.write(values)
         if result:
@@ -68,8 +75,23 @@ class FederationPortalPrivilege(models.AbstractModel):
         return result
 
     @api.model
-    def portal_call(self, records, method_name, *args, user=None, **kwargs):
+    def portal_call(
+        self,
+        records,
+        method_name,
+        *args,
+        scope_domain=None,
+        user=None,
+        **kwargs,
+    ):
         """Call a record method through the shared portal privilege boundary."""
+        if scope_domain is None:
+            raise AccessError(
+                _(
+                    "Portal call operations must provide an explicit ownership scope domain."
+                )
+            )
+        self._assert_portal_owns(records, scope_domain, user=user)
         privileged_records = self.elevate(records, user=user)
         result = getattr(privileged_records, method_name)(*args, **kwargs)
         self._log_portal_audit(

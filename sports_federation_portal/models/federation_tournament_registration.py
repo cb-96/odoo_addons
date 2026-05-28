@@ -269,7 +269,15 @@ class FederationTournamentRegistration(models.Model):
             },
             user=user,
         )
-        PortalPrivilege.portal_call(registration, "action_submit", user=user)
+        PortalPrivilege.portal_call(
+            registration,
+            "action_submit",
+            scope_domain=[
+                ("team_id", "=", team.id),
+                ("tournament_id", "=", tournament.id),
+            ],
+            user=user,
+        )
         return registration
 
     @api.onchange("tournament_id")

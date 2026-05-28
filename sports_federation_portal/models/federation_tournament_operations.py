@@ -1255,12 +1255,23 @@ class FederationTournamentOperations(models.Model):
             access_mode=access_mode,
         )
         PortalPrivilege = self.env["federation.portal.privilege"]
+        portal_scope_domain = self._operations_get_portal_match_scope_domain(user=user)
 
         def portal_write(write_values):
-            return PortalPrivilege.portal_write(match, write_values, user=user)
+            return PortalPrivilege.portal_write(
+                match,
+                write_values,
+                scope_domain=portal_scope_domain,
+                user=user,
+            )
 
         def portal_call(method_name):
-            return PortalPrivilege.portal_call(match, method_name, user=user)
+            return PortalPrivilege.portal_call(
+                match,
+                method_name,
+                scope_domain=portal_scope_domain,
+                user=user,
+            )
 
         def internal_write(write_values):
             return match.with_user(user).write(write_values)

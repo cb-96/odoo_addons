@@ -2,6 +2,8 @@
 <odoo>
 
     <template id="public_tournament_subnav" name="Public Tournament Sub Navigation">
+        <t t-set="subnav_has_public_schedule" t-value="bool(tournament.get_public_schedule_sections())"/>
+        <t t-set="subnav_has_public_bracket" t-value="bool(tournament.get_public_bracket_sections())"/>
         <div class="position-sticky top-0 bg-white border rounded-3 shadow-sm px-3 py-2 mb-4" style="z-index: 10;">
             <div class="d-flex flex-wrap gap-2 align-items-center">
                 <a t-att-href="tournament.get_public_path()"
@@ -12,7 +14,7 @@
                    t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_teams' else 'btn-outline-secondary' }}">
                     Teams
                 </a>
-                <a t-if="tournament.get_public_schedule_sections()"
+                <a t-if="subnav_has_public_schedule"
                    t-att-href="tournament.get_public_schedule_path()"
                    t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_schedule' else 'btn-outline-secondary' }}">
                     Schedule
@@ -27,7 +29,7 @@
                    t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_results' else 'btn-outline-secondary' }}">
                     Results
                 </a>
-                <a t-if="tournament.has_public_bracket()"
+                <a t-if="subnav_has_public_bracket"
                    t-att-href="tournament.get_public_bracket_path()"
                    t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_bracket' else 'btn-outline-secondary' }}">
                     Bracket
@@ -260,7 +262,7 @@
                                         <p class="mb-3" t-esc="tournament.public_editorial_summary or 'Schedules, results, standings, and bracket updates are available here.'"/>
                                         <div class="d-flex flex-wrap gap-2">
                                             <a t-att-href="tournament.get_public_path()" class="btn btn-primary btn-sm">Overview</a>
-                                            <a t-if="tournament.get_public_schedule_sections()" t-att-href="tournament.get_public_schedule_path()" class="btn btn-outline-secondary btn-sm">Schedule</a>
+                                            <a t-if="tournament_public_flags.get(tournament.id, {}).get('has_schedule')" t-att-href="tournament.get_public_schedule_path()" class="btn btn-outline-secondary btn-sm">Schedule</a>
                                             <a t-if="tournament.show_public_results" t-att-href="tournament.get_public_results_path()" class="btn btn-outline-secondary btn-sm">Results</a>
                                             <a t-if="tournament.show_public_standings" t-att-href="tournament.get_public_standings_path()" class="btn btn-outline-secondary btn-sm">Standings</a>
                                         </div>
@@ -320,7 +322,7 @@
                                         <p class="mb-3 flex-grow-1" t-esc="tournament.public_editorial_summary or tournament.notes or 'Entries, schedules, and live updates all live here.'"/>
                                         <div class="d-flex flex-wrap gap-2 mt-auto">
                                             <a t-att-href="tournament.get_public_path()" class="btn btn-sm btn-primary">Overview</a>
-                                            <a t-if="tournament.can_access_public_detail() and tournament.get_public_schedule_sections()" t-att-href="tournament.get_public_schedule_path()" class="btn btn-sm btn-outline-secondary">Schedule</a>
+                                            <a t-if="tournament.can_access_public_detail() and tournament_public_flags.get(tournament.id, {}).get('has_schedule')" t-att-href="tournament.get_public_schedule_path()" class="btn btn-sm btn-outline-secondary">Schedule</a>
                                             <a t-if="tournament.can_access_public_detail() and tournament.show_public_results" t-att-href="tournament.get_public_results_path()" class="btn btn-sm btn-outline-secondary">Results</a>
                                         </div>
                                     </div>
@@ -369,7 +371,7 @@
                                     <div class="card-body">
                                         <div class="d-grid gap-2">
                                             <a t-if="can_register" t-att-href="tournament.get_public_register_path()" class="btn btn-primary">Register for This Tournament</a>
-                                            <a t-if="tournament.can_access_public_detail() and tournament.get_public_schedule_sections()" t-att-href="tournament.get_public_schedule_path()" class="btn btn-outline-secondary">Open Schedule</a>
+                                            <a t-if="has_public_schedule" t-att-href="tournament.get_public_schedule_path()" class="btn btn-outline-secondary">Open Schedule</a>
                                             <a t-if="tournament.can_access_public_detail() and tournament.show_public_results" t-att-href="tournament.get_public_results_path()" class="btn btn-outline-secondary">Open Results</a>
                                             <a t-if="tournament.can_access_public_detail() and tournament.show_public_standings" t-att-href="tournament.get_public_standings_path()" class="btn btn-outline-secondary">Open Standings</a>
                                         </div>
@@ -406,7 +408,7 @@
                         <section class="mb-4" t-if="upcoming_matches">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h2 class="h4 mb-0">Upcoming Matches</h2>
-                                <a t-if="tournament.can_access_public_detail() and tournament.get_public_schedule_sections()" t-att-href="tournament.get_public_schedule_path()" class="btn btn-sm btn-outline-secondary">Full Schedule</a>
+                                <a t-if="has_public_schedule" t-att-href="tournament.get_public_schedule_path()" class="btn btn-sm btn-outline-secondary">Full Schedule</a>
                             </div>
                             <div class="row g-3">
                                 <t t-foreach="upcoming_matches" t-as="match">
@@ -477,7 +479,7 @@
                                         </li>
                                         <li class="d-flex justify-content-between align-items-center mb-2">
                                             <span>Schedule</span>
-                                            <span t-if="tournament.get_public_schedule_sections()" class="badge text-bg-success">Live now</span>
+                                            <span t-if="has_public_schedule" class="badge text-bg-success">Live now</span>
                                             <span t-else="" class="badge text-bg-secondary">Coming later</span>
                                         </li>
                                         <li class="d-flex justify-content-between align-items-center mb-2">
@@ -492,7 +494,7 @@
                                         </li>
                                         <li class="d-flex justify-content-between align-items-center">
                                             <span>Bracket</span>
-                                            <span t-if="tournament.has_public_bracket()" class="badge text-bg-success">Live now</span>
+                                            <span t-if="has_public_bracket" class="badge text-bg-success">Live now</span>
                                             <span t-else="" class="badge text-bg-secondary">Not in use yet</span>
                                         </li>
                                     </ul>

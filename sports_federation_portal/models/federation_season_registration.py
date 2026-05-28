@@ -101,7 +101,15 @@ class FederationSeasonRegistration(models.Model):
             },
             user=user,
         )
-        PortalPrivilege.portal_call(registration, "action_submit", user=user)
+        PortalPrivilege.portal_call(
+            registration,
+            "action_submit",
+            scope_domain=[
+                ("team_id", "=", team.id),
+                ("season_id", "=", season.id),
+            ],
+            user=user,
+        )
         return registration
 
     # ------------------------------------------------------------------

@@ -86,6 +86,7 @@ The board is powered by two JSON-RPC endpoints in `controllers/tournament_operat
 Key design decisions:
 - All writes go through the existing result-control action methods (`action_submit_result`, `action_verify_result`, `action_approve_result`, `action_contest_result`, `action_correct_result`) rather than direct ORM writes.
 - Portal writes use `federation.portal.privilege.elevate()` so the acting user identity is preserved for audit trails and self-verification guards.
+- `federation.portal.privilege.portal_write()` and `portal_call()` now require an explicit scope domain and fail closed when omitted, forcing each portal mutation path to re-declare ownership boundaries.
 - The Owl app uses Owl `mount()` (not the backend web-client `mountComponent`) so it works correctly inside the website/portal frontend context.
 - The Owl app mounts immediately and renders its own loading/error states; the initial JSON-RPC payload is no longer awaited before first paint, and the first load times out after 30 seconds so operators get visible retry feedback instead of a page that appears frozen.
 - The Owl app polls every 60 seconds but skips polls while the result panel is dirty or an action is in flight.

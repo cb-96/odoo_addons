@@ -157,12 +157,7 @@
         <field name="binding_view_types">list</field>
         <field name="state">code</field>
         <field name="code">
-for event in records:
-    if not event.invoice_ref and event.state != 'cancelled':
-        try:
-            event.action_create_invoice()
-        except Exception:
-            pass
+records.action_batch_create_invoices()
         </field>
     </record>
 

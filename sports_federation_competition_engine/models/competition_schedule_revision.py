@@ -1,4 +1,5 @@
-from odoo import fields, models
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 SCHEDULE_REVISION_STATE_SELECTION = [
@@ -86,3 +87,25 @@ class FederationCompetitionScheduleRevision(models.Model):
         default=0,
         copy=False,
     )
+
+    _planner_root_revision_number_unique = models.Constraint(
+        "unique(planner_root_round_id, revision_number)",
+        "Schedule revision numbers must be unique per planner root gameday.",
+    )
+
+    @api.constrains("planner_root_round_id", "state")
+    def _check_single_live_revision_per_planner_root(self):
+        for revision in self.filtered(
+            lambda record: record.state == "live" and record.planner_root_round_id
+        ):
+            other_live = self.search_count(
+                [
+                    ("planner_root_round_id", "=", revision.planner_root_round_id.id),
+                    ("state", "=", "live"),
+                    ("id", "!=", revision.id),
+                ]
+            )
+            if other_live:
+                raise ValidationError(
+                    "Only one live schedule revision is allowed per planner root gameday."
+                )

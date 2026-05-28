@@ -89,18 +89,12 @@ class FederationIntegrationApi(
 
         export_cursor = (request.params.get("cursor") or "").strip() or False
         export_limit = (request.params.get("limit") or "").strip() or False
-        export_batch = False
         try:
-            if export_cursor or export_limit:
-                export_batch = FinanceEvent.sudo().get_handoff_export_batch(
-                    cursor=export_cursor,
-                    limit=export_limit,
-                )
-                events = export_batch["events"]
-            else:
-                events = FinanceEvent.sudo().search(
-                    [], order="create_date desc, id desc"
-                )
+            export_batch = FinanceEvent.sudo().get_handoff_export_batch(
+                cursor=export_cursor,
+                limit=export_limit,
+            )
+            events = export_batch["events"]
         except ValidationError as error:
             return self._json_error_response(status=400, error=error)
 
@@ -118,23 +112,16 @@ class FederationIntegrationApi(
             ("X-Federation-Contract", "finance_event_v1"),
             ("X-Federation-Contract-Version", FinanceEvent.EXPORT_SCHEMA_VERSION),
             ("X-Federation-Partner-Code", partner.code),
+            ("X-Federation-Export-Mode", "cursor_page"),
+            ("X-Federation-Export-Count", str(export_batch["count"])),
+            (
+                "X-Federation-Has-More",
+                "true" if export_batch["has_more"] else "false",
+            ),
+            ("X-Federation-Page-Limit", str(export_batch["limit"])),
         ]
-        if export_batch:
-            headers.extend(
-                [
-                    ("X-Federation-Export-Mode", "cursor_page"),
-                    ("X-Federation-Export-Count", str(export_batch["count"])),
-                    (
-                        "X-Federation-Has-More",
-                        "true" if export_batch["has_more"] else "false",
-                    ),
-                    ("X-Federation-Page-Limit", str(export_batch["limit"])),
-                ]
-            )
-            if export_batch["next_cursor"]:
-                headers.append(
-                    ("X-Federation-Next-Cursor", export_batch["next_cursor"])
-                )
+        if export_batch["next_cursor"]:
+            headers.append(("X-Federation-Next-Cursor", export_batch["next_cursor"]))
 
         return Response(
             output.getvalue(),

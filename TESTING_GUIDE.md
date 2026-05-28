@@ -356,6 +356,10 @@ This enables deterministic CI selection and allows `--require-post-tests` gating
 The CI runner enforces a minimum discovered post-test count for critical suites.
 This prevents false-green runs where discovery is broken and no tests execute.
 
+GitHub Actions now also runs a dedicated integration matrix lane for
+`people_rosters_rules` and `ops_and_notifications` so cross-module behavior is
+validated on every push and pull request.
+
 | Suite | Default minimum post-tests | Notes |
 |---|---|---|
 | `competition_core` | 1 | Core workflow sanity gate |

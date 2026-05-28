@@ -219,17 +219,34 @@ class PublicTournamentHubController(TournamentHubFilterMixin, http.Controller):
             if filters["state"] != "cancelled"
             else Tournament.browse([])
         )
+        featured_public_tournaments = Tournament.get_public_featured_tournaments(
+            limit=6, extra_domain=featured_public_domain
+        )
+
+        all_public_tournaments = (
+            tournaments
+            | featured_public_tournaments
+            | archived_public_tournaments
+            | live_public_tournaments
+            | recent_public_tournaments
+        )
+        tournament_public_flags = {
+            tournament.id: {
+                "has_schedule": bool(tournament.get_public_schedule_sections()),
+                "has_bracket": bool(tournament.get_public_bracket_sections()),
+            }
+            for tournament in all_public_tournaments
+        }
 
         values = {
             "tournaments": tournaments,
             "pager": pager,
             "filters": filters,
-            "featured_public_tournaments": Tournament.get_public_featured_tournaments(
-                limit=6, extra_domain=featured_public_domain
-            ),
+            "featured_public_tournaments": featured_public_tournaments,
             "archived_public_tournaments": archived_public_tournaments,
             "live_public_tournaments": live_public_tournaments,
             "recent_public_tournaments": recent_public_tournaments,
+            "tournament_public_flags": tournament_public_flags,
             "page_name": "tournaments_hub",
         }
         values.update(self._get_filter_reference_data())
