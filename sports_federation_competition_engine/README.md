@@ -82,6 +82,11 @@ Guided flow
   planner rules. Division planning fairness rules (minimum rest and maximum
   consecutive short-rest matches per team) can be adjusted directly in the
   workspace after creation.
+  The planner toolbar also includes a dedicated confirm-validation action that
+  moves a clean planned gameday to `validated` before publication.
+  Confirming validation also freezes the current pending schedule revision as a
+  `validated` snapshot; publication later promotes that validated snapshot to
+  the live revision.
 9. Refresh or reopen the workspace without losing the current section,
   division, gameday, or planner filters.
 10. Review blocking conflicts and warnings.

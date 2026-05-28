@@ -3,6 +3,7 @@ from odoo import fields, models
 
 SCHEDULE_REVISION_STATE_SELECTION = [
     ("draft", "Draft"),
+    ("validated", "Validated"),
     ("live", "Current Live"),
     ("superseded", "Superseded"),
 ]

@@ -13,6 +13,7 @@ class _PortalLabelMixin(models.AbstractModel):
 
 
 class FederationTournament(models.Model):
+    _name = "federation.tournament"
     _inherit = ["federation.tournament", "federation.portal.label.mixin"]
 
     _PORTAL_TOURNAMENT_STATE_LABELS = {
@@ -31,6 +32,7 @@ class FederationTournament(models.Model):
 
 
 class FederationTournamentRegistration(models.Model):
+    _name = "federation.tournament.registration"
     _inherit = [
         "federation.tournament.registration",
         "federation.portal.label.mixin",
@@ -52,6 +54,7 @@ class FederationTournamentRegistration(models.Model):
 
 
 class FederationSeasonRegistration(models.Model):
+    _name = "federation.season.registration"
     _inherit = ["federation.season.registration", "federation.portal.label.mixin"]
 
     _PORTAL_SEASON_REGISTRATION_STATE_LABELS = {
@@ -70,6 +73,7 @@ class FederationSeasonRegistration(models.Model):
 
 
 class FederationTournamentParticipant(models.Model):
+    _name = "federation.tournament.participant"
     _inherit = [
         "federation.tournament.participant",
         "federation.portal.label.mixin",
@@ -89,6 +93,7 @@ class FederationTournamentParticipant(models.Model):
 
 
 class FederationMatch(models.Model):
+    _name = "federation.match"
     _inherit = ["federation.match", "federation.portal.label.mixin"]
 
     _PORTAL_MATCH_STATE_LABELS = {
@@ -122,6 +127,7 @@ class FederationMatch(models.Model):
 
 
 class FederationMatchSheet(models.Model):
+    _name = "federation.match.sheet"
     _inherit = ["federation.match.sheet", "federation.portal.label.mixin"]
 
     _PORTAL_MATCH_SHEET_STATE_LABELS = {
@@ -139,6 +145,7 @@ class FederationMatchSheet(models.Model):
 
 
 class FederationTeamRoster(models.Model):
+    _name = "federation.team.roster"
     _inherit = ["federation.team.roster", "federation.portal.label.mixin"]
 
     _PORTAL_ROSTER_STATUS_LABELS = {
@@ -155,6 +162,7 @@ class FederationTeamRoster(models.Model):
 
 
 class FederationMatchReferee(models.Model):
+    _name = "federation.match.referee"
     _inherit = ["federation.match.referee", "federation.portal.label.mixin"]
 
     _PORTAL_ASSIGNMENT_STATE_LABELS = {
@@ -173,6 +181,7 @@ class FederationMatchReferee(models.Model):
 
 
 class FederationRefereeDuty(models.Model):
+    _name = "federation.match.club.referee.duty"
     _inherit = [
         "federation.match.club.referee.duty",
         "federation.portal.label.mixin",
@@ -195,6 +204,7 @@ class FederationRefereeDuty(models.Model):
 
 
 class FederationPlayer(models.Model):
+    _name = "federation.player"
     _inherit = ["federation.player", "federation.portal.label.mixin"]
 
     _PORTAL_PLAYER_STATE_LABELS = {
@@ -212,6 +222,7 @@ class FederationPlayer(models.Model):
 
 
 class FederationPlayerLicense(models.Model):
+    _name = "federation.player.license"
     _inherit = ["federation.player.license", "federation.portal.label.mixin"]
 
     _PORTAL_LICENSE_STATE_LABELS = {

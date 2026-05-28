@@ -141,7 +141,7 @@
                 </div>
                 <div class="d-flex gap-2 flex-wrap mb-3">
                     <StatusBadge t-if="props.revisions.live_revision" t-props="{ label: 'Live R' + props.revisions.live_revision.revision_number, tone: 'success' }"/>
-                    <StatusBadge t-if="props.revisions.draft_revision" t-props="{ label: 'Draft R' + props.revisions.draft_revision.revision_number, tone: 'warning' }"/>
+                    <StatusBadge t-if="props.revisions.draft_revision" t-props="{ label: (props.revisions.draft_revision.state === 'validated' ? 'Validated R' : 'Draft R') + props.revisions.draft_revision.revision_number, tone: props.revisions.draft_revision.state === 'validated' ? 'info' : 'warning' }"/>
                     <StatusBadge t-if="props.revisions.has_pending_draft_changes" t-props="{ label: 'Pending draft changes', tone: 'warning' }"/>
                 </div>
                 <div class="o_fed_cw_revision_list" t-if="(props.revisions.recent_revisions || []).length">
@@ -500,7 +500,7 @@
                             </div>
                             <div class="d-flex gap-2 flex-wrap justify-content-end">
                                 <StatusBadge t-if="gameday.schedule_revisions.live_revision" t-props="{ label: 'Live R' + gameday.schedule_revisions.live_revision.revision_number, tone: 'success' }"/>
-                                <StatusBadge t-if="gameday.schedule_revisions.draft_revision" t-props="{ label: 'Draft R' + gameday.schedule_revisions.draft_revision.revision_number, tone: 'warning' }"/>
+                                <StatusBadge t-if="gameday.schedule_revisions.draft_revision" t-props="{ label: (gameday.schedule_revisions.draft_revision.state === 'validated' ? 'Validated R' : 'Draft R') + gameday.schedule_revisions.draft_revision.revision_number, tone: gameday.schedule_revisions.draft_revision.state === 'validated' ? 'info' : 'warning' }"/>
                                 <StatusBadge t-if="gameday.schedule_revisions.has_pending_draft_changes" t-props="{ label: 'Draft pending', tone: 'warning' }"/>
                             </div>
                         </div>
@@ -872,6 +872,7 @@
                                     <button type="button" class="btn btn-outline-primary" t-att-disabled="!this.canBulkUnassignSelection" t-on-click="bulkUnassignSelected">Bulk unassign selected</button>
                                     <button type="button" class="btn btn-outline-secondary" t-att-disabled="!(planner and planner.can_undo) or this.plannerBusy" t-on-click="undoPlannerAction">Undo</button>
                                     <button type="button" class="btn btn-outline-secondary" t-att-disabled="!(planner and planner.can_redo) or this.plannerBusy" t-on-click="redoPlannerAction">Redo</button>
+                                    <button type="button" class="btn btn-success" t-att-disabled="!this.canConfirmValidation" t-on-click="requestConfirmValidation">Confirm validation</button>
                                 </div>
                                 <div class="d-flex gap-2 flex-wrap justify-content-end o_fed_cw_toolbar_group o-destructive">
                                     <button type="button" class="btn btn-outline-danger" t-att-disabled="!this.canUnassignAllMatches" t-on-click="requestUnassignAllMatches">Unassign all</button>

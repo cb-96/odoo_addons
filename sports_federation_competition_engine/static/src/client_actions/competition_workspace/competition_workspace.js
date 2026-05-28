@@ -11,6 +11,20 @@ export function isPlannerBusyState({ saving = false, plannerLoading = false, pub
     return Boolean(saving || plannerLoading || publishing);
 }
 
+export function isPlannerValidationConfirmable({
+    currentGamedayId = false,
+    currentPlannerState = "draft",
+    saving = false,
+    plannerLoading = false,
+    publishing = false,
+} = {}) {
+    return Boolean(
+        currentGamedayId
+        && currentPlannerState === "planned"
+        && !isPlannerBusyState({ saving, plannerLoading, publishing })
+    );
+}
+
 export function formatPlannerSelectionSummary({
     selectedCount = 0,
     unscheduledCount = 0,
@@ -495,6 +509,10 @@ export class CompetitionWorkspaceAction extends Component {
         return this.planner?.gameday?.planner_revision ?? false;
     }
 
+    get currentPlannerState() {
+        return this.planner?.gameday?.planner_state || "draft";
+    }
+
     get progressSteps() {
         const division = this.selectedDivision;
         return [
@@ -976,7 +994,23 @@ export class CompetitionWorkspaceAction extends Component {
     }
 
     get confirmationDialogToneClass() {
-        return this.state.confirmDialog.tone === "danger" ? "btn-danger" : "btn-primary";
+        if (this.state.confirmDialog.tone === "danger") {
+            return "btn-danger";
+        }
+        if (this.state.confirmDialog.tone === "success") {
+            return "btn-success";
+        }
+        return "btn-primary";
+    }
+
+    get canConfirmValidation() {
+        return isPlannerValidationConfirmable({
+            currentGamedayId: this.state.currentGamedayId,
+            currentPlannerState: this.currentPlannerState,
+            saving: this.state.saving,
+            plannerLoading: this.state.plannerLoading,
+            publishing: this.state.publishing,
+        });
     }
 
     get canBulkAssignSelection() {
@@ -1885,6 +1919,19 @@ export class CompetitionWorkspaceAction extends Component {
         }
     }
 
+    requestConfirmValidation() {
+        if (!this.canConfirmValidation) {
+            return;
+        }
+        this.openConfirmDialog({
+            action: "confirm_validation",
+            title: "Confirm validation",
+            message: "Mark this gameday as validated after reviewing the schedule?",
+            confirmLabel: "Confirm validation",
+            tone: "success",
+        });
+    }
+
     openConfirmDialog({ action, title, message, confirmLabel = "Confirm", tone = "primary" }) {
         this.state.confirmDialog = {
             action,
@@ -1910,6 +1957,10 @@ export class CompetitionWorkspaceAction extends Component {
     async confirmPendingAction() {
         const action = this.state.confirmDialog.action;
         this.closeConfirmDialog();
+        if (action === "confirm_validation") {
+            await this.confirmValidation();
+            return;
+        }
         if (action === "publish_gameday") {
             await this.publishGameday();
             return;
@@ -2005,6 +2056,33 @@ export class CompetitionWorkspaceAction extends Component {
             this.notify(error.message || "The competition schedule could not be published.", "danger");
         } finally {
             this.state.publishing = false;
+        }
+    }
+
+    async confirmValidation() {
+        if (!this.state.currentGamedayId) {
+            return;
+        }
+        this.state.saving = true;
+        try {
+            const expectedPlannerRevision = this.currentPlannerRevision;
+            const result = await this.orm.call(
+                "federation.competition.workspace.service",
+                "confirm_gameday_validation",
+                [this.state.currentGamedayId, expectedPlannerRevision]
+            );
+            if (!result.ok) {
+                this.state.validationSnapshot = result.validation;
+                this.notify("The gameday still has blocking issues.", "warning");
+                return;
+            }
+            this.state.validationSnapshot = result.validation;
+            this.state.payload = result.payload;
+            this.notify("Gameday validation confirmed.", "success");
+        } catch (error) {
+            this.notify(error.message || "The gameday could not be validated.", "danger");
+        } finally {
+            this.state.saving = false;
         }
     }
 

@@ -22,6 +22,15 @@ class CompetitionWorkspaceService(models.AbstractModel):
 
     _pool_bracket_progression_sequence_gap = 10
     _workspace_extension_schema_versions = (1,)
+    _auto_schedule_default_solver_mode = "hybrid"
+    _auto_schedule_default_repair_step_limit = 200
+    _auto_schedule_default_augmentation_step_limit = 120
+    _auto_schedule_default_weights = {
+        "rest_fairness": 1.0,
+        "home_away_fairness": 1.0,
+        "timeslot_fairness": 0.5,
+        "warning_penalty": 25.0,
+    }
 
     def _check_access(self, require_publish=False):
         return self.env["federation.tournament"]._competition_workspace_check_access(
@@ -3467,6 +3476,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
         swap_batch_key = batch_key or uuid4().hex
         old_slot.write({"match_id": False})
         target_slot.write({"match_id": False})
+        # Flush intermediate clears first so unique slot<->match constraints
+        # never see both pre-swap and post-swap bindings at once.
+        self.env["federation.match.slot"].flush_model(["match_id"])
 
         match_vals = {
             "slot_id": target_slot.id,
@@ -3774,15 +3786,34 @@ class CompetitionWorkspaceService(models.AbstractModel):
     def move_match(self, match_id, target_slot_id, force=False):
         return self.assign_match_to_slot(match_id, target_slot_id, force=force)
 
-    def _auto_schedule_team_balances(self, gameday):
-        team_balances = {}
-        divisions = self._get_gameday_divisions(gameday)
-        scheduled_matches = divisions.mapped("match_ids").filtered("slot_id").sorted(
+    def _get_gameday_scheduled_matches(self, gameday):
+        matches = self.env["federation.match"]
+        linked_rounds = self._get_linked_gamedays(gameday)
+        for division in self._get_gameday_divisions(gameday):
+            linked_round = linked_rounds.filtered(
+                lambda round_record: round_record.tournament_id == division
+            )[:1]
+            division_matches = division.match_ids.filtered("slot_id")
+            if linked_round and linked_round.stage_id:
+                division_matches = division_matches.filtered(
+                    lambda match: match.stage_id == linked_round.stage_id
+                )
+            if linked_round and linked_round.sequence:
+                division_matches = division_matches.filtered(
+                    lambda match: match.round_number == linked_round.sequence
+                )
+            matches |= division_matches
+        return matches.sorted(
             lambda match: (
                 match.slot_id.start_datetime or fields.Datetime.now(),
+                match.slot_id.id if match.slot_id else 0,
                 match.id,
             )
         )
+
+    def _auto_schedule_team_balances(self, gameday):
+        team_balances = {}
+        scheduled_matches = self._get_gameday_scheduled_matches(gameday)
         for match in scheduled_matches:
             if match.home_team_id:
                 balance = team_balances.setdefault(
@@ -3926,12 +3957,569 @@ class CompetitionWorkspaceService(models.AbstractModel):
             if not away_balance["last_end"] or end_datetime > away_balance["last_end"]:
                 away_balance["last_end"] = end_datetime
 
+    def _auto_schedule_normalize_bool(self, value, default=False):
+        if value in (False, None):
+            return bool(default)
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered in ("1", "true", "yes", "on"):
+                return True
+            if lowered in ("0", "false", "no", "off", ""):
+                return False
+        return bool(value)
+
+    def _auto_schedule_normalize_mode(self, mode=False):
+        if mode in (False, None, ""):
+            return self._auto_schedule_default_solver_mode
+        normalized = str(mode).strip().lower()
+        if normalized not in ("heuristic", "hybrid", "advanced"):
+            raise ValidationError(
+                _(
+                    "Auto-schedule mode must be one of: heuristic, hybrid, advanced."
+                )
+            )
+        return normalized
+
+    def _auto_schedule_normalize_weights(self, weights=False):
+        resolved = dict(self._auto_schedule_default_weights)
+        if weights in (False, None, ""):
+            return resolved
+        if not isinstance(weights, dict):
+            raise ValidationError(
+                _("Auto-schedule fairness weights must be provided as a dictionary.")
+            )
+        allowed_keys = set(resolved)
+        unknown_keys = sorted(set(weights) - allowed_keys)
+        if unknown_keys:
+            raise ValidationError(
+                _(
+                    "Unsupported auto-schedule fairness weight keys: %(keys)s",
+                    keys=", ".join(unknown_keys),
+                )
+            )
+
+        for key in resolved:
+            if key not in weights:
+                continue
+            try:
+                resolved[key] = max(float(weights.get(key)), 0.0)
+            except (TypeError, ValueError):
+                raise ValidationError(
+                    _(
+                        "Auto-schedule fairness weight '%(key)s' must be numeric.",
+                        key=key,
+                    )
+                )
+        return resolved
+
+    def _auto_schedule_resolve_config(self, config=False):
+        config = config or {}
+        if not isinstance(config, dict):
+            raise ValidationError(
+                _("Auto-schedule config must be provided as a dictionary.")
+            )
+
+        mode = self._auto_schedule_normalize_mode(config.get("solver_mode"))
+        enable_repair = self._auto_schedule_normalize_bool(
+            config.get("enable_repair"),
+            default=True,
+        )
+        enable_augmentation = self._auto_schedule_normalize_bool(
+            config.get("enable_augmentation"),
+            default=True,
+        )
+        if mode == "heuristic":
+            enable_repair = False
+            enable_augmentation = False
+
+        repair_step_limit = config.get("repair_step_limit")
+        if repair_step_limit in (False, None, ""):
+            repair_step_limit = self._auto_schedule_default_repair_step_limit
+        try:
+            repair_step_limit = max(1, int(repair_step_limit))
+        except (TypeError, ValueError):
+            raise ValidationError(
+                _("Auto-schedule repair_step_limit must be a positive integer.")
+            )
+
+        augmentation_step_limit = config.get("augmentation_step_limit")
+        if augmentation_step_limit in (False, None, ""):
+            augmentation_step_limit = self._auto_schedule_default_augmentation_step_limit
+        try:
+            augmentation_step_limit = max(1, int(augmentation_step_limit))
+        except (TypeError, ValueError):
+            raise ValidationError(
+                _("Auto-schedule augmentation_step_limit must be a positive integer.")
+            )
+
+        weights = self._auto_schedule_normalize_weights(config.get("weights"))
+
+        return {
+            "solver_mode": mode,
+            "enable_repair": enable_repair,
+            "enable_augmentation": enable_augmentation,
+            "repair_step_limit": repair_step_limit,
+            "augmentation_step_limit": augmentation_step_limit,
+            "weights": weights,
+        }
+
+    def _auto_schedule_augment_assignments(
+        self,
+        planner_root,
+        remaining_matches,
+        slot_by_match,
+        match_lookup,
+        capabilities,
+        config,
+        batch_key=False,
+        max_new_assignments=False,
+    ):
+        summary = {
+            "enabled": bool(config.get("enable_augmentation")),
+            "considered_candidates": 0,
+            "reassigned_count": 0,
+            "newly_assigned_count": 0,
+        }
+        if not summary["enabled"] or not remaining_matches:
+            return summary, []
+
+        warning_penalty = float(config["weights"].get("warning_penalty") or 0.0)
+        limit = config.get("augmentation_step_limit") or self._auto_schedule_default_augmentation_step_limit
+        assignment_payloads = []
+        unscheduled = list(remaining_matches)
+        assigned_ids = set()
+
+        while unscheduled and summary["considered_candidates"] < limit:
+            if (
+                max_new_assignments is not False
+                and summary["newly_assigned_count"] >= max_new_assignments
+            ):
+                break
+
+            open_slots = list(self._get_open_planner_slots(planner_root))
+            if not open_slots:
+                break
+
+            scheduled_ids = sorted(
+                [
+                    match_id
+                    for match_id, slot in slot_by_match.items()
+                    if slot and match_id in match_lookup
+                ]
+            )
+            scheduled_matches = [
+                match_lookup[match_id]
+                for match_id in scheduled_ids
+                if match_id not in assigned_ids
+            ]
+
+            best_candidate = False
+            best_penalty = False
+
+            for unscheduled_match in unscheduled:
+                if summary["considered_candidates"] >= limit:
+                    break
+                for scheduled_match in scheduled_matches:
+                    if summary["considered_candidates"] >= limit:
+                        break
+                    occupied_slot = slot_by_match.get(scheduled_match.id)
+                    if not occupied_slot:
+                        continue
+                    for open_slot in open_slots:
+                        if summary["considered_candidates"] >= limit:
+                            break
+                        if open_slot.id == occupied_slot.id:
+                            continue
+                        summary["considered_candidates"] += 1
+
+                        move_validation = self._validate_assignment_action(
+                            scheduled_match,
+                            open_slot,
+                            capabilities,
+                        )
+                        if move_validation["blocking"]:
+                            continue
+
+                        self._apply_assignment(
+                            scheduled_match,
+                            open_slot,
+                            bump_revision=False,
+                            record_operation=False,
+                        )
+                        try:
+                            assign_validation = self._validate_assignment_action(
+                                unscheduled_match,
+                                occupied_slot,
+                                capabilities,
+                            )
+                            if assign_validation["blocking"]:
+                                continue
+
+                            candidate_slot_map = dict(slot_by_match)
+                            candidate_slot_map[scheduled_match.id] = open_slot
+                            candidate_slot_map[unscheduled_match.id] = occupied_slot
+                            objective = self._auto_schedule_objective_from_slot_map(
+                                candidate_slot_map,
+                                match_lookup,
+                                config["weights"],
+                            )
+                            warning_count = len(move_validation["warnings"] or []) + len(
+                                assign_validation["warnings"] or []
+                            )
+                            candidate_penalty = float(objective["total_penalty"]) + (
+                                warning_count * warning_penalty
+                            )
+
+                            if (
+                                not best_candidate
+                                or candidate_penalty + 1e-9 < best_penalty
+                            ):
+                                best_penalty = candidate_penalty
+                                best_candidate = {
+                                    "unscheduled_match": unscheduled_match,
+                                    "scheduled_match": scheduled_match,
+                                    "occupied_slot": occupied_slot,
+                                    "open_slot": open_slot,
+                                    "objective": objective,
+                                    "warning_count": warning_count,
+                                    "warning_codes": [
+                                        warning.get("code")
+                                        for warning in (
+                                            (move_validation["warnings"] or [])
+                                            + (assign_validation["warnings"] or [])
+                                        )
+                                        if warning.get("code")
+                                    ],
+                                }
+                        finally:
+                            self._apply_assignment(
+                                scheduled_match,
+                                occupied_slot,
+                                bump_revision=False,
+                                record_operation=False,
+                            )
+
+            if not best_candidate:
+                break
+
+            scheduled_match = best_candidate["scheduled_match"]
+            unscheduled_match = best_candidate["unscheduled_match"]
+            occupied_slot = best_candidate["occupied_slot"]
+            open_slot = best_candidate["open_slot"]
+
+            self._apply_assignment(
+                scheduled_match,
+                open_slot,
+                bump_revision=False,
+                batch_key=batch_key,
+            )
+            slot_by_match[scheduled_match.id] = open_slot
+            self._apply_assignment(
+                unscheduled_match,
+                occupied_slot,
+                bump_revision=False,
+                batch_key=batch_key,
+            )
+            slot_by_match[unscheduled_match.id] = occupied_slot
+            match_lookup[unscheduled_match.id] = unscheduled_match
+
+            unscheduled = [
+                match
+                for match in unscheduled
+                if match.id != unscheduled_match.id
+            ]
+            assigned_ids.add(unscheduled_match.id)
+            summary["reassigned_count"] += 1
+            summary["newly_assigned_count"] += 1
+
+            assignment_payloads.append(
+                {
+                    "match_id": unscheduled_match.id,
+                    "match_name": unscheduled_match.display_name,
+                    "slot_id": occupied_slot.id,
+                    "slot_name": occupied_slot.display_name,
+                    "score": self._auto_schedule_candidate_breakdown(
+                        unscheduled_match,
+                        occupied_slot,
+                        self._auto_schedule_team_balances(planner_root),
+                    ),
+                    "warning_count": best_candidate["warning_count"],
+                    "warning_codes": best_candidate["warning_codes"],
+                    "objective_penalty": round(float(best_penalty or 0.0), 4),
+                    "objective_components": (
+                        best_candidate["objective"].get("component_penalties") or {}
+                    ),
+                    "rearranged_match_id": scheduled_match.id,
+                    "rearranged_match_slot_id": open_slot.id,
+                }
+            )
+
+        return summary, assignment_payloads
+
+    def _auto_schedule_objective_from_slot_map(self, slot_by_match, match_lookup, weights):
+        def _variance(values):
+            if len(values) <= 1:
+                return 0.0
+            average = sum(values) / len(values)
+            return sum((value - average) ** 2 for value in values)
+
+        team_windows = {}
+        for match_id in sorted(slot_by_match):
+            slot = slot_by_match.get(match_id)
+            match = match_lookup.get(match_id)
+            if not slot or not match:
+                continue
+            if not slot.start_datetime:
+                continue
+            slot_start = fields.Datetime.to_datetime(slot.start_datetime)
+            slot_end = (
+                fields.Datetime.to_datetime(slot.end_datetime)
+                if slot.end_datetime
+                else slot_start
+            )
+            start_minutes = slot_start.hour * 60 + slot_start.minute
+            for team, role in (
+                (match.home_team_id, "home"),
+                (match.away_team_id, "away"),
+            ):
+                if not team:
+                    continue
+                payload = team_windows.setdefault(
+                    team.id,
+                    {
+                        "home": 0,
+                        "away": 0,
+                        "starts": [],
+                        "windows": [],
+                    },
+                )
+                payload[role] += 1
+                payload["starts"].append(start_minutes)
+                payload["windows"].append((slot_start, slot_end))
+
+        avg_rest_values = []
+        avg_start_values = []
+        home_away_imbalances = []
+
+        for payload in team_windows.values():
+            home_away_imbalances.append(abs(payload["home"] - payload["away"]))
+            if payload["starts"]:
+                avg_start_values.append(sum(payload["starts"]) / len(payload["starts"]))
+            windows = sorted(payload["windows"], key=lambda item: item[0])
+            rest_gaps = [
+                max(0.0, (current[0] - previous[1]).total_seconds() / 60.0)
+                for previous, current in zip(windows, windows[1:])
+            ]
+            if rest_gaps:
+                avg_rest_values.append(sum(rest_gaps) / len(rest_gaps))
+
+        rest_penalty = _variance(avg_rest_values)
+        timeslot_penalty = _variance(avg_start_values)
+        home_away_penalty = sum(imbalance**2 for imbalance in home_away_imbalances)
+
+        weighted_component_penalties = {
+            "rest_fairness": weights["rest_fairness"] * rest_penalty,
+            "home_away_fairness": weights["home_away_fairness"] * home_away_penalty,
+            "timeslot_fairness": weights["timeslot_fairness"] * timeslot_penalty,
+        }
+
+        return {
+            "tracked_team_count": len(team_windows),
+            "component_penalties": {
+                "rest_fairness": round(rest_penalty, 4),
+                "home_away_fairness": round(home_away_penalty, 4),
+                "timeslot_fairness": round(timeslot_penalty, 4),
+            },
+            "weighted_component_penalties": {
+                key: round(value, 4)
+                for key, value in weighted_component_penalties.items()
+            },
+            "total_penalty": round(sum(weighted_component_penalties.values()), 4),
+        }
+
+    def _auto_schedule_objective_delta(self, before_objective, after_objective):
+        before_components = before_objective.get("component_penalties") or {}
+        after_components = after_objective.get("component_penalties") or {}
+        keys = sorted(set(before_components) | set(after_components))
+        return {
+            "total_penalty_delta": round(
+                float(after_objective.get("total_penalty") or 0.0)
+                - float(before_objective.get("total_penalty") or 0.0),
+                4,
+            ),
+            "component_penalty_deltas": {
+                key: round(
+                    float(after_components.get(key) or 0.0)
+                    - float(before_components.get(key) or 0.0),
+                    4,
+                )
+                for key in keys
+            },
+        }
+
+    def _auto_schedule_repair_assignments(
+        self,
+        planner_root,
+        slot_by_match,
+        match_lookup,
+        capabilities,
+        config,
+        batch_key=False,
+    ):
+        summary = {
+            "enabled": bool(config.get("enable_repair")),
+            "solver_mode": config.get("solver_mode"),
+            "considered_moves": 0,
+            "applied_moves": 0,
+            "before_objective_penalty": 0.0,
+            "after_objective_penalty": 0.0,
+            "improvement": 0.0,
+        }
+        if not config.get("enable_repair"):
+            objective = self._auto_schedule_objective_from_slot_map(
+                slot_by_match,
+                match_lookup,
+                config["weights"],
+            )
+            summary["before_objective_penalty"] = objective["total_penalty"]
+            summary["after_objective_penalty"] = objective["total_penalty"]
+            return summary
+
+        limit = config.get("repair_step_limit") or self._auto_schedule_default_repair_step_limit
+        objective = self._auto_schedule_objective_from_slot_map(
+            slot_by_match,
+            match_lookup,
+            config["weights"],
+        )
+        current_penalty = float(objective["total_penalty"])
+        summary["before_objective_penalty"] = round(current_penalty, 4)
+        warning_penalty = float(config["weights"].get("warning_penalty") or 0.0)
+
+        while summary["considered_moves"] < limit:
+            best_action = False
+            best_penalty = current_penalty
+            scheduled_ids = sorted(
+                [match_id for match_id, slot in slot_by_match.items() if slot and match_id in match_lookup]
+            )
+            scheduled_matches = [match_lookup[match_id] for match_id in scheduled_ids]
+            open_slots = list(self._get_open_planner_slots(planner_root))
+
+            for index, match in enumerate(scheduled_matches):
+                for other_match in scheduled_matches[index + 1 :]:
+                    if summary["considered_moves"] >= limit:
+                        break
+                    slot = slot_by_match.get(match.id)
+                    other_slot = slot_by_match.get(other_match.id)
+                    if not slot or not other_slot:
+                        continue
+                    summary["considered_moves"] += 1
+                    validation = self._validate_swap_action(
+                        match,
+                        other_slot,
+                        other_match,
+                        capabilities,
+                    )
+                    if validation["blocking"]:
+                        continue
+
+                    candidate_slot_map = dict(slot_by_match)
+                    candidate_slot_map[match.id] = other_slot
+                    candidate_slot_map[other_match.id] = slot
+                    candidate_objective = self._auto_schedule_objective_from_slot_map(
+                        candidate_slot_map,
+                        match_lookup,
+                        config["weights"],
+                    )
+                    candidate_penalty = float(candidate_objective["total_penalty"]) + (
+                        len(validation["warnings"] or []) * warning_penalty
+                    )
+                    if candidate_penalty + 1e-9 < best_penalty:
+                        best_penalty = candidate_penalty
+                        best_action = {
+                            "type": "swap",
+                            "match": match,
+                            "slot": other_slot,
+                            "displaced_match": other_match,
+                            "source_slot": slot,
+                        }
+
+            if config.get("solver_mode") == "advanced":
+                for match in scheduled_matches:
+                    if summary["considered_moves"] >= limit:
+                        break
+                    current_slot = slot_by_match.get(match.id)
+                    if not current_slot:
+                        continue
+                    for target_slot in open_slots:
+                        if summary["considered_moves"] >= limit:
+                            break
+                        summary["considered_moves"] += 1
+                        validation = self._validate_assignment_action(
+                            match,
+                            target_slot,
+                            capabilities,
+                        )
+                        if validation["blocking"]:
+                            continue
+                        candidate_slot_map = dict(slot_by_match)
+                        candidate_slot_map[match.id] = target_slot
+                        candidate_objective = self._auto_schedule_objective_from_slot_map(
+                            candidate_slot_map,
+                            match_lookup,
+                            config["weights"],
+                        )
+                        candidate_penalty = float(candidate_objective["total_penalty"]) + (
+                            len(validation["warnings"] or []) * warning_penalty
+                        )
+                        if candidate_penalty + 1e-9 < best_penalty:
+                            best_penalty = candidate_penalty
+                            best_action = {
+                                "type": "move",
+                                "match": match,
+                                "slot": target_slot,
+                            }
+
+            if not best_action:
+                break
+
+            if best_action["type"] == "swap":
+                self._apply_swap_assignment(
+                    best_action["match"],
+                    best_action["slot"],
+                    best_action["displaced_match"],
+                    bump_revision=False,
+                    batch_key=batch_key,
+                )
+                slot_by_match[best_action["match"].id] = best_action["slot"]
+                slot_by_match[best_action["displaced_match"].id] = best_action[
+                    "source_slot"
+                ]
+            else:
+                self._apply_assignment(
+                    best_action["match"],
+                    best_action["slot"],
+                    bump_revision=False,
+                    batch_key=batch_key,
+                )
+                slot_by_match[best_action["match"].id] = best_action["slot"]
+
+            summary["applied_moves"] += 1
+            summary["improvement"] += max(0.0, current_penalty - best_penalty)
+            current_penalty = best_penalty
+
+        summary["after_objective_penalty"] = round(current_penalty, 4)
+        summary["improvement"] = round(summary["improvement"], 4)
+        return summary
+
     @api.model
     def auto_schedule_gameday(
         self,
         gameday_id,
         expected_planner_revision=False,
         max_assignments=False,
+        config=False,
     ):
         capabilities = self._check_access()
         planner_root, conflict = self._ensure_planner_write_revision_or_conflict(
@@ -3942,27 +4530,45 @@ class CompetitionWorkspaceService(models.AbstractModel):
         if conflict:
             return conflict
 
+        resolved_config = self._auto_schedule_resolve_config(config)
+
         open_slots = list(self._get_open_planner_slots(planner_root))
         unscheduled_matches = list(self._get_gameday_unscheduled_matches(planner_root))
+        scheduled_matches = list(self._get_gameday_scheduled_matches(planner_root))
+        current_slot_map = {
+            match.id: match.slot_id
+            for match in scheduled_matches
+            if match.slot_id
+        }
+        match_lookup = {match.id: match for match in scheduled_matches + unscheduled_matches}
+        fairness_before = self._auto_schedule_objective_from_slot_map(
+            current_slot_map,
+            match_lookup,
+            resolved_config["weights"],
+        )
+
+        _logger.info(
+            "Auto-schedule started for planner_root=%s (open_slots=%s, unscheduled=%s, mode=%s, repair=%s, repair_step_limit=%s, augmentation=%s, augmentation_step_limit=%s)",
+            planner_root.id,
+            len(open_slots),
+            len(unscheduled_matches),
+            resolved_config["solver_mode"],
+            resolved_config["enable_repair"],
+            resolved_config["repair_step_limit"],
+            resolved_config["enable_augmentation"],
+            resolved_config["augmentation_step_limit"],
+        )
         if max_assignments:
             try:
                 max_assignments = max(1, int(max_assignments))
             except (TypeError, ValueError):
                 max_assignments = False
 
-        if not open_slots or not unscheduled_matches:
-            return {
-                "ok": True,
-                "assigned_count": 0,
-                "attempted_count": 0,
-                "remaining_slot_count": len(open_slots),
-                "remaining_unscheduled_count": len(unscheduled_matches),
-                "planner": self.get_gameday_planner_data(planner_root.id),
-                "assigned_matches": [],
-                "skipped": [],
-            }
+        if (open_slots and unscheduled_matches) or (
+            resolved_config["enable_repair"] and current_slot_map
+        ):
+            self._clear_redo_planner_operations(planner_root)
 
-        self._clear_redo_planner_operations(planner_root)
         batch_key = uuid4().hex
         assigned_count = 0
         attempted_match_ids = set()
@@ -3980,6 +4586,10 @@ class CompetitionWorkspaceService(models.AbstractModel):
             selected_candidate = False
             selected_score = False
             selected_breakdown = False
+            selected_warning_count = 0
+            selected_warning_codes = []
+            selected_objective_penalty = 0.0
+            selected_objective_components = {}
 
             for slot in remaining_slots:
                 for match in remaining_matches:
@@ -3988,21 +4598,42 @@ class CompetitionWorkspaceService(models.AbstractModel):
                     if validation["blocking"]:
                         first_issue_by_match.setdefault(match.id, validation["blocking"][0])
                         continue
-                    if validation["warnings"]:
-                        first_issue_by_match.setdefault(match.id, validation["warnings"][0])
-                        continue
+
+                    warning_count = len(validation["warnings"] or [])
+                    warning_codes = [
+                        warning.get("code")
+                        for warning in (validation["warnings"] or [])
+                        if warning.get("code")
+                    ]
 
                     breakdown = self._auto_schedule_candidate_breakdown(
                         match,
                         slot,
                         team_balances,
                     )
-                    score = self._auto_schedule_candidate_score(
+                    base_score = self._auto_schedule_candidate_score(
                         match,
                         slot,
                         team_balances,
                         breakdown=breakdown,
                     )
+                    candidate_slot_map = dict(current_slot_map)
+                    candidate_slot_map[match.id] = slot
+                    candidate_objective = self._auto_schedule_objective_from_slot_map(
+                        candidate_slot_map,
+                        match_lookup,
+                        resolved_config["weights"],
+                    )
+                    objective_penalty = float(candidate_objective["total_penalty"]) + (
+                        warning_count
+                        * float(
+                            resolved_config["weights"].get("warning_penalty") or 0.0
+                        )
+                    )
+
+                    # Prefer warning-free candidates, then lower objective penalty,
+                    # then apply heuristic tie-breakers.
+                    score = (-warning_count, -objective_penalty, *base_score)
                     if not selected_candidate or score > selected_score:
                         selected_candidate = {
                             "match": match,
@@ -4010,6 +4641,12 @@ class CompetitionWorkspaceService(models.AbstractModel):
                         }
                         selected_score = score
                         selected_breakdown = breakdown
+                        selected_warning_count = warning_count
+                        selected_warning_codes = warning_codes
+                        selected_objective_penalty = objective_penalty
+                        selected_objective_components = (
+                            candidate_objective.get("component_penalties") or {}
+                        )
 
             if not selected_candidate:
                 break
@@ -4028,6 +4665,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 selected_slot,
                 team_balances,
             )
+            current_slot_map[selected_match.id] = selected_slot
             assigned_matches.append(
                 {
                     "match_id": selected_match.id,
@@ -4035,6 +4673,10 @@ class CompetitionWorkspaceService(models.AbstractModel):
                     "slot_id": selected_slot.id,
                     "slot_name": selected_slot.display_name,
                     "score": selected_breakdown or {},
+                    "warning_count": selected_warning_count,
+                    "warning_codes": selected_warning_codes,
+                    "objective_penalty": round(selected_objective_penalty, 4),
+                    "objective_components": selected_objective_components,
                 }
             )
             remaining_matches = [
@@ -4042,6 +4684,41 @@ class CompetitionWorkspaceService(models.AbstractModel):
             ]
             remaining_slots = [slot for slot in remaining_slots if slot.id != selected_slot.id]
             assigned_count += 1
+
+        augmentation_summary = {
+            "enabled": resolved_config["enable_augmentation"],
+            "considered_candidates": 0,
+            "reassigned_count": 0,
+            "newly_assigned_count": 0,
+        }
+        if remaining_matches and remaining_slots:
+            augmentation_capacity = False
+            if max_assignments:
+                augmentation_capacity = max(0, int(max_assignments) - assigned_count)
+            augmentation_summary, augmented_assignments = (
+                self._auto_schedule_augment_assignments(
+                    planner_root,
+                    remaining_matches,
+                    current_slot_map,
+                    match_lookup,
+                    capabilities,
+                    resolved_config,
+                    batch_key=batch_key,
+                    max_new_assignments=augmentation_capacity,
+                )
+            )
+            if augmented_assignments:
+                assigned_matches.extend(augmented_assignments)
+                assigned_count += len(augmented_assignments)
+                augmented_ids = {
+                    payload["match_id"]
+                    for payload in augmented_assignments
+                    if payload.get("match_id")
+                }
+                remaining_matches = [
+                    match for match in remaining_matches if match.id not in augmented_ids
+                ]
+                remaining_slots = list(self._get_open_planner_slots(planner_root))
 
         if remaining_matches:
             limit_reached = bool(max_assignments and assigned_count >= max_assignments)
@@ -4076,8 +4753,51 @@ class CompetitionWorkspaceService(models.AbstractModel):
                     }
                 )
 
-        if assigned_count:
+        skipped_reason_counts = {}
+        for item in skipped:
+            code = item.get("code") or "unknown"
+            skipped_reason_counts[code] = skipped_reason_counts.get(code, 0) + 1
+        skipped_reason_summary = [
+            {"code": code, "count": count}
+            for code, count in sorted(skipped_reason_counts.items())
+        ]
+
+        repair_summary = self._auto_schedule_repair_assignments(
+            planner_root,
+            current_slot_map,
+            match_lookup,
+            capabilities,
+            resolved_config,
+            batch_key=batch_key,
+        )
+
+        if assigned_count or repair_summary.get("applied_moves"):
             self._bump_planner_revision(planner_root)
+
+        fairness_after = self._auto_schedule_objective_from_slot_map(
+            current_slot_map,
+            match_lookup,
+            resolved_config["weights"],
+        )
+        fairness_delta = self._auto_schedule_objective_delta(
+            fairness_before,
+            fairness_after,
+        )
+
+        _logger.info(
+            "Auto-schedule finished for planner_root=%s (assigned=%s, attempted=%s, remaining_slots=%s, remaining_unscheduled=%s, skipped=%s, augmentation_reassigned=%s, augmentation_new=%s, repair_moves=%s, fairness_before=%s, fairness_after=%s)",
+            planner_root.id,
+            assigned_count,
+            len(attempted_match_ids),
+            len(remaining_slots),
+            len(self._get_gameday_unscheduled_matches(planner_root)),
+            skipped_reason_summary,
+            augmentation_summary.get("reassigned_count"),
+            augmentation_summary.get("newly_assigned_count"),
+            repair_summary.get("applied_moves"),
+            fairness_before.get("total_penalty"),
+            fairness_after.get("total_penalty"),
+        )
 
         return {
             "ok": True,
@@ -4090,6 +4810,20 @@ class CompetitionWorkspaceService(models.AbstractModel):
             "planner": self.get_gameday_planner_data(planner_root.id),
             "assigned_matches": assigned_matches,
             "skipped": skipped,
+            "skipped_reason_summary": skipped_reason_summary,
+            "auto_schedule_config": {
+                "solver_mode": resolved_config["solver_mode"],
+                "enable_repair": resolved_config["enable_repair"],
+                "enable_augmentation": resolved_config["enable_augmentation"],
+                "repair_step_limit": resolved_config["repair_step_limit"],
+                "augmentation_step_limit": resolved_config["augmentation_step_limit"],
+                "weights": resolved_config["weights"],
+            },
+            "augmentation": augmentation_summary,
+            "repair": repair_summary,
+            "fairness_before": fairness_before,
+            "fairness_after": fairness_after,
+            "fairness_delta": fairness_delta,
         }
 
     @api.model
@@ -4242,6 +4976,46 @@ class CompetitionWorkspaceService(models.AbstractModel):
         }
 
     @api.model
+    def unassign_all_matches(
+        self,
+        gameday_id,
+        expected_planner_revision=False,
+    ):
+        self._check_access()
+        planner_root, conflict = self._ensure_planner_write_revision_or_conflict(
+            self._resolve_gameday(gameday_id),
+            expected_planner_revision,
+            operation="unassign_all_matches",
+        )
+        if conflict:
+            return conflict
+        matches = planner_root.slot_ids.mapped("match_id").filtered(lambda match: match.slot_id)
+        if not matches:
+            return {
+                "ok": False,
+                "validation": self._planner_blocking_validation(
+                    "no_assigned_matches",
+                    _("There are no assigned matches to unassign on this gameday."),
+                ),
+            }
+
+        batch_key = uuid4().hex
+        self._clear_redo_planner_operations(planner_root)
+        with self.env.cr.savepoint():
+            for match in matches:
+                self._apply_unassignment(
+                    match,
+                    bump_revision=False,
+                    batch_key=batch_key,
+                )
+            self._bump_planner_revision(planner_root)
+        return {
+            "ok": True,
+            "operation_count": len(matches),
+            "planner": self.get_gameday_planner_data(planner_root.id),
+        }
+
+    @api.model
     def undo_last_planner_operation(self, gameday_id, expected_planner_revision=False):
         capabilities = self._check_access()
         planner_root, conflict = self._ensure_planner_write_revision_or_conflict(
@@ -4349,6 +5123,52 @@ class CompetitionWorkspaceService(models.AbstractModel):
             competition_id=competition_id,
             division_id=division_id,
         )
+
+    @api.model
+    def confirm_gameday_validation(
+        self,
+        gameday_id,
+        expected_planner_revision=False,
+    ):
+        self._check_access()
+        gameday = self._resolve_gameday(gameday_id)
+        planner_root, conflict = self._ensure_planner_write_revision_or_conflict(
+            gameday,
+            expected_planner_revision,
+            operation="confirm_gameday_validation",
+        )
+        if conflict:
+            return conflict
+        validation = self.validate_gameday(planner_root.id)
+        if validation["blocking"] or validation["unscheduled_matches"]:
+            return {"ok": False, "validation": validation}
+
+        draft_revision = (
+            planner_root.schedule_draft_revision_id
+            or self._ensure_draft_schedule_revision(planner_root)
+        )
+        self._refresh_schedule_revision(draft_revision, planner_root)
+        draft_revision.write(
+            {
+                "state": "validated",
+            }
+        )
+
+        linked_rounds = planner_root | planner_root.planner_linked_round_ids
+        linked_rounds._competition_workspace_transition_planner_state(
+            "validated",
+            reason=_("Validated from the Competition Workspace."),
+            actor=self.env.user,
+        )
+        self._bump_planner_revision(planner_root)
+        return {
+            "ok": True,
+            "validation": validation,
+            "payload": self.get_competition_workspace_data(
+                planner_root.tournament_id.edition_id.id if planner_root.tournament_id.edition_id else False,
+                gameday.tournament_id.id,
+            ),
+        }
 
     @api.model
     def validate_match_assignment(self, match_id, slot_id, simulated_slots=None):

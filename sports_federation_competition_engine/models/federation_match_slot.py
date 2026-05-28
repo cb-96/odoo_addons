@@ -73,23 +73,18 @@ class FederationMatchSlot(models.Model):
     )
     note = fields.Char(string="Note")
 
-    _sql_constraints = [
-        (
-            "federation_match_slot_unique_match",
-            "unique (match_id)",
-            "A match can only be assigned to one planner slot at a time.",
-        ),
-        (
-            "federation_match_slot_unique_start",
-            "unique (round_id, playing_area_id, start_datetime)",
-            "A court can only have one slot starting at the same time on the same gameday.",
-        ),
-        (
-            "federation_match_slot_positive_duration",
-            "CHECK(end_datetime > start_datetime)",
-            "A planner slot must end after it starts.",
-        ),
-    ]
+    _slot_unique_match = models.Constraint(
+        "UNIQUE(match_id)",
+        "A match can only be assigned to one planner slot at a time.",
+    )
+    _slot_unique_start = models.Constraint(
+        "UNIQUE(round_id, playing_area_id, start_datetime)",
+        "A court can only have one slot starting at the same time on the same gameday.",
+    )
+    _slot_positive_duration = models.Constraint(
+        "CHECK(end_datetime > start_datetime)",
+        "A planner slot must end after it starts.",
+    )
 
     @api.depends("playing_area_id", "start_datetime", "end_datetime")
     def _compute_name(self):

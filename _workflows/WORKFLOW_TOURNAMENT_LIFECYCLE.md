@@ -261,6 +261,10 @@ separates pairing generation from operational slot assignment:
      surface as warnings.
     - Consecutive short-rest streaks beyond the division limit
        (`max_consecutive_matches_per_team`) surface as warnings.
+    - The planner can confirm a clean planned gameday as `validated` once the
+       operator approves the review.
+    - Confirming validation freezes the pending schedule revision as a
+       `validated` snapshot rather than publishing it.
     - Optional venue extensions can add blackout, maintenance, and capability
        issues to the same planner review step.
     - Officiating extension checks are staged after planning (`published` and
@@ -278,6 +282,8 @@ separates pairing generation from operational slot assignment:
      gameday before the shared day can move live.
    - Publishing now creates or updates explicit schedule revisions so live,
      draft, and superseded plans remain distinguishable.
+    - A previously confirmed `validated` revision is promoted to `live` during
+       publication.
    - Republishing a live plan or forcing warnings requires a manager reason
      that stays attached to the resulting planner operation or revision.
 11. Maintain schedule changes from the same workspace.

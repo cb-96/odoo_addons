@@ -49,7 +49,7 @@
                             <field name="code" placeholder="Code"/>
                         </h3>
                     </div>
-                    <div class="alert alert-info d-flex justify-content-between align-items-start gap-3"
+                    <div class="o_form_label_info d-flex justify-content-between align-items-start gap-3"
                          invisible="participant_count"
                          role="status">
                         <div>
@@ -61,7 +61,7 @@
                                 type="object"
                                 class="btn btn-link p-0 text-nowrap"/>
                     </div>
-                    <div class="alert alert-warning d-flex justify-content-between align-items-start gap-3"
+                    <div class="o_form_label_warning d-flex justify-content-between align-items-start gap-3"
                          invisible="state not in ('draft', 'open') or not participant_count"
                          role="alert">
                         <div>

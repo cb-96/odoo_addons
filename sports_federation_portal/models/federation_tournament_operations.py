@@ -52,16 +52,16 @@ _RESULT_STATE_TONES = {
 }
 
 _ACTION_MESSAGES = {
-    "save_score": _("Score saved."),
-    "schedule": _("Match scheduled."),
-    "start": _("Match started."),
-    "finish": _("Match marked as finished."),
-    "submit": _("Result submitted for checking."),
-    "verify": _("Result verified."),
-    "approve": _("Result approved and now counts in official standings."),
-    "contest": _("Result marked for review."),
-    "correct": _("Result corrected."),
-    "reset_to_draft": _("Result reset to draft."),
+    "save_score": "Score saved.",
+    "schedule": "Match scheduled.",
+    "start": "Match started.",
+    "finish": "Match marked as finished.",
+    "submit": "Result submitted for checking.",
+    "verify": "Result verified.",
+    "approve": "Result approved and now counts in official standings.",
+    "contest": "Result marked for review.",
+    "correct": "Result corrected.",
+    "reset_to_draft": "Result reset to draft.",
 }
 
 
@@ -1371,4 +1371,4 @@ class FederationTournamentOperations(models.Model):
             caller("action_reset_result_to_draft")
         else:
             raise ValidationError(_("This action is not available from the operations board."))
-        return _ACTION_MESSAGES.get(action_key, _("Update saved."))
+        return _(_ACTION_MESSAGES.get(action_key, "Update saved."))

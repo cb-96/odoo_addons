@@ -2,6 +2,7 @@
 
 import {
     formatPlannerSelectionSummary,
+    isPlannerValidationConfirmable,
     isPlannerBusyState,
     shouldHandlePlannerEscape,
 } from "@sports_federation_competition_engine/client_actions/competition_workspace/competition_workspace";
@@ -24,6 +25,33 @@ QUnit.test("planner busy helper reflects write and loading states", function (as
         isPlannerBusyState({ saving: false, plannerLoading: false, publishing: true }),
         true,
         "Publishing state is busy"
+    );
+});
+
+QUnit.test("planner validation confirm helper requires a planned gameday", function (assert) {
+    assert.strictEqual(
+        isPlannerValidationConfirmable({ currentGamedayId: false, currentPlannerState: "planned" }),
+        false,
+        "Missing gameday cannot be confirmed"
+    );
+    assert.strictEqual(
+        isPlannerValidationConfirmable({ currentGamedayId: 12, currentPlannerState: "draft" }),
+        false,
+        "Draft gamedays cannot be confirmed"
+    );
+    assert.strictEqual(
+        isPlannerValidationConfirmable({ currentGamedayId: 12, currentPlannerState: "planned" }),
+        true,
+        "Planned gamedays can be confirmed when idle"
+    );
+    assert.strictEqual(
+        isPlannerValidationConfirmable({
+            currentGamedayId: 12,
+            currentPlannerState: "planned",
+            publishing: true,
+        }),
+        false,
+        "Busy planners cannot confirm validation"
     );
 });
 
