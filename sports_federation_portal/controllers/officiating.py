@@ -1,4 +1,4 @@
-from urllib.parse import quote_plus, urlencode
+from urllib.parse import urlencode
 
 from odoo import fields, http
 from odoo.addons.portal.controllers.portal import pager as portal_pager
@@ -7,6 +7,20 @@ from odoo.http import request
 
 
 class FederationOfficiatingPortal(http.Controller):
+    def _portal_assignment_model(self):
+        return request.env["federation.match.referee"]
+
+    def _portal_assignment_domain(self):
+        return self._portal_assignment_model()._portal_get_domain(user=request.env.user)
+
+    def _portal_assignment_by_id(self, assignment_id):
+        return request.env["federation.portal.privilege"].portal_search_by_id(
+            self._portal_assignment_model(),
+            assignment_id,
+            self._portal_assignment_domain(),
+            user=request.env.user,
+        )
+
     def _raise_not_found(self):
         """Raise the framework 404 exception for hidden officiating resources."""
         raise request.not_found()
@@ -27,15 +41,14 @@ class FederationOfficiatingPortal(http.Controller):
     )
     def portal_my_referee_assignments(self, page=1, filterby="upcoming", **kw):
         """Handle the portal my referee assignments flow."""
-        Referee = request.env["federation.referee"].with_user(request.env.user).sudo()
+        PortalPrivilege = request.env["federation.portal.privilege"]
+        Referee = request.env["federation.referee"]
         referee = Referee._portal_get_for_user(user=request.env.user)
         if not referee:
             return request.redirect("/my")
 
-        Assignment = (
-            request.env["federation.match.referee"].with_user(request.env.user).sudo()
-        )
-        base_domain = Assignment._portal_get_domain(user=request.env.user)
+        Assignment = self._portal_assignment_model()
+        base_domain = self._portal_assignment_domain()
         domain = list(base_domain)
         filter_map = {
             "upcoming": [
@@ -48,7 +61,11 @@ class FederationOfficiatingPortal(http.Controller):
         }
         domain += filter_map.get(filterby, filter_map["upcoming"])
 
-        total = Assignment.search_count(domain)
+        total = PortalPrivilege.portal_search_count(
+            Assignment,
+            domain,
+            user=request.env.user,
+        )
         pager = portal_pager(
             url="/my/referee-assignments",
             total=total,
@@ -56,16 +73,20 @@ class FederationOfficiatingPortal(http.Controller):
             step=20,
             url_args={"filterby": filterby},
         )
-        assignments = Assignment.search(
+        assignments = PortalPrivilege.portal_search(
+            Assignment,
             domain,
             limit=20,
             offset=pager["offset"],
             order="match_kickoff asc, id asc",
+            user=request.env.user,
         )
         pending_domain = base_domain + [("state", "=", "draft")]
-        pending_assignments = Assignment.search(
+        pending_assignments = PortalPrivilege.portal_search(
+            Assignment,
             pending_domain,
             order="match_kickoff asc, id asc",
+            user=request.env.user,
         )
         overdue_assignments = pending_assignments.filtered("is_confirmation_overdue")
         next_pending_assignment = pending_assignments.sorted(
@@ -102,10 +123,7 @@ class FederationOfficiatingPortal(http.Controller):
     )
     def portal_my_referee_assignment_detail(self, assignment_id, **kw):
         """Handle the portal my referee assignment detail flow."""
-        Assignment = (
-            request.env["federation.match.referee"].with_user(request.env.user).sudo()
-        )
-        assignment = Assignment.browse(assignment_id)
+        assignment = self._portal_assignment_by_id(assignment_id)
         try:
             if not assignment.exists():
                 self._raise_not_found()
@@ -137,10 +155,7 @@ class FederationOfficiatingPortal(http.Controller):
         self, assignment_id, action=None, response_note=None, **kw
     ):
         """Handle the portal my referee assignment respond flow."""
-        Assignment = (
-            request.env["federation.match.referee"].with_user(request.env.user).sudo()
-        )
-        assignment = Assignment.browse(assignment_id)
+        assignment = self._portal_assignment_by_id(assignment_id)
         try:
             if not assignment.exists():
                 self._raise_not_found()

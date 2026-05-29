@@ -146,7 +146,11 @@ class FederationMatchSlot(models.Model):
     def _sync_assignment_state(self):
         """Keep the slot state aligned with whether it carries a match."""
         for record in self:
-            if record.match_id and record.state in {"available", "reserved", "assigned"}:
+            if record.match_id and record.state in {
+                "available",
+                "reserved",
+                "assigned",
+            }:
                 super(FederationMatchSlot, record).write({"state": "assigned"})
             elif not record.match_id and record.state == "assigned":
                 super(FederationMatchSlot, record).write({"state": "available"})

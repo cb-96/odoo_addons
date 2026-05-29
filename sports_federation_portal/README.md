@@ -91,6 +91,7 @@ Key design decisions:
 - The Owl app mounts immediately and renders its own loading/error states; the initial JSON-RPC payload is no longer awaited before first paint, and the first load times out after 30 seconds so operators get visible retry feedback instead of a page that appears frozen.
 - The Owl app polls every 60 seconds but skips polls while the result panel is dirty or an action is in flight.
 - The payload stays server-shaped: ranked action-queue rows, court-status summaries, next-step hints, and schedule labels are computed in `federation_tournament_operations.py` from the existing match, result-control, officiating, venue, and match-sheet data instead of duplicating workflow logic in JavaScript.
+- The tournament operations model now splits responsibilities explicitly: `tournament_operations_access.py` owns safe portal/internal write and call boundaries, while `tournament_operations_board.py` owns board serialization, action-queue ranking, court summaries, and payload assembly.
 - The frontend adapts by screen size: desktop keeps a sticky side panel, while compact screens use an explicit bottom-sheet task panel and do not auto-open a match until the operator selects one.
 
 #### 8. Active Tournament Workspace (renamed from §7)

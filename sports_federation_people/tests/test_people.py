@@ -157,7 +157,9 @@ class TestFederationPlayerLicense(TransactionCase):
                 "expiry_date": "2024-12-31",
             }
         )
-        with self.assertRaises(Exception), mute_logger("odoo.sql_db"), self.cr.savepoint():
+        with self.assertRaises(Exception), mute_logger(
+            "odoo.sql_db"
+        ), self.cr.savepoint():
             self.env["federation.player.license"].create(
                 {
                     "name": "LIC-004",

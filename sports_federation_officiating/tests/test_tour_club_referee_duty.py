@@ -42,7 +42,13 @@ class TestTourClubRefereeDuty(TransactionCase):
             }
         )
         rule_set = cls.env["federation.rule.set"].create(
-            {"name": "Duty Rules", "code": "DR", "points_win": 3, "points_draw": 1, "points_loss": 0}
+            {
+                "name": "Duty Rules",
+                "code": "DR",
+                "points_win": 3,
+                "points_draw": 1,
+                "points_loss": 0,
+            }
         )
         cls.tournament = cls.env["federation.tournament"].create(
             {
@@ -54,19 +60,42 @@ class TestTourClubRefereeDuty(TransactionCase):
             }
         )
 
-        cls.club_a = cls.env["federation.club"].create({"name": "Alpha FC", "code": "AFC"})
-        cls.club_b = cls.env["federation.club"].create({"name": "Beta FC", "code": "BFC"})
-        cls.team_a = cls.env["federation.team"].create({"name": "Alpha Team", "club_id": cls.club_a.id, "code": "ATA"})
-        cls.team_b = cls.env["federation.team"].create({"name": "Beta Team", "club_id": cls.club_b.id, "code": "ATB"})
+        cls.club_a = cls.env["federation.club"].create(
+            {"name": "Alpha FC", "code": "AFC"}
+        )
+        cls.club_b = cls.env["federation.club"].create(
+            {"name": "Beta FC", "code": "BFC"}
+        )
+        cls.team_a = cls.env["federation.team"].create(
+            {"name": "Alpha Team", "club_id": cls.club_a.id, "code": "ATA"}
+        )
+        cls.team_b = cls.env["federation.team"].create(
+            {"name": "Beta Team", "club_id": cls.club_b.id, "code": "ATB"}
+        )
 
         cls.player_a1 = cls.env["federation.player"].create(
-            {"first_name": "Alice", "last_name": "Alpha", "club_id": cls.club_a.id, "birth_date": "1998-03-01"}
+            {
+                "first_name": "Alice",
+                "last_name": "Alpha",
+                "club_id": cls.club_a.id,
+                "birth_date": "1998-03-01",
+            }
         )
         cls.player_a2 = cls.env["federation.player"].create(
-            {"first_name": "Anna", "last_name": "Alpha", "club_id": cls.club_a.id, "birth_date": "1999-05-01"}
+            {
+                "first_name": "Anna",
+                "last_name": "Alpha",
+                "club_id": cls.club_a.id,
+                "birth_date": "1999-05-01",
+            }
         )
         cls.player_b1 = cls.env["federation.player"].create(
-            {"first_name": "Boris", "last_name": "Beta", "club_id": cls.club_b.id, "birth_date": "1997-07-01"}
+            {
+                "first_name": "Boris",
+                "last_name": "Beta",
+                "club_id": cls.club_b.id,
+                "birth_date": "1997-07-01",
+            }
         )
 
         future_date = fields.Datetime.now() + timedelta(days=10)
@@ -152,7 +181,9 @@ class TestTourClubRefereeDuty(TransactionCase):
         """nomination_deadline = match.date_scheduled − 72h."""
         duty = self._duty()
         self.assertTrue(duty.nomination_deadline)
-        expected = fields.Datetime.to_datetime(self.match.date_scheduled) - timedelta(hours=72)
+        expected = fields.Datetime.to_datetime(self.match.date_scheduled) - timedelta(
+            hours=72
+        )
         self.assertEqual(duty.nomination_deadline, expected)
 
     def test_deadline_overdue_flag_past_match(self):

@@ -54,8 +54,12 @@ class TestTourOfficiating(TransactionCase):
                 "date_start": "2026-06-01",
             }
         )
-        club1 = cls.env["federation.club"].create({"name": "Off Club 1", "code": "OFC1"})
-        club2 = cls.env["federation.club"].create({"name": "Off Club 2", "code": "OFC2"})
+        club1 = cls.env["federation.club"].create(
+            {"name": "Off Club 1", "code": "OFC1"}
+        )
+        club2 = cls.env["federation.club"].create(
+            {"name": "Off Club 2", "code": "OFC2"}
+        )
         cls.team1 = cls.env["federation.team"].create(
             {"name": "Off Team 1", "club_id": club1.id, "code": "OFT1"}
         )

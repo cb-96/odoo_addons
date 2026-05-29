@@ -34,19 +34,25 @@ MAX_RETRIES = 3
 BACKOFF_BASE = 2  # seconds; doubles on each retry
 
 
-def make_session(base_url: str, partner_code: str, partner_token: str) -> requests.Session:
+def make_session(
+    base_url: str, partner_code: str, partner_token: str
+) -> requests.Session:
     session = requests.Session()
-    session.headers.update({
-        "X-Federation-Partner-Code": partner_code,
-        "X-Federation-Partner-Token": partner_token,
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-    })
+    session.headers.update(
+        {
+            "X-Federation-Partner-Code": partner_code,
+            "X-Federation-Partner-Token": partner_token,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+    )
     session.base_url = base_url.rstrip("/")
     return session
 
 
-def request_with_retry(session: requests.Session, method: str, path: str, **kwargs) -> dict:
+def request_with_retry(
+    session: requests.Session, method: str, path: str, **kwargs
+) -> dict:
     url = session.base_url + path
     for attempt in range(1, MAX_RETRIES + 1):
         try:
@@ -72,7 +78,7 @@ def request_with_retry(session: requests.Session, method: str, path: str, **kwar
             sys.exit(1)
 
         if response.status_code in (503, 502):
-            wait = BACKOFF_BASE ** attempt
+            wait = BACKOFF_BASE**attempt
             print(
                 f"Server unavailable ({response.status_code}, attempt {attempt}/{MAX_RETRIES}). "
                 f"Retrying in {wait}s...",
@@ -108,7 +114,9 @@ def fetch_contracts(session: requests.Session) -> dict:
     print(f"  Contracts available: {len(contracts)}")
     for contract in contracts:
         status = "✓ available" if contract.get("available") else "✗ unavailable"
-        print(f"    [{status}] {contract['code']} v{contract['version']} ({contract['direction']})")
+        print(
+            f"    [{status}] {contract['code']} v{contract['version']} ({contract['direction']})"
+        )
     return result
 
 
@@ -125,7 +133,9 @@ def push_delivery(session: requests.Session, delivery_payload: dict) -> dict:
     return result
 
 
-def fetch_finance_events(session: requests.Session, since: str | None = None) -> list[dict]:
+def fetch_finance_events(
+    session: requests.Session, since: str | None = None
+) -> list[dict]:
     print("\nFetching finance events...")
     path = "/integration/v1/finance-events"
     if since:
@@ -145,9 +155,7 @@ def fetch_finance_events(session: requests.Session, since: str | None = None) ->
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Integration partner example client"
-    )
+    parser = argparse.ArgumentParser(description="Integration partner example client")
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--partner-code", required=True)
     parser.add_argument("--partner-token", required=True)
@@ -167,9 +175,11 @@ def main() -> None:
     sample_delivery = {
         "contract_code": "player_registration_import",
         "external_ref": "DEMO-DELIVERY-001",
-        "payload": json.dumps([
-            {"player_id": "EXT-P-001", "club_code": "MFC", "season_code": "2026"},
-        ]),
+        "payload": json.dumps(
+            [
+                {"player_id": "EXT-P-001", "club_code": "MFC", "season_code": "2026"},
+            ]
+        ),
     }
     push_delivery(session, sample_delivery)
 

@@ -133,7 +133,7 @@ class FederationVenueBlackout(models.Model):
     playing_area_id = fields.Many2one(
         "federation.playing.area",
         string="Playing Area",
-        domain="[(\"venue_id\", \"=\", venue_id)]",
+        domain='[("venue_id", "=", venue_id)]',
         ondelete="cascade",
     )
     date_start = fields.Datetime(required=True, index=True)
@@ -149,20 +149,33 @@ class FederationVenueBlackout(models.Model):
     note = fields.Text()
     active = fields.Boolean(default=True)
 
-    @api.depends("venue_id", "playing_area_id", "date_start", "date_end", "closure_type")
+    @api.depends(
+        "venue_id", "playing_area_id", "date_start", "date_end", "closure_type"
+    )
     def _compute_name(self):
         for record in self:
             if not record.date_start or not record.date_end:
-                record.name = record.playing_area_id.display_name or record.venue_id.display_name
+                record.name = (
+                    record.playing_area_id.display_name or record.venue_id.display_name
+                )
                 continue
-            area_label = record.playing_area_id.display_name or record.venue_id.display_name
-            window_label = _("%(start)s to %(end)s",
-                start=fields.Datetime.to_datetime(record.date_start).strftime("%Y-%m-%d %H:%M"),
-                end=fields.Datetime.to_datetime(record.date_end).strftime("%Y-%m-%d %H:%M"),
+            area_label = (
+                record.playing_area_id.display_name or record.venue_id.display_name
+            )
+            window_label = _(
+                "%(start)s to %(end)s",
+                start=fields.Datetime.to_datetime(record.date_start).strftime(
+                    "%Y-%m-%d %H:%M"
+                ),
+                end=fields.Datetime.to_datetime(record.date_end).strftime(
+                    "%Y-%m-%d %H:%M"
+                ),
             )
             record.name = _(
                 "%(type)s: %(area)s (%(window)s)",
-                type=dict(self._fields["closure_type"].selection).get(record.closure_type),
+                type=dict(self._fields["closure_type"].selection).get(
+                    record.closure_type
+                ),
                 area=area_label,
                 window=window_label,
             )
@@ -174,7 +187,10 @@ class FederationVenueBlackout(models.Model):
                 raise ValidationError(
                     _("A venue constraint window must end after it starts.")
                 )
-            if record.playing_area_id and record.playing_area_id.venue_id != record.venue_id:
+            if (
+                record.playing_area_id
+                and record.playing_area_id.venue_id != record.venue_id
+            ):
                 raise ValidationError(
                     _("The selected playing area must belong to the chosen venue.")
                 )

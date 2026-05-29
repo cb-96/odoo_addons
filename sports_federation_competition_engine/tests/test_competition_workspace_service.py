@@ -164,7 +164,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         return host_division, guest_division, host_gameday, guest_gameday
 
     def _prepare_planned_division(self, name="Planner Division"):
-        division, _participants = self._create_division(name, 4, minimum_rest_minutes=30)
+        division, _participants = self._create_division(
+            name, 4, minimum_rest_minutes=30
+        )
         division.action_lock_team_entries()
         self.service.generate_round_robin(division.id)
         gameday_id = self.service.create_gameday(
@@ -206,7 +208,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
             result["competition_id"]
         )
         self.assertEqual(created.name, "Created Through Workspace")
-        self.assertEqual(created.competition_id.name, "Created Through Workspace Template")
+        self.assertEqual(
+            created.competition_id.name, "Created Through Workspace Template"
+        )
 
     def test_create_competition_shell_reuses_existing_edition(self):
         result = self.service.with_user(self.manager_user).create_competition_shell(
@@ -235,7 +239,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
     def test_division_action_opens_competition_workspace_client_action(self):
         division, _participants = self._create_division("Workspace Action Division", 4)
 
-        action = division.with_user(self.manager_user).action_open_competition_workspace()
+        action = division.with_user(
+            self.manager_user
+        ).action_open_competition_workspace()
 
         self.assertEqual(action["type"], "ir.actions.client")
         self.assertEqual(
@@ -324,7 +330,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
                 (match.home_team_id.id, match.away_team_id.id)
             )
         self.assertEqual(len(pairings), 6)
-        self.assertTrue(all(len(oriented_pairs) == 2 for oriented_pairs in pairings.values()))
+        self.assertTrue(
+            all(len(oriented_pairs) == 2 for oriented_pairs in pairings.values())
+        )
         self.assertFalse(any(division.match_ids.mapped("slot_id")))
         self.assertFalse(any(division.match_ids.mapped("round_id")))
         self.assertFalse(any(division.match_ids.mapped("date_scheduled")))
@@ -340,8 +348,12 @@ class TestCompetitionWorkspaceService(TransactionCase):
         result = self.service.generate_schedule_structure(division.id)
 
         self.assertEqual(result["match_count"], 5)
-        self.assertEqual(division._workspace_get_or_create_stage().stage_type, "knockout")
-        self.assertEqual(sorted(division.match_ids.mapped("round_number")), [1, 1, 2, 2, 3])
+        self.assertEqual(
+            division._workspace_get_or_create_stage().stage_type, "knockout"
+        )
+        self.assertEqual(
+            sorted(division.match_ids.mapped("round_number")), [1, 1, 2, 2, 3]
+        )
         self.assertFalse(any(division.match_ids.mapped("slot_id")))
         self.assertFalse(any(division.match_ids.mapped("round_id")))
         self.assertFalse(any(division.match_ids.mapped("date_scheduled")))
@@ -358,7 +370,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(second_round[1].home_team_id, self.teams[1])
         self.assertEqual(second_round[1].source_match_2_id, first_round[1])
 
-        payload = self.service.get_competition_workspace_data(self.edition.id, division.id)
+        payload = self.service.get_competition_workspace_data(
+            self.edition.id, division.id
+        )
         preview = payload["selected_division"]["generation_preview"]
         self.assertEqual(preview["format"], "knockout")
         self.assertEqual(preview["rounds"][1]["name"], "Semifinal")
@@ -411,14 +425,18 @@ class TestCompetitionWorkspaceService(TransactionCase):
 
         pool_stage = division._workspace_get_or_create_stage()
         knockout_stage = division._workspace_get_or_create_knockout_stage()
-        pool_groups = pool_stage.group_ids.sorted(lambda group: (group.sequence, group.id))
+        pool_groups = pool_stage.group_ids.sorted(
+            lambda group: (group.sequence, group.id)
+        )
         self.assertEqual(result["match_count"], 12)
         self.assertEqual(pool_stage.stage_type, "group")
         self.assertEqual(knockout_stage.stage_type, "knockout")
         self.assertEqual(len(pool_groups), 2)
         self.assertEqual(sorted(pool_groups.mapped("participant_count")), [4, 4])
         self.assertEqual(
-            len(division.match_ids.filtered(lambda match: match.stage_id == pool_stage)),
+            len(
+                division.match_ids.filtered(lambda match: match.stage_id == pool_stage)
+            ),
             12,
         )
         self.assertFalse(
@@ -436,7 +454,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(len(knockout_stage.group_ids), 2)
         self.assertTrue(all(progressions.mapped("auto_advance")))
 
-        payload = self.service.get_competition_workspace_data(self.edition.id, division.id)
+        payload = self.service.get_competition_workspace_data(
+            self.edition.id, division.id
+        )
         preview = payload["selected_division"]["generation_preview"]
         self.assertEqual(preview["format"], "pool_then_bracket")
         self.assertTrue(preview["supported"])
@@ -456,14 +476,19 @@ class TestCompetitionWorkspaceService(TransactionCase):
 
         pool_stage = division._workspace_get_or_create_stage()
         knockout_stage = division._workspace_get_or_create_knockout_stage()
-        pool_groups = pool_stage.group_ids.sorted(lambda group: (group.sequence, group.id))
+        pool_groups = pool_stage.group_ids.sorted(
+            lambda group: (group.sequence, group.id)
+        )
 
         self._freeze_pool_standing(
             division,
             pool_stage,
             pool_groups[0],
             pool_groups[0].participant_ids.sorted(
-                lambda participant: (participant.seed or 9999, participant.team_id.name or "")
+                lambda participant: (
+                    participant.seed or 9999,
+                    participant.team_id.name or "",
+                )
             ),
         )
         self._freeze_pool_standing(
@@ -471,7 +496,10 @@ class TestCompetitionWorkspaceService(TransactionCase):
             pool_stage,
             pool_groups[1],
             pool_groups[1].participant_ids.sorted(
-                lambda participant: (participant.seed or 9999, participant.team_id.name or "")
+                lambda participant: (
+                    participant.seed or 9999,
+                    participant.team_id.name or "",
+                )
             ),
         )
 
@@ -500,13 +528,17 @@ class TestCompetitionWorkspaceService(TransactionCase):
 
         bracket_matches = division.match_ids.filtered(
             lambda match: match.stage_id == knockout_stage
-        ).sorted(lambda match: (match.round_number, match.bracket_position or 0, match.id))
+        ).sorted(
+            lambda match: (match.round_number, match.bracket_position or 0, match.id)
+        )
         self.assertEqual(result["match_count"], 3)
         self.assertEqual(sorted(bracket_matches.mapped("round_number")), [1, 1, 2])
         self.assertEqual(
             [
                 (match.home_team_id.id, match.away_team_id.id)
-                for match in bracket_matches.filtered(lambda match: match.round_number == 1)
+                for match in bracket_matches.filtered(
+                    lambda match: match.round_number == 1
+                )
             ],
             [
                 (advanced[0].team_id.id, advanced[3].team_id.id),
@@ -526,7 +558,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
 
         pool_stage = division._workspace_get_or_create_stage()
         knockout_stage = division._workspace_get_or_create_knockout_stage()
-        pool_groups = pool_stage.group_ids.sorted(lambda group: (group.sequence, group.id))
+        pool_groups = pool_stage.group_ids.sorted(
+            lambda group: (group.sequence, group.id)
+        )
         for group in pool_groups:
             self._freeze_pool_standing(
                 division,
@@ -563,7 +597,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
 
         knockout_gameday = self.env["federation.tournament.round"].browse(gameday_id)
         planner = self.service.get_gameday_planner_data(knockout_gameday.id)
-        payload = self.service.get_competition_workspace_data(self.edition.id, division.id)
+        payload = self.service.get_competition_workspace_data(
+            self.edition.id, division.id
+        )
 
         self.assertEqual(knockout_gameday.stage_id, knockout_stage)
         self.assertEqual(planner["gameday"]["stage_id"], knockout_stage.id)
@@ -577,11 +613,16 @@ class TestCompetitionWorkspaceService(TransactionCase):
             {pool_stage.id, knockout_stage.id},
         )
         self.assertEqual(
-            {round_item["stage_id"] for round_item in payload["selected_division"]["rounds"]},
+            {
+                round_item["stage_id"]
+                for round_item in payload["selected_division"]["rounds"]
+            },
             {pool_stage.id, knockout_stage.id},
         )
 
-    def test_fairness_summary_is_exposed_on_division_planner_and_overview_payloads(self):
+    def test_fairness_summary_is_exposed_on_division_planner_and_overview_payloads(
+        self,
+    ):
         division, gameday = self._prepare_planned_division("Fairness Summary Division")
         slots = gameday.slot_ids.sorted(
             lambda slot: (slot.start_datetime, slot.playing_area_id.id, slot.id)
@@ -615,7 +656,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         )
         self.assertTrue(result["ok"])
 
-        payload = self.service.get_competition_workspace_data(self.edition.id, division.id)
+        payload = self.service.get_competition_workspace_data(
+            self.edition.id, division.id
+        )
         planner = self.service.get_gameday_planner_data(gameday.id)
         fairness_summary = payload["selected_division"]["fairness_summary"]
         overview_summary = payload["overview"]["fairness_summary"]
@@ -648,7 +691,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         division, gameday = self._prepare_planned_division("Suggestion Division")
         match = division.match_ids[:1]
 
-        suggestions = self.service.get_match_slot_suggestions(match.id, gameday.id, limit=3)
+        suggestions = self.service.get_match_slot_suggestions(
+            match.id, gameday.id, limit=3
+        )
 
         self.assertEqual(len(suggestions), 3)
         self.assertEqual(
@@ -660,7 +705,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
             ["09:00", "09:00", "09:35"],
         )
         self.assertTrue(
-            suggestions[0]["score"] >= suggestions[1]["score"] >= suggestions[2]["score"]
+            suggestions[0]["score"]
+            >= suggestions[1]["score"]
+            >= suggestions[2]["score"]
         )
 
     def test_generate_round_robin_requires_locked_entries(self):
@@ -709,7 +756,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         )
 
     def test_create_gameday_accepts_explicit_round_number(self):
-        division, _participants = self._create_division("Explicit Round Gameday Division", 4)
+        division, _participants = self._create_division(
+            "Explicit Round Gameday Division", 4
+        )
         division.action_lock_team_entries()
         self.service.generate_round_robin(division.id)
 
@@ -732,7 +781,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         )
 
     def test_create_gameday_rejects_invalid_round_number(self):
-        division, _participants = self._create_division("Invalid Round Gameday Division", 4)
+        division, _participants = self._create_division(
+            "Invalid Round Gameday Division", 4
+        )
 
         with self.assertRaises(ValidationError):
             self.service.create_gameday(
@@ -744,8 +795,12 @@ class TestCompetitionWorkspaceService(TransactionCase):
                 }
             )
 
-    def test_gameday_planner_data_strictly_scopes_unscheduled_matches_by_round_number(self):
-        division, _participants = self._create_division("Strict Round Slice Division", 4)
+    def test_gameday_planner_data_strictly_scopes_unscheduled_matches_by_round_number(
+        self,
+    ):
+        division, _participants = self._create_division(
+            "Strict Round Slice Division", 4
+        )
         division.action_lock_team_entries()
         self.service.generate_round_robin(division.id)
 
@@ -885,12 +940,16 @@ class TestCompetitionWorkspaceService(TransactionCase):
             and match.home_team_id not in (match_a.home_team_id, match_a.away_team_id)
             and match.away_team_id not in (match_a.home_team_id, match_a.away_team_id)
         )[:1]
-        slots = gameday.slot_ids.filtered(lambda slot: slot.state == "available").sorted(
-            lambda slot: (slot.start_datetime, slot.playing_area_id.id)
-        )
+        slots = gameday.slot_ids.filtered(
+            lambda slot: slot.state == "available"
+        ).sorted(lambda slot: (slot.start_datetime, slot.playing_area_id.id))
 
-        self.assertTrue(self.service.assign_match_to_slot(match_a.id, slots[0].id)["ok"])
-        self.assertTrue(self.service.assign_match_to_slot(match_b.id, slots[1].id)["ok"])
+        self.assertTrue(
+            self.service.assign_match_to_slot(match_a.id, slots[0].id)["ok"]
+        )
+        self.assertTrue(
+            self.service.assign_match_to_slot(match_b.id, slots[1].id)["ok"]
+        )
 
         swap_result = self.service.assign_match_to_slot(match_a.id, slots[1].id)
 
@@ -901,7 +960,10 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(match_a.slot_id, slots[1])
         self.assertEqual(match_b.slot_id, slots[0])
         self.assertEqual(
-            [operation["operation_type"] for operation in swap_result["planner"]["operation_history"][:2]],
+            [
+                operation["operation_type"]
+                for operation in swap_result["planner"]["operation_history"][:2]
+            ],
             ["move", "move"],
         )
         self.assertTrue(swap_result["planner"]["operation_history"][0]["batch_key"])
@@ -944,11 +1006,13 @@ class TestCompetitionWorkspaceService(TransactionCase):
         )
         match_a = team_1_matches[0]
         match_b = team_1_matches[1]
-        slots = gameday.slot_ids.filtered(lambda slot: slot.state == "available").sorted(
-            lambda slot: (slot.start_datetime, slot.playing_area_id.id)
-        )
+        slots = gameday.slot_ids.filtered(
+            lambda slot: slot.state == "available"
+        ).sorted(lambda slot: (slot.start_datetime, slot.playing_area_id.id))
 
-        self.assertTrue(self.service.assign_match_to_slot(match_a.id, slots[0].id)["ok"])
+        self.assertTrue(
+            self.service.assign_match_to_slot(match_a.id, slots[0].id)["ok"]
+        )
         warning_attempt = self.service.assign_match_to_slot(match_b.id, slots[2].id)
 
         self.assertFalse(warning_attempt["ok"])
@@ -971,11 +1035,13 @@ class TestCompetitionWorkspaceService(TransactionCase):
         )
         match_a = team_1_matches[0]
         match_b = team_1_matches[1]
-        slots = gameday.slot_ids.filtered(lambda slot: slot.state == "available").sorted(
-            lambda slot: (slot.start_datetime, slot.playing_area_id.id)
-        )
+        slots = gameday.slot_ids.filtered(
+            lambda slot: slot.state == "available"
+        ).sorted(lambda slot: (slot.start_datetime, slot.playing_area_id.id))
 
-        self.assertTrue(self.service.assign_match_to_slot(match_a.id, slots[0].id)["ok"])
+        self.assertTrue(
+            self.service.assign_match_to_slot(match_a.id, slots[0].id)["ok"]
+        )
         warning_attempt = self.service.assign_match_to_slot(match_b.id, slots[2].id)
 
         self.assertFalse(warning_attempt["ok"])
@@ -994,9 +1060,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         )
         match_a = team_1_matches[0]
         match_b = team_1_matches[1]
-        slots = gameday.slot_ids.filtered(lambda slot: slot.state == "available").sorted(
-            lambda slot: (slot.start_datetime, slot.playing_area_id.id)
-        )
+        slots = gameday.slot_ids.filtered(
+            lambda slot: slot.state == "available"
+        ).sorted(lambda slot: (slot.start_datetime, slot.playing_area_id.id))
 
         self.assertTrue(
             self.service.assign_match_to_slot(match_a.id, slots[0].id)["ok"]
@@ -1022,11 +1088,13 @@ class TestCompetitionWorkspaceService(TransactionCase):
         )
         match_a = team_1_matches[0]
         match_b = team_1_matches[1]
-        slots = gameday.slot_ids.filtered(lambda slot: slot.state == "available").sorted(
-            lambda slot: (slot.start_datetime, slot.playing_area_id.id)
-        )
+        slots = gameday.slot_ids.filtered(
+            lambda slot: slot.state == "available"
+        ).sorted(lambda slot: (slot.start_datetime, slot.playing_area_id.id))
 
-        self.assertTrue(self.service.assign_match_to_slot(match_a.id, slots[0].id)["ok"])
+        self.assertTrue(
+            self.service.assign_match_to_slot(match_a.id, slots[0].id)["ok"]
+        )
 
         force_result = self.service.with_user(self.manager_user).assign_match_to_slot(
             match_b.id,
@@ -1052,9 +1120,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         )
         match_a = team_1_matches[0]
         match_b = team_1_matches[1]
-        slots = gameday.slot_ids.filtered(lambda slot: slot.state == "available").sorted(
-            lambda slot: (slot.start_datetime, slot.playing_area_id.id)
-        )
+        slots = gameday.slot_ids.filtered(
+            lambda slot: slot.state == "available"
+        ).sorted(lambda slot: (slot.start_datetime, slot.playing_area_id.id))
 
         self.assertTrue(
             self.service.with_user(self.planner_user).assign_match_to_slot(
@@ -1097,7 +1165,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
 
         self.assertTrue(
-            self.service.with_user(self.manager_user).assign_match_to_slot(match.id, slot.id)["ok"]
+            self.service.with_user(self.manager_user).assign_match_to_slot(
+                match.id, slot.id
+            )["ok"]
         )
         self.assertTrue(
             self.service.with_user(self.manager_user).publish_gameday(gameday.id)["ok"]
@@ -1112,11 +1182,13 @@ class TestCompetitionWorkspaceService(TransactionCase):
 
     @tagged("-at_install", "post_install", "sf_ws_write_guard_contract")
     def test_assign_match_rejects_stale_planner_revision(self):
-        division, gameday = self._prepare_planned_division("Revision Assignment Division")
-        match_a, match_b = division.match_ids[:2]
-        slots = gameday.slot_ids.filtered(lambda slot: slot.state == "available").sorted(
-            lambda slot: (slot.start_datetime, slot.playing_area_id.id)
+        division, gameday = self._prepare_planned_division(
+            "Revision Assignment Division"
         )
+        match_a, match_b = division.match_ids[:2]
+        slots = gameday.slot_ids.filtered(
+            lambda slot: slot.state == "available"
+        ).sorted(lambda slot: (slot.start_datetime, slot.playing_area_id.id))
         stale_revision = gameday.planner_revision
 
         self.assertTrue(
@@ -1227,7 +1299,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(len(operations_after_replay), 1)
 
     def test_unassign_match_idempotency_replays_without_duplicate_operation(self):
-        division, gameday = self._prepare_planned_division("Idempotent Unassign Division")
+        division, gameday = self._prepare_planned_division(
+            "Idempotent Unassign Division"
+        )
         match = division.match_ids[:1]
         slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
         planner_root = self.service._get_planner_root_gameday(gameday)
@@ -1291,7 +1365,11 @@ class TestCompetitionWorkspaceService(TransactionCase):
             },
             ["invalid-result-shape"],
             {
-                "blocking": {"code": "slot_occupied", "message": "Slot busy", "slot_id": "11"},
+                "blocking": {
+                    "code": "slot_occupied",
+                    "message": "Slot busy",
+                    "slot_id": "11",
+                },
                 "warnings": [{"code": "", "message": "invalid warning"}],
             },
         ]
@@ -1362,12 +1440,18 @@ class TestCompetitionWorkspaceService(TransactionCase):
                 "extend_match_assignment_validation"
             )
 
-        self.assertEqual([item["code"] for item in issues["blocking"]], [
-            "warning_promoted",
-        ])
-        self.assertEqual([item["code"] for item in issues["warnings"]], [
-            "blocking_demoted",
-        ])
+        self.assertEqual(
+            [item["code"] for item in issues["blocking"]],
+            [
+                "warning_promoted",
+            ],
+        )
+        self.assertEqual(
+            [item["code"] for item in issues["warnings"]],
+            [
+                "blocking_demoted",
+            ],
+        )
 
     def test_workspace_extension_score_components_normalize_contract(self):
         malformed_results = [
@@ -1389,11 +1473,14 @@ class TestCompetitionWorkspaceService(TransactionCase):
                 "extend_match_slot_score_components"
             )
 
-        self.assertEqual([item["key"] for item in components], [
-            "availability",
-            "bad_score",
-            "single_component",
-        ])
+        self.assertEqual(
+            [item["key"] for item in components],
+            [
+                "availability",
+                "bad_score",
+                "single_component",
+            ],
+        )
         self.assertEqual(components[0]["score"], 80)
         self.assertEqual(components[1]["score"], 100)
         self.assertEqual(components[2]["label"], "Single Component")
@@ -1465,7 +1552,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
             "_workspace_extension_models",
             return_value=[_FailingExtension(), _WorkingExtension()],
         ):
-            payload = self.service._workspace_extension_payload("extend_overview_payload")
+            payload = self.service._workspace_extension_payload(
+                "extend_overview_payload"
+            )
 
         self.assertEqual(payload, {"summary": {"ok": True}})
 
@@ -1487,7 +1576,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
             "_workspace_extension_results",
             return_value=mixed_results,
         ):
-            payload = self.service._workspace_extension_payload("extend_overview_payload")
+            payload = self.service._workspace_extension_payload(
+                "extend_overview_payload"
+            )
 
         self.assertEqual(payload["summary"], {"legacy": True, "versioned": True})
         self.assertEqual(payload["extra"], {"value": 5})
@@ -1542,13 +1633,17 @@ class TestCompetitionWorkspaceService(TransactionCase):
                 "extend_match_assignment_validation"
             )
 
-        self.assertEqual([item["code"] for item in issues["blocking"]], ["schema_blocking"])
+        self.assertEqual(
+            [item["code"] for item in issues["blocking"]], ["schema_blocking"]
+        )
         self.assertEqual(
             [item["code"] for item in issues["warnings"]],
             ["legacy_warning", "schema_warning"],
         )
 
-    def test_workspace_extension_score_components_accepts_schema_and_legacy_shapes(self):
+    def test_workspace_extension_score_components_accepts_schema_and_legacy_shapes(
+        self,
+    ):
         mixed_results = [
             {"key": "legacy_component", "score": 70},
             {
@@ -1708,7 +1803,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual({issue["slot_id"] for issue in merged["blocking"]}, {10, 11})
 
     def test_assign_match_accepts_blank_expected_planner_revision_token(self):
-        division, gameday = self._prepare_planned_division("Blank Revision Token Division")
+        division, gameday = self._prepare_planned_division(
+            "Blank Revision Token Division"
+        )
         match = division.match_ids[:1]
         slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
 
@@ -1722,7 +1819,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertTrue(result["ok"])
 
     def test_assign_match_rejects_invalid_expected_planner_revision_token(self):
-        division, gameday = self._prepare_planned_division("Invalid Revision Token Division")
+        division, gameday = self._prepare_planned_division(
+            "Invalid Revision Token Division"
+        )
         match = division.match_ids[:1]
         slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
 
@@ -1742,14 +1841,12 @@ class TestCompetitionWorkspaceService(TransactionCase):
         match_a = division.match_ids[:1]
         match_b = division.match_ids.filtered(
             lambda match: match != match_a
-            and match.home_team_id
-            not in (match_a.home_team_id, match_a.away_team_id)
-            and match.away_team_id
-            not in (match_a.home_team_id, match_a.away_team_id)
+            and match.home_team_id not in (match_a.home_team_id, match_a.away_team_id)
+            and match.away_team_id not in (match_a.home_team_id, match_a.away_team_id)
         )[:1]
-        slots = gameday.slot_ids.filtered(lambda slot: slot.state == "available").sorted(
-            lambda slot: (slot.start_datetime, slot.playing_area_id.id)
-        )
+        slots = gameday.slot_ids.filtered(
+            lambda slot: slot.state == "available"
+        ).sorted(lambda slot: (slot.start_datetime, slot.playing_area_id.id))
 
         gameday.invalidate_recordset()
         initial_draft = gameday.schedule_draft_revision_id
@@ -1823,7 +1920,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         Revision = self.env["federation.competition.schedule.revision"]
         existing_revision_number = gameday.schedule_draft_revision_id.revision_number
 
-        with self.assertRaises(Exception), mute_logger("odoo.sql_db"), self.cr.savepoint():
+        with self.assertRaises(Exception), mute_logger(
+            "odoo.sql_db"
+        ), self.cr.savepoint():
             Revision.create(
                 {
                     "name": "Revision 1 Duplicate",
@@ -1869,7 +1968,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
             gameday.id,
             "planner",
         )
-        summary = self.service.with_user(self.manager_user).heartbeat_workspace_presence(
+        summary = self.service.with_user(
+            self.manager_user
+        ).heartbeat_workspace_presence(
             self.edition.id,
             division.id,
             gameday.id,
@@ -2019,13 +2120,17 @@ class TestCompetitionWorkspaceService(TransactionCase):
             {match["division_id"] for match in planner["unscheduled_matches"]},
             {host_division.id, guest_division.id},
         )
-        self.assertEqual(workspace_payload["planner"]["gameday"]["id"], guest_gameday.id)
+        self.assertEqual(
+            workspace_payload["planner"]["gameday"]["id"], guest_gameday.id
+        )
         self.assertEqual(
             workspace_payload["selected_division"]["slot_count"],
             len(host_gameday.slot_ids),
         )
 
-    def test_shared_gameday_planner_payload_filters_unscheduled_matches_by_division(self):
+    def test_shared_gameday_planner_payload_filters_unscheduled_matches_by_division(
+        self,
+    ):
         host_division, guest_division, _host_gameday, guest_gameday = (
             self._prepare_shared_planned_divisions()
         )
@@ -2041,7 +2146,10 @@ class TestCompetitionWorkspaceService(TransactionCase):
             {host_division.id, guest_division.id},
         )
         self.assertEqual(
-            {match["division_id"] for match in guest_only_planner["unscheduled_matches"]},
+            {
+                match["division_id"]
+                for match in guest_only_planner["unscheduled_matches"]
+            },
             {guest_division.id},
         )
         self.assertLess(
@@ -2136,12 +2244,16 @@ class TestCompetitionWorkspaceService(TransactionCase):
             and match.home_team_id not in (match_a.home_team_id, match_a.away_team_id)
             and match.away_team_id not in (match_a.home_team_id, match_a.away_team_id)
         )[:1]
-        slots = gameday.slot_ids.filtered(lambda slot: slot.state == "available").sorted(
-            lambda slot: (slot.start_datetime, slot.playing_area_id.id)
-        )
+        slots = gameday.slot_ids.filtered(
+            lambda slot: slot.state == "available"
+        ).sorted(lambda slot: (slot.start_datetime, slot.playing_area_id.id))
 
-        self.assertTrue(self.service.assign_match_to_slot(match_a.id, slots[0].id)["ok"])
-        self.assertTrue(self.service.assign_match_to_slot(match_b.id, slots[1].id)["ok"])
+        self.assertTrue(
+            self.service.assign_match_to_slot(match_a.id, slots[0].id)["ok"]
+        )
+        self.assertTrue(
+            self.service.assign_match_to_slot(match_b.id, slots[1].id)["ok"]
+        )
 
         swap_result = self.service.assign_match_to_slot(match_a.id, slots[1].id)
 
@@ -2194,7 +2306,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
             False,
         )
 
-        result = self.service.bulk_assign_matches(gameday.id, division.match_ids[:2].ids)
+        result = self.service.bulk_assign_matches(
+            gameday.id, division.match_ids[:2].ids
+        )
 
         self.assertFalse(result["ok"])
         self.assertEqual(
@@ -2291,7 +2405,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertFalse(planner["unscheduled_has_more"])
         self.assertEqual(len(planner["unscheduled_matches"]), 2)
 
-    def test_workspace_payload_forwards_planner_filters_and_can_trim_reference_data(self):
+    def test_workspace_payload_forwards_planner_filters_and_can_trim_reference_data(
+        self,
+    ):
         division, gameday = self._prepare_planned_division(
             "Trimmed Planner Payload Division"
         )
@@ -2314,13 +2430,17 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(payload["planner"]["unscheduled_loaded_count"], 1)
         self.assertTrue(payload["planner"]["unscheduled_has_more"])
         self.assertEqual(len(payload["planner"]["unscheduled_matches"]), 1)
-        self.assertEqual(payload["planner"]["unscheduled_matches"][0]["round_number"], 1)
+        self.assertEqual(
+            payload["planner"]["unscheduled_matches"][0]["round_number"], 1
+        )
         self.assertNotIn("participating_divisions", payload["planner"])
         self.assertNotIn("team_options", payload["planner"])
         self.assertNotIn("courts", payload["planner"])
 
     def test_gameday_planner_data_ignores_invalid_numeric_filters(self):
-        division, gameday = self._prepare_planned_division("Invalid Planner Filter Division")
+        division, gameday = self._prepare_planned_division(
+            "Invalid Planner Filter Division"
+        )
 
         planner = self.service.get_gameday_planner_data(
             gameday.id,
@@ -2337,7 +2457,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertFalse(planner["unscheduled_has_more"])
 
     def test_gameday_planner_data_scopes_unscheduled_matches_to_gameday_sequence(self):
-        division, first_gameday = self._prepare_planned_division("Gameday Slice Division")
+        division, first_gameday = self._prepare_planned_division(
+            "Gameday Slice Division"
+        )
         second_gameday_id = self.service.create_gameday(
             {
                 "division_id": division.id,
@@ -2345,7 +2467,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
                 "round_date": "2026-10-17",
             }
         )["gameday_id"]
-        second_gameday = self.env["federation.tournament.round"].browse(second_gameday_id)
+        second_gameday = self.env["federation.tournament.round"].browse(
+            second_gameday_id
+        )
 
         first_planner = self.service.get_gameday_planner_data(first_gameday.id)
         second_planner = self.service.get_gameday_planner_data(second_gameday.id)
@@ -2359,384 +2483,10 @@ class TestCompetitionWorkspaceService(TransactionCase):
             {second_gameday.sequence},
         )
 
-    def test_auto_schedule_gameday_assigns_only_active_gameday_round_slice(self):
-        division, first_gameday = self._prepare_planned_division("Auto Schedule Slice Division")
-        second_gameday_id = self.service.create_gameday(
-            {
-                "division_id": division.id,
-                "name": "Gameday 2",
-                "round_date": "2026-10-17",
-            }
-        )["gameday_id"]
-        second_gameday = self.env["federation.tournament.round"].browse(second_gameday_id)
-        self.service.generate_slots(
-            second_gameday.id,
-            [self.court_1.id, self.court_2.id],
-            "09:00",
-            "10:20",
-            30,
-            5,
-            [],
-            False,
-        )
-
-        result = self.service.auto_schedule_gameday(first_gameday.id)
-
-        self.assertTrue(result["ok"])
-        self.assertEqual(result["assigned_count"], 2)
-        self.assertEqual(len(result["assigned_matches"]), 2)
-        self.assertEqual(
-            {
-                "min_rest_gap_minutes",
-                "total_rest_gap_minutes",
-                "home_away_delta",
-                "slot_start",
-            },
-            set(result["assigned_matches"][0]["score"].keys()),
-        )
-        scheduled_round_numbers = set(
-            division.match_ids.filtered("slot_id").mapped("round_number")
-        )
-        self.assertEqual(scheduled_round_numbers, {first_gameday.sequence})
-        self.assertEqual(
-            len(second_gameday.slot_ids.filtered("match_id")),
-            0,
-        )
-
-    def test_auto_schedule_gameday_uses_candidate_scoring(self):
-        division, _participants = self._create_division(
-            "Auto Schedule Scoring Division",
-            4,
-            minimum_rest_minutes=0,
-        )
-        division.action_lock_team_entries()
-        self.service.generate_round_robin(division.id)
-        gameday_id = self.service.create_gameday(
-            {
-                "division_id": division.id,
-                "name": "Scoring Gameday 1",
-                "round_date": "2026-10-10",
-                "venue_id": self.venue.id,
-            }
-        )["gameday_id"]
-        gameday = self.env["federation.tournament.round"].browse(gameday_id)
-        self.service.generate_slots(
-            gameday.id,
-            [self.court_1.id],
-            "09:00",
-            "11:00",
-            30,
-            0,
-            [],
-            False,
-        )
-
-        unscheduled = self.service._get_gameday_unscheduled_matches(gameday)
-        penalized_match = unscheduled[0]
-        preferred_match = unscheduled[1]
-
-        earliest_slot = gameday.slot_ids.sorted(lambda slot: slot.start_datetime)[0]
-        next_slot = gameday.slot_ids.sorted(lambda slot: slot.start_datetime)[1]
-        for slot in gameday.slot_ids - earliest_slot - next_slot:
-            slot.write({"state": "blocked"})
-
-        extra_team = self.env["federation.team"].create(
-            {
-                "name": "Auto Schedule Seed Team",
-                "club_id": self.club.id,
-            }
-        )
-        prior_match = self.env["federation.match"].create(
-            {
-                "tournament_id": division.id,
-                "home_team_id": penalized_match.home_team_id.id,
-                "away_team_id": extra_team.id,
-                "round_number": 99,
-            }
-        )
-        prior_match.write(
-            {
-                "slot_id": earliest_slot.id,
-                "round_id": gameday.id,
-                "date_scheduled": earliest_slot.start_datetime,
-            }
-        )
-        earliest_slot.write({"match_id": prior_match.id})
-
-        result = self.service.auto_schedule_gameday(gameday.id, max_assignments=1)
-
-        self.assertTrue(result["ok"])
-        self.assertEqual(result["assigned_count"], 1)
-        self.assertEqual(len(result["assigned_matches"]), 1)
-        self.assertEqual(result["assigned_matches"][0]["match_id"], preferred_match.id)
-        self.assertIn("home_away_delta", result["assigned_matches"][0]["score"])
-        self.assertIn("min_rest_gap_minutes", result["assigned_matches"][0]["score"])
-        self.assertEqual(next_slot.match_id.id, preferred_match.id)
-        self.assertFalse(penalized_match.slot_id)
-
-    def test_auto_schedule_gameday_assigns_when_only_warnings_exist(self):
-        _division, gameday = self._prepare_planned_division(
-            "Auto Schedule Warning-Only Division"
-        )
-
-        warning_validation = self.service._planner_validation(
-            warnings=[
-                {
-                    "code": "short_rest_warning",
-                    "message": "Short rest window detected.",
-                }
-            ]
-        )
-
-        with patch.object(
-            type(self.service),
-            "_validate_assignment_action",
-            return_value=warning_validation,
-        ):
-            result = self.service.auto_schedule_gameday(gameday.id, max_assignments=1)
-
-        self.assertTrue(result["ok"])
-        self.assertEqual(result["assigned_count"], 1)
-        self.assertEqual(len(result["assigned_matches"]), 1)
-        self.assertEqual(result["assigned_matches"][0]["warning_count"], 1)
-        self.assertIn(
-            "short_rest_warning",
-            result["assigned_matches"][0]["warning_codes"],
-        )
-
-    def test_auto_schedule_gameday_includes_fairness_and_repair_diagnostics(self):
-        _division, gameday = self._prepare_planned_division(
-            "Auto Schedule Diagnostics Division"
-        )
-
-        result = self.service.auto_schedule_gameday(
-            gameday.id,
-            config={
-                "solver_mode": "advanced",
-                "enable_repair": True,
-                "repair_step_limit": 25,
-                "weights": {
-                    "rest_fairness": 1.5,
-                    "home_away_fairness": 1.0,
-                    "timeslot_fairness": 0.75,
-                    "warning_penalty": 30,
-                },
-            },
-        )
-
-        self.assertTrue(result["ok"])
-        self.assertEqual(result["assigned_count"], 2)
-        self.assertIn("fairness_before", result)
-        self.assertIn("fairness_after", result)
-        self.assertIn("fairness_delta", result)
-        self.assertIn("repair", result)
-        self.assertIn("augmentation", result)
-        self.assertIn("auto_schedule_config", result)
-        self.assertEqual(result["auto_schedule_config"]["solver_mode"], "advanced")
-        self.assertTrue(result["auto_schedule_config"]["enable_repair"])
-        self.assertTrue(result["auto_schedule_config"]["enable_augmentation"])
-        self.assertEqual(result["auto_schedule_config"]["repair_step_limit"], 25)
-        self.assertIn("objective_penalty", result["assigned_matches"][0])
-        self.assertIn("objective_components", result["assigned_matches"][0])
-
-    def test_auto_schedule_gameday_rejects_unknown_weight_keys(self):
-        _division, gameday = self._prepare_planned_division(
-            "Auto Schedule Invalid Config Division"
-        )
-
-        with self.assertRaises(ValidationError):
-            self.service.auto_schedule_gameday(
-                gameday.id,
-                config={
-                    "weights": {
-                        "unknown_weight": 1,
-                    }
-                },
-            )
-
-    def test_auto_schedule_repair_pass_applies_improving_swap(self):
-        _division, gameday = self._prepare_planned_division(
-            "Auto Schedule Repair Swap Division"
-        )
-        unscheduled = self.service._get_gameday_unscheduled_matches(gameday)
-        slots = gameday.slot_ids.sorted(lambda slot: slot.start_datetime)
-        self.assertTrue(self.service.assign_match_to_slot(unscheduled[0].id, slots[0].id)["ok"])
-        self.assertTrue(self.service.assign_match_to_slot(unscheduled[1].id, slots[1].id)["ok"])
-
-        scheduled_matches = list(self.service._get_gameday_scheduled_matches(gameday))
-        self.assertEqual(len(scheduled_matches), 2)
-        first_match = scheduled_matches[0]
-        second_match = scheduled_matches[1]
-        first_slot = first_match.slot_id
-        second_slot = second_match.slot_id
-
-        slot_by_match = {
-            first_match.id: first_slot,
-            second_match.id: second_slot,
-        }
-        match_lookup = {
-            first_match.id: first_match,
-            second_match.id: second_match,
-        }
-
-        def _fake_objective(_service, slot_map, _lookup, _weights):
-            swapped = (
-                slot_map.get(first_match.id) == second_slot
-                and slot_map.get(second_match.id) == first_slot
-            )
-            penalty = 0.0 if swapped else 100.0
-            return {
-                "tracked_team_count": 2,
-                "component_penalties": {
-                    "rest_fairness": penalty,
-                    "home_away_fairness": 0.0,
-                    "timeslot_fairness": 0.0,
-                },
-                "weighted_component_penalties": {
-                    "rest_fairness": penalty,
-                    "home_away_fairness": 0.0,
-                    "timeslot_fairness": 0.0,
-                },
-                "total_penalty": penalty,
-            }
-
-        resolved_config = self.service._auto_schedule_resolve_config(
-            {
-                "solver_mode": "hybrid",
-                "enable_repair": True,
-                "repair_step_limit": 10,
-            }
-        )
-
-        with patch.object(
-            type(self.service),
-            "_auto_schedule_objective_from_slot_map",
-            autospec=True,
-            side_effect=_fake_objective,
-        ):
-            summary = self.service._auto_schedule_repair_assignments(
-                self.service._get_planner_root_gameday(gameday),
-                slot_by_match,
-                match_lookup,
-                self.service._check_access(),
-                resolved_config,
-                batch_key="repair-swap-test",
-            )
-
-        self.assertGreaterEqual(summary["applied_moves"], 1)
-        self.assertLess(summary["after_objective_penalty"], summary["before_objective_penalty"])
-        self.assertEqual(
-            self.env["federation.match"].browse(first_match.id).slot_id.id,
-            second_slot.id,
-        )
-        self.assertEqual(
-            self.env["federation.match"].browse(second_match.id).slot_id.id,
-            first_slot.id,
-        )
-
-    def test_auto_schedule_augmentation_rearranges_to_assign_all_matches(self):
-        division, gameday = self._prepare_planned_division(
-            "Auto Schedule Augmentation Division"
-        )
-        teams = division.participant_ids.mapped("team_id")
-        self.env["federation.match"].create(
-            {
-                "tournament_id": division.id,
-                "home_team_id": teams[0].id,
-                "away_team_id": teams[2].id,
-                "stage_id": gameday.stage_id.id,
-                "round_number": gameday.sequence,
-            }
-        )
-
-        slots = gameday.slot_ids.sorted(lambda slot: slot.start_datetime)
-        for slot in slots[3:]:
-            slot.write({"state": "blocked"})
-
-        unscheduled = self.service._get_gameday_unscheduled_matches(gameday)
-        self.assertGreaterEqual(len(unscheduled), 3)
-        m1, m2, m3 = unscheduled[:3]
-        s1, s2, s3 = slots[:3]
-
-        allowed_slots = {
-            m1.id: {s1.id, s3.id},
-            m2.id: {s1.id},
-            m3.id: {s2.id},
-        }
-
-        def _fake_validate(
-            service,
-            match,
-            slot,
-            _capabilities,
-            force=False,
-            override_reason=False,
-            **kwargs,
-        ):
-            del force, override_reason, kwargs
-            allowed = allowed_slots.get(match.id)
-            if allowed and slot.id not in allowed:
-                return service._planner_validation(
-                    blocking=[
-                        {
-                            "code": "no_feasible_slot",
-                            "message": "No feasible slot for this match.",
-                        }
-                    ]
-                )
-            return service._planner_validation()
-
-        def _fake_score(_service, match, slot, _balances, breakdown=False):
-            del breakdown
-            priority = 200 if (match.id == m1.id and slot.id == s1.id) else 0
-            return (priority, 0, 0, 0, 0)
-
-        with patch.object(
-            type(self.service),
-            "_validate_assignment_action",
-            autospec=True,
-            side_effect=_fake_validate,
-        ), patch.object(
-            type(self.service),
-            "_auto_schedule_candidate_score",
-            autospec=True,
-            side_effect=_fake_score,
-        ):
-            result = self.service.auto_schedule_gameday(gameday.id)
-
-        self.assertTrue(result["ok"])
-        self.assertEqual(result["assigned_count"], 3)
-        self.assertEqual(result["remaining_unscheduled_count"], 0)
-        self.assertGreaterEqual(result["augmentation"]["newly_assigned_count"], 1)
-        self.assertGreaterEqual(result["augmentation"]["reassigned_count"], 1)
-        self.assertEqual(m2.slot_id.id, s1.id)
-        self.assertEqual(m3.slot_id.id, s2.id)
-        self.assertEqual(m1.slot_id.id, s3.id)
-
-    def test_auto_schedule_home_away_delta_prefers_balance_improving_pairings(self):
-        division, gameday = self._prepare_planned_division("Auto Schedule Balance Division")
-        match = self.service._get_gameday_unscheduled_matches(gameday)[0]
-
-        worsening_delta = self.service._auto_schedule_home_away_delta(
-            match,
-            {
-                match.home_team_id.id: {"home": 5, "away": 1, "last_end": False},
-                match.away_team_id.id: {"home": 1, "away": 5, "last_end": False},
-            },
-        )
-        improving_delta = self.service._auto_schedule_home_away_delta(
-            match,
-            {
-                match.home_team_id.id: {"home": 1, "away": 5, "last_end": False},
-                match.away_team_id.id: {"home": 5, "away": 1, "last_end": False},
-            },
-        )
-
-        self.assertLess(worsening_delta, 0)
-        self.assertGreater(improving_delta, 0)
-
     def test_workspace_payload_ignores_invalid_planner_gameday_id(self):
-        division, gameday = self._prepare_planned_division("Invalid Planner Target Division")
+        division, gameday = self._prepare_planned_division(
+            "Invalid Planner Target Division"
+        )
 
         payload = self.service.get_competition_workspace_data(
             self.edition.id,
@@ -2845,9 +2595,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         match = division.match_ids[:1]
         slot = gameday.slot_ids[:1]
         self.assertTrue(
-            self.service.with_user(self.planner_user).assign_match_to_slot(match.id, slot.id)[
-                "ok"
-            ]
+            self.service.with_user(self.planner_user).assign_match_to_slot(
+                match.id, slot.id
+            )["ok"]
         )
 
         confirm_result = self.service.with_user(
@@ -2866,9 +2616,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         match = division.match_ids[:1]
         slot = gameday.slot_ids[:1]
         self.assertTrue(
-            self.service.with_user(self.planner_user).assign_match_to_slot(match.id, slot.id)[
-                "ok"
-            ]
+            self.service.with_user(self.planner_user).assign_match_to_slot(
+                match.id, slot.id
+            )["ok"]
         )
         confirm_result = self.service.with_user(
             self.planner_user
@@ -2889,23 +2639,25 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(gameday.schedule_live_revision_id, validated_revision)
         self.assertEqual(validated_revision.state, "live")
 
-    def test_confirm_gameday_validation_returns_stale_conflict_after_interleaved_write(self):
+    def test_confirm_gameday_validation_returns_stale_conflict_after_interleaved_write(
+        self,
+    ):
         division, gameday = self._prepare_planned_division("Stale Validation Division")
         match = division.match_ids[:1]
         slot = gameday.slot_ids[:1]
         self.assertTrue(
-            self.service.with_user(self.planner_user).assign_match_to_slot(match.id, slot.id)[
-                "ok"
-            ]
+            self.service.with_user(self.planner_user).assign_match_to_slot(
+                match.id, slot.id
+            )["ok"]
         )
         stale_revision = gameday.planner_revision
         self.assertTrue(
             self.service.with_user(self.planner_user).unassign_match(match.id)["ok"]
         )
         self.assertTrue(
-            self.service.with_user(self.planner_user).assign_match_to_slot(match.id, slot.id)[
-                "ok"
-            ]
+            self.service.with_user(self.planner_user).assign_match_to_slot(
+                match.id, slot.id
+            )["ok"]
         )
 
         stale = self.service.with_user(self.planner_user).confirm_gameday_validation(
@@ -2943,7 +2695,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         slot = gameday.slot_ids[:1]
         self.assertTrue(self.service.assign_match_to_slot(match.id, slot.id)["ok"])
 
-        publish_result = self.service.with_user(self.manager_user).publish_competition_schedule(
+        publish_result = self.service.with_user(
+            self.manager_user
+        ).publish_competition_schedule(
             self.edition.id,
             division.id,
         )
@@ -2982,12 +2736,14 @@ class TestCompetitionWorkspaceService(TransactionCase):
         match = division.match_ids[:1]
         slot = gameday.slot_ids[:1]
         self.assertTrue(
-            self.service.with_user(self.manager_user).assign_match_to_slot(match.id, slot.id)[
-                "ok"
-            ]
+            self.service.with_user(self.manager_user).assign_match_to_slot(
+                match.id, slot.id
+            )["ok"]
         )
 
-        first_publish = self.service.with_user(self.manager_user).publish_competition_schedule(
+        first_publish = self.service.with_user(
+            self.manager_user
+        ).publish_competition_schedule(
             self.edition.id,
             division.id,
         )
@@ -3019,7 +2775,9 @@ class TestCompetitionWorkspaceService(TransactionCase):
         match = division.match_ids[:1]
         slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
         self.assertTrue(
-            self.service.with_user(self.manager_user).assign_match_to_slot(match.id, slot.id)["ok"]
+            self.service.with_user(self.manager_user).assign_match_to_slot(
+                match.id, slot.id
+            )["ok"]
         )
         self.assertTrue(
             self.service.with_user(self.manager_user).publish_gameday(gameday.id)["ok"]
@@ -3067,13 +2825,21 @@ class TestCompetitionWorkspaceService(TransactionCase):
             )
 
     def test_bulk_unassign_returns_stale_conflict_after_interleaved_write(self):
-        division, gameday = self._prepare_planned_division("Bulk Stale Conflict Division")
+        division, gameday = self._prepare_planned_division(
+            "Bulk Stale Conflict Division"
+        )
         matches = division.match_ids[:2]
-        slots = gameday.slot_ids.filtered(lambda record: record.state == "available")[:2]
+        slots = gameday.slot_ids.filtered(lambda record: record.state == "available")[
+            :2
+        ]
 
-        self.assertTrue(self.service.assign_match_to_slot(matches[0].id, slots[0].id)["ok"])
+        self.assertTrue(
+            self.service.assign_match_to_slot(matches[0].id, slots[0].id)["ok"]
+        )
         stale_revision = gameday.planner_revision
-        self.assertTrue(self.service.assign_match_to_slot(matches[1].id, slots[1].id)["ok"])
+        self.assertTrue(
+            self.service.assign_match_to_slot(matches[1].id, slots[1].id)["ok"]
+        )
 
         stale = self.service.bulk_unassign_matches(
             gameday.id,
@@ -3090,11 +2856,17 @@ class TestCompetitionWorkspaceService(TransactionCase):
             "Unassign All Stale Conflict Division"
         )
         matches = division.match_ids[:2]
-        slots = gameday.slot_ids.filtered(lambda record: record.state == "available")[:2]
+        slots = gameday.slot_ids.filtered(lambda record: record.state == "available")[
+            :2
+        ]
 
-        self.assertTrue(self.service.assign_match_to_slot(matches[0].id, slots[0].id)["ok"])
+        self.assertTrue(
+            self.service.assign_match_to_slot(matches[0].id, slots[0].id)["ok"]
+        )
         stale_revision = gameday.planner_revision
-        self.assertTrue(self.service.assign_match_to_slot(matches[1].id, slots[1].id)["ok"])
+        self.assertTrue(
+            self.service.assign_match_to_slot(matches[1].id, slots[1].id)["ok"]
+        )
 
         stale = self.service.unassign_all_matches(
             gameday.id,
@@ -3107,13 +2879,21 @@ class TestCompetitionWorkspaceService(TransactionCase):
 
     @tagged("-at_install", "post_install", "sf_ws_concurrency_contract")
     def test_undo_returns_stale_conflict_after_interleaved_write(self):
-        division, gameday = self._prepare_planned_division("Undo Stale Conflict Division")
+        division, gameday = self._prepare_planned_division(
+            "Undo Stale Conflict Division"
+        )
         matches = division.match_ids[:2]
-        slots = gameday.slot_ids.filtered(lambda record: record.state == "available")[:2]
+        slots = gameday.slot_ids.filtered(lambda record: record.state == "available")[
+            :2
+        ]
 
-        self.assertTrue(self.service.assign_match_to_slot(matches[0].id, slots[0].id)["ok"])
+        self.assertTrue(
+            self.service.assign_match_to_slot(matches[0].id, slots[0].id)["ok"]
+        )
         stale_revision = gameday.planner_revision
-        self.assertTrue(self.service.assign_match_to_slot(matches[1].id, slots[1].id)["ok"])
+        self.assertTrue(
+            self.service.assign_match_to_slot(matches[1].id, slots[1].id)["ok"]
+        )
 
         stale = self.service.undo_last_planner_operation(
             gameday.id,

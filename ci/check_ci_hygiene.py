@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import subprocess
 import sys
 
 CI_DIR = pathlib.Path(__file__).resolve().parent
@@ -43,8 +44,29 @@ def _logs_metrics(logs_dir: pathlib.Path) -> tuple[int, int]:
     return total_files, total_bytes
 
 
+def _tracked_bytecode_artifacts(repo_root: pathlib.Path) -> list[str]:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo_root), "ls-files"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        # Do not fail hygiene if git metadata is unavailable in the environment.
+        return []
+
+    tracked = []
+    for rel_path in result.stdout.splitlines():
+        if rel_path.endswith(".pyc") or "/__pycache__/" in rel_path:
+            tracked.append(rel_path)
+    return tracked
+
+
 def main() -> int:
     errors: list[str] = []
+    repo_root = CI_DIR.parent
 
     root_compose = _list_compose_files(CI_DIR)
     unexpected_root = sorted(root_compose - ACTIVE_COMPOSE)
@@ -71,6 +93,19 @@ def main() -> int:
         errors.append(
             f"ci/logs size is {logs_bytes} bytes (limit {MAX_LOG_BYTES}). "
             "Run ci/prune_ci_logs.sh or lower retention."
+        )
+
+    tracked_bytecode = _tracked_bytecode_artifacts(repo_root)
+    if tracked_bytecode:
+        errors.append(
+            "Tracked Python bytecode artifacts detected: "
+            + ", ".join(sorted(tracked_bytecode)[:10])
+            + (
+                f" (and {len(tracked_bytecode) - 10} more)"
+                if len(tracked_bytecode) > 10
+                else ""
+            )
+            + ". Remove them with: git rm --cached <paths>."
         )
 
     if errors:

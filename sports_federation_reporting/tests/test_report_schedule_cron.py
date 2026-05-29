@@ -7,11 +7,13 @@ class TestReportScheduleCron(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.season = cls.env["federation.season"].create({
-            "name": "Cron Test Season",
-            "date_start": "2024-09-01",
-            "date_end": "2025-06-30",
-        })
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "Cron Test Season",
+                "date_start": "2024-09-01",
+                "date_end": "2025-06-30",
+            }
+        )
 
     def _make_schedule(self, report_type, period_type="weekly", **kwargs):
         vals = {
@@ -45,6 +47,7 @@ class TestReportScheduleCron(TransactionCase):
 
     def test_generated_file_has_nonzero_bytes(self):
         import base64
+
         schedule = self._make_schedule("operational", season_id=self.season.id)
         schedule._generate_single_report()
         data = base64.b64decode(schedule.generated_file)

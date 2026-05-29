@@ -39,8 +39,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run repository-wide lint report
-        run: bash ci/run_repo_lint.sh --report
+      - name: Run repository-wide lint (strict)
+        run: bash ci/run_repo_lint.sh --strict
 
       - name: Check documentation freshness metadata
         run: python ci/check_doc_freshness.py
@@ -74,6 +74,31 @@ jobs:
           bash -n ci/run_tests.sh
           bash -n ci/apply_env_to_ir_config.sh
           bash -n ci/restore_backup_drill.sh
+
+  lint-report:
+    name: Lint report (nightly)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install lint dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Run repository-wide lint report
+        run: bash ci/run_repo_lint.sh --report
 
   odoo-tests:
     name: Odoo tests (${{ matrix.suite }})

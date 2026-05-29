@@ -1,4 +1,4 @@
-from odoo import fields, models, tools
+from odoo import fields, models
 
 
 class FederationReportFinance(models.Model):
@@ -25,8 +25,9 @@ class FederationReportFinance(models.Model):
 
     def init(self):
         """Create SQL view for finance report."""
-        tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute("""
+        self.env["federation.report.sql.helper"].recreate_view(
+            self._table,
+            """
             CREATE VIEW federation_report_finance AS (
                 SELECT
                     row_number() OVER () AS id,
@@ -37,4 +38,5 @@ class FederationReportFinance(models.Model):
                 FROM federation_finance_event fe
                 GROUP BY fe.fee_type_id, fe.state
             )
-        """)
+            """,
+        )

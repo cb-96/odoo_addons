@@ -125,6 +125,11 @@ Key models and services
   gameday creation, slot generation, assignment validation, bulk planner
   actions, planner history, revisioned publication, collaboration heartbeat,
   and payload building for the Owl action.
+- The service internals now keep three stable seams: access helpers in
+  `competition_workspace_access_mixin.py`, addon extension contract handling
+  in `competition_workspace_extension_mixin.py`, and planner revision,
+  idempotency, plus schedule-revision state handling in
+  `competition_workspace_planner_state_mixin.py`.
 - `federation.competition.workspace.validation.service` centralizes planner
   assignment, gameday, and competition validation so the write service and the
   read-model payload stay aligned.

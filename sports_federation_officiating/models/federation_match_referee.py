@@ -89,7 +89,11 @@ class FederationMatchReferee(models.Model):
         if start_dt:
             return (
                 fields.Datetime.to_datetime(start_dt),
-                fields.Datetime.to_datetime(end_dt) if end_dt else fields.Datetime.to_datetime(start_dt),
+                (
+                    fields.Datetime.to_datetime(end_dt)
+                    if end_dt
+                    else fields.Datetime.to_datetime(start_dt)
+                ),
             )
 
         match = match or self.match_id
@@ -97,7 +101,11 @@ class FederationMatchReferee(models.Model):
             return False, False
 
         slot = match.slot_id if "slot_id" in match._fields else False
-        start_value = slot.start_datetime if slot and slot.start_datetime else match.date_scheduled
+        start_value = (
+            slot.start_datetime
+            if slot and slot.start_datetime
+            else match.date_scheduled
+        )
         if not start_value:
             return False, False
         end_value = (
@@ -107,7 +115,11 @@ class FederationMatchReferee(models.Model):
         )
         return (
             fields.Datetime.to_datetime(start_value),
-            fields.Datetime.to_datetime(end_value) if end_value else fields.Datetime.to_datetime(start_value),
+            (
+                fields.Datetime.to_datetime(end_value)
+                if end_value
+                else fields.Datetime.to_datetime(start_value)
+            ),
         )
 
     @staticmethod

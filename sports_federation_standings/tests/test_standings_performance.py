@@ -9,6 +9,7 @@ Expected query budget for _build_standing_table():
   3. _get_participants()      → 1 query
 Total: <= 5 queries regardless of match count.
 """
+
 from odoo.tests.common import TransactionCase
 
 
@@ -59,10 +60,7 @@ class TestStandingsPerformance(TransactionCase):
             ]
         )
         cls.participants = cls.env["federation.tournament.participant"].create(
-            [
-                {"tournament_id": cls.tournament.id, "team_id": t.id}
-                for t in cls.teams
-            ]
+            [{"tournament_id": cls.tournament.id, "team_id": t.id} for t in cls.teams]
         )
 
         # Create 200 done matches between team pairs (cycling through all pairs)
@@ -71,9 +69,7 @@ class TestStandingsPerformance(TransactionCase):
         match_vals = []
         count = 0
         # Generate round-robin pairs and repeat until 200 matches
-        pairs = [
-            (teams[i], teams[j]) for i in range(n) for j in range(n) if i != j
-        ]
+        pairs = [(teams[i], teams[j]) for i in range(n) for j in range(n) if i != j]
         while count < 200:
             home, away = pairs[count % len(pairs)]
             vals = {

@@ -40,7 +40,12 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
 
     def _officiating_checks_active_for_planner(self, workspace_service, gameday):
         planner_root = workspace_service._get_planner_root_gameday(gameday)
-        return planner_root.planner_state in ("published", "locked", "in_progress", "completed")
+        return planner_root.planner_state in (
+            "published",
+            "locked",
+            "in_progress",
+            "completed",
+        )
 
     def extend_match_assignment_validation(
         self,
@@ -51,7 +56,9 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
     ):
         if "referee_assignment_ids" not in match._fields:
             return {}
-        if not self._officiating_checks_active_for_planner(workspace_service, slot.round_id):
+        if not self._officiating_checks_active_for_planner(
+            workspace_service, slot.round_id
+        ):
             return {}
 
         target_start, target_end = self._match_window(
@@ -112,7 +119,10 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
         return {"blocking": blocking, "warnings": warnings}
 
     def extend_gameday_validation(self, workspace_service, gameday):
-        if "referee_assignment_ids" not in workspace_service.env["federation.match"]._fields:
+        if (
+            "referee_assignment_ids"
+            not in workspace_service.env["federation.match"]._fields
+        ):
             return {}
         if not self._officiating_checks_active_for_planner(workspace_service, gameday):
             return {}
@@ -128,7 +138,9 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
                         "message": _(
                             "Officiating is not ready for %(match)s: %(issues)s",
                             match=match.display_name,
-                            issues=(match.official_readiness_issues or "").replace("\n", "; "),
+                            issues=(match.official_readiness_issues or "").replace(
+                                "\n", "; "
+                            ),
                         ),
                         "record_id": match.id,
                         "match_id": match.id,
@@ -196,7 +208,9 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
             "warning_match_count": 0,
         }
         for division in divisions:
-            division_summary = self._officiating_summary(division.match_ids.filtered("slot_id"))
+            division_summary = self._officiating_summary(
+                division.match_ids.filtered("slot_id")
+            )
             for key, value in division_summary.items():
                 summary[key] += value
         return {"officiating_summary": summary}

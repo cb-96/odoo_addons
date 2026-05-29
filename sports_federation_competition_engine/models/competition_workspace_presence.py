@@ -1,6 +1,5 @@
 from odoo import fields, models
 
-
 WORKSPACE_SECTION_SELECTION = [
     ("overview", "Overview"),
     ("teams", "Teams"),

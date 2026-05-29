@@ -59,7 +59,9 @@ class TestFeeSchedule(TransactionCase):
     def test_unique_constraint_prevents_duplicate(self):
         """Uniqueness constraint prevents two rows for the same combination."""
         self._make_schedule(category="senior", gender="female", amount=50.0)
-        with self.assertRaises(Exception), mute_logger("odoo.sql_db"), self.cr.savepoint():
+        with self.assertRaises(Exception), mute_logger(
+            "odoo.sql_db"
+        ), self.cr.savepoint():
             self._make_schedule(category="senior", gender="female", amount=60.0)
 
     def test_negative_amount_raises(self):
@@ -225,7 +227,9 @@ class TestCreateInvoice(TransactionCase):
     def test_create_invoice_succeeds_when_accounting_installed(self):
         """action_create_invoice creates one account.move with the correct amount."""
         if "account.move" not in self.env:
-            self.skipTest("account module not installed; skipping invoice creation test")
+            self.skipTest(
+                "account module not installed; skipping invoice creation test"
+            )
         event = self._make_event(amount=150.0)
         invoice = event.action_create_invoice()
         self.assertTrue(invoice)

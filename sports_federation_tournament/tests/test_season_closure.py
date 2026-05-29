@@ -1,4 +1,5 @@
 """Tests for season closure checklist: action_close blocks while tournaments are active."""
+
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 

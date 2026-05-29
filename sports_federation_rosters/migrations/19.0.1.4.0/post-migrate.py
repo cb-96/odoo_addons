@@ -14,27 +14,21 @@ Two variants of the index are required because competition_id is nullable:
 
 def migrate(cr, version):
     # Drop pre-existing indexes in case this migration is re-run.
-    cr.execute(
-        """
+    cr.execute("""
         DROP INDEX IF EXISTS federation_team_roster_unique_active_no_comp;
         DROP INDEX IF EXISTS federation_team_roster_unique_active_with_comp;
-        """
-    )
+        """)
 
     # Partial unique index: active rosters without a competition scope.
-    cr.execute(
-        """
+    cr.execute("""
         CREATE UNIQUE INDEX federation_team_roster_unique_active_no_comp
             ON federation_team_roster (team_id, season_id)
             WHERE status = 'active' AND competition_id IS NULL;
-        """
-    )
+        """)
 
     # Partial unique index: active rosters with a specific competition scope.
-    cr.execute(
-        """
+    cr.execute("""
         CREATE UNIQUE INDEX federation_team_roster_unique_active_with_comp
             ON federation_team_roster (team_id, season_id, competition_id)
             WHERE status = 'active' AND competition_id IS NOT NULL;
-        """
-    )
+        """)

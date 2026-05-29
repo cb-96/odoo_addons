@@ -6,6 +6,9 @@ from odoo import http
 from odoo.addons.sports_federation_base.exceptions import (
     AttachmentScanVerificationError,
 )
+from odoo.addons.sports_federation_base.request_security import (
+    FederationRequestSecurityMixin,
+)
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import Response, request
 
@@ -16,6 +19,7 @@ _logger = logging.getLogger(__name__)
 
 
 class FederationIntegrationApi(
+    FederationRequestSecurityMixin,
     FederationIntegrationApiResponseMixin,
     FederationIntegrationApiAuthMixin,
     http.Controller,
@@ -151,10 +155,7 @@ class FederationIntegrationApi(
                     "Inbound delivery requests must use a JSON object body."
                 )
 
-            request_idempotency_key = (
-                request_proxy.httprequest.headers.get("X-Federation-Idempotency-Key")
-                or ""
-            ).strip() or False
+            request_idempotency_key = self._get_idempotency_key()
 
             delivery_result = (
                 request_proxy.env["federation.integration.delivery"]

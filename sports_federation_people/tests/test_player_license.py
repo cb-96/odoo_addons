@@ -9,21 +9,27 @@ class TestPlayerLicense(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.club = cls.env["federation.club"].create({"name": "License Test Club"})
-        cls.season = cls.env["federation.season"].create({
-            "name": "License Season 2024",
-            "date_start": "2024-09-01",
-            "date_end": "2025-06-30",
-        })
-        cls.season2 = cls.env["federation.season"].create({
-            "name": "License Season 2025",
-            "date_start": "2025-09-01",
-            "date_end": "2026-06-30",
-        })
-        cls.player = cls.env["federation.player"].create({
-            "first_name": "LicTest",
-            "last_name": "Player",
-            "club_id": cls.club.id,
-        })
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "License Season 2024",
+                "date_start": "2024-09-01",
+                "date_end": "2025-06-30",
+            }
+        )
+        cls.season2 = cls.env["federation.season"].create(
+            {
+                "name": "License Season 2025",
+                "date_start": "2025-09-01",
+                "date_end": "2026-06-30",
+            }
+        )
+        cls.player = cls.env["federation.player"].create(
+            {
+                "first_name": "LicTest",
+                "last_name": "Player",
+                "club_id": cls.club.id,
+            }
+        )
 
     def _make_license(self, player=None, season=None, name="LIC-001", **kwargs):
         vals = {

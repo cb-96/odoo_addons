@@ -1,6 +1,5 @@
 from odoo import models
 
-
 PUBLIC_TOURNAMENT_STATE_LABELS = {
     "draft": "Planning",
     "open": "Open for entries",

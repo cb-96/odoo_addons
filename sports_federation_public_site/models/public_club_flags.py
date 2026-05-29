@@ -49,9 +49,7 @@ class FederationClub(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        return super().create(
-            [self._normalize_public_slug_vals(v) for v in vals_list]
-        )
+        return super().create([self._normalize_public_slug_vals(v) for v in vals_list])
 
     def write(self, vals):
         return super().write(self._normalize_public_slug_vals(vals))
@@ -111,7 +109,9 @@ class FederationClub(models.Model):
         if not team_ids:
             return self.env["federation.tournament.participant"].browse([])
         Season = self.env["federation.season"].sudo()
-        recent_seasons = Season.search([], order="date_end desc, id desc", limit=seasons)
+        recent_seasons = Season.search(
+            [], order="date_end desc, id desc", limit=seasons
+        )
         if not recent_seasons:
             return self.env["federation.tournament.participant"].browse([])
         return (

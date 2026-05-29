@@ -48,9 +48,7 @@ class TestTourDataImport(TransactionCase):
         wizard.action_parse_and_import()
         self.assertEqual(wizard.success_count, 2)
         self.assertEqual(wizard.error_count, 0)
-        self.assertFalse(
-            self.env["federation.club"].search([("code", "=", "TICA")])
-        )
+        self.assertFalse(self.env["federation.club"].search([("code", "=", "TICA")]))
 
         # STEP 2: Request approval → governance job created
         wizard.action_request_approval()

@@ -53,8 +53,6 @@ class FederationRoundDateWizard(models.TransientModel):
             [("round_id", "=", self.round_id.id)]
         )
         if not matches:
-            raise UserError(
-                f"No matches found in round '{self.round_id.name}'."
-            )
+            raise UserError(f"No matches found in round '{self.round_id.name}'.")
         matches.write({"date_scheduled": self.date_scheduled})
         return {"type": "ir.actions.act_window_close"}

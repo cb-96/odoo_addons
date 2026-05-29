@@ -5,7 +5,11 @@ from odoo.exceptions import UserError, ValidationError
 class FederationFinanceEvent(models.Model):
     _name = "federation.finance.event"
     _description = "Federation Finance Event"
-    _inherit = ["federation.finance.event.export.mixin", "mail.thread", "mail.activity.mixin"]
+    _inherit = [
+        "federation.finance.event.export.mixin",
+        "mail.thread",
+        "mail.activity.mixin",
+    ]
     _order = "create_date desc"
 
     name = fields.Char(required=True)
@@ -460,16 +464,13 @@ class FederationFinanceEvent(models.Model):
         if "account.move" not in self.env:
             return False
         if self.invoice_ref:
-            raise ValidationError(
-                "An invoice already exists for this finance event."
-            )
+            raise ValidationError("An invoice already exists for this finance event.")
         if self.state == "cancelled":
             raise ValidationError(
                 "Cannot create an invoice for a cancelled finance event."
             )
-        partner = (
-            self.partner_id
-            or (self.club_id.partner_id if self.club_id else False)
+        partner = self.partner_id or (
+            self.club_id.partner_id if self.club_id else False
         )
         invoice_vals = {
             "move_type": "out_invoice",

@@ -5,7 +5,11 @@ from odoo.exceptions import ValidationError
 class FederationComplianceCheck(models.Model):
     _name = "federation.compliance.check"
     _description = "Federation Compliance Check"
-    _inherit = ["federation.compliance.target.mixin", "mail.thread", "mail.activity.mixin"]
+    _inherit = [
+        "federation.compliance.target.mixin",
+        "mail.thread",
+        "mail.activity.mixin",
+    ]
     _order = "create_date desc"
 
     STATUS_SELECTION = [

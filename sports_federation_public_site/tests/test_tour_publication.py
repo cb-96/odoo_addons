@@ -15,7 +15,6 @@ Key invariants verified:
 - tournament website_published field is settable
 """
 
-from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
 
@@ -84,9 +83,9 @@ class TestTourPublication(TransactionCase):
         self.assertEqual(item.publication_state, "archived")
         self.assertFalse(item.can_access_publicly())
 
-        live_after_archive = self.env["federation.public.editorial.item"].get_live_items(
-            season=self.season
-        )
+        live_after_archive = self.env[
+            "federation.public.editorial.item"
+        ].get_live_items(season=self.season)
         self.assertNotIn(item, live_after_archive)
 
         # STEP 7: Reset to draft

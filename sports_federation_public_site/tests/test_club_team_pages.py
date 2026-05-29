@@ -7,6 +7,7 @@ Asserts:
   - A published club appears on /clubs and its detail slug returns HTTP 200
   - An unpublished club's slug returns HTTP 404
 """
+
 from odoo import SUPERUSER_ID, api
 from odoo.tests.common import HttpCase, tagged
 
@@ -21,23 +22,31 @@ class TestClubPublicPages(HttpCase):
         with cls.registry.cursor() as cr:
             env = api.Environment(cr, SUPERUSER_ID, {})
 
-            cls.pub_club_id = env["federation.club"].create(
-                {
-                    "name": "Public Club Page Smoke Club",
-                    "code": "PCPSC",
-                    "website_published": True,
-                    "public_slug": "public-club-page-smoke",
-                }
-            ).id
+            cls.pub_club_id = (
+                env["federation.club"]
+                .create(
+                    {
+                        "name": "Public Club Page Smoke Club",
+                        "code": "PCPSC",
+                        "website_published": True,
+                        "public_slug": "public-club-page-smoke",
+                    }
+                )
+                .id
+            )
 
-            cls.hidden_club_id = env["federation.club"].create(
-                {
-                    "name": "Hidden Club Page Smoke Club",
-                    "code": "HCPSC",
-                    "website_published": False,
-                    "public_slug": "hidden-club-page-smoke",
-                }
-            ).id
+            cls.hidden_club_id = (
+                env["federation.club"]
+                .create(
+                    {
+                        "name": "Hidden Club Page Smoke Club",
+                        "code": "HCPSC",
+                        "website_published": False,
+                        "public_slug": "hidden-club-page-smoke",
+                    }
+                )
+                .id
+            )
 
     def test_clubs_list_returns_200(self):
         res = self.url_open("/clubs")

@@ -13,7 +13,9 @@ class TestTournamentOperations(TransactionCase):
         cls.role_type = cls.env.ref(
             "sports_federation_portal.role_type_competition_contact"
         )
-        cls.manager_group = cls.env.ref("sports_federation_base.group_federation_manager")
+        cls.manager_group = cls.env.ref(
+            "sports_federation_base.group_federation_manager"
+        )
         cls.validator_group = cls.env.ref(
             "sports_federation_result_control.group_result_validator"
         )
@@ -50,7 +52,9 @@ class TestTournamentOperations(TransactionCase):
                     "name": "Operations Validator",
                     "login": "operations.validator@example.com",
                     "email": "operations.validator@example.com",
-                    "group_ids": [(6, 0, [cls.manager_group.id, cls.validator_group.id])],
+                    "group_ids": [
+                        (6, 0, [cls.manager_group.id, cls.validator_group.id])
+                    ],
                 }
             )
         )
@@ -186,7 +190,11 @@ class TestTournamentOperations(TransactionCase):
 
         venue_model = cls.env.get("federation.venue")
         playing_area_model = cls.env.get("federation.playing.area")
-        cls.venue = venue_model.create({"name": "Operations Venue", "city": "Brussels"}) if venue_model else False
+        cls.venue = (
+            venue_model.create({"name": "Operations Venue", "city": "Brussels"})
+            if venue_model
+            else False
+        )
         cls.playing_area = (
             playing_area_model.create({"name": "Court 1", "venue_id": cls.venue.id})
             if playing_area_model and cls.venue
@@ -297,7 +305,9 @@ class TestTournamentOperations(TransactionCase):
                 "short_label"
             ]
         )
-        self.assertEqual(payload["action_queue"][0]["match_id"], self.missing_result_match.id)
+        self.assertEqual(
+            payload["action_queue"][0]["match_id"], self.missing_result_match.id
+        )
         court_names = {court["court_name"] for court in payload["court_summaries"]}
         if self.playing_area:
             self.assertIn(self.playing_area.name, court_names)
@@ -305,7 +315,9 @@ class TestTournamentOperations(TransactionCase):
             self.assertIn("Unassigned court", court_names)
 
     def test_portal_user_can_resolve_visible_tournament(self):
-        visible_tournament = self.env["federation.tournament"]._operations_get_tournament_for_user(
+        visible_tournament = self.env[
+            "federation.tournament"
+        ]._operations_get_tournament_for_user(
             self.tournament.id,
             user=self.portal_user,
         )
@@ -313,7 +325,9 @@ class TestTournamentOperations(TransactionCase):
         self.assertEqual(visible_tournament, self.tournament)
 
     def test_unrelated_portal_user_cannot_resolve_foreign_tournament(self):
-        hidden_tournament = self.env["federation.tournament"]._operations_get_tournament_for_user(
+        hidden_tournament = self.env[
+            "federation.tournament"
+        ]._operations_get_tournament_for_user(
             self.tournament.id,
             user=self.out_of_scope_portal_user,
         )
@@ -354,7 +368,9 @@ class TestTournamentOperations(TransactionCase):
             user=self.portal_user,
         )
 
-        self.assertEqual(message, "Result approved and now counts in official standings.")
+        self.assertEqual(
+            message, "Result approved and now counts in official standings."
+        )
         self.assertEqual(self.verified_match.result_state, "approved")
         self.assertTrue(self.verified_match.include_in_official_standings)
 

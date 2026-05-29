@@ -1,4 +1,3 @@
-import json
 import logging
 from datetime import datetime, timedelta, time
 from uuid import uuid4
@@ -6,17 +5,24 @@ from uuid import uuid4
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 
+from .competition_workspace_access_mixin import CompetitionWorkspaceAccessMixin
+from .competition_workspace_extension_mixin import (
+    CompetitionWorkspaceExtensionMixin,
+)
+from .competition_workspace_planner_state_mixin import (
+    CompetitionWorkspacePlannerStateMixin,
+)
+from .planner_operation_rollback import PlannerOperationRollback
 
 _logger = logging.getLogger(__name__)
 
 
-class PlannerOperationRollback(Exception):
-    def __init__(self, result):
-        super().__init__("Planner operation rolled back")
-        self.result = result
-
-
-class CompetitionWorkspaceService(models.AbstractModel):
+class CompetitionWorkspaceService(
+    CompetitionWorkspaceExtensionMixin,
+    CompetitionWorkspacePlannerStateMixin,
+    CompetitionWorkspaceAccessMixin,
+    models.AbstractModel,
+):
     _name = "federation.competition.workspace.service"
     _description = "Competition Workspace Service"
 
@@ -31,549 +37,6 @@ class CompetitionWorkspaceService(models.AbstractModel):
         "timeslot_fairness": 0.5,
         "warning_penalty": 25.0,
     }
-
-    def _check_access(self, require_publish=False):
-        return self.env["federation.tournament"]._competition_workspace_check_access(
-            user=self.env.user,
-            require_publish=require_publish,
-        )
-
-    def _validation_service(self):
-        return self.env["federation.competition.workspace.validation.service"]
-
-    def _read_model_service(self):
-        return self.env["federation.competition.workspace.read.model.service"]
-
-    def _workspace_extension_models(self):
-        return [
-            self.env[model_name]
-            for model_name in sorted(self.env.registry.models)
-            if model_name.startswith("federation.competition.workspace.extension.")
-        ]
-
-    def _workspace_extension_results(self, method_name, *args, **kwargs):
-        telemetry = kwargs.pop("_telemetry", None)
-        warning_bucket = kwargs.pop("_warning_bucket", None)
-        results = []
-        for extension in self._workspace_extension_models():
-            method = getattr(extension, method_name, None)
-            if not callable(method):
-                continue
-            try:
-                result = method(self, *args, **kwargs)
-            except Exception as error:  # pylint: disable=broad-except
-                correlation_id = uuid4().hex[:12]
-                if isinstance(telemetry, list):
-                    telemetry.append(
-                        {
-                            "method": method_name,
-                            "extension_model": extension._name,
-                            "status": "error",
-                            "error_type": type(error).__name__,
-                            "correlation_id": correlation_id,
-                        }
-                    )
-                if isinstance(warning_bucket, list):
-                    warning_bucket.append(
-                        self._workspace_extension_failure_warning(
-                            method_name,
-                            extension._name,
-                            correlation_id=correlation_id,
-                        )
-                    )
-                _logger.exception(
-                    "Workspace extension hook failed for %s on %s (correlation_id=%s)",
-                    method_name,
-                    extension._name,
-                    correlation_id,
-                )
-                continue
-
-            if isinstance(telemetry, list):
-                telemetry.append(
-                    {
-                        "method": method_name,
-                        "extension_model": extension._name,
-                        "status": "ok",
-                        "emitted": bool(result),
-                    }
-                )
-            if result:
-                results.append(result)
-
-        if isinstance(telemetry, list):
-            self._log_workspace_extension_telemetry(method_name, telemetry)
-        return results
-
-    def _workspace_extension_failure_warning(
-        self,
-        method_name,
-        extension_model,
-        correlation_id=False,
-    ):
-        return {
-            "code": "extension_hook_failed",
-            "message": _(
-                "An extension hook failed and was ignored while computing workspace data."
-            ),
-            "hook": method_name,
-            "extension_model": extension_model,
-            "correlation_id": correlation_id or uuid4().hex[:12],
-        }
-
-    def _normalize_workspace_extension_schema_version(self, result, method_name):
-        if not isinstance(result, dict) or "schema_version" not in result:
-            return 1
-        try:
-            schema_version = int(result.get("schema_version"))
-        except (TypeError, ValueError):
-            _logger.warning(
-                "Workspace extension output ignored for %s: invalid schema_version %s",
-                method_name,
-                result.get("schema_version"),
-            )
-            return False
-
-        if schema_version not in self._workspace_extension_schema_versions:
-            _logger.warning(
-                "Workspace extension output ignored for %s: unsupported schema_version %s",
-                method_name,
-                schema_version,
-            )
-            return False
-        return schema_version
-
-    def _normalize_workspace_extension_payload_result(self, result, method_name):
-        schema_version = self._normalize_workspace_extension_schema_version(
-            result,
-            method_name,
-        )
-        if not schema_version:
-            return {}
-        if schema_version == 1 and isinstance(result, dict) and "schema_version" in result:
-            payload = result.get("payload")
-            if payload is None:
-                return {}
-            if isinstance(payload, dict):
-                return payload
-            _logger.warning(
-                "Workspace extension payload ignored for %s: schema payload must be dict",
-                method_name,
-            )
-            return {}
-        return result
-
-    def _normalize_workspace_extension_issue_result(self, result, method_name):
-        schema_version = self._normalize_workspace_extension_schema_version(
-            result,
-            method_name,
-        )
-        if not schema_version:
-            return {}
-        if schema_version == 1 and isinstance(result, dict) and "schema_version" in result:
-            issues = result.get("issues")
-            if issues is None:
-                return {}
-            if isinstance(issues, dict):
-                return issues
-            _logger.warning(
-                "Workspace extension issues ignored for %s: schema issues must be dict",
-                method_name,
-            )
-            return {}
-        return result
-
-    def _normalize_workspace_extension_score_result(self, result, method_name):
-        schema_version = self._normalize_workspace_extension_schema_version(
-            result,
-            method_name,
-        )
-        if not schema_version:
-            return []
-        if schema_version == 1 and isinstance(result, dict) and "schema_version" in result:
-            components = result.get("components")
-            if components is None:
-                return []
-            if isinstance(components, dict):
-                return [components]
-            if isinstance(components, (list, tuple, set)):
-                return list(components)
-            _logger.warning(
-                "Workspace extension score components ignored for %s: schema components must be list/dict",
-                method_name,
-            )
-            return []
-        return result
-
-    def _log_workspace_extension_telemetry(self, method_name, telemetry):
-        if not telemetry:
-            return
-        failed = [entry for entry in telemetry if entry.get("status") == "error"]
-        if failed:
-            _logger.warning(
-                "Workspace extension telemetry for %s: %s hook(s) failed out of %s",
-                method_name,
-                len(failed),
-                len(telemetry),
-            )
-        else:
-            _logger.debug(
-                "Workspace extension telemetry for %s: %s hook(s) executed",
-                method_name,
-                len(telemetry),
-            )
-
-    def _merge_workspace_payload(self, payload, update):
-        merged = dict(payload or {})
-        for key, value in (update or {}).items():
-            if isinstance(value, dict) and isinstance(merged.get(key), dict):
-                merged[key] = self._merge_workspace_payload(merged[key], value)
-            elif isinstance(value, list) and isinstance(merged.get(key), list):
-                merged[key] = merged[key] + value
-            else:
-                merged[key] = value
-        return merged
-
-    def _workspace_extension_payload(self, method_name, *args, **kwargs):
-        payload = {}
-        telemetry = []
-        for update in self._workspace_extension_results(
-            method_name,
-            *args,
-            _telemetry=telemetry,
-            **kwargs,
-        ):
-            update = self._normalize_workspace_extension_payload_result(
-                update,
-                method_name,
-            )
-            normalized_update = self._normalize_workspace_extension_payload_update(
-                update,
-                method_name=method_name,
-            )
-            payload = self._merge_workspace_payload(payload, normalized_update)
-        return payload
-
-    def _normalize_workspace_extension_payload_update(self, update, method_name):
-        if not update:
-            return {}
-        if not isinstance(update, dict):
-            _logger.warning(
-                "Workspace extension payload ignored for %s: expected dict, got %s",
-                method_name,
-                type(update).__name__,
-            )
-            return {}
-        return update
-
-    def _workspace_extension_issues(self, method_name, *args, **kwargs):
-        issues = {"blocking": [], "warnings": []}
-        extension_warnings = []
-        telemetry = []
-        for result in self._workspace_extension_results(
-            method_name,
-            *args,
-            _warning_bucket=extension_warnings,
-            _telemetry=telemetry,
-            **kwargs,
-        ):
-            result = self._normalize_workspace_extension_issue_result(
-                result,
-                method_name,
-            )
-            if not isinstance(result, dict):
-                _logger.warning(
-                    "Workspace extension issues ignored for %s: expected dict, got %s",
-                    method_name,
-                    type(result).__name__,
-                )
-                continue
-            blocking_issues = self._normalize_workspace_extension_issue_bucket(
-                result.get("blocking"),
-                method_name=method_name,
-                severity="blocking",
-            )
-            warning_issues = self._normalize_workspace_extension_issue_bucket(
-                result.get("warnings"),
-                method_name=method_name,
-                severity="warning",
-            )
-
-            for issue in blocking_issues:
-                severity = self._validation_service().normalize_issue_severity(
-                    issue.get("severity"),
-                    default="blocking",
-                )
-                if severity == "blocking":
-                    issues["blocking"].append(issue)
-                else:
-                    issues["warnings"].append(issue)
-
-            for issue in warning_issues:
-                severity = self._validation_service().normalize_issue_severity(
-                    issue.get("severity"),
-                    default="warning",
-                )
-                if severity == "blocking":
-                    issues["blocking"].append(issue)
-                else:
-                    issues["warnings"].append(issue)
-        issues["warnings"].extend(extension_warnings)
-        return issues
-
-    def _safe_workspace_issue_int(self, raw_value):
-        try:
-            return int(raw_value)
-        except (TypeError, ValueError):
-            return False
-
-    def _normalize_workspace_extension_issue(self, issue, method_name, severity):
-        if not isinstance(issue, dict):
-            _logger.warning(
-                "Workspace extension issue ignored for %s (%s): expected dict, got %s",
-                method_name,
-                severity,
-                type(issue).__name__,
-            )
-            return False
-
-        code = str(issue.get("code") or "").strip()
-        message = str(issue.get("message") or "").strip()
-        if not code or not message:
-            _logger.warning(
-                "Workspace extension issue ignored for %s (%s): missing code/message",
-                method_name,
-                severity,
-            )
-            return False
-
-        normalized = dict(issue)
-        normalized["code"] = code
-        normalized["message"] = message
-
-        for key in ("record_id", "match_id", "slot_id", "focus_record_id", "referee_id"):
-            if key not in issue:
-                continue
-            parsed = self._safe_workspace_issue_int(issue.get(key))
-            if parsed:
-                normalized[key] = parsed
-            else:
-                normalized.pop(key, None)
-
-        team_ids = issue.get("team_ids")
-        if isinstance(team_ids, (list, tuple, set)):
-            parsed_team_ids = {
-                team_id
-                for team_id in (self._safe_workspace_issue_int(value) for value in team_ids)
-                if team_id
-            }
-            if parsed_team_ids:
-                normalized["team_ids"] = sorted(parsed_team_ids)
-            else:
-                normalized.pop("team_ids", None)
-        elif "team_ids" in normalized:
-            normalized.pop("team_ids", None)
-
-        return normalized
-
-    def _normalize_workspace_extension_issue_bucket(self, raw_issues, method_name, severity):
-        if not raw_issues:
-            return []
-        if isinstance(raw_issues, dict):
-            raw_issues = [raw_issues]
-        if not isinstance(raw_issues, (list, tuple, set)):
-            _logger.warning(
-                "Workspace extension issue bucket ignored for %s (%s): expected list/dict, got %s",
-                method_name,
-                severity,
-                type(raw_issues).__name__,
-            )
-            return []
-
-        normalized_issues = []
-        for issue in raw_issues:
-            normalized = self._normalize_workspace_extension_issue(
-                issue,
-                method_name=method_name,
-                severity=severity,
-            )
-            if normalized:
-                normalized_issues.append(normalized)
-        return normalized_issues
-
-    def _workspace_extension_score_components(self, method_name, *args, **kwargs):
-        components = []
-        telemetry = []
-        for result in self._workspace_extension_results(
-            method_name,
-            *args,
-            _telemetry=telemetry,
-            **kwargs,
-        ):
-            result = self._normalize_workspace_extension_score_result(
-                result,
-                method_name,
-            )
-            if isinstance(result, dict):
-                result = [result]
-            elif not isinstance(result, (list, tuple, set)):
-                _logger.warning(
-                    "Workspace extension score components ignored for %s: expected list/dict, got %s",
-                    method_name,
-                    type(result).__name__,
-                )
-                continue
-
-            for component in result:
-                normalized_component = self._normalize_workspace_extension_score_component(
-                    component,
-                    method_name=method_name,
-                )
-                if normalized_component:
-                    components.append(normalized_component)
-        return components
-
-    def _normalize_workspace_extension_score_component(self, component, method_name):
-        if not isinstance(component, dict):
-            _logger.warning(
-                "Workspace extension score component ignored for %s: expected dict, got %s",
-                method_name,
-                type(component).__name__,
-            )
-            return False
-
-        key = str(component.get("key") or "").strip()
-        if not key:
-            _logger.warning(
-                "Workspace extension score component ignored for %s: missing key",
-                method_name,
-            )
-            return False
-
-        label = str(component.get("label") or "").strip() or key.replace("_", " ").title()
-        raw_score = component.get("score", 100)
-        try:
-            score = float(raw_score)
-        except (TypeError, ValueError):
-            score = 100
-        score = max(0, min(100, round(score)))
-
-        normalized = dict(component)
-        normalized["key"] = key
-        normalized["label"] = label
-        normalized["score"] = score
-        return normalized
-
-    def _ensure_planner_write_revision(self, gameday, expected_planner_revision=False):
-        planner_root = self._get_planner_root_gameday(gameday)
-        normalized_revision = self._normalize_expected_planner_revision(
-            expected_planner_revision
-        )
-        planner_root._competition_workspace_check_revision(normalized_revision)
-        return planner_root
-
-    def _planner_write_conflict_payload(
-        self,
-        planner_root,
-        operation,
-        expected_planner_revision=False,
-        code="stale_planner_revision",
-        message=False,
-    ):
-        correlation_id = uuid4().hex[:12]
-        _logger.warning(
-            "Planner write conflict for %s (correlation_id=%s, expected=%s, current=%s)",
-            operation,
-            correlation_id,
-            expected_planner_revision,
-            planner_root.planner_revision,
-        )
-        return {
-            "ok": False,
-            "validation": self._planner_blocking_validation(
-                code,
-                message
-                or _(
-                    "The planner data is stale for this write operation. Refresh and retry."
-                ),
-                record_id=planner_root.id,
-            ),
-            "conflict": {
-                "code": code,
-                "operation": operation,
-                "expected_planner_revision": expected_planner_revision or False,
-                "current_planner_revision": planner_root.planner_revision,
-                "correlation_id": correlation_id,
-            },
-            "diagnostics": {"correlation_id": correlation_id},
-        }
-
-    def _ensure_planner_write_revision_or_conflict(
-        self,
-        gameday,
-        expected_planner_revision=False,
-        operation="planner_write",
-    ):
-        planner_root = self._get_planner_root_gameday(gameday)
-        try:
-            normalized_revision = self._normalize_expected_planner_revision(
-                expected_planner_revision
-            )
-        except ValidationError:
-            return (
-                False,
-                self._planner_write_conflict_payload(
-                    planner_root,
-                    operation,
-                    expected_planner_revision=expected_planner_revision,
-                    code="invalid_planner_revision",
-                    message=_("The planner revision token is invalid."),
-                ),
-            )
-
-        try:
-            planner_root._competition_workspace_check_revision(normalized_revision)
-        except ValidationError:
-            return (
-                False,
-                self._planner_write_conflict_payload(
-                    planner_root,
-                    operation,
-                    expected_planner_revision=normalized_revision,
-                ),
-            )
-        return planner_root, False
-
-    def _bump_planner_revision(self, gameday):
-        planner_root = self._get_planner_root_gameday(gameday)
-        planner_root._competition_workspace_bump_revision()
-        if planner_root.schedule_draft_revision_id:
-            self._refresh_schedule_revision(
-                planner_root.schedule_draft_revision_id,
-                planner_root,
-            )
-        return True
-
-    def _planner_operation_model(self):
-        return self.env["federation.competition.planner.operation"]
-
-    def _schedule_revision_model(self):
-        return self.env["federation.competition.schedule.revision"]
-
-    def _workspace_presence_model(self):
-        return self.env["federation.competition.workspace.presence"]
-
-    def _normalize_expected_planner_revision(self, expected_planner_revision=False):
-        if expected_planner_revision in (False, None):
-            return False
-        if isinstance(expected_planner_revision, str):
-            expected_planner_revision = expected_planner_revision.strip()
-            if not expected_planner_revision:
-                return False
-        try:
-            return int(expected_planner_revision)
-        except (TypeError, ValueError):
-            raise ValidationError(_("The planner revision token is invalid."))
 
     def _copy_validation_result(self, validation):
         return {
@@ -664,278 +127,38 @@ class CompetitionWorkspaceService(models.AbstractModel):
     def _normalize_override_reason(self, override_reason):
         return (override_reason or "").strip()
 
-    def _normalize_idempotency_key(self, idempotency_key=False):
-        if idempotency_key in (False, None):
-            return False
-        key = str(idempotency_key).strip()
-        if not key:
-            return False
-        if len(key) > 120:
-            raise ValidationError(_("The idempotency key is too long."))
-        return key
-
-    def _idempotency_batch_key(self, scope, idempotency_key=False):
-        key = self._normalize_idempotency_key(idempotency_key)
-        if not key:
-            return False
-        return "idem:%s:%s" % (scope, key)
-
-    def _idempotency_metadata(self, scope, idempotency_key=False, replayed=False):
-        key = self._normalize_idempotency_key(idempotency_key)
-        if not key:
-            return False
-        return {
-            "scope": scope,
-            "key": key,
-            "replayed": bool(replayed),
-        }
-
-    def _idempotency_replay_response(
-        self,
-        planner_root,
-        scope,
-        idempotency_key=False,
+    def _coerce_workspace_competition(
+        self, competition=False, division=False, gameday=False
     ):
-        return {
-            "ok": True,
-            "replayed": True,
-            "idempotency": self._idempotency_metadata(
-                scope,
-                idempotency_key=idempotency_key,
-                replayed=True,
-            ),
-            "planner": self.get_gameday_planner_data(planner_root.id),
-        }
-
-    def _idempotency_applied_operations(self, planner_root, scope, idempotency_key=False):
-        batch_key = self._idempotency_batch_key(scope, idempotency_key=idempotency_key)
-        if not batch_key:
-            return self._planner_operation_model().browse()
-        return self._planner_operation_model().search(
-            [
-                ("planner_root_round_id", "=", planner_root.id),
-                ("batch_key", "=", batch_key),
-                ("state", "=", "applied"),
-            ],
-            order="id asc",
-        )
-
-    def _idempotency_applied_operations_for_match(
-        self,
-        match,
-        scope,
-        idempotency_key=False,
-    ):
-        batch_key = self._idempotency_batch_key(scope, idempotency_key=idempotency_key)
-        if not batch_key:
-            return self._planner_operation_model().browse()
-        return self._planner_operation_model().search(
-            [
-                ("match_id", "=", match.id),
-                ("batch_key", "=", batch_key),
-                ("state", "=", "applied"),
-            ],
-            order="id asc",
-        )
-
-    def _assert_idempotent_assign_intent(self, operations, match, slot):
-        if not operations:
-            return False
-        if not operations.filtered(lambda operation: operation.match_id == match):
-            raise ValidationError(
-                _("The idempotency key was reused for a different match assignment request.")
-            )
-        if not operations.filtered(
-            lambda operation: operation.new_slot_id and operation.new_slot_id == slot
-        ):
-            raise ValidationError(
-                _("The idempotency key was reused for a different target slot.")
-            )
-        return True
-
-    def _assert_idempotent_unassign_intent(self, operations, match):
-        if not operations:
-            return False
-        if not operations.filtered(
-            lambda operation: operation.match_id == match
-            and operation.operation_type == "unassign"
-        ):
-            raise ValidationError(
-                _("The idempotency key was reused for a different unassign request.")
-            )
-        return True
-
-    def _next_schedule_revision_number(self, planner_root):
-        latest_revision = self._schedule_revision_model().search(
-            [("planner_root_round_id", "=", planner_root.id)],
-            order="revision_number desc, id desc",
-            limit=1,
-        )
-        return (latest_revision.revision_number or 0) + 1
-
-    def _schedule_revision_metrics(self, planner_root):
-        validation = self.validate_gameday(planner_root.id)
-        return {
-            "slot_count": len(planner_root.slot_ids),
-            "assigned_match_count": len(planner_root.slot_ids.filtered("match_id")),
-            "warning_count": len(validation["warnings"]),
-        }
-
-    def _build_schedule_revision_snapshot(self, planner_root):
-        slots = planner_root.slot_ids.sorted(
-            lambda record: (
-                record.start_datetime,
-                record.playing_area_id.name or "",
-                record.id,
-            )
-        )
-        payload = {
-            "planner_root_round_id": planner_root.id,
-            "planner_state": planner_root.planner_state,
-            "planner_revision": planner_root.planner_revision,
-            "round_date": self._serialize_date(planner_root.round_date),
-            "slots": [
-                {
-                    "slot_id": slot.id,
-                    "start_datetime": self._serialize_datetime(slot.start_datetime),
-                    "end_datetime": self._serialize_datetime(slot.end_datetime),
-                    "state": slot.state,
-                    "court_id": slot.playing_area_id.id if slot.playing_area_id else False,
-                    "court_name": slot.playing_area_id.display_name
-                    if slot.playing_area_id
-                    else False,
-                    "match_id": slot.match_id.id if slot.match_id else False,
-                    "match_name": slot.match_id.display_name if slot.match_id else False,
-                    "division_id": slot.match_id.tournament_id.id
-                    if slot.match_id and slot.match_id.tournament_id
-                    else False,
-                }
-                for slot in slots
-            ],
-        }
-        return json.dumps(payload, sort_keys=True)
-
-    def _refresh_schedule_revision(self, revision, planner_root, override_reason=False):
-        metrics = self._schedule_revision_metrics(planner_root)
-        write_vals = {
-            "snapshot_payload": self._build_schedule_revision_snapshot(planner_root),
-            **metrics,
-        }
-        normalized_reason = self._normalize_override_reason(override_reason)
-        if normalized_reason:
-            write_vals["override_reason"] = normalized_reason
-        revision.write(write_vals)
-        return revision
-
-    def _ensure_draft_schedule_revision(self, gameday):
-        planner_root = self._get_planner_root_gameday(gameday)
-        draft_revision = planner_root.schedule_draft_revision_id
-        if draft_revision and draft_revision.state == "draft":
-            return self._refresh_schedule_revision(draft_revision, planner_root)
-
-        revision_number = self._next_schedule_revision_number(planner_root)
-
-        draft_revision = self._schedule_revision_model().create(
-            {
-                "name": _(
-                    "Revision %(number)s",
-                    number=revision_number,
-                ),
-                "planner_root_round_id": planner_root.id,
-                "edition_id": planner_root.tournament_id.edition_id.id,
-                "revision_number": revision_number,
-                "state": "draft",
-                "based_on_revision_id": planner_root.schedule_live_revision_id.id,
-            }
-        )
-        planner_root.write({"schedule_draft_revision_id": draft_revision.id})
-        return self._refresh_schedule_revision(draft_revision, planner_root)
-
-    def _promote_schedule_revision_to_live(self, gameday, override_reason=False):
-        planner_root = self._get_planner_root_gameday(gameday)
-        current_live_revision = planner_root.schedule_live_revision_id
-        draft_revision = planner_root.schedule_draft_revision_id or self._ensure_draft_schedule_revision(
-            planner_root
-        )
-        normalized_reason = self._normalize_override_reason(override_reason)
-        self._refresh_schedule_revision(
-            draft_revision,
-            planner_root,
-            override_reason=normalized_reason,
-        )
-        if current_live_revision and current_live_revision != draft_revision:
-            current_live_revision.write({"state": "superseded"})
-        draft_revision.write(
-            {
-                "state": "live",
-                "published_on": fields.Datetime.now(),
-                "published_by_id": self.env.user.id,
-                "override_reason": normalized_reason or draft_revision.override_reason or False,
-            }
-        )
-        planner_root.write(
-            {
-                "schedule_live_revision_id": draft_revision.id,
-                "schedule_draft_revision_id": False,
-            }
-        )
-        return draft_revision
-
-    def _serialize_schedule_revision(self, revision):
-        if not revision:
-            return False
-        return {
-            "id": revision.id,
-            "name": revision.name,
-            "revision_number": revision.revision_number,
-            "state": revision.state,
-            "state_label": self._get_state_label(revision, "state", revision.state),
-            "based_on_revision_id": revision.based_on_revision_id.id,
-            "based_on_revision_number": revision.based_on_revision_id.revision_number,
-            "published_on": self._serialize_datetime(revision.published_on),
-            "published_by_name": revision.published_by_id.display_name
-            if revision.published_by_id
-            else False,
-            "override_reason": revision.override_reason or False,
-            "slot_count": revision.slot_count,
-            "assigned_match_count": revision.assigned_match_count,
-            "warning_count": revision.warning_count,
-        }
-
-    def _serialize_schedule_revision_summary(self, gameday, limit=6):
-        planner_root = self._get_planner_root_gameday(gameday)
-        revisions = self._schedule_revision_model().search(
-            [("planner_root_round_id", "=", planner_root.id)],
-            order="revision_number desc, id desc",
-            limit=limit,
-        )
-        return {
-            "live_revision": self._serialize_schedule_revision(
-                planner_root.schedule_live_revision_id
-            ),
-            "draft_revision": self._serialize_schedule_revision(
-                planner_root.schedule_draft_revision_id
-            ),
-            "recent_revisions": [
-                self._serialize_schedule_revision(revision) for revision in revisions
-            ],
-            "has_pending_draft_changes": bool(planner_root.schedule_draft_revision_id),
-            "requires_republish_reason": bool(planner_root.schedule_live_revision_id),
-        }
-
-    def _coerce_workspace_competition(self, competition=False, division=False, gameday=False):
         if competition:
-            return competition if hasattr(competition, "_name") else self._resolve_competition(competition)
+            return (
+                competition
+                if hasattr(competition, "_name")
+                else self._resolve_competition(competition)
+            )
         if division:
-            division = division if hasattr(division, "_name") else self._resolve_division(division)
+            division = (
+                division
+                if hasattr(division, "_name")
+                else self._resolve_division(division)
+            )
             return division.edition_id
         if gameday:
-            gameday = gameday if hasattr(gameday, "_name") else self._resolve_gameday(gameday)
+            gameday = (
+                gameday if hasattr(gameday, "_name") else self._resolve_gameday(gameday)
+            )
             return gameday.tournament_id.edition_id
         return False
 
     def _normalize_presence_section(self, active_section):
-        allowed_sections = {"overview", "teams", "rounds", "gamedays", "planner", "publish"}
+        allowed_sections = {
+            "overview",
+            "teams",
+            "rounds",
+            "gamedays",
+            "planner",
+            "publish",
+        }
         return active_section if active_section in allowed_sections else "overview"
 
     def _touch_workspace_presence(
@@ -952,8 +175,16 @@ class CompetitionWorkspaceService(models.AbstractModel):
         )
         if not competition:
             return False
-        division = division if hasattr(division, "_name") else self._resolve_division(division) if division else False
-        gameday = gameday if hasattr(gameday, "_name") else self._resolve_gameday(gameday) if gameday else False
+        division = (
+            division
+            if hasattr(division, "_name")
+            else self._resolve_division(division) if division else False
+        )
+        gameday = (
+            gameday
+            if hasattr(gameday, "_name")
+            else self._resolve_gameday(gameday) if gameday else False
+        )
         planner_root = self._get_planner_root_gameday(gameday) if gameday else False
         presence_model = self._workspace_presence_model()
         presence = presence_model.search(
@@ -965,7 +196,11 @@ class CompetitionWorkspaceService(models.AbstractModel):
         )
         values = {
             "competition_id": competition.id,
-            "division_id": division.id if division else gameday.tournament_id.id if gameday else False,
+            "division_id": (
+                division.id
+                if division
+                else gameday.tournament_id.id if gameday else False
+            ),
             "planner_root_round_id": planner_root.id if planner_root else False,
             "active_section": self._normalize_presence_section(active_section),
             "last_seen": fields.Datetime.now(),
@@ -987,13 +222,19 @@ class CompetitionWorkspaceService(models.AbstractModel):
             "user_id": presence.user_id.id,
             "user_name": presence.user_id.display_name,
             "division_id": presence.division_id.id if presence.division_id else False,
-            "division_name": presence.division_id.display_name if presence.division_id else False,
-            "planner_root_id": presence.planner_root_round_id.id
-            if presence.planner_root_round_id
-            else False,
-            "gameday_name": presence.planner_root_round_id.display_name
-            if presence.planner_root_round_id
-            else False,
+            "division_name": (
+                presence.division_id.display_name if presence.division_id else False
+            ),
+            "planner_root_id": (
+                presence.planner_root_round_id.id
+                if presence.planner_root_round_id
+                else False
+            ),
+            "gameday_name": (
+                presence.planner_root_round_id.display_name
+                if presence.planner_root_round_id
+                else False
+            ),
             "active_section": presence.active_section,
             "last_seen": self._serialize_datetime(presence.last_seen),
             "is_current_user": presence.user_id == self.env.user,
@@ -1002,7 +243,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
             ),
         }
 
-    def _workspace_presence_summary(self, competition=False, division=False, gameday=False):
+    def _workspace_presence_summary(
+        self, competition=False, division=False, gameday=False
+    ):
         competition = self._coerce_workspace_competition(
             competition=competition,
             division=division,
@@ -1017,7 +260,11 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 "has_same_gameday_editors": False,
                 "warning_message": False,
             }
-        gameday = gameday if hasattr(gameday, "_name") else self._resolve_gameday(gameday) if gameday else False
+        gameday = (
+            gameday
+            if hasattr(gameday, "_name")
+            else self._resolve_gameday(gameday) if gameday else False
+        )
         planner_root = self._get_planner_root_gameday(gameday) if gameday else False
         cutoff = fields.Datetime.to_string(fields.Datetime.now() - timedelta(minutes=5))
         presences = self._workspace_presence_model().search(
@@ -1043,11 +290,13 @@ class CompetitionWorkspaceService(models.AbstractModel):
             "active_count": len(active_users),
             "same_gameday_count": len(same_gameday_users),
             "has_same_gameday_editors": bool(same_gameday_users),
-            "warning_message": _(
-                "Another planner is currently active on this gameday. Coordinate before making force changes."
-            )
-            if same_gameday_users
-            else False,
+            "warning_message": (
+                _(
+                    "Another planner is currently active on this gameday. Coordinate before making force changes."
+                )
+                if same_gameday_users
+                else False
+            ),
         }
 
     def _resolve_competition(self, competition_id):
@@ -1067,7 +316,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
     def _resolve_season(self, season_id):
         season = self.env["federation.season"].browse(season_id)
         if not season.exists():
-            raise ValidationError(_("Select a valid season before creating a competition."))
+            raise ValidationError(
+                _("Select a valid season before creating a competition.")
+            )
         return season
 
     def _resolve_division(self, division_id, competition=False):
@@ -1113,13 +364,19 @@ class CompetitionWorkspaceService(models.AbstractModel):
         if len(matches) != len(set(resolved_ids)):
             raise ValidationError(_("One or more selected matches could not be found."))
         match_by_id = {match.id: match for match in matches}
-        return [match_by_id[match_id] for match_id in resolved_ids if match_id in match_by_id]
+        return [
+            match_by_id[match_id]
+            for match_id in resolved_ids
+            if match_id in match_by_id
+        ]
 
     def _get_planner_root_gameday(self, gameday):
         return gameday._competition_workspace_root_round()
 
     def _get_linked_gamedays(self, gameday):
-        return self._get_planner_root_gameday(gameday)._competition_workspace_linked_rounds()
+        return self._get_planner_root_gameday(
+            gameday
+        )._competition_workspace_linked_rounds()
 
     def _get_gameday_divisions(self, gameday):
         return self._get_linked_gamedays(gameday).mapped("tournament_id")
@@ -1167,18 +424,29 @@ class CompetitionWorkspaceService(models.AbstractModel):
         return division._workspace_get_or_create_stage()
 
     def _resolve_shared_divisions(self, division, division_ids):
-        requested_ids = [int(division_id) for division_id in (division_ids or []) if division_id]
+        requested_ids = [
+            int(division_id) for division_id in (division_ids or []) if division_id
+        ]
         if not requested_ids:
             return self.env["federation.tournament"]
 
-        shared_divisions = self.env["federation.tournament"].browse(requested_ids).exists()
+        shared_divisions = (
+            self.env["federation.tournament"].browse(requested_ids).exists()
+        )
         if len(shared_divisions) != len(set(requested_ids)):
             raise ValidationError(_("One or more shared divisions could not be found."))
         if division in shared_divisions:
-            raise ValidationError(_("Do not add the selected division twice to the same gameday."))
-        if any(shared_division.edition_id != division.edition_id for shared_division in shared_divisions):
             raise ValidationError(
-                _("Shared gamedays can only include divisions from the same competition.")
+                _("Do not add the selected division twice to the same gameday.")
+            )
+        if any(
+            shared_division.edition_id != division.edition_id
+            for shared_division in shared_divisions
+        ):
+            raise ValidationError(
+                _(
+                    "Shared gamedays can only include divisions from the same competition."
+                )
             )
         return shared_divisions.sorted(lambda record: (record.name or "", record.id))
 
@@ -1188,9 +456,13 @@ class CompetitionWorkspaceService(models.AbstractModel):
         try:
             round_number = int(value)
         except (TypeError, ValueError):
-            raise ValidationError(label or _("Round number must be a positive integer."))
+            raise ValidationError(
+                label or _("Round number must be a positive integer.")
+            )
         if round_number < 1:
-            raise ValidationError(label or _("Round number must be a positive integer."))
+            raise ValidationError(
+                label or _("Round number must be a positive integer.")
+            )
         return round_number
 
     def _resolve_gameday_sequence(self, division, stage, vals):
@@ -1204,9 +476,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
         )
         if round_number and sequence_number and round_number != sequence_number:
             raise ValidationError(
-                _(
-                    "Round number and sequence must match when both are provided."
-                )
+                _("Round number and sequence must match when both are provided.")
             )
         if round_number or sequence_number:
             return round_number or sequence_number
@@ -1225,7 +495,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
             return {}
         if not isinstance(shared_round_numbers, dict):
             raise ValidationError(
-                _("Shared round numbers must be provided as a division-to-round mapping.")
+                _(
+                    "Shared round numbers must be provided as a division-to-round mapping."
+                )
             )
         shared_division_ids = set(shared_divisions.ids)
         normalized = {}
@@ -1234,7 +506,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 normalized_division_id = int(division_id)
             except (TypeError, ValueError):
                 raise ValidationError(
-                    _("One or more shared round number entries use an invalid division id.")
+                    _(
+                        "One or more shared round number entries use an invalid division id."
+                    )
                 )
             if normalized_division_id not in shared_division_ids:
                 raise ValidationError(
@@ -1357,7 +631,10 @@ class CompetitionWorkspaceService(models.AbstractModel):
             lambda record: (record.name or "", record.id)
         ):
             participants = division.participant_ids.sorted(
-                lambda participant: (participant.seed or 9999, participant.team_id.name or "")
+                lambda participant: (
+                    participant.seed or 9999,
+                    participant.team_id.name or "",
+                )
             )
             for participant in participants:
                 if not participant.team_id:
@@ -1378,14 +655,20 @@ class CompetitionWorkspaceService(models.AbstractModel):
 
     def _serialize_stage_option(self, stage, division=False):
         division = division or stage.tournament_id
-        stage_matches = division.match_ids.filtered(lambda match: match.stage_id == stage)
+        stage_matches = division.match_ids.filtered(
+            lambda match: match.stage_id == stage
+        )
         scheduled_matches = stage_matches.filtered("slot_id")
-        gamedays = division.round_ids.filtered(lambda round_record: round_record.stage_id == stage)
+        gamedays = division.round_ids.filtered(
+            lambda round_record: round_record.stage_id == stage
+        )
         return {
             "id": stage.id,
             "name": stage.display_name,
             "stage_type": stage.stage_type,
-            "stage_type_label": self._get_state_label(stage, "stage_type", stage.stage_type),
+            "stage_type_label": self._get_state_label(
+                stage, "stage_type", stage.stage_type
+            ),
             "sequence": stage.sequence,
             "match_count": len(stage_matches),
             "scheduled_match_count": len(scheduled_matches),
@@ -1451,17 +734,27 @@ class CompetitionWorkspaceService(models.AbstractModel):
             "timeslot_balance_gap_minutes": 0,
             "warnings": [],
             "score_components": [
-                self._fairness_score_component("rest_fairness", _("Rest fairness"), 0, 30),
-                self._fairness_score_component("court_fairness", _("Court fairness"), 0, 50),
-                self._fairness_score_component("timeslot_fairness", _("Timeslot fairness"), 0, 90),
+                self._fairness_score_component(
+                    "rest_fairness", _("Rest fairness"), 0, 30
+                ),
+                self._fairness_score_component(
+                    "court_fairness", _("Court fairness"), 0, 50
+                ),
+                self._fairness_score_component(
+                    "timeslot_fairness", _("Timeslot fairness"), 0, 90
+                ),
             ],
             "team_metrics": [],
         }
 
     def _fairness_summary(self, division=False, matches=False):
-        scheduled_matches = matches or (division.match_ids if division else self.env["federation.match"])
+        scheduled_matches = matches or (
+            division.match_ids if division else self.env["federation.match"]
+        )
         scheduled_matches = scheduled_matches.filtered(
-            lambda match: match.slot_id and match.slot_id.start_datetime and match.slot_id.end_datetime
+            lambda match: match.slot_id
+            and match.slot_id.start_datetime
+            and match.slot_id.end_datetime
         )
         if not scheduled_matches:
             return self._empty_fairness_summary()
@@ -1480,7 +773,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
             for team in (match.home_team_id, match.away_team_id):
                 if not team:
                     continue
-                team_windows.setdefault(team.id, {"team": team, "windows": []})["windows"].append(
+                team_windows.setdefault(team.id, {"team": team, "windows": []})[
+                    "windows"
+                ].append(
                     {
                         "start": match.slot_id.start_datetime,
                         "end": match.slot_id.end_datetime,
@@ -1501,8 +796,12 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 item[0],
             ),
         ):
-            windows = sorted(payload["windows"], key=lambda item: (item["start"], item["match"].id))
-            start_minutes = [window["start"].hour * 60 + window["start"].minute for window in windows]
+            windows = sorted(
+                payload["windows"], key=lambda item: (item["start"], item["match"].id)
+            )
+            start_minutes = [
+                window["start"].hour * 60 + window["start"].minute for window in windows
+            ]
             rest_gaps = [
                 int((current["start"] - previous["end"]).total_seconds() / 60)
                 for previous, current in zip(windows, windows[1:])
@@ -1512,7 +811,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
             )
             min_rest_gap = min(rest_gaps) if rest_gaps else False
             average_start_minutes = (
-                round(sum(start_minutes) / len(start_minutes)) if start_minutes else False
+                round(sum(start_minutes) / len(start_minutes))
+                if start_minutes
+                else False
             )
             court_counts = {}
             for window in windows:
@@ -1548,12 +849,20 @@ class CompetitionWorkspaceService(models.AbstractModel):
                     "team_name": payload["team"].display_name,
                     "scheduled_match_count": len(windows),
                     "distinct_court_count": len(court_counts),
-                    "primary_court_name": primary_court["name"] if primary_court else False,
+                    "primary_court_name": (
+                        primary_court["name"] if primary_court else False
+                    ),
                     "court_repeat_percent": int(round(court_repeat_ratio * 100)),
                     "average_start_minutes": average_start_minutes,
-                    "average_start_label": self._format_minutes_label(average_start_minutes),
-                    "earliest_start_label": self._format_minutes_label(min(start_minutes) if start_minutes else False),
-                    "latest_start_label": self._format_minutes_label(max(start_minutes) if start_minutes else False),
+                    "average_start_label": self._format_minutes_label(
+                        average_start_minutes
+                    ),
+                    "earliest_start_label": self._format_minutes_label(
+                        min(start_minutes) if start_minutes else False
+                    ),
+                    "latest_start_label": self._format_minutes_label(
+                        max(start_minutes) if start_minutes else False
+                    ),
                     "average_rest_gap_minutes": average_rest_gap,
                     "min_rest_gap_minutes": min_rest_gap,
                 }
@@ -1658,8 +967,12 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 score_values.setdefault(component["key"], []).append(component["score"])
 
         return {
-            "tracked_team_count": sum(summary["tracked_team_count"] for summary in summaries),
-            "scheduled_match_count": sum(summary["scheduled_match_count"] for summary in summaries),
+            "tracked_team_count": sum(
+                summary["tracked_team_count"] for summary in summaries
+            ),
+            "scheduled_match_count": sum(
+                summary["scheduled_match_count"] for summary in summaries
+            ),
             "rest_balance_gap_minutes": max(
                 summary["rest_balance_gap_minutes"] for summary in summaries
             ),
@@ -1691,10 +1004,18 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 {
                     "division_id": payload["id"],
                     "division_name": payload["name"],
-                    "rest_balance_gap_minutes": payload["fairness_summary"]["rest_balance_gap_minutes"],
-                    "court_balance_gap_percent": payload["fairness_summary"]["court_balance_gap_percent"],
-                    "timeslot_balance_gap_minutes": payload["fairness_summary"]["timeslot_balance_gap_minutes"],
-                    "warning_count": len(payload["fairness_summary"].get("warnings") or []),
+                    "rest_balance_gap_minutes": payload["fairness_summary"][
+                        "rest_balance_gap_minutes"
+                    ],
+                    "court_balance_gap_percent": payload["fairness_summary"][
+                        "court_balance_gap_percent"
+                    ],
+                    "timeslot_balance_gap_minutes": payload["fairness_summary"][
+                        "timeslot_balance_gap_minutes"
+                    ],
+                    "warning_count": len(
+                        payload["fairness_summary"].get("warnings") or []
+                    ),
                 }
                 for payload in division_payloads
             ],
@@ -1741,7 +1062,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
             "id": participant.id,
             "team_id": participant.team_id.id,
             "team_name": participant.team_id.display_name,
-            "club_name": participant.club_id.display_name if participant.club_id else False,
+            "club_name": (
+                participant.club_id.display_name if participant.club_id else False
+            ),
             "seed": participant.seed,
             "status": status_key,
             "status_label": status_labels.get(status_key, status_key),
@@ -1787,13 +1110,15 @@ class CompetitionWorkspaceService(models.AbstractModel):
             "state": match.state,
             "state_label": self._get_state_label(match, "state", match.state),
             "result_state": getattr(match, "result_state", False),
-            "result_state_label": self._get_state_label(
-                match,
-                "result_state",
-                getattr(match, "result_state", False),
-            )
-            if "result_state" in match._fields
-            else False,
+            "result_state_label": (
+                self._get_state_label(
+                    match,
+                    "result_state",
+                    getattr(match, "result_state", False),
+                )
+                if "result_state" in match._fields
+                else False
+            ),
             "division_id": match.tournament_id.id,
             "division_name": match.tournament_id.display_name,
             "stage_id": match.stage_id.id if match.stage_id else False,
@@ -1801,9 +1126,11 @@ class CompetitionWorkspaceService(models.AbstractModel):
             "stage_type": match.stage_id.stage_type if match.stage_id else False,
             "slot_id": match.slot_id.id if match.slot_id else False,
             "scheduled_start": self._serialize_datetime(match.date_scheduled),
-            "court_name": match.playing_area_id.display_name
-            if "playing_area_id" in match._fields and match.playing_area_id
-            else False,
+            "court_name": (
+                match.playing_area_id.display_name
+                if "playing_area_id" in match._fields and match.playing_area_id
+                else False
+            ),
             "group_id": match.group_id.id if match.group_id else False,
             "group_name": match.group_id.display_name if match.group_id else False,
         }
@@ -1871,11 +1198,13 @@ class CompetitionWorkspaceService(models.AbstractModel):
             "override_reason": operation.override_reason or False,
             "batch_key": operation.batch_key or False,
             "created_at": self._serialize_datetime(operation.create_date),
-            "created_at_label": fields.Datetime.to_datetime(
-                operation.create_date
-            ).strftime("%Y-%m-%d %H:%M")
-            if operation.create_date
-            else False,
+            "created_at_label": (
+                fields.Datetime.to_datetime(operation.create_date).strftime(
+                    "%Y-%m-%d %H:%M"
+                )
+                if operation.create_date
+                else False
+            ),
         }
 
     def _serialize_planner_operation_history(self, gameday, limit=12):
@@ -1885,7 +1214,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
             order="id desc",
             limit=limit,
         )
-        return [self._serialize_planner_operation(operation) for operation in operations]
+        return [
+            self._serialize_planner_operation(operation) for operation in operations
+        ]
 
     def _can_undo_planner_operations(self, gameday):
         planner_root = self._get_planner_root_gameday(gameday)
@@ -1934,7 +1265,10 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 "Manual mode keeps match creation outside the guided generator."
             ),
             "pool_then_bracket": self._pool_then_bracket_description(division),
-        }.get(division.planning_format, _("Generate the schedule structure for this division."))
+        }.get(
+            division.planning_format,
+            _("Generate the schedule structure for this division."),
+        )
 
     def _get_generation_empty_message(self, division):
         return {
@@ -1956,7 +1290,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
     def _pool_then_bracket_generation_phase(self, division):
         pool_stage = division._workspace_get_or_create_stage()
         knockout_stage = division._workspace_get_or_create_knockout_stage()
-        pool_matches = division.match_ids.filtered(lambda match: match.stage_id == pool_stage)
+        pool_matches = division.match_ids.filtered(
+            lambda match: match.stage_id == pool_stage
+        )
         knockout_matches = division.match_ids.filtered(
             lambda match: match.stage_id == knockout_stage
         )
@@ -2015,7 +1351,8 @@ class CompetitionWorkspaceService(models.AbstractModel):
         knockout_round_names = {}
         for stage in self._get_workspace_stages(division):
             round_matches = division.match_ids.filtered(
-                lambda record, stage=stage: record.round_number and record.stage_id == stage
+                lambda record, stage=stage: record.round_number
+                and record.stage_id == stage
             )
             if stage.stage_type == "knockout" and round_matches:
                 knockout_round_names[stage.id] = self.env[
@@ -2028,8 +1365,12 @@ class CompetitionWorkspaceService(models.AbstractModel):
         return [
             {
                 "stage_id": stage_id,
-                "stage_name": self.env["federation.tournament.stage"].browse(stage_id).display_name,
-                "stage_type": self.env["federation.tournament.stage"].browse(stage_id).stage_type,
+                "stage_name": self.env["federation.tournament.stage"]
+                .browse(stage_id)
+                .display_name,
+                "stage_type": self.env["federation.tournament.stage"]
+                .browse(stage_id)
+                .stage_type,
                 "round_number": round_number,
                 "name": knockout_round_names.get(stage_id, {}).get(
                     round_number,
@@ -2043,7 +1384,8 @@ class CompetitionWorkspaceService(models.AbstractModel):
             for (stage_id, round_number), matches in sorted(
                 grouped.items(),
                 key=lambda item: (
-                    self.env["federation.tournament.stage"].browse(item[0][0]).sequence or 0,
+                    self.env["federation.tournament.stage"].browse(item[0][0]).sequence
+                    or 0,
                     item[0][1],
                     item[0][0],
                 ),
@@ -2089,17 +1431,25 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 planner_root, "planner_state", planner_root.planner_state
             ),
             "planner_revision": planner_root.planner_revision,
-            "venue_id": planner_root.venue_id.id
-            if "venue_id" in planner_root._fields and planner_root.venue_id
-            else False,
-            "venue_name": planner_root.venue_id.display_name
-            if "venue_id" in planner_root._fields and planner_root.venue_id
-            else False,
+            "venue_id": (
+                planner_root.venue_id.id
+                if "venue_id" in planner_root._fields and planner_root.venue_id
+                else False
+            ),
+            "venue_name": (
+                planner_root.venue_id.display_name
+                if "venue_id" in planner_root._fields and planner_root.venue_id
+                else False
+            ),
             "slot_count": len(planner_root.slot_ids),
             "assigned_count": len(assigned_matches),
-            "empty_slot_count": len(planner_root.slot_ids.filtered(lambda slot: not slot.match_id)),
+            "empty_slot_count": len(
+                planner_root.slot_ids.filtered(lambda slot: not slot.match_id)
+            ),
             "publish_locked": planner_root.publish_locked,
-            "schedule_revisions": self._serialize_schedule_revision_summary(planner_root),
+            "schedule_revisions": self._serialize_schedule_revision_summary(
+                planner_root
+            ),
             "is_shared": len(participating_divisions) > 1,
             "participating_divisions": [
                 self._serialize_division_option(division)
@@ -2139,7 +1489,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
             "pool_qualifier_count": division.pool_qualifier_count,
             "participant_count": len(division.participant_ids),
             "confirmed_participant_count": len(
-                division.participant_ids.filtered(lambda participant: participant.state == "confirmed")
+                division.participant_ids.filtered(
+                    lambda participant: participant.state == "confirmed"
+                )
             ),
             "match_count": len(division.match_ids),
             "scheduled_match_count": len(division.match_ids.filtered("slot_id")),
@@ -2151,10 +1503,14 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 self._serialize_stage_option(stage, division=division)
                 for stage in self._get_workspace_stages(division)
             ],
-            "workspace_stage_id": division.workspace_stage_id.id if division.workspace_stage_id else False,
-            "workspace_knockout_stage_id": division.workspace_knockout_stage_id.id
-            if division.workspace_knockout_stage_id
-            else False,
+            "workspace_stage_id": (
+                division.workspace_stage_id.id if division.workspace_stage_id else False
+            ),
+            "workspace_knockout_stage_id": (
+                division.workspace_knockout_stage_id.id
+                if division.workspace_knockout_stage_id
+                else False
+            ),
             "generation_action_label": self._get_generation_action_label(division),
             "guided_generation_supported": division.planning_format
             in (
@@ -2176,7 +1532,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
 
     def _get_next_action(self, division):
         confirmed_count = len(
-            division.participant_ids.filtered(lambda participant: participant.state == "confirmed")
+            division.participant_ids.filtered(
+                lambda participant: participant.state == "confirmed"
+            )
         )
         if not division.id:
             return _("Create the first division.")
@@ -2227,30 +1585,49 @@ class CompetitionWorkspaceService(models.AbstractModel):
         return _("Maintain the published schedule.")
 
     def _get_workspace_overview(self, competition, divisions):
-        division_payloads = [self._serialize_division(division) for division in divisions]
+        division_payloads = [
+            self._serialize_division(division) for division in divisions
+        ]
         selected_payload = division_payloads[0] if division_payloads else {}
         validation = (
             self.validate_competition_schedule(competition.id)
             if competition and divisions
-            else self.validate_competition_schedule(division_id=divisions[:1].id)
-            if divisions
-            else {"blocking": [], "warnings": [], "unscheduled_matches": [], "empty_slots": []}
+            else (
+                self.validate_competition_schedule(division_id=divisions[:1].id)
+                if divisions
+                else {
+                    "blocking": [],
+                    "warnings": [],
+                    "unscheduled_matches": [],
+                    "empty_slots": [],
+                }
+            )
         )
         payload = {
-            "competition_name": competition.name if competition else selected_payload.get("name"),
+            "competition_name": (
+                competition.name if competition else selected_payload.get("name")
+            ),
             "competition_state": competition.state if competition else False,
-            "competition_state_label": self._get_state_label(
-                competition,
-                "state",
-                competition.state,
-            )
-            if competition
-            else False,
+            "competition_state_label": (
+                self._get_state_label(
+                    competition,
+                    "state",
+                    competition.state,
+                )
+                if competition
+                else False
+            ),
             "division_count": len(divisions),
-            "team_count": sum(payload["confirmed_participant_count"] for payload in division_payloads),
+            "team_count": sum(
+                payload["confirmed_participant_count"] for payload in division_payloads
+            ),
             "match_count": sum(payload["match_count"] for payload in division_payloads),
-            "scheduled_count": sum(payload["scheduled_match_count"] for payload in division_payloads),
-            "unscheduled_count": sum(payload["unscheduled_match_count"] for payload in division_payloads),
+            "scheduled_count": sum(
+                payload["scheduled_match_count"] for payload in division_payloads
+            ),
+            "unscheduled_count": sum(
+                payload["unscheduled_match_count"] for payload in division_payloads
+            ),
             "conflict_count": len(validation["blocking"]),
             "warning_count": len(validation["warnings"]),
             "fairness_summary": self._fairness_overview_summary(division_payloads),
@@ -2274,7 +1651,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
         capabilities = self._check_access(require_publish=True)
         if not capabilities["is_manager"]:
             raise AccessError(
-                _("Only federation managers can create competitions from the workspace.")
+                _(
+                    "Only federation managers can create competitions from the workspace."
+                )
             )
         return capabilities
 
@@ -2447,7 +1826,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
         elif competition_id:
             divisions = self._resolve_competition(competition_id).tournament_ids
         else:
-            raise ValidationError(_("Select a competition or division to lock entries."))
+            raise ValidationError(
+                _("Select a competition or division to lock entries.")
+            )
         divisions.action_lock_team_entries()
         target_division = divisions[:1]
         return {
@@ -2460,7 +1841,12 @@ class CompetitionWorkspaceService(models.AbstractModel):
     def _get_generation_participants(self, division):
         return division.participant_ids.filtered(
             lambda participant: participant.state == "confirmed"
-        ).sorted(lambda participant: (participant.seed or 9999, participant.team_id.name or ""))
+        ).sorted(
+            lambda participant: (
+                participant.seed or 9999,
+                participant.team_id.name or "",
+            )
+        )
 
     def _prepare_generation(self, division, force=False):
         if not division.entries_locked:
@@ -2475,7 +1861,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 _("At least two confirmed teams are required to generate rounds.")
             )
 
-        stage_matches = division.match_ids.filtered(lambda match: match.stage_id == stage)
+        stage_matches = division.match_ids.filtered(
+            lambda match: match.stage_id == stage
+        )
         if stage_matches:
             if not force:
                 raise ValidationError(
@@ -2537,7 +1925,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 )
             )
 
-        existing_groups = stage.group_ids.sorted(lambda group: (group.sequence, group.id))
+        existing_groups = stage.group_ids.sorted(
+            lambda group: (group.sequence, group.id)
+        )
         if len(existing_groups) < pool_count:
             for index in range(len(existing_groups), pool_count):
                 existing_groups |= self.env["federation.tournament.group"].create(
@@ -2548,10 +1938,14 @@ class CompetitionWorkspaceService(models.AbstractModel):
                         "max_participants": 0,
                     }
                 )
-        groups = existing_groups.sorted(lambda group: (group.sequence, group.id))[:pool_count]
+        groups = existing_groups.sorted(lambda group: (group.sequence, group.id))[
+            :pool_count
+        ]
 
         order = self._pool_then_bracket_order(pool_count)
-        buckets = {group.id: self.env["federation.tournament.participant"] for group in groups}
+        buckets = {
+            group.id: self.env["federation.tournament.participant"] for group in groups
+        }
         for index, participant in enumerate(participants):
             group = groups[order[index % len(order)]]
             buckets[group.id] |= participant
@@ -2559,7 +1953,11 @@ class CompetitionWorkspaceService(models.AbstractModel):
         for group in groups:
             group.write({"max_participants": len(buckets[group.id])})
             for participant in buckets[group.id].sorted(
-                lambda record: (record.seed or 9999, record.team_id.name or "", record.id)
+                lambda record: (
+                    record.seed or 9999,
+                    record.team_id.name or "",
+                    record.id,
+                )
             ):
                 participant.write(
                     {
@@ -2576,7 +1974,12 @@ class CompetitionWorkspaceService(models.AbstractModel):
         for group in groups.sorted(lambda record: (record.sequence, record.id)):
             group_participants = group.participant_ids.filtered(
                 lambda participant: participant.state == "confirmed"
-            ).sorted(lambda participant: (participant.seed or 9999, participant.team_id.name or ""))
+            ).sorted(
+                lambda participant: (
+                    participant.seed or 9999,
+                    participant.team_id.name or "",
+                )
+            )
             pairings = round_robin_service._generate_pairings(
                 group_participants.mapped("team_id"),
                 False,
@@ -2598,7 +2001,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                     )
         return created_matches
 
-    def _pool_then_bracket_seed_groups(self, knockout_stage, qualifier_count, pool_count):
+    def _pool_then_bracket_seed_groups(
+        self, knockout_stage, qualifier_count, pool_count
+    ):
         existing_groups = knockout_stage.group_ids.sorted(
             lambda group: (group.sequence, group.id)
         )
@@ -2660,7 +2065,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 sequence += self._pool_bracket_progression_sequence_gap
         return created
 
-    def _prepare_pool_then_bracket_knockout_participants(self, division, knockout_stage):
+    def _prepare_pool_then_bracket_knockout_participants(
+        self, division, knockout_stage
+    ):
         participants = division.participant_ids.filtered(
             lambda participant: participant.state == "confirmed"
             and participant.stage_id == knockout_stage
@@ -2692,7 +2099,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 _("At least two confirmed teams are required to generate rounds.")
             )
 
-        pool_matches = division.match_ids.filtered(lambda match: match.stage_id == pool_stage)
+        pool_matches = division.match_ids.filtered(
+            lambda match: match.stage_id == pool_stage
+        )
         knockout_matches = division.match_ids.filtered(
             lambda match: match.stage_id == knockout_stage
         )
@@ -2725,14 +2134,18 @@ class CompetitionWorkspaceService(models.AbstractModel):
 
         if not pool_matches:
             participants.write({"stage_id": pool_stage.id, "group_id": False})
-            groups = self._assign_pool_then_bracket_groups(division, pool_stage, participants)
+            groups = self._assign_pool_then_bracket_groups(
+                division, pool_stage, participants
+            )
             self._ensure_pool_then_bracket_progressions(
                 division,
                 pool_stage,
                 knockout_stage,
                 groups,
             )
-            return self._generate_group_round_robin_matches(division, pool_stage, groups)
+            return self._generate_group_round_robin_matches(
+                division, pool_stage, groups
+            )
 
         if knockout_matches:
             if not force:
@@ -2912,13 +2325,17 @@ class CompetitionWorkspaceService(models.AbstractModel):
             "sequence": sequence,
             "round_date": vals.get("round_date"),
             "planner_state": vals.get("planner_state", "draft"),
-            "venue_id": vals.get("venue_id")
-            if "venue_id" in self.env["federation.tournament.round"]._fields
-            else False,
+            "venue_id": (
+                vals.get("venue_id")
+                if "venue_id" in self.env["federation.tournament.round"]._fields
+                else False
+            ),
         }
         gameday = self.env["federation.tournament.round"].create(round_vals)
         for shared_division in shared_divisions:
-            shared_stage = shared_stages.get(shared_division.id) or self._resolve_workspace_stage(
+            shared_stage = shared_stages.get(
+                shared_division.id
+            ) or self._resolve_workspace_stage(
                 shared_division,
                 stage_type=stage.stage_type,
             )
@@ -2936,7 +2353,8 @@ class CompetitionWorkspaceService(models.AbstractModel):
         if division.workspace_state in ("registration_locked", "schedule_generated"):
             division._competition_workspace_transition_state("planning")
         for shared_division in shared_divisions.filtered(
-            lambda record: record.workspace_state in ("registration_locked", "schedule_generated")
+            lambda record: record.workspace_state
+            in ("registration_locked", "schedule_generated")
         ):
             shared_division._competition_workspace_transition_state("planning")
         return {
@@ -2950,8 +2368,12 @@ class CompetitionWorkspaceService(models.AbstractModel):
     def _normalize_breaks(self, breaks):
         normalized = []
         for break_item in breaks or []:
-            start_value = self._normalize_time_value(break_item.get("start"), _("Break start"))
-            end_value = self._normalize_time_value(break_item.get("end"), _("Break end"))
+            start_value = self._normalize_time_value(
+                break_item.get("start"), _("Break start")
+            )
+            end_value = self._normalize_time_value(
+                break_item.get("end"), _("Break end")
+            )
             if end_value <= start_value:
                 raise ValidationError(_("Each break must end after it starts."))
             normalized.append(
@@ -2980,25 +2402,35 @@ class CompetitionWorkspaceService(models.AbstractModel):
         assigned_slots = existing_slots.filtered("match_id")
         if assigned_slots and not force:
             raise ValidationError(
-                _("This gameday already has assigned slots. Use force regeneration only when you intend to clear them.")
+                _(
+                    "This gameday already has assigned slots. Use force regeneration only when you intend to clear them."
+                )
             )
         if assigned_slots and force and not capabilities["can_force_assign"]:
             raise AccessError(
-                _("Only federation managers can force-regenerate a gameday that already carries assigned matches.")
+                _(
+                    "Only federation managers can force-regenerate a gameday that already carries assigned matches."
+                )
             )
         for slot in assigned_slots:
             self._apply_unassignment(slot.match_id, allow_locked=True)
         existing_slots.unlink()
 
-    def _build_slot_windows(self, gameday, start_dt, end_dt, match_duration_minutes, buffer_minutes, breaks):
+    def _build_slot_windows(
+        self, gameday, start_dt, end_dt, match_duration_minutes, buffer_minutes, breaks
+    ):
         windows = []
         pointer = start_dt
         duration = timedelta(minutes=match_duration_minutes)
         buffer_delta = timedelta(minutes=buffer_minutes)
         break_windows = [
             {
-                "start": datetime.combine(fields.Date.to_date(gameday.round_date), item["start"]),
-                "end": datetime.combine(fields.Date.to_date(gameday.round_date), item["end"]),
+                "start": datetime.combine(
+                    fields.Date.to_date(gameday.round_date), item["start"]
+                ),
+                "end": datetime.combine(
+                    fields.Date.to_date(gameday.round_date), item["end"]
+                ),
                 "label": item["label"],
             }
             for item in breaks
@@ -3071,7 +2503,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
             gameday, expected_planner_revision
         )
         if not court_ids:
-            raise ValidationError(_("Select at least one court before generating slots."))
+            raise ValidationError(
+                _("Select at least one court before generating slots.")
+            )
         courts = self.env["federation.playing.area"].browse(court_ids).exists()
         if len(courts) != len(court_ids):
             raise ValidationError(_("One or more selected courts could not be found."))
@@ -3091,9 +2525,13 @@ class CompetitionWorkspaceService(models.AbstractModel):
         start_dt = self._combine_gameday_time(gameday_root, start_time, _("Start time"))
         end_dt = self._combine_gameday_time(gameday_root, end_time, _("End time"))
         if end_dt <= start_dt:
-            raise ValidationError(_("The slot generation end time must be after the start time."))
+            raise ValidationError(
+                _("The slot generation end time must be after the start time.")
+            )
         if match_duration_minutes <= 0:
-            raise ValidationError(_("Match duration must be a positive number of minutes."))
+            raise ValidationError(
+                _("Match duration must be a positive number of minutes.")
+            )
         if buffer_minutes < 0:
             raise ValidationError(_("Buffer duration cannot be negative."))
 
@@ -3125,9 +2563,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                     }
                 )
                 sequence += 10
-        (gameday_root | gameday_root.planner_linked_round_ids)._competition_workspace_transition_planner_state(
-            "planned"
-        )
+        (
+            gameday_root | gameday_root.planner_linked_round_ids
+        )._competition_workspace_transition_planner_state("planned")
         self._get_gameday_divisions(gameday_root).filtered(
             lambda record: record.workspace_state == "schedule_generated"
         )._competition_workspace_transition_state("planning")
@@ -3144,7 +2582,10 @@ class CompetitionWorkspaceService(models.AbstractModel):
             planner_root = self._get_planner_root_gameday(gameday)
             self._ensure_draft_schedule_revision(planner_root)
             affected_rounds = planner_root | planner_root.planner_linked_round_ids
-            if any(round_record.planner_state in ("validated", "published") for round_record in affected_rounds):
+            if any(
+                round_record.planner_state in ("validated", "published")
+                for round_record in affected_rounds
+            ):
                 affected_rounds._competition_workspace_transition_planner_state(
                     "planned",
                     reason=_(
@@ -3234,14 +2675,14 @@ class CompetitionWorkspaceService(models.AbstractModel):
             raise AccessError(
                 _("Only federation managers can force an assignment after warnings.")
             )
-        if validation["warnings"] and force and not self._normalize_override_reason(
-            override_reason
+        if (
+            validation["warnings"]
+            and force
+            and not self._normalize_override_reason(override_reason)
         ):
             return self._planner_override_reason_required(
                 validation,
-                _(
-                    "Provide a manager reason before forcing a warning-only assignment."
-                ),
+                _("Provide a manager reason before forcing a warning-only assignment."),
                 record_id=match.id,
             )
         return validation
@@ -3251,9 +2692,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
         target_match = slot.match_id.exists()
         if not old_slot or not target_match or target_match == match:
             return False
-        if self._get_planner_root_gameday(old_slot.round_id) != self._get_planner_root_gameday(
-            slot.round_id
-        ):
+        if self._get_planner_root_gameday(
+            old_slot.round_id
+        ) != self._get_planner_root_gameday(slot.round_id):
             return False
         return target_match
 
@@ -3289,14 +2730,14 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 simulated_slots=simulated_slots,
             ),
         )
-        if validation["warnings"] and force and not self._normalize_override_reason(
-            override_reason
+        if (
+            validation["warnings"]
+            and force
+            and not self._normalize_override_reason(override_reason)
         ):
             return self._planner_override_reason_required(
                 validation,
-                _(
-                    "Provide a manager reason before forcing a warning-only swap."
-                ),
+                _("Provide a manager reason before forcing a warning-only swap."),
                 record_id=match.id,
             )
         return validation
@@ -3376,7 +2817,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
         target_slot = operation.new_slot_id.exists()
         if not target_slot:
             raise ValidationError(
-                _("The destination slot for this planner action is no longer available.")
+                _(
+                    "The destination slot for this planner action is no longer available."
+                )
             )
         validation = self._validate_assignment_action(
             match,
@@ -3409,7 +2852,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
         planner_round = self._get_match_planner_round(slot.round_id, match)
         if not planner_round:
             raise ValidationError(
-                _("The selected slot is not linked to the match division's shared gameday."),
+                _(
+                    "The selected slot is not linked to the match division's shared gameday."
+                ),
             )
         old_slot = match.slot_id
         if old_slot and old_slot != slot:
@@ -3555,10 +3000,14 @@ class CompetitionWorkspaceService(models.AbstractModel):
         displaced_match = counterpart.match_id.exists()
         if not match or not displaced_match:
             raise ValidationError(
-                _("One of the matches from the selected swap action could not be found.")
+                _(
+                    "One of the matches from the selected swap action could not be found."
+                )
             )
         target_slot = (
-            primary.old_slot_id.exists() if direction == "undo" else primary.new_slot_id.exists()
+            primary.old_slot_id.exists()
+            if direction == "undo"
+            else primary.new_slot_id.exists()
         )
         validation = self._validate_swap_action(
             match,
@@ -3936,9 +3385,11 @@ class CompetitionWorkspaceService(models.AbstractModel):
         end_datetime = (
             fields.Datetime.to_datetime(slot.end_datetime)
             if slot.end_datetime
-            else fields.Datetime.to_datetime(slot.start_datetime)
-            if slot.start_datetime
-            else fields.Datetime.now()
+            else (
+                fields.Datetime.to_datetime(slot.start_datetime)
+                if slot.start_datetime
+                else fields.Datetime.now()
+            )
         )
         if match.home_team_id:
             home_balance = team_balances.setdefault(
@@ -3976,9 +3427,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
         normalized = str(mode).strip().lower()
         if normalized not in ("heuristic", "hybrid", "advanced"):
             raise ValidationError(
-                _(
-                    "Auto-schedule mode must be one of: heuristic, hybrid, advanced."
-                )
+                _("Auto-schedule mode must be one of: heuristic, hybrid, advanced.")
             )
         return normalized
 
@@ -4046,7 +3495,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
 
         augmentation_step_limit = config.get("augmentation_step_limit")
         if augmentation_step_limit in (False, None, ""):
-            augmentation_step_limit = self._auto_schedule_default_augmentation_step_limit
+            augmentation_step_limit = (
+                self._auto_schedule_default_augmentation_step_limit
+            )
         try:
             augmentation_step_limit = max(1, int(augmentation_step_limit))
         except (TypeError, ValueError):
@@ -4086,7 +3537,10 @@ class CompetitionWorkspaceService(models.AbstractModel):
             return summary, []
 
         warning_penalty = float(config["weights"].get("warning_penalty") or 0.0)
-        limit = config.get("augmentation_step_limit") or self._auto_schedule_default_augmentation_step_limit
+        limit = (
+            config.get("augmentation_step_limit")
+            or self._auto_schedule_default_augmentation_step_limit
+        )
         assignment_payloads = []
         unscheduled = list(remaining_matches)
         assigned_ids = set()
@@ -4165,9 +3619,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                                 match_lookup,
                                 config["weights"],
                             )
-                            warning_count = len(move_validation["warnings"] or []) + len(
-                                assign_validation["warnings"] or []
-                            )
+                            warning_count = len(
+                                move_validation["warnings"] or []
+                            ) + len(assign_validation["warnings"] or [])
                             candidate_penalty = float(objective["total_penalty"]) + (
                                 warning_count * warning_penalty
                             )
@@ -4226,9 +3680,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
             match_lookup[unscheduled_match.id] = unscheduled_match
 
             unscheduled = [
-                match
-                for match in unscheduled
-                if match.id != unscheduled_match.id
+                match for match in unscheduled if match.id != unscheduled_match.id
             ]
             assigned_ids.add(unscheduled_match.id)
             summary["reassigned_count"] += 1
@@ -4258,7 +3710,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
 
         return summary, assignment_payloads
 
-    def _auto_schedule_objective_from_slot_map(self, slot_by_match, match_lookup, weights):
+    def _auto_schedule_objective_from_slot_map(
+        self, slot_by_match, match_lookup, weights
+    ):
         def _variance(values):
             if len(values) <= 1:
                 return 0.0
@@ -4387,7 +3841,10 @@ class CompetitionWorkspaceService(models.AbstractModel):
             summary["after_objective_penalty"] = objective["total_penalty"]
             return summary
 
-        limit = config.get("repair_step_limit") or self._auto_schedule_default_repair_step_limit
+        limit = (
+            config.get("repair_step_limit")
+            or self._auto_schedule_default_repair_step_limit
+        )
         objective = self._auto_schedule_objective_from_slot_map(
             slot_by_match,
             match_lookup,
@@ -4401,7 +3858,11 @@ class CompetitionWorkspaceService(models.AbstractModel):
             best_action = False
             best_penalty = current_penalty
             scheduled_ids = sorted(
-                [match_id for match_id, slot in slot_by_match.items() if slot and match_id in match_lookup]
+                [
+                    match_id
+                    for match_id, slot in slot_by_match.items()
+                    if slot and match_id in match_lookup
+                ]
             )
             scheduled_matches = [match_lookup[match_id] for match_id in scheduled_ids]
             open_slots = list(self._get_open_planner_slots(planner_root))
@@ -4465,14 +3926,16 @@ class CompetitionWorkspaceService(models.AbstractModel):
                             continue
                         candidate_slot_map = dict(slot_by_match)
                         candidate_slot_map[match.id] = target_slot
-                        candidate_objective = self._auto_schedule_objective_from_slot_map(
-                            candidate_slot_map,
-                            match_lookup,
-                            config["weights"],
+                        candidate_objective = (
+                            self._auto_schedule_objective_from_slot_map(
+                                candidate_slot_map,
+                                match_lookup,
+                                config["weights"],
+                            )
                         )
-                        candidate_penalty = float(candidate_objective["total_penalty"]) + (
-                            len(validation["warnings"] or []) * warning_penalty
-                        )
+                        candidate_penalty = float(
+                            candidate_objective["total_penalty"]
+                        ) + (len(validation["warnings"] or []) * warning_penalty)
                         if candidate_penalty + 1e-9 < best_penalty:
                             best_penalty = candidate_penalty
                             best_action = {
@@ -4536,11 +3999,11 @@ class CompetitionWorkspaceService(models.AbstractModel):
         unscheduled_matches = list(self._get_gameday_unscheduled_matches(planner_root))
         scheduled_matches = list(self._get_gameday_scheduled_matches(planner_root))
         current_slot_map = {
-            match.id: match.slot_id
-            for match in scheduled_matches
-            if match.slot_id
+            match.id: match.slot_id for match in scheduled_matches if match.slot_id
         }
-        match_lookup = {match.id: match for match in scheduled_matches + unscheduled_matches}
+        match_lookup = {
+            match.id: match for match in scheduled_matches + unscheduled_matches
+        }
         fairness_before = self._auto_schedule_objective_from_slot_map(
             current_slot_map,
             match_lookup,
@@ -4594,9 +4057,13 @@ class CompetitionWorkspaceService(models.AbstractModel):
             for slot in remaining_slots:
                 for match in remaining_matches:
                     attempted_match_ids.add(match.id)
-                    validation = self._validate_assignment_action(match, slot, capabilities)
+                    validation = self._validate_assignment_action(
+                        match, slot, capabilities
+                    )
                     if validation["blocking"]:
-                        first_issue_by_match.setdefault(match.id, validation["blocking"][0])
+                        first_issue_by_match.setdefault(
+                            match.id, validation["blocking"][0]
+                        )
                         continue
 
                     warning_count = len(validation["warnings"] or [])
@@ -4682,7 +4149,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
             remaining_matches = [
                 match for match in remaining_matches if match.id != selected_match.id
             ]
-            remaining_slots = [slot for slot in remaining_slots if slot.id != selected_slot.id]
+            remaining_slots = [
+                slot for slot in remaining_slots if slot.id != selected_slot.id
+            ]
             assigned_count += 1
 
         augmentation_summary = {
@@ -4716,7 +4185,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                     if payload.get("match_id")
                 }
                 remaining_matches = [
-                    match for match in remaining_matches if match.id not in augmented_ids
+                    match
+                    for match in remaining_matches
+                    if match.id not in augmented_ids
                 ]
                 remaining_slots = list(self._get_open_planner_slots(planner_root))
 
@@ -4849,7 +4320,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 "ok": False,
                 "validation": self._planner_blocking_validation(
                     "no_selected_matches",
-                    _("Select one or more unscheduled matches before bulk assigning them."),
+                    _(
+                        "Select one or more unscheduled matches before bulk assigning them."
+                    ),
                 ),
             }
         assigned_match = next((match for match in matches if match.slot_id), False)
@@ -4885,9 +4358,7 @@ class CompetitionWorkspaceService(models.AbstractModel):
                         force=force,
                         override_reason=override_reason,
                     )
-                    if validation["blocking"] or (
-                        validation["warnings"] and not force
-                    ):
+                    if validation["blocking"] or (validation["warnings"] and not force):
                         raise PlannerOperationRollback(
                             {"ok": False, "validation": validation}
                         )
@@ -4929,10 +4400,14 @@ class CompetitionWorkspaceService(models.AbstractModel):
                 "ok": False,
                 "validation": self._planner_blocking_validation(
                     "no_selected_matches",
-                    _("Select one or more assigned matches before bulk unassigning them."),
+                    _(
+                        "Select one or more assigned matches before bulk unassigning them."
+                    ),
                 ),
             }
-        unassigned_match = next((match for match in matches if not match.slot_id), False)
+        unassigned_match = next(
+            (match for match in matches if not match.slot_id), False
+        )
         if unassigned_match:
             return {
                 "ok": False,
@@ -4946,7 +4421,8 @@ class CompetitionWorkspaceService(models.AbstractModel):
             (
                 match
                 for match in matches
-                if self._get_planner_root_gameday(match.slot_id.round_id) != planner_root
+                if self._get_planner_root_gameday(match.slot_id.round_id)
+                != planner_root
             ),
             False,
         )
@@ -4989,7 +4465,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
         )
         if conflict:
             return conflict
-        matches = planner_root.slot_ids.mapped("match_id").filtered(lambda match: match.slot_id)
+        matches = planner_root.slot_ids.mapped("match_id").filtered(
+            lambda match: match.slot_id
+        )
         if not matches:
             return {
                 "ok": False,
@@ -5048,7 +4526,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                         )
                 else:
                     for operation in operations:
-                        validation = self._undo_planner_operation(operation, capabilities)
+                        validation = self._undo_planner_operation(
+                            operation, capabilities
+                        )
                         if validation["blocking"] or validation["warnings"]:
                             raise PlannerOperationRollback(
                                 {"ok": False, "validation": validation}
@@ -5095,7 +4575,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
                         )
                 else:
                     for operation in operations:
-                        validation = self._redo_planner_operation(operation, capabilities)
+                        validation = self._redo_planner_operation(
+                            operation, capabilities
+                        )
                         if validation["blocking"] or validation["warnings"]:
                             raise PlannerOperationRollback(
                                 {"ok": False, "validation": validation}
@@ -5165,7 +4647,11 @@ class CompetitionWorkspaceService(models.AbstractModel):
             "ok": True,
             "validation": validation,
             "payload": self.get_competition_workspace_data(
-                planner_root.tournament_id.edition_id.id if planner_root.tournament_id.edition_id else False,
+                (
+                    planner_root.tournament_id.edition_id.id
+                    if planner_root.tournament_id.edition_id
+                    else False
+                ),
                 gameday.tournament_id.id,
             ),
         }
@@ -5238,7 +4724,11 @@ class CompetitionWorkspaceService(models.AbstractModel):
             "ok": True,
             "validation": validation,
             "payload": self.get_competition_workspace_data(
-                planner_root.tournament_id.edition_id.id if planner_root.tournament_id.edition_id else False,
+                (
+                    planner_root.tournament_id.edition_id.id
+                    if planner_root.tournament_id.edition_id
+                    else False
+                ),
                 gameday.tournament_id.id,
             ),
         }
@@ -5289,7 +4779,11 @@ class CompetitionWorkspaceService(models.AbstractModel):
             }
 
         for planner_root in planner_roots.sorted(
-            lambda record: (record.round_date or fields.Date.today(), record.sequence, record.id)
+            lambda record: (
+                record.round_date or fields.Date.today(),
+                record.sequence,
+                record.id,
+            )
         ):
             linked_rounds = planner_root | planner_root.planner_linked_round_ids
             linked_rounds._competition_workspace_transition_planner_state(
@@ -5306,7 +4800,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
             for slot in planner_root.slot_ids.filtered("match_id"):
                 if slot.match_id.state == "draft":
                     slot.match_id.action_schedule()
-            self._get_gameday_divisions(planner_root)._competition_workspace_transition_state(
+            self._get_gameday_divisions(
+                planner_root
+            )._competition_workspace_transition_state(
                 "published",
                 reason=_("Published from the Competition Workspace."),
                 actor=self.env.user,
@@ -5426,8 +4922,14 @@ class CompetitionWorkspaceService(models.AbstractModel):
         gameday_id=False,
         active_section="overview",
     ):
-        competition = self._resolve_competition(competition_id) if competition_id else False
-        division = self._resolve_division(division_id, competition=competition) if division_id else False
+        competition = (
+            self._resolve_competition(competition_id) if competition_id else False
+        )
+        division = (
+            self._resolve_division(division_id, competition=competition)
+            if division_id
+            else False
+        )
         gameday = self._resolve_gameday(gameday_id) if gameday_id else False
         self._touch_workspace_presence(
             competition=competition,
@@ -5465,7 +4967,9 @@ class CompetitionWorkspaceService(models.AbstractModel):
             domain.append(("club_id", "=", int(club_id)))
 
         limit = int(options.get("limit") or 40)
-        teams = self.env["federation.team"].search(domain, limit=limit, order="name asc")
+        teams = self.env["federation.team"].search(
+            domain, limit=limit, order="name asc"
+        )
         return [
             {
                 "id": team.id,

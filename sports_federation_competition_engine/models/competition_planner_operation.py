@@ -1,6 +1,5 @@
 from odoo import fields, models
 
-
 PLANNER_OPERATION_TYPE_SELECTION = [
     ("assign", "Assign"),
     ("move", "Move"),

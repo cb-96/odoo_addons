@@ -211,9 +211,7 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
             "venue_maintenance": {
                 "group_key": "venue_constraints",
                 "group_label": _("Venue constraints"),
-                "hint": _(
-                    "Reschedule the match away from the maintenance closure."
-                ),
+                "hint": _("Reschedule the match away from the maintenance closure."),
                 "focus_target": "slot",
             },
             "team_overlap": {
@@ -242,7 +240,10 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
         issue.setdefault("focus_target", defaults.get("focus_target", "issue"))
         issue.setdefault(
             "focus_record_id",
-            issue.get("slot_id") or issue.get("match_id") or issue.get("record_id") or False,
+            issue.get("slot_id")
+            or issue.get("match_id")
+            or issue.get("record_id")
+            or False,
         )
         return issue
 
@@ -264,7 +265,11 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
             grouped[key]
             for key in sorted(
                 grouped,
-                key=lambda item: (grouped[item]["severity"], grouped[item]["label"], item),
+                key=lambda item: (
+                    grouped[item]["severity"],
+                    grouped[item]["label"],
+                    item,
+                ),
             )
         ]
 
@@ -343,12 +348,17 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
                 "record_id": match.id,
                 "match_id": match.id,
             }
-        if match.slot_id and match.slot_id.round_id.planner_state in (
-            "published",
-            "locked",
-            "in_progress",
-            "completed",
-        ) and not capabilities["is_manager"]:
+        if (
+            match.slot_id
+            and match.slot_id.round_id.planner_state
+            in (
+                "published",
+                "locked",
+                "in_progress",
+                "completed",
+            )
+            and not capabilities["is_manager"]
+        ):
             return {
                 "code": "published_match_locked",
                 "message": _(
@@ -374,9 +384,13 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
 
     def _compute_rest_gap_minutes(self, slot, other_slot):
         if other_slot.end_datetime <= slot.start_datetime:
-            return int((slot.start_datetime - other_slot.end_datetime).total_seconds() / 60)
+            return int(
+                (slot.start_datetime - other_slot.end_datetime).total_seconds() / 60
+            )
         if slot.end_datetime <= other_slot.start_datetime:
-            return int((other_slot.start_datetime - slot.end_datetime).total_seconds() / 60)
+            return int(
+                (other_slot.start_datetime - slot.end_datetime).total_seconds() / 60
+            )
         return None
 
     def _effective_slot_for_match(self, match, simulated_slots=None):
@@ -392,11 +406,17 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
 
     def _effective_slot_match(self, slot, simulated_slots=None, match_id=False):
         for simulated_match_id, simulated_slot in (simulated_slots or {}).items():
-            if simulated_slot and simulated_slot == slot and simulated_match_id != match_id:
+            if (
+                simulated_slot
+                and simulated_slot == slot
+                and simulated_match_id != match_id
+            ):
                 return self.env["federation.match"].browse(simulated_match_id).exists()
         current_match = slot.match_id.exists()
-        if current_match and current_match.id != match_id and (
-            not simulated_slots or current_match.id not in simulated_slots
+        if (
+            current_match
+            and current_match.id != match_id
+            and (not simulated_slots or current_match.id not in simulated_slots)
         ):
             return current_match
         return False
@@ -444,9 +464,7 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
             )
         else:
             warning_domain.append(("slot_id", "!=", False))
-        other_matches = self.env["federation.match"].search(
-            warning_domain
-        )
+        other_matches = self.env["federation.match"].search(warning_domain)
         team_windows = {
             team_id: [
                 {
@@ -522,9 +540,7 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
                 previous_window = ordered_windows[current_index - 1]
                 current_window = ordered_windows[current_index]
                 rest_gap = int(
-                    (
-                        current_window["start"] - previous_window["end"]
-                    ).total_seconds()
+                    (current_window["start"] - previous_window["end"]).total_seconds()
                     / 60
                 )
                 if self._rest_gap_is_consecutive(rest_gap, min_rest_minutes):
@@ -752,9 +768,15 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
         warning_seen = set()
         empty_slot_seen = set()
         for division in competition.tournament_ids.sorted(
-            lambda record: (record.date_start or fields.Date.today(), record.name or "", record.id)
+            lambda record: (
+                record.date_start or fields.Date.today(),
+                record.name or "",
+                record.id,
+            )
         ):
-            division_result = self._validate_division_schedule(workspace_service, division)
+            division_result = self._validate_division_schedule(
+                workspace_service, division
+            )
             for issue in division_result["blocking"]:
                 self._append_issue(result["blocking"], issue, blocking_seen)
             for issue in division_result["warnings"]:

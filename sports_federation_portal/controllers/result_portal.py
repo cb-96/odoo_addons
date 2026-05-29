@@ -33,8 +33,7 @@ class FederationResultPortal(FederationPortalBase):
         user = user or request.env.user
         clubs = user.portal_club_scope_ids
         return (
-            match.home_team_id.club_id in clubs
-            or match.away_team_id.club_id in clubs
+            match.home_team_id.club_id in clubs or match.away_team_id.club_id in clubs
         )
 
     # ------------------------------------------------------------------

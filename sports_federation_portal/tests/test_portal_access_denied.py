@@ -3,7 +3,7 @@
 Verifies that ``_render_access_denied()`` is available on the portal base
 helper and that the 403 template is registered in the Odoo view registry.
 """
-from odoo.exceptions import AccessError
+
 from odoo.tests.common import TransactionCase
 
 

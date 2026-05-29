@@ -46,8 +46,12 @@ class TestTourPortalWorkflows(TransactionCase):
         )
 
         # My club
-        cls.club = cls.env["federation.club"].create({"name": "Portal Journey FC", "code": "PJFC"})
-        cls.other_club = cls.env["federation.club"].create({"name": "Rival FC", "code": "RIV"})
+        cls.club = cls.env["federation.club"].create(
+            {"name": "Portal Journey FC", "code": "PJFC"}
+        )
+        cls.other_club = cls.env["federation.club"].create(
+            {"name": "Rival FC", "code": "RIV"}
+        )
 
         cls.team = cls.env["federation.team"].create(
             {"name": "Journey Team", "club_id": cls.club.id, "code": "JT1"}
@@ -57,17 +61,38 @@ class TestTourPortalWorkflows(TransactionCase):
         )
 
         cls.player = cls.env["federation.player"].create(
-            {"first_name": "Jordan", "last_name": "Portal", "club_id": cls.club.id, "birth_date": "2000-01-01"}
+            {
+                "first_name": "Jordan",
+                "last_name": "Portal",
+                "club_id": cls.club.id,
+                "birth_date": "2000-01-01",
+            }
         )
         cls.rival_player = cls.env["federation.player"].create(
-            {"first_name": "Rival", "last_name": "Player", "club_id": cls.other_club.id, "birth_date": "2000-01-01"}
+            {
+                "first_name": "Rival",
+                "last_name": "Player",
+                "club_id": cls.other_club.id,
+                "birth_date": "2000-01-01",
+            }
         )
 
         cls.season = cls.env["federation.season"].create(
-            {"name": "Portal Journey Season", "code": "PJS26", "date_start": "2026-01-01", "date_end": "2026-12-31"}
+            {
+                "name": "Portal Journey Season",
+                "code": "PJS26",
+                "date_start": "2026-01-01",
+                "date_end": "2026-12-31",
+            }
         )
         rule_set = cls.env["federation.rule.set"].create(
-            {"name": "Journey Rules", "code": "JR", "points_win": 3, "points_draw": 1, "points_loss": 0}
+            {
+                "name": "Journey Rules",
+                "code": "JR",
+                "points_win": 3,
+                "points_draw": 1,
+                "points_loss": 0,
+            }
         )
         cls.tournament = cls.env["federation.tournament"].create(
             {
@@ -162,9 +187,9 @@ class TestTourPortalWorkflows(TransactionCase):
     def test_portal_user_cannot_register_rival_team(self):
         """Portal user cannot create a registration for another club's team."""
         try:
-            self.env["federation.season.registration"].with_user(self.portal_user).create(
-                {"season_id": self.season.id, "team_id": self.rival_team.id}
-            )
+            self.env["federation.season.registration"].with_user(
+                self.portal_user
+            ).create({"season_id": self.season.id, "team_id": self.rival_team.id})
             self.fail("Expected ValidationError but no exception was raised")
         except (ValidationError, Exception) as exc:
             # Any access-level or validation exception is acceptable here
@@ -202,8 +227,10 @@ class TestTourPortalWorkflows(TransactionCase):
                 "tournament_id": self.tournament.id,
             }
         )
-        visible = self.env["federation.roster"].with_user(self.portal_user).search(
-            [("id", "=", rival_roster.id)]
+        visible = (
+            self.env["federation.roster"]
+            .with_user(self.portal_user)
+            .search([("id", "=", rival_roster.id)])
         )
         self.assertFalse(visible)
 
@@ -216,7 +243,12 @@ class TestTourPortalWorkflows(TransactionCase):
         if "federation.match.club.referee.duty" not in self.env:
             self.skipTest("sports_federation_officiating not installed")
         duty = self.env["federation.match.club.referee.duty"].create(
-            {"match_id": self.match.id, "club_id": self.club.id, "role": "table", "state": "open"}
+            {
+                "match_id": self.match.id,
+                "club_id": self.club.id,
+                "role": "table",
+                "state": "open",
+            }
         )
         duty.with_user(self.portal_user).action_nominate(self.player.id)
         self.assertEqual(duty.state, "nominated")
@@ -227,7 +259,12 @@ class TestTourPortalWorkflows(TransactionCase):
         if "federation.match.club.referee.duty" not in self.env:
             self.skipTest("sports_federation_officiating not installed")
         duty = self.env["federation.match.club.referee.duty"].create(
-            {"match_id": self.match.id, "club_id": self.club.id, "role": "assistant_1", "state": "open"}
+            {
+                "match_id": self.match.id,
+                "club_id": self.club.id,
+                "role": "assistant_1",
+                "state": "open",
+            }
         )
         with self.assertRaises(ValidationError):
             duty.with_user(self.portal_user).action_nominate(self.rival_player.id)
@@ -237,10 +274,17 @@ class TestTourPortalWorkflows(TransactionCase):
         if "federation.match.club.referee.duty" not in self.env:
             self.skipTest("sports_federation_officiating not installed")
         duty = self.env["federation.match.club.referee.duty"].create(
-            {"match_id": self.match.id, "club_id": self.club.id, "role": "fourth", "state": "open"}
+            {
+                "match_id": self.match.id,
+                "club_id": self.club.id,
+                "role": "fourth",
+                "state": "open",
+            }
         )
-        visible = self.env["federation.match.club.referee.duty"].with_user(self.rival_user).search(
-            [("id", "=", duty.id)]
+        visible = (
+            self.env["federation.match.club.referee.duty"]
+            .with_user(self.rival_user)
+            .search([("id", "=", duty.id)])
         )
         self.assertFalse(visible)
 
@@ -280,8 +324,10 @@ class TestTourPortalWorkflows(TransactionCase):
                 "state": "pending_approval",
             }
         )
-        visible = self.env["federation.match.result"].with_user(self.rival_user).search(
-            [("id", "=", result.id)]
+        visible = (
+            self.env["federation.match.result"]
+            .with_user(self.rival_user)
+            .search([("id", "=", result.id)])
         )
         self.assertFalse(visible)
 
@@ -295,22 +341,39 @@ class TestTourPortalWorkflows(TransactionCase):
             self.skipTest("sports_federation_officiating not installed")
 
         club_ids = [self.club.id]
-        before = self.env["federation.match.club.referee.duty"].sudo().search_count(
-            [("club_id", "in", club_ids), ("state", "in", ("open", "rejected"))]
+        before = (
+            self.env["federation.match.club.referee.duty"]
+            .sudo()
+            .search_count(
+                [("club_id", "in", club_ids), ("state", "in", ("open", "rejected"))]
+            )
         )
         duty = self.env["federation.match.club.referee.duty"].create(
-            {"match_id": self.match.id, "club_id": self.club.id, "role": "table", "state": "open"}
+            {
+                "match_id": self.match.id,
+                "club_id": self.club.id,
+                "role": "table",
+                "state": "open",
+            }
         )
-        after = self.env["federation.match.club.referee.duty"].sudo().search_count(
-            [("club_id", "in", club_ids), ("state", "in", ("open", "rejected"))]
+        after = (
+            self.env["federation.match.club.referee.duty"]
+            .sudo()
+            .search_count(
+                [("club_id", "in", club_ids), ("state", "in", ("open", "rejected"))]
+            )
         )
         self.assertEqual(after, before + 1)
 
         # Confirming the duty removes it from pending count
         duty.action_nominate(self.player.id)
         duty.action_confirm()
-        confirmed = self.env["federation.match.club.referee.duty"].sudo().search_count(
-            [("club_id", "in", club_ids), ("state", "in", ("open", "rejected"))]
+        confirmed = (
+            self.env["federation.match.club.referee.duty"]
+            .sudo()
+            .search_count(
+                [("club_id", "in", club_ids), ("state", "in", ("open", "rejected"))]
+            )
         )
         self.assertEqual(confirmed, before)
 
@@ -320,12 +383,25 @@ class TestTourPortalWorkflows(TransactionCase):
             self.skipTest("sports_federation_officiating not installed")
 
         self.env["federation.match.club.referee.duty"].create(
-            {"match_id": self.match.id, "club_id": self.club.id, "role": "assistant_2", "state": "open"}
+            {
+                "match_id": self.match.id,
+                "club_id": self.club.id,
+                "role": "assistant_2",
+                "state": "open",
+            }
         )
         rival_club_ids = [self.other_club.id]
         # Rival club's pending count does not include our duties
-        rival_pending = self.env["federation.match.club.referee.duty"].sudo().search(
-            [("club_id", "in", rival_club_ids), ("state", "in", ("open", "rejected"))]
-        ).mapped("club_id")
+        rival_pending = (
+            self.env["federation.match.club.referee.duty"]
+            .sudo()
+            .search(
+                [
+                    ("club_id", "in", rival_club_ids),
+                    ("state", "in", ("open", "rejected")),
+                ]
+            )
+            .mapped("club_id")
+        )
         for club in rival_pending:
             self.assertNotEqual(club.id, self.club.id)

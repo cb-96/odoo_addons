@@ -34,7 +34,9 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
             return value.strip().lower() not in ("", "0", "false", "no")
         return bool(value)
 
-    def _resolve_planner_target(self, workspace_service, selected_division, gameday_id=False):
+    def _resolve_planner_target(
+        self, workspace_service, selected_division, gameday_id=False
+    ):
         gamedays = workspace_service._get_division_gamedays(selected_division)
         if not gamedays:
             return False
@@ -44,9 +46,12 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
                 target_gameday = workspace_service._resolve_gameday(parsed_gameday_id)
                 if target_gameday.id in gamedays.ids:
                     return target_gameday
-                target_root = workspace_service._get_planner_root_gameday(target_gameday)
+                target_root = workspace_service._get_planner_root_gameday(
+                    target_gameday
+                )
                 linked_target = gamedays.filtered(
-                    lambda record: record._competition_workspace_root_round() == target_root
+                    lambda record: record._competition_workspace_root_round()
+                    == target_root
                 )[:1]
                 if linked_target:
                     return linked_target
@@ -100,7 +105,9 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
         gameday = workspace_service._resolve_gameday(gameday_id)
         planner_root = workspace_service._get_planner_root_gameday(gameday)
         division = gameday.tournament_id
-        unscheduled_matches = workspace_service._get_gameday_unscheduled_matches(planner_root)
+        unscheduled_matches = workspace_service._get_gameday_unscheduled_matches(
+            planner_root
+        )
         normalization_warnings = []
 
         division_id = self._collect_filter_int(
@@ -152,7 +159,11 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
 
         slots = []
         for slot in planner_root.slot_ids.sorted(
-            lambda record: (record.start_datetime, record.playing_area_id.name or "", record.id)
+            lambda record: (
+                record.start_datetime,
+                record.playing_area_id.name or "",
+                record.id,
+            )
         ):
             slots.append(
                 {
@@ -168,14 +179,16 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
                     "start_label": fields.Datetime.to_datetime(
                         slot.start_datetime
                     ).strftime("%H:%M"),
-                    "end_label": fields.Datetime.to_datetime(slot.end_datetime).strftime(
-                        "%H:%M"
-                    ),
+                    "end_label": fields.Datetime.to_datetime(
+                        slot.end_datetime
+                    ).strftime("%H:%M"),
                     "court_id": slot.playing_area_id.id,
                     "court_name": slot.playing_area_id.display_name,
-                    "match": workspace_service._serialize_match_card(slot.match_id)
-                    if slot.match_id
-                    else False,
+                    "match": (
+                        workspace_service._serialize_match_card(slot.match_id)
+                        if slot.match_id
+                        else False
+                    ),
                     "note": slot.note,
                 }
             )
@@ -246,7 +259,11 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
         )
         if competition:
             divisions = competition.tournament_ids.sorted(
-                lambda record: (record.date_start or fields.Date.today(), record.name or "", record.id)
+                lambda record: (
+                    record.date_start or fields.Date.today(),
+                    record.name or "",
+                    record.id,
+                )
             )
         elif division_id:
             divisions = workspace_service._resolve_division(division_id)
@@ -295,19 +312,25 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
                 "id": competition.id if competition else False,
                 "name": competition.name if competition else False,
                 "season_id": competition.season_id.id if competition else False,
-                "season_name": competition.season_id.display_name
-                if competition and competition.season_id
-                else False,
+                "season_name": (
+                    competition.season_id.display_name
+                    if competition and competition.season_id
+                    else False
+                ),
                 "template_id": competition.competition_id.id if competition else False,
-                "template_name": competition.competition_id.display_name
-                if competition and competition.competition_id
-                else False,
+                "template_name": (
+                    competition.competition_id.display_name
+                    if competition and competition.competition_id
+                    else False
+                ),
                 "state": competition.state if competition else False,
-                "state_label": workspace_service._get_state_label(
-                    competition, "state", competition.state
-                )
-                if competition
-                else False,
+                "state_label": (
+                    workspace_service._get_state_label(
+                        competition, "state", competition.state
+                    )
+                    if competition
+                    else False
+                ),
             },
             "overview": workspace_service._get_workspace_overview(
                 competition, divisions
@@ -319,36 +342,47 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
                 }
                 for division in divisions
             ],
-            "selected_division_id": selected_division.id if selected_division else False,
-            "selected_division": {
-                **workspace_service._serialize_division(selected_division),
-                "generation_preview": workspace_service._serialize_generation_preview(
-                    selected_division
-                ),
-                "team_entries": [
-                    workspace_service._serialize_team_entry(entry)
-                    for entry in selected_division.participant_ids.sorted(
-                        lambda record: (record.seed or 9999, record.team_id.name or "")
-                    )
-                ],
-                "rounds": workspace_service._serialize_round_preview(selected_division),
-                "gamedays": [
-                    workspace_service._serialize_gameday(gameday)
-                    for gameday in workspace_service._get_division_gamedays(
+            "selected_division_id": (
+                selected_division.id if selected_division else False
+            ),
+            "selected_division": (
+                {
+                    **workspace_service._serialize_division(selected_division),
+                    "generation_preview": workspace_service._serialize_generation_preview(
                         selected_division
-                    )
-                ],
-                "validation": workspace_service._validate_division_schedule(
-                    selected_division
-                ),
-            }
-            if selected_division
-            else False,
+                    ),
+                    "team_entries": [
+                        workspace_service._serialize_team_entry(entry)
+                        for entry in selected_division.participant_ids.sorted(
+                            lambda record: (
+                                record.seed or 9999,
+                                record.team_id.name or "",
+                            )
+                        )
+                    ],
+                    "rounds": workspace_service._serialize_round_preview(
+                        selected_division
+                    ),
+                    "gamedays": [
+                        workspace_service._serialize_gameday(gameday)
+                        for gameday in workspace_service._get_division_gamedays(
+                            selected_division
+                        )
+                    ],
+                    "validation": workspace_service._validate_division_schedule(
+                        selected_division
+                    ),
+                }
+                if selected_division
+                else False
+            ),
             "planner": planner,
             "options": {
                 "competition_templates": [
                     {"id": record.id, "name": record.display_name}
-                    for record in workspace_service.env["federation.competition"].search([])
+                    for record in workspace_service.env[
+                        "federation.competition"
+                    ].search([])
                 ],
                 "seasons": [
                     {"id": record.id, "name": record.display_name}

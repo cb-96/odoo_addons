@@ -124,7 +124,9 @@ class TestWorkspaceVenueConstraints(TransactionCase):
             "venue_blackout",
             {issue["code"] for issue in validation["blocking"]},
         )
-        self.assertEqual(planner["gameday"]["venue_summary"]["attention_match_count"], 1)
+        self.assertEqual(
+            planner["gameday"]["venue_summary"]["attention_match_count"], 1
+        )
         self.assertEqual(planner["gameday"]["venue_summary"]["blackout_match_count"], 1)
         self.assertFalse(planner["gameday"]["venue_summary"]["clear_match_count"])
 

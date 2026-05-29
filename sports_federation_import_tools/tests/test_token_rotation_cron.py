@@ -1,4 +1,5 @@
 """Tests for integration partner token rotation cron."""
+
 from datetime import timedelta
 
 from odoo import fields

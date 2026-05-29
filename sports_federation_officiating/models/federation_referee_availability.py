@@ -24,7 +24,9 @@ class FederationRefereeAvailability(models.Model):
     def _compute_name(self):
         for record in self:
             start_label = (
-                fields.Datetime.to_datetime(record.date_start).strftime("%Y-%m-%d %H:%M")
+                fields.Datetime.to_datetime(record.date_start).strftime(
+                    "%Y-%m-%d %H:%M"
+                )
                 if record.date_start
                 else _("Start")
             )
