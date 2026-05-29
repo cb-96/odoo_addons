@@ -14,5 +14,6 @@ from . import federation_team_roster
 from . import federation_match_sheet
 from . import federation_player
 from . import tournament_operations_access
+from . import tournament_operations_board
 from . import federation_tournament_operations
 from . import portal_status_labels

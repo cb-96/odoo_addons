@@ -1,6 +1,6 @@
 # Sports Federation — Technical Note
 
-Last updated: 2026-05-26
+Last updated: 2026-05-29
 Owner: Federation Platform Team
 Last reviewed: 2026-05-25
 Review cadence: Every release
@@ -192,6 +192,11 @@ and slot-based scheduling.
     `manual` remains available for planner-led match entry, and addon
     extensions register under `federation.competition.workspace.extension.*`
     to add validation, payload, and scoring rules.
+    Internally, the service now isolates access helpers in
+    `competition_workspace_access_mixin.py`, extension-contract handling in
+    `competition_workspace_extension_mixin.py`, and planner revision,
+    idempotency, plus schedule-revision state handling in
+    `competition_workspace_planner_state_mixin.py`.
 - `sports_federation_officiating` now contributes workspace validation and
     payload extension rules so double-booked referee assignments block planner
     readiness and uncovered availability remains visible as a warning.
