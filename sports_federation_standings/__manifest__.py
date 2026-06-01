@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Standings",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "category": "Sports",
     "summary": "Compute and store standings for tournament stages/groups",
     "description": """
@@ -17,6 +17,7 @@
     ],
     "data": [
         "security/ir.model.access.csv",
+        "data/standing_recompute_cron.xml",
         "views/standing_views.xml",
         "views/tournament_views_inherit.xml",
         "views/menu_views.xml",

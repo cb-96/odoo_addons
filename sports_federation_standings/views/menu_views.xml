@@ -5,4 +5,11 @@
               parent="sports_federation_base.menu_federation_publication"
               action="action_federation_standing"
               sequence="10"/>
+
+    <menuitem id="menu_federation_standing_recompute_jobs"
+              name="Recompute Queue"
+              parent="menu_federation_standings"
+              action="action_federation_standing_recompute_job"
+              sequence="20"
+              groups="sports_federation_base.group_federation_manager"/>
 </odoo>

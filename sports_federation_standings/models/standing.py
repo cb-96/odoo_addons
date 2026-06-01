@@ -1,5 +1,11 @@
+import logging
+from uuid import uuid4
+
+from odoo.addons.sports_federation_base.correlation import ensure_correlation_id
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+
+_logger = logging.getLogger(__name__)
 
 
 class FederationStanding(models.Model):
@@ -69,6 +75,19 @@ class FederationStanding(models.Model):
         readonly=True,
     )
     notes = fields.Text(string="Notes")
+    recompute_job_ids = fields.One2many(
+        "federation.standing.recompute.job",
+        "standing_id",
+        string="Recompute Jobs",
+    )
+    recompute_pending_count = fields.Integer(
+        compute="_compute_recompute_queue_counts",
+        string="Pending Recomputes",
+    )
+    recompute_failed_count = fields.Integer(
+        compute="_compute_recompute_queue_counts",
+        string="Failed Recomputes",
+    )
 
     _unique_tournament_stage_group_name = models.Constraint(
         "UNIQUE(tournament_id, stage_id, group_id, name)",
@@ -81,6 +100,19 @@ class FederationStanding(models.Model):
         for record in self:
             record.line_count = len(record.line_ids)
 
+    @api.depends("recompute_job_ids.state")
+    def _compute_recompute_queue_counts(self):
+        """Compute pending and failed recompute queue counters."""
+        for record in self:
+            record.recompute_pending_count = len(
+                record.recompute_job_ids.filtered(
+                    lambda job: job.state in ("pending", "running")
+                )
+            )
+            record.recompute_failed_count = len(
+                record.recompute_job_ids.filtered(lambda job: job.state == "failed")
+            )
+
     def action_view_lines(self):
         """Execute the view lines action."""
         self.ensure_one()
@@ -90,6 +122,45 @@ class FederationStanding(models.Model):
         action["domain"] = [("standing_id", "=", self.id)]
         action["context"] = {"default_standing_id": self.id}
         return action
+
+    def action_view_recompute_jobs(self):
+        """Open queue jobs for this standing."""
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_standings.action_federation_standing_recompute_job"
+        )
+        action["domain"] = [("standing_id", "=", self.id)]
+        action["context"] = {
+            "default_standing_id": self.id,
+            "search_default_pending": 1,
+        }
+        return action
+
+    def action_queue_recompute(self):
+        """Queue a recompute job for asynchronous execution."""
+        self.ensure_one()
+        correlation_id = ensure_correlation_id(self.env)
+        key = "standing:%s:%s" % (self.id, uuid4().hex)
+        queue_result = self.env["federation.standing.recompute.job"].request_recompute(
+            self,
+            idempotency_key=key,
+            correlation_id=correlation_id,
+        )
+        if queue_result.get("replayed"):
+            _logger.info(
+                "Standing recompute replayed for standing=%s correlation_id=%s idempotency_key=%s",
+                self.id,
+                correlation_id,
+                key,
+            )
+        else:
+            _logger.info(
+                "Standing recompute queued for standing=%s correlation_id=%s idempotency_key=%s",
+                self.id,
+                correlation_id,
+                key,
+            )
+        return self.action_view_recompute_jobs()
 
     @api.constrains("group_id", "stage_id")
     def _check_group_stage_consistency(self):

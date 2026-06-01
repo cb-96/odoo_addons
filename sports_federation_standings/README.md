@@ -64,6 +64,22 @@ Fields:
 - ``note`` (Char): Short free-text remark for this line.
 - ``tiebreak_notes`` (Text, readonly): Auto-generated explanation of the tie-break criterion used to order this participant.
 
+``federation.standing.recompute.job``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Asynchronous recompute queue record used for background standings updates.
+
+Fields:
+
+- ``standing_id`` (Many2one): Target standing to recompute.
+- ``idempotency_key`` (Char): Replay-safe key for deduplicating repeated queue requests.
+- ``correlation_id`` (Char): Trace identifier propagated through queue processing.
+- ``state`` (Selection): ``pending``, ``running``, ``done``, or ``failed``.
+- ``attempt_count`` / ``max_attempts`` (Integer): Retry control metadata.
+- ``requested_on`` / ``started_on`` / ``completed_on`` (Datetime): Lifecycle timestamps.
+- ``next_retry_on`` (Datetime): Retry schedule for failed jobs.
+- ``last_error`` (Text): Last failure reason captured for operators.
+
 Key Behaviours
 --------------
 
@@ -83,3 +99,16 @@ Key Behaviours
 - **Publication is separate**: public visibility is handled by
    ``sports_federation_public_site`` through ``website_published``, not by a
    dedicated published standings state.
+- **Optional queued recompute**: standings can be recomputed asynchronously via
+   ``federation.standing.recompute.job`` and the
+   ``action_queue_recompute`` button.
+- **Idempotent queue requests**: repeated queue requests with the same
+   ``idempotency_key`` replay the original job instead of creating duplicates.
+- **Queue visibility**: pending and failed queue counters are surfaced directly
+   on the standing form, with a dedicated queue action and menu entry.
+
+## Migration note (v19.0.1.2.0)
+
+- Adds ``federation.standing.recompute.job`` for asynchronous, idempotent
+   standings recompute processing.
+- Adds queue cron ``Standings: Process Recompute Queue``.

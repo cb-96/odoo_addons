@@ -25,6 +25,7 @@
                 <header>
                     <button name="action_recompute" string="Recompute" type="object" class="oe_highlight" groups="sports_federation_base.group_federation_manager" invisible="state == 'frozen'"/>
                     <button name="action_recompute" string="Force Recompute" type="object" class="oe_highlight" groups="sports_federation_base.group_federation_manager" context="{'force_recompute': True}" invisible="state != 'frozen'"/>
+                    <button name="action_queue_recompute" string="Queue Recompute" type="object" groups="sports_federation_base.group_federation_manager"/>
                     <button name="action_freeze" string="Freeze" type="object" groups="sports_federation_base.group_federation_manager" invisible="state != 'computed'" confirm="Freezing the standing may trigger stage progressions. Continue?"/>
                     <button name="action_unfreeze" string="Unfreeze" type="object" groups="sports_federation_base.group_federation_manager" invisible="state != 'frozen'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,computed,frozen"/>
@@ -33,6 +34,12 @@
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_lines" type="object" class="oe_stat_button" icon="fa-list">
                             <field name="line_count" string="Lines" widget="statinfo"/>
+                        </button>
+                        <button name="action_view_recompute_jobs" type="object" class="oe_stat_button" icon="fa-refresh">
+                            <field name="recompute_pending_count" string="Pending Jobs" widget="statinfo"/>
+                        </button>
+                        <button name="action_view_recompute_jobs" type="object" class="oe_stat_button" icon="fa-exclamation-triangle">
+                            <field name="recompute_failed_count" string="Failed Jobs" widget="statinfo"/>
                         </button>
                     </div>
                     <div class="oe_title">
@@ -56,6 +63,11 @@
                          role="status">
                         <strong>Next step:</strong>
                         Standings stay empty until approved results are included in official standings for this tournament.
+                    </div>
+                    <div class="alert alert-info"
+                         role="status">
+                        <strong>Queue option:</strong>
+                        Queue recompute runs in the background and records idempotency/correlation metadata for replay-safe operations.
                     </div>
                     <div class="alert alert-warning"
                          invisible="state != 'draft'"
@@ -152,6 +164,80 @@
         </field>
     </record>
 
+    <record id="view_federation_standing_recompute_job_list" model="ir.ui.view">
+        <field name="name">federation.standing.recompute.job.list</field>
+        <field name="model">federation.standing.recompute.job</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="standing_id"/>
+                <field name="state"/>
+                <field name="priority"/>
+                <field name="idempotency_key" optional="hide"/>
+                <field name="correlation_id"/>
+                <field name="attempt_count"/>
+                <field name="requested_on"/>
+                <field name="started_on"/>
+                <field name="completed_on"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_federation_standing_recompute_job_form" model="ir.ui.view">
+        <field name="name">federation.standing.recompute.job.form</field>
+        <field name="model">federation.standing.recompute.job</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="standing_id" readonly="1"/>
+                            <field name="state" readonly="1"/>
+                            <field name="priority"/>
+                            <field name="requested_by_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="idempotency_key" readonly="1"/>
+                            <field name="correlation_id" readonly="1"/>
+                            <field name="attempt_count" readonly="1"/>
+                            <field name="max_attempts"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="requested_on" readonly="1"/>
+                            <field name="started_on" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="next_retry_on" readonly="1"/>
+                            <field name="completed_on" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="replayed_from_job_id" readonly="1"/>
+                        <field name="last_error" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_federation_standing_recompute_job_search" model="ir.ui.view">
+        <field name="name">federation.standing.recompute.job.search</field>
+        <field name="model">federation.standing.recompute.job</field>
+        <field name="arch" type="xml">
+            <search string="Search Recompute Jobs">
+                <field name="standing_id"/>
+                <field name="state"/>
+                <field name="correlation_id"/>
+                <field name="idempotency_key"/>
+                <filter name="pending" string="Pending" domain="[('state', 'in', ('pending', 'running'))]"/>
+                <filter name="failed" string="Failed" domain="[('state', '=', 'failed')]"/>
+                <filter name="done" string="Done" domain="[('state', '=', 'done')]"/>
+            </search>
+        </field>
+    </record>
+
     <record id="action_federation_standing" model="ir.actions.act_window">
         <field name="name">Standings</field>
         <field name="res_model">federation.standing</field>
@@ -173,5 +259,20 @@
         <field name="res_model">federation.standing.line</field>
         <field name="view_mode">list</field>
         <field name="domain">[('standing_id', '=', id)]</field>
+    </record>
+
+    <record id="action_federation_standing_recompute_job" model="ir.actions.act_window">
+        <field name="name">Standing Recompute Jobs</field>
+        <field name="res_model">federation.standing.recompute.job</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_federation_standing_recompute_job_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Queued standings recomputes appear here.
+            </p>
+            <p>
+                Use the correlation and idempotency fields to trace replay-safe recompute execution.
+            </p>
+        </field>
     </record>
 </odoo>
