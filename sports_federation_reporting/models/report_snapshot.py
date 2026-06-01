@@ -1,4 +1,9 @@
+import logging
+
 from odoo import api, fields, models
+from odoo.addons.sports_federation_base.correlation import ensure_correlation_id
+
+_logger = logging.getLogger(__name__)
 
 
 class FederationReportSnapshot(models.Model):
@@ -58,10 +63,22 @@ class FederationReportSnapshot(models.Model):
             )
 
     @api.model
+    def _compliance_pending_total(self):
+        """Return the aggregate compliance backlog in one SQL roundtrip."""
+        self.env.cr.execute("""
+            SELECT
+                COALESCE(SUM(pending_count), 0)
+                + COALESCE(SUM(expired_count), 0)
+                + COALESCE(SUM(non_compliant_count), 0)
+            FROM federation_report_compliance
+            """)
+        result = self.env.cr.fetchone()
+        return int(result[0] or 0) if result else 0
+
+    @api.model
     def _build_snapshot_rows(self):
         """Build snapshot rows."""
         workflow_model = self.env["federation.report.workflow.exception"]
-        compliance_model = self.env["federation.report.compliance"]
         finance_follow_up_model = self.env["federation.report.finance.reconciliation"]
         finance_exception_model = self.env["federation.report.finance.exception"]
         season_checklist_model = self.env["federation.report.season.checklist"]
@@ -76,21 +93,7 @@ class FederationReportSnapshot(models.Model):
             ]
         )
         sanction_exposure = finance_exception_model.search_count([])
-        compliance_group = compliance_model.read_group(
-            [],
-            [
-                "pending_count:sum",
-                "expired_count:sum",
-                "non_compliant_count:sum",
-            ],
-            [],
-        )
-        compliance_summary = compliance_group[0] if compliance_group else {}
-        compliance_pending = int(
-            (compliance_summary.get("pending_count_sum") or 0)
-            + (compliance_summary.get("expired_count_sum") or 0)
-            + (compliance_summary.get("non_compliant_count_sum") or 0)
-        )
+        compliance_pending = self._compliance_pending_total()
         finance_follow_up = finance_follow_up_model.search_count(
             [
                 ("needs_follow_up", "=", True),
@@ -201,4 +204,12 @@ class FederationReportSnapshot(models.Model):
     @api.model
     def _cron_capture_snapshots(self):
         """Handle cron capture snapshots."""
-        self.capture_snapshot()
+        correlation_id = ensure_correlation_id(self.env)
+        snapshots = self.with_context(
+            federation_correlation_id=correlation_id
+        ).capture_snapshot()
+        _logger.info(
+            "Captured reporting snapshots count=%s correlation_id=%s",
+            len(snapshots),
+            correlation_id,
+        )

@@ -231,6 +231,14 @@ Implementation note:
 - Report-type-specific row builders and back-office action metadata now live in `services/report_schedule_builders.py`.
 - Keep new schedule types in that registry so `federation.report.schedule` stays focused on cadence, CSV serialization, retention, and failure capture.
 
+Snapshot/query modernization note:
+
+- `federation.report.snapshot` now computes compliance backlog totals through a
+	single SQL aggregate query (`_compliance_pending_total`) instead of
+	`read_group` aggregation.
+- Snapshot and schedule cron entrypoints now attach a shared
+	`federation_correlation_id` context value and emit correlation-aware logs.
+
 ### `federation.report.audit.event`
 
 Read-only audit log reporting view for privileged portal activity and

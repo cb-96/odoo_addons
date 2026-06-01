@@ -4,4 +4,5 @@ from . import test_kpi_csv
 from . import test_operational_reporting
 from . import test_year_four_reporting
 from . import test_report_schedule_cron
+from . import test_report_snapshot
 from . import test_report_reconciliation

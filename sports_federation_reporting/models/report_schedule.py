@@ -7,6 +7,7 @@ from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models
+from odoo.addons.sports_federation_base.correlation import ensure_correlation_id
 from odoo.exceptions import UserError
 from odoo.addons.sports_federation_base.models.failure_feedback import (
     FAILURE_CATEGORY_SELECTION,
@@ -279,6 +280,7 @@ class FederationReportSchedule(models.Model):
     @api.model
     def _cron_generate_scheduled_reports(self):
         """Process a bounded batch of due schedules so cron stays catch-up friendly."""
+        correlation_id = ensure_correlation_id(self.env)
         schedules = self.search(
             [
                 ("active", "=", True),
@@ -287,7 +289,14 @@ class FederationReportSchedule(models.Model):
             ],
             limit=20,
         )
-        schedules._generate_report()
+        schedules.with_context(
+            federation_correlation_id=correlation_id
+        )._generate_report()
+        _logger.info(
+            "Processed scheduled reports batch size=%s correlation_id=%s",
+            len(schedules),
+            correlation_id,
+        )
 
     @api.model
     def _purge_generated_files(self, reference_dt=None):

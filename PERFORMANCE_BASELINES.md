@@ -1,8 +1,8 @@
 # Performance Baselines
 
-Last updated: 2026-04-18
+Last updated: 2026-06-01
 Owner: Federation Platform Team
-Last reviewed: 2026-04-18
+Last reviewed: 2026-06-01
 Review cadence: Every release
 
 This document records the query-count budgets enforced in CI for the slowest
@@ -22,6 +22,20 @@ highlight which operators usually dominate the heavy reporting views.
 
 - `federation.report.schedule._build_season_portfolio_rows()`: `3` queries.
 - `federation.report.schedule._build_club_performance_rows()`: `4` queries.
+- `federation.report.snapshot._compliance_pending_total()`: `1` SQL aggregate query.
+
+## Planner Performance Smoke Thresholds
+
+- `federation.competition.workspace.service.get_gameday_planner_data()`:
+  `<= 20.0s` on the deterministic `planner_payload_smoke` dataset.
+- `federation.competition.workspace.service.auto_schedule_gameday()`:
+  `<= 25.0s` on the deterministic `auto_schedule_smoke` dataset with
+  `max_assignments=12`.
+
+Dataset pack and test harness:
+
+- `sports_federation_competition_engine/tests/data/planner_performance_scenarios.json`
+- `sports_federation_competition_engine/tests/test_competition_workspace_performance_smoke.py`
 
 ## SQL Plan Watchpoints
 
@@ -62,6 +76,7 @@ docker compose exec -T db psql -U odoo -d postgres -c "SELECT pg_reload_conf();"
 - Public-site budgets are asserted in `sports_federation_public_site/tests/test_public_api.py`.
 - Portal roster budgets are asserted in `sports_federation_portal/tests/test_roster_portal_access.py`.
 - Reporting budgets and plan watchpoints are asserted in `sports_federation_reporting/tests/test_operational_reporting.py`.
+- Planner performance smoke thresholds are asserted in `sports_federation_competition_engine/tests/test_competition_workspace_performance_smoke.py`.
 
 ---
 
