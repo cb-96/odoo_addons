@@ -20,8 +20,17 @@ REQUIRED_SECURITY_SCHEMES = {
     "FederationPartnerToken",
     "FederationPartnerBearer",
 }
+REQUIRED_INTEGRATION_RESPONSES = {
+    "/integration/v1/contracts": {"401", "429"},
+    "/integration/v1/outbound/finance/events": {"400", "401", "404", "429"},
+    "/integration/v1/inbound/{contract_code}/deliveries": {"400", "401", "429", "500"},
+}
+REQUIRED_FINANCE_QUERY_PARAMETERS = {"limit", "cursor"}
 
 PUBLIC_FEEDS_SPEC_PATH = REPO_ROOT / "openapi" / "public_feeds_v1.yaml"
+INTEGRATION_GOLDEN_EXAMPLES_PATH = (
+    REPO_ROOT / "openapi" / "examples" / "INTEGRATION_GOLDEN_EXAMPLES.md"
+)
 PUBLIC_FEEDS_REQUIRED_PATHS = {
     "/api/v1/tournaments/{slug}/feed": {"get"},
     "/tournaments/{slug}/schedule.ics": {"get"},
@@ -48,6 +57,11 @@ def main() -> int:
     _expect(
         SPEC_PATH.exists(),
         f"Missing OpenAPI contract: {SPEC_PATH.relative_to(REPO_ROOT)}",
+        failures,
+    )
+    _expect(
+        INTEGRATION_GOLDEN_EXAMPLES_PATH.exists(),
+        f"Missing OpenAPI golden examples: {INTEGRATION_GOLDEN_EXAMPLES_PATH.relative_to(REPO_ROOT)}",
         failures,
     )
     if failures:
@@ -105,6 +119,45 @@ def main() -> int:
                             f"{method.upper()} {route} requires responses.",
                             failures,
                         )
+        for route, required_codes in REQUIRED_INTEGRATION_RESPONSES.items():
+            route_entry = paths.get(route, {})
+            method = "post" if route.endswith("/deliveries") else "get"
+            operation = route_entry.get(method) if isinstance(route_entry, dict) else {}
+            responses = (
+                operation.get("responses") if isinstance(operation, dict) else {}
+            )
+            if isinstance(responses, dict):
+                missing_codes = sorted(required_codes - set(responses))
+                _expect(
+                    not missing_codes,
+                    f"{method.upper()} {route} missing response codes: {', '.join(missing_codes)}",
+                    failures,
+                )
+
+        finance_operation = paths.get(
+            "/integration/v1/outbound/finance/events", {}
+        ).get("get")
+        if isinstance(finance_operation, dict):
+            parameters = finance_operation.get("parameters")
+            _expect(
+                isinstance(parameters, list),
+                "GET /integration/v1/outbound/finance/events must define parameters.",
+                failures,
+            )
+            if isinstance(parameters, list):
+                defined_parameters = {
+                    parameter.get("name")
+                    for parameter in parameters
+                    if isinstance(parameter, dict)
+                }
+                missing_parameters = sorted(
+                    REQUIRED_FINANCE_QUERY_PARAMETERS - defined_parameters
+                )
+                _expect(
+                    not missing_parameters,
+                    "Finance export endpoint must define limit and cursor query parameters.",
+                    failures,
+                )
 
     components = spec.get("components")
     _expect(
@@ -124,6 +177,18 @@ def main() -> int:
             _expect(
                 not missing_schemes,
                 f"Missing required security schemes: {', '.join(missing_schemes)}",
+                failures,
+            )
+        schemas = components.get("schemas")
+        error_schema = schemas.get("ErrorResponse") if isinstance(schemas, dict) else {}
+        if isinstance(error_schema, dict):
+            required_fields = set(error_schema.get("required") or [])
+            missing_required_fields = sorted(
+                {"error", "error_code", "correlation_id"} - required_fields
+            )
+            _expect(
+                not missing_required_fields,
+                "ErrorResponse must require error, error_code, and correlation_id.",
                 failures,
             )
 

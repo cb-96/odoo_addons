@@ -657,6 +657,11 @@ Manifest and data maintenance
 - Keep `__manifest__.py` `version` and `data` accurate. Prefer small, focused upgrade scripts to large one-off DB migrations.
 - For breaking model changes provide a dedicated migration script (`openupgrade` style) and document steps.
 - `ci/check_migration_review.py` should pass whenever model, view, or controller ownership changes are present. Treat a passing run as evidence that migration scripts or release-note surfaces were updated in the same change set.
+- Migration-sensitive branches must also update `MIGRATION_DRY_RUN_EVIDENCE.md` and `MIGRATION_ROLLBACK_NOTES.md`.
+- `ci/check_constraint_index_contracts.py` validates curated constraint/index contracts for major workflow models. Keep `ci/contracts/constraint_index_contracts.json` and `CONSTRAINT_INDEX_AUDIT.md` aligned when those models evolve.
+- `ci/check_openapi_contracts.py` validates managed integration and public-feed OpenAPI contracts plus required golden examples (`openapi/examples/INTEGRATION_GOLDEN_EXAMPLES.md`).
+- Standings recompute now supports asynchronous, idempotent queue execution through `federation.standing.recompute.job`; use correlation IDs (`federation_correlation_id`) when invoking queue workers or replaying failed jobs.
+- Integration API, scheduled reporting crons, and notification flows propagate correlation IDs for cross-module incident tracing.
 - Keep `RELEASE_TRAIN.md`, `ROADMAP.md`, and `RELEASE_RUNBOOK.md` on the same active `Release train:` value so roadmap commitments, upgrade handling, and operator checklists stay synchronized.
 
 Pre/post hooks

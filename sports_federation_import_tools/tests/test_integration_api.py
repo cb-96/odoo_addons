@@ -175,6 +175,34 @@ class TestIntegrationApi(TransactionCase):
         payload = json.loads(response.get_data(as_text=True))
         self.assertEqual(payload["error_code"], "access_denied")
         self.assertIn("headers only", payload["error"])
+        self.assertTrue(payload.get("correlation_id"))
+        self.assertEqual(
+            response.headers.get("X-Federation-Correlation-Id"),
+            payload.get("correlation_id"),
+        )
+
+    def test_contracts_route_echoes_header_correlation_id(self):
+        request_stub = self._make_request(
+            headers={
+                "X-Federation-Partner-Code": self.partner.code,
+                "X-Federation-Partner-Token": self.raw_token,
+                "X-Federation-Correlation-Id": "contract-corr-1",
+            }
+        )
+
+        with patch(
+            "odoo.addons.sports_federation_import_tools.controllers.integration_api.request",
+            request_stub,
+        ):
+            response = self.controller.integration_contracts()
+
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.get_data(as_text=True))
+        self.assertEqual(payload["correlation_id"], "contract-corr-1")
+        self.assertEqual(
+            response.headers.get("X-Federation-Correlation-Id"),
+            "contract-corr-1",
+        )
 
     def test_inbound_route_returns_400_for_disallowed_payload_extension(self):
         request_stub = self._make_request(
@@ -590,6 +618,7 @@ class TestIntegrationApi(TransactionCase):
         self.assertEqual(second_response.status_code, 200)
         self.assertEqual(second_response.headers.get("X-Federation-Has-More"), "false")
         self.assertIsNone(second_response.headers.get("X-Federation-Next-Cursor"))
+        self.assertTrue(second_response.headers.get("X-Federation-Correlation-Id"))
         self.assertEqual(second_rows[1][1], "299")
 
     def test_finance_events_route_returns_400_for_invalid_limit(self):

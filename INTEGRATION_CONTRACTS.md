@@ -255,6 +255,24 @@ Verification policy:
 - Breaking changes require a new contract identifier or version rather than a
   silent replacement.
 
+Endpoint compatibility policy (v1):
+
+- `/integration/v1/contracts`: additive response changes only; remove fields
+  only in a new API version.
+- `/integration/v1/outbound/finance/events`: keep CSV column order and header
+  semantics stable for `finance_event_v1` until a new contract code/version is
+  published.
+- `/integration/v1/inbound/{contract_code}/deliveries`: keep
+  `delivery_outcome` semantics (`created`, `checksum_reuse`,
+  `idempotency_replay`) stable within v1.
+- JSON error envelopes for all managed integration endpoints must preserve the
+  typed shape `{error, error_code, correlation_id}` across minor releases.
+
+Partner onboarding references:
+
+- Golden request/response examples: `openapi/examples/INTEGRATION_GOLDEN_EXAMPLES.md`.
+- CI contract guardrails: `ci/check_openapi_contracts.py`.
+
 ## Deprecation Policy
 
 The working list of compatibility aliases, owners, review dates, and target

@@ -42,6 +42,10 @@ black_exit=0
 flake8_exit=0
 ci_hygiene_exit=0
 dependency_drift_exit=0
+workflow_contracts_exit=0
+migration_review_exit=0
+constraint_index_contracts_exit=0
+openapi_contracts_exit=0
 
 echo "[lint] Running Black across the repository"
 black --check --exclude '/(\.git|__pycache__|\.venv|ci/logs)/' . || black_exit=$?
@@ -52,21 +56,42 @@ flake8 . || flake8_exit=$?
 echo "[lint] Running CI hygiene checks"
 python3 ci/check_ci_hygiene.py || ci_hygiene_exit=$?
 
+echo "[lint] Validating workflow state contracts"
+python3 ci/check_workflow_state_contracts.py || workflow_contracts_exit=$?
+
+echo "[lint] Validating constraint/index contracts"
+python3 ci/check_constraint_index_contracts.py || constraint_index_contracts_exit=$?
+
+echo "[lint] Validating OpenAPI integration/public contracts"
+python3 ci/check_openapi_contracts.py || openapi_contracts_exit=$?
+
 echo "[lint] Reporting module dependency drift"
 python3 ci/check_module_dependency_drift.py || dependency_drift_exit=$?
+
+echo "[lint] Checking migration review evidence"
+mapfile -t lint_changed_files < <(git diff --name-only HEAD && git ls-files --others --exclude-standard)
+if [[ ${#lint_changed_files[@]} -gt 0 ]]; then
+    python3 ci/check_migration_review.py --files "${lint_changed_files[@]}" || migration_review_exit=$?
+else
+    python3 ci/check_migration_review.py || migration_review_exit=$?
+fi
 
 echo
 echo "[lint] Summary"
 echo "  Black exit code:  $black_exit"
 echo "  Flake8 exit code: $flake8_exit"
 echo "  CI hygiene exit code: $ci_hygiene_exit"
+echo "  Workflow contract exit code: $workflow_contracts_exit"
+echo "  Constraint/index contract exit code: $constraint_index_contracts_exit"
+echo "  OpenAPI contract exit code: $openapi_contracts_exit"
+echo "  Migration review exit code: $migration_review_exit"
 echo "  Dependency drift report exit code: $dependency_drift_exit"
 
-if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 ) ]]; then
+if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $migration_review_exit -ne 0 ) ]]; then
     exit 1
 fi
 
-if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 ]]; then
+if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $migration_review_exit -ne 0 ]]; then
     echo "[lint] Repository-wide report found issues."
 else
     echo "[lint] Repository-wide report is clean."

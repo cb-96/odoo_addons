@@ -1,502 +1,365 @@
-# ROADMAP — 2026-05-24 Competition Workspace Cycle
+# Sports Federation Platform Roadmap
 
-Last updated: 2026-05-25
+Last updated: 2026-06-01
 Owner: Federation Platform Team
-Last reviewed: 2026-05-25
-Review cadence: Every release
-Release train: 2026.11
+Planning horizon: 18 months
+Scope: All addons, shared CI/docs/runbooks, and release operations
 
-The previous operating-period roadmap is archived in
-`archive/roadmaps/ROADMAP_archive_2026-05-24.md`.
+## Planning Principles
 
-This cycle narrows the roadmap to the Competition Workspace in
-`sports_federation_competition_engine`. It is based on the current workspace
-models, the central service, the Owl client action, the linked-round shared
-gameday implementation, the service regression suite, and the browser smoke
-coverage.
+1. Keep workflow correctness first for tournament lifecycle, match-day operations, and result officiality.
+2. Prefer small, test-backed, module-bounded changes over cross-cutting rewrites.
+3. Strengthen extension seams before introducing new domain complexity.
+4. Treat release reliability, restore readiness, and observability as product features.
+5. Keep portal and public surfaces safe-by-default on ownership and publication rules.
 
----
+## Prioritization Model
 
-## Current Assessment
+- P0: Correctness, security, and release blockers.
+- P1: High-value throughput and maintainability improvements.
+- P2: Product-quality and analytics improvements.
+- P3: Exploratory and optimization opportunities.
 
-### What Is Working Well
+## Delivery Windows
 
-- The workspace already supports a real end-to-end flow: create competition,
-  create division, confirm and lock entries, generate match structure, create
-  gamedays, generate slots, assign matches, validate, and publish.
-- The shared-gameday design is pragmatic. Reusing linked
-  `federation.tournament.round` records preserves `federation.match.round_id`
-  scope instead of weakening the tournament model.
-- Shared-day validation and publication now resolve through the planner root,
-  so host and guest-linked rounds see the same blocking, warning, and empty-slot
-  results.
-- The implementation takes server-side guardrails seriously: access checks,
-  assignment validation, publish locks, and force-override restrictions are all
-  present.
-- Planner writes are now revision-aware and reject stale assignment or publish
-  attempts instead of silently accepting last-write-wins behavior.
-- Team selection is now search-backed and filterable, and the workspace restores
-  section, division, gameday, and planner filters after reloads or navigation.
-- Planner collaboration is now visible in the product: operators can see active
-  workspace presence, same-gameday edit warnings, grouped validation hints,
-  revision summaries, and manager-audited override reasons without leaving the
-  planner.
-- Large-event planner reads are slimmer than the original implementation:
-  planner hydration is lazy, repeated refreshes reuse a smaller payload shape,
-  and unscheduled matches can be loaded incrementally instead of forcing one
-  eager list.
-- Bulk planner throughput has crossed the spreadsheet-replacement threshold:
-  bulk assign, bulk unassign, undo, redo, action history, and validated safe
-  swaps across occupied slots are all available in the same workflow.
-- Rule depth is no longer theoretical: officiating readiness, venue blackout
-  and capability constraints, fairness analytics, and stage-aware
-  `pool_then_bracket` planning are now part of the delivered workspace.
-- The workspace service has been split into orchestration, validation, and
-  read-model responsibilities, which makes the codebase easier to extend.
-- The workspace has meaningful regression coverage. It is not just a UI demo;
-  it already has service tests and browser smoke coverage for the most visible
-  paths.
-
-### What Is Lacking Today
-
-- Travel limits, protected-date intake, and exception-handling tools are still
-  future work even though the planner now understands officiating, venue, and
-  fairness constraints.
-- Collaboration remains advisory rather than fully locking: operators get soft
-  warnings and presence signals, but the planner does not yet claim hard
-  short-lived locks on individual matches or slots.
-- The extension seam is now live for validation, payload enrichment, scoring,
-  and slot suggestions, but it still needs more federation-specific addon
-  implementations over time.
-
-### Strategic Direction
-
-- Keep the Competition Workspace focused on planning, validation, publication,
-  and governed change management.
-- Keep live match-day execution as a separate future Operations Board rather
-  than overloading the planner with real-time incident handling.
-- Preserve round-scope integrity and avoid shortcuts that break core tournament
-  invariants.
-- Grow the workspace by tightening workflow boundaries and extension seams, not
-  by growing one giant service file forever.
+- Wave 1: 0-3 months
+- Wave 2: 3-6 months
+- Wave 3: 6-12 months
+- Wave 4: 12-18 months
 
 ---
 
-## Status Snapshot — 2026-05-25
+## Detailed Plan (20 Items)
 
-Completed in code, tests, and docs:
+### 1) Workflow Source-of-Truth Validation Gate
+- Priority: P0
+- Wave: 1
+- Status: Done (2026-06-01; verified by CI run 20260601_071414 and strict lint gate)
+- Why now: Workflow markdown and implemented states can drift as modules evolve.
+- Scope: Add CI checks that compare canonical workflow state transitions against model selection values and guarded actions.
+- Deliverables:
+  - Workflow-state mapping file per domain workflow.
+  - CI validator integrated into the lint/hygiene stage.
+  - Failing examples and fix guidance in contributor docs.
+- Success metric: Zero undocumented state additions in release branches.
 
-- Phase 0 through Phase 3 are fully delivered.
-- Phase 0 items 1 through 5 hardened shared-day validation, service
-  boundaries, workflow transitions, concurrency protection, and regression
-  coverage.
-- Phase 1 items 6 through 10 delivered search-backed team selection,
-  persisted workspace state, planner history and undo/redo, bulk actions and
-  safe swaps, plus scalable planner payload loading.
-- Phase 2 items 11 through 15 delivered schedule revisions, manager-recorded
-  override reasons, collaborative presence indicators, grouped conflict
-  guidance, and keyboard-plus-mobile planner parity.
-- Phase 3 items 16 through 20 delivered officiating-aware validation, venue
-  blackout and capability rules, fairness analytics, stage-aware
-  `pool_then_bracket` planning, and extension-backed slot suggestions.
+### 2) Competition Workspace Service Final Decomposition
+- Priority: P0
+- Wave: 1
+- Status: Done (2026-06-01; verified by CI run 20260601_071414 and strict lint gate)
+- Why now: Core service is improved but still carries high cognitive load and broad change surface.
+- Scope: Split remaining orchestration paths into cohesive mixins and helper services, aligned by read, write, and planner state concerns.
+- Deliverables:
+  - Additional focused service seams with explicit responsibilities.
+  - Reduced method count per class and smaller file size targets.
+  - Regression coverage for each seam boundary.
+- Success metric: Lower review time and smaller median diff size for workspace changes.
 
-Validation snapshot:
+### 3) Workspace Extension Contract v2
+- Priority: P0
+- Wave: 1
+- Status: Done (2026-06-01; verified by CI run 20260601_071414 and strict lint gate)
+- Why now: Extension hooks exist, but long-term compatibility needs explicit schema lifecycle and deprecation behavior.
+- Scope: Define extension contract versions, fallback behavior, and validation tooling for hook payloads/issues/score components.
+- Deliverables:
+  - Contract specification document and migration policy.
+  - Runtime warnings upgraded to actionable diagnostics.
+  - Contract test suite per extension hook type.
+- Success metric: No breaking extension regressions across two release trains.
 
-- Focused direct `ci-odoo` validation passed on 2026-05-25 for
-  `sports_federation_competition_engine`, `sports_federation_officiating`, and
-  `sports_federation_venues`, with zero failures and zero errors on the Phase 3
-  workspace surface.
-- Final verification reruns on 2026-05-25 included 119 officiating tests and 17
-  venues tests, with the venues suite now executing its two post-install
-  workspace venue-constraint regressions after the CI tagging fix.
+### 4) Scheduler Performance Baseline Program
+- Priority: P1
+- Wave: 1
+- Status: Done (2026-06-01; verified by CI run 20260601_071414 and strict lint gate)
+- Why now: Planner adoption is rising and needs predictable response under larger event loads.
+- Scope: Build deterministic benchmark scenarios for slot generation, assignment, swap, undo/redo, and auto-schedule.
+- Deliverables:
+  - Benchmark dataset pack.
+  - CI performance smoke thresholds.
+  - Baseline report updates per release.
+- Success metric: P95 planner payload and assignment latency within target budgets.
+
+### 5) Database Constraint and Index Audit
+- Priority: P0
+- Wave: 1
+- Status: Done (2026-06-01; verified by strict lint gates and CI run 20260601_073151)
+- Why now: Cross-module growth increases risk of soft-validated invariants and query regressions.
+- Scope: Audit major models for unique constraints, foreign-key semantics, and index coverage on common filters.
+- Deliverables:
+  - Constraint/index gap report.
+  - Migration scripts for schema hardening.
+  - Post-migration data-fix scripts where needed.
+- Success metric: Reduced data-quality incidents and improved heavy-query plans.
+
+### 6) Migration Discipline and Dry-Run Enforcement
+- Priority: P0
+- Wave: 1
+- Status: Done (2026-06-01; verified by strict lint gates and CI run 20260601_073151)
+- Why now: Release reliability depends on predictable schema/data migration behavior.
+- Scope: Require migration review checks for model/view/controller ownership changes, with dry-run evidence in release PRs.
+- Deliverables:
+  - Stronger CI migration-review gate.
+  - Migration checklist templates.
+  - Rollback notes per migration-sensitive change.
+- Success metric: Zero production rollbacks caused by migration defects.
+
+### 7) Portal Ownership Boundary Hardening
+- Priority: P0
+- Wave: 1
+- Status: Done (2026-06-01; verified by strict lint gates and CI run 20260601_073151)
+- Why now: Portal privilege paths are high-risk for access regressions when features are added.
+- Scope: Expand negative and escalation tests across representative, team-scoped, and official-scoped flows.
+- Deliverables:
+  - Ownership test matrix across portal controllers and model helpers.
+  - Deny-by-default regression tests for missing scope filters.
+  - Coverage dashboard for ownership-sensitive routes.
+- Success metric: No cross-club data exposure regressions in post-install suites.
+
+### 8) Result Pipeline Separation-of-Duties Reinforcement
+- Priority: P0
+- Wave: 1
+- Status: Done (2026-06-01; verified by strict lint gates and CI run 20260601_073151)
+- Why now: Submit, verify, and approve guards must remain strict as portal/internal action paths evolve.
+- Scope: Harden action-level role checks and audit traces, including contest/correction recovery loops.
+- Deliverables:
+  - Explicit duty-separation assertions.
+  - Additional contested/corrected loop tests.
+  - Improved operator-facing error messaging.
+- Success metric: Zero bypasses of approval-duty boundaries.
+
+### 9) Standings Recompute Queue and Idempotency
+- Priority: P1
+- Wave: 2
+- Status: Done (2026-06-01; verified by CI run 20260601_080437, strict lint gate, and focused import-tools suite run)
+- Why now: Synchronous recompute paths can become brittle under higher update volume.
+- Scope: Introduce optional queued recompute with idempotent jobs and conflict-safe replay.
+- Deliverables:
+  - Queue model and worker orchestration.
+  - Idempotency keys for recompute requests.
+  - Operational visibility into pending/failed recomputes.
+- Success metric: Stable recompute behavior under bursty result updates.
+
+### 10) End-to-End Correlation ID Standard
+- Priority: P1
+- Wave: 2
+- Status: Done (2026-06-01; verified by CI run 20260601_080437 and strict lint gate)
+- Why now: Multi-module workflows are difficult to debug without request-to-job traceability.
+- Scope: Propagate correlation IDs through controllers, services, planner writes, scheduled jobs, and notifications.
+- Deliverables:
+  - Correlation ID helper utilities.
+  - Log format standard update.
+  - Incident debugging runbook section.
+- Success metric: Faster root-cause analysis for cross-module failures.
+
+### 11) Reporting Query Modernization
+- Priority: P1
+- Wave: 2
+- Status: Done (2026-06-01; verified by CI run 20260601_080437 and strict lint gate)
+- Why now: Deprecation warnings and heavy report surfaces indicate future compatibility and performance risk.
+- Scope: Replace deprecated read_group usage and optimize high-traffic reporting builders.
+- Deliverables:
+  - Reporting query refactors with benchmark evidence.
+  - Explain-snapshot updates for key reporting paths.
+  - Compatibility note in release docs.
+- Success metric: No deprecation warnings in reporting test runs.
+
+### 12) Integration API Contract Verification Expansion
+- Priority: P1
+- Wave: 2
+- Status: Done (2026-06-01; verified by CI run 20260601_080437 and strict lint gate)
+- Why now: Contract drift between OpenAPI docs and runtime payloads is a recurring integration risk.
+- Scope: Add contract tests for request/response schema, auth failures, pagination, and error shape consistency.
+- Deliverables:
+  - OpenAPI-backed contract suite in CI.
+  - Golden examples for partner onboarding.
+  - Compatibility policy per endpoint version.
+- Success metric: No partner-facing contract regressions between minor releases.
+
+### 13) Cron and Background Job Reliability Program
+- Priority: P1
+- Wave: 2
+- Why now: Operational correctness depends on scheduled tasks finishing reliably and observably.
+- Scope: Add retry policies, dead-letter handling, and operator-facing dashboards for recurring jobs.
+- Deliverables:
+  - Standard retry/backoff helpers.
+  - Failed-job queue inspection UI.
+  - Alert thresholds and runbook actions.
+- Success metric: Reduced unresolved scheduled-job failure backlog.
+
+### 14) Security Posture Hardening Sprint
+- Priority: P0
+- Wave: 2
+- Why now: Expanding integrations and portal surfaces increase secret-handling and privilege risks.
+- Scope: Strengthen secret redaction tests, token rotation workflows, and privilege escalation guardrails.
+- Deliverables:
+  - Secret scanning gates and redaction assertions.
+  - Token lifecycle policy enforcement checks.
+  - Access-rule regression pack for sensitive models.
+- Success metric: No secret leaks in logs/artifacts; no critical access-rule findings.
+
+### 15) Data Retention Automation and Evidence
+- Priority: P1
+- Wave: 2
+- Why now: Retention behavior spans notifications, imports, and report artifacts and needs auditable consistency.
+- Scope: Standardize retention cron behavior and capture retention evidence in health dashboards.
+- Deliverables:
+  - Retention policy-to-cron mapping table.
+  - Automated retention verification tests.
+  - Operator checklist for retention exceptions.
+- Success metric: Retention jobs consistently pass and produce auditable evidence.
+
+### 16) Accessibility and Usability Compliance Pack
+- Priority: P1
+- Wave: 3
+- Why now: Portal and public flows are critical user entry points and must remain inclusive as features grow.
+- Scope: Add route-level accessibility checks, keyboard path tests, and usability copy consistency checks.
+- Deliverables:
+  - Accessibility CI checks for major portal/public templates.
+  - Keyboard-only test scenarios for operations board and workspace.
+  - Terminology consistency lints.
+- Success metric: Reduced accessibility defects in release QA.
+
+### 17) Test Strategy Tiering and Runtime Reduction
+- Priority: P1
+- Wave: 3
+- Why now: Suite growth increases release-cycle cost and feedback latency.
+- Scope: Tier tests into smoke, contract, focused module, and broad release surfaces with clear ownership.
+- Deliverables:
+  - Updated suite matrix and ownership map.
+  - Flaky-test quarantine and stabilization policy.
+  - Runtime target budgets by suite tier.
+- Success metric: Faster average CI feedback without coverage regression.
+
+### 18) Demo and Sandbox Scenario Expansion
+- Priority: P2
+- Wave: 3
+- Why now: Training, onboarding, and QA need richer deterministic scenarios for advanced workflows.
+- Scope: Extend demo pack to include contested results, override flows, shared-day exceptions, and governance recovery cases.
+- Deliverables:
+  - Expanded demo data fixtures.
+  - Scenario walkthrough docs.
+  - Demo integrity tests.
+- Success metric: Shorter onboarding time and higher reproducibility in bug triage.
+
+### 19) Incident Response and Recovery Maturity
+- Priority: P1
+- Wave: 4
+- Why now: More automation and integrations require faster, clearer incident handling.
+- Scope: Build incident playbooks for planner, portal, reporting, and integration outage classes.
+- Deliverables:
+  - Incident playbook library linked to runbook.
+  - Automated incident context bundle scripts.
+  - Recovery drills with measurable outcomes.
+- Success metric: Lower mean time to detect and resolve major incidents.
+
+### 20) Release Governance Dashboard
+- Priority: P2
+- Wave: 4
+- Why now: Release readiness signals are currently distributed across docs, CI logs, and ad hoc checks.
+- Scope: Consolidate release gates, doc freshness, migration checks, and suite status into a single decision dashboard.
+- Deliverables:
+  - Release readiness scorecard.
+  - Blocker classification and sign-off workflow.
+  - Historical trend tracking for release quality.
+- Success metric: Higher first-pass release acceptance rate.
 
 ---
 
-## Phase 0 — Weeks 1–2: Correctness, Shared-Day Safety, and Service Boundaries
+## Idea Backlog (80 Items)
 
-Module: `sports_federation_competition_engine`
-
-### 1. Shared-gameday validation must always resolve through the planner root — Delivered 2026-05-25
-
-Why:
-Shared days currently work, but validation paths are still too dependent on the
-specific round used to enter the method.
-
-Deliver:
-- Normalize `validate_gameday()` and all publication checks through the planner
-  root round.
-- Make empty-slot, warning, and blocking issue reporting consistent for host and
-  guest-linked rounds.
-- Add explicit regression coverage for validating and publishing guest rounds.
-
-### 2. Split the workspace service by responsibility — Delivered 2026-05-25
-
-Why:
-One service currently owns orchestration, validation, serialization, and write
-commands. That will slow down every future change.
-
-Deliver:
-- Extract planner validation helpers into a dedicated validation service.
-- Extract payload serialization into dedicated read-model helpers.
-- Keep the top-level workspace service as the thin orchestration entrypoint.
-
-### 3. Introduce explicit workflow transition methods — Delivered 2026-05-25
-
-Why:
-The current implementation mutates `workspace_state` and `planner_state`
-directly in several flows. That is workable now, but it weakens auditability.
-
-Deliver:
-- Replace ad-hoc state writes with named transition helpers.
-- Centralize allowed transitions for divisions and gamedays.
-- Log transition reason and actor where state changes affect publication.
-
-### 4. Add concurrency protection to planner writes — Delivered 2026-05-25
-
-Why:
-Two planners can currently race on assignment or publication in a way that is
-not modeled explicitly.
-
-Deliver:
-- Add optimistic concurrency tokens or equivalent stale-write checks.
-- Reject outdated slot assignments with a clear retry message.
-- Cover concurrent planner write scenarios in tests.
-
-### 5. Expand regression coverage around the critical workflow edges — Delivered 2026-05-25
-
-Why:
-The existing tests are good, but the most fragile behavior will now be shared
-days, publish transitions, overrides, and stale state.
-
-Deliver:
-- Add tests for host vs guest shared-day validation and publication.
-- Add tests for forced warning-only assignment and its permissions.
-- Add tests for state rollback after unassign and republish paths.
-
----
-
-## Phase 1 — Weeks 3–5: Planner UX, Throughput, and Scale
-
-Module: `sports_federation_competition_engine`
-
-### 6. Replace eager team loading with search-backed selection — Delivered 2026-05-25
-
-Why:
-The planner currently loads teams with a fixed `search_read(..., limit=200)`.
-That is not federation-scale.
-
-Deliver:
-- Replace the eager team dropdown with search/autocomplete RPCs.
-- Support server-side filtering by division and club.
-- Remove the hard-coded 200-team ceiling from the workspace flow.
-
-### 7. Persist workspace UI state across refresh and navigation — Delivered 2026-05-25
-
-Why:
-Operators should not lose selected division, gameday, section, and filters on
-every reload.
-
-Deliver:
-- Persist current section, division, gameday, and planner filters.
-- Restore planner context when returning from form views or a hard refresh.
-- Clear persisted state safely when the underlying competition changes.
-
-### 8. Add undo, redo, and planner action history — Delivered 2026-05-25
-
-Why:
-The planner needs reversible operations if it is to replace spreadsheet-based
-planning confidently.
-
-Deliver:
-- Record assignment, unassignment, and move actions as planner operations.
-- Add quick undo and redo for recent planner actions.
-- Expose a user-readable planner action history panel.
-
-### 9. Add bulk planner actions — Delivered 2026-05-25
-
-Why:
-Single-card assignment is correct but slow for large rounds and tournament days.
-
-Deliver:
-- Bulk unassign selected matches.
-- Bulk assign by round or by filtered set.
-- Add safe swap and move operations across slots and courts.
-
-Delivered so far:
-- Bulk assign uses the current filtered selected unscheduled set and fills the
-  next available slots on the active gameday.
-- Bulk unassign removes selected scheduled matches from the active gameday.
-- Single-match move across slots and courts remains available through drag and
-  drop or mobile assignment.
-- Dropping an already scheduled match onto another occupied slot now performs a
-  validated safe swap when both matches can legally trade places.
-
-### 10. Make large-event planner payloads scalable — Delivered 2026-05-25
-
-Why:
-The current payload shape is fine for modest tournaments, but it will become
-heavy when slot grids, teams, and mixed divisions grow.
-
-Deliver:
-- Introduce lazy planner payload loading where possible.
-- Virtualize or paginate unscheduled match lists.
-- Reduce redundant payload fields in repeated planner refreshes.
+21) Enforce ADR freshness cadence for high-impact architectural changes.
+22) Auto-generate state-machine diagrams from model selections and transition helpers.
+23) Add optional-manifest dependency consistency checks across addon families.
+24) Add model ownership annotations for easier code stewardship.
+25) Introduce a cross-module deprecation lifecycle policy with sunset tracking.
+26) Auto-sync query budgets from benchmark snapshots into CI assertions.
+27) Publish a shared fixture catalog package for common federation test setups.
+28) Add deterministic random-seed helpers for schedule-generation tests.
+29) Introduce flaky-test quarantine workflow with owner escalation.
+30) Add strict portal ownership contract tests for sudo/elevated execution paths.
+31) Standardize API pagination and sorting semantics across integration endpoints.
+32) Publish endpoint-level rate-limit policy matrix with test enforcement.
+33) Add signed webhook replay protection with nonce window checks.
+34) Build OpenAPI example drift checker against runtime responses.
+35) Add dead-letter queue interface for failed inbound import deliveries.
+36) Version inbound import schemas and add migration handlers.
+37) Build a unified background job operations dashboard.
+38) Add cron drift detection and stale-run alerting.
+39) Define service-level objectives per critical module flow.
+40) Add optional structured JSON logging mode for production diagnostics.
+41) Introduce secret redaction test suite for logs and notifications.
+42) Add backup freshness monitor with release gate integration.
+43) Automate monthly restore drills and evidence capture.
+44) Build attachment malware-scan policy simulator for safe tuning.
+45) Introduce per-environment feature flags for progressive delivery.
+46) Add dark-launch hooks for planner behavior changes.
+47) Normalize audit-event taxonomy across modules.
+48) Propagate correlation IDs through all portal controller responses.
+49) Add trace exporter integration for distributed observability.
+50) Create a standard large-event performance profile dataset.
+51) Add cold-start benchmark for module installation and upgrade paths.
+52) Add warm-cache benchmark for planner and portal payload endpoints.
+53) Explore materialized-view strategy for heavy reporting projections.
+54) Add SQL style and safety lint rules for reporting views.
+55) Complete read_group to _read_group modernization across modules.
+56) Add memory-budget guards for heavy report generation jobs.
+57) Add retention-drill tests for report artifacts and generated files.
+58) Add incremental standings recompute mode for small result updates.
+59) Add asynchronous standings recompute queue with idempotent retries.
+60) Build standings reconciliation explain view for operators.
+61) Add SLA timers for result verification and approval handoffs.
+62) Build a contested-result resolution assistant wizard.
+63) Add referee assignment fairness scoring at tournament-day level.
+64) Add referee availability conflict heatmap for assignment planning.
+65) Add roster-deadline calendar synchronization for club reps.
+66) Add match-sheet completeness scoring for pre-match readiness.
+67) Automate player-license expiry communication campaigns.
+68) Add a club compliance readiness index surface in portal and reporting.
+69) Build governance-override guidance assistant for operators.
+70) Add recurring venue-blackout templates and conflict previews.
+71) Add travel-buffer constraint plugin for schedule scoring.
+72) Add shared-gameday load-balancing suggestions across courts.
+73) Add planner what-if sandbox mode without persistent writes.
+74) Add bulk-action dry-run preview with projected warnings/conflicts.
+75) Add planner conflict-resolver UI for stale optimistic-lock writes.
+76) Add planner keyboard shortcut discovery overlay.
+77) Add mobile offline draft capability for portal score entry.
+78) Add guided-mode steps for first-time portal operators.
+79) Add accessibility compliance gates for core portal routes.
+80) Add multilingual terminology consistency checks for UI labels.
+81) Add public-site SEO slug health monitoring and conflict alerts.
+82) Add deterministic public cache invalidation hooks after publication.
+83) Add privacy-review checklist enforcement for public profile fields.
+84) Add public route canary tests for release-day confidence.
+85) Add notification template versioning and rollback support.
+86) Build notification deliverability analytics dashboard.
+87) Add channel fallback rules for failed notifications.
+88) Add finance-reconciliation assistant with actionable remediation hints.
+89) Add sanction-to-finance linkage consistency validator.
+90) Add payment-provider abstraction interface for future integrations.
+91) Build module scaffolding generator v2 with tests/docs wiring.
+92) Enforce module path ownership checks from ownership registry.
+93) Add docs freshness bot triggered by changed modules.
+94) Expand workflow documentation with executable scenario examples.
+95) Add release-notes auto-assembler from commit and module metadata.
+96) Add dependency vulnerability scan gate in CI.
+97) Add secret-scanning pre-push hook recommendations and templates.
+98) Add branch-protection compliance reporter for release branches.
+99) Run quarterly architecture scorecard review and publish deltas.
+100) Build continuous operator-feedback ingestion loop into roadmap triage.
 
 ---
 
-## Phase 2 — Weeks 6–8: Governance, Collaboration, and Publish Control
-
-Module: `sports_federation_competition_engine`
-
-### 11. Introduce schedule revisions instead of one mutable published state — Delivered 2026-05-25
-
-Why:
-Published schedules need governed changes, not just lock-or-unlock semantics.
-
-Deliver:
-- Add schedule revision records or equivalent version tracking.
-- Allow draft revisions after publication without overwriting the live plan
-  immediately.
-- Keep a clear distinction between draft, current live, and superseded plans.
-
-Delivered so far:
-- `federation.competition.schedule.revision` persists draft, live, and
-  superseded planner snapshots.
-- Gamedays now keep explicit live and draft revision links and expose revision
-  summaries in the planner and publish views.
-
-### 12. Require manager override reasons — Delivered 2026-05-25
-
-Why:
-Manager-only force assignment and publication overrides should be explainable to
-operators and auditors.
-
-Deliver:
-- Require a reason when forcing warning-only assignments.
-- Require a reason when republishing or bypassing planner warnings.
-- Store those reasons on the relevant planner action or revision record.
-
-Delivered so far:
-- Forced warning-only assignment requires a manager override reason and stores
-  it on the planner operation history.
-- Republishing or publishing with warnings records the manager reason on the
-  resulting schedule revision.
-
-### 13. Add collaborative presence and soft locks — Delivered 2026-05-25
-
-Why:
-The workspace is moving from a single-operator tool toward a multi-operator
-planning surface.
-
-Deliver:
-- Show who else is currently in the same competition workspace.
-- Add soft locks or edit indicators for active gameday planning.
-- Warn before conflicting edits rather than failing silently.
-
-Delivered so far:
-- `federation.competition.workspace.presence` tracks active operators and their
-  current section or gameday context.
-- Planner and publish views now show active workspace users and same-gameday
-  warnings before overlapping edits.
-
-### 14. Make conflict output explainable and operator-friendly — Delivered 2026-05-25
-
-Why:
-Current validation tells operators what is wrong; the next step is to help them
-fix it faster.
-
-Deliver:
-- Group planner conflicts by blocking type and severity.
-- Add actionable resolution hints to each conflict payload.
-- Highlight the affected slot, match, or team in the planner UI.
-
-Delivered so far:
-- Validation payloads now group blocking and warning issues and include
-  operator-facing resolution hints.
-- The planner highlights the affected slots and matches while grouped conflicts
-  remain visible in both planner review and publish review panels.
-
-### 15. Improve keyboard, accessibility, and mobile parity — Delivered 2026-05-25
-
-Why:
-The workspace is already mobile-aware, but it still behaves primarily like a
-desktop planner.
-
-Deliver:
-- Make all planner actions keyboard reachable.
-- Improve focus management, button semantics, and screen-reader output.
-- Close the remaining gaps between drag-and-drop and tap-to-assign flows.
-
-Delivered so far:
-- Empty-slot assign buttons now let keyboard users select one match and assign
-  it without drag-and-drop.
-- Validation panels use grouped live updates, cards expose focus-visible state,
-  and assignment dialogs keep explicit dialog semantics.
-- The planner now keeps a consistent desktop, mobile, and tap-to-assign path
-  for the common assignment flow.
-
----
-
-## Phase 3 — Weeks 9–12: Rule Depth, Format Coverage, and Extension Seams
-
-Module: `sports_federation_competition_engine`
-
-### 16. Make officiating availability part of planner validation — Delivered 2026-05-25
-
-Why:
-Missing referees are currently only a warning. Eventually the workspace must be
-able to schedule with officiating feasibility in mind.
-
-Deliver:
-- Add optional officiating-aware validation rules.
-- Flag unavailable or double-booked officials before publication.
-- Expose officiating readiness in planner and publish summaries.
-
-Delivered so far:
-- The officiating addon now extends workspace validation and payloads so
-  double-booked referee assignments block planning and publication while
-  uncovered availability remains visible as a warning.
-- Match-assignment readiness and publish summaries now include officiating
-  readiness details without forcing the core engine to hard-code refereeing
-  rules.
-
-### 17. Model venue blackout, capability, and maintenance constraints — Delivered 2026-05-25
-
-Why:
-Courts are not interchangeable in real operations.
-
-Deliver:
-- Add venue blackout windows and maintenance closures.
-- Support court capability tags or sport-specific restrictions.
-- Block or warn on assignments that ignore those constraints.
-
-Delivered so far:
-- `sports_federation_venues` now models blackout windows and playing-area
-  capabilities and lets divisions require specific court capabilities.
-- Workspace validation blocks blackout, maintenance, and capability mismatch
-  assignments and exposes venue-readiness summaries in match, gameday,
-  division, and overview payloads.
-
-### 18. Add fairness and balance analytics to the planner model — Delivered 2026-05-25
-
-Why:
-The planner should optimize more than simple slot occupancy.
-
-Deliver:
-- Track rest fairness, court fairness, and timeslot fairness by team.
-- Expose these metrics in division and competition overview payloads.
-- Provide warning thresholds or scoring hooks for future automation.
-
-Delivered so far:
-- Division, planner, and competition overview payloads now carry fairness
-  summaries with tracked-team counts, per-team metrics, and threshold-aware
-  score components.
-- The planner UI now shows fairness metrics directly and reuses the same
-  scoring structure for future automation.
-
-### 19. Implement `pool_then_bracket` and broader multi-stage planning — Delivered 2026-05-25
-
-Why:
-The current workspace stops at round robin, double round robin, knockout, and
-manual planning.
-
-Deliver:
-- Implement pool-stage generation with bracket progression.
-- Support stage-aware gameday planning and stage-specific previews.
-- Add workflow documentation and regression tests for the new path.
-
-Delivered so far:
-- The workspace now generates balanced pool stages plus seeded knockout stages
-  for `pool_then_bracket` divisions.
-- Gamedays, previews, planner filters, and match cards are stage-aware and let
-  operators target pool or knockout work explicitly.
-
-### 20. Add extension hooks for federation-specific planning rules — Delivered 2026-05-25
-
-Why:
-The workspace needs to become more configurable without turning into a giant set
-of hard-coded special cases.
-
-Deliver:
-- Define extension hooks for validation, scoring, and planner suggestion logic.
-- Separate stable base payloads from rule-specific enrichments.
-- Document the extension points for future addon-level customization.
-
-Delivered so far:
-- Workspace extensions now register by model prefix and can enrich validation,
-  payloads, and scoring without modifying the base planner service.
-- The planner exposes ranked slot suggestions backed by the shared scoring hook
-  path, so addon-specific rules can now influence future placement guidance.
-
----
-
-## Potential New Features — Next-Layer Product Differentiators
-
-These features are intentionally not committed to the current 12-week delivery
-sequence. They are candidates once the delivered planner baseline needs a new
-round of automation, decision support, and operator differentiation.
-
-### 1. Explainable auto-scheduler
-
-Generate a draft schedule automatically and explain why each match landed in a
-given slot, court, or gameday.
-
-### 2. Scenario sandbox and branch planning
-
-Let planners create multiple schedule variants, compare them side by side, and
-promote one branch into the working revision.
-
-### 3. Fairness dashboard
-
-Show home-away balance, rest balance, court balance, and early/late slot
-distribution by division and by team.
-
-### 4. Matchday incident mode
-
-Handle late starts, venue outages, and court closures with controlled, guided
-reflow tools distinct from normal planning mode.
-
-### 5. Team availability and blackout intake
-
-Collect team availability, protected dates, and blackout windows before the
-planner starts assigning matches.
-
-### 6. Travel-aware scheduling
-
-Score or optimize schedules based on travel burden across clubs, divisions, and
-same-day journeys.
-
-### 7. Broadcast and featured-court planning
-
-Reserve certain courts or timeslots for broadcast, streaming, or marquee match
-placement and surface those constraints in the planner.
-
-### 8. Schedule change notification center
-
-Track who has been notified of schedule changes, who has acknowledged them, and
-which changes still need operator follow-up.
-
-### 9. Downstream qualification and progression preview
-
-Show how schedule changes affect later-stage readiness, playoff qualification
-timelines, or linked bracket progression windows.
-
-### 10. Schedule diff and release-note viewer
-
-Give operators a human-readable summary of what changed between two schedule
-revisions so they can publish changes clearly.
-
----
-
-## Recommended Delivery Order
-
-If time pressure forces prioritization, deliver the roadmap in this order:
-
-1. Item 1 — planner-root validation and publication normalization.
-2. Item 6 — search-backed team loading and removal of the fixed team cap.
-3. Item 8 — undo/redo and planner history.
-4. Item 11 — revisioned publication model.
-5. Item 19 — `pool_then_bracket` and multi-stage workflow support.
-
-This sequence protects correctness first, then scale, then operator confidence,
-then governance, and finally scope expansion.
+## Suggested Execution Sequence
+
+1. Execute items 1-8 in Wave 1 as the foundation tranche.
+2. Execute items 9-15 in Wave 2 to improve reliability and scale readiness.
+3. Execute items 16-18 in Wave 3 to improve user quality and delivery throughput.
+4. Execute items 19-20 in Wave 4 to institutionalize operational maturity.
+5. Pull from the 80-item idea backlog each release based on measurable bottlenecks, incident learnings, and owner capacity.
+
+## Operating Cadence
+
+- Monthly: Prioritize top 5 roadmap candidates by risk and impact.
+- Per release: Move completed roadmap items into release notes and archive.
+- Quarterly: Re-rank the 80-item idea backlog with updated telemetry and incident trends.

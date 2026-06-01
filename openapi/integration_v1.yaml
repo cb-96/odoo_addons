@@ -37,12 +37,19 @@ components:
       schema:
         type: integer
         minimum: 1
+    FederationCorrelationId:
+      description: End-to-end correlation identifier used for support and incident tracing.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
   schemas:
     ErrorResponse:
       type: object
       required:
         - error
         - error_code
+        - correlation_id
       properties:
         error:
           type: string
@@ -56,6 +63,9 @@ components:
             - data_validation
             - operator_input
             - unexpected_bug
+        correlation_id:
+          type: string
+          description: Correlates this error with logs across controllers/jobs/services.
     ContractManifestPartner:
       type: object
       required:
@@ -117,9 +127,12 @@ components:
     ContractManifestResponse:
       type: object
       required:
+        - correlation_id
         - partner
         - contracts
       properties:
+        correlation_id:
+          type: string
         partner:
           $ref: '#/components/schemas/ContractManifestPartner'
         contracts:
@@ -194,9 +207,12 @@ components:
     InboundDeliveryResponse:
       type: object
       required:
+        - correlation_id
         - delivery_outcome
         - delivery
       properties:
+        correlation_id:
+          type: string
         delivery_outcome:
           $ref: '#/components/schemas/InboundDeliveryOutcome'
         delivery:
@@ -217,6 +233,9 @@ paths:
       responses:
         '200':
           description: Partner contract manifest.
+          headers:
+            X-Federation-Correlation-Id:
+              $ref: '#/components/headers/FederationCorrelationId'
           content:
             application/json:
               schema:
@@ -242,6 +261,9 @@ paths:
                         last_used_on: '2026-04-18T07:38:47Z'
         '401':
           description: Invalid or missing partner credentials.
+          headers:
+            X-Federation-Correlation-Id:
+              $ref: '#/components/headers/FederationCorrelationId'
           content:
             application/json:
               schema:
@@ -251,6 +273,8 @@ paths:
           headers:
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
+            X-Federation-Correlation-Id:
+              $ref: '#/components/headers/FederationCorrelationId'
           content:
             application/json:
               schema:
@@ -282,6 +306,8 @@ paths:
         '200':
           description: Finance handoff CSV export.
           headers:
+            X-Federation-Correlation-Id:
+              $ref: '#/components/headers/FederationCorrelationId'
             X-Federation-Contract:
               schema:
                 type: string
@@ -326,18 +352,27 @@ paths:
                 12,FIN-00012,confirmed,ready,team_fee,125.00
         '400':
           description: Invalid pagination parameters.
+          headers:
+            X-Federation-Correlation-Id:
+              $ref: '#/components/headers/FederationCorrelationId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Invalid or missing partner credentials.
+          headers:
+            X-Federation-Correlation-Id:
+              $ref: '#/components/headers/FederationCorrelationId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Finance export contract unavailable in the active database.
+          headers:
+            X-Federation-Correlation-Id:
+              $ref: '#/components/headers/FederationCorrelationId'
           content:
             application/json:
               schema:
@@ -347,6 +382,8 @@ paths:
           headers:
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
+            X-Federation-Correlation-Id:
+              $ref: '#/components/headers/FederationCorrelationId'
           content:
             application/json:
               schema:
@@ -387,6 +424,8 @@ paths:
         '201':
           description: Delivery request accepted successfully.
           headers:
+            X-Federation-Correlation-Id:
+              $ref: '#/components/headers/FederationCorrelationId'
             X-Federation-Delivery-Outcome:
               schema:
                 $ref: '#/components/schemas/InboundDeliveryOutcome'
@@ -408,12 +447,18 @@ paths:
                 $ref: '#/components/schemas/InboundDeliveryResponse'
         '400':
           description: Invalid delivery payload or conflicting idempotency key reuse.
+          headers:
+            X-Federation-Correlation-Id:
+              $ref: '#/components/headers/FederationCorrelationId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Invalid or missing partner credentials.
+          headers:
+            X-Federation-Correlation-Id:
+              $ref: '#/components/headers/FederationCorrelationId'
           content:
             application/json:
               schema:
@@ -423,12 +468,17 @@ paths:
           headers:
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
+            X-Federation-Correlation-Id:
+              $ref: '#/components/headers/FederationCorrelationId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Unexpected staging failure.
+          headers:
+            X-Federation-Correlation-Id:
+              $ref: '#/components/headers/FederationCorrelationId'
           content:
             application/json:
               schema:
