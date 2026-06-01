@@ -39,6 +39,7 @@ class FederationIntegrationApi(
     )
     def integration_contracts(self, **kw):
         """Handle integration contracts."""
+        correlation_id = self._get_correlation_id()
         blocked_response = self._rate_limit_response("integration_contracts")
         if blocked_response:
             return blocked_response
@@ -52,6 +53,7 @@ class FederationIntegrationApi(
         )
         return self._json_response(
             {
+                "correlation_id": correlation_id,
                 "partner": {
                     "code": partner.code,
                     "name": partner.name,
@@ -73,6 +75,7 @@ class FederationIntegrationApi(
     )
     def integration_finance_events(self, **kw):
         """Handle integration finance events."""
+        correlation_id = self._get_correlation_id()
         blocked_response = self._rate_limit_response("integration_finance_events")
         if blocked_response:
             return blocked_response
@@ -123,6 +126,7 @@ class FederationIntegrationApi(
                 "true" if export_batch["has_more"] else "false",
             ),
             ("X-Federation-Page-Limit", str(export_batch["limit"])),
+            ("X-Federation-Correlation-Id", correlation_id),
         ]
         if export_batch["next_cursor"]:
             headers.append(("X-Federation-Next-Cursor", export_batch["next_cursor"]))
@@ -143,6 +147,7 @@ class FederationIntegrationApi(
     )
     def integration_stage_inbound_delivery(self, contract_code, **kw):
         """Handle integration stage inbound delivery."""
+        correlation_id = self._get_correlation_id()
         blocked_response = self._rate_limit_response("integration_inbound_deliveries")
         if blocked_response:
             return blocked_response
@@ -190,6 +195,7 @@ class FederationIntegrationApi(
             return self._json_error_response(status=500, error=error)
 
         headers = [("X-Federation-Delivery-Outcome", delivery_result["outcome"])]
+        headers.append(("X-Federation-Correlation-Id", correlation_id))
         if request_idempotency_key:
             headers.extend(
                 [
@@ -206,6 +212,7 @@ class FederationIntegrationApi(
 
         return self._json_response(
             {
+                "correlation_id": correlation_id,
                 "delivery_outcome": delivery_result["outcome"],
                 "delivery": {
                     "id": delivery.id,

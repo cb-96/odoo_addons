@@ -1,6 +1,7 @@
 import logging
 
 from odoo import api, fields, models
+from odoo.addons.sports_federation_base.correlation import ensure_correlation_id
 from odoo.addons.sports_federation_base.models.failure_feedback import (
     build_failure_feedback,
 )
@@ -35,6 +36,7 @@ class FederationNotificationService(models.AbstractModel):
             The created notification log record.
         """
         Log = self.env["federation.notification.log"].sudo()
+        correlation_id = ensure_correlation_id(self.env)
         if isinstance(email_to, (list, tuple, set)):
             email_to = ",".join(dict.fromkeys(email for email in email_to if email))
 
@@ -45,6 +47,7 @@ class FederationNotificationService(models.AbstractModel):
             "notification_type": "email",
             "template_xmlid": template_xmlid,
             "state": "pending",
+            "correlation_id": correlation_id,
         }
         if partner:
             log_vals["recipient_partner_id"] = partner.id
@@ -108,7 +111,9 @@ class FederationNotificationService(models.AbstractModel):
         except Exception as e:
             failure_category, operator_message = build_failure_feedback(error=e)
             _logger.exception(
-                "Notification email delivery failed for %s", log.display_name
+                "Notification email delivery failed for %s (correlation_id=%s)",
+                log.display_name,
+                correlation_id,
             )
             log.write(
                 {
@@ -142,6 +147,7 @@ class FederationNotificationService(models.AbstractModel):
             The created notification log record.
         """
         Log = self.env["federation.notification.log"].sudo()
+        correlation_id = ensure_correlation_id(self.env)
         activity_type = self.env.ref(activity_type_xmlid, raise_if_not_found=False)
 
         log_vals = {
@@ -150,6 +156,7 @@ class FederationNotificationService(models.AbstractModel):
             "target_res_id": record.id,
             "notification_type": "activity",
             "state": "pending",
+            "correlation_id": correlation_id,
         }
 
         log = Log.create(log_vals)
@@ -176,7 +183,9 @@ class FederationNotificationService(models.AbstractModel):
         except Exception as e:
             failure_category, operator_message = build_failure_feedback(error=e)
             _logger.exception(
-                "Notification activity creation failed for %s", log.display_name
+                "Notification activity creation failed for %s (correlation_id=%s)",
+                log.display_name,
+                correlation_id,
             )
             log.write(
                 {
@@ -198,6 +207,7 @@ class FederationNotificationService(models.AbstractModel):
         confirmations and officiating shortages.
         """
         Log = self.env["federation.notification.log"].sudo()
+        correlation_id = ensure_correlation_id(self.env)
         Registration = self.env.get("federation.season.registration")
 
         if not Registration:
@@ -208,6 +218,7 @@ class FederationNotificationService(models.AbstractModel):
                     "state": "sent",
                     "sent_on": fields.Datetime.now(),
                     "message": "No federation.season.registration model found. No action configured.",
+                    "correlation_id": correlation_id,
                 }
             )
             return
@@ -235,6 +246,7 @@ class FederationNotificationService(models.AbstractModel):
                         "state": "sent",
                         "sent_on": fields.Datetime.now(),
                         "message": f"Season registration '{reg.name}' has been in draft state for more than 7 days.",
+                        "correlation_id": correlation_id,
                     }
                 )
         else:
@@ -245,6 +257,7 @@ class FederationNotificationService(models.AbstractModel):
                     "state": "sent",
                     "sent_on": fields.Datetime.now(),
                     "message": "No draft registrations older than 7 days found.",
+                    "correlation_id": correlation_id,
                 }
             )
 

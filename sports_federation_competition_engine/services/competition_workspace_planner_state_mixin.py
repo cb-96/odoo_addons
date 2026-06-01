@@ -1,8 +1,8 @@
 import json
 import logging
-from uuid import uuid4
 
 from odoo import _, fields
+from odoo.addons.sports_federation_base.correlation import ensure_correlation_id
 from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class CompetitionWorkspacePlannerStateMixin:
         code="stale_planner_revision",
         message=False,
     ):
-        correlation_id = uuid4().hex[:12]
+        correlation_id = ensure_correlation_id(self.env)
         _logger.warning(
             "Planner write conflict for %s (correlation_id=%s, expected=%s, current=%s)",
             operation,

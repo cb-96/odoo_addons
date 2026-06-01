@@ -39,6 +39,7 @@ Audit record of every notification sent through the federation.
 | `recipient_email` | Char | Recipient email address |
 | `notification_type` | Selection | email / activity / other |
 | `template_xmlid` | Char | Which template was used |
+| `correlation_id` | Char | End-to-end trace ID for support and incident debugging |
 | `sent_on` | Datetime | When sent |
 | `state` | Selection | pending / sent / failed |
 | `message` | Text | Content or error details |
@@ -72,6 +73,7 @@ Reusable service methods callable by any module.
 8. **Failure visibility without transaction rollback** — Missing recipients or template failures create `failed` notification logs instead of blocking the business workflow.
 9. **Suspension delivery fallback** — `send_suspension_issued()` now sends a direct email and logs the outcome even when no dedicated mail template exists yet.
 10. **Retention cleanup** — Notification logs are purged automatically after their state-specific retention windows in `DATA_RETENTION_POLICY.md` expire.
+11. **Correlation tracing** — Notification service actions and cron scans stamp each log with a correlation ID so failures can be traced across controllers, jobs, and service logs.
 
 ## Integration configuration (env)
 

@@ -1,12 +1,35 @@
 import logging
-from uuid import uuid4
 
 from odoo import _
+from odoo.addons.sports_federation_base.correlation import ensure_correlation_id
 
 _logger = logging.getLogger(__name__)
 
 
 class CompetitionWorkspaceExtensionMixin:
+    def _workspace_extension_contract_spec(self):
+        return {
+            "supported_schema_versions": tuple(
+                getattr(self, "_workspace_extension_schema_versions", (1,))
+            ),
+            "v1": {
+                "payload": {"schema_version": 1, "payload": {}},
+                "issues": {
+                    "schema_version": 1,
+                    "issues": {"blocking": [], "warnings": []},
+                },
+                "components": {"schema_version": 1, "components": []},
+            },
+            "v2": {
+                "payload": {"schema_version": 2, "data": {}},
+                "issues": {
+                    "schema_version": 2,
+                    "data": {"blocking": [], "warnings": []},
+                },
+                "components": {"schema_version": 2, "data": []},
+            },
+        }
+
     def _workspace_extension_models(self):
         return [
             self.env[model_name]
@@ -25,7 +48,7 @@ class CompetitionWorkspaceExtensionMixin:
             try:
                 result = method(self, *args, **kwargs)
             except Exception as error:  # pylint: disable=broad-except
-                correlation_id = uuid4().hex[:12]
+                correlation_id = ensure_correlation_id(self.env)
                 if isinstance(telemetry, list):
                     telemetry.append(
                         {
@@ -81,27 +104,34 @@ class CompetitionWorkspaceExtensionMixin:
             ),
             "hook": method_name,
             "extension_model": extension_model,
-            "correlation_id": correlation_id or uuid4().hex[:12],
+            "correlation_id": correlation_id or ensure_correlation_id(self.env),
         }
 
     def _normalize_workspace_extension_schema_version(self, result, method_name):
+        supported = self._workspace_extension_contract_spec()[
+            "supported_schema_versions"
+        ]
         if not isinstance(result, dict) or "schema_version" not in result:
             return 1
         try:
             schema_version = int(result.get("schema_version"))
         except (TypeError, ValueError):
             _logger.warning(
-                "Workspace extension output ignored for %s: invalid schema_version %s",
+                "Workspace extension output ignored for %s: invalid schema_version %s. "
+                "Use schema_version=%s and the documented contract payload.",
                 method_name,
                 result.get("schema_version"),
+                max(supported),
             )
             return False
 
-        if schema_version not in self._workspace_extension_schema_versions:
+        if schema_version not in supported:
             _logger.warning(
-                "Workspace extension output ignored for %s: unsupported schema_version %s",
+                "Workspace extension output ignored for %s: unsupported schema_version %s. "
+                "Supported versions: %s.",
                 method_name,
                 schema_version,
+                ", ".join(str(value) for value in supported),
             )
             return False
         return schema_version
@@ -125,6 +155,21 @@ class CompetitionWorkspaceExtensionMixin:
                 return payload
             _logger.warning(
                 "Workspace extension payload ignored for %s: schema payload must be dict",
+                method_name,
+            )
+            return {}
+        if (
+            schema_version == 2
+            and isinstance(result, dict)
+            and "schema_version" in result
+        ):
+            payload = result.get("data")
+            if payload is None:
+                return {}
+            if isinstance(payload, dict):
+                return payload
+            _logger.warning(
+                "Workspace extension payload ignored for %s: schema v2 data must be dict",
                 method_name,
             )
             return {}
@@ -152,6 +197,21 @@ class CompetitionWorkspaceExtensionMixin:
                 method_name,
             )
             return {}
+        if (
+            schema_version == 2
+            and isinstance(result, dict)
+            and "schema_version" in result
+        ):
+            issues = result.get("data")
+            if issues is None:
+                return {}
+            if isinstance(issues, dict):
+                return issues
+            _logger.warning(
+                "Workspace extension issues ignored for %s: schema v2 data must be dict",
+                method_name,
+            )
+            return {}
         return result
 
     def _normalize_workspace_extension_score_result(self, result, method_name):
@@ -175,6 +235,23 @@ class CompetitionWorkspaceExtensionMixin:
                 return list(components)
             _logger.warning(
                 "Workspace extension score components ignored for %s: schema components must be list/dict",
+                method_name,
+            )
+            return []
+        if (
+            schema_version == 2
+            and isinstance(result, dict)
+            and "schema_version" in result
+        ):
+            components = result.get("data")
+            if components is None:
+                return []
+            if isinstance(components, dict):
+                return [components]
+            if isinstance(components, (list, tuple, set)):
+                return list(components)
+            _logger.warning(
+                "Workspace extension score components ignored for %s: schema v2 data must be list/dict",
                 method_name,
             )
             return []

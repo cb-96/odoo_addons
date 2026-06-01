@@ -25,6 +25,7 @@
                             <field name="name"/>
                             <field name="notification_type"/>
                             <field name="state"/>
+                            <field name="correlation_id" readonly="1"/>
                             <field name="failure_category" readonly="1"/>
                             <field name="sent_on"/>
                         </group>
@@ -65,6 +66,7 @@
                 <field name="target_model"/>
                 <field name="recipient_email"/>
                 <field name="state"/>
+                <field name="correlation_id" optional="show"/>
                 <field name="failure_category" optional="show"/>
                 <field name="sent_on"/>
             </list>
@@ -80,6 +82,7 @@
                 <field name="name"/>
                 <field name="target_model"/>
                 <field name="recipient_email"/>
+                <field name="correlation_id"/>
                 <field name="failure_category"/>
                 <filter name="email" string="Email" domain="[('notification_type', '=', 'email')]"/>
                 <filter name="activity" string="Activity" domain="[('notification_type', '=', 'activity')]"/>

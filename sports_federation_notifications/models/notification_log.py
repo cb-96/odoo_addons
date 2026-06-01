@@ -52,6 +52,7 @@ class FederationNotificationLog(models.Model):
     )
     operator_message = fields.Text(string="Operator Message")
     message = fields.Text(string="Message")
+    correlation_id = fields.Char(string="Correlation ID", index=True)
 
     target_display_name = fields.Char(
         string="Target",

@@ -163,6 +163,20 @@ Managed Integration Contract Docs
   ``INTEGRATION_CONTRACTS.md``.
 - Machine-readable route and payload definitions live in
   ``openapi/integration_v1.yaml``.
+- Partner onboarding golden examples live in
+  ``openapi/examples/INTEGRATION_GOLDEN_EXAMPLES.md``.
+
+Correlation ID Standard
+-----------------------
+
+- Managed integration routes accept optional
+  ``X-Federation-Correlation-Id`` headers.
+- JSON responses include ``correlation_id`` and mirror it in the
+  ``X-Federation-Correlation-Id`` response header.
+- CSV exports include ``X-Federation-Correlation-Id`` for cross-service
+  traceability.
+- Typed JSON error payloads include ``error``, ``error_code``, and
+  ``correlation_id``.
 
 Credential Handling
 -------------------

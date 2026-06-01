@@ -1,5 +1,6 @@
 import re
 
+from odoo.addons.sports_federation_base.correlation import ensure_correlation_id
 from odoo.exceptions import ValidationError
 from odoo.http import request
 
@@ -36,3 +37,11 @@ class FederationRequestSecurityMixin:
                 "Idempotency keys must be 1-128 chars and use only letters, digits, and _.:-"
             )
         return header_value
+
+    def _get_correlation_id(self, header_name="X-Federation-Correlation-Id"):
+        """Return a correlation id propagated from request/context or generated locally."""
+        request_proxy = self._security_request_proxy()
+        header_value = (
+            request_proxy.httprequest.headers.get(header_name) or ""
+        ).strip()
+        return ensure_correlation_id(getattr(request_proxy, "env", None), header_value)

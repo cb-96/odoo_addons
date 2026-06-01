@@ -49,6 +49,7 @@ class TestNotifications(TransactionCase):
         self.assertEqual(log.target_res_id, self.club.id)
         self.assertEqual(log.recipient_email, "test@example.com")
         self.assertEqual(log.notification_type, "email")
+        self.assertTrue(log.correlation_id)
         self.assertIn(log.state, ("sent", "failed"))
 
     def test_missing_template_failure_is_typed_for_operators(self):
@@ -80,6 +81,7 @@ class TestNotifications(TransactionCase):
         self.assertTrue(log.id)
         self.assertEqual(log.name, "Test Activity Summary")
         self.assertEqual(log.notification_type, "activity")
+        self.assertTrue(log.correlation_id)
         self.assertIn(log.state, ("sent", "failed"))
 
     def test_cron_method_runs_without_error(self):
