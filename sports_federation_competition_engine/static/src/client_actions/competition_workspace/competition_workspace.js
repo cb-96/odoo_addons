@@ -114,6 +114,79 @@ export function formatPlannerSelectionSummary({
     return `${selectedCount} selected: ${unscheduledCount} unscheduled and ${assignedCount} assigned.`;
 }
 
+export function resolveWorkspaceSections({ competition = {}, division = false } = {}) {
+    const hasCompetition = Boolean(competition?.id);
+    const hasDivision = Boolean(division?.id);
+    const entriesLocked = Boolean(division?.entries_locked);
+    const hasMatches = Boolean(division?.match_count);
+    const hasGamedays = Boolean(division?.gameday_count);
+    const scheduleComplete = Boolean(
+        hasDivision && division.slot_count > 0 && division.unscheduled_match_count === 0
+    );
+    return [
+        {
+            key: "overview",
+            label: "Set up",
+            shortLabel: "Overview",
+            description: hasDivision
+                ? "Review divisions and competition settings."
+                : "Create or select the division you want to plan.",
+            disabled: !hasCompetition,
+            complete: hasDivision,
+        },
+        {
+            key: "teams",
+            label: "Add teams",
+            shortLabel: "Teams",
+            description: entriesLocked
+                ? "Team entries are confirmed and locked."
+                : "Add, confirm, and lock participating teams.",
+            disabled: !hasDivision,
+            complete: entriesLocked,
+        },
+        {
+            key: "rounds",
+            label: "Build schedule",
+            shortLabel: "Schedule",
+            description: hasMatches
+                ? "The match structure has been generated."
+                : "Generate rounds and matches from the locked entries.",
+            disabled: !entriesLocked,
+            complete: hasMatches,
+        },
+        {
+            key: "gamedays",
+            label: "Create gamedays",
+            shortLabel: "Gamedays",
+            description: hasGamedays
+                ? "Gamedays exist and can receive planning slots."
+                : "Choose dates, venue, courts, and timeslot settings.",
+            disabled: !hasMatches,
+            complete: hasGamedays,
+        },
+        {
+            key: "planner",
+            label: "Plan matches",
+            shortLabel: "Planner",
+            description: scheduleComplete
+                ? "Every match has a slot. Review conflicts and fairness."
+                : "Assign matches to slots and resolve scheduling conflicts.",
+            disabled: !hasGamedays,
+            complete: scheduleComplete,
+        },
+        {
+            key: "publish",
+            label: "Validate and publish",
+            shortLabel: "Publish",
+            description: division?.workspace_state === "published"
+                ? "The current schedule is published."
+                : "Run final checks and publish the approved schedule.",
+            disabled: !hasGamedays,
+            complete: division?.workspace_state === "published",
+        },
+    ];
+}
+
 export function shouldHandlePlannerEscape({
     key,
     activeSection,
@@ -186,6 +259,11 @@ class StatusBadge extends Component {
 class ProgressStepper extends Component {
     static template = "sports_federation_competition_engine.CompetitionWorkspaceProgressStepper";
 
+    selectStep(step) {
+        if (!step.disabled && this.props.onSelect) {
+            this.props.onSelect(step.key);
+        }
+    }
     stepClass(step) {
         if (step.active) {
             return "o-active";
@@ -600,52 +678,44 @@ export class CompetitionWorkspaceAction extends Component {
         return this.planner?.gameday?.planner_state || "draft";
     }
 
-    get progressSteps() {
-        const division = this.selectedDivision;
-        return [
-            {
-                key: "shell",
-                label: "Competition",
-                complete: !!this.payload.competition?.id,
-                active: !this.payload.competition?.id,
-            },
-            {
-                key: "entries",
-                label: "Teams",
-                complete: !!division?.entries_locked,
-                active: !!division && !division.entries_locked,
-            },
-            {
-                key: "rounds",
-                label: "Rounds",
-                complete: !!division?.match_count,
-                active: !!division && division.entries_locked && !division.match_count,
-            },
-            {
-                key: "gamedays",
-                label: "Gamedays",
-                complete: !!division?.gameday_count,
-                active: !!division && division.match_count > 0 && !division.gameday_count,
-            },
-            {
-                key: "planner",
-                label: "Planner",
-                complete: !!division && division.match_count > 0 && division.unscheduled_match_count === 0 && division.slot_count > 0,
-                active: !!division && division.gameday_count > 0 && division.unscheduled_match_count > 0,
-            },
-            {
-                key: "publish",
-                label: "Publish",
-                complete: division?.workspace_state === "published",
-                active: !!division && division.unscheduled_match_count === 0 && division.workspace_state !== "published",
-            },
-        ];
-    }
-
     get workspaceSections() {
-        return WORKSPACE_SECTIONS;
+        return resolveWorkspaceSections({
+            competition: this.payload.competition,
+            division: this.selectedDivision,
+        }).map((section) => ({
+            ...section,
+            active: section.key === this.state.activeSection,
+        }));
     }
-
+    get progressSteps() {
+        return this.workspaceSections;
+    }
+    get activeWorkspaceSection() {
+        return this.workspaceSections.find(
+            (section) => section.key === this.state.activeSection
+        ) || this.workspaceSections[0];
+    }
+    get recommendedWorkspaceSection() {
+        return this.workspaceSections.find(
+            (section) => !section.disabled && !section.complete
+        ) || this.workspaceSections.filter((section) => !section.disabled).at(-1);
+    }
+    get previousWorkspaceSection() {
+        const available = this.workspaceSections.filter((section) => !section.disabled);
+        const index = available.findIndex(
+            (section) => section.key === this.state.activeSection
+        );
+        return index > 0 ? available[index - 1] : false;
+    }
+    get nextWorkspaceSection() {
+        const available = this.workspaceSections.filter((section) => !section.disabled);
+        const index = available.findIndex(
+            (section) => section.key === this.state.activeSection
+        );
+        return index >= 0 && index < available.length - 1
+            ? available[index + 1]
+            : false;
+    }
     get divisionPlanningFormatOptions() {
         return DIVISION_PLANNING_FORMAT_OPTIONS;
     }

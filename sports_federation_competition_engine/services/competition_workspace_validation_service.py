@@ -68,6 +68,14 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
                 ),
                 "focus_target": "match",
             },
+            "club_duty_play_overlap": {
+                "group_key": "officiating_conflicts",
+                "group_label": _("Club officiating duties"),
+                "hint": _(
+                    "Move either the club's playing match or its officiating duty to a different timeslot."
+                ),
+                "focus_target": "match",
+            },
             "cross_division_slot": {
                 "group_key": "slot_conflicts",
                 "group_label": _("Slot conflicts"),

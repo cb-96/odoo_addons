@@ -5,6 +5,7 @@ import {
     isPlannerValidationConfirmable,
     isPlannerBusyState,
     shouldHandlePlannerEscape,
+    resolveWorkspaceSections,
 } from "@sports_federation_competition_engine/client_actions/competition_workspace/competition_workspace";
 
 QUnit.module("sports_federation_competition_engine > competition workspace ui");
@@ -109,4 +110,26 @@ QUnit.test("planner escape helper only clears when relevant", function (assert) 
         false,
         "Escape outside planner section does not clear planner state"
     );
+});
+
+QUnit.test("workspace journey unlocks steps progressively", function (assert) {
+    const initial = resolveWorkspaceSections({ competition: { id: 10 }, division: false });
+    assert.strictEqual(initial.find((step) => step.key === "overview").disabled, false);
+    assert.strictEqual(initial.find((step) => step.key === "teams").disabled, true);
+
+    const planning = resolveWorkspaceSections({
+        competition: { id: 10 },
+        division: {
+            id: 20,
+            entries_locked: true,
+            match_count: 12,
+            gameday_count: 2,
+            slot_count: 12,
+            unscheduled_match_count: 0,
+            workspace_state: "planning",
+        },
+    });
+    assert.strictEqual(planning.find((step) => step.key === "planner").disabled, false);
+    assert.strictEqual(planning.find((step) => step.key === "planner").complete, true);
+    assert.strictEqual(planning.find((step) => step.key === "publish").complete, false);
 });

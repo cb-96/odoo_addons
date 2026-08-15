@@ -692,6 +692,43 @@ class TestCompetitionWorkspaceOfficiatingIntegration(TransactionCase):
             ["referee_unavailable"],
         )
 
+    def test_workspace_blocks_club_playing_during_its_referee_duty(self):
+        """A club cannot play and supply an official in overlapping slots."""
+        duty = self.env["federation.match.club.referee.duty"].create(
+            {
+                "match_id": self.match_b.id,
+                "club_id": self.club.id,
+                "role": "table",
+            }
+        )
+        duty.action_open()
+        self.service.assign_match_to_slot(self.match_b.id, self.slot_b.id)
+
+        validation = self.service.validate_match_assignment(
+            self.match_a.id, self.slot_a.id
+        )
+
+        codes = {issue["code"] for issue in validation["blocking"]}
+        self.assertIn("club_duty_play_overlap", codes)
+
+    def test_workspace_ignores_unopened_club_referee_duty(self):
+        """A draft duty does not constrain the planner until it is opened."""
+        self.env["federation.match.club.referee.duty"].create(
+            {
+                "match_id": self.match_b.id,
+                "club_id": self.club.id,
+                "role": "table",
+            }
+        )
+        self.service.assign_match_to_slot(self.match_b.id, self.slot_b.id)
+
+        validation = self.service.validate_match_assignment(
+            self.match_a.id, self.slot_a.id
+        )
+
+        codes = {issue["code"] for issue in validation["blocking"]}
+        self.assertNotIn("club_duty_play_overlap", codes)
+
     def test_workspace_validation_blocks_double_booked_referee(self):
         """Planner validation blocks double-booked referees after planning is published."""
         self.env["federation.match.referee"].create(

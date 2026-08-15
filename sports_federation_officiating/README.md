@@ -112,3 +112,8 @@ before the match goes live.
 9. **Finance bridge integration** — When `sports_federation_finance_bridge` is installed,
    assignments that reach `done` automatically create reusable reimbursement events.
 10. **Portal self-service** — When `sports_federation_portal` is installed, linked officials can review, confirm, or decline their own draft assignments through the portal.
+
+11. **Club-duty planning constraint** — Open club referee duties are first-class
+    planner constraints. A club cannot play a match and supply an official for
+    another match in an overlapping timeslot. Match cards expose duty club, role,
+    and state directly in the Competition Workspace.

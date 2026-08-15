@@ -408,3 +408,11 @@ Validation and safeguards
   and restricts warning-only overrides to federation managers.
 - Slot generation enforces one match per slot and one slot start time per
   playing area and gameday.
+
+Guided workspace navigation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The Competition Workspace now presents setup as one dependency-aware journey:
+set up the competition, add teams, build the schedule, create gamedays, plan
+matches, and validate/publish. Completed steps stay available, blocked steps
+explain their dependency, and previous/next controls preserve a predictable
+flow on desktop and mobile.

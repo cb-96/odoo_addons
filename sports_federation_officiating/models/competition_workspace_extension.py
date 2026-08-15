@@ -47,6 +47,102 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
             "completed",
         )
 
+    @staticmethod
+    def _windows_overlap(start_a, end_a, start_b, end_b):
+        return bool(start_a and start_b and not (end_a <= start_b or end_b <= start_a))
+
+    @staticmethod
+    def _match_club_ids(match):
+        return set((match.home_team_id.club_id | match.away_team_id.club_id).ids)
+
+    def _club_duty_conflicts(
+        self,
+        workspace_service,
+        match,
+        slot,
+        effective_slots=False,
+    ):
+        """Detect a club playing while supplying an overlapping official duty."""
+        if "club_referee_duty_ids" not in match._fields:
+            return []
+        target_start, target_end = self._match_window(
+            match, slot=slot, effective_slots=effective_slots
+        )
+        if not target_start:
+            return []
+
+        planner_root = workspace_service._get_planner_root_gameday(slot.round_id)
+        planner_matches = planner_root.slot_ids.filtered("match_id").mapped("match_id") | match
+        target_playing_clubs = self._match_club_ids(match)
+        conflicts = []
+        seen = set()
+
+        for other in planner_matches:
+            if other == match:
+                continue
+            other_slot = (effective_slots or {}).get(other.id) or other.slot_id
+            other_start, other_end = self._match_window(
+                other, slot=other_slot, effective_slots=effective_slots
+            )
+            if not self._windows_overlap(target_start, target_end, other_start, other_end):
+                continue
+
+            for duty in other.club_referee_duty_ids.filtered(
+                lambda item: item.state != "draft"
+                and item.club_id.id in target_playing_clubs
+            ):
+                key = (duty.id, match.id, other.id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                conflicts.append(
+                    self._club_duty_overlap_issue(
+                        duty=duty,
+                        playing_match=match,
+                        duty_match=other,
+                        slot=slot,
+                    )
+                )
+
+            other_playing_clubs = self._match_club_ids(other)
+            for duty in match.club_referee_duty_ids.filtered(
+                lambda item: item.state != "draft"
+                and item.club_id.id in other_playing_clubs
+            ):
+                key = (duty.id, other.id, match.id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                conflicts.append(
+                    self._club_duty_overlap_issue(
+                        duty=duty,
+                        playing_match=other,
+                        duty_match=match,
+                        slot=slot,
+                    )
+                )
+        return conflicts
+
+    @staticmethod
+    def _club_duty_overlap_issue(duty, playing_match, duty_match, slot):
+        role_label = dict(duty._fields["role"].selection).get(duty.role, duty.role)
+        return {
+            "code": "club_duty_play_overlap",
+            "message": _(
+                "%(club)s cannot play %(playing_match)s while supplying %(role)s "
+                "for %(duty_match)s in the same timeslot.",
+                club=duty.club_id.display_name,
+                playing_match=playing_match.display_name,
+                role=role_label,
+                duty_match=duty_match.display_name,
+            ),
+            "record_id": playing_match.id,
+            "match_id": playing_match.id,
+            "slot_id": slot.id,
+            "duty_id": duty.id,
+            "club_id": duty.club_id.id,
+        }
+
     def extend_match_assignment_validation(
         self,
         workspace_service,
@@ -56,11 +152,16 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
     ):
         if "referee_assignment_ids" not in match._fields:
             return {}
+        duty_conflicts = self._club_duty_conflicts(
+            workspace_service,
+            match,
+            slot,
+            effective_slots=effective_slots,
+        )
         if not self._officiating_checks_active_for_planner(
             workspace_service, slot.round_id
         ):
-            return {}
-
+            return {"blocking": duty_conflicts, "warnings": []}
         target_start, target_end = self._match_window(
             match,
             slot=slot,
@@ -69,7 +170,7 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
         if not target_start:
             return {}
 
-        blocking = []
+        blocking = list(duty_conflicts)
         warnings = []
         for assignment in self._active_referee_assignments(match):
             overlaps = assignment._get_overlapping_assignments(
@@ -171,6 +272,11 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
         if "referee_assignment_ids" not in match._fields:
             return {}
         officiating_warnings = match._get_officiating_warnings()
+        active_duties = match.club_referee_duty_ids.filtered(
+            lambda duty: duty.state != "draft"
+        ) if "club_referee_duty_ids" in match._fields else self.env[
+            "federation.match.club.referee.duty"
+        ]
         return {
             "officiating": {
                 "required_count": match.required_referee_count,
@@ -179,6 +285,23 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
                 "issues": match.official_readiness_issues or False,
                 "warning_count": len(officiating_warnings),
                 "warnings": officiating_warnings,
+                "club_duty_count": len(active_duties),
+                "club_duties": [
+                    {
+                        "id": duty.id,
+                        "club_id": duty.club_id.id,
+                        "club_name": duty.club_id.display_name,
+                        "role": duty.role,
+                        "role_label": dict(duty._fields["role"].selection).get(
+                            duty.role, duty.role
+                        ),
+                        "state": duty.state,
+                        "state_label": dict(duty._fields["state"].selection).get(
+                            duty.state, duty.state
+                        ),
+                    }
+                    for duty in active_duties
+                ],
             }
         }
 

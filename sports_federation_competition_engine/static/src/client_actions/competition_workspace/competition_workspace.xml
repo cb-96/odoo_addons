@@ -30,10 +30,21 @@
     <t t-name="sports_federation_competition_engine.CompetitionWorkspaceProgressStepper">
         <div class="o_fed_cw_stepper mb-4">
             <t t-foreach="props.steps" t-as="step" t-key="step.key">
-                <div class="o_fed_cw_step" t-att-class="this.stepClass(step)">
-                    <div class="o_fed_cw_step_marker"><t t-esc="step.label.slice(0, 1)"/></div>
-                    <div class="o_fed_cw_step_label"><t t-esc="step.label"/></div>
-                </div>
+                <button type="button"
+                        class="o_fed_cw_step text-start"
+                        t-att-class="this.stepClass(step)"
+                        t-att-disabled="step.disabled"
+                        t-att-aria-current="step.active ? 'step' : undefined"
+                        t-on-click="() => this.selectStep(step)">
+                    <div class="o_fed_cw_step_marker">
+                        <i t-if="step.complete" class="fa fa-check" aria-hidden="true"/>
+                        <t t-else=""><t t-esc="step.label.slice(0, 1)"/></t>
+                    </div>
+                    <div>
+                        <div class="o_fed_cw_step_label"><t t-esc="step.label"/></div>
+                        <div class="o_fed_cw_step_hint"><t t-esc="step.description"/></div>
+                    </div>
+                </button>
             </t>
         </div>
     </t>
@@ -313,6 +324,15 @@
             <div class="small text-muted mb-1" t-if="props.match.stage_name"><t t-esc="props.match.stage_name"/><t t-if="props.match.group_name"> · <t t-esc="props.match.group_name"/></t></div>
             <div class="small text-muted mb-2">Round <t t-esc="props.match.round_number || '-'"/></div>
             <div class="small text-muted mb-3" t-if="props.match.court_name">Assigned to <t t-esc="props.match.court_name"/></div>
+            <div class="d-flex gap-2 flex-wrap mb-3" t-if="props.match.officiating">
+                <StatusBadge t-props="{ label: props.match.officiating.ready ? 'Officials ready' : 'Officials need attention', tone: props.match.officiating.ready ? 'success' : 'warning' }"/>
+                <StatusBadge t-if="props.match.officiating.club_duty_count" t-props="{ label: props.match.officiating.club_duty_count + ' club duty', tone: 'info' }"/>
+            </div>
+            <div class="small text-muted mb-3" t-if="props.match.officiating and (props.match.officiating.club_duties || []).length">
+                <t t-foreach="props.match.officiating.club_duties" t-as="duty" t-key="duty.id">
+                    <div><t t-esc="duty.club_name"/> · <t t-esc="duty.role_label"/> · <t t-esc="duty.state_label"/></div>
+                </t>
+            </div>
             <div class="d-flex gap-2 flex-wrap">
                 <button type="button" class="btn btn-outline-primary btn-sm" t-if="props.isMobile and !props.assigned" t-on-click="onAssignClick">Assign</button>
                 <button type="button" class="btn btn-outline-secondary btn-sm" t-if="props.assigned" t-on-click="onUnassignClick">Unassign</button>
@@ -510,17 +530,27 @@
     </t>
 
     <t t-name="sports_federation_competition_engine.CompetitionWorkspaceSectionNav">
-        <div class="o_fed_cw_nav mb-4" role="tablist" aria-label="Competition workspace sections">
-            <t t-foreach="this.workspaceSections" t-as="section" t-key="section.key">
-                <button type="button"
-                        class="btn btn-outline-secondary"
-                        role="tab"
-                        t-att-aria-selected="state.activeSection === section.key ? 'true' : 'false'"
-                        t-att-class="state.activeSection === section.key ? 'active' : ''"
-                        t-on-click="() => this.setSection(section.key)">
-                    <t t-esc="section.label"/>
-                </button>
-            </t>
+        <div class="o_fed_cw_context_bar mb-4" t-if="payload.competition.id and this.activeWorkspaceSection">
+            <div>
+                <div class="small text-uppercase text-muted">Current step</div>
+                <div class="fw-semibold"><t t-esc="this.activeWorkspaceSection.label"/></div>
+                <div class="small text-muted"><t t-esc="this.activeWorkspaceSection.description"/></div>
+            </div>
+            <div class="o_fed_cw_nav" role="tablist" aria-label="Competition workspace sections">
+                <t t-foreach="this.workspaceSections" t-as="section" t-key="section.key">
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            role="tab"
+                            t-att-disabled="section.disabled"
+                            t-att-title="section.disabled ? 'Complete the previous step first' : section.description"
+                            t-att-aria-selected="section.active ? 'true' : 'false'"
+                            t-att-class="section.active ? 'active' : ''"
+                            t-on-click="() => this.setSection(section.key)">
+                        <i t-if="section.complete" class="fa fa-check me-1" aria-hidden="true"/>
+                        <t t-esc="section.shortLabel"/>
+                    </button>
+                </t>
+            </div>
         </div>
     </t>
 
@@ -940,7 +970,24 @@
             </t>
             <t t-else="">
                 <CompetitionOverviewCard t-props="{ overview: payload.overview }"/>
-                <ProgressStepper t-props="{ steps: this.progressSteps }"/>
+                <section class="o_fed_cw_journey card shadow-sm mb-4" t-if="payload.competition.id">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                            <div>
+                                <div class="text-uppercase small text-muted">Competition setup journey</div>
+                                <h2 class="h5 mb-1 mt-1">Follow the steps from teams to publication</h2>
+                                <p class="text-muted small mb-0">Completed steps stay available. Steps that depend on unfinished work are disabled.</p>
+                            </div>
+                            <button t-if="this.recommendedWorkspaceSection and this.recommendedWorkspaceSection.key !== state.activeSection"
+                                    type="button" class="btn btn-primary"
+                                    t-on-click="() => this.setSection(this.recommendedWorkspaceSection.key)">
+                                Continue: <t t-esc="this.recommendedWorkspaceSection.label"/>
+                                <i class="fa fa-arrow-right ms-2" aria-hidden="true"/>
+                            </button>
+                        </div>
+                        <ProgressStepper t-props="{ steps: this.progressSteps, onSelect: this.setSection.bind(this) }"/>
+                    </div>
+                </section>
                 <t t-call="sports_federation_competition_engine.CompetitionWorkspaceSectionNav"/>
 
                 <t t-if="!payload.competition.id and payload.capabilities.is_manager">
@@ -997,6 +1044,15 @@
                     <t t-call="sports_federation_competition_engine.CompetitionWorkspaceSectionPublish"/>
                 </t>
 
+                <nav class="o_fed_cw_step_footer" t-if="payload.competition.id" aria-label="Workspace step navigation">
+                    <button t-if="this.previousWorkspaceSection" type="button" class="btn btn-outline-secondary" t-on-click="() => this.setSection(this.previousWorkspaceSection.key)">
+                        <i class="fa fa-arrow-left me-2" aria-hidden="true"/><t t-esc="this.previousWorkspaceSection.label"/>
+                    </button>
+                    <span t-else=""/>
+                    <button t-if="this.nextWorkspaceSection" type="button" class="btn btn-primary" t-on-click="() => this.setSection(this.nextWorkspaceSection.key)">
+                        <t t-esc="this.nextWorkspaceSection.label"/><i class="fa fa-arrow-right ms-2" aria-hidden="true"/>
+                    </button>
+                </nav>
                 <ActionConfirmDialog t-props="{ open: state.confirmDialog.open, title: state.confirmDialog.title, message: state.confirmDialog.message, confirmLabel: state.confirmDialog.confirmLabel, confirmClass: this.confirmationDialogToneClass, onClose: this.closeConfirmDialog.bind(this), onConfirm: this.confirmPendingAction.bind(this) }"/>
             </t>
         </div>
