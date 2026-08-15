@@ -3,6 +3,7 @@ from . import test_competition_workspace_service
 from . import test_competition_workspace_auto_schedule
 from . import test_competition_workspace_contract_tags
 from . import test_competition_workspace_http_smoke
+from . import test_competition_workspace_performance_smoke
 from . import test_knockout
 from . import test_tournament_template
 from . import test_simulate_tournament

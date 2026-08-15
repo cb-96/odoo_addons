@@ -24,6 +24,8 @@ SENSITIVE_SURFACES = {
     "views": "view ownership",
     "controllers": "route ownership",
 }
+DRY_RUN_EVIDENCE_FILE = "MIGRATION_DRY_RUN_EVIDENCE.md"
+ROLLBACK_NOTES_FILE = "MIGRATION_ROLLBACK_NOTES.md"
 
 
 def _normalize_repo_path(path_text: str) -> str:
@@ -81,18 +83,40 @@ def _find_sensitive_changes(changed_files: list[str]) -> dict[str, set[str]]:
     return sensitive
 
 
+def _has_module_migration_change(module_name: str, changed_files: set[str]) -> bool:
+    return any(path.startswith(f"{module_name}/migrations/") for path in changed_files)
+
+
 def _has_review_evidence(
     module_name: str, surfaces: set[str], changed_files: set[str]
-) -> bool:
+) -> tuple[bool, list[str]]:
+    reasons: list[str] = []
+    has_surface_evidence = False
+
     if changed_files & GLOBAL_REVIEW_FILES:
-        return True
+        has_surface_evidence = True
     if f"{module_name}/README.md" in changed_files:
-        return True
-    if any(path.startswith(f"{module_name}/migrations/") for path in changed_files):
-        return True
+        has_surface_evidence = True
+    if _has_module_migration_change(module_name, changed_files):
+        has_surface_evidence = True
     if "controllers" in surfaces and changed_files & ROUTE_REVIEW_FILES:
-        return True
-    return False
+        has_surface_evidence = True
+
+    if not has_surface_evidence:
+        reasons.append(
+            "touch a migration script, module README, TECHNICAL_NOTE.md, RELEASE_RUNBOOK.md, RELEASE_TRAIN.md, or route ownership docs"
+        )
+
+    if DRY_RUN_EVIDENCE_FILE not in changed_files:
+        reasons.append(f"update {DRY_RUN_EVIDENCE_FILE} with dry-run evidence")
+
+    if _has_module_migration_change(module_name, changed_files):
+        if ROLLBACK_NOTES_FILE not in changed_files:
+            reasons.append(
+                f"update {ROLLBACK_NOTES_FILE} with rollback notes for this migration"
+            )
+
+    return not reasons, reasons
 
 
 def main() -> int:
@@ -123,14 +147,17 @@ def main() -> int:
     sensitive_changes = _find_sensitive_changes(changed_files)
     failures = []
     for module_name, surfaces in sorted(sensitive_changes.items()):
-        if _has_review_evidence(module_name, surfaces, changed_file_set):
+        has_evidence, reasons = _has_review_evidence(
+            module_name, surfaces, changed_file_set
+        )
+        if has_evidence:
             continue
         surface_labels = ", ".join(
             SENSITIVE_SURFACES[surface] for surface in sorted(surfaces)
         )
+        reason_text = "; ".join(reasons)
         failures.append(
-            f"- {module_name}: changed {surface_labels} without touching a migration script, module README, "
-            "TECHNICAL_NOTE.md, RELEASE_RUNBOOK.md, RELEASE_TRAIN.md, or the route inventory docs."
+            f"- {module_name}: changed {surface_labels} but did not {reason_text}."
         )
 
     if failures:

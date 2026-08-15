@@ -1,0 +1,47 @@
+{
+  "contracts": [
+    {
+      "model": "federation.match",
+      "source": "sports_federation_tournament/models/federation_match.py",
+      "required_indexed_fields": [
+        "date_scheduled",
+        "scheduled_date",
+        "state"
+      ],
+      "required_constraint_symbols": []
+    },
+    {
+      "model": "federation.match.result.audit",
+      "source": "sports_federation_result_control/models/match_result_audit.py",
+      "required_indexed_fields": [
+        "event_type",
+        "match_id"
+      ],
+      "required_constraint_symbols": []
+    },
+    {
+      "model": "federation.season.registration",
+      "source": "sports_federation_base/models/federation_season_registration.py",
+      "required_indexed_fields": [],
+      "required_constraint_symbols": [
+        "_team_season_unique"
+      ]
+    },
+    {
+      "model": "federation.tournament.participant",
+      "source": "sports_federation_tournament/models/federation_tournament_participant.py",
+      "required_indexed_fields": [],
+      "required_constraint_symbols": [
+        "_team_tournament_unique"
+      ]
+    },
+    {
+      "model": "federation.tournament.registration",
+      "source": "sports_federation_portal/models/federation_tournament_registration.py",
+      "required_indexed_fields": [],
+      "required_constraint_symbols": [
+        "_team_tournament_unique"
+      ]
+    }
+  ]
+}

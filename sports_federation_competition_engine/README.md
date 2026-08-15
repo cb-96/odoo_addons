@@ -126,7 +126,9 @@ Key models and services
   actions, planner history, revisioned publication, collaboration heartbeat,
   and payload building for the Owl action.
 - The service internals now keep three stable seams: access helpers in
-  `competition_workspace_access_mixin.py`, addon extension contract handling
+  `competition_workspace_access_mixin.py`, auto-schedule config and fairness
+  objective helpers in
+  `competition_workspace_auto_schedule_config_mixin.py`, addon extension contract handling
   in `competition_workspace_extension_mixin.py`, and planner revision,
   idempotency, plus schedule-revision state handling in
   `competition_workspace_planner_state_mixin.py`.
@@ -228,10 +230,13 @@ Roles and safeguards
   extension hook are caught, logged, and ignored so other hooks can continue.
   Validation hook failures emit a structured `extension_hook_failed` warning
   payload with hook and extension model metadata.
-- Extension outputs now support schema-versioned contracts (`schema_version: 1`)
+- Extension outputs now support schema-versioned contracts (`schema_version: 1` and
+  `schema_version: 2`)
   for payload enrichments (`payload`), validation issues (`issues`), and slot
   score components (`components`) while keeping legacy shapes backward
-  compatible.
+  compatible. Contract v2 uses `data` as the envelope key for all hook types.
+  Migration policy: legacy and v1 outputs remain supported in the current
+  release train; new extension modules should emit v2 payloads.
 - Planner write endpoints now accept optional idempotency keys on assignment and
   unassignment paths. Replayed keys return a deterministic success payload with
   `replayed=true` and do not create duplicate planner operation rows.

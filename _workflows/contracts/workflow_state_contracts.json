@@ -1,0 +1,77 @@
+{
+  "contracts": [
+    {
+      "id": "tournament_lifecycle",
+      "workflow_file": "_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md",
+      "state_source": {
+        "file": "sports_federation_tournament/workflow_states.py",
+        "selection_symbol": "TOURNAMENT_STATE_SELECTION"
+      },
+      "canonical_states": [
+        "draft",
+        "open",
+        "in_progress",
+        "closed",
+        "cancelled"
+      ],
+      "action_source": {
+        "file": "sports_federation_tournament/models/federation_tournament.py"
+      },
+      "required_actions": [
+        "action_open",
+        "action_start",
+        "action_close",
+        "action_cancel",
+        "action_draft"
+      ]
+    },
+    {
+      "id": "result_pipeline",
+      "workflow_file": "_workflows/WORKFLOW_RESULT_PIPELINE.md",
+      "state_source": {
+        "file": "sports_federation_result_control/models/match_result_control.py",
+        "selection_symbol": "RESULT_STATE_SELECTION"
+      },
+      "canonical_states": [
+        "draft",
+        "submitted",
+        "verified",
+        "approved",
+        "contested",
+        "corrected"
+      ],
+      "action_source": {
+        "file": "sports_federation_result_control/models/match_result_control.py"
+      },
+      "required_actions": [
+        "action_submit_result",
+        "action_verify_result",
+        "action_approve_result",
+        "action_contest_result",
+        "action_correct_result",
+        "action_reset_result_to_draft"
+      ]
+    },
+    {
+      "id": "standings_lifecycle",
+      "workflow_file": "_workflows/WORKFLOW_STANDINGS_LIFECYCLE.md",
+      "state_source": {
+        "file": "sports_federation_standings/models/standing.py",
+        "field_name": "state"
+      },
+      "canonical_states": [
+        "draft",
+        "computed",
+        "frozen"
+      ],
+      "action_source": {
+        "file": "sports_federation_standings/models/standing.py"
+      },
+      "required_actions": [
+        "action_recompute",
+        "action_freeze",
+        "action_unfreeze"
+      ]
+    }
+  ]
+}

@@ -182,7 +182,7 @@ class FederationMatchResultControl(models.Model):
                 raise ValidationError("Only submitted results can be verified.")
             if rec.result_submitted_by_id == self.env.user:
                 raise ValidationError(
-                    "The submitting user cannot verify the same result."
+                    "Separation of duties violation: the submitting user cannot verify the same result."
                 )
             from_state = rec.result_state
             rec.write(
@@ -210,11 +210,11 @@ class FederationMatchResultControl(models.Model):
                 raise ValidationError("Only verified results can be approved.")
             if rec.result_submitted_by_id == self.env.user:
                 raise ValidationError(
-                    "The submitting user cannot approve the same result."
+                    "Separation of duties violation: the submitting user cannot approve the same result."
                 )
             if rec.result_verified_by_id == self.env.user:
                 raise ValidationError(
-                    "The verifying user cannot approve the same result."
+                    "Separation of duties violation: the verifying user cannot approve the same result."
                 )
             from_state = rec.result_state
             rec.write(
@@ -244,7 +244,9 @@ class FederationMatchResultControl(models.Model):
                     "Only submitted, verified, or approved results can be contested."
                 )
             if not rec.result_contest_reason:
-                raise ValidationError("A contest reason is required.")
+                raise ValidationError(
+                    "A contest reason is required before moving a result to contested."
+                )
             from_state = rec.result_state
             rec.write(
                 {
@@ -276,7 +278,9 @@ class FederationMatchResultControl(models.Model):
                     "Only contested or approved results can be corrected."
                 )
             if not rec.result_correction_reason:
-                raise ValidationError("A correction reason is required.")
+                raise ValidationError(
+                    "A correction reason is required before moving a result to corrected."
+                )
             from_state = rec.result_state
             rec.write(
                 {

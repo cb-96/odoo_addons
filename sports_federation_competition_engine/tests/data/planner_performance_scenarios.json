@@ -1,0 +1,13 @@
+{
+  "scenarios": {
+    "planner_payload_smoke": {
+      "team_count": 8,
+      "max_elapsed_seconds": 20.0
+    },
+    "auto_schedule_smoke": {
+      "team_count": 8,
+      "max_assignments": 12,
+      "max_elapsed_seconds": 25.0
+    }
+  }
+}

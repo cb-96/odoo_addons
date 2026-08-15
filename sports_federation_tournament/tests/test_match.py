@@ -167,19 +167,56 @@ class TestFederationMatch(TransactionCase):
         match1.action_done()
         self.assertEqual(match2.away_team_id, self.team_away)
 
-    def test_bracket_advancement_draw_does_not_populate_next(self):
-        """A draw leaves the next match teams unset."""
+    def test_bracket_draw_requires_explicit_resolution(self):
+        """A tied bracket match cannot complete without an explicit winner."""
+        match1 = self._make_match()
+        self.env["federation.match"].create(
+            {"tournament_id": self.tournament.id, "source_match_1_id": match1.id}
+        )
+        match1.write({"home_score": 1, "away_score": 1})
+        with self.assertRaises(ValidationError):
+            match1.action_done()
+        self.assertEqual(match1.state, "draft")
+
+    def test_bracket_draw_tiebreak_advances_selected_team(self):
         match1 = self._make_match()
         match2 = self.env["federation.match"].create(
             {
                 "tournament_id": self.tournament.id,
                 "source_match_1_id": match1.id,
+                "source_type_1": "winner",
             }
         )
-        match1.home_score = 1
-        match1.away_score = 1
+        match1.write(
+            {
+                "home_score": 1,
+                "away_score": 1,
+                "resolution_type": "tiebreak",
+                "advancing_team_id": self.team_away.id,
+            }
+        )
         match1.action_done()
-        self.assertFalse(match2.home_team_id)
+        self.assertEqual(match2.home_team_id, self.team_away)
+        self.assertEqual(match1._get_result_team("loser"), self.team_home)
+
+    def test_bracket_resolution_rejects_unrelated_advancing_team(self):
+        other_team = self.env["federation.team"].create(
+            {"name": "Unrelated Team", "club_id": self.club.id}
+        )
+        match1 = self._make_match()
+        self.env["federation.match"].create(
+            {"tournament_id": self.tournament.id, "source_match_1_id": match1.id}
+        )
+        match1.write(
+            {
+                "home_score": 2,
+                "away_score": 2,
+                "resolution_type": "administrative",
+                "advancing_team_id": other_team.id,
+            }
+        )
+        with self.assertRaises(ValidationError):
+            match1.action_done()
 
     # ── schedule normalisation ───────────────────────────────────────────────
 

@@ -1,0 +1,52 @@
+diff --git a/sports_federation_tournament/README.md b/sports_federation_tournament/README.md
+index de1de0a..da35466 100644
+--- a/sports_federation_tournament/README.md
++++ b/sports_federation_tournament/README.md
+@@ -133,3 +133,9 @@ An individual game between two teams.
+ 7. **Tournament open/start guards** — Only active draft tournaments linked to a season can open, and only open tournaments with at least one stage can start.
+ 8. **Archive safety** — Open or in-progress tournaments must be closed or cancelled before archiving.
+ 9. **Venue extensions** — Venue fields are supplied by `sports_federation_venues`; this module keeps the core match lifecycle and hierarchy only.
++
++## Migration note (v19.0.1.1.0)
++
++- Added migration scripts under `migrations/19.0.1.1.0/` to harden `federation.match` indexing for high-traffic filters.
++- Added backfill for `scheduled_date` and `round_number` on historical match rows where those persisted values were missing.
++- Added composite indexes for `(tournament_id, state)`, `(stage_id, state)`, `(group_id, state)`, `(scheduled_date, state)`, and `(date_scheduled, state)`.
+diff --git a/sports_federation_tournament/__manifest__.py b/sports_federation_tournament/__manifest__.py
+index 1c7f90a..b3a5231 100644
+--- a/sports_federation_tournament/__manifest__.py
++++ b/sports_federation_tournament/__manifest__.py
+@@ -1,6 +1,6 @@
+ {
+     "name": "Sports Federation Tournament",
+-    "version": "19.0.1.0.0",
++    "version": "19.0.1.1.0",
+     "category": "Sports",
+     "summary": "Tournaments, stages, groups, participants, and matches",
+     "description": """
+diff --git a/sports_federation_tournament/models/federation_match.py b/sports_federation_tournament/models/federation_match.py
+index 7aef4d0..445e5fc 100644
+--- a/sports_federation_tournament/models/federation_match.py
++++ b/sports_federation_tournament/models/federation_match.py
+@@ -35,11 +35,12 @@ class FederationMatch(models.Model):
+     away_team_id = fields.Many2one(
+         "federation.team", string="Away Team", ondelete="restrict"
+     )
+-    date_scheduled = fields.Datetime(string="Kickoff", tracking=True)
++    date_scheduled = fields.Datetime(string="Kickoff", tracking=True, index=True)
+     scheduled_date = fields.Date(
+         string="Scheduled Date",
+         compute="_compute_schedule_fields",
+         store=True,
++        index=True,
+     )
+     scheduled_time = fields.Float(
+         string="Kickoff Time",
+@@ -62,6 +63,7 @@ class FederationMatch(models.Model):
+         default=MATCH_STATE_DRAFT,
+         required=True,
+         tracking=True,
++        index=True,
+     )
+     notes = fields.Text(string="Notes")
+ 

@@ -126,6 +126,28 @@ class TestResultControl(TransactionCase):
                 }
             )
         )
+        cls.dual_role_user = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Result Dual Role",
+                    "login": "result.dual@example.com",
+                    "email": "result.dual@example.com",
+                    "group_ids": [
+                        (
+                            6,
+                            0,
+                            [
+                                manager_group.id,
+                                validator_group.id,
+                                approver_group.id,
+                            ],
+                        )
+                    ],
+                }
+            )
+        )
         cls.match = cls.env["federation.match"].create(
             {
                 "tournament_id": cls.tournament.id,
@@ -256,9 +278,24 @@ class TestResultControl(TransactionCase):
     def test_same_user_cannot_approve_own_verification(self):
         """Test that same user cannot approve own verification."""
         self.match.with_user(self.submitter_user).action_submit_result()
-        self.match.with_user(self.approver_user).action_verify_result()
+        self.match.with_user(self.dual_role_user).action_verify_result()
         with self.assertRaises(ValidationError):
-            self.match.with_user(self.approver_user).action_approve_result()
+            self.match.with_user(self.dual_role_user).action_approve_result()
+
+    def test_same_user_cannot_verify_after_submitting_corrected_cycle(self):
+        """Duty separation still applies after contest/correct and resubmission."""
+        self.match.with_user(self.submitter_user).action_submit_result()
+        self.match.with_user(self.verifier_user).action_verify_result()
+        self.match.with_user(self.approver_user).action_approve_result()
+
+        self.match.result_contest_reason = "Score disputed"
+        self.match.action_contest_result()
+        self.match.result_correction_reason = "Score corrected"
+        self.match.action_correct_result()
+
+        self.match.with_user(self.dual_role_user).action_submit_result()
+        with self.assertRaises(ValidationError):
+            self.match.with_user(self.dual_role_user).action_verify_result()
 
     def test_approved_scores_are_immutable(self):
         """Test that approved scores are immutable."""

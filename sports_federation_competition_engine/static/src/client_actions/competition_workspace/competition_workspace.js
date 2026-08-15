@@ -3,9 +3,87 @@
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { Component, onMounted, onWillStart, onWillUnmount, useState } from "@odoo/owl";
+import { CompetitionWorkspaceFormMethods } from "./methods/competition_workspace_form_methods";
+import { CompetitionWorkspacePlannerActionMethods } from "./methods/competition_workspace_planner_action_methods";
+import { CompetitionWorkspacePlannerDataMethods } from "./methods/competition_workspace_planner_data_methods";
+import { CompetitionWorkspacePublishingMethods } from "./methods/competition_workspace_publishing_methods";
 
 const MOBILE_QUERY = "(max-width: 991.98px)";
 const UI_STATE_STORAGE_KEY = "sports_federation_competition_engine.competition_workspace.ui_state";
+
+// Keep top-level workspace navigation and form options in one place.
+const WORKSPACE_SECTIONS = Object.freeze([
+    { key: "overview", label: "Overview" },
+    { key: "teams", label: "Teams" },
+    { key: "rounds", label: "Rounds" },
+    { key: "gamedays", label: "Gamedays" },
+    { key: "planner", label: "Gameday Planner" },
+    { key: "publish", label: "Publish" },
+]);
+
+const DIVISION_PLANNING_FORMAT_OPTIONS = Object.freeze([
+    { value: "single_round_robin", label: "Single Round Robin" },
+    { value: "double_round_robin", label: "Double Round Robin" },
+    { value: "knockout", label: "Knockout" },
+    { value: "pool_then_bracket", label: "Pool Then Bracket" },
+    { value: "manual", label: "Manual" },
+]);
+
+const DIVISION_CATEGORY_OPTIONS = Object.freeze([
+    { value: "", label: "Any" },
+    { value: "senior", label: "Senior" },
+    { value: "youth", label: "Youth" },
+    { value: "junior", label: "Junior" },
+    { value: "cadet", label: "Cadet" },
+    { value: "mini", label: "Mini" },
+]);
+
+const DIVISION_GENDER_OPTIONS = Object.freeze([
+    { value: "", label: "Any" },
+    { value: "male", label: "Male" },
+    { value: "female", label: "Female" },
+    { value: "mixed", label: "Mixed" },
+]);
+
+const DEFAULT_VALIDATION = Object.freeze({
+    blocking: [],
+    warnings: [],
+    unscheduled_matches: [],
+    empty_slots: [],
+});
+
+const DEFAULT_COLLABORATION = Object.freeze({
+    active_count: 0,
+    active_users: [],
+    same_gameday_count: 0,
+    same_gameday_users: [],
+    warning_message: false,
+});
+
+const DEFAULT_SCHEDULE_REVISIONS = Object.freeze({
+    draft_revision: false,
+    live_revision: false,
+    recent_revisions: [],
+});
+
+const DEFAULT_GENERATION_PREVIEW = Object.freeze({
+    action_label: false,
+    description: "",
+    empty_message: "No generated preview is available yet.",
+    format: false,
+    rounds: [],
+    supported: false,
+});
+
+const DEFAULT_FAIRNESS_SUMMARY = Object.freeze({
+    court_balance_gap_percent: 0,
+    rest_balance_gap_minutes: 0,
+    score_components: [],
+    team_metrics: [],
+    timeslot_balance_gap_minutes: 0,
+    tracked_team_count: 0,
+    warnings: [],
+});
 
 export function isPlannerBusyState({ saving = false, plannerLoading = false, publishing = false } = {}) {
     return Boolean(saving || plannerLoading || publishing);
@@ -86,6 +164,15 @@ function stateTone(state) {
         superseded: "dark",
     };
     return toneMap[state] || "secondary";
+}
+
+function applyPrototypeMethods(target, sourceClass) {
+    for (const name of Object.getOwnPropertyNames(sourceClass.prototype)) {
+        if (name === "constructor") {
+            continue;
+        }
+        Object.defineProperty(target, name, Object.getOwnPropertyDescriptor(sourceClass.prototype, name));
+    }
 }
 
 class StatusBadge extends Component {
@@ -555,6 +642,22 @@ export class CompetitionWorkspaceAction extends Component {
         ];
     }
 
+    get workspaceSections() {
+        return WORKSPACE_SECTIONS;
+    }
+
+    get divisionPlanningFormatOptions() {
+        return DIVISION_PLANNING_FORMAT_OPTIONS;
+    }
+
+    get divisionCategoryOptions() {
+        return DIVISION_CATEGORY_OPTIONS;
+    }
+
+    get divisionGenderOptions() {
+        return DIVISION_GENDER_OPTIONS;
+    }
+
     get divisionOptions() {
         return this.payload.divisions || [];
     }
@@ -661,15 +764,9 @@ export class CompetitionWorkspaceAction extends Component {
     }
 
     get plannerFairnessSummary() {
-        return this.planner?.fairness_summary || this.selectedDivision?.fairness_summary || {
-            court_balance_gap_percent: 0,
-            rest_balance_gap_minutes: 0,
-            score_components: [],
-            team_metrics: [],
-            timeslot_balance_gap_minutes: 0,
-            tracked_team_count: 0,
-            warnings: [],
-        };
+        return this.planner?.fairness_summary
+            || this.selectedDivision?.fairness_summary
+            || DEFAULT_FAIRNESS_SUMMARY;
     }
 
     get plannerPolicyBadge() {
@@ -714,14 +811,7 @@ export class CompetitionWorkspaceAction extends Component {
     }
 
     get generationPreview() {
-        return this.selectedDivision?.generation_preview || {
-            action_label: false,
-            description: "",
-            empty_message: "No generated preview is available yet.",
-            format: false,
-            rounds: [],
-            supported: false,
-        };
+        return this.selectedDivision?.generation_preview || DEFAULT_GENERATION_PREVIEW;
     }
 
     get generationSectionTitle() {
@@ -739,31 +829,15 @@ export class CompetitionWorkspaceAction extends Component {
     }
 
     get workspaceCollaboration() {
-        return this.state.collaboration.workspace || {
-            active_count: 0,
-            active_users: [],
-            same_gameday_count: 0,
-            same_gameday_users: [],
-            warning_message: false,
-        };
+        return this.state.collaboration.workspace || DEFAULT_COLLABORATION;
     }
 
     get plannerCollaboration() {
-        return this.state.collaboration.planner || {
-            active_count: 0,
-            active_users: [],
-            same_gameday_count: 0,
-            same_gameday_users: [],
-            warning_message: false,
-        };
+        return this.state.collaboration.planner || DEFAULT_COLLABORATION;
     }
 
     get plannerScheduleRevisions() {
-        return this.planner?.gameday?.schedule_revisions || {
-            draft_revision: false,
-            live_revision: false,
-            recent_revisions: [],
-        };
+        return this.planner?.gameday?.schedule_revisions || DEFAULT_SCHEDULE_REVISIONS;
     }
 
     get publishRequiresReason() {
@@ -904,7 +978,7 @@ export class CompetitionWorkspaceAction extends Component {
         return this.state.pendingValidation?.validation
             || this.state.validationSnapshot
             || this.selectedDivision?.validation
-            || { blocking: [], warnings: [], unscheduled_matches: [], empty_slots: [] };
+            || DEFAULT_VALIDATION;
     }
 
     get selectedMatchIdSet() {
@@ -1059,10 +1133,7 @@ export class CompetitionWorkspaceAction extends Component {
     }
 
     get canForcePendingAction() {
-        const validation = this.state.pendingValidation?.validation || {
-            blocking: [],
-            warnings: [],
-        };
+        const validation = this.state.pendingValidation?.validation || DEFAULT_VALIDATION;
         return Boolean(
             this.state.pendingValidation?.allowForce
             && this.payload.capabilities?.can_force_assign
@@ -1071,1483 +1142,12 @@ export class CompetitionWorkspaceAction extends Component {
         );
     }
 
-    syncPlannerSelection(planner = this.planner) {
-        const validMatchIds = new Set();
-        for (const match of planner?.unscheduled_matches || []) {
-            validMatchIds.add(match.id);
-        }
-        for (const slot of planner?.slots || []) {
-            if (slot.match?.id) {
-                validMatchIds.add(slot.match.id);
-            }
-        }
-        this.state.selectedMatchIds = (this.state.selectedMatchIds || []).filter((matchId) =>
-            validMatchIds.has(Number(matchId))
-        );
-    }
-
-    clearPlannerSelection() {
-        this.state.selectedMatchIds = [];
-        this.state.slotSuggestions = {
-            items: [],
-            loading: false,
-            matchId: false,
-        };
-    }
-
-    resetPlannerPagination() {
-        this.state.plannerUnscheduledLimit = this.state.plannerPageSize;
-    }
-
-    resetPlannerFilters() {
-        this.state.filters.divisionId = "";
-        this.state.filters.roundNumber = "";
-        this.state.filters.teamId = "";
-        this.state.filters.conflictsOnly = false;
-    }
-
-    buildPlannerRpcFilters({ includeReferenceData = true, unscheduledLimit } = {}) {
-        return {
-            division_id: this.state.filters.divisionId || false,
-            conflicts_only: this.state.filters.conflictsOnly,
-            include_reference_data: includeReferenceData,
-            round_number: this.state.filters.roundNumber || false,
-            team_id: this.state.filters.teamId || false,
-            unscheduled_limit: unscheduledLimit || this.state.plannerUnscheduledLimit,
-        };
-    }
-
-    toggleMatchSelection(matchId) {
-        const selectedMatchIds = new Set(this.state.selectedMatchIds || []);
-        if (selectedMatchIds.has(matchId)) {
-            selectedMatchIds.delete(matchId);
-        } else {
-            selectedMatchIds.add(matchId);
-        }
-        this.state.selectedMatchIds = [...selectedMatchIds];
-        this.refreshSlotSuggestions();
-    }
-
-    toggleFilteredSelection() {
-        const filteredMatchIds = this.filteredUnscheduledMatches.map((match) => match.id);
-        if (!filteredMatchIds.length) {
-            return;
-        }
-        const selectedMatchIds = new Set(this.state.selectedMatchIds || []);
-        const allSelected = filteredMatchIds.every((matchId) => selectedMatchIds.has(matchId));
-        for (const matchId of filteredMatchIds) {
-            if (allSelected) {
-                selectedMatchIds.delete(matchId);
-            } else {
-                selectedMatchIds.add(matchId);
-            }
-        }
-        this.state.selectedMatchIds = [...selectedMatchIds];
-        this.refreshSlotSuggestions();
-    }
-
-    async refreshSlotSuggestions() {
-        if (!this.state.currentGamedayId || !this.shouldShowSlotSuggestions) {
-            this.state.slotSuggestions = {
-                items: [],
-                loading: false,
-                matchId: false,
-            };
-            return false;
-        }
-
-        const match = this.selectedUnscheduledMatches[0];
-        this.state.slotSuggestions = {
-            items: [],
-            loading: true,
-            matchId: match.id,
-        };
-        try {
-            const suggestions = await this.orm.call(
-                "federation.competition.workspace.service",
-                "get_match_slot_suggestions",
-                [match.id, this.state.currentGamedayId, 5]
-            );
-            if (this.state.slotSuggestions.matchId !== match.id) {
-                return false;
-            }
-            this.state.slotSuggestions = {
-                items: suggestions,
-                loading: false,
-                matchId: match.id,
-            };
-            return suggestions;
-        } catch (error) {
-            this.state.slotSuggestions = {
-                items: [],
-                loading: false,
-                matchId: false,
-            };
-            this.notify(error.message || "Slot suggestions could not be loaded.", "warning");
-            return false;
-        }
-    }
-
-    async loadWorkspace({
-        competitionId = this.state.currentCompetitionId,
-        divisionId = this.state.currentDivisionId,
-        gamedayId = this.state.currentGamedayId,
-        includePlanner = Boolean(gamedayId),
-        includePlannerReferenceData,
-        unscheduledLimit,
-    } = {}) {
-        this.state.loading = true;
-        this.state.error = null;
-        try {
-            const requestedGamedayId = gamedayId || false;
-            const samePlannerTarget = Boolean(
-                requestedGamedayId
-                && this.planner?.gameday?.id
-                && Number(this.planner.gameday.id) === Number(requestedGamedayId)
-            );
-            const resolvedIncludePlannerReferenceData = includePlannerReferenceData
-                ?? !samePlannerTarget;
-            const payload = await this.orm.call(
-                "federation.competition.workspace.service",
-                "get_competition_workspace_data",
-                [competitionId || false, divisionId || false, {
-                    gameday_id: requestedGamedayId,
-                    include_planner: includePlanner,
-                    include_planner_reference_data: resolvedIncludePlannerReferenceData,
-                    planner_filters: requestedGamedayId
-                        ? this.buildPlannerRpcFilters({
-                            includeReferenceData: resolvedIncludePlannerReferenceData,
-                            unscheduledLimit,
-                        })
-                        : false,
-                }]
-            );
-            if (
-                payload.planner
-                && !resolvedIncludePlannerReferenceData
-                && this.state.payload?.planner
-            ) {
-                payload.planner = {
-                    ...this.state.payload.planner,
-                    ...payload.planner,
-                };
-            }
-            this.state.payload = payload;
-            this.state.currentCompetitionId = payload.competition?.id || competitionId || false;
-            this.state.currentDivisionId = payload.selected_division_id || divisionId || false;
-            const resolvedRequestedGamedayId = payload.selected_division?.gamedays?.some(
-                (day) => day.id === gamedayId
-            )
-                ? gamedayId
-                : false;
-            this.state.currentGamedayId = payload.planner?.gameday?.id
-                || resolvedRequestedGamedayId
-                || payload.selected_division?.gamedays?.[0]?.id
-                || false;
-            this.syncPlannerSelection(payload.planner);
-            const stageOptions = payload.selected_division?.stage_options || [];
-            if (stageOptions.length) {
-                const defaultStageId = payload.planner?.gameday?.stage_id || stageOptions[0].id;
-                const selectedStageId = String(this.state.gamedayForm.stage_id || "");
-                if (!stageOptions.some((stage) => String(stage.id) === selectedStageId)) {
-                    this.state.gamedayForm.stage_id = String(defaultStageId);
-                }
-            } else {
-                this.state.gamedayForm.stage_id = "";
-            }
-            if (unscheduledLimit) {
-                this.state.plannerUnscheduledLimit = unscheduledLimit;
-            }
-            if (resolvedRequestedGamedayId && !payload.planner) {
-                await this.loadPlanner(resolvedRequestedGamedayId, {
-                    includeReferenceData: resolvedIncludePlannerReferenceData,
-                    silent: true,
-                    unscheduledLimit,
-                });
-            }
-            await this.loadCourtsForVenue(this.state.gamedayForm.venue_id || payload.planner?.gameday?.venue_id || false);
-            await this.refreshCollaboration({
-                activeSection: this.state.activeSection,
-                competitionId: this.state.currentCompetitionId,
-                divisionId: this.state.currentDivisionId,
-                gamedayId: this.state.currentGamedayId,
-                silent: true,
-            });
-            await this.refreshSlotSuggestions();
-            this.persistUiState();
-        } catch (error) {
-            this.state.error = error.message || "The workspace could not be loaded.";
-        } finally {
-            this.state.loading = false;
-        }
-    }
-
-    async loadPlanner(
-        gamedayId,
-        { silent = false, includeReferenceData, unscheduledLimit } = {}
-    ) {
-        if (!gamedayId) {
-            return false;
-        }
-        if (!silent) {
-            this.state.plannerLoading = true;
-        }
-        try {
-            const requestedLimit = unscheduledLimit || this.state.plannerUnscheduledLimit;
-            const samePlannerTarget = Boolean(
-                this.planner?.gameday?.id
-                && Number(this.planner.gameday.id) === Number(gamedayId)
-            );
-            const resolvedIncludeReferenceData = includeReferenceData ?? !samePlannerTarget;
-            const planner = await this.orm.call(
-                "federation.competition.workspace.service",
-                "get_gameday_planner_data",
-                [
-                    gamedayId,
-                    this.buildPlannerRpcFilters({
-                        includeReferenceData: resolvedIncludeReferenceData,
-                        unscheduledLimit: requestedLimit,
-                    }),
-                ]
-            );
-            const nextPlanner = !resolvedIncludeReferenceData && this.state.payload?.planner
-                ? {
-                    ...this.state.payload.planner,
-                    ...planner,
-                }
-                : planner;
-            if (this.state.payload) {
-                this.state.payload.planner = nextPlanner;
-            }
-            this.state.currentGamedayId = nextPlanner.gameday.id;
-            this.state.gamedayForm.selected_gameday_id = String(nextPlanner.gameday.id);
-            this.state.gamedayForm.stage_id = nextPlanner.gameday.stage_id
-                ? String(nextPlanner.gameday.stage_id)
-                : "";
-            this.state.gamedayForm.round_number = nextPlanner.gameday.sequence
-                ? String(nextPlanner.gameday.sequence)
-                : "";
-            this.state.plannerUnscheduledLimit = requestedLimit;
-            if (nextPlanner.gameday.venue_id) {
-                this.state.gamedayForm.venue_id = String(nextPlanner.gameday.venue_id);
-                await this.loadCourtsForVenue(nextPlanner.gameday.venue_id);
-            }
-            this.syncPlannerSelection(nextPlanner);
-            await this.refreshCollaboration({
-                activeSection: this.state.activeSection,
-                competitionId: this.state.currentCompetitionId,
-                divisionId: this.state.currentDivisionId,
-                gamedayId: nextPlanner.gameday.id,
-                silent: true,
-            });
-            await this.refreshSlotSuggestions();
-            this.persistUiState();
-            return nextPlanner;
-        } catch (error) {
-            this.notify(error.message || "The planner could not be refreshed.", "danger");
-            return false;
-        } finally {
-            this.state.plannerLoading = false;
-        }
-    }
-
-    async loadAvailableClubs() {
-        this.state.availableClubs = await this.orm.searchRead(
-            "federation.club",
-            [],
-            ["display_name"],
-            { order: "name asc" }
-        );
-    }
-
-    async loadTeamSearchData() {
-        if (!this.state.currentDivisionId) {
-            this.state.availableTeams = [];
-            return;
-        }
-        this.state.teamSearchLoading = true;
-        try {
-            if (!this.state.availableClubs.length) {
-                await this.loadAvailableClubs();
-            }
-            this.state.availableTeams = await this.orm.call(
-                "federation.competition.workspace.service",
-                "search_available_teams",
-                [this.state.currentDivisionId, {
-                    club_id: this.state.teamEntryForm.club_id
-                        ? Number(this.state.teamEntryForm.club_id)
-                        : false,
-                    limit: 40,
-                    query: this.state.teamEntryForm.search || false,
-                }]
-            );
-        } catch (error) {
-            this.notify(error.message || "Team search could not be refreshed.", "danger");
-        } finally {
-            this.state.teamSearchLoading = false;
-        }
-    }
-
-    async loadCourtsForVenue(venueId) {
-        if (!venueId) {
-            this.state.availableCourts = [];
-            return;
-        }
-        this.state.availableCourts = await this.orm.searchRead(
-            "federation.playing.area",
-            [["venue_id", "=", Number(venueId)]],
-            ["display_name", "venue_id"],
-            { order: "name asc" }
-        );
-    }
-
-    async refreshCollaboration({
-        competitionId = this.state.currentCompetitionId,
-        divisionId = this.state.currentDivisionId,
-        gamedayId = this.state.currentGamedayId,
-        activeSection = this.state.activeSection,
-        silent = true,
-    } = {}) {
-        if (!competitionId && !divisionId) {
-            this.state.collaboration.workspace = false;
-            this.state.collaboration.planner = false;
-            return false;
-        }
-        try {
-            const summary = await this.orm.call(
-                "federation.competition.workspace.service",
-                "heartbeat_workspace_presence",
-                [competitionId || false, divisionId || false, gamedayId || false, activeSection || "overview"]
-            );
-            this.state.collaboration.workspace = summary.workspace_collaboration || false;
-            this.state.collaboration.planner = summary.planner_collaboration || false;
-            return summary;
-        } catch (error) {
-            if (!silent) {
-                this.notify(
-                    error.message || "Workspace collaboration status could not be refreshed.",
-                    "warning"
-                );
-            }
-            return false;
-        }
-    }
-
-    notify(message, type = "info") {
-        this.notification.add(message, { type });
-    }
-
-    setSection(section) {
-        this.state.activeSection = section;
-        if (section === "planner" && (this.state.currentGamedayId || this.gamedayOptions[0]?.id)) {
-            this.loadPlanner(this.state.currentGamedayId || this.gamedayOptions[0].id, {
-                includeReferenceData: !this.planner,
-                silent: true,
-            });
-        }
-        if (section === "teams") {
-            this.loadTeamSearchData();
-        }
-        this.refreshCollaboration({
-            activeSection: section,
-            silent: true,
-        });
-        this.persistUiState();
-    }
-
-    updateShellField(ev) {
-        this.state.shellForm[ev.target.name] = ev.target.value;
-    }
-
-    updateDivisionField(ev) {
-        this.state.divisionForm[ev.target.name] = ev.target.value;
-        if (ev.target.name === "planning_format" && ev.target.value !== "pool_then_bracket") {
-            this.state.divisionForm.pool_count = "2";
-            this.state.divisionForm.pool_qualifier_count = "2";
-        }
-    }
-
-    async updateTeamEntryField(ev) {
-        this.state.teamEntryForm[ev.target.name] = ev.target.value;
-        if (["club_id", "search"].includes(ev.target.name)) {
-            this.state.teamEntryForm.team_id = "";
-            await this.loadTeamSearchData();
-        }
-    }
-
-    async updateGamedayField(ev) {
-        this.state.gamedayForm[ev.target.name] = ev.target.value;
-        if (ev.target.name === "venue_id") {
-            this.state.gamedayForm.courtIds = [];
-            await this.loadCourtsForVenue(ev.target.value);
-        }
-    }
-
-    updateFilterField(ev) {
-        const name = ev.target.name;
-        this.state.filters[name] = ev.target.type === "checkbox" ? ev.target.checked : ev.target.value;
-        this.clearPlannerSelection();
-        this.resetPlannerPagination();
-        this.persistUiState();
-        if (this.state.currentGamedayId) {
-            this.loadPlanner(this.state.currentGamedayId, {
-                includeReferenceData: false,
-                silent: true,
-            });
-        }
-    }
-
-    async updateMobileAssignField(ev) {
-        this.state.mobileAssign[ev.target.name] = ev.target.value;
-        if (ev.target.name === "gameday_id") {
-            this.state.mobileAssign.slot_id = "";
-            await this.loadPlanner(Number(ev.target.value), { silent: true });
-        }
-    }
-
-    async updateDivisionPlanningRule(ev) {
-        if (!this.state.currentDivisionId) {
-            return;
-        }
-        const fieldName = ev.target.name;
-        if (!["minimum_rest_minutes", "max_consecutive_matches_per_team"].includes(fieldName)) {
-            return;
-        }
-        const rawValue = Number(ev.target.value || 0);
-        const normalizedValue = fieldName === "minimum_rest_minutes"
-            ? Math.max(rawValue, 0)
-            : Math.max(rawValue || 1, 1);
-        this.state.saving = true;
-        try {
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "update_division_planning_rules",
-                [this.state.currentDivisionId, { [fieldName]: normalizedValue }]
-            );
-            this.state.payload = result.payload;
-            this.notify("Planning rules updated.", "success");
-        } catch (error) {
-            this.notify(error.message || "Planning rules could not be updated.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    updatePendingOverrideReason(ev) {
-        this.state.overrideReason.pending = ev.target.value;
-    }
-
-    updatePublishOverrideReason(ev) {
-        this.state.overrideReason.publish = ev.target.value;
-    }
-
-    toggleCourt(ev) {
-        const courtId = Number(ev.target.value);
-        const selected = new Set(this.state.gamedayForm.courtIds);
-        if (ev.target.checked) {
-            selected.add(courtId);
-        } else {
-            selected.delete(courtId);
-        }
-        this.state.gamedayForm.courtIds = [...selected];
-    }
-
-    toggleSharedDivision(ev) {
-        const divisionId = Number(ev.target.value);
-        const selected = new Set(this.state.gamedayForm.sharedDivisionIds);
-        const config = { ...this.state.gamedayForm.sharedDivisionConfig };
-        if (ev.target.checked) {
-            selected.add(divisionId);
-            this.state.gamedayForm.sharedDivisionIds = [...selected];
-            this.state.gamedayForm.sharedDivisionConfig = config;
-            this.ensureSharedDivisionConfig(divisionId);
-            return;
-        } else {
-            selected.delete(divisionId);
-            delete config[String(divisionId)];
-        }
-        this.state.gamedayForm.sharedDivisionIds = [...selected];
-        this.state.gamedayForm.sharedDivisionConfig = config;
-    }
-
-    updateSharedDivisionConfig(ev) {
-        const divisionId = String(ev.target.dataset.divisionId || "");
-        const fieldName = ev.target.name;
-        if (!divisionId || !fieldName) {
-            return;
-        }
-        const existingConfig = this.getSharedDivisionConfig(divisionId);
-        const nextConfig = {
-            ...existingConfig,
-            [fieldName]: ev.target.value,
-        };
-        if (fieldName === "stage_id") {
-            const roundOptions = this.getSharedDivisionRoundOptions(divisionId).filter(
-                (roundItem) => String(roundItem.stage_id) === String(ev.target.value || "")
-            );
-            if (!roundOptions.some(
-                (roundItem) => String(roundItem.round_number) === String(nextConfig.round_number)
-            )) {
-                nextConfig.round_number = roundOptions[0]?.round_number
-                    ? String(roundOptions[0].round_number)
-                    : "";
-            }
-        }
-        this.state.gamedayForm.sharedDivisionConfig = {
-            ...this.state.gamedayForm.sharedDivisionConfig,
-            [divisionId]: nextConfig,
-        };
-    }
-
-    async createCompetitionShell() {
-        const name = this.state.shellForm.name.trim();
-        const seasonId = this.state.shellForm.season_id
-            ? Number(this.state.shellForm.season_id)
-            : false;
-        if (!name || !seasonId) {
-            this.notify("Provide a competition name and a season before creating it.", "warning");
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "create_competition_shell",
-                [{
-                    competition_id: this.state.shellForm.competition_id ? Number(this.state.shellForm.competition_id) : false,
-                    competition_vals: this.state.shellForm.competition_id ? {} : {
-                        name,
-                        competition_type: this.state.shellForm.competition_type,
-                    },
-                    date_end: this.state.shellForm.date_end || false,
-                    date_start: this.state.shellForm.date_start || false,
-                    name,
-                    season_id: seasonId,
-                }]
-            );
-            this.state.currentCompetitionId = result.competition_id;
-            this.state.payload = result.payload;
-            this.state.currentDivisionId = result.payload.selected_division_id || false;
-            this.state.currentGamedayId = false;
-            this.persistUiState();
-            this.notify("Competition created.", "success");
-        } catch (error) {
-            this.notify(error.message || "The competition could not be created.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async createDivision() {
-        if (!this.state.currentCompetitionId) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const vals = {
-                category: this.state.divisionForm.category || false,
-                date_end: this.state.divisionForm.date_end || false,
-                date_start: this.state.divisionForm.date_start || false,
-                gender: this.state.divisionForm.gender || false,
-                max_consecutive_matches_per_team: Number(
-                    this.state.divisionForm.max_consecutive_matches_per_team || 1
-                ),
-                minimum_rest_minutes: Number(this.state.divisionForm.minimum_rest_minutes || 30),
-                name: this.state.divisionForm.name,
-                planning_format: this.state.divisionForm.planning_format,
-            };
-            if (this.state.divisionForm.planning_format === "pool_then_bracket") {
-                vals.pool_count = Number(this.state.divisionForm.pool_count || 2);
-                vals.pool_qualifier_count = Number(
-                    this.state.divisionForm.pool_qualifier_count || 2
-                );
-            }
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "create_division",
-                [this.state.currentCompetitionId, vals]
-            );
-            this.state.payload = result.payload;
-            this.state.currentDivisionId = result.division_id;
-            this.state.currentGamedayId = false;
-            this.persistUiState();
-            if (this.state.activeSection === "teams") {
-                await this.loadTeamSearchData();
-            }
-            this.notify("Division created.", "success");
-        } catch (error) {
-            this.notify(error.message || "The division could not be created.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async createTeamEntry() {
-        if (!this.state.currentDivisionId || !this.state.teamEntryForm.team_id) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "create_team_entry",
-                [this.state.currentDivisionId, {
-                    seed: this.state.teamEntryForm.seed ? Number(this.state.teamEntryForm.seed) : false,
-                    team_id: Number(this.state.teamEntryForm.team_id),
-                }]
-            );
-            this.state.payload = result.payload;
-            this.state.teamEntryForm.club_id = "";
-            this.state.teamEntryForm.search = "";
-            this.state.teamEntryForm.seed = "";
-            this.state.teamEntryForm.team_id = "";
-            await this.loadTeamSearchData();
-            this.notify("Team entry added.", "success");
-        } catch (error) {
-            this.notify(error.message || "The team entry could not be created.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async confirmTeamEntry(ev) {
-        const entryId = Number(ev.currentTarget.dataset.entryId);
-        this.state.saving = true;
-        try {
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "confirm_team_entry",
-                [entryId]
-            );
-            this.state.payload = result.payload;
-            this.notify("Team entry confirmed.", "success");
-        } catch (error) {
-            this.notify(error.message || "The team entry could not be confirmed.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async lockEntries() {
-        if (!this.state.currentDivisionId) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "lock_team_entries",
-                [this.state.currentCompetitionId || false, this.state.currentDivisionId]
-            );
-            this.state.payload = result.payload;
-            this.notify("Participant list locked.", "success");
-        } catch (error) {
-            this.notify(error.message || "The participant list could not be locked.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async generateScheduleStructure() {
-        if (!this.state.currentDivisionId) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "generate_schedule_structure",
-                [this.state.currentDivisionId, false]
-            );
-            this.state.payload = result.payload;
-            this.notify(`${result.match_count} match(es) generated.`, "success");
-        } catch (error) {
-            this.notify(error.message || "Schedule generation failed.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async generateRoundRobin() {
-        await this.generateScheduleStructure();
-    }
-
-    async createGameday() {
-        if (!this.state.currentDivisionId || !this.state.gamedayForm.round_date) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const sharedStageIds = {};
-            const sharedRoundNumbers = {};
-            for (const divisionId of this.state.gamedayForm.sharedDivisionIds) {
-                const config = this.getSharedDivisionConfig(divisionId);
-                if (config.stage_id) {
-                    sharedStageIds[String(divisionId)] = Number(config.stage_id);
-                }
-                if (config.round_number) {
-                    sharedRoundNumbers[String(divisionId)] = Number(config.round_number);
-                }
-            }
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "create_gameday",
-                [{
-                    division_id: this.state.currentDivisionId,
-                    name: this.state.gamedayForm.name || false,
-                    round_number: this.state.gamedayForm.round_number
-                        ? Number(this.state.gamedayForm.round_number)
-                        : false,
-                    round_date: this.state.gamedayForm.round_date,
-                    shared_division_ids: this.state.gamedayForm.sharedDivisionIds,
-                    shared_round_numbers: sharedRoundNumbers,
-                    shared_stage_ids: sharedStageIds,
-                    stage_id: this.state.gamedayForm.stage_id
-                        ? Number(this.state.gamedayForm.stage_id)
-                        : false,
-                    venue_id: this.state.gamedayForm.venue_id ? Number(this.state.gamedayForm.venue_id) : false,
-                }]
-            );
-            this.state.payload = result.payload;
-            this.state.currentGamedayId = result.gameday_id;
-            this.state.gamedayForm.selected_gameday_id = String(result.gameday_id);
-            this.state.gamedayForm.sharedDivisionIds = [];
-            this.state.gamedayForm.sharedDivisionConfig = {};
-            this.resetPlannerFilters();
-            this.resetPlannerPagination();
-            this.persistUiState();
-            this.notify("Gameday created.", "success");
-            await this.loadPlanner(result.gameday_id);
-        } catch (error) {
-            this.notify(error.message || "The gameday could not be created.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async generateSlots() {
-        const gamedayId = Number(this.state.gamedayForm.selected_gameday_id || this.state.currentGamedayId || 0);
-        if (!gamedayId || !this.state.gamedayForm.courtIds.length) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const expectedPlannerRevision = this.planner?.gameday?.planner_revision ?? false;
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "generate_slots",
-                [
-                    gamedayId,
-                    this.state.gamedayForm.courtIds,
-                    this.state.gamedayForm.start_time,
-                    this.state.gamedayForm.end_time,
-                    Number(this.state.gamedayForm.match_duration_minutes || 35),
-                    Number(this.state.gamedayForm.buffer_minutes || 5),
-                    [],
-                    false,
-                    expectedPlannerRevision,
-                ]
-            );
-            await this.loadWorkspace({
-                competitionId: this.state.currentCompetitionId,
-                divisionId: this.state.currentDivisionId,
-                gamedayId,
-            });
-            this.notify(`${result.slot_count} slot(s) generated.`, "success");
-        } catch (error) {
-            this.notify(error.message || "Slot generation failed.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async selectDivision(ev) {
-        const divisionId = Number(ev.currentTarget.dataset.divisionId || 0);
-        this.state.currentDivisionId = divisionId;
-        this.state.currentGamedayId = false;
-        this.resetPlannerFilters();
-        this.state.gamedayForm.sharedDivisionIds = [];
-        this.state.gamedayForm.sharedDivisionConfig = {};
-        this.state.gamedayForm.round_number = "";
-        this.state.gamedayForm.stage_id = "";
-        this.clearPlannerSelection();
-        this.clearPendingValidation();
-        this.resetPlannerPagination();
-        await this.loadWorkspace({
-            competitionId: this.state.currentCompetitionId,
-            divisionId,
-            gamedayId: false,
-        });
-        if (this.state.activeSection === "teams") {
-            await this.loadTeamSearchData();
-        }
-    }
-
-    async selectGameday(ev) {
-        const gamedayId = Number(ev.currentTarget.dataset.gamedayId || 0);
-        this.clearPlannerSelection();
-        this.clearPendingValidation();
-        this.resetPlannerFilters();
-        this.resetPlannerPagination();
-        await this.loadPlanner(gamedayId);
-    }
-
-    async loadMoreUnscheduledMatches() {
-        if (!this.planner?.unscheduled_has_more || !this.state.currentGamedayId) {
-            return;
-        }
-        const nextLimit = this.state.plannerUnscheduledLimit + this.state.plannerPageSize;
-        await this.loadPlanner(this.state.currentGamedayId, {
-            includeReferenceData: false,
-            unscheduledLimit: nextLimit,
-        });
-    }
-
-    async validateSchedule() {
-        if (!this.state.currentCompetitionId && !this.state.currentDivisionId) {
-            return;
-        }
-        try {
-            this.state.validationSnapshot = await this.orm.call(
-                "federation.competition.workspace.service",
-                "validate_competition_schedule",
-                [this.state.currentCompetitionId || false, this.state.currentDivisionId || false]
-            );
-            this.notify("Schedule validation refreshed.", "info");
-        } catch (error) {
-            this.notify(error.message || "Schedule validation failed.", "danger");
-        }
-    }
-
-    requestConfirmValidation() {
-        if (!this.canConfirmValidation) {
-            return;
-        }
-        this.openConfirmDialog({
-            action: "confirm_validation",
-            title: "Confirm validation",
-            message: "Mark this gameday as validated after reviewing the schedule?",
-            confirmLabel: "Confirm validation",
-            tone: "success",
-        });
-    }
-
-    openConfirmDialog({ action, title, message, confirmLabel = "Confirm", tone = "primary" }) {
-        this.state.confirmDialog = {
-            action,
-            confirmLabel,
-            message,
-            open: true,
-            title,
-            tone,
-        };
-    }
-
-    closeConfirmDialog() {
-        this.state.confirmDialog = {
-            action: false,
-            confirmLabel: "Confirm",
-            message: "",
-            open: false,
-            title: "Please confirm",
-            tone: "primary",
-        };
-    }
-
-    async confirmPendingAction() {
-        const action = this.state.confirmDialog.action;
-        this.closeConfirmDialog();
-        if (action === "confirm_validation") {
-            await this.confirmValidation();
-            return;
-        }
-        if (action === "publish_gameday") {
-            await this.publishGameday();
-            return;
-        }
-        if (action === "publish_competition") {
-            await this.publishCompetition();
-            return;
-        }
-        if (action === "unassign_all") {
-            await this.unassignAllMatches();
-        }
-    }
-
-    requestPublishGameday() {
-        if (!this.state.currentGamedayId || this.state.publishing) {
-            return;
-        }
-        this.openConfirmDialog({
-            action: "publish_gameday",
-            title: "Publish gameday",
-            message: "Publish this gameday and lock routine edits?",
-            confirmLabel: "Publish gameday",
-            tone: "primary",
-        });
-    }
-
-    requestPublishCompetition() {
-        if (this.state.publishing) {
-            return;
-        }
-        this.openConfirmDialog({
-            action: "publish_competition",
-            title: "Publish competition",
-            message: "Publish the competition schedule and lock routine edits?",
-            confirmLabel: "Publish competition",
-            tone: "primary",
-        });
-    }
-
-    async publishGameday() {
-        if (!this.state.currentGamedayId) {
-            return;
-        }
-        this.state.publishing = true;
-        try {
-            const expectedPlannerRevision = this.planner?.gameday?.planner_revision ?? false;
-            const overrideReason = this.state.overrideReason.publish.trim();
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "publish_gameday",
-                [this.state.currentGamedayId, expectedPlannerRevision, overrideReason || false]
-            );
-            if (!result.ok) {
-                this.state.validationSnapshot = result.validation;
-                this.notify("The gameday still has blocking issues.", "warning");
-                return;
-            }
-            this.state.payload = result.payload;
-            this.state.overrideReason.publish = "";
-            this.notify("Gameday published.", "success");
-        } catch (error) {
-            this.notify(error.message || "The gameday could not be published.", "danger");
-        } finally {
-            this.state.publishing = false;
-        }
-    }
-
-    async publishCompetition() {
-        if (!this.state.currentCompetitionId && !this.state.currentDivisionId) {
-            return;
-        }
-        this.state.publishing = true;
-        try {
-            const overrideReason = this.state.overrideReason.publish.trim();
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "publish_competition_schedule",
-                [
-                    this.state.currentCompetitionId || false,
-                    this.state.currentDivisionId || false,
-                    overrideReason || false,
-                ]
-            );
-            if (!result.ok) {
-                this.state.validationSnapshot = result.validation;
-                this.notify("The schedule still has blocking issues.", "warning");
-                return;
-            }
-            this.state.payload = result.payload;
-            this.state.overrideReason.publish = "";
-            this.notify("Competition schedule published.", "success");
-        } catch (error) {
-            this.notify(error.message || "The competition schedule could not be published.", "danger");
-        } finally {
-            this.state.publishing = false;
-        }
-    }
-
-    async confirmValidation() {
-        if (!this.state.currentGamedayId) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const expectedPlannerRevision = this.currentPlannerRevision;
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "confirm_gameday_validation",
-                [this.state.currentGamedayId, expectedPlannerRevision]
-            );
-            if (!result.ok) {
-                this.state.validationSnapshot = result.validation;
-                this.notify("The gameday still has blocking issues.", "warning");
-                return;
-            }
-            this.state.validationSnapshot = result.validation;
-            this.state.payload = result.payload;
-            this.notify("Gameday validation confirmed.", "success");
-        } catch (error) {
-            this.notify(error.message || "The gameday could not be validated.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    onDragStartMatch(matchId) {
-        this.state.mobileAssign.match_id = String(matchId);
-    }
-
-    async assignMatch(matchId, slotId, force = false, overrideReason = false) {
-        if (this.state.saving) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const resolvedOverrideReason = overrideReason || (force
-                ? this.state.overrideReason.pending.trim()
-                : false);
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "assign_match_to_slot",
-                [
-                    matchId,
-                    slotId,
-                    force,
-                    this.currentPlannerRevision,
-                    resolvedOverrideReason || false,
-                ]
-            );
-            if (!result.ok) {
-                if (!force) {
-                    this.state.overrideReason.pending = "";
-                }
-                this.state.pendingValidation = {
-                    action: "assign",
-                    allowForce: true,
-                    matchId,
-                    slotId,
-                    title: "Assignment review",
-                    validation: result.validation,
-                };
-                this.notify("Assignment needs attention before it can be saved.", "warning");
-                return;
-            }
-            this.state.pendingValidation = null;
-            this.state.overrideReason.pending = "";
-            this.clearPlannerSelection();
-            await this.loadWorkspace({
-                competitionId: this.state.currentCompetitionId,
-                divisionId: this.state.currentDivisionId,
-                gamedayId: this.state.currentGamedayId,
-                includePlannerReferenceData: false,
-                unscheduledLimit: this.state.plannerUnscheduledLimit,
-            });
-            this.notify("Match assignment saved.", "success");
-        } catch (error) {
-            this.notify(error.message || "The match could not be assigned.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async unassignMatch(matchId) {
-        if (this.state.saving) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            await this.orm.call(
-                "federation.competition.workspace.service",
-                "unassign_match",
-                [matchId, this.currentPlannerRevision]
-            );
-            this.clearPlannerSelection();
-            this.state.pendingValidation = null;
-            await this.loadWorkspace({
-                competitionId: this.state.currentCompetitionId,
-                divisionId: this.state.currentDivisionId,
-                gamedayId: this.state.currentGamedayId,
-                includePlannerReferenceData: false,
-                unscheduledLimit: this.state.plannerUnscheduledLimit,
-            });
-            this.notify("Match unassigned.", "success");
-        } catch (error) {
-            this.notify(error.message || "The match could not be unassigned.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async handleDropMatch(matchId, slotId) {
-        await this.assignMatch(matchId, slotId, false);
-    }
-
-    async bulkAssignMatches(matchIds, force = false, overrideReason = false) {
-        if (!this.state.currentGamedayId || !matchIds.length) {
-            return;
-        }
-        if (this.state.saving) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const resolvedOverrideReason = overrideReason || (force
-                ? this.state.overrideReason.pending.trim()
-                : false);
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "bulk_assign_matches",
-                [
-                    this.state.currentGamedayId,
-                    matchIds,
-                    force,
-                    this.currentPlannerRevision,
-                    resolvedOverrideReason || false,
-                ]
-            );
-            if (!result.ok) {
-                if (!force) {
-                    this.state.overrideReason.pending = "";
-                }
-                this.state.pendingValidation = {
-                    action: "bulk_assign",
-                    allowForce: true,
-                    matchIds: [...matchIds],
-                    title: "Bulk assignment review",
-                    validation: result.validation,
-                };
-                this.notify("Bulk assignment needs attention before it can be saved.", "warning");
-                return;
-            }
-            this.clearPlannerSelection();
-            this.state.pendingValidation = null;
-            this.state.overrideReason.pending = "";
-            await this.loadWorkspace({
-                competitionId: this.state.currentCompetitionId,
-                divisionId: this.state.currentDivisionId,
-                gamedayId: this.state.currentGamedayId,
-                includePlannerReferenceData: false,
-                unscheduledLimit: this.state.plannerUnscheduledLimit,
-            });
-            this.notify(`${result.operation_count || matchIds.length} match(es) assigned.`, "success");
-        } catch (error) {
-            this.notify(error.message || "Bulk assignment failed.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async bulkAssignSelected() {
-        if (this.hasMixedPlannerSelection) {
-            this.notify(
-                "Select only unscheduled matches or only scheduled matches before using a bulk action.",
-                "warning"
-            );
-            return;
-        }
-        await this.bulkAssignMatches(this.selectedUnscheduledMatches.map((match) => match.id), false);
-    }
-
-    async bulkUnassignSelected() {
-        if (this.hasMixedPlannerSelection) {
-            this.notify(
-                "Select only unscheduled matches or only scheduled matches before using a bulk action.",
-                "warning"
-            );
-            return;
-        }
-        const matchIds = this.selectedAssignedMatches.map((match) => match.id);
-        if (!this.state.currentGamedayId || !matchIds.length) {
-            return;
-        }
-        if (this.state.saving) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "bulk_unassign_matches",
-                [this.state.currentGamedayId, matchIds, this.currentPlannerRevision]
-            );
-            if (!result.ok) {
-                this.state.pendingValidation = {
-                    action: "bulk_unassign",
-                    allowForce: false,
-                    matchIds: [...matchIds],
-                    title: "Bulk unassignment review",
-                    validation: result.validation,
-                };
-                this.notify("Bulk unassignment could not be completed.", "warning");
-                return;
-            }
-            this.clearPlannerSelection();
-            this.state.pendingValidation = null;
-            await this.loadWorkspace({
-                competitionId: this.state.currentCompetitionId,
-                divisionId: this.state.currentDivisionId,
-                gamedayId: this.state.currentGamedayId,
-                includePlannerReferenceData: false,
-                unscheduledLimit: this.state.plannerUnscheduledLimit,
-            });
-            this.notify(`${result.operation_count || matchIds.length} match(es) unassigned.`, "success");
-        } catch (error) {
-            this.notify(error.message || "Bulk unassignment failed.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    requestUnassignAllMatches() {
-        if (!this.state.currentGamedayId || !this.plannerAssignedMatchCount) {
-            return;
-        }
-        if (this.state.saving) {
-            return;
-        }
-        this.openConfirmDialog({
-            action: "unassign_all",
-            title: "Unassign all matches",
-            message: `Unassign all ${this.plannerAssignedMatchCount} assigned match(es) on this gameday?`,
-            confirmLabel: "Unassign all",
-            tone: "danger",
-        });
-    }
-
-    async unassignAllMatches() {
-        if (!this.state.currentGamedayId || !this.plannerAssignedMatchCount || this.state.saving) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "unassign_all_matches",
-                [this.state.currentGamedayId, this.currentPlannerRevision]
-            );
-            if (!result.ok) {
-                this.state.pendingValidation = {
-                    action: "unassign_all",
-                    allowForce: false,
-                    title: "Unassign all review",
-                    validation: result.validation,
-                };
-                this.notify("Unassign all could not be completed.", "warning");
-                return;
-            }
-            this.clearPlannerSelection();
-            this.state.pendingValidation = null;
-            await this.loadWorkspace({
-                competitionId: this.state.currentCompetitionId,
-                divisionId: this.state.currentDivisionId,
-                gamedayId: this.state.currentGamedayId,
-                includePlannerReferenceData: false,
-                unscheduledLimit: this.state.plannerUnscheduledLimit,
-            });
-            this.notify(`${result.operation_count || 0} match(es) unassigned.`, "success");
-        } catch (error) {
-            this.notify(error.message || "Unassign all failed.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async autoScheduleGameday() {
-        if (!this.state.currentGamedayId) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "auto_schedule_gameday",
-                [
-                    this.state.currentGamedayId,
-                    this.currentPlannerRevision,
-                    false,
-                ]
-            );
-            if (!result.ok) {
-                this.state.pendingValidation = {
-                    action: "auto_schedule",
-                    allowForce: false,
-                    title: "Auto-schedule review",
-                    validation: result.validation,
-                };
-                this.notify(
-                    result.validation?.blocking?.[0]?.message
-                        || "Auto-schedule could not be completed.",
-                    "warning"
-                );
-                return;
-            }
-
-            this.clearPlannerSelection();
-            this.state.pendingValidation = null;
-            await this.loadWorkspace({
-                competitionId: this.state.currentCompetitionId,
-                divisionId: this.state.currentDivisionId,
-                gamedayId: this.state.currentGamedayId,
-                includePlannerReferenceData: false,
-                unscheduledLimit: this.state.plannerUnscheduledLimit,
-            });
-
-            const assignedCount = Number(result.assigned_count || 0);
-            const skippedCount = Number((result.skipped || []).length || 0);
-            const skippedSummary = (result.skipped_reason_summary || [])
-                .map((item) => `${item.code}: ${item.count}`)
-                .join(", ");
-            this.notify(
-                `Auto-schedule assigned ${assignedCount} match(es)`
-                + (skippedCount
-                    ? `, skipped ${skippedCount}${skippedSummary ? ` (${skippedSummary})` : ""}.`
-                    : "."),
-                assignedCount ? "success" : "warning"
-            );
-        } catch (error) {
-            this.notify(error.message || "Auto-schedule failed.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async undoPlannerAction() {
-        if (!this.state.currentGamedayId) {
-            return;
-        }
-        if (this.state.saving) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "undo_last_planner_operation",
-                [this.state.currentGamedayId, this.currentPlannerRevision]
-            );
-            if (!result.ok) {
-                this.state.pendingValidation = {
-                    action: "undo",
-                    allowForce: false,
-                    title: "Undo review",
-                    validation: result.validation,
-                };
-                this.notify("The last planner action could not be undone.", "warning");
-                return;
-            }
-            this.clearPlannerSelection();
-            this.state.pendingValidation = null;
-            await this.loadWorkspace({
-                competitionId: this.state.currentCompetitionId,
-                divisionId: this.state.currentDivisionId,
-                gamedayId: this.state.currentGamedayId,
-                includePlannerReferenceData: false,
-                unscheduledLimit: this.state.plannerUnscheduledLimit,
-            });
-            this.notify("Last planner action undone.", "success");
-        } catch (error) {
-            this.notify(error.message || "Undo failed.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async redoPlannerAction() {
-        if (!this.state.currentGamedayId) {
-            return;
-        }
-        if (this.state.saving) {
-            return;
-        }
-        this.state.saving = true;
-        try {
-            const result = await this.orm.call(
-                "federation.competition.workspace.service",
-                "redo_last_planner_operation",
-                [this.state.currentGamedayId, this.currentPlannerRevision]
-            );
-            if (!result.ok) {
-                this.state.pendingValidation = {
-                    action: "redo",
-                    allowForce: false,
-                    title: "Redo review",
-                    validation: result.validation,
-                };
-                this.notify("The last planner action could not be redone.", "warning");
-                return;
-            }
-            this.clearPlannerSelection();
-            this.state.pendingValidation = null;
-            await this.loadWorkspace({
-                competitionId: this.state.currentCompetitionId,
-                divisionId: this.state.currentDivisionId,
-                gamedayId: this.state.currentGamedayId,
-                includePlannerReferenceData: false,
-                unscheduledLimit: this.state.plannerUnscheduledLimit,
-            });
-            this.notify("Last planner action redone.", "success");
-        } catch (error) {
-            this.notify(error.message || "Redo failed.", "danger");
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async forcePendingAssignment() {
-        if (!this.state.pendingValidation) {
-            return;
-        }
-        const overrideReason = this.state.overrideReason.pending.trim();
-        if (this.state.pendingValidation.action === "bulk_assign") {
-            await this.bulkAssignMatches(
-                this.state.pendingValidation.matchIds || [],
-                true,
-                overrideReason
-            );
-            return;
-        }
-        await this.assignMatch(
-            this.state.pendingValidation.matchId,
-            this.state.pendingValidation.slotId,
-            true,
-            overrideReason
-        );
-    }
-
-    async assignSelectedToSlot(slotId) {
-        if (this.selectedUnscheduledMatches.length !== 1) {
-            this.notify(
-                "Select exactly one unscheduled match before assigning it to a slot.",
-                "warning"
-            );
-            return;
-        }
-        await this.assignMatch(this.selectedUnscheduledMatches[0].id, slotId, false);
-    }
-
-    openMobileAssign(matchId) {
-        this.state.mobileAssign.open = true;
-        this.state.mobileAssign.match_id = String(matchId);
-        this.state.mobileAssign.gameday_id = String(this.state.currentGamedayId || this.gamedayOptions[0]?.id || "");
-        this.state.mobileAssign.slot_id = "";
-    }
-
-    closeMobileAssign() {
-        this.state.mobileAssign.open = false;
-        this.state.mobileAssign.match_id = "";
-        this.state.mobileAssign.slot_id = "";
-    }
-
-    async confirmMobileAssign() {
-        if (!this.state.mobileAssign.match_id || !this.state.mobileAssign.slot_id) {
-            return;
-        }
-        await this.assignMatch(
-            Number(this.state.mobileAssign.match_id),
-            Number(this.state.mobileAssign.slot_id),
-            false
-        );
-        this.closeMobileAssign();
-    }
-
-    clearPendingValidation() {
-        this.state.pendingValidation = null;
-        this.state.overrideReason.pending = "";
-    }
 }
+
+applyPrototypeMethods(CompetitionWorkspaceAction.prototype, CompetitionWorkspacePlannerDataMethods);
+applyPrototypeMethods(CompetitionWorkspaceAction.prototype, CompetitionWorkspaceFormMethods);
+applyPrototypeMethods(CompetitionWorkspaceAction.prototype, CompetitionWorkspacePublishingMethods);
+applyPrototypeMethods(CompetitionWorkspaceAction.prototype, CompetitionWorkspacePlannerActionMethods);
 
 registry.category("actions").add(
     "sports_federation_competition_engine.competition_workspace",

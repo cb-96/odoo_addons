@@ -133,3 +133,19 @@ An individual game between two teams.
 7. **Tournament open/start guards** — Only active draft tournaments linked to a season can open, and only open tournaments with at least one stage can start.
 8. **Archive safety** — Open or in-progress tournaments must be closed or cancelled before archiving.
 9. **Venue extensions** — Venue fields are supplied by `sports_federation_venues`; this module keeps the core match lifecycle and hierarchy only.
+
+## Migration note (v19.0.1.1.0)
+
+- Added migration scripts under `migrations/19.0.1.1.0/` to harden `federation.match` indexing for high-traffic filters.
+- Added backfill for `scheduled_date` and `round_number` on historical match rows where those persisted values were missing.
+- Added composite indexes for `(tournament_id, state)`, `(stage_id, state)`, `(group_id, state)`, `(scheduled_date, state)`, and `(date_scheduled, state)`.
+
+## Knockout result resolution (v19.0.1.2.0)
+
+Knockout matches must have an unambiguous advancing team before they can be
+completed. A tied numeric score requires a non-regulation resolution, such as
+overtime, tiebreak, forfeit, walkover, or an administrative decision, plus an
+explicit advancing team selected from the two match participants.
+
+Winner and loser bracket progression uses this explicit decision, preventing a
+completed knockout match from leaving downstream participants unresolved.

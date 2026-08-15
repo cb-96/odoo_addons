@@ -1,3 +1,4 @@
+from odoo.exceptions import ValidationError
 from odoo.tests import TransactionCase
 
 
@@ -94,9 +95,22 @@ class TestBracketLinking(TransactionCase):
         # Loser = away_team (Team 1)
         self.assertEqual(self.final.home_team_id, self.teams[1])
 
-    def test_advance_bracket_does_not_advance_on_draw(self):
-        """A draw should not trigger automatic advancement."""
-        self.sf2.write({"home_score": 1, "away_score": 1, "state": "done"})
-        self.sf2._advance_bracket_teams()
-        # No team should be set in final.away_team_id
+    def test_tied_bracket_requires_resolution_before_completion(self):
+        self.sf2.write({"home_score": 1, "away_score": 1})
+        with self.assertRaises(ValidationError):
+            self.sf2.action_done()
+        self.assertNotEqual(self.sf2.state, "done")
         self.assertFalse(self.final.away_team_id)
+
+    def test_tied_bracket_advances_explicit_winner(self):
+        self.sf2.write(
+            {
+                "home_score": 1,
+                "away_score": 1,
+                "resolution_type": "tiebreak",
+                "advancing_team_id": self.teams[3].id,
+            }
+        )
+        self.sf2.action_done()
+        self.assertEqual(self.sf2.state, "done")
+        self.assertEqual(self.final.away_team_id, self.teams[3])

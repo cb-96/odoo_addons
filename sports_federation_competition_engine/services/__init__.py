@@ -1,5 +1,6 @@
 from . import base_schedule_service
 from . import competition_workspace_access_mixin
+from . import competition_workspace_auto_schedule_config_mixin
 from . import competition_workspace_extension_mixin
 from . import competition_workspace_planner_state_mixin
 from . import competition_engine

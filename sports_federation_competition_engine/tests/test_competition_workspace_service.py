@@ -5,6 +5,10 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 from odoo.tools.misc import mute_logger
 
+from ..services.competition_workspace_auto_schedule_config_mixin import (
+    CompetitionWorkspaceAutoScheduleConfigMixin,
+)
+
 
 @tagged("-at_install", "post_install", "sf_competition_workspace")
 class TestCompetitionWorkspaceService(TransactionCase):
@@ -1584,6 +1588,29 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(payload["extra"], {"value": 5})
         self.assertFalse(payload.get("ignored"))
 
+    def test_workspace_extension_payload_accepts_schema_v2_shape(self):
+        mixed_results = [
+            {
+                "schema_version": 2,
+                "data": {
+                    "summary": {"from_v2": True},
+                    "planner": {"sections": ["overview", "planner"]},
+                },
+            }
+        ]
+
+        with patch.object(
+            type(self.service),
+            "_workspace_extension_results",
+            return_value=mixed_results,
+        ):
+            payload = self.service._workspace_extension_payload(
+                "extend_overview_payload"
+            )
+
+        self.assertEqual(payload["summary"], {"from_v2": True})
+        self.assertEqual(payload["planner"]["sections"], ["overview", "planner"])
+
     def test_workspace_extension_issues_accepts_schema_and_legacy_shapes(self):
         mixed_results = [
             {
@@ -1641,6 +1668,39 @@ class TestCompetitionWorkspaceService(TransactionCase):
             ["legacy_warning", "schema_warning"],
         )
 
+    def test_workspace_extension_issues_accepts_schema_v2_shape(self):
+        mixed_results = [
+            {
+                "schema_version": 2,
+                "data": {
+                    "blocking": [
+                        {
+                            "code": "v2_blocking",
+                            "message": "Blocking issue",
+                        }
+                    ],
+                    "warnings": [
+                        {
+                            "code": "v2_warning",
+                            "message": "Warning issue",
+                        }
+                    ],
+                },
+            }
+        ]
+
+        with patch.object(
+            type(self.service),
+            "_workspace_extension_results",
+            return_value=mixed_results,
+        ):
+            issues = self.service._workspace_extension_issues(
+                "extend_match_assignment_validation"
+            )
+
+        self.assertEqual([item["code"] for item in issues["blocking"]], ["v2_blocking"])
+        self.assertEqual([item["code"] for item in issues["warnings"]], ["v2_warning"])
+
     def test_workspace_extension_score_components_accepts_schema_and_legacy_shapes(
         self,
     ):
@@ -1668,6 +1728,31 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(
             [item["key"] for item in components],
             ["legacy_component", "schema_component"],
+        )
+
+    def test_workspace_extension_score_components_accepts_schema_v2_shape(self):
+        mixed_results = [
+            {
+                "schema_version": 2,
+                "data": [{"key": "v2_component", "label": "V2 Component", "score": 91}],
+            }
+        ]
+
+        with patch.object(
+            type(self.service),
+            "_workspace_extension_results",
+            return_value=mixed_results,
+        ):
+            components = self.service._workspace_extension_score_components(
+                "extend_match_slot_score_components"
+            )
+
+        self.assertEqual([item["key"] for item in components], ["v2_component"])
+
+    def test_workspace_service_includes_auto_schedule_config_mixin(self):
+        self.assertIn(
+            CompetitionWorkspaceAutoScheduleConfigMixin,
+            type(self.service).__mro__,
         )
 
     def test_gameday_planner_data_reports_stale_consistency(self):

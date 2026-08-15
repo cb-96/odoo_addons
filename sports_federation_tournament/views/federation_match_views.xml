@@ -60,6 +60,12 @@
                                     <field name="round_number"/>
                                     <field name="bracket_position"/>
                                 </group>
+                                <group string="Resolution">
+                                    <field name="resolution_type"/>
+                                    <field name="advancing_team_id"
+                                           domain="[('id', 'in', [home_team_id, away_team_id])]"
+                                           invisible="resolution_type == 'regulation' and home_score != away_score"/>
+                                </group>
                                 <group string="Source Matches">
                                     <field name="source_match_1_id"/>
                                     <field name="source_type_1"/>

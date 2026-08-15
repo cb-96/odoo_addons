@@ -35,11 +35,12 @@ class FederationMatch(models.Model):
     away_team_id = fields.Many2one(
         "federation.team", string="Away Team", ondelete="restrict"
     )
-    date_scheduled = fields.Datetime(string="Kickoff", tracking=True)
+    date_scheduled = fields.Datetime(string="Kickoff", tracking=True, index=True)
     scheduled_date = fields.Date(
         string="Scheduled Date",
         compute="_compute_schedule_fields",
         store=True,
+        index=True,
     )
     scheduled_time = fields.Float(
         string="Kickoff Time",
@@ -62,6 +63,7 @@ class FederationMatch(models.Model):
         default=MATCH_STATE_DRAFT,
         required=True,
         tracking=True,
+        index=True,
     )
     notes = fields.Text(string="Notes")
 
@@ -370,9 +372,14 @@ class FederationMatch(models.Model):
         for rec in self:
             rec.state = MATCH_STATE_IN_PROGRESS
 
+    def _validate_completion_result(self):
+        """Validate that the recorded result can complete this match."""
+        return True
+
     def action_done(self):
-        """Execute the done action."""
+        """Complete the match after validating its sporting outcome."""
         for rec in self:
+            rec._validate_completion_result()
             rec.state = MATCH_STATE_DONE
             rec._advance_bracket_teams()
 

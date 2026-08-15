@@ -1,4 +1,4 @@
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase
 
 
@@ -384,3 +384,11 @@ class TestTournamentOperations(TransactionCase):
         self.assertIn(self.verified_match.id, match_ids)
         self.assertNotIn(self.foreign_match.id, match_ids)
         self.assertNotIn(self.foreign_match.id, queue_match_ids)
+
+    def test_out_of_scope_portal_user_cannot_apply_action_to_foreign_match(self):
+        with self.assertRaises(AccessError):
+            self.tournament._operations_apply_action(
+                self.foreign_match,
+                "approve",
+                user=self.out_of_scope_portal_user,
+            )

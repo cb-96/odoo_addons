@@ -60,6 +60,9 @@ jobs:
       - name: Check migration review coverage
         run: python ci/check_migration_review.py --base-ref origin/${{ github.base_ref || 'main' }}
 
+      - name: Check constraint/index contracts
+        run: python ci/check_constraint_index_contracts.py
+
       - name: Check OpenAPI contract docs
         run: python ci/check_openapi_contracts.py
 

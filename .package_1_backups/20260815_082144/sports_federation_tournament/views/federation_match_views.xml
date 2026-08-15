@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_federation_match_form" model="ir.ui.view">
+        <field name="name">federation.match.form</field>
+        <field name="model">federation.match</field>
+        <field name="arch" type="xml">
+            <form string="Match">
+                <header>
+                    <button name="action_schedule" string="Schedule" type="object" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_start" string="Start" type="object" class="btn-primary"
+                            invisible="state != 'scheduled'"/>
+                    <button name="action_create_venue_finance_event" string="Create Venue Charge" type="object" class="btn-secondary"
+                        invisible="state != 'scheduled'"/>
+                    <button name="action_done" string="Done" type="object" class="btn-secondary"
+                            invisible="state != 'in_progress'"/>
+                    <button name="action_cancel" string="Cancel" type="object"
+                            invisible="state in ('done', 'cancelled')"/>
+                    <button name="action_draft" string="Reset to Draft" type="object"
+                            invisible="state != 'cancelled'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,scheduled,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box"/>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Match">
+                            <field name="tournament_id"/>
+                            <field name="stage_id" domain="[('tournament_id', '=', tournament_id)]"/>
+                            <field name="group_id" domain="[('stage_id', '=', stage_id)]"/>
+                            <field name="round_id" domain="[('stage_id', '=', stage_id)]"/>
+                        </group>
+                        <group string="Schedule">
+                            <field name="scheduled_date" readonly="1"/>
+                            <field name="scheduled_time" widget="float_time"/>
+                            <field name="date_scheduled" invisible="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Home">
+                            <field name="home_team_id"/>
+                            <field name="home_score" invisible="state not in ('in_progress', 'done')"/>
+                        </group>
+                        <group string="Away">
+                            <field name="away_team_id"/>
+                            <field name="away_score" invisible="state not in ('in_progress', 'done')"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Bracket" name="bracket"
+                              invisible="not source_match_1_id and not source_match_2_id and not bracket_type">
+                            <group>
+                                <group string="Bracket Info">
+                                    <field name="bracket_type"/>
+                                    <field name="round_number"/>
+                                    <field name="bracket_position"/>
+                                </group>
+                                <group string="Source Matches">
+                                    <field name="source_match_1_id"/>
+                                    <field name="source_type_1"/>
+                                    <field name="source_match_2_id"/>
+                                    <field name="source_type_2"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_federation_match_list" model="ir.ui.view">
+        <field name="name">federation.match.list</field>
+        <field name="model">federation.match</field>
+        <field name="arch" type="xml">
+            <list string="Matches"
+                  decoration-muted="state == 'cancelled'">
+                <field name="scheduled_date" optional="show"/>
+                <field name="scheduled_time" widget="float_time" optional="show"/>
+                <field name="tournament_id"/>
+                <field name="stage_id"/>
+                <field name="round_id" optional="hide"/>
+                <field name="home_team_id" string="Home"/>
+                <field name="home_score" optional="show"/>
+                <field name="away_team_id" string="Away"/>
+                <field name="away_score" optional="show"/>
+                <field name="bracket_type" optional="hide"/>
+                <field name="round_number" optional="hide"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_federation_match_search" model="ir.ui.view">
+        <field name="name">federation.match.search</field>
+        <field name="model">federation.match</field>
+        <field name="arch" type="xml">
+            <search string="Search Matches">
+                <field name="tournament_id"/>
+                <field name="stage_id"/>
+                <field name="group_id"/>
+                <field name="home_team_id" string="Team" filter_domain="['|', ('home_team_id', '=', self), ('away_team_id', '=', self)]"/>
+                <field name="away_team_id" invisible="1"/>
+                <filter name="today" string="Today"
+                        domain="[('scheduled_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="upcoming" string="Upcoming"
+                        domain="[('state', 'in', ('draft', 'scheduled')), ('scheduled_date', '>=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="this_week" string="This Week"
+                        domain="[('scheduled_date', '>=', (context_today() + relativedelta(weekday=0, weeks=-0)).strftime('%Y-%m-%d')), ('scheduled_date', '&lt;=', (context_today() + relativedelta(weekday=6, weeks=0)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="scheduled" string="Scheduled" domain="[('state', '=', 'scheduled')]"/>
+                <filter name="in_progress" string="In Progress" domain="[('state', '=', 'in_progress')]"/>
+                <filter name="done" string="Done" domain="[('state', '=', 'done')]"/>
+                <filter name="cancelled" string="Cancelled" domain="[('state', '=', 'cancelled')]"/>
+                <separator/>
+                <group>
+                    <filter name="tournament" string="Tournament" context="{'group_by': 'tournament_id'}"/>
+                    <filter name="stage" string="Stage" context="{'group_by': 'stage_id'}"/>
+                    <filter name="group" string="Group" context="{'group_by': 'group_id'}"/>
+                    <filter name="scheduled_date" string="Date" context="{'group_by': 'scheduled_date'}"/>
+                    <filter name="state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="federation_match_action" model="ir.actions.act_window">
+        <field name="name">Matches</field>
+        <field name="res_model">federation.match</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_federation_match_search"/>
+        <field name="context">{'search_default_upcoming': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Matches are generated by the schedule wizard.
+            </p>
+        </field>
+    </record>
+
+</odoo>

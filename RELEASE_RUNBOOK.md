@@ -45,6 +45,16 @@ release-note coverage or an explicit migration script:
 python3 addons/ci/check_migration_review.py --base-ref origin/main
 ```
 
+For the same release branch, update migration evidence and rollback notes:
+
+```bash
+# add the commands and outcomes used to validate migration-sensitive changes
+${EDITOR:-vi} addons/MIGRATION_DRY_RUN_EVIDENCE.md
+
+# add rollback triggers and SQL/drop steps for new migration scripts
+${EDITOR:-vi} addons/MIGRATION_ROLLBACK_NOTES.md
+```
+
 If the release changes addon responsibility boundaries or adds a new
 `sports_federation_*` module, update `MODULE_OWNERS.yaml` in the same release
 branch and rerun the registry check before cutting the release.

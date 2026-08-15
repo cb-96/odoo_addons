@@ -381,3 +381,8 @@ This is the fastest way to distinguish between:
 - `portal` - For portal layout, pager, and `CustomerPortal` base class.
 - `sports_federation_base` - For clubs, teams, seasons, season registrations.
 - `sports_federation_tournament` - For tournaments and participants.
+
+## Ownership Hardening References
+
+- `PORTAL_OWNERSHIP_TEST_MATRIX.md` defines the ownership test matrix across representative, team, and official-scoped surfaces.
+- `PORTAL_OWNERSHIP_COVERAGE.md` tracks deny-by-default coverage for ownership-sensitive routes and helpers.

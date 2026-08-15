@@ -56,6 +56,7 @@ python3 ci/check_openapi_contracts.py
 python3 ci/check_release_train.py
 python3 ci/check_explain_snapshots.py
 python3 ci/check_ci_hygiene.py
+python3 ci/check_workflow_state_contracts.py
 python3 ci/check_module_dependency_drift.py
 bash ci/prune_ci_logs.sh 30
 ```
@@ -128,6 +129,18 @@ output as `sf_ci-ci-odoo-run-<hash>`.
 5. **Doc freshness checks** — `ci/check_doc_freshness.py`, `check_markdown_links.py`,
    `check_module_owners.py`, `check_openapi_contracts.py` verify documentation
    and contracts are up to date.
+6. **Workflow contract checks** — `ci/check_workflow_state_contracts.py` verifies
+   that documented lifecycle states and required workflow actions stay aligned
+   with model declarations.
+
+### Workflow contract map upkeep
+
+- Keep `_workflows/contracts/workflow_state_contracts.json` aligned with each
+  canonical workflow markdown and model state source.
+- If CI reports undocumented states, either add the state to the matching
+  workflow markdown and contract entry or remove/rename the code state.
+- If CI reports missing actions, add the action method in code with the
+  expected guardrails or update the contract when the workflow changed by design.
 
 ### Iterating on a failing test
 
@@ -167,6 +180,8 @@ python3 ci/check_openapi_contracts.py
 python3 ci/check_release_train.py
 python3 ci/check_explain_snapshots.py
 python3 ci/check_module_dependency_drift.py
+python3 ci/check_migration_review.py
+python3 ci/check_constraint_index_contracts.py
 ```
 
 ## Documentation expectations
@@ -179,3 +194,5 @@ python3 ci/check_module_dependency_drift.py
 - Update `RELEASE_TRAIN.md` when a change starts a new release window or needs train-level migration coordination.
 - Update `DATA_RETENTION_POLICY.md` when a change modifies cleanup scope or retention windows for logs, staged deliveries, or generated report files.
 - Update the relevant record under `adr/` when a change revises portal trust boundaries, reporting SQL-view policy, or public route ownership.
+- For migration-sensitive changes, update `MIGRATION_DRY_RUN_EVIDENCE.md` and `MIGRATION_ROLLBACK_NOTES.md` in the same branch.
+- Use `MIGRATION_CHECKLIST_TEMPLATE.md` as the baseline checklist for model/view/controller ownership changes.
