@@ -1,0 +1,708 @@
+diff --git a/sports_federation_competition_engine/README.md b/sports_federation_competition_engine/README.md
+index 51f5fd8..1eaec7f 100644
+--- a/sports_federation_competition_engine/README.md
++++ b/sports_federation_competition_engine/README.md
+@@ -408,3 +408,11 @@ Validation and safeguards
+   and restricts warning-only overrides to federation managers.
+ - Slot generation enforces one match per slot and one slot start time per
+   playing area and gameday.
++
++Guided workspace navigation
++~~~~~~~~~~~~~~~~~~~~~~~~~~~
++The Competition Workspace now presents setup as one dependency-aware journey:
++set up the competition, add teams, build the schedule, create gamedays, plan
++matches, and validate/publish. Completed steps stay available, blocked steps
++explain their dependency, and previous/next controls preserve a predictable
++flow on desktop and mobile.
+diff --git a/sports_federation_competition_engine/services/competition_workspace_validation_service.py b/sports_federation_competition_engine/services/competition_workspace_validation_service.py
+index c1007d0..e91cf8e 100644
+--- a/sports_federation_competition_engine/services/competition_workspace_validation_service.py
++++ b/sports_federation_competition_engine/services/competition_workspace_validation_service.py
+@@ -68,6 +68,14 @@ class CompetitionWorkspaceValidationService(models.AbstractModel):
+                 ),
+                 "focus_target": "match",
+             },
++            "club_duty_play_overlap": {
++                "group_key": "officiating_conflicts",
++                "group_label": _("Club officiating duties"),
++                "hint": _(
++                    "Move either the club's playing match or its officiating duty to a different timeslot."
++                ),
++                "focus_target": "match",
++            },
+             "cross_division_slot": {
+                 "group_key": "slot_conflicts",
+                 "group_label": _("Slot conflicts"),
+diff --git a/sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.js b/sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.js
+index 662f88f..496ac71 100644
+--- a/sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.js
++++ b/sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.js
+@@ -114,6 +114,79 @@ export function formatPlannerSelectionSummary({
+     return `${selectedCount} selected: ${unscheduledCount} unscheduled and ${assignedCount} assigned.`;
+ }
+ 
++export function resolveWorkspaceSections({ competition = {}, division = false } = {}) {
++    const hasCompetition = Boolean(competition?.id);
++    const hasDivision = Boolean(division?.id);
++    const entriesLocked = Boolean(division?.entries_locked);
++    const hasMatches = Boolean(division?.match_count);
++    const hasGamedays = Boolean(division?.gameday_count);
++    const scheduleComplete = Boolean(
++        hasDivision && division.slot_count > 0 && division.unscheduled_match_count === 0
++    );
++    return [
++        {
++            key: "overview",
++            label: "Set up",
++            shortLabel: "Overview",
++            description: hasDivision
++                ? "Review divisions and competition settings."
++                : "Create or select the division you want to plan.",
++            disabled: !hasCompetition,
++            complete: hasDivision,
++        },
++        {
++            key: "teams",
++            label: "Add teams",
++            shortLabel: "Teams",
++            description: entriesLocked
++                ? "Team entries are confirmed and locked."
++                : "Add, confirm, and lock participating teams.",
++            disabled: !hasDivision,
++            complete: entriesLocked,
++        },
++        {
++            key: "rounds",
++            label: "Build schedule",
++            shortLabel: "Schedule",
++            description: hasMatches
++                ? "The match structure has been generated."
++                : "Generate rounds and matches from the locked entries.",
++            disabled: !entriesLocked,
++            complete: hasMatches,
++        },
++        {
++            key: "gamedays",
++            label: "Create gamedays",
++            shortLabel: "Gamedays",
++            description: hasGamedays
++                ? "Gamedays exist and can receive planning slots."
++                : "Choose dates, venue, courts, and timeslot settings.",
++            disabled: !hasMatches,
++            complete: hasGamedays,
++        },
++        {
++            key: "planner",
++            label: "Plan matches",
++            shortLabel: "Planner",
++            description: scheduleComplete
++                ? "Every match has a slot. Review conflicts and fairness."
++                : "Assign matches to slots and resolve scheduling conflicts.",
++            disabled: !hasGamedays,
++            complete: scheduleComplete,
++        },
++        {
++            key: "publish",
++            label: "Validate and publish",
++            shortLabel: "Publish",
++            description: division?.workspace_state === "published"
++                ? "The current schedule is published."
++                : "Run final checks and publish the approved schedule.",
++            disabled: !hasGamedays,
++            complete: division?.workspace_state === "published",
++        },
++    ];
++}
++
+ export function shouldHandlePlannerEscape({
+     key,
+     activeSection,
+@@ -186,6 +259,11 @@ class StatusBadge extends Component {
+ class ProgressStepper extends Component {
+     static template = "sports_federation_competition_engine.CompetitionWorkspaceProgressStepper";
+ 
++    selectStep(step) {
++        if (!step.disabled && this.props.onSelect) {
++            this.props.onSelect(step.key);
++        }
++    }
+     stepClass(step) {
+         if (step.active) {
+             return "o-active";
+@@ -600,52 +678,44 @@ export class CompetitionWorkspaceAction extends Component {
+         return this.planner?.gameday?.planner_state || "draft";
+     }
+ 
++    get workspaceSections() {
++        return resolveWorkspaceSections({
++            competition: this.payload.competition,
++            division: this.selectedDivision,
++        }).map((section) => ({
++            ...section,
++            active: section.key === this.state.activeSection,
++        }));
++    }
+     get progressSteps() {
+-        const division = this.selectedDivision;
+-        return [
+-            {
+-                key: "shell",
+-                label: "Competition",
+-                complete: !!this.payload.competition?.id,
+-                active: !this.payload.competition?.id,
+-            },
+-            {
+-                key: "entries",
+-                label: "Teams",
+-                complete: !!division?.entries_locked,
+-                active: !!division && !division.entries_locked,
+-            },
+-            {
+-                key: "rounds",
+-                label: "Rounds",
+-                complete: !!division?.match_count,
+-                active: !!division && division.entries_locked && !division.match_count,
+-            },
+-            {
+-                key: "gamedays",
+-                label: "Gamedays",
+-                complete: !!division?.gameday_count,
+-                active: !!division && division.match_count > 0 && !division.gameday_count,
+-            },
+-            {
+-                key: "planner",
+-                label: "Planner",
+-                complete: !!division && division.match_count > 0 && division.unscheduled_match_count === 0 && division.slot_count > 0,
+-                active: !!division && division.gameday_count > 0 && division.unscheduled_match_count > 0,
+-            },
+-            {
+-                key: "publish",
+-                label: "Publish",
+-                complete: division?.workspace_state === "published",
+-                active: !!division && division.unscheduled_match_count === 0 && division.workspace_state !== "published",
+-            },
+-        ];
++        return this.workspaceSections;
++    }
++    get activeWorkspaceSection() {
++        return this.workspaceSections.find(
++            (section) => section.key === this.state.activeSection
++        ) || this.workspaceSections[0];
++    }
++    get recommendedWorkspaceSection() {
++        return this.workspaceSections.find(
++            (section) => !section.disabled && !section.complete
++        ) || this.workspaceSections.filter((section) => !section.disabled).at(-1);
++    }
++    get previousWorkspaceSection() {
++        const available = this.workspaceSections.filter((section) => !section.disabled);
++        const index = available.findIndex(
++            (section) => section.key === this.state.activeSection
++        );
++        return index > 0 ? available[index - 1] : false;
+     }
+-
+-    get workspaceSections() {
+-        return WORKSPACE_SECTIONS;
++    get nextWorkspaceSection() {
++        const available = this.workspaceSections.filter((section) => !section.disabled);
++        const index = available.findIndex(
++            (section) => section.key === this.state.activeSection
++        );
++        return index >= 0 && index < available.length - 1
++            ? available[index + 1]
++            : false;
+     }
+-
+     get divisionPlanningFormatOptions() {
+         return DIVISION_PLANNING_FORMAT_OPTIONS;
+     }
+diff --git a/sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.scss b/sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.scss
+index adb36bf..8a05917 100644
+--- a/sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.scss
++++ b/sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.scss
+@@ -399,3 +399,75 @@
+         justify-content: flex-start;
+     }
+ }
++
++
++// Guided competition journey
++.o_fed_cw_journey {
++    border: 0;
++    border-radius: 1.25rem;
++    background: linear-gradient(135deg, #ffffff 0%, #f4f8ff 100%);
++}
++.o_fed_cw_journey .o_fed_cw_stepper { margin-bottom: 0 !important; }
++.o_fed_cw_step {
++    width: 100%;
++    color: inherit;
++    text-decoration: none;
++    appearance: none;
++    cursor: pointer;
++    transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
++}
++.o_fed_cw_step:hover:not(:disabled) {
++    transform: translateY(-2px);
++    border-color: rgba(13, 110, 253, 0.3);
++    box-shadow: 0 0.55rem 1.2rem rgba(15, 23, 42, 0.08);
++}
++.o_fed_cw_step:focus-visible {
++    outline: 3px solid rgba(13, 110, 253, 0.28);
++    outline-offset: 2px;
++}
++.o_fed_cw_step:disabled { cursor: not-allowed; opacity: 0.5; }
++.o_fed_cw_step_hint {
++    margin-top: 0.15rem;
++    color: #64748b;
++    font-size: 0.75rem;
++    font-weight: 400;
++    line-height: 1.25;
++}
++.o_fed_cw_context_bar {
++    position: sticky;
++    top: 0;
++    z-index: 20;
++    display: flex;
++    justify-content: space-between;
++    align-items: center;
++    gap: 1rem;
++    padding: 0.85rem 1rem;
++    border: 1px solid rgba(15, 23, 42, 0.08);
++    border-radius: 1rem;
++    background: rgba(255, 255, 255, 0.96);
++    box-shadow: 0 0.5rem 1.25rem rgba(15, 23, 42, 0.08);
++    backdrop-filter: blur(10px);
++}
++.o_fed_cw_context_bar .o_fed_cw_nav { justify-content: flex-end; }
++.o_fed_cw_context_bar .btn:disabled { opacity: 0.42; }
++.o_fed_cw_step_footer {
++    display: flex;
++    justify-content: space-between;
++    align-items: center;
++    gap: 1rem;
++    margin-top: 1.5rem;
++    padding: 1rem;
++    border-top: 1px solid rgba(15, 23, 42, 0.08);
++}
++@media (max-width: 991.98px) {
++    .o_fed_cw_context_bar { align-items: flex-start; flex-direction: column; }
++    .o_fed_cw_context_bar .o_fed_cw_nav {
++        width: 100%;
++        flex-wrap: nowrap;
++        justify-content: flex-start;
++        overflow-x: auto;
++        padding-bottom: 0.25rem;
++    }
++    .o_fed_cw_context_bar .o_fed_cw_nav .btn { flex: 0 0 auto; }
++    .o_fed_cw_stepper { grid-template-columns: 1fr; }
++}
+diff --git a/sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.xml b/sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.xml
+index 3dd239c..fbfef72 100644
+--- a/sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.xml
++++ b/sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.xml
+@@ -30,10 +30,21 @@
+     <t t-name="sports_federation_competition_engine.CompetitionWorkspaceProgressStepper">
+         <div class="o_fed_cw_stepper mb-4">
+             <t t-foreach="props.steps" t-as="step" t-key="step.key">
+-                <div class="o_fed_cw_step" t-att-class="this.stepClass(step)">
+-                    <div class="o_fed_cw_step_marker"><t t-esc="step.label.slice(0, 1)"/></div>
+-                    <div class="o_fed_cw_step_label"><t t-esc="step.label"/></div>
+-                </div>
++                <button type="button"
++                        class="o_fed_cw_step text-start"
++                        t-att-class="this.stepClass(step)"
++                        t-att-disabled="step.disabled"
++                        t-att-aria-current="step.active ? 'step' : undefined"
++                        t-on-click="() => this.selectStep(step)">
++                    <div class="o_fed_cw_step_marker">
++                        <i t-if="step.complete" class="fa fa-check" aria-hidden="true"/>
++                        <t t-else=""><t t-esc="step.label.slice(0, 1)"/></t>
++                    </div>
++                    <div>
++                        <div class="o_fed_cw_step_label"><t t-esc="step.label"/></div>
++                        <div class="o_fed_cw_step_hint"><t t-esc="step.description"/></div>
++                    </div>
++                </button>
+             </t>
+         </div>
+     </t>
+@@ -313,6 +324,15 @@
+             <div class="small text-muted mb-1" t-if="props.match.stage_name"><t t-esc="props.match.stage_name"/><t t-if="props.match.group_name"> · <t t-esc="props.match.group_name"/></t></div>
+             <div class="small text-muted mb-2">Round <t t-esc="props.match.round_number || '-'"/></div>
+             <div class="small text-muted mb-3" t-if="props.match.court_name">Assigned to <t t-esc="props.match.court_name"/></div>
++            <div class="d-flex gap-2 flex-wrap mb-3" t-if="props.match.officiating">
++                <StatusBadge t-props="{ label: props.match.officiating.ready ? 'Officials ready' : 'Officials need attention', tone: props.match.officiating.ready ? 'success' : 'warning' }"/>
++                <StatusBadge t-if="props.match.officiating.club_duty_count" t-props="{ label: props.match.officiating.club_duty_count + ' club duty', tone: 'info' }"/>
++            </div>
++            <div class="small text-muted mb-3" t-if="props.match.officiating and (props.match.officiating.club_duties || []).length">
++                <t t-foreach="props.match.officiating.club_duties" t-as="duty" t-key="duty.id">
++                    <div><t t-esc="duty.club_name"/> · <t t-esc="duty.role_label"/> · <t t-esc="duty.state_label"/></div>
++                </t>
++            </div>
+             <div class="d-flex gap-2 flex-wrap">
+                 <button type="button" class="btn btn-outline-primary btn-sm" t-if="props.isMobile and !props.assigned" t-on-click="onAssignClick">Assign</button>
+                 <button type="button" class="btn btn-outline-secondary btn-sm" t-if="props.assigned" t-on-click="onUnassignClick">Unassign</button>
+@@ -510,17 +530,27 @@
+     </t>
+ 
+     <t t-name="sports_federation_competition_engine.CompetitionWorkspaceSectionNav">
+-        <div class="o_fed_cw_nav mb-4" role="tablist" aria-label="Competition workspace sections">
+-            <t t-foreach="this.workspaceSections" t-as="section" t-key="section.key">
+-                <button type="button"
+-                        class="btn btn-outline-secondary"
+-                        role="tab"
+-                        t-att-aria-selected="state.activeSection === section.key ? 'true' : 'false'"
+-                        t-att-class="state.activeSection === section.key ? 'active' : ''"
+-                        t-on-click="() => this.setSection(section.key)">
+-                    <t t-esc="section.label"/>
+-                </button>
+-            </t>
++        <div class="o_fed_cw_context_bar mb-4" t-if="payload.competition.id and this.activeWorkspaceSection">
++            <div>
++                <div class="small text-uppercase text-muted">Current step</div>
++                <div class="fw-semibold"><t t-esc="this.activeWorkspaceSection.label"/></div>
++                <div class="small text-muted"><t t-esc="this.activeWorkspaceSection.description"/></div>
++            </div>
++            <div class="o_fed_cw_nav" role="tablist" aria-label="Competition workspace sections">
++                <t t-foreach="this.workspaceSections" t-as="section" t-key="section.key">
++                    <button type="button"
++                            class="btn btn-sm btn-outline-secondary"
++                            role="tab"
++                            t-att-disabled="section.disabled"
++                            t-att-title="section.disabled ? 'Complete the previous step first' : section.description"
++                            t-att-aria-selected="section.active ? 'true' : 'false'"
++                            t-att-class="section.active ? 'active' : ''"
++                            t-on-click="() => this.setSection(section.key)">
++                        <i t-if="section.complete" class="fa fa-check me-1" aria-hidden="true"/>
++                        <t t-esc="section.shortLabel"/>
++                    </button>
++                </t>
++            </div>
+         </div>
+     </t>
+ 
+@@ -940,7 +970,24 @@
+             </t>
+             <t t-else="">
+                 <CompetitionOverviewCard t-props="{ overview: payload.overview }"/>
+-                <ProgressStepper t-props="{ steps: this.progressSteps }"/>
++                <section class="o_fed_cw_journey card shadow-sm mb-4" t-if="payload.competition.id">
++                    <div class="card-body">
++                        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
++                            <div>
++                                <div class="text-uppercase small text-muted">Competition setup journey</div>
++                                <h2 class="h5 mb-1 mt-1">Follow the steps from teams to publication</h2>
++                                <p class="text-muted small mb-0">Completed steps stay available. Steps that depend on unfinished work are disabled.</p>
++                            </div>
++                            <button t-if="this.recommendedWorkspaceSection and this.recommendedWorkspaceSection.key !== state.activeSection"
++                                    type="button" class="btn btn-primary"
++                                    t-on-click="() => this.setSection(this.recommendedWorkspaceSection.key)">
++                                Continue: <t t-esc="this.recommendedWorkspaceSection.label"/>
++                                <i class="fa fa-arrow-right ms-2" aria-hidden="true"/>
++                            </button>
++                        </div>
++                        <ProgressStepper t-props="{ steps: this.progressSteps, onSelect: this.setSection.bind(this) }"/>
++                    </div>
++                </section>
+                 <t t-call="sports_federation_competition_engine.CompetitionWorkspaceSectionNav"/>
+ 
+                 <t t-if="!payload.competition.id and payload.capabilities.is_manager">
+@@ -997,6 +1044,15 @@
+                     <t t-call="sports_federation_competition_engine.CompetitionWorkspaceSectionPublish"/>
+                 </t>
+ 
++                <nav class="o_fed_cw_step_footer" t-if="payload.competition.id" aria-label="Workspace step navigation">
++                    <button t-if="this.previousWorkspaceSection" type="button" class="btn btn-outline-secondary" t-on-click="() => this.setSection(this.previousWorkspaceSection.key)">
++                        <i class="fa fa-arrow-left me-2" aria-hidden="true"/><t t-esc="this.previousWorkspaceSection.label"/>
++                    </button>
++                    <span t-else=""/>
++                    <button t-if="this.nextWorkspaceSection" type="button" class="btn btn-primary" t-on-click="() => this.setSection(this.nextWorkspaceSection.key)">
++                        <t t-esc="this.nextWorkspaceSection.label"/><i class="fa fa-arrow-right ms-2" aria-hidden="true"/>
++                    </button>
++                </nav>
+                 <ActionConfirmDialog t-props="{ open: state.confirmDialog.open, title: state.confirmDialog.title, message: state.confirmDialog.message, confirmLabel: state.confirmDialog.confirmLabel, confirmClass: this.confirmationDialogToneClass, onClose: this.closeConfirmDialog.bind(this), onConfirm: this.confirmPendingAction.bind(this) }"/>
+             </t>
+         </div>
+diff --git a/sports_federation_competition_engine/static/tests/competition_workspace_ui_tests.js b/sports_federation_competition_engine/static/tests/competition_workspace_ui_tests.js
+index 5d12b1c..5152666 100644
+--- a/sports_federation_competition_engine/static/tests/competition_workspace_ui_tests.js
++++ b/sports_federation_competition_engine/static/tests/competition_workspace_ui_tests.js
+@@ -5,6 +5,7 @@ import {
+     isPlannerValidationConfirmable,
+     isPlannerBusyState,
+     shouldHandlePlannerEscape,
++    resolveWorkspaceSections,
+ } from "@sports_federation_competition_engine/client_actions/competition_workspace/competition_workspace";
+ 
+ QUnit.module("sports_federation_competition_engine > competition workspace ui");
+@@ -110,3 +111,25 @@ QUnit.test("planner escape helper only clears when relevant", function (assert)
+         "Escape outside planner section does not clear planner state"
+     );
+ });
++
++QUnit.test("workspace journey unlocks steps progressively", function (assert) {
++    const initial = resolveWorkspaceSections({ competition: { id: 10 }, division: false });
++    assert.strictEqual(initial.find((step) => step.key === "overview").disabled, false);
++    assert.strictEqual(initial.find((step) => step.key === "teams").disabled, true);
++
++    const planning = resolveWorkspaceSections({
++        competition: { id: 10 },
++        division: {
++            id: 20,
++            entries_locked: true,
++            match_count: 12,
++            gameday_count: 2,
++            slot_count: 12,
++            unscheduled_match_count: 0,
++            workspace_state: "planning",
++        },
++    });
++    assert.strictEqual(planning.find((step) => step.key === "planner").disabled, false);
++    assert.strictEqual(planning.find((step) => step.key === "planner").complete, true);
++    assert.strictEqual(planning.find((step) => step.key === "publish").complete, false);
++});
+diff --git a/sports_federation_officiating/README.md b/sports_federation_officiating/README.md
+index 8115eff..ad9050c 100644
+--- a/sports_federation_officiating/README.md
++++ b/sports_federation_officiating/README.md
+@@ -112,3 +112,8 @@ before the match goes live.
+ 9. **Finance bridge integration** — When `sports_federation_finance_bridge` is installed,
+    assignments that reach `done` automatically create reusable reimbursement events.
+ 10. **Portal self-service** — When `sports_federation_portal` is installed, linked officials can review, confirm, or decline their own draft assignments through the portal.
++
++11. **Club-duty planning constraint** — Open club referee duties are first-class
++    planner constraints. A club cannot play a match and supply an official for
++    another match in an overlapping timeslot. Match cards expose duty club, role,
++    and state directly in the Competition Workspace.
+diff --git a/sports_federation_officiating/__manifest__.py b/sports_federation_officiating/__manifest__.py
+index 24fc263..cff4aa7 100644
+--- a/sports_federation_officiating/__manifest__.py
++++ b/sports_federation_officiating/__manifest__.py
+@@ -1,6 +1,6 @@
+ {
+     "name": "Sports Federation Officiating",
+-    "version": "19.0.1.4.0",
++    "version": "19.0.1.5.0",
+     "category": "Sports",
+     "summary": "Referee management and match assignments",
+     "description": "Referee management, certifications, and match assignment workflows.",
+diff --git a/sports_federation_officiating/models/competition_workspace_extension.py b/sports_federation_officiating/models/competition_workspace_extension.py
+index d1aaeab..84f44ae 100644
+--- a/sports_federation_officiating/models/competition_workspace_extension.py
++++ b/sports_federation_officiating/models/competition_workspace_extension.py
+@@ -47,6 +47,102 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
+             "completed",
+         )
+ 
++    @staticmethod
++    def _windows_overlap(start_a, end_a, start_b, end_b):
++        return bool(start_a and start_b and not (end_a <= start_b or end_b <= start_a))
++
++    @staticmethod
++    def _match_club_ids(match):
++        return set((match.home_team_id.club_id | match.away_team_id.club_id).ids)
++
++    def _club_duty_conflicts(
++        self,
++        workspace_service,
++        match,
++        slot,
++        effective_slots=False,
++    ):
++        """Detect a club playing while supplying an overlapping official duty."""
++        if "club_referee_duty_ids" not in match._fields:
++            return []
++        target_start, target_end = self._match_window(
++            match, slot=slot, effective_slots=effective_slots
++        )
++        if not target_start:
++            return []
++
++        planner_root = workspace_service._get_planner_root_gameday(slot.round_id)
++        planner_matches = planner_root.slot_ids.filtered("match_id").mapped("match_id") | match
++        target_playing_clubs = self._match_club_ids(match)
++        conflicts = []
++        seen = set()
++
++        for other in planner_matches:
++            if other == match:
++                continue
++            other_slot = (effective_slots or {}).get(other.id) or other.slot_id
++            other_start, other_end = self._match_window(
++                other, slot=other_slot, effective_slots=effective_slots
++            )
++            if not self._windows_overlap(target_start, target_end, other_start, other_end):
++                continue
++
++            for duty in other.club_referee_duty_ids.filtered(
++                lambda item: item.state != "draft"
++                and item.club_id.id in target_playing_clubs
++            ):
++                key = (duty.id, match.id, other.id)
++                if key in seen:
++                    continue
++                seen.add(key)
++                conflicts.append(
++                    self._club_duty_overlap_issue(
++                        duty=duty,
++                        playing_match=match,
++                        duty_match=other,
++                        slot=slot,
++                    )
++                )
++
++            other_playing_clubs = self._match_club_ids(other)
++            for duty in match.club_referee_duty_ids.filtered(
++                lambda item: item.state != "draft"
++                and item.club_id.id in other_playing_clubs
++            ):
++                key = (duty.id, other.id, match.id)
++                if key in seen:
++                    continue
++                seen.add(key)
++                conflicts.append(
++                    self._club_duty_overlap_issue(
++                        duty=duty,
++                        playing_match=other,
++                        duty_match=match,
++                        slot=slot,
++                    )
++                )
++        return conflicts
++
++    @staticmethod
++    def _club_duty_overlap_issue(duty, playing_match, duty_match, slot):
++        role_label = dict(duty._fields["role"].selection).get(duty.role, duty.role)
++        return {
++            "code": "club_duty_play_overlap",
++            "message": _(
++                "%(club)s cannot play %(playing_match)s while supplying %(role)s "
++                "for %(duty_match)s in the same timeslot.",
++                club=duty.club_id.display_name,
++                playing_match=playing_match.display_name,
++                role=role_label,
++                duty_match=duty_match.display_name,
++            ),
++            "record_id": playing_match.id,
++            "match_id": playing_match.id,
++            "slot_id": slot.id,
++            "duty_id": duty.id,
++            "club_id": duty.club_id.id,
++        }
++
+     def extend_match_assignment_validation(
+         self,
+         workspace_service,
+@@ -56,11 +152,16 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
+     ):
+         if "referee_assignment_ids" not in match._fields:
+             return {}
++        duty_conflicts = self._club_duty_conflicts(
++            workspace_service,
++            match,
++            slot,
++            effective_slots=effective_slots,
++        )
+         if not self._officiating_checks_active_for_planner(
+             workspace_service, slot.round_id
+         ):
+-            return {}
+-
++            return {"blocking": duty_conflicts, "warnings": []}
+         target_start, target_end = self._match_window(
+             match,
+             slot=slot,
+@@ -69,7 +170,7 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
+         if not target_start:
+             return {}
+ 
+-        blocking = []
++        blocking = list(duty_conflicts)
+         warnings = []
+         for assignment in self._active_referee_assignments(match):
+             overlaps = assignment._get_overlapping_assignments(
+@@ -171,6 +272,11 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
+         if "referee_assignment_ids" not in match._fields:
+             return {}
+         officiating_warnings = match._get_officiating_warnings()
++        active_duties = match.club_referee_duty_ids.filtered(
++            lambda duty: duty.state != "draft"
++        ) if "club_referee_duty_ids" in match._fields else self.env[
++            "federation.match.club.referee.duty"
++        ]
+         return {
+             "officiating": {
+                 "required_count": match.required_referee_count,
+@@ -179,6 +285,23 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
+                 "issues": match.official_readiness_issues or False,
+                 "warning_count": len(officiating_warnings),
+                 "warnings": officiating_warnings,
++                "club_duty_count": len(active_duties),
++                "club_duties": [
++                    {
++                        "id": duty.id,
++                        "club_id": duty.club_id.id,
++                        "club_name": duty.club_id.display_name,
++                        "role": duty.role,
++                        "role_label": dict(duty._fields["role"].selection).get(
++                            duty.role, duty.role
++                        ),
++                        "state": duty.state,
++                        "state_label": dict(duty._fields["state"].selection).get(
++                            duty.state, duty.state
++                        ),
++                    }
++                    for duty in active_duties
++                ],
+             }
+         }
+ 
+diff --git a/sports_federation_officiating/tests/test_officiating.py b/sports_federation_officiating/tests/test_officiating.py
+index 02e1812..f59ec69 100644
+--- a/sports_federation_officiating/tests/test_officiating.py
++++ b/sports_federation_officiating/tests/test_officiating.py
+@@ -692,6 +692,43 @@ class TestCompetitionWorkspaceOfficiatingIntegration(TransactionCase):
+             ["referee_unavailable"],
+         )
+ 
++    def test_workspace_blocks_club_playing_during_its_referee_duty(self):
++        """A club cannot play and supply an official in overlapping slots."""
++        duty = self.env["federation.match.club.referee.duty"].create(
++            {
++                "match_id": self.match_b.id,
++                "club_id": self.club.id,
++                "role": "table",
++            }
++        )
++        duty.action_open()
++        self.service.assign_match_to_slot(self.match_b.id, self.slot_b.id)
++
++        validation = self.service.validate_match_assignment(
++            self.match_a.id, self.slot_a.id
++        )
++
++        codes = {issue["code"] for issue in validation["blocking"]}
++        self.assertIn("club_duty_play_overlap", codes)
++
++    def test_workspace_ignores_unopened_club_referee_duty(self):
++        """A draft duty does not constrain the planner until it is opened."""
++        self.env["federation.match.club.referee.duty"].create(
++            {
++                "match_id": self.match_b.id,
++                "club_id": self.club.id,
++                "role": "table",
++            }
++        )
++        self.service.assign_match_to_slot(self.match_b.id, self.slot_b.id)
++
++        validation = self.service.validate_match_assignment(
++            self.match_a.id, self.slot_a.id
++        )
++
++        codes = {issue["code"] for issue in validation["blocking"]}
++        self.assertNotIn("club_duty_play_overlap", codes)
++
+     def test_workspace_validation_blocks_double_booked_referee(self):
+         """Planner validation blocks double-booked referees after planning is published."""
+         self.env["federation.match.referee"].create(

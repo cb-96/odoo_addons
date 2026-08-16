@@ -1,0 +1,37 @@
+=== CURRENT BRANCH ===
+main
+
+=== CURRENT COMMIT ===
+e504f225d467f9f0fdc3ca3f4e184db6537a8024
+
+=== WORKTREE STATUS ===
+?? package_2.patch
+?? package_2_current_sources.txt
+?? package_2_git_metadata.txt
+
+=== RECENT COMMITS ===
+e504f22 (HEAD -> main) Implemented package 1 from Copilot.
+e4175c4 test(api): expand integration contract verification gates
+87aad49 perf(reporting): modernize snapshot query aggregation
+26360ee feat(observability): standardize correlation IDs across flows
+db3b917 feat(standings): add recompute queue with idempotent jobs
+ee8b4d1 (origin/main, origin/HEAD) Merge branch 'followup/decompose-workspace-ops-finalize'
+5be9512 (followup/decompose-workspace-ops-finalize) test: split workspace auto schedule suite
+f2bb481 refactor operations workspace service seams
+6a5aee6 (feat/top10-sequence-execution) execute top10 sequence: strict CI, lint baseline, security hardening, decomposition, docs
+7273916 merge: resolve pycache conflicts by keeping tracked-bytecode deletions
+59d9f40 Merge branch 'chore/untrack-pycache'
+c084f0b (chore/untrack-pycache) chore: stop tracking python bytecode cache files
+420bf11 (review/top10-critical-health-pass) review pass: implement 10 critical health fixes
+bf69b52 (fix/health-pass-six-items) health pass: implement six hardening fixes with focused CI
+a61e52d (copilot/worktree-2026-05-19T17-48-58) Merge pull request #7 from cb-96/copilot/worktree-2026-05-19T17-48-58
+
+=== PACKAGE 2 FILE HISTORY ===
+e504f22 Implemented package 1 from Copilot.
+6a5aee6 execute top10 sequence: strict CI, lint baseline, security hardening, decomposition, docs
+ce9f9a7 Validation flow competition workspace.
+5bccad5 Improve workspace UX flows and add frontend UI tests
+803596f competition_workspace: require shared stage and round mapping in gameday form
+bd43267 competition_workspace: use existing round options in gameday form
+385b7ef competition_workspace: make gamedays round-targeted and strict per-round
+69bd4f4 Improvements to intuitiveness.

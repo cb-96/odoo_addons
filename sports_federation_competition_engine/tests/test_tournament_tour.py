@@ -115,12 +115,20 @@ class TestTournamentTour(TransactionCase):
 
     def _ensure_ready_roster(self, team, season):
         """Guarantee an active roster exists so schedule guards pass."""
-        roster = self.env["federation.team.roster"].search(
-            [("team_id", "=", team.id), ("season_id", "=", season.id)],
+        Roster = self.env.get("federation.team.roster")
+        if Roster is None:
+            return False
+        
+        roster = Roster.search(
+            [
+                ("team_id", "=", team.id), 
+                ("season_id", "=", season.id)
+            ],
             limit=1,
         )
+        
         if not roster:
-            roster = self.env["federation.team.roster"].create(
+            roster = Roster.create(
                 {
                     "team_id": team.id,
                     "season_id": season.id,
