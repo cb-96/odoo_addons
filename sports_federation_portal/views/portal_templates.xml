@@ -545,11 +545,22 @@
                                         <td><t t-esc="reg.registration_date" t-options='{"widget": "date"}'/></td>
                                         <td>
                                             <span class="badge"
-                                                  t-att-class="'text-bg-warning' if reg.state == 'submitted' else 'text-bg-success' if reg.state == 'confirmed' else 'text-bg-secondary' if reg.state == 'draft' else 'text-bg-danger'">
+                                                  t-att-class="'text-bg-warning' if reg.state in ('submitted', 'returned') else 'text-bg-success' if reg.state == 'confirmed' else 'text-bg-secondary' if reg.state == 'draft' else 'text-bg-danger'">
                                                 <t t-esc="reg.get_portal_state_label()"/>
                                             </span>
                                         </td>
                                         <td>
+                                            <form t-if="reg.state == 'returned'"
+                                                  t-attf-action="/my/tournament-registration/#{reg.id}/resubmit"
+                                                  method="POST" class="mb-2">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <label t-attf-for="registration_notes_#{reg.id}" class="form-label small">Correction note</label>
+                                                <textarea t-attf-id="registration_notes_#{reg.id}" name="notes" class="form-control form-control-sm mb-2" rows="2"><t t-esc="reg.notes or ''"/></textarea>
+                                                <button type="submit" class="btn btn-sm btn-primary">Resubmit</button>
+                                            </form>
+                                            <div t-if="reg.state == 'returned' and reg.decision_reason" class="alert alert-warning py-2 small" role="alert">
+                                                <strong>Federation feedback:</strong> <t t-esc="reg.decision_reason"/>
+                                            </div>
                                             <form t-if="reg.state in ('draft', 'submitted')"
                                                   t-attf-action="/my/season-registration/#{reg.id}/cancel"
                                                   method="POST" class="d-inline">
@@ -639,11 +650,22 @@
                                         <td><t t-esc="reg.registration_date" t-options='{"widget": "date"}'/></td>
                                         <td>
                                             <span class="badge"
-                                                  t-att-class="'text-bg-warning' if reg.state == 'submitted' else 'text-bg-success' if reg.state == 'confirmed' else 'text-bg-secondary' if reg.state == 'draft' else 'text-bg-danger' if reg.state == 'rejected' else 'text-bg-dark'">
+                                                  t-att-class="'text-bg-warning' if reg.state in ('submitted', 'returned') else 'text-bg-success' if reg.state == 'confirmed' else 'text-bg-secondary' if reg.state == 'draft' else 'text-bg-danger' if reg.state == 'rejected' else 'text-bg-dark'">
                                                 <t t-esc="reg.get_portal_state_label()"/>
                                             </span>
                                         </td>
                                         <td>
+                                            <form t-if="reg.state == 'returned'"
+                                                  t-attf-action="/my/tournament-registration/#{reg.id}/resubmit"
+                                                  method="POST" class="mb-2">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <label t-attf-for="registration_notes_#{reg.id}" class="form-label small">Correction note</label>
+                                                <textarea t-attf-id="registration_notes_#{reg.id}" name="notes" class="form-control form-control-sm mb-2" rows="2"><t t-esc="reg.notes or ''"/></textarea>
+                                                <button type="submit" class="btn btn-sm btn-primary">Resubmit</button>
+                                            </form>
+                                            <div t-if="reg.state == 'returned' and reg.decision_reason" class="alert alert-warning py-2 small" role="alert">
+                                                <strong>Federation feedback:</strong> <t t-esc="reg.decision_reason"/>
+                                            </div>
                                             <form t-if="reg.state in ('draft', 'submitted')"
                                                   t-attf-action="/my/tournament-registration/#{reg.id}/cancel"
                                                   method="POST" class="d-inline">

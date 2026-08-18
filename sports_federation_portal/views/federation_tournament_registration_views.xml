@@ -15,7 +15,7 @@
                 <field name="registration_date"/>
                 <field name="state" widget="badge"
                        decoration-success="state == 'confirmed'"
-                       decoration-warning="state == 'submitted'"
+                       decoration-warning="state in ('submitted', 'returned')"
                        decoration-danger="state == 'rejected'"
                        decoration-info="state == 'draft'"/>
             </list>
@@ -35,6 +35,9 @@
                     <button name="action_confirm" string="Confirm" type="object"
                             class="btn-success"
                             invisible="state != 'submitted'"/>
+                    <button name="action_return" string="Return for Correction" type="object"
+                            class="btn-warning"
+                            invisible="state != 'submitted'"/>
                     <button name="action_reject" string="Reject" type="object"
                             class="btn-danger"
                             invisible="state != 'submitted'"/>
@@ -44,7 +47,7 @@
                     <button name="action_reset_draft" string="Reset to Draft" type="object"
                             invisible="state not in ('rejected', 'cancelled')"/>
                     <field name="state" widget="statusbar"
-                           statusbar_visible="draft,submitted,confirmed"/>
+                           statusbar_visible="draft,submitted,returned,confirmed"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -83,6 +86,9 @@
                     </group>
                     <group>
                         <field name="notes"/>
+                        <field name="decision_reason"
+                               placeholder="Required before returning or rejecting a submitted registration"
+                               invisible="state not in ('submitted', 'returned', 'rejected')"/>
                         <field name="rejection_reason"
                                invisible="state != 'rejected'"/>
                     </group>
@@ -105,6 +111,7 @@
                 <field name="user_id"/>
                 <filter name="filter_draft" string="Draft" domain="[('state', '=', 'draft')]"/>
                 <filter name="filter_submitted" string="Submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter name="filter_returned" string="Returned" domain="[('state', '=', 'returned')]"/>
                 <filter name="filter_confirmed" string="Confirmed" domain="[('state', '=', 'confirmed')]"/>
                 <filter name="filter_rejected" string="Rejected" domain="[('state', '=', 'rejected')]"/>
                 <separator/>

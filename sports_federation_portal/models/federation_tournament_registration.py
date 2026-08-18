@@ -89,6 +89,7 @@ class FederationTournamentRegistration(models.Model):
         [
             ("draft", "Draft"),
             ("submitted", "Submitted"),
+            ("returned", "Returned for correction"),
             ("confirmed", "Confirmed"),
             ("rejected", "Rejected"),
             ("cancelled", "Cancelled"),
@@ -103,6 +104,16 @@ class FederationTournamentRegistration(models.Model):
         string="Rejection Reason",
         readonly=True,
         tracking=True,
+    )
+    reviewed_by_id = fields.Many2one(
+        "res.users", string="Reviewed By", readonly=True, copy=False, tracking=True
+    )
+    reviewed_on = fields.Datetime(
+        string="Reviewed On", readonly=True, copy=False, tracking=True
+    )
+    decision_reason = fields.Text(
+        string="Decision Reason", tracking=True,
+        help="Required when returning or rejecting a registration.",
     )
     participant_id = fields.Many2one(
         "federation.tournament.participant",
@@ -332,19 +343,56 @@ class FederationTournamentRegistration(models.Model):
     # ------------------------------------------------------------------
 
     def action_submit(self):
-        """Submit the registration for review."""
+        """Submit a new or corrected registration for federation review."""
         for rec in self:
-            if rec.state != "draft":
-                raise ValidationError("Only draft registrations can be submitted.")
-            rec.state = "submitted"
+            if rec.state not in ("draft", "returned"):
+                raise ValidationError(
+                    _("Only draft or returned registrations can be submitted.")
+                )
+            rec.write(
+                {
+                    "state": "submitted",
+                    "reviewed_by_id": False,
+                    "reviewed_on": False,
+                    "rejection_reason": False,
+                }
+            )
+
+    def action_return(self, reason=None):
+        """Return a submitted registration to the club for correction."""
+        reason = (reason or self[:1].decision_reason or "").strip()
+        if not reason:
+            raise ValidationError(_("A reason is required when returning a registration."))
+        for rec in self:
+            if rec.state != "submitted":
+                raise ValidationError(_("Only submitted registrations can be returned."))
+            rec.write(
+                {
+                    "state": "returned",
+                    "decision_reason": reason,
+                    "rejection_reason": False,
+                    "reviewed_by_id": self.env.user.id,
+                    "reviewed_on": fields.Datetime.now(),
+                }
+            )
 
     def action_confirm(self):
         """Confirm the registration and optionally create a participant."""
         for rec in self:
+            if rec.state == "confirmed" and rec.participant_id:
+                continue
             if rec.state != "submitted":
-                raise ValidationError("Only submitted registrations can be confirmed.")
-            rec.state = "confirmed"
-            # Create participant record if one does not already exist
+                raise ValidationError(_("Only submitted registrations can be confirmed."))
+            rec.write(
+                {
+                    "state": "confirmed",
+                    "decision_reason": False,
+                    "rejection_reason": False,
+                    "reviewed_by_id": self.env.user.id,
+                    "reviewed_on": fields.Datetime.now(),
+                }
+            )
+            # Create or reuse the scheduling participant idempotently.
             if not rec.participant_id:
                 existing = self.env["federation.tournament.participant"].search(
                     [
@@ -367,13 +415,22 @@ class FederationTournamentRegistration(models.Model):
                     rec.participant_id = participant.id
 
     def action_reject(self, reason=None):
-        """Reject the registration with an optional reason."""
+        """Reject a submitted registration and persist the required reason."""
+        reason = (reason or self[:1].decision_reason or "").strip()
+        if not reason:
+            raise ValidationError(_("A reason is required when rejecting a registration."))
         for rec in self:
             if rec.state != "submitted":
-                raise ValidationError("Only submitted registrations can be rejected.")
-            rec.state = "rejected"
-            if reason:
-                rec.rejection_reason = reason
+                raise ValidationError(_("Only submitted registrations can be rejected."))
+            rec.write(
+                {
+                    "state": "rejected",
+                    "decision_reason": reason,
+                    "rejection_reason": reason,
+                    "reviewed_by_id": self.env.user.id,
+                    "reviewed_on": fields.Datetime.now(),
+                }
+            )
 
     def action_cancel(self):
         """Cancel the registration (portal or backend)."""

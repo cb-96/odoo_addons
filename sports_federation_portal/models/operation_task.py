@@ -178,7 +178,7 @@ class FederationOperationTask(models.Model):
         specs = []
         registration_domain = [] if is_manager else [("club_id", "in", club_ids)]
         registrations = self.env["federation.tournament.registration"].sudo().search(
-            registration_domain + [("state", "in", ("draft", "submitted", "rejected"))]
+            registration_domain + [("state", "in", ("draft", "submitted", "returned", "rejected"))]
         )
         for registration in registrations:
             audience = "manager" if registration.state == "submitted" else "club"
@@ -194,8 +194,10 @@ class FederationOperationTask(models.Model):
                             registration.state, registration.state
                         )
                     },
-                    _("Review tournament registration"),
-                    priority="1" if registration.state == "rejected" else "0",
+                    _("Correct and resubmit registration")
+                    if registration.state == "returned"
+                    else _("Review tournament registration"),
+                    priority="1" if registration.state in ("returned", "rejected") else "0",
                 )
             )
 

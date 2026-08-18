@@ -2,7 +2,7 @@
 main
 
 === CURRENT COMMIT ===
-ffb762ec37629f883c92ecb848ca81c4d9829a4e
+37010576681e4fbc9d396963458a59288b4cd2ae
 
 === WORKTREE STATUS ===
  M current_sources.txt
@@ -21,14 +21,15 @@ sports_federation_officiating: "version": "19.0.1.5.0",
 
 sports_federation_result_control: "version": "19.0.1.1.0",
 
-sports_federation_portal: "version": "19.0.1.5.0",
+sports_federation_portal: "version": "19.0.1.6.0",
 
 sports_federation_notifications: "version": "19.0.1.2.0",
 
 
 === RELEVANT RECENT HISTORY ===
 
-ffb762e (HEAD -> main) feat(portal): add operational action queues
+3701057 (HEAD -> main) New patch applied (patch_2608181501). Updated .gitignore.
+ffb762e feat(portal): add operational action queues
 0125507 Added source_collector.py
 437bbc9 chore: remove generated package artifacts
 cc31727 test: restore portal and public smoke contracts
@@ -47,9 +48,8 @@ bf69b52 (fix/health-pass-six-items) health pass: implement six hardening fixes w
 17aa078 Resolved Linting issue and Public Ops test.
 ce9f9a7 Validation flow competition workspace.
 5bccad5 Improve workspace UX flows and add frontend UI tests
-803596f competition_workspace: require shared stage and round mapping in gameday form
 
 
 === DISCOVERED FILE COUNT ===
 
-200
+201

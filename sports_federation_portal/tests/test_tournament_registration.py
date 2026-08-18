@@ -284,3 +284,44 @@ class TestTournamentRegistration(TransactionCase):
                 self.eligible_team,
                 user=self.user_a,
             )
+
+    def test_return_requires_reason_and_can_be_resubmitted(self):
+        registration = self.env["federation.tournament.registration"].create(
+            {"tournament_id": self.tournament.id, "team_id": self.eligible_team.id}
+        )
+        registration.action_submit()
+        with self.assertRaises(ValidationError):
+            registration.action_return()
+        registration.action_return("Please correct the team contact details.")
+        self.assertEqual(registration.state, "returned")
+        self.assertTrue(registration.reviewed_by_id)
+        self.assertTrue(registration.reviewed_on)
+        registration.action_submit()
+        self.assertEqual(registration.state, "submitted")
+
+    def test_reject_requires_reason(self):
+        registration = self.env["federation.tournament.registration"].create(
+            {"tournament_id": self.tournament.id, "team_id": self.eligible_team.id}
+        )
+        registration.action_submit()
+        with self.assertRaises(ValidationError):
+            registration.action_reject()
+        registration.action_reject("Tournament eligibility was not met.")
+        self.assertEqual(registration.state, "rejected")
+        self.assertEqual(registration.rejection_reason, "Tournament eligibility was not met.")
+
+    def test_confirmation_is_idempotent(self):
+        registration = self.env["federation.tournament.registration"].create(
+            {"tournament_id": self.tournament.id, "team_id": self.eligible_team.id}
+        )
+        registration.action_submit()
+        registration.action_confirm()
+        participant = registration.participant_id
+        registration.action_confirm()
+        self.assertEqual(registration.participant_id, participant)
+        self.assertEqual(
+            self.env["federation.tournament.participant"].search_count(
+                [("tournament_id", "=", self.tournament.id), ("team_id", "=", self.eligible_team.id)]
+            ),
+            1,
+        )

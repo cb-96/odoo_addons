@@ -181,6 +181,53 @@ class FederationRegistrationPortal(FederationPortalBase):
         )
 
     @http.route(
+        ["/my/tournament-registration/<int:reg_id>/resubmit"],
+        type="http",
+        auth="user",
+        website=True,
+        methods=["POST"],
+        csrf=True,
+    )
+    def portal_tournament_registration_resubmit(self, reg_id, notes="", **kw):
+        """Resubmit a returned registration through the portal privilege boundary."""
+        Registration = request.env["federation.tournament.registration"]
+        scope_domain = [("club_id", "in", self._get_portal_clubs().ids)]
+        registration = request.env["federation.portal.privilege"].portal_search_by_id(
+            Registration,
+            reg_id,
+            domain=scope_domain,
+            user=request.env.user,
+        )
+        if not registration:
+            return self._render_access_denied()
+        try:
+            if registration.state != "returned":
+                raise ValidationError("Only returned registrations can be resubmitted.")
+            if notes.strip():
+                request.env["federation.portal.privilege"].portal_write(
+                    registration,
+                    {"notes": notes.strip()},
+                    scope_domain=scope_domain,
+                    user=request.env.user,
+                )
+            request.env["federation.portal.privilege"].portal_call(
+                registration,
+                "action_submit",
+                scope_domain=scope_domain,
+                user=request.env.user,
+            )
+        except (AccessError, ValidationError) as error:
+            return self._redirect_with_query(
+                "/my/tournament-registrations",
+                error=str(error),
+                error_hint="Review the federation feedback, correct the registration and resubmit it.",
+            )
+        return self._redirect_with_query(
+            "/my/tournament-registrations",
+            success="Tournament registration resubmitted",
+        )
+
+    @http.route(
         ["/my/tournament-registration/<int:reg_id>/cancel"],
         type="http",
         auth="user",
