@@ -1012,6 +1012,16 @@ Guided flow
   work stay separate in the planner.
   A gameday can now include one or more additional divisions from the same
   competition when they share the same physical match day.
+  Empty draft or planned gamedays can be deleted from the same workspace with
+  confirmation. Deletion removes empty planner slots and linked shared-division
+  gamedays together; assigned, validated, published, locked, or completed
+  gamedays require the existing schedule workflow instead.
+6a. Use the Schedule tab to create additional ordered stages. A stage can be a
+  group/league phase, knockout, final, or placement phase. When the next stage
+  should receive qualifiers from the previous one, configure the source stage,
+  rank range, and optional automatic advancement. Rounds and gamedays remain
+  owned by their stage. Pool-then-bracket remains the one-step guided option
+  for generating pool play followed by knockouts.
 7. Generate court and timeslot slots for a gameday.
 8. Open the visual planner and assign matches to slots.
   The planner now supports selected-match bulk assign and bulk unassign,
@@ -1070,7 +1080,7 @@ Key models and services
   reversed without leaving the workspace.
 - `federation.competition.workspace.service` owns competition creation,
   division creation, team-entry confirmation, format-aware schedule generation,
-  gameday creation, slot generation, assignment validation, bulk planner
+  gameday creation and guarded deletion, slot generation, assignment validation, bulk planner
   actions, planner history, revisioned publication, collaboration heartbeat,
   and payload building for the Owl action.
 - The service internals now keep three stable seams: access helpers in
@@ -1383,7 +1393,7 @@ FILE: sports_federation_competition_engine/__manifest__.py
 
 {
     "name": "Sports Federation Competition Engine",
-    "version": "19.0.1.4.0",
+    "version": "19.0.1.5.0",
     "category": "Sports",
     "summary": "Competition engine with round-robin and knockout generation wizards",
     "description": "Competition generation services and wizards for round-robin and knockout tournaments.",
@@ -4627,6 +4637,93 @@ class CompetitionWorkspaceService(
         return self.generate_schedule_structure(division_id, force=force)
 
     @api.model
+    def create_stage(self, vals):
+        """Create a planning stage and optionally link it from a prior stage."""
+        self._check_access()
+        division = self._resolve_division(vals.get("division_id"))
+        if division.workspace_state in (
+            "published",
+            "in_progress",
+            "completed",
+            "archived",
+            "cancelled",
+        ):
+            raise ValidationError(
+                _("Stages cannot be added after the competition has been published.")
+            )
+
+        name = (vals.get("name") or "").strip()
+        if not name:
+            raise ValidationError(_("Enter a name for the new stage."))
+
+        stage_type = vals.get("stage_type") or "group"
+        valid_stage_types = dict(
+            self.env["federation.tournament.stage"]._fields["stage_type"].selection
+        )
+        if stage_type not in valid_stage_types:
+            raise ValidationError(_("Select a valid stage type."))
+
+        sequence = vals.get("sequence")
+        if sequence in (False, None, ""):
+            sequence = max(division.stage_ids.mapped("sequence") or [0]) + 10
+        try:
+            sequence = int(sequence)
+        except (TypeError, ValueError):
+            raise ValidationError(_("Stage order must be a positive integer."))
+        if sequence < 1:
+            raise ValidationError(_("Stage order must be a positive integer."))
+
+        stage = self.env["federation.tournament.stage"].create(
+            {
+                "name": name,
+                "tournament_id": division.id,
+                "sequence": sequence,
+                "stage_type": stage_type,
+                "date_start": vals.get("date_start") or False,
+                "date_end": vals.get("date_end") or False,
+                "notes": vals.get("notes") or False,
+            }
+        )
+
+        source_stage_id = vals.get("source_stage_id")
+        if source_stage_id:
+            source_stage = self._resolve_workspace_stage(
+                division,
+                stage_id=source_stage_id,
+            )
+            rank_from = vals.get("rank_from") or 1
+            rank_to = vals.get("rank_to") or rank_from
+            try:
+                rank_from = int(rank_from)
+                rank_to = int(rank_to)
+            except (TypeError, ValueError):
+                raise ValidationError(_("Stage qualification ranks must be integers."))
+            if rank_from < 1 or rank_to < rank_from:
+                raise ValidationError(
+                    _("The qualification range must start at 1 and end at or after it.")
+                )
+            self.env["federation.stage.progression"].create(
+                {
+                    "tournament_id": division.id,
+                    "sequence": sequence,
+                    "source_stage_id": source_stage.id,
+                    "target_stage_id": stage.id,
+                    "rank_from": rank_from,
+                    "rank_to": rank_to,
+                    "seeding_method": vals.get("seeding_method") or "keep_rank",
+                    "auto_advance": bool(vals.get("auto_advance")),
+                }
+            )
+
+        return {
+            "stage_id": stage.id,
+            "payload": self.get_competition_workspace_data(
+                division.edition_id.id if division.edition_id else False,
+                division.id,
+            ),
+        }
+
+    @api.model
     def create_gameday(self, vals):
         self._check_access()
         division = self._resolve_division(vals["division_id"])
@@ -4687,6 +4784,48 @@ class CompetitionWorkspaceService(
             "payload": self.get_competition_workspace_data(
                 division.edition_id.id if division.edition_id else False,
                 division.id,
+            ),
+        }
+
+    @api.model
+    def delete_gameday(self, gameday_id):
+        """Delete an unassigned draft/planned gameday and its shared guests."""
+        self._check_access()
+        gameday = self._resolve_gameday(gameday_id)
+        planner_root = self._get_planner_root_gameday(gameday)
+        linked_gamedays = planner_root._competition_workspace_linked_rounds()
+
+        if any(
+            record.planner_state not in ("draft", "planned")
+            for record in linked_gamedays
+        ):
+            raise ValidationError(
+                _(
+                    "Only draft or planned gamedays can be deleted. Published, validated, locked, or completed gamedays must be cancelled or managed through the schedule workflow."
+                )
+            )
+        if linked_gamedays.mapped("slot_ids").filtered("match_id"):
+            raise ValidationError(
+                _(
+                    "This gameday has assigned matches. Unassign every match before deleting the gameday."
+                )
+            )
+
+        divisions = linked_gamedays.mapped("tournament_id")
+        root_division = planner_root.tournament_id
+        edition_id = root_division.edition_id.id if root_division.edition_id else False
+        selected_division_id = gameday.tournament_id.id
+        deleted_gameday_ids = linked_gamedays.ids
+        linked_gamedays.unlink()
+        for division in divisions:
+            if not division.round_ids and division.workspace_state == "planning":
+                division._competition_workspace_transition_state("schedule_generated")
+
+        return {
+            "deleted_gameday_ids": deleted_gameday_ids,
+            "payload": self.get_competition_workspace_data(
+                edition_id,
+                selected_division_id,
             ),
         }
 
@@ -8392,6 +8531,17 @@ export class CompetitionWorkspaceAction extends Component {
                 buffer_minutes: "5",
                 venue_id: "",
             },
+            stageForm: {
+                auto_advance: false,
+                date_end: "",
+                date_start: "",
+                name: "",
+                rank_from: "1",
+                rank_to: "2",
+                sequence: "",
+                source_stage_id: "",
+                stage_type: "group",
+            },
             loading: true,
             mobileAssign: {
                 gameday_id: params.gameday_id ? String(params.gameday_id) : "",
@@ -8412,6 +8562,7 @@ export class CompetitionWorkspaceAction extends Component {
                 title: "Please confirm",
                 tone: "primary",
             },
+            pendingGamedayDeletionId: false,
             plannerLoading: false,
             plannerPageSize: 40,
             plannerUnscheduledLimit: 40,
@@ -10435,6 +10586,37 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
     </t>
 
     <t t-name="sports_federation_competition_engine.CompetitionWorkspaceSectionRounds">
+        <section class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                        <h2 class="h5 mb-1">Stages</h2>
+                        <p class="text-muted small mb-0">Create phases in order. Rounds and gamedays are created inside the selected stage.</p>
+                    </div>
+                    <StatusBadge t-props="{ label: (selectedDivision.stage_options || []).length + ' stages', tone: 'info' }"/>
+                </div>
+                <div class="d-flex gap-2 flex-wrap mb-3" t-if="(selectedDivision.stage_options || []).length">
+                    <t t-foreach="selectedDivision.stage_options || []" t-as="stage" t-key="'stage-summary-' + stage.id">
+                        <span class="badge rounded-pill text-bg-light border"><t t-esc="stage.sequence"/> · <t t-esc="stage.name"/> · <t t-esc="stage.stage_type_label"/></span>
+                    </t>
+                </div>
+                <div class="row g-2">
+                    <div class="col-12 col-lg-3"><label class="form-label fw-semibold">Stage name</label><input type="text" class="form-control" name="name" placeholder="Round Robin Phase" t-att-value="state.stageForm.name" t-on-input="updateStageField"/></div>
+                    <div class="col-12 col-md-4 col-lg-2"><label class="form-label fw-semibold">Type</label><select class="form-select" name="stage_type" t-att-value="state.stageForm.stage_type" t-on-change="updateStageField"><option value="group">Group / league</option><option value="knockout">Knockout</option><option value="final">Final</option><option value="placement">Placement</option></select></div>
+                    <div class="col-6 col-md-4 col-lg-2"><label class="form-label fw-semibold">Order</label><input type="number" min="1" class="form-control" name="sequence" placeholder="Auto" t-att-value="state.stageForm.sequence" t-on-input="updateStageField"/></div>
+                    <div class="col-6 col-md-4 col-lg-2"><label class="form-label fw-semibold">Start</label><input type="date" class="form-control" name="date_start" t-att-value="state.stageForm.date_start" t-on-input="updateStageField"/></div>
+                    <div class="col-6 col-md-4 col-lg-2"><label class="form-label fw-semibold">End</label><input type="date" class="form-control" name="date_end" t-att-value="state.stageForm.date_end" t-on-input="updateStageField"/></div>
+                    <div class="col-12 col-md-4 col-lg-1 d-flex align-items-end"><button type="button" class="btn btn-primary w-100" t-att-disabled="state.saving" t-on-click="createStage">Add</button></div>
+                </div>
+                <div class="row g-2 mt-1">
+                    <div class="col-12 col-md-4"><label class="form-label fw-semibold">Advance from</label><select class="form-select" name="source_stage_id" t-att-value="state.stageForm.source_stage_id" t-on-change="updateStageField"><option value="">No automatic handoff</option><t t-foreach="selectedDivision.stage_options || []" t-as="sourceStage" t-key="'source-stage-' + sourceStage.id"><option t-att-value="sourceStage.id"><t t-esc="sourceStage.name"/></option></t></select></div>
+                    <div class="col-6 col-md-2"><label class="form-label fw-semibold">Rank from</label><input type="number" min="1" class="form-control" name="rank_from" t-att-value="state.stageForm.rank_from" t-on-input="updateStageField"/></div>
+                    <div class="col-6 col-md-2"><label class="form-label fw-semibold">Rank to</label><input type="number" min="1" class="form-control" name="rank_to" t-att-value="state.stageForm.rank_to" t-on-input="updateStageField"/></div>
+                    <div class="col-12 col-md-4 d-flex align-items-end"><label class="form-check mb-2"><input class="form-check-input" type="checkbox" name="auto_advance" t-att-checked="state.stageForm.auto_advance" t-on-change="updateStageField"/> <span class="form-check-label">Auto-advance qualifiers when standings are frozen</span></label></div>
+                </div>
+                <div class="form-text mt-2">For a round-robin phase followed by knockouts, create the knockout stage after the round-robin stage and set the qualification range. The Pool Then Bracket format can generate this structure automatically.</div>
+            </div>
+        </section>
         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
             <div>
                 <h2 class="h5 mb-1"><t t-esc="this.generationSectionTitle"/></h2>
@@ -10517,7 +10699,10 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
                         </div>
                         <div class="d-flex gap-2 flex-wrap mb-3" t-if="(selectedDivision.gamedays || []).length">
                             <t t-foreach="selectedDivision.gamedays || []" t-as="gameday" t-key="gameday.id">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" t-att-data-gameday-id="gameday.id" t-att-class="state.currentGamedayId === gameday.id ? 'active' : ''" t-on-click="selectGameday"><t t-esc="gameday.name"/><t t-if="gameday.stage_name"> · <t t-esc="gameday.stage_name"/></t></button>
+                                <div class="d-flex align-items-center gap-1">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" t-att-data-gameday-id="gameday.id" t-att-class="state.currentGamedayId === gameday.id ? 'active' : ''" t-on-click="selectGameday"><t t-esc="gameday.name"/><t t-if="gameday.stage_name"> · <t t-esc="gameday.stage_name"/></t></button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" t-att-data-gameday-id="gameday.id" t-att-disabled="state.saving" t-on-click="requestDeleteGameday" aria-label="Delete gameday" title="Delete gameday"><i class="fa fa-trash" aria-hidden="true"/></button>
+                                </div>
                             </t>
                         </div>
                         <div class="row g-3">
@@ -10792,6 +10977,54 @@ export class CompetitionWorkspaceFormMethods {
         if (ev.target.name === "planning_format" && ev.target.value !== "pool_then_bracket") {
             this.state.divisionForm.pool_count = "2";
             this.state.divisionForm.pool_qualifier_count = "2";
+        }
+    }
+
+    updateStageField(ev) {
+        const fieldName = ev.target.name;
+        this.state.stageForm[fieldName] = ev.target.type === "checkbox"
+            ? ev.target.checked
+            : ev.target.value;
+    }
+
+    async createStage() {
+        const name = this.state.stageForm.name.trim();
+        if (!name || !this.state.currentDivisionId) {
+            this.notify("Provide a stage name before creating it.", "warning");
+            return;
+        }
+        this.state.saving = true;
+        try {
+            const result = await this.orm.call(
+                "federation.competition.workspace.service",
+                "create_stage",
+                [{
+                    ...this.state.stageForm,
+                    division_id: this.state.currentDivisionId,
+                    sequence: this.state.stageForm.sequence
+                        ? Number(this.state.stageForm.sequence)
+                        : false,
+                    source_stage_id: this.state.stageForm.source_stage_id
+                        ? Number(this.state.stageForm.source_stage_id)
+                        : false,
+                    rank_from: Number(this.state.stageForm.rank_from || 1),
+                    rank_to: Number(this.state.stageForm.rank_to || 1),
+                }]
+            );
+            this.state.payload = result.payload;
+            this.state.stageForm = {
+                ...this.state.stageForm,
+                name: "",
+                sequence: "",
+                source_stage_id: "",
+                date_start: "",
+                date_end: "",
+            };
+            this.notify("Stage created.", "success");
+        } catch (error) {
+            this.notify(error.message || "The stage could not be created.", "danger");
+        } finally {
+            this.state.saving = false;
         }
     }
 
@@ -11148,6 +11381,53 @@ export class CompetitionWorkspaceFormMethods {
             await this.loadPlanner(result.gameday_id);
         } catch (error) {
             this.notify(error.message || "The gameday could not be created.", "danger");
+        } finally {
+            this.state.saving = false;
+        }
+    }
+
+    requestDeleteGameday(ev) {
+        const gamedayId = Number(ev.currentTarget.dataset.gamedayId || 0);
+        const gameday = (this.selectedDivision?.gamedays || []).find(
+            (record) => record.id === gamedayId
+        );
+        if (!gameday || this.state.saving) {
+            return;
+        }
+        this.state.pendingGamedayDeletionId = gamedayId;
+        this.openConfirmDialog({
+            action: "delete_gameday",
+            title: "Delete gameday",
+            message: `Delete ${gameday.name}? This also removes its empty planning slots and any linked shared-division gamedays. Assigned or published gamedays cannot be deleted.`,
+            confirmLabel: "Delete gameday",
+            tone: "danger",
+        });
+    }
+
+    async deleteGameday() {
+        const gamedayId = this.state.pendingGamedayDeletionId;
+        this.state.pendingGamedayDeletionId = false;
+        if (!gamedayId || !this.state.currentDivisionId) {
+            return;
+        }
+        this.state.saving = true;
+        try {
+            const result = await this.orm.call(
+                "federation.competition.workspace.service",
+                "delete_gameday",
+                [gamedayId]
+            );
+            this.state.payload = result.payload;
+            this.state.currentGamedayId = false;
+            this.state.gamedayForm.selected_gameday_id = "";
+            this.state.gamedayForm.courtIds = [];
+            this.clearPlannerSelection();
+            this.resetPlannerFilters();
+            this.resetPlannerPagination();
+            this.persistUiState();
+            this.notify("Gameday deleted.", "success");
+        } catch (error) {
+            this.notify(error.message || "The gameday could not be deleted.", "danger");
         } finally {
             this.state.saving = false;
         }
@@ -12767,6 +13047,82 @@ class TestCompetitionWorkspaceService(TransactionCase):
             preview["rounds"][1]["matches"][0]["away_team_name"],
         )
 
+    def test_create_stage_can_link_round_robin_to_knockout_stage(self):
+        division, _participants = self._create_division(
+            "Custom Stage Division",
+            6,
+            planning_format="manual",
+        )
+
+        round_robin_result = self.service.create_stage(
+            {
+                "division_id": division.id,
+                "name": "Round Robin Phase",
+                "stage_type": "group",
+                "sequence": 10,
+                "date_start": "2026-10-10",
+                "date_end": "2026-10-20",
+            }
+        )
+        round_robin_stage = self.env["federation.tournament.stage"].browse(
+            round_robin_result["stage_id"]
+        )
+
+        knockout_result = self.service.create_stage(
+            {
+                "division_id": division.id,
+                "name": "Knockout Phase",
+                "stage_type": "knockout",
+                "sequence": 20,
+                "source_stage_id": round_robin_stage.id,
+                "rank_from": 1,
+                "rank_to": 2,
+                "auto_advance": True,
+            }
+        )
+        knockout_stage = self.env["federation.tournament.stage"].browse(
+            knockout_result["stage_id"]
+        )
+
+        progression = self.env["federation.stage.progression"].search(
+            [
+                ("source_stage_id", "=", round_robin_stage.id),
+                ("target_stage_id", "=", knockout_stage.id),
+            ],
+            limit=1,
+        )
+        self.assertEqual(round_robin_stage.sequence, 10)
+        self.assertEqual(knockout_stage.sequence, 20)
+        self.assertEqual(progression.rank_from, 1)
+        self.assertEqual(progression.rank_to, 2)
+        self.assertTrue(progression.auto_advance)
+        self.assertEqual(
+            [
+                stage["name"]
+                for stage in knockout_result["payload"]["selected_division"][
+                    "stage_options"
+                ]
+            ],
+            ["Round Robin Phase", "Knockout Phase"],
+        )
+
+    def test_create_stage_rejects_published_divisions(self):
+        division, _participants = self._create_division(
+            "Published Stage Division",
+            4,
+            planning_format="manual",
+        )
+        division.write({"workspace_state": "published"})
+
+        with self.assertRaises(ValidationError):
+            self.service.create_stage(
+                {
+                    "division_id": division.id,
+                    "name": "Late Stage",
+                    "stage_type": "knockout",
+                }
+            )
+
     def _freeze_pool_standing(self, division, pool_stage, group, ranked_participants):
         standing = self.env["federation.standing"].create(
             {
@@ -13176,6 +13532,47 @@ class TestCompetitionWorkspaceService(TransactionCase):
                     "round_number": 0,
                 }
             )
+
+    def test_delete_gameday_removes_empty_gameday_and_reopens_division_state(self):
+        division, gameday = self._prepare_planned_division(
+            "Delete Empty Gameday Division"
+        )
+        self.assertEqual(division.workspace_state, "planning")
+
+        result = self.service.delete_gameday(gameday.id)
+
+        self.assertEqual(result["deleted_gameday_ids"], [gameday.id])
+        self.assertFalse(gameday.exists())
+        division.invalidate_recordset()
+        self.assertEqual(division.workspace_state, "schedule_generated")
+        self.assertFalse(division.round_ids)
+
+    def test_delete_gameday_rejects_assigned_matches(self):
+        division, gameday = self._prepare_planned_division(
+            "Delete Assigned Gameday Division"
+        )
+        match = division.match_ids[:1]
+        slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
+        self.assertTrue(self.service.assign_match_to_slot(match.id, slot.id)["ok"])
+
+        with self.assertRaises(ValidationError):
+            self.service.delete_gameday(gameday.id)
+
+        self.assertTrue(gameday.exists())
+
+    def test_delete_shared_gameday_removes_root_and_guest(self):
+        _host_division, guest_division, host_gameday, guest_gameday = (
+            self._prepare_shared_planned_divisions()
+        )
+
+        result = self.service.delete_gameday(guest_gameday.id)
+
+        self.assertEqual(
+            set(result["deleted_gameday_ids"]),
+            {host_gameday.id, guest_gameday.id},
+        )
+        self.assertFalse(host_gameday.exists())
+        self.assertFalse(guest_gameday.exists())
 
     def test_gameday_planner_data_strictly_scopes_unscheduled_matches_by_round_number(
         self,
@@ -14853,6 +15250,22 @@ class TestCompetitionWorkspaceService(TransactionCase):
             payload_with_planner["planner"]["gameday"]["planner_revision"],
             int,
         )
+
+    def test_workspace_payload_recovers_from_deleted_selected_gameday(self):
+        division, gameday = self._prepare_planned_division(
+            "Deleted Selected Gameday Division"
+        )
+        stale_gameday_id = gameday.id
+        gameday.unlink()
+
+        payload = self.service.get_competition_workspace_data(
+            self.edition.id,
+            division.id,
+            {"include_planner": True, "gameday_id": stale_gameday_id},
+        )
+
+        self.assertFalse(payload["planner"])
+        self.assertFalse(payload["selected_division"]["gamedays"])
 
     def test_gameday_planner_data_limits_unscheduled_matches(self):
         division, gameday = self._prepare_planned_division("Paginated Planner Division")
@@ -23528,7 +23941,7 @@ FILE: sports_federation_portal/__manifest__.py
 
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.1.8.0",
+    "version": "19.0.2.0.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -23557,6 +23970,7 @@ on top of the federation base modules.
         "security/ir_rule.xml",
         "data/federation_club_role_type.xml",
         "data/ir_sequence.xml",
+        "data/operation_task_cron.xml",
         "views/federation_club_role_type_views.xml",
         "views/federation_club_representative_views.xml",
         "views/federation_club_views.xml",
@@ -23568,6 +23982,7 @@ on top of the federation base modules.
         "views/federation_tournament_views.xml",
         "views/federation_match_sheet_views.xml",
         "views/federation_club_representative_portal_views.xml",
+        "views/qol_views.xml",
         "views/portal_templates.xml",
         "views/portal_officiating_templates.xml",
         "views/portal_tournament_workspace_templates.xml",
@@ -23582,6 +23997,7 @@ on top of the federation base modules.
     "assets": {
         "web.assets_frontend": [
             "sports_federation_portal/static/src/scss/federation_portal.scss",
+            "sports_federation_portal/static/src/js/qol_draft_guard.js",
             "sports_federation_portal/static/src/components/tournament_operations/tournament_operations.js",
             "sports_federation_portal/static/src/components/tournament_operations/tournament_operations.xml",
             "sports_federation_portal/static/src/components/tournament_operations/tournament_operations.scss",
@@ -23607,6 +24023,7 @@ from . import referee_duty_portal
 from . import tournament_operations
 from . import operation_tasks
 from . import manager_operation_tasks
+from . import qol
 
 ====================================================================================================
 FILE: sports_federation_portal/controllers/main.py
@@ -23627,6 +24044,9 @@ FILE: sports_federation_portal/controllers/manager_operation_tasks.py
 ====================================================================================================
 
 from collections import Counter
+from datetime import timedelta
+
+from odoo import fields
 
 from odoo import http
 from odoo.exceptions import AccessError
@@ -23660,6 +24080,14 @@ class FederationManagerOperationTasks(http.Controller):
             domain.append(("task_type", "=", task_type))
         if kw.get("blocking") == "1":
             domain.append(("blocking", "=", True))
+        if kw.get("club_id", "").isdigit():
+            domain.append(("responsible_club_id", "=", int(kw["club_id"])))
+        if kw.get("tournament_id", "").isdigit():
+            domain.append(("tournament_id", "=", int(kw["tournament_id"])))
+        if kw.get("assignee") == "me":
+            domain.append(("assigned_user_id", "=", request.env.user.id))
+        if kw.get("due") == "7":
+            domain += [("deadline", "!=", False), ("deadline", "<=", fields.Datetime.now() + timedelta(days=7))]
         tasks = Task.search(domain)
         all_open = Task.search(
             [("audience", "=", "manager"), ("state", "!=", "done")]
@@ -23679,6 +24107,10 @@ class FederationManagerOperationTasks(http.Controller):
                 "task_type_labels": allowed_types,
                 "active_task_type": task_type if task_type in allowed_types else False,
                 "active_blocking": kw.get("blocking") == "1",
+                "clubs": all_open.mapped("responsible_club_id"),
+                "tournaments": all_open.mapped("tournament_id"),
+                "active_filters": kw,
+                "success": kw.get("success"), "error": kw.get("error"),
             },
         )
 
@@ -24967,6 +25399,162 @@ class FederationWorkspacePortal(FederationPortalBase):
         )
 
 ====================================================================================================
+FILE: sports_federation_portal/controllers/qol.py
+====================================================================================================
+
+from collections import defaultdict
+from datetime import timedelta
+
+from odoo import _, fields, http
+from odoo.exceptions import AccessError, ValidationError
+from odoo.http import request
+
+from .operation_tasks import FederationOperationTaskPortal
+from .portal_helpers import FederationPortalBase
+
+
+class FederationOperationTaskPortalQoL(FederationOperationTaskPortal):
+    """Extend the existing action-items controller without a duplicate route owner."""
+
+    @http.route()
+    def portal_my_action_items(self, scope="my", status="open", task_type=None, **kw):
+        Task = request.env["federation.operation.task"].sudo()
+        Task.sync_for_user(user=request.env.user)
+        domain = Task._portal_get_domain(user=request.env.user)
+        if status == "recent":
+            domain += [
+                ("state", "=", "done"),
+                ("completed_on", ">=", fields.Datetime.now() - timedelta(days=7)),
+            ]
+        else:
+            domain += [("state", "!=", "done")]
+        if scope == "my":
+            domain += [
+                "|",
+                ("assigned_user_id", "=", request.env.user.id),
+                ("assigned_user_id", "=", False),
+            ]
+        allowed_types = dict(Task._fields["task_type"].selection)
+        if task_type in allowed_types:
+            domain += [("task_type", "=", task_type)]
+        tasks = Task.search(domain)
+        buckets = defaultdict(lambda: Task.browse())
+        for task in tasks:
+            bucket = task.work_bucket or "now"
+            if (
+                task.state != "done"
+                and task.assigned_user_id
+                and task.assigned_user_id != request.env.user
+            ):
+                bucket = "waiting"
+            buckets[bucket] |= task
+        representatives = request.env["federation.club.representative"].sudo().search([
+            ("club_id", "in", request.env.user.portal_club_scope_ids.ids),
+            ("is_current", "=", True),
+            ("effective_user_id", "!=", False),
+        ])
+        return request.render(
+            "sports_federation_portal.portal_my_operation_tasks",
+            {
+                "tasks": tasks,
+                "buckets": buckets,
+                "representatives": representatives,
+                "active_scope": scope,
+                "active_status": status,
+                "active_type": task_type,
+                "task_type_labels": allowed_types,
+                "success": kw.get("success"),
+                "error": kw.get("error"),
+                "page_name": "my_action_items",
+            },
+        )
+
+
+class FederationQoLPortal(FederationPortalBase):
+    def _task_scope(self):
+        Task = request.env["federation.operation.task"].sudo()
+        return Task, Task._portal_get_domain(user=request.env.user)
+
+    @http.route("/my/action-items/assign", type="http", auth="user", website=True, methods=["POST"], csrf=True)
+    def assign_action_item(self, task_id, user_id, **kw):
+        Task, domain = self._task_scope()
+        task = Task.search(domain + [("id", "=", int(task_id))], limit=1)
+        if not task:
+            return self._render_access_denied()
+        try:
+            task.with_user(request.env.user).action_assign_user(int(user_id))
+        except (AccessError, ValidationError) as error:
+            return self._redirect_with_query("/my/action-items", error=str(error))
+        return self._redirect_with_query("/my/action-items", success=_("Action reassigned."))
+
+    @http.route("/my/milestones", type="http", auth="user", website=True)
+    def portal_milestones(self, **kw):
+        Task, domain = self._task_scope()
+        Task.sync_for_user(user=request.env.user)
+        tasks = Task.search(domain + [("state", "!=", "done"), ("deadline", "!=", False)])
+        groups = defaultdict(list)
+        today = fields.Date.context_today(Task)
+        now = fields.Datetime.now()
+        for task in tasks:
+            due = fields.Datetime.context_timestamp(Task, task.deadline).date()
+            if task.deadline < now:
+                key = "Overdue"
+            elif due <= today + timedelta(days=7):
+                key = "Next 7 days"
+            else:
+                key = "Later"
+            groups[key].append(task)
+        return request.render("sports_federation_portal.portal_milestones", {"groups": groups, "page_name": "milestones"})
+
+    @http.route("/federation/operations/bulk-registrations", type="http", auth="user", website=True, methods=["POST"], csrf=True)
+    def bulk_registrations(self, registration_ids="", decision="", reason="", **kw):
+        if not request.env.user.has_group("sports_federation_base.group_federation_manager"):
+            raise AccessError(_("Tournament manager access is required."))
+        ids = [int(value) for value in str(registration_ids).split(",") if value.strip().isdigit()]
+        registrations = request.env["federation.tournament.registration"].sudo().browse(ids).exists()
+        if not registrations or any(record.state != "submitted" for record in registrations):
+            return self._redirect_with_query("/federation/operations/action-items", error=_("Select submitted registrations only."))
+        if decision in ("return", "reject") and not reason.strip():
+            return self._redirect_with_query("/federation/operations/action-items", error=_("A reason is required."))
+        failures = []
+        for record in registrations:
+            try:
+                if decision == "accept": record.action_confirm()
+                elif decision == "return": record.action_return(reason.strip())
+                elif decision == "reject": record.action_reject(reason.strip())
+                else: raise ValidationError(_("Choose a valid bulk decision."))
+            except ValidationError as error:
+                failures.append(_("%(record)s: %(error)s") % {"record": record.display_name, "error": str(error)})
+        if failures:
+            return self._redirect_with_query("/federation/operations/action-items", error=" | ".join(failures))
+        return self._redirect_with_query("/federation/operations/action-items", success=_("Selected registrations processed."))
+
+    @http.route("/federation/operations/send-reminders", type="http", auth="user", website=True, methods=["POST"], csrf=True)
+    def bulk_reminders(self, task_ids="", **kw):
+        if not request.env.user.has_group("sports_federation_base.group_federation_manager"):
+            raise AccessError(_("Tournament manager access is required."))
+        ids = [int(value) for value in str(task_ids).split(",") if value.strip().isdigit()]
+        tasks = request.env["federation.operation.task"].sudo().browse(ids).exists().filtered(lambda task: task.state != "done")
+        for task in tasks.filtered("assigned_user_id"):
+            task.activity_schedule("mail.mail_activity_data_todo", user_id=task.assigned_user_id.id, summary=task.name, note=task.next_step or task.blocking_reason)
+        return self._redirect_with_query("/federation/operations/action-items", success=_("Reminders created."))
+
+    @http.route("/my/rosters/<int:roster_id>/copy-lines", type="http", auth="user", website=True, methods=["POST"], csrf=True)
+    def copy_roster_lines(self, roster_id, source_roster_id, **kw):
+        Roster = request.env["federation.team.roster"]
+        domain = Roster._portal_get_scope_domain(user=request.env.user)
+        privilege = request.env["federation.portal.privilege"]
+        target = privilege.portal_search_by_id(Roster, roster_id, domain, user=request.env.user)
+        source = privilege.portal_search_by_id(Roster, int(source_roster_id), domain, user=request.env.user)
+        if not target or not source:
+            return self._render_access_denied()
+        try:
+            copied, skipped = target._portal_copy_eligible_lines(source, user=request.env.user)
+        except ValidationError as error:
+            return self._redirect_with_query(f"/my/rosters/{roster_id}", error=str(error))
+        return self._redirect_with_query(f"/my/rosters/{roster_id}", success=_("%(copied)s player(s) copied; %(skipped)s skipped for review.") % {"copied": copied, "skipped": skipped})
+
+====================================================================================================
 FILE: sports_federation_portal/controllers/referee_duty_portal.py
 ====================================================================================================
 
@@ -25543,6 +26131,7 @@ class FederationRosterPortal(FederationRosterPortalBase):
             "error": kw.get("error"),
             "error_hint": kw.get("error_hint"),
             "can_manage_roster": can_manage_roster,
+            "other_rosters": request.env["federation.team.roster"].sudo().search(roster._portal_get_scope_domain(request.env.user) + [("id", "!=", roster.id), ("team_id", "=", roster.team_id.id)], order="id desc", limit=10),
             "can_edit_roster": can_manage_roster and roster.status != "closed",
             "portal_manage_error": portal_manage_error,
         }
@@ -26048,6 +26637,13 @@ class FederationTournamentOperationsPortal(FederationPortalBase):
         }
 
 ====================================================================================================
+FILE: sports_federation_portal/data/operation_task_cron.xml
+====================================================================================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1"><record id="ir_cron_federation_action_digest" model="ir.cron"><field name="name">Federation: daily action digest</field><field name="model_id" ref="model_federation_operation_task"/><field name="state">code</field><field name="code">model.cron_send_action_digests()</field><field name="interval_number">1</field><field name="interval_type">days</field><field name="active">True</field></record></odoo>
+
+====================================================================================================
 FILE: sports_federation_portal/models/__init__.py
 ====================================================================================================
 
@@ -26136,6 +26732,24 @@ class FederationClubRepresentative(models.Model):
         default=False,
         help="If checked, this representative is the primary contact for this role type.",
     )
+    operational_role = fields.Selection(
+        [("competition_contact", "Competition contact"),
+         ("team_admin", "Team administrator"),
+         ("roster_manager", "Roster manager"),
+         ("officials_coordinator", "Officials coordinator"),
+         ("result_reviewer", "Result reviewer"),
+         ("backup", "Backup representative")],
+        string="Operational Responsibility",
+        index=True,
+    )
+    delegated_to_id = fields.Many2one(
+        "federation.club.representative", string="Temporary Delegate",
+        domain="[('club_id', '=', club_id), ('is_current', '=', True)]",
+        ondelete="set null",
+    )
+    delegation_until = fields.Date(string="Delegation Until")
+    effective_user_id = fields.Many2one("res.users", compute="_compute_effective_user", store=True)
+
     role = fields.Selection(
         [
             ("primary", "Primary Representative"),
@@ -26187,6 +26801,22 @@ class FederationClubRepresentative(models.Model):
             if rec.is_primary:
                 parts.append("(Primary)")
             rec.display_name = " - ".join(parts) if parts else "New"
+
+    @api.depends("user_id", "delegated_to_id.user_id", "delegation_until", "active")
+    def _compute_effective_user(self):
+        today = fields.Date.context_today(self)
+        for rec in self:
+            delegate_active = (
+                rec.delegated_to_id and rec.delegated_to_id.is_current
+                and (not rec.delegation_until or rec.delegation_until >= today)
+            )
+            rec.effective_user_id = rec.delegated_to_id.user_id if delegate_active else rec.user_id
+
+    @api.constrains("delegated_to_id", "delegation_until")
+    def _check_delegation_scope(self):
+        for rec in self:
+            if rec.delegated_to_id and rec.delegated_to_id.club_id != rec.club_id:
+                raise ValidationError(_("Delegation must stay within the same club."))
 
     @api.depends("date_start", "date_end", "active")
     def _compute_is_current(self):
@@ -27508,6 +28138,36 @@ class FederationTeamRoster(models.Model):
             scope_domain=self._portal_get_scope_domain(user=user),
             user=user,
         )
+
+    def _portal_copy_eligible_lines(self, source, user=None):
+        """Copy currently eligible unique players from another authorized roster."""
+        self.ensure_one()
+        source.ensure_one()
+        user = user or self.env.user
+        self._portal_assert_manage_access(user=user)
+        source._portal_assert_scope_access(user=user)
+        if self.status != "draft":
+            raise ValidationError(_("Players can only be copied into a draft roster."))
+        line_field = "line_ids" if "line_ids" in self._fields else "roster_line_ids"
+        target_lines = self[line_field]
+        source_lines = source[line_field]
+        existing = set(target_lines.mapped("player_id").ids)
+        copied = skipped = 0
+        for line in source_lines:
+            player = line.player_id
+            if not player or player.id in existing or not getattr(player, "active", True):
+                skipped += 1
+                continue
+            values = {"roster_id": self.id, "player_id": player.id}
+            if "license_id" in line._fields and line.license_id:
+                values["license_id"] = line.license_id.id
+            try:
+                self.env[line._name].sudo().create(values)
+                existing.add(player.id)
+                copied += 1
+            except Exception:
+                skipped += 1
+        return copied, skipped
 
 
 class FederationTeamRosterLine(models.Model):
@@ -29115,6 +29775,21 @@ class FederationOperationTask(models.Model):
     action_url = fields.Char(readonly=True)
     deadline = fields.Datetime(index=True)
     assigned_user_id = fields.Many2one("res.users", index=True, tracking=True)
+    waiting_on = fields.Selection(
+        [("club", "Club"), ("federation", "Federation"), ("external", "External party")],
+        compute="_compute_qol_status",
+        store=True,
+        index=True,
+    )
+    work_bucket = fields.Selection(
+        [("now", "Needs action now"), ("soon", "Due soon"),
+         ("waiting", "Waiting"), ("recent", "Completed recently")],
+        compute="_compute_qol_status",
+        store=True,
+        index=True,
+    )
+    source_changed_on = fields.Datetime(readonly=True)
+    digest_sent_on = fields.Date(copy=False, readonly=True)
     responsible_club_id = fields.Many2one(
         "federation.club", index=True, ondelete="cascade"
     )
@@ -29171,6 +29846,7 @@ class FederationOperationTask(models.Model):
             "deadline": deadline,
             "source_model": source._name,
             "source_record_id": source.id,
+            "source_changed_on": source.write_date,
             "source_key": "%s:%s:%s" % (source._name, source.id, task_type),
         }
         if source._name == "federation.tournament.registration":
@@ -29349,6 +30025,68 @@ class FederationOperationTask(models.Model):
             ("audience", "=", "club"),
             ("responsible_club_id", "in", self._portal_club_ids(user)),
         ]
+
+
+    @api.depends("audience", "state", "deadline", "assigned_user_id", "completed_on")
+    def _compute_qol_status(self):
+        now = fields.Datetime.now()
+        soon = now + timedelta(days=7)
+        recent_cutoff = now - timedelta(days=7)
+        for task in self:
+            task.waiting_on = "club" if task.audience == "club" else "federation"
+            if task.state == "done" and task.completed_on and task.completed_on >= recent_cutoff:
+                task.work_bucket = "recent"
+            elif task.state == "done":
+                task.work_bucket = False
+            elif task.deadline and task.deadline <= soon:
+                task.work_bucket = "soon" if task.deadline > now else "now"
+            else:
+                task.work_bucket = "now"
+
+    def _allowed_assignment_users(self):
+        """Return active representatives for the task club, never widening club scope."""
+        self.ensure_one()
+        if not self.responsible_club_id:
+            return self.env["res.users"].browse()
+        reps = self.env["federation.club.representative"].sudo().search([
+            ("club_id", "=", self.responsible_club_id.id),
+            ("is_current", "=", True),
+            ("user_id", "!=", False),
+        ])
+        return reps.mapped("effective_user_id") | reps.mapped("user_id")
+
+    def action_assign_user(self, user):
+        """Assign within the responsible club or to any internal manager."""
+        self.ensure_one()
+        user = self.env["res.users"].browse(user.id if hasattr(user, "id") else int(user)).exists()
+        is_manager_task = self.audience == "manager" and self.env.user.has_group(
+            "sports_federation_base.group_federation_manager"
+        )
+        if not user or (not is_manager_task and user not in self._allowed_assignment_users()):
+            raise ValidationError(_("The selected assignee is not authorized for this club task."))
+        self.write({"assigned_user_id": user.id})
+        return True
+
+    @api.model
+    def cron_send_action_digests(self):
+        """Create one actionable daily activity per assignee with open work."""
+        today = fields.Date.context_today(self)
+        tasks = self.sudo().search([
+            ("state", "!=", "done"), ("assigned_user_id", "!=", False),
+            "|", ("digest_sent_on", "=", False), ("digest_sent_on", "<", today),
+        ])
+        for user in tasks.mapped("assigned_user_id"):
+            user_tasks = tasks.filtered(lambda task: task.assigned_user_id == user)
+            if not user_tasks:
+                continue
+            first = user_tasks.sorted(lambda task: (not task.blocking, task.deadline or fields.Datetime.to_datetime("9999-12-31 00:00:00")))[0]
+            first.activity_schedule(
+                "mail.mail_activity_data_todo",
+                user_id=user.id,
+                summary=_("Federation action digest: %(count)s open item(s)") % {"count": len(user_tasks)},
+                note=_("Open the action inbox to review deadlines, blockers, and direct next steps."),
+            )
+            user_tasks.write({"digest_sent_on": today})
 
     def action_acknowledge(self):
         """Acknowledge a warning without pretending the source is resolved."""
@@ -33030,6 +33768,7 @@ from . import test_tournament_operations
 from . import test_tournament_workspace
 from . import test_tour_portal_workflows
 from . import test_operation_tasks
+from . import test_qol
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_club_representative.py
@@ -34791,6 +35530,21 @@ class TestPortalOwnershipGuard(TransactionCase):
             Roster, scope, user=no_club_user
         )
         self.assertFalse(result)
+
+====================================================================================================
+FILE: sports_federation_portal/tests/test_qol.py
+====================================================================================================
+
+from odoo import fields
+from odoo.exceptions import ValidationError
+from odoo.tests.common import TransactionCase
+
+class TestPortalQoL(TransactionCase):
+    def test_task_assignment_never_widens_club_scope(self):
+        a,b=self.env["federation.club"].create([{"name":"QoL A","code":"QOLA"},{"name":"QoL B","code":"QOLB"}]); partner=self.env["res.partner"].create({"name":"Delegate"}); user=self.env["res.users"].with_context(no_reset_password=True).create({"name":"Delegate","login":"qol.delegate@test","partner_id":partner.id}); role=self.env["federation.club.role.type"].search([],limit=1); self.env["federation.club.representative"].create({"club_id":b.id,"partner_id":partner.id,"user_id":user.id,"role_type_id":role.id}); task=self.env["federation.operation.task"].create({"name":"Scoped","task_type":"registration","audience":"club","responsible_club_id":a.id,"source_model":"x","source_record_id":1,"source_key":"x:1:qol"})
+        with self.assertRaises(ValidationError): task.action_assign_user(user)
+    def test_task_bucket_marks_near_deadline(self):
+        task=self.env["federation.operation.task"].create({"name":"Soon","task_type":"registration","audience":"club","deadline":fields.Datetime.now(),"source_model":"x","source_record_id":2,"source_key":"x:2:qol"}); self.assertIn(task.work_bucket,("now","soon"))
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_result_portal_access.py
@@ -39391,6 +40145,7 @@ FILE: sports_federation_portal/views/portal_roster_templates.xml
                                 <div t-if="not roster.readiness_feedback and not roster.match_day_lock_feedback" class="text-muted">
                                     No current blocking issues are recorded.
                                 </div>
+                                <form t-if="can_manage_roster and roster.status == 'draft' and other_rosters" t-attf-action="/my/rosters/#{roster.id}/copy-lines" method="POST" class="d-flex gap-2 flex-wrap mb-3" data-qol-draft-guard="1"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><label t-attf-for="source_roster_#{roster.id}" class="form-label mb-0 align-self-center">Copy eligible players from</label><select t-attf-id="source_roster_#{roster.id}" name="source_roster_id" class="form-select form-select-sm w-auto" required="1"><option value="">Choose roster</option><option t-foreach="other_rosters" t-as="source" t-att-value="source.id"><t t-esc="source.display_name"/></option></select><button class="btn btn-sm btn-outline-primary">Copy eligible players</button></form>
                                 <div t-if="can_manage_roster" class="d-flex flex-wrap gap-2 mt-3">
                                     <form t-if="roster.status == 'draft'"
                                           t-attf-action="/my/rosters/#{roster.id}/activate"
@@ -40278,27 +41033,16 @@ FILE: sports_federation_portal/views/portal_templates.xml
         </div>
     </template>
 
-    <template id="portal_my_operation_tasks" name="My Action Items">
-        <t t-call="portal.portal_layout">
-            <div class="container py-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div><h2><i class="fa fa-tasks me-2"/>Action items</h2><p class="text-muted mb-0">Resolve these items to keep your club ready for competition.</p></div>
-                    <a href="/my/home" class="btn btn-outline-secondary btn-sm"><i class="fa fa-arrow-left me-1"/>Back</a>
-                </div>
-                <div t-if="tasks" class="list-group">
-                    <div t-foreach="tasks" t-as="task" class="list-group-item list-group-item-action d-flex justify-content-between align-items-start gap-3">
-                        <div>
-                            <div class="d-flex gap-2 align-items-center"><strong><t t-esc="task.name"/></strong><span t-if="task.blocking" class="badge bg-danger">Blocking</span><span t-if="task.priority == '2'" class="badge bg-warning text-dark">Urgent</span></div>
-                            <div class="text-muted small mt-1"><t t-esc="task.blocking_reason"/></div>
-                            <div class="small mt-1"><strong>Next step:</strong> <t t-esc="task.next_step"/></div>
-                        </div>
-                        <a t-if="task.action_url" t-att-href="task.action_url" class="btn btn-sm btn-primary text-nowrap">Open <i class="fa fa-arrow-right ms-1" aria-hidden="true"/></a>
-                    </div>
-                </div>
-                <div t-else="" class="text-center py-5"><i class="fa fa-check-circle fa-3x text-success mb-3 d-block"/><h3>All clear</h3><p class="text-muted">Your club has no open action items.</p></div>
-            </div>
-        </t>
+    <template id="portal_my_operation_tasks" name="Club Work Inbox">
+      <t t-call="portal.portal_layout"><div class="container py-4">
+        <div class="d-flex justify-content-between gap-3 flex-wrap mb-4"><div><h2><i class="fa fa-inbox me-2"/>Club work inbox</h2><p class="text-muted mb-0">Deadlines, returned work and direct next steps in one place.</p></div><a href="/my/milestones" class="btn btn-outline-primary">Milestones</a></div>
+        <div t-if="success" class="alert alert-success" role="status"><t t-esc="success"/></div><div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div>
+        <nav class="d-flex gap-2 flex-wrap mb-4" aria-label="Inbox filters"><a t-attf-class="btn btn-sm #{'btn-primary' if active_scope == 'my' else 'btn-outline-primary'}" href="/my/action-items?scope=my">My actions</a><a t-attf-class="btn btn-sm #{'btn-primary' if active_scope == 'club' else 'btn-outline-primary'}" href="/my/action-items?scope=club">All club actions</a><a class="btn btn-sm btn-outline-secondary" href="/my/action-items?scope=club&amp;status=recent">Completed recently</a><t t-foreach="task_type_labels.items()" t-as="kind"><a class="btn btn-sm btn-outline-secondary" t-attf-href="/my/action-items?scope=#{active_scope}&amp;task_type=#{kind[0]}"><t t-esc="kind[1]"/></a></t></nav>
+        <t t-foreach="[('now','Needs action now'),('soon','Due soon'),('waiting','Waiting for someone else'),('recent','Completed recently')]" t-as="bucket"><section t-if="buckets.get(bucket[0])" class="mb-4"><h3 class="h5"><t t-esc="bucket[1]"/></h3><div class="vstack gap-3"><article t-foreach="buckets[bucket[0]]" t-as="task" class="card"><div class="card-body"><div class="d-flex justify-content-between gap-3 flex-wrap"><div><div class="d-flex gap-2 flex-wrap"><strong><t t-esc="task.name"/></strong><span t-if="task.blocking" class="badge text-bg-danger">Blocking</span><span t-if="task.is_overdue" class="badge text-bg-warning">Overdue</span></div><p class="text-muted small mb-1"><t t-esc="task.blocking_reason"/></p><div class="small"><strong>Next:</strong> <t t-esc="task.next_step"/><t t-if="task.deadline"> · <t t-esc="task.deadline" t-options="{'widget':'datetime'}"/></t></div><div class="small text-muted" t-if="task.assigned_user_id">Owner: <t t-esc="task.assigned_user_id.name"/></div></div><a t-if="task.action_url" t-att-href="task.action_url" class="btn btn-primary align-self-start">Open</a></div><form t-if="task.state != 'done' and representatives" action="/my/action-items/assign" method="POST" class="d-flex gap-2 flex-wrap mt-3"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><input type="hidden" name="task_id" t-att-value="task.id"/><label t-attf-for="assignee_#{task.id}" class="visually-hidden">Assign action</label><select t-attf-id="assignee_#{task.id}" name="user_id" class="form-select form-select-sm w-auto"><t t-foreach="representatives" t-as="rep"><option t-att-value="rep.effective_user_id.id" t-att-selected="task.assigned_user_id == rep.effective_user_id"><t t-esc="rep.effective_user_id.name"/> · <t t-esc="rep.operational_role or rep.role_type_id.name"/></option></t></select><button class="btn btn-sm btn-outline-secondary">Assign</button></form></div></article></div></section></t>
+        <div t-if="not tasks" class="text-center py-5"><i class="fa fa-check-circle fa-3x text-success"/><h3>All clear</h3><p class="text-muted">There are no actions in this view.</p></div>
+      </div></t>
     </template>
+    <template id="portal_milestones" name="Club Milestones"><t t-call="portal.portal_layout"><div class="container py-4"><div class="d-flex justify-content-between mb-4"><div><h2>Milestones</h2><p class="text-muted">Authoritative deadlines from registrations, rosters, officials and results.</p></div><a href="/my/action-items" class="btn btn-outline-secondary">Work inbox</a></div><t t-foreach="groups.items()" t-as="group"><section class="mb-4"><h3 class="h5"><t t-esc="group[0]"/></h3><div class="list-group"><a t-foreach="group[1]" t-as="task" t-att-href="task.action_url or '/my/action-items'" class="list-group-item list-group-item-action d-flex justify-content-between"><span><strong><t t-esc="task.name"/></strong><br/><small><t t-esc="task.next_step"/></small></span><time><t t-esc="task.deadline" t-options="{'widget':'datetime'}"/></time></a></div></section></t><div t-if="not groups" class="alert alert-success">No upcoming deadlines.</div></div></t></template>
 
     <!-- ============================================================ -->
     <!-- My Club Page                                                  -->
@@ -41412,6 +42156,12 @@ FILE: sports_federation_portal/views/portal_tournament_workspace_templates.xml
     </template>
 
 </odoo>
+
+====================================================================================================
+FILE: sports_federation_portal/views/qol_views.xml
+====================================================================================================
+
+<?xml version="1.0" encoding="utf-8"?><odoo><record id="view_club_representative_qol_form" model="ir.ui.view"><field name="name">federation.club.representative.qol.form</field><field name="model">federation.club.representative</field><field name="inherit_id" ref="sports_federation_portal.view_federation_club_representative_portal_form"/><field name="arch" type="xml"><xpath expr="//field[@name='role']" position="after"><field name="operational_role"/><field name="delegated_to_id"/><field name="delegation_until" invisible="not delegated_to_id"/><field name="effective_user_id" readonly="1"/></xpath></field></record></odoo>
 
 ====================================================================================================
 FILE: sports_federation_portal/views/website_menus.xml

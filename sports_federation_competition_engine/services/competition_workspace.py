@@ -680,6 +680,8 @@ class CompetitionWorkspaceService(
             "gameday_count": len(gamedays),
             "is_workspace_stage": division.workspace_stage_id == stage,
             "is_knockout_stage": division.workspace_knockout_stage_id == stage,
+            "group_count": len(stage.group_ids),
+            "can_delete_without_cascade": not stage_matches and not gamedays and not stage.group_ids,
         }
 
     def _normalize_time_value(self, value, field_label):
@@ -2304,6 +2306,258 @@ class CompetitionWorkspaceService(
     @api.model
     def generate_round_robin(self, division_id, force=False):
         return self.generate_schedule_structure(division_id, force=force)
+
+    def _create_workspace_stage_record(self, division, name, stage_type, sequence=False):
+        """Create one stage through a single, preset-safe internal contract."""
+        return self.env["federation.tournament.stage"].create(
+            {
+                "name": name,
+                "tournament_id": division.id,
+                "sequence": sequence
+                or max(division.stage_ids.mapped("sequence") or [0]) + 10,
+                "stage_type": stage_type,
+            }
+        )
+
+    def _create_stage_groups(self, stage, count, prefix=None):
+        """Create missing groups deterministically and return the requested set."""
+        count = max(1, int(count or 1))
+        groups = stage.group_ids.sorted(lambda group: (group.sequence, group.id))
+        prefix = prefix or _("Group")
+        for index in range(len(groups), count):
+            groups |= self.env["federation.tournament.group"].create(
+                {
+                    "name": _("%(prefix)s %(name)s", prefix=prefix, name=chr(65 + index)),
+                    "stage_id": stage.id,
+                    "sequence": (index + 1) * 10,
+                    "max_participants": 0,
+                }
+            )
+        return groups.sorted(lambda group: (group.sequence, group.id))[:count]
+
+    def _create_progression_mapping(
+        self, division, source_stage, target_stage, rank_from, rank_to,
+        sequence=10, source_group=False, target_group=False,
+    ):
+        values = {
+            "tournament_id": division.id,
+            "sequence": sequence,
+            "source_stage_id": source_stage.id,
+            "target_stage_id": target_stage.id,
+            "rank_from": int(rank_from),
+            "rank_to": int(rank_to),
+            "seeding_method": "keep_rank",
+            "auto_advance": True,
+        }
+        if source_group:
+            values["source_group_id"] = source_group.id
+        if target_group:
+            values["target_group_id"] = target_group.id
+        return self.env["federation.stage.progression"].create(values)
+
+    @api.model
+    def create_stage_preset(self, vals):
+        """Build a complete stage graph from a tournament-flow preset."""
+        self._check_access()
+        division = self._resolve_division(vals.get("division_id"))
+        if division.workspace_state in ("published", "in_progress", "completed", "archived", "cancelled"):
+            raise ValidationError(_("Tournament structure is locked after publication."))
+        if division.stage_ids or division.match_ids or division.round_ids:
+            raise ValidationError(
+                _("Presets can only be applied before stages, matches, or gamedays exist. Use individual stage tools to extend an existing flow.")
+            )
+        preset = vals.get("preset") or "league"
+        group_count = max(1, min(int(vals.get("group_count") or 1), 26))
+        qualifiers = max(1, int(vals.get("qualifiers_per_group") or 2))
+        placement_from = max(1, int(vals.get("placement_from") or qualifiers + 1))
+        placement_to = max(placement_from, int(vals.get("placement_to") or placement_from + 1))
+        stages = self.env["federation.tournament.stage"]
+        progressions = self.env["federation.stage.progression"]
+
+        if preset == "league":
+            league = self._create_workspace_stage_record(division, _("League Phase"), "group", 10)
+            self._create_stage_groups(league, 1, _("League"))
+            division.workspace_stage_id = league.id
+            stages |= league
+        elif preset in ("knockout", "final_four"):
+            bracket = self._create_workspace_stage_record(
+                division, _("Final Four") if preset == "final_four" else _("Knockout"), "knockout", 10
+            )
+            self._create_stage_groups(bracket, 1, _("Bracket"))
+            division.workspace_knockout_stage_id = bracket.id
+            stages |= bracket
+        elif preset in ("group_knockout", "groups_championship_placement"):
+            group_stage = self._create_workspace_stage_record(division, _("Group Phase"), "group", 10)
+            groups = self._create_stage_groups(group_stage, group_count)
+            championship = self._create_workspace_stage_record(division, _("Championship Knockout"), "knockout", 20)
+            championship_seeds = self._create_stage_groups(championship, qualifiers, _("Seed"))
+            stages |= group_stage | championship
+            division.workspace_stage_id = group_stage.id
+            division.workspace_knockout_stage_id = championship.id
+            sequence = 10
+            for rank, target_group in enumerate(championship_seeds, start=1):
+                for source_group in groups:
+                    progressions |= self._create_progression_mapping(
+                        division, group_stage, championship, rank, rank,
+                        sequence=sequence, source_group=source_group, target_group=target_group,
+                    )
+                    sequence += 10
+            if preset == "groups_championship_placement":
+                placement = self._create_workspace_stage_record(
+                    division,
+                    _("Placement %(from)s-%(to)s", **{"from": placement_from, "to": placement_to}),
+                    "placement",
+                    30,
+                )
+                self._create_stage_groups(placement, 1, _("Placement"))
+                stages |= placement
+                progressions |= self._create_progression_mapping(
+                    division, group_stage, placement, placement_from, placement_to,
+                    sequence=sequence,
+                )
+        else:
+            raise ValidationError(_("Select a supported tournament preset."))
+
+        return {
+            "stage_ids": stages.ids,
+            "progression_ids": progressions.ids,
+            "payload": self.get_competition_workspace_data(
+                division.edition_id.id if division.edition_id else False, division.id
+            ),
+        }
+
+    def _stage_dependency_summary(self, stage):
+        division = stage.tournament_id
+        matches = division.match_ids.filtered(lambda match: match.stage_id == stage)
+        gamedays = division.round_ids.filtered(lambda day: day.stage_id == stage)
+        slots = gamedays.mapped("slot_ids")
+        Progression = self.env["federation.stage.progression"]
+        progressions = Progression.search([
+            "|", ("source_stage_id", "=", stage.id), ("target_stage_id", "=", stage.id)
+        ])
+        played = matches.filtered(lambda match: match.state == "done")
+        return {
+            "matches": matches,
+            "gamedays": gamedays,
+            "slots": slots,
+            "progressions": progressions,
+            "groups": stage.group_ids,
+            "played_matches": played,
+        }
+
+    @api.model
+    def preview_stage_deletion(self, stage_id):
+        self._check_access()
+        stage = self.env["federation.tournament.stage"].browse(int(stage_id)).exists()
+        if not stage:
+            raise ValidationError(_("The selected stage no longer exists."))
+        deps = self._stage_dependency_summary(stage)
+        return {
+            "stage_id": stage.id,
+            "stage_name": stage.display_name,
+            "match_count": len(deps["matches"]),
+            "played_match_count": len(deps["played_matches"]),
+            "gameday_count": len(deps["gamedays"]),
+            "slot_count": len(deps["slots"]),
+            "progression_count": len(deps["progressions"]),
+            "group_count": len(deps["groups"]),
+            "can_delete": not deps["played_matches"],
+        }
+
+    @api.model
+    def delete_stage(self, stage_id, cascade=False, reason=False):
+        """Delete an unused stage, or explicitly cascade draft planning dependencies."""
+        self._check_access()
+        stage = self.env["federation.tournament.stage"].browse(int(stage_id)).exists()
+        if not stage:
+            raise ValidationError(_("The selected stage no longer exists."))
+        division = stage.tournament_id
+        deps = self._stage_dependency_summary(stage)
+        if deps["played_matches"]:
+            raise ValidationError(_("A stage with played matches cannot be deleted. Archive the competition history instead."))
+        has_dependencies = any(deps[key] for key in ("matches", "gamedays", "slots", "progressions", "groups"))
+        if has_dependencies and not cascade:
+            raise ValidationError(
+                _(
+                    "Stage '%(stage)s' is still used by %(matches)s match(es), %(days)s gameday(s), %(slots)s slot(s), %(links)s progression link(s), and %(groups)s group(s). Use cascade delete with a reason to remove draft planning data.",
+                    stage=stage.display_name, matches=len(deps["matches"]), days=len(deps["gamedays"]),
+                    slots=len(deps["slots"]), links=len(deps["progressions"]), groups=len(deps["groups"]),
+                )
+            )
+        if cascade and not (reason or "").strip():
+            raise ValidationError(_("Enter a reason before cascade deleting stage planning data."))
+        if deps["slots"]:
+            deps["slots"].unlink()
+        if deps["matches"]:
+            deps["matches"].unlink()
+        if deps["gamedays"]:
+            deps["gamedays"].unlink()
+        if deps["progressions"]:
+            deps["progressions"].unlink()
+        if deps["groups"]:
+            deps["groups"].unlink()
+        if division.workspace_stage_id == stage:
+            division.workspace_stage_id = False
+        if division.workspace_knockout_stage_id == stage:
+            division.workspace_knockout_stage_id = False
+        stage.unlink()
+        return {
+            "payload": self.get_competition_workspace_data(
+                division.edition_id.id if division.edition_id else False, division.id
+            )
+        }
+
+    @api.model
+    def create_stage_rounds(self, vals):
+        """Create missing gameday rounds for one stage without duplicating round numbers."""
+        self._check_access()
+        division = self._resolve_division(vals.get("division_id"))
+        stage = self._resolve_workspace_stage(division, stage_id=vals.get("stage_id"))
+        round_count = max(1, min(int(vals.get("round_count") or 1), 64))
+        existing = set(division.round_ids.filtered(lambda day: day.stage_id == stage).mapped("round_number"))
+        created = self.env["federation.tournament.round"]
+        for number in range(1, round_count + 1):
+            if number in existing:
+                continue
+            created |= self.env["federation.tournament.round"].create({
+                "name": _("%(stage)s - Round %(round)s", stage=stage.display_name, round=number),
+                "tournament_id": division.id,
+                "stage_id": stage.id,
+                "round_number": number,
+                "planner_state": "draft",
+            })
+        return {
+            "gameday_ids": created.ids,
+            "payload": self.get_competition_workspace_data(
+                division.edition_id.id if division.edition_id else False, division.id
+            ),
+        }
+
+    @api.model
+    def create_progression_mapping(self, vals):
+        """Add another branch in the stage graph, including placement branches."""
+        self._check_access()
+        division = self._resolve_division(vals.get("division_id"))
+        source = self._resolve_workspace_stage(division, stage_id=vals.get("source_stage_id"))
+        target = self._resolve_workspace_stage(division, stage_id=vals.get("target_stage_id"))
+        if source == target:
+            raise ValidationError(_("A stage cannot progress into itself."))
+        start = int(vals.get("rank_from") or 1)
+        end = int(vals.get("rank_to") or start)
+        if start < 1 or end < start:
+            raise ValidationError(_("Enter a valid ranking range."))
+        progression = self._create_progression_mapping(
+            division, source, target, start, end,
+            sequence=max(self.env["federation.stage.progression"].search([
+                ("tournament_id", "=", division.id)
+            ]).mapped("sequence") or [0]) + 10,
+        )
+        return {
+            "progression_id": progression.id,
+            "payload": self.get_competition_workspace_data(
+                division.edition_id.id if division.edition_id else False, division.id
+            ),
+        }
 
     @api.model
     def create_stage(self, vals):

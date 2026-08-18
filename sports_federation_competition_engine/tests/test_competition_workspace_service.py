@@ -1,3 +1,4 @@
+from odoo.exceptions import ValidationError
 from unittest.mock import patch
 
 from odoo.exceptions import AccessError, ValidationError
@@ -3121,3 +3122,40 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertFalse(stale["ok"])
         self.assertEqual(stale["conflict"]["code"], "stale_planner_revision")
         self.assertEqual(stale["conflict"]["operation"], "undo_last_planner_operation")
+
+
+class TestCompetitionWorkspaceStageBuilder(TransactionCase):
+    """Focused stage-graph and deletion safety contracts."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.service = cls.env["federation.competition.workspace.service"]
+        cls.manager = cls.env.ref("base.user_admin")
+        cls.division = cls.env["federation.tournament"].search([], limit=1)
+
+    def test_stage_deletion_preview_reports_dependencies(self):
+        if not self.division:
+            self.skipTest("No tournament fixture is available in this isolated class.")
+        stage = self.env["federation.tournament.stage"].create({
+            "name": "Delete Preview", "tournament_id": self.division.id,
+            "sequence": 990, "stage_type": "group",
+        })
+        preview = self.service.preview_stage_deletion(stage.id)
+        self.assertEqual(preview["stage_id"], stage.id)
+        self.assertTrue(preview["can_delete"])
+
+    def test_progression_cannot_target_same_stage(self):
+        if not self.division:
+            self.skipTest("No tournament fixture is available in this isolated class.")
+        stage = self.env["federation.tournament.stage"].create({
+            "name": "No Cycle", "tournament_id": self.division.id,
+            "sequence": 991, "stage_type": "group",
+        })
+        with self.assertRaises(ValidationError):
+            self.service.create_progression_mapping({
+                "division_id": self.division.id,
+                "source_stage_id": stage.id,
+                "target_stage_id": stage.id,
+                "rank_from": 1, "rank_to": 2,
+            })

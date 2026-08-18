@@ -20,6 +20,85 @@ export class CompetitionWorkspaceFormMethods {
             : ev.target.value;
     }
 
+
+    async createStagePreset() {
+        if (!this.state.currentDivisionId) return;
+        this.state.saving = true;
+        try {
+            const result = await this.orm.call(
+                "federation.competition.workspace.service", "create_stage_preset", [{
+                    division_id: this.state.currentDivisionId,
+                    preset: this.state.stageForm.preset,
+                    group_count: Number(this.state.stageForm.group_count || 1),
+                    qualifiers_per_group: Number(this.state.stageForm.qualifiers_per_group || 2),
+                    placement_from: Number(this.state.stageForm.placement_from || 3),
+                    placement_to: Number(this.state.stageForm.placement_to || 4),
+                }]
+            );
+            this.state.payload = result.payload;
+            this.notify("Tournament flow created.", "success");
+        } catch (error) {
+            this.notify(error.message || "The tournament flow could not be created.", "danger");
+        } finally { this.state.saving = false; }
+    }
+
+    async createStageRounds(ev) {
+        const stageId = Number(ev.currentTarget.dataset.stageId || 0);
+        if (!stageId) return;
+        this.state.saving = true;
+        try {
+            const result = await this.orm.call(
+                "federation.competition.workspace.service", "create_stage_rounds", [{
+                    division_id: this.state.currentDivisionId,
+                    stage_id: stageId,
+                    round_count: Number(this.state.stageForm.round_count || 1),
+                }]
+            );
+            this.state.payload = result.payload;
+            this.notify("Missing rounds created.", "success");
+        } catch (error) { this.notify(error.message || "Rounds could not be created.", "danger"); }
+        finally { this.state.saving = false; }
+    }
+
+    async deleteStage(ev) {
+        const stageId = Number(ev.currentTarget.dataset.stageId || 0);
+        if (!stageId) return;
+        this.state.saving = true;
+        try {
+            const result = await this.orm.call(
+                "federation.competition.workspace.service", "delete_stage", [
+                    stageId,
+                    Boolean(this.state.stageForm.cascade_delete),
+                    this.state.stageForm.delete_reason || false,
+                ]
+            );
+            this.state.payload = result.payload;
+            this.notify("Stage removed.", "success");
+        } catch (error) { this.notify(error.message || "The stage could not be removed.", "danger"); }
+        finally { this.state.saving = false; }
+    }
+
+    async createProgressionMapping() {
+        if (!this.state.stageForm.source_stage_id || !this.state.stageForm.target_stage_id) {
+            this.notify("Select both the source and destination stage.", "warning"); return;
+        }
+        this.state.saving = true;
+        try {
+            const result = await this.orm.call(
+                "federation.competition.workspace.service", "create_progression_mapping", [{
+                    division_id: this.state.currentDivisionId,
+                    source_stage_id: Number(this.state.stageForm.source_stage_id),
+                    target_stage_id: Number(this.state.stageForm.target_stage_id),
+                    rank_from: Number(this.state.stageForm.rank_from || 1),
+                    rank_to: Number(this.state.stageForm.rank_to || 1),
+                }]
+            );
+            this.state.payload = result.payload;
+            this.notify("Progression branch added.", "success");
+        } catch (error) { this.notify(error.message || "The progression could not be created.", "danger"); }
+        finally { this.state.saving = false; }
+    }
+
     async createStage() {
         const name = this.state.stageForm.name.trim();
         if (!name || !this.state.currentDivisionId) {
