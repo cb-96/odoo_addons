@@ -397,6 +397,36 @@ class FederationTeamRoster(models.Model):
             user=user,
         )
 
+    def _portal_copy_eligible_lines(self, source, user=None):
+        """Copy currently eligible unique players from another authorized roster."""
+        self.ensure_one()
+        source.ensure_one()
+        user = user or self.env.user
+        self._portal_assert_manage_access(user=user)
+        source._portal_assert_scope_access(user=user)
+        if self.status != "draft":
+            raise ValidationError(_("Players can only be copied into a draft roster."))
+        line_field = "line_ids" if "line_ids" in self._fields else "roster_line_ids"
+        target_lines = self[line_field]
+        source_lines = source[line_field]
+        existing = set(target_lines.mapped("player_id").ids)
+        copied = skipped = 0
+        for line in source_lines:
+            player = line.player_id
+            if not player or player.id in existing or not getattr(player, "active", True):
+                skipped += 1
+                continue
+            values = {"roster_id": self.id, "player_id": player.id}
+            if "license_id" in line._fields and line.license_id:
+                values["license_id"] = line.license_id.id
+            try:
+                self.env[line._name].sudo().create(values)
+                existing.add(player.id)
+                copied += 1
+            except Exception:
+                skipped += 1
+        return copied, skipped
+
 
 class FederationTeamRosterLine(models.Model):
     _inherit = "federation.team.roster.line"

@@ -132,6 +132,7 @@ class FederationRosterPortal(FederationRosterPortalBase):
             "error": kw.get("error"),
             "error_hint": kw.get("error_hint"),
             "can_manage_roster": can_manage_roster,
+            "other_rosters": request.env["federation.team.roster"].sudo().search(roster._portal_get_scope_domain(request.env.user) + [("id", "!=", roster.id), ("team_id", "=", roster.team_id.id)], order="id desc", limit=10),
             "can_edit_roster": can_manage_roster and roster.status != "closed",
             "portal_manage_error": portal_manage_error,
         }

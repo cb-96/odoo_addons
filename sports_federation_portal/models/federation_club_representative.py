@@ -58,6 +58,24 @@ class FederationClubRepresentative(models.Model):
         default=False,
         help="If checked, this representative is the primary contact for this role type.",
     )
+    operational_role = fields.Selection(
+        [("competition_contact", "Competition contact"),
+         ("team_admin", "Team administrator"),
+         ("roster_manager", "Roster manager"),
+         ("officials_coordinator", "Officials coordinator"),
+         ("result_reviewer", "Result reviewer"),
+         ("backup", "Backup representative")],
+        string="Operational Responsibility",
+        index=True,
+    )
+    delegated_to_id = fields.Many2one(
+        "federation.club.representative", string="Temporary Delegate",
+        domain="[('club_id', '=', club_id), ('is_current', '=', True)]",
+        ondelete="set null",
+    )
+    delegation_until = fields.Date(string="Delegation Until")
+    effective_user_id = fields.Many2one("res.users", compute="_compute_effective_user", store=True)
+
     role = fields.Selection(
         [
             ("primary", "Primary Representative"),
@@ -109,6 +127,22 @@ class FederationClubRepresentative(models.Model):
             if rec.is_primary:
                 parts.append("(Primary)")
             rec.display_name = " - ".join(parts) if parts else "New"
+
+    @api.depends("user_id", "delegated_to_id.user_id", "delegation_until", "active")
+    def _compute_effective_user(self):
+        today = fields.Date.context_today(self)
+        for rec in self:
+            delegate_active = (
+                rec.delegated_to_id and rec.delegated_to_id.is_current
+                and (not rec.delegation_until or rec.delegation_until >= today)
+            )
+            rec.effective_user_id = rec.delegated_to_id.user_id if delegate_active else rec.user_id
+
+    @api.constrains("delegated_to_id", "delegation_until")
+    def _check_delegation_scope(self):
+        for rec in self:
+            if rec.delegated_to_id and rec.delegated_to_id.club_id != rec.club_id:
+                raise ValidationError(_("Delegation must stay within the same club."))
 
     @api.depends("date_start", "date_end", "active")
     def _compute_is_current(self):

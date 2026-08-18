@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.1.8.0",
+    "version": "19.0.2.0.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -29,6 +29,7 @@ on top of the federation base modules.
         "security/ir_rule.xml",
         "data/federation_club_role_type.xml",
         "data/ir_sequence.xml",
+        "data/operation_task_cron.xml",
         "views/federation_club_role_type_views.xml",
         "views/federation_club_representative_views.xml",
         "views/federation_club_views.xml",
@@ -40,6 +41,7 @@ on top of the federation base modules.
         "views/federation_tournament_views.xml",
         "views/federation_match_sheet_views.xml",
         "views/federation_club_representative_portal_views.xml",
+        "views/qol_views.xml",
         "views/portal_templates.xml",
         "views/portal_officiating_templates.xml",
         "views/portal_tournament_workspace_templates.xml",
@@ -54,6 +56,7 @@ on top of the federation base modules.
     "assets": {
         "web.assets_frontend": [
             "sports_federation_portal/static/src/scss/federation_portal.scss",
+            "sports_federation_portal/static/src/js/qol_draft_guard.js",
             "sports_federation_portal/static/src/components/tournament_operations/tournament_operations.js",
             "sports_federation_portal/static/src/components/tournament_operations/tournament_operations.xml",
             "sports_federation_portal/static/src/components/tournament_operations/tournament_operations.scss",

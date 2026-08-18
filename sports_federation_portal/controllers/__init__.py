@@ -7,3 +7,4 @@ from . import referee_duty_portal
 from . import tournament_operations
 from . import operation_tasks
 from . import manager_operation_tasks
+from . import qol

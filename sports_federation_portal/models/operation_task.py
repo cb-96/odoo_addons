@@ -55,6 +55,21 @@ class FederationOperationTask(models.Model):
     action_url = fields.Char(readonly=True)
     deadline = fields.Datetime(index=True)
     assigned_user_id = fields.Many2one("res.users", index=True, tracking=True)
+    waiting_on = fields.Selection(
+        [("club", "Club"), ("federation", "Federation"), ("external", "External party")],
+        compute="_compute_qol_status",
+        store=True,
+        index=True,
+    )
+    work_bucket = fields.Selection(
+        [("now", "Needs action now"), ("soon", "Due soon"),
+         ("waiting", "Waiting"), ("recent", "Completed recently")],
+        compute="_compute_qol_status",
+        store=True,
+        index=True,
+    )
+    source_changed_on = fields.Datetime(readonly=True)
+    digest_sent_on = fields.Date(copy=False, readonly=True)
     responsible_club_id = fields.Many2one(
         "federation.club", index=True, ondelete="cascade"
     )
@@ -111,6 +126,7 @@ class FederationOperationTask(models.Model):
             "deadline": deadline,
             "source_model": source._name,
             "source_record_id": source.id,
+            "source_changed_on": source.write_date,
             "source_key": "%s:%s:%s" % (source._name, source.id, task_type),
         }
         if source._name == "federation.tournament.registration":
@@ -289,6 +305,70 @@ class FederationOperationTask(models.Model):
             ("audience", "=", "club"),
             ("responsible_club_id", "in", self._portal_club_ids(user)),
         ]
+
+
+    @api.depends("audience", "state", "deadline", "assigned_user_id", "completed_on")
+    def _compute_qol_status(self):
+        now = fields.Datetime.now()
+        soon = now + timedelta(days=7)
+        recent_cutoff = now - timedelta(days=7)
+        for task in self:
+            task.waiting_on = "club" if task.audience == "club" else "federation"
+            if task.state == "done" and task.completed_on and task.completed_on >= recent_cutoff:
+                task.work_bucket = "recent"
+            elif task.state == "done":
+                task.work_bucket = False
+            elif task.audience == "club" and task.assigned_user_id and task.assigned_user_id != self.env.user:
+                task.work_bucket = "waiting"
+            elif task.deadline and task.deadline <= soon:
+                task.work_bucket = "soon" if task.deadline > now else "now"
+            else:
+                task.work_bucket = "now"
+
+    def _allowed_assignment_users(self):
+        """Return active representatives for the task club, never widening club scope."""
+        self.ensure_one()
+        if not self.responsible_club_id:
+            return self.env["res.users"].browse()
+        reps = self.env["federation.club.representative"].sudo().search([
+            ("club_id", "=", self.responsible_club_id.id),
+            ("is_current", "=", True),
+            ("user_id", "!=", False),
+        ])
+        return reps.mapped("effective_user_id") | reps.mapped("user_id")
+
+    def action_assign_user(self, user):
+        """Assign within the responsible club or to any internal manager."""
+        self.ensure_one()
+        user = self.env["res.users"].browse(user.id if hasattr(user, "id") else int(user)).exists()
+        is_manager_task = self.audience == "manager" and self.env.user.has_group(
+            "sports_federation_base.group_federation_manager"
+        )
+        if not user or (not is_manager_task and user not in self._allowed_assignment_users()):
+            raise ValidationError(_("The selected assignee is not authorized for this club task."))
+        self.write({"assigned_user_id": user.id})
+        return True
+
+    @api.model
+    def cron_send_action_digests(self):
+        """Create one actionable daily activity per assignee with open work."""
+        today = fields.Date.context_today(self)
+        tasks = self.sudo().search([
+            ("state", "!=", "done"), ("assigned_user_id", "!=", False),
+            "|", ("digest_sent_on", "=", False), ("digest_sent_on", "<", today),
+        ])
+        for user in tasks.mapped("assigned_user_id"):
+            user_tasks = tasks.filtered(lambda task: task.assigned_user_id == user)
+            if not user_tasks:
+                continue
+            first = user_tasks.sorted(lambda task: (not task.blocking, task.deadline or fields.Datetime.to_datetime("9999-12-31 00:00:00")))[0]
+            first.activity_schedule(
+                "mail.mail_activity_data_todo",
+                user_id=user.id,
+                summary=_("Federation action digest: %(count)s open item(s)") % {"count": len(user_tasks)},
+                note=_("Open the action inbox to review deadlines, blockers, and direct next steps."),
+            )
+            user_tasks.write({"digest_sent_on": today})
 
     def action_acknowledge(self):
         """Acknowledge a warning without pretending the source is resolved."""

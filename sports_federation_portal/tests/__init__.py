@@ -15,3 +15,4 @@ from . import test_tournament_operations
 from . import test_tournament_workspace
 from . import test_tour_portal_workflows
 from . import test_operation_tasks
+from . import test_qol

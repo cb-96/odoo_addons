@@ -186,6 +186,7 @@
                                 <div t-if="not roster.readiness_feedback and not roster.match_day_lock_feedback" class="text-muted">
                                     No current blocking issues are recorded.
                                 </div>
+                                <form t-if="can_manage_roster and roster.status == 'draft' and other_rosters" t-attf-action="/my/rosters/#{roster.id}/copy-lines" method="POST" class="d-flex gap-2 flex-wrap mb-3" data-qol-draft-guard="1"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><label t-attf-for="source_roster_#{roster.id}" class="form-label mb-0 align-self-center">Copy eligible players from</label><select t-attf-id="source_roster_#{roster.id}" name="source_roster_id" class="form-select form-select-sm w-auto" required="1"><option value="">Choose roster</option><option t-foreach="other_rosters" t-as="source" t-att-value="source.id"><t t-esc="source.display_name"/></option></select><button class="btn btn-sm btn-outline-primary">Copy eligible players</button></form>
                                 <div t-if="can_manage_roster" class="d-flex flex-wrap gap-2 mt-3">
                                     <form t-if="roster.status == 'draft'"
                                           t-attf-action="/my/rosters/#{roster.id}/activate"
