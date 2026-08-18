@@ -10,3 +10,4 @@ from . import competition_workspace_validation_service
 from . import competition_workspace
 from . import round_robin
 from . import knockout
+from . import competition_integrity

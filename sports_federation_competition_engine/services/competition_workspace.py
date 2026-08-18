@@ -2294,6 +2294,7 @@ class CompetitionWorkspaceService(
                 )
             )
 
+        self.env["federation.competition.integrity.service"].assert_division_integrity(division.id)
         division._competition_workspace_transition_state("schedule_generated")
         return {
             "match_count": len(created_matches),

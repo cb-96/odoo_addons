@@ -2,10 +2,20 @@
 main
 
 === CURRENT COMMIT ===
-a05f8a67be32eac4ff7d36474582af219f54e51f
+549694a50975ae59a5f65cb8e6b6d1e6a9344502
 
 === WORKTREE STATUS ===
+ M current_git_metadata.txt
  M current_sources.txt
+ M sports_federation_competition_engine/__manifest__.py
+ M sports_federation_competition_engine/services/__init__.py
+ M sports_federation_competition_engine/services/competition_workspace.py
+ M sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.xml
+ M sports_federation_portal/__manifest__.py
+ M sports_federation_portal/tests/__init__.py
+?? docs/
+?? sports_federation_competition_engine/services/competition_integrity.py
+?? sports_federation_portal/tests/test_production_security_matrix.py
 
 === MODULE VERSIONS ===
 
@@ -15,20 +25,21 @@ sports_federation_rules: "version": "19.0.1.2.0",
 
 sports_federation_tournament: "version": "19.0.1.3.0",
 
-sports_federation_competition_engine: "version": "19.0.1.5.0",
+sports_federation_competition_engine: "version": "19.0.1.7.0",
 
 sports_federation_officiating: "version": "19.0.1.6.0",
 
 sports_federation_result_control: "version": "19.0.1.2.0",
 
-sports_federation_portal: "version": "19.0.2.0.0",
+sports_federation_portal: "version": "19.0.2.1.0",
 
 sports_federation_notifications: "version": "19.0.1.3.0",
 
 
 === RELEVANT RECENT HISTORY ===
 
-a05f8a6 (HEAD -> main) Added Stage creation to Schedule Planning.
+549694a (HEAD -> main) Expanded on Tournament Flow Builder inside Schedule Planning.
+a05f8a6 Added Stage creation to Schedule Planning.
 e57634d QoL v2 to v3 fix.
 ee3fccf QoL.patch
 67dcdf6 Backend cleanup.
@@ -47,9 +58,8 @@ e504f22 Implemented package 1 from Copilot.
 f2bb481 refactor operations workspace service seams
 6a5aee6 (feat/top10-sequence-execution) execute top10 sequence: strict CI, lint baseline, security hardening, decomposition, docs
 7273916 merge: resolve pycache conflicts by keeping tracked-bytecode deletions
-c084f0b (chore/untrack-pycache) chore: stop tracking python bytecode cache files
 
 
 === DISCOVERED FILE COUNT ===
 
-205
+207
