@@ -72,7 +72,9 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
             return []
 
         planner_root = workspace_service._get_planner_root_gameday(slot.round_id)
-        planner_matches = planner_root.slot_ids.filtered("match_id").mapped("match_id") | match
+        planner_matches = (
+            planner_root.slot_ids.filtered("match_id").mapped("match_id") | match
+        )
         target_playing_clubs = self._match_club_ids(match)
         conflicts = []
         seen = set()
@@ -84,7 +86,9 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
             other_start, other_end = self._match_window(
                 other, slot=other_slot, effective_slots=effective_slots
             )
-            if not self._windows_overlap(target_start, target_end, other_start, other_end):
+            if not self._windows_overlap(
+                target_start, target_end, other_start, other_end
+            ):
                 continue
 
             for duty in other.club_referee_duty_ids.filtered(
@@ -272,11 +276,11 @@ class CompetitionWorkspaceOfficiatingExtension(models.AbstractModel):
         if "referee_assignment_ids" not in match._fields:
             return {}
         officiating_warnings = match._get_officiating_warnings()
-        active_duties = match.club_referee_duty_ids.filtered(
-            lambda duty: duty.state != "draft"
-        ) if "club_referee_duty_ids" in match._fields else self.env[
-            "federation.match.club.referee.duty"
-        ]
+        active_duties = (
+            match.club_referee_duty_ids.filtered(lambda duty: duty.state != "draft")
+            if "club_referee_duty_ids" in match._fields
+            else self.env["federation.match.club.referee.duty"]
+        )
         return {
             "officiating": {
                 "required_count": match.required_referee_count,

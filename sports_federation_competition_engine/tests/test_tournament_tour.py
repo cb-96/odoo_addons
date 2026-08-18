@@ -118,15 +118,12 @@ class TestTournamentTour(TransactionCase):
         Roster = self.env.get("federation.team.roster")
         if Roster is None:
             return False
-        
+
         roster = Roster.search(
-            [
-                ("team_id", "=", team.id), 
-                ("season_id", "=", season.id)
-            ],
+            [("team_id", "=", team.id), ("season_id", "=", season.id)],
             limit=1,
         )
-        
+
         if not roster:
             roster = Roster.create(
                 {

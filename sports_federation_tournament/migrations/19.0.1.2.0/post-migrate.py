@@ -2,8 +2,7 @@
 
 
 def migrate(cr, version):
-    cr.execute(
-        """
+    cr.execute("""
         UPDATE federation_match
            SET resolution_type = 'regulation'
          WHERE resolution_type IS NULL
@@ -12,5 +11,4 @@ def migrate(cr, version):
                 OR source_match_1_id IS NOT NULL
                 OR source_match_2_id IS NOT NULL
            )
-        """
-    )
+        """)

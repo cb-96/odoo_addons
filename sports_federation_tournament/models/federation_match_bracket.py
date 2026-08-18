@@ -95,11 +95,15 @@ class FederationMatchBracket(models.Model):
             participants = match.home_team_id | match.away_team_id
             if len(participants) < 2:
                 raise ValidationError(
-                    _("A knockout match needs both participating teams before it can be completed.")
+                    _(
+                        "A knockout match needs both participating teams before it can be completed."
+                    )
                 )
             if match.advancing_team_id and match.advancing_team_id not in participants:
                 raise ValidationError(
-                    _("The advancing team must be one of the teams in this knockout match.")
+                    _(
+                        "The advancing team must be one of the teams in this knockout match."
+                    )
                 )
             if match.resolution_type != "regulation" and not match.advancing_team_id:
                 raise ValidationError(
