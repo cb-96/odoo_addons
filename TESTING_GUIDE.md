@@ -311,6 +311,21 @@ CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federati
 CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_concurrency
 CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_acl
 
+# Run all Workspace contract tags in one installed database/invocation
+CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --suite competition_workspace_contracts
+
+# Frontend-only feedback loop: XML/QWeb, JS syntax, QUnit registration/assets,
+# portal accessibility/mobile templates, and selected HTTP rendering tests
+bash addons/ci/run_tests.sh \
+    --frontend-module sports_federation_competition_engine \
+    --frontend-module sports_federation_portal
+
+# Detect changed addons and expand to all manifest reverse dependents
+bash addons/ci/run_tests.sh --affected-from origin/main --include-dependents
+
+# Retain failed containers, database, filestore, generated config, and commands
+bash addons/ci/run_tests.sh --module sports_federation_portal --keep-on-failure
+
 # Run all suites (used in final PR validation)
 bash addons/ci/run_tests.sh
 ```
@@ -318,6 +333,11 @@ bash addons/ci/run_tests.sh
 The CI runner produces a results block at the end:
 
 ```
+
+Every run also writes `test_failures.log`, `expected_diagnostics.log`,
+`infrastructure.log`, and `full.log` under `ci/logs/<timestamp>/`. A failed
+`--keep-on-failure` run writes `retained-container-commands.sh` with exact
+inspection and cleanup commands; successful runs clean up automatically.
 ════════════════════════════════
   RESULTS
 ════════════════════════════════

@@ -19,7 +19,7 @@ def _extract_csrf_token(response_text):
     return match.group(1)
 
 
-@tagged("-at_install", "post_install")
+@tagged("-at_install", "post_install", "sf_frontend_http")
 class TestPortalHttpSmoke(HttpCase):
     def test_web_login_get_renders_login_page(self):
         response = self.url_open("/web/login")

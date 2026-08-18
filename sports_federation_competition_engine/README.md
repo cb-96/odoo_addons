@@ -266,6 +266,10 @@ Roles and safeguards
 - Frontend helper regressions for planner busy-state and keyboard-clear behavior
   are now covered by `static/tests/competition_workspace_ui_tests.js` and
   loaded through `web.qunit_suite_tests`.
+- The backend test asset includes a route-scoped `StorageManager` compatibility
+  shim so Odoo's RPC cache can initialize when `/web/tests` is served over plain
+  HTTP from a LAN IP. Production pages should use HTTPS for persistent browser
+  storage features.
 - Planner unscheduled match lists are now sliced by the active gameday sequence
   (per linked division round), instead of showing every unscheduled match in the
   stage.

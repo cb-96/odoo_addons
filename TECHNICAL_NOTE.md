@@ -638,6 +638,10 @@ CI recommendations
 - Include a lint step (flake8/black for Python where applicable) and XML/manifest validation.
 - The repository CI entrypoint is `ci/run_tests.sh`; the GitHub workflow at `.github/workflows/ci.yml` reuses that script and runs Black/Flake8 from `requirements.txt`.
 - `ci/run_tests.sh` also provides named suites (`competition_core`, `portal_public_ops`, `finance_reporting`) so maintainers can run the same focused coverage locally and in GitHub Actions.
+- The runner supports a frontend-only mode (`--frontend-module`) that performs XML/QWeb parsing, JavaScript syntax and QUnit-registration checks, asset checks, portal accessibility/mobile checks, and selected HTTP tests without scheduling or standings suites.
+- `--affected-from <ref> --include-dependents` resolves changed addons from git and expands their manifest reverse-dependency closure before testing.
+- `competition_workspace_contracts` combines all Workspace contract tags in one installed database and Odoo invocation.
+- Each run retains `test_failures.log`, `expected_diagnostics.log`, `infrastructure.log`, and `full.log`; `--keep-on-failure` additionally preserves runtime artifacts and writes exact inspection commands.
 - Public-site, portal, and reporting performance hotspots should carry explicit `assertQueryCount(...)` budgets in their regression suites; the current enforced budgets are summarized in `PERFORMANCE_BASELINES.md`.
 - Do not commit runtime credentials. Keep local CI values in `ci/.env`, commit only `ci/.env.example`, and let CI generate ephemeral values at runtime.
 - Integration environment variables: maintain `ci/integrations.env.example` with the common external-integration keys (SMTP, SendGrid/Mailgun keys, OAuth client IDs/secrets, Slack webhook, Twilio credentials, AWS S3 keys). Keep real values out of VCS and populate `ci/.env` locally or via your secret store in CI runs.

@@ -1,7 +1,7 @@
 from odoo.tests.common import HttpCase, tagged
 
 
-@tagged("-at_install", "post_install")
+@tagged("-at_install", "post_install", "sf_frontend_http")
 class TestCompetitionWorkspaceHttpSmoke(HttpCase):
     @classmethod
     def setUpClass(cls):

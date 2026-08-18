@@ -26,6 +26,7 @@
     ],
     "assets": {
         "web.assets_backend": [
+            "sports_federation_competition_engine/static/tests/storage_manager_compatibility.js",
             "sports_federation_competition_engine/static/src/client_actions/competition_workspace/competition_workspace.js",
             "sports_federation_competition_engine/static/src/client_actions/competition_workspace/methods/competition_workspace_form_methods.js",
             "sports_federation_competition_engine/static/src/client_actions/competition_workspace/methods/competition_workspace_planner_action_methods.js",

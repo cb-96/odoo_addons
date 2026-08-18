@@ -161,6 +161,16 @@ bash ./ci/run_tests.sh --module sports_federation_standings --keep
 bash ./ci/run_tests.sh --module sports_federation_standings --keep
 ```
 
+Use `--keep-on-failure` for automatic cleanup on success and retained
+containers/database/filestore/configuration on failure. For fast UI work use
+`--frontend-module`; for cross-module safety use
+`--affected-from origin/main --include-dependents`. Workspace contracts can be
+combined with:
+
+```bash
+bash ./ci/run_tests.sh --suite competition_workspace_contracts
+```
+
 ### Pre-push checks
 
 Before pushing, run the static checks locally to avoid a CI round-trip:

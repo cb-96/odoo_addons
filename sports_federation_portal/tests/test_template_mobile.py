@@ -3,11 +3,12 @@ from pathlib import Path
 
 from lxml import etree
 
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 MIN_COLUMNS_FOR_RESPONSIVE = 5
 
 
+@tagged("-at_install", "post_install", "sf_frontend_mobile")
 class TestPortalTemplateMobile(TransactionCase):
     """Verify mobile-specific layout conventions in the largest portal templates.
 

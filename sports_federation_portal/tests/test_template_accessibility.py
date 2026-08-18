@@ -2,9 +2,10 @@ from pathlib import Path
 
 from lxml import etree
 
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 
+@tagged("-at_install", "post_install", "sf_frontend_accessibility")
 class TestPortalTemplateAccessibility(TransactionCase):
     @classmethod
     def setUpClass(cls):

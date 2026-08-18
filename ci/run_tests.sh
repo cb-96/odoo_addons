@@ -8,6 +8,9 @@
 #   bash ci/run_tests.sh --suite portal_public_ops
 #   bash ci/run_tests.sh --module sports_federation_rosters --test-tags sf_rosters_participant_readiness --require-post-tests 1
 #   bash ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_read_model --require-post-tests 1
+#   bash ci/run_tests.sh --frontend-module sports_federation_portal
+#   bash ci/run_tests.sh --affected-from origin/main --include-dependents
+#   bash ci/run_tests.sh --suite competition_workspace_contracts
 #   bash ci/run_tests.sh --list-suites
 #   bash ci/run_tests.sh --keep                  # keep containers for debugging
 #
@@ -31,7 +34,7 @@ Usage:
   bash ci/run_tests.sh
   bash ci/run_tests.sh --module sports_federation_base
   bash ci/run_tests.sh --suite competition_core
-  bash ci/run_tests.sh --suite portal_public_ops --keep
+  bash ci/run_tests.sh --suite portal_public_ops --keep-on-failure
   bash ci/run_tests.sh --module sports_federation_rosters --test-tags sf_rosters_participant_readiness --require-post-tests 1
   bash ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_read_model --require-post-tests 1
   bash ci/run_tests.sh --list-suites
@@ -42,8 +45,12 @@ Options:
   --contract-suite, -c Select a named contract tag suite. Repeatable.
   --test-tags         Override Odoo --test-tags expression used for discovery.
   --require-post-tests Fail if discovered post-tests are below the provided minimum.
+  --frontend-module   Run frontend-only checks for a module. Repeatable.
+  --affected-from     Select modules changed since a git ref.
+  --include-dependents Expand affected modules through manifest reverse dependencies.
   --list-suites       Print the available named suites.
   --keep, -k          Leave the Docker Compose stack running after the run.
+  --keep-on-failure   Clean successful runs; retain failed runtime artifacts.
   --help, -h          Show this help text.
 
 Environment:
@@ -61,6 +68,7 @@ Available suites:
   release_surfaces       Broader portal/public, match-day, compliance, and notification release verification
   people_rosters_rules   People, rosters, rules, and officiating modules
   ops_and_notifications  Discipline, governance, notifications, import_tools, and demo modules
+  competition_workspace_contracts All Workspace contract tags in one invocation
 EOF
 }
 
@@ -158,6 +166,11 @@ sports_federation_governance
 sports_federation_notifications
 sports_federation_import_tools
 sports_federation_demo
+EOF
+      ;;
+    competition_workspace_contracts)
+      cat <<'EOF'
+sports_federation_competition_engine
 EOF
       ;;
     *)
@@ -271,9 +284,14 @@ contains_module() {
 MODULES=()
 SUITES=()
 CONTRACT_SUITES=()
+FRONTEND_MODULES=()
 CUSTOM_TEST_TAGS=""
 REQUIRE_POST_TESTS=0
 KEEP=false
+KEEP_ON_FAILURE=false
+FRONTEND_MODE=false
+AFFECTED_FROM=""
+INCLUDE_DEPENDENTS=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --module|-m)
@@ -290,6 +308,21 @@ while [[ $# -gt 0 ]]; do
       [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; usage >&2; exit 1; }
       CONTRACT_SUITES+=("$2")
       shift 2
+      ;;
+    --frontend-module)
+      [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; usage >&2; exit 1; }
+      FRONTEND_MODULES+=("$2")
+      FRONTEND_MODE=true
+      shift 2
+      ;;
+    --affected-from)
+      [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; usage >&2; exit 1; }
+      AFFECTED_FROM="$2"
+      shift 2
+      ;;
+    --include-dependents)
+      INCLUDE_DEPENDENTS=true
+      shift
       ;;
     --test-tags)
       [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; usage >&2; exit 1; }
@@ -313,6 +346,10 @@ while [[ $# -gt 0 ]]; do
       KEEP=true
       shift
       ;;
+    --keep-on-failure)
+      KEEP_ON_FAILURE=true
+      shift
+      ;;
     *)
       echo "Unknown option: $1" >&2
       usage >&2
@@ -320,6 +357,11 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ "$INCLUDE_DEPENDENTS" == "true" && -z "$AFFECTED_FROM" ]]; then
+  echo "--include-dependents requires --affected-from" >&2
+  exit 1
+fi
 
 if ! [[ "$REQUIRE_POST_TESTS" =~ ^[0-9]+$ ]]; then
   echo "--require-post-tests must be a non-negative integer" >&2
@@ -337,6 +379,31 @@ if [[ ${#SUITES[@]} -gt 0 ]]; then
       MODULES+=("$module")
     done <<< "$suite_modules"
   done
+fi
+
+if [[ "$AFFECTED_FROM" != "" ]]; then
+  SCOPE_ARGS=(--affected-from "$AFFECTED_FROM")
+  if [[ "$INCLUDE_DEPENDENTS" == "true" ]]; then
+    SCOPE_ARGS+=(--include-dependents)
+  fi
+  mapfile -t AFFECTED_MODULES < <(
+    python3 "$SCRIPT_DIR/resolve_ci_scope.py" "${SCOPE_ARGS[@]}"
+  )
+  if [[ ${#AFFECTED_MODULES[@]} -eq 0 ]]; then
+    echo "No sports federation modules changed since $AFFECTED_FROM" >&2
+    exit 1
+  fi
+  MODULES+=("${AFFECTED_MODULES[@]}")
+fi
+
+if [[ ${#FRONTEND_MODULES[@]} -gt 0 ]]; then
+  if [[ -n "$CUSTOM_TEST_TAGS" ]]; then
+    echo "--frontend-module cannot be combined with --test-tags or --contract-suite" >&2
+    exit 1
+  fi
+  MODULES+=("${FRONTEND_MODULES[@]}")
+  CUSTOM_TEST_TAGS="sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile"
+  REQUIRE_POST_TESTS=1
 fi
 
 if [[ ${#CONTRACT_SUITES[@]} -gt 0 ]]; then
@@ -363,12 +430,15 @@ fi
 
 for suite in "${SUITES[@]}"; do
   case "$suite" in
-    competition_core|portal_public_ops|finance_reporting|release_surfaces|people_rosters_rules|ops_and_notifications)
+    competition_core|portal_public_ops|finance_reporting|release_surfaces|people_rosters_rules|ops_and_notifications|competition_workspace_contracts)
       if (( REQUIRE_POST_TESTS < 1 )); then
         REQUIRE_POST_TESTS=1
       fi
       ;;
   esac
+  if [[ "$suite" == "competition_workspace_contracts" ]]; then
+    CUSTOM_TEST_TAGS="sf_competition_workspace,sf_ws_read_model_contract,sf_ws_write_guard_contract,sf_ws_extension_contract,sf_ws_concurrency_contract,sf_ws_acl_contract"
+  fi
   if [[ "$suite" == "rosters_readiness_guard" ]]; then
     if [[ -z "$CUSTOM_TEST_TAGS" ]]; then
       CUSTOM_TEST_TAGS="sf_rosters_participant_readiness"
@@ -395,6 +465,15 @@ for module in "${MODULES[@]}"; do
 done
 MODULES=("${UNIQUE_MODULES[@]}")
 
+# Restore dependency-safe install order after combining suites and dynamic scopes.
+ORDERED_MODULES=()
+for module in "${ALL_MODULES[@]}"; do
+  if contains_module "$module" "${MODULES[@]}"; then
+    ORDERED_MODULES+=("$module")
+  fi
+done
+MODULES=("${ORDERED_MODULES[@]}")
+
 MODULE_CSV=$(IFS=,; echo "${MODULES[*]}")
 SUITE_CSV=$(IFS=,; echo "${SUITES[*]}")
 
@@ -403,9 +482,17 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 LOG_DIR="$SCRIPT_DIR/logs/$TIMESTAMP"
 mkdir -p "$LOG_DIR"
 
+if [[ "$KEEP_ON_FAILURE" == "true" ]]; then
+  PROJECT_NAME="${CI_PROJECT_NAME}_${TIMESTAMP}"
+fi
+
 RAW_LOG="$LOG_DIR/raw.log"
 SUMMARY_LOG="$LOG_DIR/summary.log"
 ERRORS_LOG="$LOG_DIR/errors.log"
+TEST_FAILURES_LOG="$LOG_DIR/test_failures.log"
+EXPECTED_DIAGNOSTICS_LOG="$LOG_DIR/expected_diagnostics.log"
+INFRASTRUCTURE_LOG="$LOG_DIR/infrastructure.log"
+FULL_LOG="$LOG_DIR/full.log"
 
 echo "=== SF CI Run – $TIMESTAMP ===" | tee "$SUMMARY_LOG"
 echo "Modules: $MODULE_CSV" | tee -a "$SUMMARY_LOG"
@@ -414,6 +501,7 @@ if [[ ${#SUITES[@]} -gt 0 ]]; then
 fi
 echo "Config:  $LOADED_ENV_FILE" | tee -a "$SUMMARY_LOG"
 echo "Logs:    $LOG_DIR" | tee -a "$SUMMARY_LOG"
+echo "Project: $PROJECT_NAME" | tee -a "$SUMMARY_LOG"
 echo "────────────────────────────────────────────" | tee -a "$SUMMARY_LOG"
 
 # ── Bring up isolated environment ────────────────────────────────────
@@ -451,6 +539,53 @@ if [[ -n "$CUSTOM_TEST_TAGS" ]]; then
   TEST_TAGS="$CUSTOM_TEST_TAGS"
 fi
 
+FRONTEND_STATIC_EXIT=0
+if [[ "$FRONTEND_MODE" == "true" ]]; then
+  FRONTEND_STATIC_LOG="$LOG_DIR/frontend_static.log"
+  NODE_BIN=""
+  for candidate in /usr/bin/node /usr/local/bin/node /usr/bin/nodejs /usr/local/bin/nodejs; do
+    if [[ -x "$candidate" ]]; then
+      NODE_BIN="$candidate"
+      break
+    fi
+  done
+  if [[ -z "$NODE_BIN" ]]; then
+    NODE_BIN="$(command -v node || command -v nodejs || true)"
+  fi
+  : > "$FRONTEND_STATIC_LOG"
+  echo "[CI] Frontend-only static checks" | tee -a "$FRONTEND_STATIC_LOG"
+  for module in "${MODULES[@]}"; do
+    while IFS= read -r js_path; do
+      if [[ -n "$NODE_BIN" ]]; then
+        "$NODE_BIN" --check "$js_path" >> "$FRONTEND_STATIC_LOG" 2>&1 || FRONTEND_STATIC_EXIT=1
+      else
+        echo "WARNING: node or nodejs unavailable; skipped JavaScript syntax check for $js_path" >> "$FRONTEND_STATIC_LOG"
+      fi
+    done < <(find "$SCRIPT_DIR/../$module" -type f -name '*.js' -not -path '*/static/lib/*' -print)
+    if ! python3 - "$SCRIPT_DIR/../$module" >> "$FRONTEND_STATIC_LOG" 2>&1 <<'PY'
+import pathlib
+import sys
+import xml.etree.ElementTree as ET
+
+root = pathlib.Path(sys.argv[1])
+for path in root.rglob("*.xml"):
+    ET.parse(path)
+if root.name == "sports_federation_competition_engine":
+    manifest = (root / "__manifest__.py").read_text(encoding="utf-8")
+    assert "web.qunit_suite_tests" in manifest, "QUnit suite is not registered"
+    assert (root / "static/tests/competition_workspace_ui_tests.js").is_file()
+print(f"frontend static checks passed: {root.name}")
+PY
+    then
+      FRONTEND_STATIC_EXIT=1
+    fi
+  done
+  cat "$FRONTEND_STATIC_LOG" | tee -a "$SUMMARY_LOG"
+  if (( FRONTEND_STATIC_EXIT != 0 )); then
+    echo "[CI] Frontend static checks failed" | tee -a "$SUMMARY_LOG"
+  fi
+fi
+
 TEST_CONTAINER_CMD=$(cat <<EOF
 python3 -m pip show websocket-client >/dev/null 2>&1 || python3 -m pip install --break-system-packages --no-cache-dir websocket-client==1.8.0
 if [ "$CI_SKIP_BROWSER_BOOTSTRAP" != "1" ]; then
@@ -470,10 +605,24 @@ exec odoo --stop-after-init --test-enable --test-tags="$TEST_TAGS" -d "$CI_ODOO_
 EOF
 )
 
-docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run --rm \
+RUN_CONTAINER_ARGS=()
+if [[ "$KEEP_ON_FAILURE" != "true" ]]; then
+  RUN_CONTAINER_ARGS=(--rm)
+fi
+# Compose has no --no-rm flag; omitting --rm retains the one-off Odoo
+# container so its filestore and generated configuration remain inspectable.
+
+docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run "${RUN_CONTAINER_ARGS[@]}" \
   ci-odoo \
   sh -lc "$TEST_CONTAINER_CMD" \
   2>&1 | tee "$RAW_LOG" || EXIT_CODE=$?
+
+if (( FRONTEND_STATIC_EXIT != 0 )); then
+  EXIT_CODE=1
+fi
+
+cp "$RAW_LOG" "$FULL_LOG"
+python3 "$SCRIPT_DIR/parse_ci_logs.py" "$RAW_LOG" "$LOG_DIR" | tee -a "$SUMMARY_LOG" || true
 
 # ── Parse results ────────────────────────────────────────────────────
 TEST_RESULT_LINE=$(grep -F "odoo.tests.result:" "$RAW_LOG" | tail -1 || true)
@@ -522,6 +671,10 @@ fi
   if [[ "$DIAGNOSTIC_COUNT" != "n/a" ]]; then
     echo "  Diagnostics:   $DIAGNOSTIC_COUNT"
   fi
+  echo "  Failure log:   $TEST_FAILURES_LOG"
+  echo "  Expected log:  $EXPECTED_DIAGNOSTICS_LOG"
+  echo "  Infrastructure: $INFRASTRUCTURE_LOG"
+  echo "  Full log:      $FULL_LOG"
   echo "════════════════════════════════════════════"
 } | tee -a "$SUMMARY_LOG"
 
@@ -541,6 +694,10 @@ if (( REQUIRE_POST_TESTS > 0 )); then
   fi
 fi
 
+if (( EXIT_CODE != 0 )); then
+  echo "  Final exit code: $EXIT_CODE" | tee -a "$SUMMARY_LOG"
+fi
+
 if [[ $EXIT_CODE -ne 0 ]]; then
   echo ""
   echo "[CI] ❌ TESTS FAILED — see $ERRORS_LOG"
@@ -548,18 +705,51 @@ if [[ $EXIT_CODE -ne 0 ]]; then
   tail -30 "$ERRORS_LOG"
 fi
 
+write_retention_commands() {
+  local commands="$LOG_DIR/retained-container-commands.sh"
+  cat > "$commands" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+export CI_POSTGRES_USER='$CI_POSTGRES_USER'
+export CI_POSTGRES_PASSWORD='$CI_POSTGRES_PASSWORD'
+export CI_POSTGRES_DB='$CI_POSTGRES_DB'
+export CI_ODOO_DB_HOST='$CI_ODOO_DB_HOST'
+export CI_ODOO_DB_PORT='$CI_ODOO_DB_PORT'
+PROJECT_NAME='$PROJECT_NAME'
+COMPOSE_FILE='$COMPOSE_FILE'
+DB_NAME='$CI_ODOO_DB_NAME'
+docker compose -p "\$PROJECT_NAME" -f "\$COMPOSE_FILE" ps
+docker compose -p "\$PROJECT_NAME" -f "\$COMPOSE_FILE" logs --tail=200 ci-odoo
+docker compose -p "\$PROJECT_NAME" -f "\$COMPOSE_FILE" exec -T ci-db psql -U '$CI_POSTGRES_USER' -d "\$DB_NAME" -c '\\dt'
+docker compose -p "\$PROJECT_NAME" -f "\$COMPOSE_FILE" exec -T ci-odoo find /var/lib/odoo/filestore -maxdepth 2 -type f | head -100
+docker cp "\$(docker compose -p \"\$PROJECT_NAME\" -f \"\$COMPOSE_FILE\" ps -q ci-odoo):/var/lib/odoo/filestore" '$LOG_DIR/filestore'
+docker cp "\$(docker compose -p \"\$PROJECT_NAME\" -f \"\$COMPOSE_FILE\" ps -q ci-odoo):/etc/odoo/odoo.conf" '$LOG_DIR/odoo.conf.retained'
+docker compose -p "\$PROJECT_NAME" -f "\$COMPOSE_FILE" down -v --remove-orphans
+EOF
+  chmod +x "$commands"
+  echo "[CI] Retained-container commands: $commands" | tee -a "$SUMMARY_LOG"
+}
+
 # ── Cleanup ──────────────────────────────────────────────────────────
-if [[ "$KEEP" == "false" ]]; then
+if [[ "$KEEP" == "false" && ! ( "$KEEP_ON_FAILURE" == "true" && $EXIT_CODE -ne 0 ) ]]; then
   echo ""
   echo "[CI] Tearing down containers …"
+  if [[ "$KEEP_ON_FAILURE" == "true" ]]; then
+    docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" rm -f ci-odoo 2>/dev/null || true
+  fi
   docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" down -v --remove-orphans 2>/dev/null || true
   if [[ -f "$GENERATED_CONF" ]]; then
     rm -f "$GENERATED_CONF"
   fi
 else
   echo ""
-  echo "[CI] --keep: containers left running (project: $PROJECT_NAME)"
-  echo "     To stop: docker compose -p $PROJECT_NAME -f $COMPOSE_FILE down -v"
+  if [[ "$KEEP_ON_FAILURE" == "true" && $EXIT_CODE -ne 0 ]]; then
+    write_retention_commands
+    echo "[CI] --keep-on-failure: retained project $PROJECT_NAME"
+  else
+    echo "[CI] --keep: containers left running (project: $PROJECT_NAME)"
+    echo "     To stop: docker compose -p $PROJECT_NAME -f $COMPOSE_FILE down -v"
+  fi
 fi
 
 if [[ -x "$SCRIPT_DIR/prune_ci_logs.sh" ]]; then
