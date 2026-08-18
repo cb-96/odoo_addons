@@ -25,9 +25,8 @@ Top-level docs:
 - `CONTEXT.md`
 - `TECHNICAL_NOTE.md`
 - `ROADMAP.md`
-- `INTEGRATIONS.md`
+- `INTEGRATION_CONTRACTS.md`
 - `STATE_AND_OWNERSHIP_MATRIX.md`
-- `NOTIFICATION_MATRIX.md`
 
 Workflow specs:
 - `_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md`
@@ -77,14 +76,14 @@ Update:
 
 Update:
 - the addon `README.md`
-- `NOTIFICATION_MATRIX.md`
+- `INTEGRATION_CONTRACTS.md` (notification matrix section)
 - any affected workflow doc
 
 ### Integration configuration changed
 
 Update:
 - the addon `README.md`
-- `INTEGRATIONS.md`
+- `INTEGRATION_CONTRACTS.md`
 - `README.md` or CI docs if setup commands changed
 
 3. Write docs from the operator’s point of view.
@@ -111,7 +110,7 @@ Update the relevant `_workflows/*.md` file even if the data model change is smal
 
 ### If the change only affects developer setup or CI
 
-Update `README.md`, `CONTRIBUTING.md`, and `INTEGRATIONS.md` as needed.
+Update `README.md`, `CONTRIBUTING.md`, and `INTEGRATION_CONTRACTS.md` as needed.
 
 ### If a doc seems related but not authoritative
 

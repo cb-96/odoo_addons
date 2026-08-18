@@ -45,14 +45,12 @@ release-note coverage or an explicit migration script:
 python3 addons/ci/check_migration_review.py --base-ref origin/main
 ```
 
-For the same release branch, update migration evidence and rollback notes:
+For the same release branch, record migration evidence and rollback notes in
+this runbook:
 
 ```bash
-# add the commands and outcomes used to validate migration-sensitive changes
-${EDITOR:-vi} addons/MIGRATION_DRY_RUN_EVIDENCE.md
-
-# add rollback triggers and SQL/drop steps for new migration scripts
-${EDITOR:-vi} addons/MIGRATION_ROLLBACK_NOTES.md
+# add the commands, outcomes, rollback triggers, and SQL/drop steps
+${EDITOR:-vi} addons/RELEASE_RUNBOOK.md
 ```
 
 If the release changes addon responsibility boundaries or adds a new
@@ -83,7 +81,7 @@ bash addons/ci/run_tests.sh --module sports_federation_reporting
 ```
 
 These suites now include query-budget regression checks for the public-site,
-portal, and reporting hotspots documented in `PERFORMANCE_BASELINES.md`.
+portal, and reporting hotspots documented in `TESTING_GUIDE.md`.
 
 If the release changes the largest reporting SQL views, refresh the committed
 `EXPLAIN` snapshots from a restored or staging database and review the diff in
@@ -126,8 +124,7 @@ The upgrade script performs backups by default. It stores:
 Do not use `--skip-backup` for production releases.
 
 Run the periodic restore drill against one of these backup directories before
-or during each release train using `RESTORE_VERIFICATION_CHECKLIST.md` as the
-operator checklist:
+or during each release train using the restore checklist in this runbook:
 
 ```bash
 bash addons/ci/restore_backup_drill.sh --backup-dir 2026-04-15_191410 --target-db odoo_restore_drill --dry-run
@@ -238,11 +235,78 @@ Adjust database names and paths to match the selected backup directory.
 This section records DB migrations, new `ir.config_parameter` keys, deprecated
 field removals, and module install order changes introduced in each release.
 Add a subsection here for every release train that makes schema or behavioural
-changes. Reference `COMPATIBILITY_INVENTORY.md` for route retirement dates.
+changes. Reference the compatibility table in `INTEGRATION_CONTRACTS.md` for
+route retirement dates.
 
 ### Release 2026.05
 
 **DB migrations**: None.
+
+## Release train convention
+
+This runbook and `ROADMAP.md` are the two authoritative release-train
+surfaces. Use `YYYY.MM` for the active train identifier and update both files
+when the operating window changes. Before cutting a new train:
+
+1. Archive or replace superseded roadmap commitments.
+2. Align the `Release train:` metadata in this file and `ROADMAP.md`.
+3. Confirm module release notes and migration evidence use the same train.
+4. Run documentation, migration, workflow, and release checks before promotion.
+
+## Release acceptance checklist
+
+- [ ] Domain-integrity gate is green for every active division.
+- [ ] Workflow, portal ownership, and security certification is green.
+- [ ] Performance, concurrency, and migration checks are green.
+- [ ] Restore and operations verification is green.
+- [ ] Static CI, fresh install, restored-database upgrade, full Odoo tests,
+         frontend tests, and production-like smoke tests are green.
+- [ ] Backup/restore rehearsal, artifact checksum, rollback owner, and rollback
+         trigger are recorded.
+
+## Production gates
+
+- **Domain integrity:** played or published history must not be removed by
+   cascades; stage, gameday, match, participant, and progression records must
+   remain inside their division.
+- **Security:** all cross-club substitution tests must deny access; modifying
+   routes must be authenticated, state-checked, ownership-scoped, and CSRF
+   protected.
+- **Performance and concurrency:** validate migration indexes with
+   `EXPLAIN (ANALYZE, BUFFERS)` on anonymized production-like data; preserve
+   revision and domain invariants for slot assignment, publication, deletion,
+   registration, roster editing, and result approval.
+- **Operational health:** run the sanitized operational health snapshot after
+   restore and upgrade, then execute the canonical smoke journeys.
+
+## Backup and restore drill
+
+Run at least once per release train and after backup, compose, or filestore
+layout changes:
+
+```bash
+bash addons/ci/restore_backup_drill.sh \
+   --backup-dir <backup-directory> \
+   --target-db odoo_restore_drill --dry-run
+```
+
+Then run without `--dry-run`. Confirm the dump, `modules.txt`, and optional
+filestore are restored, every listed module is present, secrets are replaced in
+the acceptance environment, health/integrity checks pass, and scheduled jobs
+remain disabled until verification completes. Record the date, backup, target
+database, and outcome here or in the release log, then drop the disposable DB.
+
+## Migration evidence and rollback record
+
+For every migration-sensitive change, record the affected modules, migration
+or ownership surfaces, command output summary, test result, and known warnings
+in the release notes. Record rollback triggers, backup requirements, migration
+artifacts, and any index or data reversal in the same release entry. The
+validated 2026.06 tournament migration backfilled missing match schedule and
+round fields and added five operational indexes; its rollback path is restoring
+the paired database/filestore or dropping those indexes when only index
+rollback is required. The 2026.08 workspace and portal ownership cleanup was
+rollback-neutral.
 
 **New `ir.config_parameter` keys**:
 

@@ -6,6 +6,10 @@ Owner: Federation Platform Team
 This guide explains the project's test taxonomy, how to write tests for each
 category, and how to keep query-budget assertions current.
 
+Performance budgets and explain snapshots are maintained here with the test
+patterns below. A query-count increase is a regression unless the test and the
+budget are updated together with a reason.
+
 ---
 
 ## 1. Test Taxonomy
@@ -16,15 +20,11 @@ The project uses three test classes depending on what is being tested:
 
 Used for: model methods, computed fields, `@api.constrains` validators,
 wizards, services, and controller methods that are tested by injecting a mock
-`request` object (no real HTTP).
 
 Each test runs inside a savepoint that is rolled back after the test, so data
-does not carry between tests. It is the **default choice** for new tests.
 
-```python
 from odoo.tests.common import TransactionCase
 
-class TestFederationClub(TransactionCase):
 
     @classmethod
     def setUpClass(cls):
@@ -44,7 +44,6 @@ class TestFederationClub(TransactionCase):
 across all test methods (and rolled back as a unit at the end of the class).
 Fixtures created inside individual test methods are rolled back after each
 method.
-
 ### `HttpCase` — end-to-end HTTP smoke tests
 
 Used for: verifying that routes return the expected HTTP status code, CSRF
@@ -59,7 +58,6 @@ from odoo.tests.common import HttpCase, tagged
 
 @tagged("-at_install", "post_install")
 class TestPublicSiteHttpSmoke(HttpCase):
-
     def test_tournaments_list_returns_200(self):
         response = self.url_open("/tournaments")
         self.assertEqual(response.status_code, 200)
@@ -170,20 +168,36 @@ class TestPortalOwnership(TransactionCase):
         )
 
         def _make_user(name, login):
-            return (
                 cls.env["res.users"]
                 .with_context(no_reset_password=True)
                 .create({
-                    "name": name,
                     "login": login,
-                    "email": login,
-                    "group_ids": [(6, 0, [cls.portal_group.id])],
-                })
             )
-
         cls.user_a = _make_user("User A", "usera@example.com")
-        cls.user_b = _make_user("User B", "userb@example.com")
 
+
+## Maintained performance budgets
+
+These are the current CI budgets for the most sensitive read paths:
+
+| Path | Budget |
+|---|---:|
+| `federation.tournament.get_public_featured_tournaments(limit=4)` | 1 query |
+| `federation.tournament.get_public_live_tournaments(limit=4)` | 1 query |
+| `federation.tournament.get_public_recent_result_tournaments(limit=4)` | 3 queries |
+| `federation.tournament.get_public_schedule_sections()` | 4 queries |
+| `federation.team.roster.line._portal_get_available_players()` | 7 queries |
+| `federation.report.schedule._build_season_portfolio_rows()` | 3 queries |
+| `federation.report.schedule._build_club_performance_rows()` | 4 queries |
+| `federation.report.snapshot._compliance_pending_total()` | 1 aggregate query |
+| Workspace planner payload smoke | ≤ 20 seconds |
+| Workspace auto-schedule smoke | ≤ 25 seconds |
+
+The authoritative tests are in the public-site, portal, reporting, and
+competition-engine test suites. Planner scenarios live in
+`sports_federation_competition_engine/tests/data/planner_performance_scenarios.json`.
+When a budget changes, update the assertion, explain the cause, and review the
+corresponding SQL plan or index before changing the documented value.
         # Link users to clubs via representative records
         for user, club in ((cls.user_a, cls.club_a), (cls.user_b, cls.club_b)):
             cls.env["federation.club.representative"].create({
@@ -244,10 +258,10 @@ def test_public_discovery_helpers_stay_within_query_budget(self):
 - `assertQueryCount(N)` fails if the block executes more or fewer than `N`
   queries. Fewer queries is also a failure because it may indicate a test
   regression (e.g., empty dataset masking missing queries).
-- Budgets live in `PERFORMANCE_BASELINES.md`. If you lower a budget, update
-  that file.
+- Budgets live in the maintained performance section of this guide. If you
+    lower a budget, update that section.
 - If your change legitimately increases a query count, update the assertion
-  and add a comment explaining why, and update `PERFORMANCE_BASELINES.md`.
+    and add a comment explaining why, and update the budget table in this guide.
 
 ---
 

@@ -9,7 +9,6 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TRAIN_FILES = [
-    "RELEASE_TRAIN.md",
     "ROADMAP.md",
     "RELEASE_RUNBOOK.md",
 ]

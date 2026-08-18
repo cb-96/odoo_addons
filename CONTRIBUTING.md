@@ -198,11 +198,43 @@ python3 ci/check_constraint_index_contracts.py
 
 - Update the relevant module README for behavior or schema changes.
 - Update the matching workflow under `_workflows/` when business behavior changes.
-- Run the [Intuitiveness review checklist](INTUITIVENESS_REVIEW_CHECKLIST.md) for major UX, naming, entry-point, and state-label changes.
-- Keep `TECHNICAL_NOTE.md`, `CONTEXT.md`, `INTEGRATIONS.md`, and `STATE_AND_OWNERSHIP_MATRIX.md` aligned when the change affects their scope.
+- Keep `TECHNICAL_NOTE.md`, `CONTEXT.md`, `INTEGRATION_CONTRACTS.md`, and `STATE_AND_OWNERSHIP_MATRIX.md` aligned when the change affects their scope.
 - Update `MODULE_OWNERS.yaml` whenever a new addon is introduced or primary module ownership changes.
-- Update `RELEASE_TRAIN.md` when a change starts a new release window or needs train-level migration coordination.
 - Update `DATA_RETENTION_POLICY.md` when a change modifies cleanup scope or retention windows for logs, staged deliveries, or generated report files.
 - Update the relevant record under `adr/` when a change revises portal trust boundaries, reporting SQL-view policy, or public route ownership.
-- For migration-sensitive changes, update `MIGRATION_DRY_RUN_EVIDENCE.md` and `MIGRATION_ROLLBACK_NOTES.md` in the same branch.
-- Use `MIGRATION_CHECKLIST_TEMPLATE.md` as the baseline checklist for model/view/controller ownership changes.
+
+## Module implementation checklist
+
+When adding an addon or persistent model, keep the change complete and
+installable:
+
+- Declare direct dependencies and every XML/CSV file in `__manifest__.py`.
+- Export model, wizard, and controller packages from their `__init__.py` files.
+- Add ACLs and record rules for every new model; check company and portal scope.
+- Add a module README, focused regression test, and workflow update when the
+  change introduces a business state or user journey.
+- For a new module, use the standard layout: `models/`, `security/`, `views/`,
+  optional `data/`, `wizards/`, `controllers/`, and `tests/`. Do not create
+  empty directories.
+
+## Migration review checklist
+
+For model, view, controller, security, or ownership changes, record the
+affected modules and release train, then verify:
+
+- schema, backfill, index, view, route, and ACL implications are understood;
+- `python3 ci/check_migration_review.py --base-ref origin/main` passes;
+- the migration dry-run command and result are recorded in
+  `RELEASE_RUNBOOK.md`;
+- rollback triggers, backup requirements, and any SQL reversal are recorded in
+  the same runbook;
+- the affected module tests and the relevant full suite pass.
+
+## Architecture summary
+
+The dependency direction is `base → tournament → competition_engine`, followed
+by domain modules such as people, rules, rosters, officiating, results,
+standings, compliance, discipline, governance, venues, and finance. Portal,
+public-site, notification, reporting, and import modules are integration or
+surface layers. A module may import only from declared dependencies; use the
+module README and manifest as the final authority.

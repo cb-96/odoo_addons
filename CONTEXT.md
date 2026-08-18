@@ -102,8 +102,8 @@ Recent additions (2026-05-26)
 - Template accessibility tests in `sports_federation_portal` and
 	`sports_federation_public_site` now include regression checks that forbid raw
 	state rendering fragments.
-- `INTUITIVENESS_REVIEW_CHECKLIST.md` now defines the lightweight governance
-	gate for major naming, entry-point, and UX-state changes.
+- Major naming, entry-point, and UX-state changes use the documentation and
+	terminology review expectations in `CONTRIBUTING.md`.
 
 See `odoo/TECHNICAL_NOTE.md` → "Portal/public intuitiveness baseline
 (2026-05-26)" for details.

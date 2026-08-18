@@ -8,19 +8,14 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 TRACKED_DOCS = [
-    "CODE_REVIEW_REPORT.md",
-    "MAINTAINABILITY_REVIEW.md",
     "ROADMAP.md",
     "TECHNICAL_NOTE.md",
     "CONTEXT.md",
-    "INTEGRATIONS.md",
     "INTEGRATION_CONTRACTS.md",
     "ROUTE_INVENTORY.md",
     "STATE_AND_OWNERSHIP_MATRIX.md",
     "RELEASE_RUNBOOK.md",
-    "RELEASE_TRAIN.md",
     "DATA_RETENTION_POLICY.md",
-    "RESTORE_VERIFICATION_CHECKLIST.md",
     "adr/README.md",
     "adr/0001-portal-trust-boundaries.md",
     "adr/0002-reporting-sql-views.md",

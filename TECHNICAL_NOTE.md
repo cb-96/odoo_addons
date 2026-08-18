@@ -231,9 +231,8 @@ and slot-based scheduling.
     internal status rendering.
 - Regression guards in portal/public template accessibility tests now block
     reintroduction of raw internal state render fragments.
-- Intuitiveness governance now includes
-    `INTUITIVENESS_REVIEW_CHECKLIST.md`, referenced by
-    `CONTRIBUTING.md` for major UX and terminology changes.
+- Intuitiveness governance follows the documentation and terminology review
+    expectations in `CONTRIBUTING.md`.
 
 Validation policy
 
@@ -642,7 +641,7 @@ CI recommendations
 - `--affected-from <ref> --include-dependents` resolves changed addons from git and expands their manifest reverse-dependency closure before testing.
 - `competition_workspace_contracts` combines all Workspace contract tags in one installed database and Odoo invocation.
 - Each run retains `test_failures.log`, `expected_diagnostics.log`, `infrastructure.log`, and `full.log`; `--keep-on-failure` additionally preserves runtime artifacts and writes exact inspection commands.
-- Public-site, portal, and reporting performance hotspots should carry explicit `assertQueryCount(...)` budgets in their regression suites; the current enforced budgets are summarized in `PERFORMANCE_BASELINES.md`.
+- Public-site, portal, and reporting performance hotspots should carry explicit `assertQueryCount(...)` budgets in their regression suites; the current enforced budgets are summarized in `TESTING_GUIDE.md`.
 - Do not commit runtime credentials. Keep local CI values in `ci/.env`, commit only `ci/.env.example`, and let CI generate ephemeral values at runtime.
 - Integration environment variables: maintain `ci/integrations.env.example` with the common external-integration keys (SMTP, SendGrid/Mailgun keys, OAuth client IDs/secrets, Slack webhook, Twilio credentials, AWS S3 keys). Keep real values out of VCS and populate `ci/.env` locally or via your secret store in CI runs.
 - Contributor-facing local setup, suite selection, and script validation commands live in `CONTRIBUTING.md`.
@@ -661,12 +660,12 @@ Manifest and data maintenance
 - Keep `__manifest__.py` `version` and `data` accurate. Prefer small, focused upgrade scripts to large one-off DB migrations.
 - For breaking model changes provide a dedicated migration script (`openupgrade` style) and document steps.
 - `ci/check_migration_review.py` should pass whenever model, view, or controller ownership changes are present. Treat a passing run as evidence that migration scripts or release-note surfaces were updated in the same change set.
-- Migration-sensitive branches must also update `MIGRATION_DRY_RUN_EVIDENCE.md` and `MIGRATION_ROLLBACK_NOTES.md`.
-- `ci/check_constraint_index_contracts.py` validates curated constraint/index contracts for major workflow models. Keep `ci/contracts/constraint_index_contracts.json` and `CONSTRAINT_INDEX_AUDIT.md` aligned when those models evolve.
+- Migration-sensitive branches must record dry-run evidence and rollback notes in `RELEASE_RUNBOOK.md`.
+- `ci/check_constraint_index_contracts.py` validates curated constraint/index contracts for major workflow models. Keep `ci/contracts/constraint_index_contracts.json` aligned when those models evolve.
 - `ci/check_openapi_contracts.py` validates managed integration and public-feed OpenAPI contracts plus required golden examples (`openapi/examples/INTEGRATION_GOLDEN_EXAMPLES.md`).
 - Standings recompute now supports asynchronous, idempotent queue execution through `federation.standing.recompute.job`; use correlation IDs (`federation_correlation_id`) when invoking queue workers or replaying failed jobs.
 - Integration API, scheduled reporting crons, and notification flows propagate correlation IDs for cross-module incident tracing.
-- Keep `RELEASE_TRAIN.md`, `ROADMAP.md`, and `RELEASE_RUNBOOK.md` on the same active `Release train:` value so roadmap commitments, upgrade handling, and operator checklists stay synchronized.
+- Keep `ROADMAP.md` and `RELEASE_RUNBOOK.md` on the same active `Release train:` value so roadmap commitments, upgrade handling, and operator checklists stay synchronized.
 
 Pre/post hooks
 

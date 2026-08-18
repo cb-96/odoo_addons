@@ -276,8 +276,21 @@ Partner onboarding references:
 ## Deprecation Policy
 
 The working list of compatibility aliases, owners, review dates, and target
-sunset dates lives in `COMPATIBILITY_INVENTORY.md` and must be updated in the
-same change set as any contract-facing deprecation decision.
+sunset dates is maintained here and must be updated in the same change set as
+any contract-facing deprecation decision.
+
+| Surface | Canonical replacement | Target exit |
+|---|---|---|
+| `/competitions`, `/competitions/archive`, `/competitions/api/json` | `/tournaments`, `/tournaments/api/json` | 2026-10-01 |
+| Numeric public tournament and season routes | Slug-first routes under `/tournaments/<slug>` and `/seasons/<slug>` | 2026-10-01 |
+| Numeric or competition-named v1 tournament feeds | `/api/v1/tournaments/<slug>/feed` | 2026-10-01 |
+| Player import `name` column fallback | Explicit `first_name`, `last_name` columns | 2026-10-15 |
+| Team import name fallbacks | `club_code` and explicit team naming columns | 2026-10-15 |
+| Participant import tournament/team name fallbacks | `tournament_code` and `team_code` | 2026-10-15 |
+
+Remove a compatibility surface only after its replacement is documented,
+covered by tests, and announced in the owning module README. If a target date
+passes without a removal decision, extend it here with the reason.
 
 - Slug-based public routes are canonical.
 - Numeric public routes remain compatibility shims and should not be used for
@@ -289,3 +302,46 @@ same change set as any contract-facing deprecation decision.
   a replacement contract is published.
 - Removals must be announced by updating this file, relevant READMEs, and the
   roadmap in the same release window.
+
+## Integration configuration
+
+CI and local development use environment variables for SMTP, OAuth, partner
+tokens, webhooks, and object storage. Copy `ci/integrations.env.example` to
+`ci/.env`; never commit credentials. The CI helper writes non-empty values to
+Odoo system parameters with the `integration.` prefix, including:
+
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_USE_TLS`,
+  `EMAIL_FROM`;
+- `SENDGRID_API_KEY`, `MAILGUN_API_KEY`;
+- `OAUTH_GOOGLE_*`, `OAUTH_GITHUB_*`;
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `SLACK_WEBHOOK_URL`;
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET`, `S3_REGION`;
+- `ALLOWED_HOSTS`.
+
+Read global parameters through `ir.config_parameter` and do not log secret
+values. Upload malware scanning, when enabled, uses
+`sports_federation.attachment_scan.command` and
+`sports_federation.attachment_scan.timeout_seconds`; exit code `0` means clean,
+`10` means infected, and any other non-zero code means verification failed.
+
+## Notification matrix
+
+The notification dispatcher is non-blocking and records delivery outcomes in
+`federation.notification.log`. Business actions trigger the following current
+notifications:
+
+| Event | Recipient or audience | Channel |
+|---|---|---|
+| Season registration confirmed or returned | Submitting representative or club contact | Email |
+| Tournament published | Participant club and team contacts | Email |
+| Participant confirmed | Team and club contacts | Email |
+| Result submitted | Result validators | Activity |
+| Result approved or contested | Team/club contacts; managers for contests | Email |
+| Standing frozen | Participant club contacts | Email |
+| Finance event confirmed | Partner or club/player/referee contact | Email |
+| Referee assigned | Referee | Email |
+| Overdue referee confirmation or officiating shortage | Federation managers | Activity |
+
+Delivery failures must not roll back the business transaction. Failed sends are
+logged for retry or operator investigation; dispatcher methods must not raise a
+business validation error.

@@ -4,7 +4,7 @@ Lightweight collection of Odoo 19 addons to manage a sports federation: clubs,
 teams, seasons, tournaments, scheduling, officiating, rosters, results,
 standings, portal pages and reporting.
 
-This repository contains modular, opinionated addons under `odoo/` named
+This repository contains modular, opinionated addons named
 `sports_federation_<domain>` (e.g. `sports_federation_tournament`). The code is
 designed for clarity: algorithmic logic lives in `services/`, interactive flows
 use `wizards/`, and persistent objects in `models/`.
@@ -17,24 +17,18 @@ Table of contents
 - Module list (high level)
 
 Quick links
-- High-level context: `odoo/CONTEXT.md`
-- Maintainability review: `odoo/MAINTAINABILITY_REVIEW.md`
-- Technical notes: `odoo/TECHNICAL_NOTE.md`
-- Architecture decisions: `odoo/adr/README.md`
-- Route inventory: `odoo/ROUTE_INVENTORY.md`
-- Compatibility inventory: `odoo/COMPATIBILITY_INVENTORY.md`
-- Documentation lifecycle: `odoo/DOC_LIFECYCLE.md`
-- Roadmap archive index: `odoo/ROADMAP_ARCHIVE_INDEX.md`
-- Release runbook: `odoo/RELEASE_RUNBOOK.md`
-- Release train: `odoo/RELEASE_TRAIN.md`
-- Data retention policy: `odoo/DATA_RETENTION_POLICY.md`
-- Performance baselines: `odoo/PERFORMANCE_BASELINES.md`
-- Restore drill checklist: `odoo/RESTORE_VERIFICATION_CHECKLIST.md`
-- Module owners: `odoo/MODULE_OWNERS.yaml`
-- Demo data pack: `odoo/sports_federation_demo/README.md`
-- Integration contracts: `odoo/INTEGRATION_CONTRACTS.md`
-- Managed integration OpenAPI: `odoo/openapi/integration_v1.yaml`
-- Workflows: `odoo/_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md`
+- High-level context: `CONTEXT.md`
+- Technical notes: `TECHNICAL_NOTE.md`
+- Documentation map: `docs/README.md`
+- Architecture decisions: `adr/README.md`
+- Route inventory: `ROUTE_INVENTORY.md`
+- Release runbook: `RELEASE_RUNBOOK.md`
+- Data retention policy: `DATA_RETENTION_POLICY.md`
+- Module owners: `MODULE_OWNERS.yaml`
+- Demo data pack: `sports_federation_demo/README.md`
+- Integration contracts: `INTEGRATION_CONTRACTS.md`
+- Managed integration OpenAPI: `openapi/integration_v1.yaml`
+- Workflows: `_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md`
 - Contributor guide: `CONTRIBUTING.md`
 
 **Architecture overview**
@@ -82,7 +76,7 @@ Notes:
 - `federation.tournament.round` is the shared schedule block for a stage: rounds
   own the calendar date and venue, while matches keep the exact kickoff time.
 - Standings computation and `stage_progression` rules automate advancement
-  across stages (optional `auto_advance`). See `odoo/TECHNICAL_NOTE.md`.
+  across stages (optional `auto_advance`). See `TECHNICAL_NOTE.md`.
 
 Quickstart / Installation (example)
 
@@ -146,10 +140,10 @@ Development & tests
 
 Contributing & docs
 - Always update repository documentation as part of the same change set.
-  Update `odoo/TECHNICAL_NOTE.md`, relevant `odoo/_workflows/*` and the
-  affected module `README.md` under `odoo/<module>/`.
-- Treat `ROUTE_INVENTORY.md`, `COMPATIBILITY_INVENTORY.md`, and
-  `RELEASE_RUNBOOK.md` as maintained release documents, not one-off notes.
+  Update `TECHNICAL_NOTE.md`, relevant `_workflows/*`, and the affected module
+  `README.md`.
+- Treat `ROUTE_INVENTORY.md`, `INTEGRATION_CONTRACTS.md`, and `RELEASE_RUNBOOK.md`
+  as maintained release documents, not one-off notes.
 - Follow the PR checklist in `.github/copilot-instructions.md` and add tests
   for behavioural changes. If you cannot update docs immediately, add a clear
   TODO in the change and notify maintainers.

@@ -52,7 +52,7 @@ Shared capabilities:
 - Standardized error categories such as ``missing_reference``,
   ``duplicate_entry``, ``format_error``, and ``missing_required_field``.
 - Explicit compatibility handling for legacy CSV aliases tracked in
-  ``COMPATIBILITY_INVENTORY.md``.
+  ``INTEGRATION_CONTRACTS.md``.
 
 Managed Partner Integrations
 ----------------------------

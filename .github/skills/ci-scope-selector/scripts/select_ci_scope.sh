@@ -108,7 +108,7 @@ for raw_path in "${files[@]}"; do
       cross_cutting=true
       reasons+=("CI or workflow infrastructure changed: $path")
       ;;
-    CONTEXT.md|TECHNICAL_NOTE.md|INTEGRATIONS.md|STATE_AND_OWNERSHIP_MATRIX.md|NOTIFICATION_MATRIX.md)
+    CONTEXT.md|TECHNICAL_NOTE.md|INTEGRATION_CONTRACTS.md|STATE_AND_OWNERSHIP_MATRIX.md)
       cross_cutting=true
       doc_touch=true
       reasons+=("Top-level architecture or operations docs changed: $path")
