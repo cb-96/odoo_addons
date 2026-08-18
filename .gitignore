@@ -2,6 +2,10 @@ ERRORS.md
 __pycache__/
 *.pyc
 *.pyo
+.coverage
+.pytest_cache/
+current_sources.txt
+*.patch
 
 # Local environment and generated runtime config
 .env

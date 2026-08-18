@@ -2,10 +2,10 @@
 main
 
 === CURRENT COMMIT ===
-012550753d467f61cdb34578c45d776c91b94a7b
+ffb762ec37629f883c92ecb848ca81c4d9829a4e
 
 === WORKTREE STATUS ===
-?? current_sources.txt
+ M current_sources.txt
 
 === MODULE VERSIONS ===
 
@@ -21,14 +21,15 @@ sports_federation_officiating: "version": "19.0.1.5.0",
 
 sports_federation_result_control: "version": "19.0.1.1.0",
 
-sports_federation_portal: "version": "19.0.1.4.0",
+sports_federation_portal: "version": "19.0.1.5.0",
 
 sports_federation_notifications: "version": "19.0.1.2.0",
 
 
 === RELEVANT RECENT HISTORY ===
 
-0125507 (HEAD -> main) Added source_collector.py
+ffb762e (HEAD -> main) feat(portal): add operational action queues
+0125507 Added source_collector.py
 437bbc9 chore: remove generated package artifacts
 cc31727 test: restore portal and public smoke contracts
 2487b0a Workspace and portal overhaul.
@@ -47,9 +48,8 @@ bf69b52 (fix/health-pass-six-items) health pass: implement six hardening fixes w
 ce9f9a7 Validation flow competition workspace.
 5bccad5 Improve workspace UX flows and add frontend UI tests
 803596f competition_workspace: require shared stage and round mapping in gameday form
-bd43267 competition_workspace: use existing round options in gameday form
 
 
 === DISCOVERED FILE COUNT ===
 
-198
+200
