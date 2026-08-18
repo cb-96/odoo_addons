@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Competition Engine",
-    "version": "19.0.1.7.0",
+    "version": "19.0.1.8.0",
     "category": "Sports",
     "summary": "Competition engine with round-robin and knockout generation wizards",
     "description": "Competition generation services and wizards for round-robin and knockout tournaments.",
