@@ -7,6 +7,9 @@ __pycache__/
 current_sources.txt
 *.patch
 
+current_git_metadata.txt
+current_sources.txt
+
 # Local environment and generated runtime config
 .env
 .env.local

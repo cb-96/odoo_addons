@@ -156,7 +156,7 @@ FILE: sports_federation_base/__manifest__.py
 
 {
     "name": "Sports Federation Base",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "category": "Sports",
     "summary": "Base module for federation clubs, teams, seasons, and registrations",
     "author": "Sports Federation",
@@ -246,6 +246,8 @@ from . import federation_club
 from . import federation_team
 from . import federation_season
 from . import federation_season_registration
+
+from . import operational_health
 
 ====================================================================================================
 FILE: sports_federation_base/models/attachment_policy.py
@@ -1393,7 +1395,7 @@ FILE: sports_federation_competition_engine/__manifest__.py
 
 {
     "name": "Sports Federation Competition Engine",
-    "version": "19.0.1.7.0",
+    "version": "19.0.1.8.0",
     "category": "Sports",
     "summary": "Competition engine with round-robin and knockout generation wizards",
     "description": "Competition generation services and wizards for round-robin and knockout tournaments.",
@@ -1437,6 +1439,52 @@ FILE: sports_federation_competition_engine/__manifest__.py
     "auto_install": False,
     "sequence": 30,
 }
+
+====================================================================================================
+FILE: sports_federation_competition_engine/migrations/19.0.1.8.0/post-migrate.py
+====================================================================================================
+
+"""Create competition workspace indexes when their real columns are available."""
+
+import logging
+
+_logger = logging.getLogger(__name__)
+
+INDEXES = (
+    ("sf_match_tournament_stage_state_idx", "federation_match", ("tournament_id", "stage_id", "state")),
+    ("sf_match_round_slot_idx", "federation_match", ("round_id", "slot_id")),
+    ("sf_round_tournament_stage_number_idx", "federation_tournament_round", ("tournament_id", "stage_id", "round_number")),
+    ("sf_slot_round_match_idx", "federation_match_slot", ("round_id", "match_id")),
+    ("sf_stage_tournament_sequence_idx", "federation_tournament_stage", ("tournament_id", "sequence")),
+    ("sf_progression_tournament_source_target_idx", "federation_stage_progression", ("tournament_id", "source_stage_id", "target_stage_id")),
+)
+
+
+def _table_has_columns(cr, table, columns):
+    cr.execute(
+        """
+        SELECT column_name
+          FROM information_schema.columns
+         WHERE table_schema = current_schema()
+           AND table_name = %s
+           AND column_name = ANY(%s)
+        """,
+        (table, list(columns)),
+    )
+    existing = {row[0] for row in cr.fetchall()}
+    return existing == set(columns)
+
+
+def migrate(cr, version):
+    for name, table, columns in INDEXES:
+        if not _table_has_columns(cr, table, columns):
+            _logger.warning("Skipping index %s: %s is missing required columns %s", name, table, columns)
+            continue
+        quoted_columns = ", ".join('"%s"' % column for column in columns)
+        cr.execute(
+            'CREATE INDEX IF NOT EXISTS "%s" ON "%s" (%s)'
+            % (name, table, quoted_columns)
+        )
 
 ====================================================================================================
 FILE: sports_federation_competition_engine/models/__init__.py
@@ -24402,7 +24450,7 @@ FILE: sports_federation_portal/__manifest__.py
 
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.2.1.0",
+    "version": "19.0.2.2.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -27103,6 +27151,51 @@ FILE: sports_federation_portal/data/operation_task_cron.xml
 
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1"><record id="ir_cron_federation_action_digest" model="ir.cron"><field name="name">Federation: daily action digest</field><field name="model_id" ref="model_federation_operation_task"/><field name="state">code</field><field name="code">model.cron_send_action_digests()</field><field name="interval_number">1</field><field name="interval_type">days</field><field name="active">True</field></record></odoo>
+
+====================================================================================================
+FILE: sports_federation_portal/migrations/19.0.2.2.0/post-migrate.py
+====================================================================================================
+
+"""Create club and manager queue indexes when their real columns are available."""
+
+import logging
+
+_logger = logging.getLogger(__name__)
+
+INDEXES = (
+    ("sf_operation_task_queue_idx", "federation_operation_task", ("audience", "state", "blocking", "priority", "deadline")),
+    ("sf_operation_task_owner_idx", "federation_operation_task", ("assigned_user_id", "state", "deadline")),
+    ("sf_operation_task_club_idx", "federation_operation_task", ("responsible_club_id", "state", "task_type")),
+    ("sf_tournament_registration_review_idx", "federation_tournament_registration", ("tournament_id", "state", "club_id")),
+    ("sf_roster_team_status_idx", "federation_team_roster", ("team_id", "status")),
+)
+
+
+def _table_has_columns(cr, table, columns):
+    cr.execute(
+        """
+        SELECT column_name
+          FROM information_schema.columns
+         WHERE table_schema = current_schema()
+           AND table_name = %s
+           AND column_name = ANY(%s)
+        """,
+        (table, list(columns)),
+    )
+    existing = {row[0] for row in cr.fetchall()}
+    return existing == set(columns)
+
+
+def migrate(cr, version):
+    for name, table, columns in INDEXES:
+        if not _table_has_columns(cr, table, columns):
+            _logger.warning("Skipping index %s: %s is missing required columns %s", name, table, columns)
+            continue
+        quoted_columns = ", ".join('"%s"' % column for column in columns)
+        cr.execute(
+            'CREATE INDEX IF NOT EXISTS "%s" ON "%s" (%s)'
+            % (name, table, quoted_columns)
+        )
 
 ====================================================================================================
 FILE: sports_federation_portal/models/__init__.py
