@@ -17,3 +17,4 @@ from . import tournament_operations_access
 from . import tournament_operations_board
 from . import federation_tournament_operations
 from . import portal_status_labels
+from . import operation_task

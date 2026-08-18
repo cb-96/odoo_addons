@@ -20,4 +20,11 @@
               action="action_federation_tournament_registration"
               sequence="15"/>
 
+    <menuitem id="menu_federation_operation_task"
+              name="Operational Action Queue"
+              parent="sports_federation_base.menu_federation_planning"
+              action="action_federation_operation_task"
+              groups="sports_federation_base.group_federation_manager"
+              sequence="20"/>
+
 </odoo>

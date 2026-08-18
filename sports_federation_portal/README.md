@@ -15,6 +15,29 @@ the workspace and preparation queue are for pre-kick-off work, the live
 operations board is for in-progress play, and the results queue is for
 post-match follow-up.
 
+### Operational Action Queue
+
+The portal now provides a shared operational projection model,
+`federation.operation.task`, for the first daily-control-layer slice. Tasks
+are generated from authoritative registration, roster readiness, club referee
+duty, and result-control records; they do not replace those workflows.
+
+- `source_key` makes synchronization idempotent and prevents duplicate tasks.
+- Source resolution marks a task done; if the source becomes actionable again,
+    synchronization reopens the task.
+- Blocking tasks must be resolved in their linked source record. Managers can
+    acknowledge non-blocking warnings or escalate a task, but cannot use task
+    state as a sporting override.
+- Club representatives see only tasks for their representative club scope at
+    `/my/action-items`.
+- Federation managers get the backend **Operational Action Queue**, with
+    filters for task type, club, tournament, state, priority, and blocking
+    status.
+
+The synchronization entrypoint is `federation.operation.task.sync_for_user()`.
+It is safe to call repeatedly and should remain the single projection refresh
+path for future scheduled jobs or notification triggers.
+
 ### Key Design Decisions
 
 #### 1. Ownership Mapping Strategy

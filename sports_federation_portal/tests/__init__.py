@@ -14,3 +14,4 @@ from . import test_tournament_registration
 from . import test_tournament_operations
 from . import test_tournament_workspace
 from . import test_tour_portal_workflows
+from . import test_operation_tasks

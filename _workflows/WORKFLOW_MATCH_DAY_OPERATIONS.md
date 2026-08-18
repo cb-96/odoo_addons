@@ -27,6 +27,21 @@ Primary surfaces by phase:
 Direct queues and record pages exist as shortcuts, but they should not be
 treated as equal-weight starting points for club representatives.
 
+## Operational Control Layer
+
+The portal action-items page (`/my/action-items`) is a compact control layer
+over the preparation and result follow-up phases. It projects unresolved work
+from the authoritative registration, roster, club-duty, and result records
+into `federation.operation.task` records. Re-running synchronization is
+idempotent; resolving a source closes its task, while a newly blocking source
+state reopens the same task by its stable source key.
+
+Club representatives receive only tasks for clubs they represent. Federation
+managers use the backend Operational Action Queue to filter blocking work by
+club, tournament, type, priority, deadline, and state. A task acknowledgement
+does not override a sporting blocker; the linked domain action remains the
+required resolution path.
+
 ## Modules Involved
 
 | Module | Role |

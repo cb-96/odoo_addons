@@ -64,6 +64,19 @@ class FederationPortalBase(CustomerPortal):
 
         # Count badges for portal home sidebar urgency indicators
         if representative:
+            operation_task_model = request.env.get("federation.operation.task")
+            if operation_task_model is not None:
+                operation_task_model.sudo().sync_for_user(user=request.env.user)
+                task_domain = operation_task_model._portal_get_domain(
+                    user=request.env.user
+                )
+                values[
+                    "federation_operation_task_count"
+                ] = operation_task_model.sudo().search_count(
+                    task_domain + [("state", "!=", "done")]
+                )
+            else:
+                values["federation_operation_task_count"] = 0
             clubs = representative.mapped("club_id")
             club_ids = clubs.ids
             values["federation_pending_duties_count"] = (
@@ -95,6 +108,7 @@ class FederationPortalBase(CustomerPortal):
         else:
             values["federation_pending_duties_count"] = 0
             values["federation_pending_results_count"] = 0
+            values["federation_operation_task_count"] = 0
 
         return values
 
