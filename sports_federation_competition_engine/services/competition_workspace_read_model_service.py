@@ -43,18 +43,21 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
         if gameday_id:
             parsed_gameday_id = self._safe_int(gameday_id)
             if parsed_gameday_id:
-                target_gameday = workspace_service._resolve_gameday(parsed_gameday_id)
-                if target_gameday.id in gamedays.ids:
-                    return target_gameday
-                target_root = workspace_service._get_planner_root_gameday(
-                    target_gameday
-                )
-                linked_target = gamedays.filtered(
-                    lambda record: record._competition_workspace_root_round()
-                    == target_root
-                )[:1]
-                if linked_target:
-                    return linked_target
+                target_gameday = workspace_service.env[
+                    "federation.tournament.round"
+                ].browse(parsed_gameday_id).exists()
+                if target_gameday:
+                    if target_gameday.id in gamedays.ids:
+                        return target_gameday
+                    target_root = workspace_service._get_planner_root_gameday(
+                        target_gameday
+                    )
+                    linked_target = gamedays.filtered(
+                        lambda record: record._competition_workspace_root_round()
+                        == target_root
+                    )[:1]
+                    if linked_target:
+                        return linked_target
         return gamedays[:1]
 
     def _collect_filter_int(self, filters, key, warnings, warning_code):

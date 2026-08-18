@@ -389,6 +389,82 @@ class TestCompetitionWorkspaceService(TransactionCase):
             preview["rounds"][1]["matches"][0]["away_team_name"],
         )
 
+    def test_create_stage_can_link_round_robin_to_knockout_stage(self):
+        division, _participants = self._create_division(
+            "Custom Stage Division",
+            6,
+            planning_format="manual",
+        )
+
+        round_robin_result = self.service.create_stage(
+            {
+                "division_id": division.id,
+                "name": "Round Robin Phase",
+                "stage_type": "group",
+                "sequence": 10,
+                "date_start": "2026-10-10",
+                "date_end": "2026-10-20",
+            }
+        )
+        round_robin_stage = self.env["federation.tournament.stage"].browse(
+            round_robin_result["stage_id"]
+        )
+
+        knockout_result = self.service.create_stage(
+            {
+                "division_id": division.id,
+                "name": "Knockout Phase",
+                "stage_type": "knockout",
+                "sequence": 20,
+                "source_stage_id": round_robin_stage.id,
+                "rank_from": 1,
+                "rank_to": 2,
+                "auto_advance": True,
+            }
+        )
+        knockout_stage = self.env["federation.tournament.stage"].browse(
+            knockout_result["stage_id"]
+        )
+
+        progression = self.env["federation.stage.progression"].search(
+            [
+                ("source_stage_id", "=", round_robin_stage.id),
+                ("target_stage_id", "=", knockout_stage.id),
+            ],
+            limit=1,
+        )
+        self.assertEqual(round_robin_stage.sequence, 10)
+        self.assertEqual(knockout_stage.sequence, 20)
+        self.assertEqual(progression.rank_from, 1)
+        self.assertEqual(progression.rank_to, 2)
+        self.assertTrue(progression.auto_advance)
+        self.assertEqual(
+            [
+                stage["name"]
+                for stage in knockout_result["payload"]["selected_division"][
+                    "stage_options"
+                ]
+            ],
+            ["Round Robin Phase", "Knockout Phase"],
+        )
+
+    def test_create_stage_rejects_published_divisions(self):
+        division, _participants = self._create_division(
+            "Published Stage Division",
+            4,
+            planning_format="manual",
+        )
+        division.write({"workspace_state": "published"})
+
+        with self.assertRaises(ValidationError):
+            self.service.create_stage(
+                {
+                    "division_id": division.id,
+                    "name": "Late Stage",
+                    "stage_type": "knockout",
+                }
+            )
+
     def _freeze_pool_standing(self, division, pool_stage, group, ranked_participants):
         standing = self.env["federation.standing"].create(
             {
@@ -798,6 +874,47 @@ class TestCompetitionWorkspaceService(TransactionCase):
                     "round_number": 0,
                 }
             )
+
+    def test_delete_gameday_removes_empty_gameday_and_reopens_division_state(self):
+        division, gameday = self._prepare_planned_division(
+            "Delete Empty Gameday Division"
+        )
+        self.assertEqual(division.workspace_state, "planning")
+
+        result = self.service.delete_gameday(gameday.id)
+
+        self.assertEqual(result["deleted_gameday_ids"], [gameday.id])
+        self.assertFalse(gameday.exists())
+        division.invalidate_recordset()
+        self.assertEqual(division.workspace_state, "schedule_generated")
+        self.assertFalse(division.round_ids)
+
+    def test_delete_gameday_rejects_assigned_matches(self):
+        division, gameday = self._prepare_planned_division(
+            "Delete Assigned Gameday Division"
+        )
+        match = division.match_ids[:1]
+        slot = gameday.slot_ids.filtered(lambda record: record.state == "available")[:1]
+        self.assertTrue(self.service.assign_match_to_slot(match.id, slot.id)["ok"])
+
+        with self.assertRaises(ValidationError):
+            self.service.delete_gameday(gameday.id)
+
+        self.assertTrue(gameday.exists())
+
+    def test_delete_shared_gameday_removes_root_and_guest(self):
+        _host_division, guest_division, host_gameday, guest_gameday = (
+            self._prepare_shared_planned_divisions()
+        )
+
+        result = self.service.delete_gameday(guest_gameday.id)
+
+        self.assertEqual(
+            set(result["deleted_gameday_ids"]),
+            {host_gameday.id, guest_gameday.id},
+        )
+        self.assertFalse(host_gameday.exists())
+        self.assertFalse(guest_gameday.exists())
 
     def test_gameday_planner_data_strictly_scopes_unscheduled_matches_by_round_number(
         self,
@@ -2475,6 +2592,22 @@ class TestCompetitionWorkspaceService(TransactionCase):
             payload_with_planner["planner"]["gameday"]["planner_revision"],
             int,
         )
+
+    def test_workspace_payload_recovers_from_deleted_selected_gameday(self):
+        division, gameday = self._prepare_planned_division(
+            "Deleted Selected Gameday Division"
+        )
+        stale_gameday_id = gameday.id
+        gameday.unlink()
+
+        payload = self.service.get_competition_workspace_data(
+            self.edition.id,
+            division.id,
+            {"include_planner": True, "gameday_id": stale_gameday_id},
+        )
+
+        self.assertFalse(payload["planner"])
+        self.assertFalse(payload["selected_division"]["gamedays"])
 
     def test_gameday_planner_data_limits_unscheduled_matches(self):
         division, gameday = self._prepare_planned_division("Paginated Planner Division")

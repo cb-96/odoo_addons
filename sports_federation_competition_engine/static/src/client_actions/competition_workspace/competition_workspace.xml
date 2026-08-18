@@ -694,6 +694,37 @@
     </t>
 
     <t t-name="sports_federation_competition_engine.CompetitionWorkspaceSectionRounds">
+        <section class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                        <h2 class="h5 mb-1">Stages</h2>
+                        <p class="text-muted small mb-0">Create phases in order. Rounds and gamedays are created inside the selected stage.</p>
+                    </div>
+                    <StatusBadge t-props="{ label: (selectedDivision.stage_options || []).length + ' stages', tone: 'info' }"/>
+                </div>
+                <div class="d-flex gap-2 flex-wrap mb-3" t-if="(selectedDivision.stage_options || []).length">
+                    <t t-foreach="selectedDivision.stage_options || []" t-as="stage" t-key="'stage-summary-' + stage.id">
+                        <span class="badge rounded-pill text-bg-light border"><t t-esc="stage.sequence"/> · <t t-esc="stage.name"/> · <t t-esc="stage.stage_type_label"/></span>
+                    </t>
+                </div>
+                <div class="row g-2">
+                    <div class="col-12 col-lg-3"><label class="form-label fw-semibold">Stage name</label><input type="text" class="form-control" name="name" placeholder="Round Robin Phase" t-att-value="state.stageForm.name" t-on-input="updateStageField"/></div>
+                    <div class="col-12 col-md-4 col-lg-2"><label class="form-label fw-semibold">Type</label><select class="form-select" name="stage_type" t-att-value="state.stageForm.stage_type" t-on-change="updateStageField"><option value="group">Group / league</option><option value="knockout">Knockout</option><option value="final">Final</option><option value="placement">Placement</option></select></div>
+                    <div class="col-6 col-md-4 col-lg-2"><label class="form-label fw-semibold">Order</label><input type="number" min="1" class="form-control" name="sequence" placeholder="Auto" t-att-value="state.stageForm.sequence" t-on-input="updateStageField"/></div>
+                    <div class="col-6 col-md-4 col-lg-2"><label class="form-label fw-semibold">Start</label><input type="date" class="form-control" name="date_start" t-att-value="state.stageForm.date_start" t-on-input="updateStageField"/></div>
+                    <div class="col-6 col-md-4 col-lg-2"><label class="form-label fw-semibold">End</label><input type="date" class="form-control" name="date_end" t-att-value="state.stageForm.date_end" t-on-input="updateStageField"/></div>
+                    <div class="col-12 col-md-4 col-lg-1 d-flex align-items-end"><button type="button" class="btn btn-primary w-100" t-att-disabled="state.saving" t-on-click="createStage">Add</button></div>
+                </div>
+                <div class="row g-2 mt-1">
+                    <div class="col-12 col-md-4"><label class="form-label fw-semibold">Advance from</label><select class="form-select" name="source_stage_id" t-att-value="state.stageForm.source_stage_id" t-on-change="updateStageField"><option value="">No automatic handoff</option><t t-foreach="selectedDivision.stage_options || []" t-as="sourceStage" t-key="'source-stage-' + sourceStage.id"><option t-att-value="sourceStage.id"><t t-esc="sourceStage.name"/></option></t></select></div>
+                    <div class="col-6 col-md-2"><label class="form-label fw-semibold">Rank from</label><input type="number" min="1" class="form-control" name="rank_from" t-att-value="state.stageForm.rank_from" t-on-input="updateStageField"/></div>
+                    <div class="col-6 col-md-2"><label class="form-label fw-semibold">Rank to</label><input type="number" min="1" class="form-control" name="rank_to" t-att-value="state.stageForm.rank_to" t-on-input="updateStageField"/></div>
+                    <div class="col-12 col-md-4 d-flex align-items-end"><label class="form-check mb-2"><input class="form-check-input" type="checkbox" name="auto_advance" t-att-checked="state.stageForm.auto_advance" t-on-change="updateStageField"/> <span class="form-check-label">Auto-advance qualifiers when standings are frozen</span></label></div>
+                </div>
+                <div class="form-text mt-2">For a round-robin phase followed by knockouts, create the knockout stage after the round-robin stage and set the qualification range. The Pool Then Bracket format can generate this structure automatically.</div>
+            </div>
+        </section>
         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
             <div>
                 <h2 class="h5 mb-1"><t t-esc="this.generationSectionTitle"/></h2>
@@ -776,7 +807,10 @@
                         </div>
                         <div class="d-flex gap-2 flex-wrap mb-3" t-if="(selectedDivision.gamedays || []).length">
                             <t t-foreach="selectedDivision.gamedays || []" t-as="gameday" t-key="gameday.id">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" t-att-data-gameday-id="gameday.id" t-att-class="state.currentGamedayId === gameday.id ? 'active' : ''" t-on-click="selectGameday"><t t-esc="gameday.name"/><t t-if="gameday.stage_name"> · <t t-esc="gameday.stage_name"/></t></button>
+                                <div class="d-flex align-items-center gap-1">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" t-att-data-gameday-id="gameday.id" t-att-class="state.currentGamedayId === gameday.id ? 'active' : ''" t-on-click="selectGameday"><t t-esc="gameday.name"/><t t-if="gameday.stage_name"> · <t t-esc="gameday.stage_name"/></t></button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" t-att-data-gameday-id="gameday.id" t-att-disabled="state.saving" t-on-click="requestDeleteGameday" aria-label="Delete gameday" title="Delete gameday"><i class="fa fa-trash" aria-hidden="true"/></button>
+                                </div>
                             </t>
                         </div>
                         <div class="row g-3">

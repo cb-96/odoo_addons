@@ -224,9 +224,19 @@ separates pairing generation from operational slot assignment:
      they share one physical match day.
    - The workspace creates one slot-owning gameday plus one linked gameday per
      extra division so each scheduled match still keeps a division-local round.
+    - The Schedule tab can create additional ordered stages directly. For a
+       round-robin phase followed by knockouts, create the knockout stage after
+       the round-robin stage and configure the qualification rank range; the
+       workspace records the stage progression and can auto-advance qualifiers
+       after standings are frozen. Pool Then Bracket remains the one-step guided
+       option for generating this structure automatically.
 7. Generate court/time slots. The workspace creates `federation.match.slot`
    records on the slot-owning gameday and reuses that physical grid for every
    linked division in the same shared day.
+   - Empty draft or planned gamedays can be deleted from the Planning
+     Workspace with confirmation. Shared gameday deletion removes the
+     slot-owning root and linked guest records together; assigned, validated,
+     published, locked, or completed gamedays are protected.
 8. Open the visual planner and assign matches to slots.
    - Desktop and tablet users can drag and drop.
    - Mobile users use the tap-to-assign fallback.
@@ -246,6 +256,9 @@ separates pairing generation from operational slot assignment:
      workspace.
    - The workspace remembers the current section, division, gameday, and
      planner filters across refreshes so operators can recover their place.
+    - If a remembered gameday or stage is deleted, reopening Schedule Planning
+       discards the stale selection and returns to the division overview instead
+       of raising a server error.
    - The planner also shows recent operator presence and warns when another
      user is active on the same gameday.
     - Stage labels stay visible on previews, gameday controls, and match cards,

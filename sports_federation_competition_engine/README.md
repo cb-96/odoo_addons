@@ -64,6 +64,16 @@ Guided flow
   work stay separate in the planner.
   A gameday can now include one or more additional divisions from the same
   competition when they share the same physical match day.
+  Empty draft or planned gamedays can be deleted from the same workspace with
+  confirmation. Deletion removes empty planner slots and linked shared-division
+  gamedays together; assigned, validated, published, locked, or completed
+  gamedays require the existing schedule workflow instead.
+6a. Use the Schedule tab to create additional ordered stages. A stage can be a
+  group/league phase, knockout, final, or placement phase. When the next stage
+  should receive qualifiers from the previous one, configure the source stage,
+  rank range, and optional automatic advancement. Rounds and gamedays remain
+  owned by their stage. Pool-then-bracket remains the one-step guided option
+  for generating pool play followed by knockouts.
 7. Generate court and timeslot slots for a gameday.
 8. Open the visual planner and assign matches to slots.
   The planner now supports selected-match bulk assign and bulk unassign,
@@ -122,7 +132,7 @@ Key models and services
   reversed without leaving the workspace.
 - `federation.competition.workspace.service` owns competition creation,
   division creation, team-entry confirmation, format-aware schedule generation,
-  gameday creation, slot generation, assignment validation, bulk planner
+  gameday creation and guarded deletion, slot generation, assignment validation, bulk planner
   actions, planner history, revisioned publication, collaboration heartbeat,
   and payload building for the Owl action.
 - The service internals now keep three stable seams: access helpers in

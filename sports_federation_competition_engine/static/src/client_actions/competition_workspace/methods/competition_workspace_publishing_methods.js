@@ -69,6 +69,10 @@ export class CompetitionWorkspacePublishingMethods {
         }
         if (action === "unassign_all") {
             await this.unassignAllMatches();
+            return;
+        }
+        if (action === "delete_gameday") {
+            await this.deleteGameday();
         }
     }
 

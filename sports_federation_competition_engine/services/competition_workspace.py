@@ -2306,6 +2306,93 @@ class CompetitionWorkspaceService(
         return self.generate_schedule_structure(division_id, force=force)
 
     @api.model
+    def create_stage(self, vals):
+        """Create a planning stage and optionally link it from a prior stage."""
+        self._check_access()
+        division = self._resolve_division(vals.get("division_id"))
+        if division.workspace_state in (
+            "published",
+            "in_progress",
+            "completed",
+            "archived",
+            "cancelled",
+        ):
+            raise ValidationError(
+                _("Stages cannot be added after the competition has been published.")
+            )
+
+        name = (vals.get("name") or "").strip()
+        if not name:
+            raise ValidationError(_("Enter a name for the new stage."))
+
+        stage_type = vals.get("stage_type") or "group"
+        valid_stage_types = dict(
+            self.env["federation.tournament.stage"]._fields["stage_type"].selection
+        )
+        if stage_type not in valid_stage_types:
+            raise ValidationError(_("Select a valid stage type."))
+
+        sequence = vals.get("sequence")
+        if sequence in (False, None, ""):
+            sequence = max(division.stage_ids.mapped("sequence") or [0]) + 10
+        try:
+            sequence = int(sequence)
+        except (TypeError, ValueError):
+            raise ValidationError(_("Stage order must be a positive integer."))
+        if sequence < 1:
+            raise ValidationError(_("Stage order must be a positive integer."))
+
+        stage = self.env["federation.tournament.stage"].create(
+            {
+                "name": name,
+                "tournament_id": division.id,
+                "sequence": sequence,
+                "stage_type": stage_type,
+                "date_start": vals.get("date_start") or False,
+                "date_end": vals.get("date_end") or False,
+                "notes": vals.get("notes") or False,
+            }
+        )
+
+        source_stage_id = vals.get("source_stage_id")
+        if source_stage_id:
+            source_stage = self._resolve_workspace_stage(
+                division,
+                stage_id=source_stage_id,
+            )
+            rank_from = vals.get("rank_from") or 1
+            rank_to = vals.get("rank_to") or rank_from
+            try:
+                rank_from = int(rank_from)
+                rank_to = int(rank_to)
+            except (TypeError, ValueError):
+                raise ValidationError(_("Stage qualification ranks must be integers."))
+            if rank_from < 1 or rank_to < rank_from:
+                raise ValidationError(
+                    _("The qualification range must start at 1 and end at or after it.")
+                )
+            self.env["federation.stage.progression"].create(
+                {
+                    "tournament_id": division.id,
+                    "sequence": sequence,
+                    "source_stage_id": source_stage.id,
+                    "target_stage_id": stage.id,
+                    "rank_from": rank_from,
+                    "rank_to": rank_to,
+                    "seeding_method": vals.get("seeding_method") or "keep_rank",
+                    "auto_advance": bool(vals.get("auto_advance")),
+                }
+            )
+
+        return {
+            "stage_id": stage.id,
+            "payload": self.get_competition_workspace_data(
+                division.edition_id.id if division.edition_id else False,
+                division.id,
+            ),
+        }
+
+    @api.model
     def create_gameday(self, vals):
         self._check_access()
         division = self._resolve_division(vals["division_id"])
@@ -2366,6 +2453,48 @@ class CompetitionWorkspaceService(
             "payload": self.get_competition_workspace_data(
                 division.edition_id.id if division.edition_id else False,
                 division.id,
+            ),
+        }
+
+    @api.model
+    def delete_gameday(self, gameday_id):
+        """Delete an unassigned draft/planned gameday and its shared guests."""
+        self._check_access()
+        gameday = self._resolve_gameday(gameday_id)
+        planner_root = self._get_planner_root_gameday(gameday)
+        linked_gamedays = planner_root._competition_workspace_linked_rounds()
+
+        if any(
+            record.planner_state not in ("draft", "planned")
+            for record in linked_gamedays
+        ):
+            raise ValidationError(
+                _(
+                    "Only draft or planned gamedays can be deleted. Published, validated, locked, or completed gamedays must be cancelled or managed through the schedule workflow."
+                )
+            )
+        if linked_gamedays.mapped("slot_ids").filtered("match_id"):
+            raise ValidationError(
+                _(
+                    "This gameday has assigned matches. Unassign every match before deleting the gameday."
+                )
+            )
+
+        divisions = linked_gamedays.mapped("tournament_id")
+        root_division = planner_root.tournament_id
+        edition_id = root_division.edition_id.id if root_division.edition_id else False
+        selected_division_id = gameday.tournament_id.id
+        deleted_gameday_ids = linked_gamedays.ids
+        linked_gamedays.unlink()
+        for division in divisions:
+            if not division.round_ids and division.workspace_state == "planning":
+                division._competition_workspace_transition_state("schedule_generated")
+
+        return {
+            "deleted_gameday_ids": deleted_gameday_ids,
+            "payload": self.get_competition_workspace_data(
+                edition_id,
+                selected_division_id,
             ),
         }
 

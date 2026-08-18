@@ -13,6 +13,54 @@ export class CompetitionWorkspaceFormMethods {
         }
     }
 
+    updateStageField(ev) {
+        const fieldName = ev.target.name;
+        this.state.stageForm[fieldName] = ev.target.type === "checkbox"
+            ? ev.target.checked
+            : ev.target.value;
+    }
+
+    async createStage() {
+        const name = this.state.stageForm.name.trim();
+        if (!name || !this.state.currentDivisionId) {
+            this.notify("Provide a stage name before creating it.", "warning");
+            return;
+        }
+        this.state.saving = true;
+        try {
+            const result = await this.orm.call(
+                "federation.competition.workspace.service",
+                "create_stage",
+                [{
+                    ...this.state.stageForm,
+                    division_id: this.state.currentDivisionId,
+                    sequence: this.state.stageForm.sequence
+                        ? Number(this.state.stageForm.sequence)
+                        : false,
+                    source_stage_id: this.state.stageForm.source_stage_id
+                        ? Number(this.state.stageForm.source_stage_id)
+                        : false,
+                    rank_from: Number(this.state.stageForm.rank_from || 1),
+                    rank_to: Number(this.state.stageForm.rank_to || 1),
+                }]
+            );
+            this.state.payload = result.payload;
+            this.state.stageForm = {
+                ...this.state.stageForm,
+                name: "",
+                sequence: "",
+                source_stage_id: "",
+                date_start: "",
+                date_end: "",
+            };
+            this.notify("Stage created.", "success");
+        } catch (error) {
+            this.notify(error.message || "The stage could not be created.", "danger");
+        } finally {
+            this.state.saving = false;
+        }
+    }
+
     async updateTeamEntryField(ev) {
         this.state.teamEntryForm[ev.target.name] = ev.target.value;
         if (["club_id", "search"].includes(ev.target.name)) {
@@ -366,6 +414,53 @@ export class CompetitionWorkspaceFormMethods {
             await this.loadPlanner(result.gameday_id);
         } catch (error) {
             this.notify(error.message || "The gameday could not be created.", "danger");
+        } finally {
+            this.state.saving = false;
+        }
+    }
+
+    requestDeleteGameday(ev) {
+        const gamedayId = Number(ev.currentTarget.dataset.gamedayId || 0);
+        const gameday = (this.selectedDivision?.gamedays || []).find(
+            (record) => record.id === gamedayId
+        );
+        if (!gameday || this.state.saving) {
+            return;
+        }
+        this.state.pendingGamedayDeletionId = gamedayId;
+        this.openConfirmDialog({
+            action: "delete_gameday",
+            title: "Delete gameday",
+            message: `Delete ${gameday.name}? This also removes its empty planning slots and any linked shared-division gamedays. Assigned or published gamedays cannot be deleted.`,
+            confirmLabel: "Delete gameday",
+            tone: "danger",
+        });
+    }
+
+    async deleteGameday() {
+        const gamedayId = this.state.pendingGamedayDeletionId;
+        this.state.pendingGamedayDeletionId = false;
+        if (!gamedayId || !this.state.currentDivisionId) {
+            return;
+        }
+        this.state.saving = true;
+        try {
+            const result = await this.orm.call(
+                "federation.competition.workspace.service",
+                "delete_gameday",
+                [gamedayId]
+            );
+            this.state.payload = result.payload;
+            this.state.currentGamedayId = false;
+            this.state.gamedayForm.selected_gameday_id = "";
+            this.state.gamedayForm.courtIds = [];
+            this.clearPlannerSelection();
+            this.resetPlannerFilters();
+            this.resetPlannerPagination();
+            this.persistUiState();
+            this.notify("Gameday deleted.", "success");
+        } catch (error) {
+            this.notify(error.message || "The gameday could not be deleted.", "danger");
         } finally {
             this.state.saving = false;
         }
