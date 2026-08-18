@@ -1,5 +1,11 @@
 # Migration Rollback Notes
 
+## 2026-08-18 — Cleanup commit verification
+
+Artifact removal is rollback-neutral. If the preceding ownership or migration
+changes need reverting, use the rollback procedure documented below and restore
+the last validated database backup.
+
 ## 2026-08-18 — Competition Workspace and portal overhaul
 
 Migration-sensitive surfaces:

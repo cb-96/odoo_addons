@@ -1,5 +1,10 @@
 # Migration Dry-run Evidence
 
+## 2026-08-18 — Cleanup commit verification
+
+The cleanup commit retained the validated module ownership and migration
+surfaces; strict repository lint was rerun after the artifact removal.
+
 ## 2026-08-18 — Competition Workspace and portal overhaul
 
 Change scope:
