@@ -540,7 +540,7 @@ class TestPublicSiteNewEndpoints(TransactionCase):
                 "summary": "Currently live highlight.",
                 "season_id": self.season.id,
                 "publish_start": "2024-05-01 08:00:00",
-                "publish_end": "2026-07-01 08:00:00",
+                "publish_end": "2099-12-31 08:00:00",
             }
         )
         future_item = self.env["federation.public.editorial.item"].create(

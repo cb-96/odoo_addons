@@ -294,29 +294,6 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
             )
             workspace_registration.action_confirm()
 
-            live_tournament = env["federation.tournament"].create(
-                {
-                    "name": "Portal Smoke Workspace Tournament",
-                    "code": f"PSWTN{suffix}",
-                    "season_id": self.open_season.id,
-                    "date_start": "2026-06-15",
-                    "state": "in_progress",
-                    "category": "senior",
-                    "gender": "male",
-                }
-            )
-            tournament_registration = env["federation.tournament.registration"].create(
-                {
-                    "tournament_id": live_tournament.id,
-                    "team_id": workspace_team.id,
-                    "user_id": self.season_user.id,
-                }
-            )
-            tournament_registration.action_submit()
-            tournament_registration.action_confirm()
-            if tournament_registration.participant_id:
-                tournament_registration.participant_id.action_confirm()
-
             player = env["federation.player"].create(
                 {
                     "first_name": "Portal",
@@ -341,6 +318,29 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                 }
             )
             roster.action_activate()
+
+            live_tournament = env["federation.tournament"].create(
+                {
+                    "name": "Portal Smoke Workspace Tournament",
+                    "code": f"PSWTN{suffix}",
+                    "season_id": self.open_season.id,
+                    "date_start": "2026-06-15",
+                    "state": "in_progress",
+                    "category": "senior",
+                    "gender": "male",
+                }
+            )
+            tournament_registration = env["federation.tournament.registration"].create(
+                {
+                    "tournament_id": live_tournament.id,
+                    "team_id": workspace_team.id,
+                    "user_id": self.season_user.id,
+                }
+            )
+            tournament_registration.action_submit()
+            tournament_registration.action_confirm()
+            if tournament_registration.participant_id:
+                tournament_registration.participant_id.action_confirm()
 
             opponent_club = env["federation.club"].create(
                 {

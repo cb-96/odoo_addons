@@ -1,5 +1,20 @@
 # Migration Rollback Notes
 
+## 2026-08-18 — Competition Workspace and portal overhaul
+
+Migration-sensitive surfaces:
+- `sports_federation_officiating` Competition Workspace extension ownership.
+- `sports_federation_tournament` bracket model ownership and post-migration
+  normalization.
+
+Rollback guidance:
+1. Restore the last validated database backup if the ownership or migration
+	normalization causes registry or bracket-resolution regressions.
+2. Revert the corresponding module commit and rerun the portal and competition
+	contract suites before re-promoting the release branch.
+3. Preserve the portal roster deadline contract; do not bypass participant
+	confirmation validation in tests or production code.
+
 ## 2026-06-01 — sports_federation_tournament 19.0.1.1.0
 
 Migration artifacts:

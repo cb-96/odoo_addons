@@ -9,6 +9,14 @@ Manages the **referee lifecycle** separately from the club/team hierarchy. Refer
 operate across tournaments and are assigned to specific matches in defined roles
 (head referee, assistant, etc.).
 
+## Competition Workspace integration
+
+The officiating extension contributes referee-duty visibility and conflict
+checks to the Competition Workspace without taking ownership of the core
+workspace model. The extension is safe to load when optional workspace fields
+are absent; upgrades should therefore validate both the officiating module and
+the workspace contract suites before release.
+
 ## Dependencies
 
 | Module | Reason |
