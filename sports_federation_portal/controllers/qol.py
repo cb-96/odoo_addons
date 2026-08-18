@@ -5,12 +5,15 @@ from odoo import _, fields, http
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
 
+from .operation_tasks import FederationOperationTaskPortal
 from .portal_helpers import FederationPortalBase
 
 
-class FederationQoLPortal(FederationPortalBase):
-    @http.route("/my/action-items", type="http", auth="user", website=True)
-    def portal_my_action_items_qol(self, scope="my", status="open", task_type=None, **kw):
+class FederationOperationTaskPortalQoL(FederationOperationTaskPortal):
+    """Extend the existing action-items controller without a duplicate route owner."""
+
+    @http.route()
+    def portal_my_action_items(self, scope="my", status="open", task_type=None, **kw):
         Task = request.env["federation.operation.task"].sudo()
         Task.sync_for_user(user=request.env.user)
         domain = Task._portal_get_domain(user=request.env.user)
@@ -33,7 +36,14 @@ class FederationQoLPortal(FederationPortalBase):
         tasks = Task.search(domain)
         buckets = defaultdict(lambda: Task.browse())
         for task in tasks:
-            buckets[task.work_bucket or "now"] |= task
+            bucket = task.work_bucket or "now"
+            if (
+                task.state != "done"
+                and task.assigned_user_id
+                and task.assigned_user_id != request.env.user
+            ):
+                bucket = "waiting"
+            buckets[bucket] |= task
         representatives = request.env["federation.club.representative"].sudo().search([
             ("club_id", "in", request.env.user.portal_club_scope_ids.ids),
             ("is_current", "=", True),
@@ -55,6 +65,8 @@ class FederationQoLPortal(FederationPortalBase):
             },
         )
 
+
+class FederationQoLPortal(FederationPortalBase):
     def _task_scope(self):
         Task = request.env["federation.operation.task"].sudo()
         return Task, Task._portal_get_domain(user=request.env.user)

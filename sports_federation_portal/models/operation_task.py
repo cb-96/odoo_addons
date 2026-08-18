@@ -318,8 +318,6 @@ class FederationOperationTask(models.Model):
                 task.work_bucket = "recent"
             elif task.state == "done":
                 task.work_bucket = False
-            elif task.audience == "club" and task.assigned_user_id and task.assigned_user_id != self.env.user:
-                task.work_bucket = "waiting"
             elif task.deadline and task.deadline <= soon:
                 task.work_bucket = "soon" if task.deadline > now else "now"
             else:
