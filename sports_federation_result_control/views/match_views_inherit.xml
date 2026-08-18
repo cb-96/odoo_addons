@@ -103,7 +103,7 @@
                 </group>
             </xpath>
             <xpath expr="//notebook" position="inside">
-                <page string="Result Audit" name="result_audit">
+                <page string="History" name="result_audit">
                     <field name="result_audit_ids" readonly="1">
                         <list create="0" delete="0" edit="0">
                             <field name="created_on"/>

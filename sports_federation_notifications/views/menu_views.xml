@@ -4,13 +4,13 @@
 
     <!-- Notifications submenu -->
     <menuitem id="menu_federation_notifications"
-              name="Notifications"
+              name="Notification Centre"
               parent="sports_federation_base.menu_federation_administration"
               sequence="30"/>
 
     <!-- Notification Logs -->
     <menuitem id="menu_federation_notification_log"
-              name="Notification Logs"
+              name="Delivery History"
               parent="menu_federation_notifications"
               action="action_federation_notification_log"
               sequence="10"/>

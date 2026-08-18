@@ -2,7 +2,7 @@
 <odoo>
 
     <record id="action_competition_workspace" model="ir.actions.client">
-        <field name="name">Planning Workspace</field>
+        <field name="name">Schedule Planning</field>
         <field name="tag">sports_federation_competition_engine.competition_workspace</field>
     </record>
 
@@ -13,7 +13,7 @@
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
                 <button name="action_open_competition_workspace"
-                        string="Planning Workspace"
+                        string="Open Schedule Planning"
                         type="object"
                         class="btn-primary"
                         invisible="id == False"/>
@@ -28,7 +28,7 @@
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
                 <button name="action_open_competition_workspace"
-                        string="Planning Workspace"
+                        string="Open Schedule Planning"
                         type="object"
                         class="btn-primary"
                         invisible="id == False"/>
@@ -49,7 +49,7 @@
                 </div>
             </xpath>
             <xpath expr="//notebook" position="inside">
-                <page string="Planning Workspace" name="competition_workspace">
+                <page string="Open Schedule Planning" name="competition_workspace">
                     <div class="border rounded p-3 bg-body-tertiary mb-3" role="note">
                         This page is the canonical scheduling surface. Build the schedule here first, then use a gameday planner for one-day setup and the live operations board once play begins.
                     </div>
@@ -114,7 +114,7 @@
     </record>
 
     <menuitem id="menu_competition_workspace"
-              name="Planning Workspace"
+              name="Schedule Planning"
               parent="sports_federation_base.menu_federation_planning"
               action="action_competition_workspace"
               sequence="5"

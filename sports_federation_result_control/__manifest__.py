@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Result Control",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "category": "Sports",
     "summary": "Result lifecycle control and approval workflow for matches",
     "description": "Result submission, verification, approval, and control workflows for matches.",

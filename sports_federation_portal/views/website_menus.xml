@@ -7,18 +7,18 @@
 
     <!-- Backend menu for portal module -->
     <menuitem id="menu_federation_portal_root"
-              name="Portal"
+              name="Clubs &amp; People"
               parent="sports_federation_base.menu_federation_root"
               sequence="50"/>
 
     <menuitem id="menu_federation_tournament_registration"
-              name="Tournament Registrations"
-              parent="menu_federation_portal_root"
+              name="Registrations"
+              parent="sports_federation_base.menu_federation_competitions"
               action="action_federation_tournament_registration"
               sequence="10"/>
 
     <menuitem id="menu_federation_club_representative_portal"
-              name="Club Representatives"
+              name="Representatives &amp; Access"
               parent="menu_federation_portal_root"
               action="action_federation_club_representative_portal"
               sequence="20"/>

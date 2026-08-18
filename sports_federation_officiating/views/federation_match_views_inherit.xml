@@ -34,10 +34,11 @@
             </xpath>
             <!-- Officials notebook page: inline assignment management -->
             <xpath expr="//notebook" position="inside">
-                <page string="Officials" name="officials">
+                <page string="Officiating" name="officials">
                     <button name="%(sports_federation_officiating.action_federation_round_assign_wizard)d"
                             string="Assign Role to Round" type="action" class="btn-secondary mb-2"/>
-                    <field name="referee_assignment_ids">
+                    <group string="Assigned Officials" col="1">
+                        <field name="referee_assignment_ids">
                         <list editable="bottom"
                               decoration-danger="is_confirmation_overdue and state == 'draft'"
                               decoration-success="state == 'confirmed'"
@@ -48,11 +49,11 @@
                             <field name="assignment_ready" optional="hide"/>
                             <field name="confirmation_deadline" optional="show"/>
                             <field name="is_confirmation_overdue" column_invisible="1"/>
-                        </list>
-                    </field>
-                </page>
-                <page string="Club Duties" name="club_duties">
-                    <field name="club_referee_duty_ids">
+                            </list>
+                        </field>
+                    </group>
+                    <group string="Club-Provided Duties" col="1">
+                        <field name="club_referee_duty_ids">
                         <list editable="bottom"
                               decoration-danger="is_deadline_overdue and state not in ('confirmed',)">
                             <field name="club_id"/>
@@ -61,8 +62,9 @@
                             <field name="nominated_player_id" optional="show"/>
                             <field name="nomination_deadline" optional="show"/>
                             <field name="is_deadline_overdue" column_invisible="1"/>
-                        </list>
-                    </field>
+                            </list>
+                        </field>
+                    </group>
                 </page>
             </xpath>
         </field>

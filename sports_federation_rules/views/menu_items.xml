@@ -3,37 +3,42 @@
 
     <!-- Competition Rules submenu -->
     <menuitem id="menu_federation_competition_rules"
-              name="Competition Rules"
+              name="Rules"
               parent="sports_federation_base.menu_federation_competitions"
               sequence="35"/>
 
     <menuitem id="menu_federation_rule_set"
-              name="Rule Sets"
+              name="Rule Sets &amp; Policies"
               parent="menu_federation_competition_rules"
               action="federation_rule_set_action"
               sequence="10"/>
 
-    <menuitem id="menu_federation_points_rule"
-              name="Points Rules"
+    <menuitem id="menu_federation_rule_components"
+              name="Advanced Components"
               parent="menu_federation_competition_rules"
+              sequence="90"/>
+
+    <menuitem id="menu_federation_points_rule"
+              name="Points Components"
+              parent="menu_federation_rule_components"
               action="federation_points_rule_action"
               sequence="20"/>
 
     <menuitem id="menu_federation_tie_break_rule"
-              name="Tie-Break Rules"
-              parent="menu_federation_competition_rules"
+              name="Tie-Break Components"
+              parent="menu_federation_rule_components"
               action="federation_tie_break_rule_action"
               sequence="30"/>
 
     <menuitem id="menu_federation_eligibility_rule"
-              name="Eligibility Rules"
-              parent="menu_federation_competition_rules"
+              name="Eligibility Components"
+              parent="menu_federation_rule_components"
               action="federation_eligibility_rule_action"
               sequence="40"/>
 
     <menuitem id="menu_federation_qualification_rule"
-              name="Qualification Rules"
-              parent="menu_federation_competition_rules"
+              name="Qualification Components"
+              parent="menu_federation_rule_components"
               action="federation_qualification_rule_action"
               sequence="50"/>
 
