@@ -96,6 +96,7 @@ class FederationTournamentOperationsPortal(FederationPortalBase):
         type="jsonrpc",
         auth="user",
         methods=["POST"],
+        csrf=True,
     )
     def portal_tournament_operations_data(self, tournament_id, **kw):
         """Return the full operations payload for one tournament."""
@@ -120,6 +121,7 @@ class FederationTournamentOperationsPortal(FederationPortalBase):
         type="jsonrpc",
         auth="user",
         methods=["POST"],
+        csrf=True,
     )
     def portal_tournament_operations_action(self, tournament_id, match_id, **kw):
         """Apply one server-side match action and return the refreshed payload."""
