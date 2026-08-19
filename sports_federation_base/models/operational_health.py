@@ -15,15 +15,21 @@ class FederationOperationalHealth(models.AbstractModel):
         checks = []
 
         def add(code, ok, message, metric=None):
-            checks.append({
-                "code": code,
-                "ok": bool(ok),
-                "message": message,
-                "metric": metric,
-            })
+            checks.append(
+                {
+                    "code": code,
+                    "ok": bool(ok),
+                    "message": message,
+                    "metric": metric,
+                }
+            )
 
         self.env.cr.execute("SELECT 1")
-        add("database", self.env.cr.fetchone()[0] == 1, _("Database connection is ready."))
+        add(
+            "database",
+            self.env.cr.fetchone()[0] == 1,
+            _("Database connection is ready."),
+        )
 
         required_models = (
             "federation.club",
@@ -35,22 +41,40 @@ class FederationOperationalHealth(models.AbstractModel):
         add(
             "registry",
             not missing,
-            _("Required federation models are registered.") if not missing else _("Required models are missing."),
+            (
+                _("Required federation models are registered.")
+                if not missing
+                else _("Required models are missing.")
+            ),
             len(missing),
         )
 
         if "federation.operation.task" in self.env:
             Task = self.env["federation.operation.task"].sudo()
-            overdue = Task.search_count([
-                ("state", "!=", "done"),
-                ("deadline", "<", fields.Datetime.now()),
-            ])
-            add("overdue_actions", True, _("Open overdue actions were counted."), overdue)
+            overdue = Task.search_count(
+                [
+                    ("state", "!=", "done"),
+                    ("deadline", "<", fields.Datetime.now()),
+                ]
+            )
+            add(
+                "overdue_actions",
+                True,
+                _("Open overdue actions were counted."),
+                overdue,
+            )
 
         if "federation.competition.integrity.service" in self.env:
-            results = self.env["federation.competition.integrity.service"].scan_active_divisions()
+            results = self.env[
+                "federation.competition.integrity.service"
+            ].scan_active_divisions()
             blocking = sum(1 for result in results if not result["valid"])
-            add("competition_integrity", blocking == 0, _("Active competition integrity was checked."), blocking)
+            add(
+                "competition_integrity",
+                blocking == 0,
+                _("Active competition integrity was checked."),
+                blocking,
+            )
 
         ready = all(check["ok"] for check in checks)
         return {

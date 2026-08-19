@@ -75,6 +75,7 @@ for module in existing_modules:
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
         import re
+
         if re.search(PATTERNS, text, flags=re.IGNORECASE):
             files.add(relative)
 
@@ -137,12 +138,18 @@ for module in existing_modules:
             for line in manifest.read_text(encoding="utf-8").splitlines()
             if '"version"' in line or "'version'" in line
         ]
-        metadata.append(f"{module}: {' '.join(version_lines) or '[no version found]'}\n")
+        metadata.append(
+            f"{module}: {' '.join(version_lines) or '[no version found]'}\n"
+        )
 metadata.append("\n=== RELEVANT RECENT HISTORY ===\n")
-metadata.append(run("git", "log", "--oneline", "--decorate", "-20", "--", *existing_modules))
+metadata.append(
+    run("git", "log", "--oneline", "--decorate", "-20", "--", *existing_modules)
+)
 metadata.append("\n=== DISCOVERED FILE COUNT ===\n")
 metadata.append(f"{len(files)}\n")
 META_OUT.write_text("\n".join(metadata), encoding="utf-8")
 
-print(f"Created {SOURCE_OUT.name}: {len(files)} files, {SOURCE_OUT.stat().st_size / 1024:.1f} KiB")
+print(
+    f"Created {SOURCE_OUT.name}: {len(files)} files, {SOURCE_OUT.stat().st_size / 1024:.1f} KiB"
+)
 print(f"Created {META_OUT.name}: {META_OUT.stat().st_size / 1024:.1f} KiB")

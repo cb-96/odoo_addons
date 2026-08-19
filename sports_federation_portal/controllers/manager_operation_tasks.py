@@ -42,11 +42,12 @@ class FederationManagerOperationTasks(http.Controller):
         if kw.get("assignee") == "me":
             domain.append(("assigned_user_id", "=", request.env.user.id))
         if kw.get("due") == "7":
-            domain += [("deadline", "!=", False), ("deadline", "<=", fields.Datetime.now() + timedelta(days=7))]
+            domain += [
+                ("deadline", "!=", False),
+                ("deadline", "<=", fields.Datetime.now() + timedelta(days=7)),
+            ]
         tasks = Task.search(domain)
-        all_open = Task.search(
-            [("audience", "=", "manager"), ("state", "!=", "done")]
-        )
+        all_open = Task.search([("audience", "=", "manager"), ("state", "!=", "done")])
         counts = Counter(all_open.mapped("task_type"))
         return request.render(
             "sports_federation_portal.manager_operation_task_control_centre",
@@ -65,6 +66,7 @@ class FederationManagerOperationTasks(http.Controller):
                 "clubs": all_open.mapped("responsible_club_id"),
                 "tournaments": all_open.mapped("tournament_id"),
                 "active_filters": kw,
-                "success": kw.get("success"), "error": kw.get("error"),
+                "success": kw.get("success"),
+                "error": kw.get("error"),
             },
         )

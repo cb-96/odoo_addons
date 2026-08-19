@@ -43,7 +43,9 @@ for generated in ROOT.rglob("*.pyc"):
 for cache in ROOT.rglob("__pycache__"):
     errors.append(f"Generated cache committed: {cache.relative_to(ROOT)}")
 
-print(f"Checked {python_count} Python files, {xml_count} XML files, and {manifest_count} manifests.")
+print(
+    f"Checked {python_count} Python files, {xml_count} XML files, and {manifest_count} manifests."
+)
 for error in errors:
     print(error, file=sys.stderr)
 sys.exit(1 if errors else 0)

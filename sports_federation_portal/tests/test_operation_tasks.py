@@ -5,13 +5,19 @@ class TestFederationOperationTasks(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.manager_group = cls.env.ref("sports_federation_base.group_federation_manager")
-        cls.manager = cls.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Action Queue Manager",
-                "login": "action.queue.manager@example.com",
-                "group_ids": [(6, 0, [cls.manager_group.id])],
-            }
+        cls.manager_group = cls.env.ref(
+            "sports_federation_base.group_federation_manager"
+        )
+        cls.manager = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Action Queue Manager",
+                    "login": "action.queue.manager@example.com",
+                    "group_ids": [(6, 0, [cls.manager_group.id])],
+                }
+            )
         )
         cls.club = cls.env["federation.club"].create(
             {"name": "Action Queue Club", "code": "AQC"}

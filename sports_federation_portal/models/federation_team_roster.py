@@ -413,7 +413,11 @@ class FederationTeamRoster(models.Model):
         copied = skipped = 0
         for line in source_lines:
             player = line.player_id
-            if not player or player.id in existing or not getattr(player, "active", True):
+            if (
+                not player
+                or player.id in existing
+                or not getattr(player, "active", True)
+            ):
                 skipped += 1
                 continue
             values = {"roster_id": self.id, "player_id": player.id}

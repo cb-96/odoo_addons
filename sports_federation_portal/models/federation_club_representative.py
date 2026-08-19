@@ -59,22 +59,27 @@ class FederationClubRepresentative(models.Model):
         help="If checked, this representative is the primary contact for this role type.",
     )
     operational_role = fields.Selection(
-        [("competition_contact", "Competition contact"),
-         ("team_admin", "Team administrator"),
-         ("roster_manager", "Roster manager"),
-         ("officials_coordinator", "Officials coordinator"),
-         ("result_reviewer", "Result reviewer"),
-         ("backup", "Backup representative")],
+        [
+            ("competition_contact", "Competition contact"),
+            ("team_admin", "Team administrator"),
+            ("roster_manager", "Roster manager"),
+            ("officials_coordinator", "Officials coordinator"),
+            ("result_reviewer", "Result reviewer"),
+            ("backup", "Backup representative"),
+        ],
         string="Operational Responsibility",
         index=True,
     )
     delegated_to_id = fields.Many2one(
-        "federation.club.representative", string="Temporary Delegate",
+        "federation.club.representative",
+        string="Temporary Delegate",
         domain="[('club_id', '=', club_id), ('is_current', '=', True)]",
         ondelete="set null",
     )
     delegation_until = fields.Date(string="Delegation Until")
-    effective_user_id = fields.Many2one("res.users", compute="_compute_effective_user", store=True)
+    effective_user_id = fields.Many2one(
+        "res.users", compute="_compute_effective_user", store=True
+    )
 
     role = fields.Selection(
         [
@@ -133,10 +138,13 @@ class FederationClubRepresentative(models.Model):
         today = fields.Date.context_today(self)
         for rec in self:
             delegate_active = (
-                rec.delegated_to_id and rec.delegated_to_id.is_current
+                rec.delegated_to_id
+                and rec.delegated_to_id.is_current
                 and (not rec.delegation_until or rec.delegation_until >= today)
             )
-            rec.effective_user_id = rec.delegated_to_id.user_id if delegate_active else rec.user_id
+            rec.effective_user_id = (
+                rec.delegated_to_id.user_id if delegate_active else rec.user_id
+            )
 
     @api.constrains("delegated_to_id", "delegation_until")
     def _check_delegation_scope(self):

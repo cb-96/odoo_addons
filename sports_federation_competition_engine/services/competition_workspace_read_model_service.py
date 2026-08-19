@@ -43,9 +43,11 @@ class CompetitionWorkspaceReadModelService(models.AbstractModel):
         if gameday_id:
             parsed_gameday_id = self._safe_int(gameday_id)
             if parsed_gameday_id:
-                target_gameday = workspace_service.env[
-                    "federation.tournament.round"
-                ].browse(parsed_gameday_id).exists()
+                target_gameday = (
+                    workspace_service.env["federation.tournament.round"]
+                    .browse(parsed_gameday_id)
+                    .exists()
+                )
                 if target_gameday:
                     if target_gameday.id in gamedays.ids:
                         return target_gameday

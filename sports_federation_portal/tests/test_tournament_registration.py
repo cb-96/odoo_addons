@@ -308,7 +308,9 @@ class TestTournamentRegistration(TransactionCase):
             registration.action_reject()
         registration.action_reject("Tournament eligibility was not met.")
         self.assertEqual(registration.state, "rejected")
-        self.assertEqual(registration.rejection_reason, "Tournament eligibility was not met.")
+        self.assertEqual(
+            registration.rejection_reason, "Tournament eligibility was not met."
+        )
 
     def test_confirmation_is_idempotent(self):
         registration = self.env["federation.tournament.registration"].create(
@@ -321,7 +323,10 @@ class TestTournamentRegistration(TransactionCase):
         self.assertEqual(registration.participant_id, participant)
         self.assertEqual(
             self.env["federation.tournament.participant"].search_count(
-                [("tournament_id", "=", self.tournament.id), ("team_id", "=", self.eligible_team.id)]
+                [
+                    ("tournament_id", "=", self.tournament.id),
+                    ("team_id", "=", self.eligible_team.id),
+                ]
             ),
             1,
         )

@@ -112,7 +112,8 @@ class FederationTournamentRegistration(models.Model):
         string="Reviewed On", readonly=True, copy=False, tracking=True
     )
     decision_reason = fields.Text(
-        string="Decision Reason", tracking=True,
+        string="Decision Reason",
+        tracking=True,
         help="Required when returning or rejecting a registration.",
     )
     participant_id = fields.Many2one(
@@ -362,10 +363,14 @@ class FederationTournamentRegistration(models.Model):
         """Return a submitted registration to the club for correction."""
         reason = (reason or self[:1].decision_reason or "").strip()
         if not reason:
-            raise ValidationError(_("A reason is required when returning a registration."))
+            raise ValidationError(
+                _("A reason is required when returning a registration.")
+            )
         for rec in self:
             if rec.state != "submitted":
-                raise ValidationError(_("Only submitted registrations can be returned."))
+                raise ValidationError(
+                    _("Only submitted registrations can be returned.")
+                )
             rec.write(
                 {
                     "state": "returned",
@@ -382,7 +387,9 @@ class FederationTournamentRegistration(models.Model):
             if rec.state == "confirmed" and rec.participant_id:
                 continue
             if rec.state != "submitted":
-                raise ValidationError(_("Only submitted registrations can be confirmed."))
+                raise ValidationError(
+                    _("Only submitted registrations can be confirmed.")
+                )
             rec.write(
                 {
                     "state": "confirmed",
@@ -418,10 +425,14 @@ class FederationTournamentRegistration(models.Model):
         """Reject a submitted registration and persist the required reason."""
         reason = (reason or self[:1].decision_reason or "").strip()
         if not reason:
-            raise ValidationError(_("A reason is required when rejecting a registration."))
+            raise ValidationError(
+                _("A reason is required when rejecting a registration.")
+            )
         for rec in self:
             if rec.state != "submitted":
-                raise ValidationError(_("Only submitted registrations can be rejected."))
+                raise ValidationError(
+                    _("Only submitted registrations can be rejected.")
+                )
             rec.write(
                 {
                     "state": "rejected",
