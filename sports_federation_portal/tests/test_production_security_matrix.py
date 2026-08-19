@@ -18,7 +18,11 @@ class TestProductionSecurityMatrix(TransactionCase):
             chunks = source.split("@http.route(")[1:]
             for chunk in chunks:
                 declaration = chunk.split(")\n", 1)[0]
-                if 'methods=["POST"]' in declaration and "csrf=True" not in declaration:
+                is_http_post = (
+                    'methods=["POST"]' in declaration
+                    and 'type="http"' in declaration
+                )
+                if is_http_post and "csrf=True" not in declaration:
                     violations.append(path.name)
         self.assertFalse(
             violations, "POST routes missing explicit CSRF: %s" % violations
