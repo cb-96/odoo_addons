@@ -125,6 +125,12 @@ class FederationTournament(models.Model):
             if self.edition_id.rule_set_id and not self.rule_set_id:
                 self.rule_set_id = self.edition_id.rule_set_id
 
+    def write(self, vals):
+        protected = {"rule_set_id", "competition_id", "edition_id", "season_id"}
+        if protected.intersection(vals) and self.filtered(lambda r: r.state != TOURNAMENT_STATE_DRAFT):
+            raise ValidationError(_("Competition identity and rules cannot change after opening."))
+        return super().write(vals)
+
     def action_open(self):
         """Execute the open action."""
         invalid_tournaments = self.filtered(
@@ -136,6 +142,12 @@ class FederationTournament(models.Model):
             raise ValidationError(
                 _("Only active draft tournaments linked to a season can be opened.")
             )
+        for tournament in self:
+            rule_set = tournament._get_effective_rule_set()
+            if not rule_set:
+                raise ValidationError(_("Select a rule set before opening a tournament."))
+            if hasattr(rule_set, "action_lock"):
+                rule_set.action_lock()
         self.write({"state": TOURNAMENT_STATE_OPEN})
 
     def action_start(self):

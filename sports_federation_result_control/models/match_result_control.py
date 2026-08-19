@@ -304,6 +304,8 @@ class FederationMatchResultControl(models.Model):
             "Only result approvers can reset results to draft.",
         )
         for rec in self:
+            if rec.result_state == "approved":
+                raise ValidationError("Approved results must use the correction workflow.")
             from_state = rec.result_state
             rec.write(
                 {

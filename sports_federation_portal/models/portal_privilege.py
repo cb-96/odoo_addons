@@ -54,7 +54,7 @@ class FederationPortalPrivilege(models.AbstractModel):
     @api.model
     def portal_write(self, records, values, scope_domain=None, user=None):
         """Write through the shared portal privilege boundary."""
-        if scope_domain is None:
+        if not scope_domain:
             raise AccessError(
                 _(
                     "Portal write operations must provide an explicit ownership scope domain."
@@ -85,15 +85,20 @@ class FederationPortalPrivilege(models.AbstractModel):
         **kwargs,
     ):
         """Call a record method through the shared portal privilege boundary."""
-        if scope_domain is None:
+        if not scope_domain:
             raise AccessError(
                 _(
                     "Portal call operations must provide an explicit ownership scope domain."
                 )
             )
+        if not method_name or method_name.startswith("_"):
+            raise AccessError(_("Private model methods cannot be invoked through the portal."))
         self._assert_portal_owns(records, scope_domain, user=user)
         privileged_records = self.elevate(records, user=user)
-        result = getattr(privileged_records, method_name)(*args, **kwargs)
+        method = getattr(privileged_records, method_name, None)
+        if not callable(method):
+            raise AccessError(_("The requested portal action is not available."))
+        result = method(*args, **kwargs)
         self._log_portal_audit(
             event_type="portal_call",
             description=_("Executed a portal-managed record method."),

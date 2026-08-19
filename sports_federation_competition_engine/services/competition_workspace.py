@@ -1,3 +1,5 @@
+import hashlib
+import json
 import logging
 from datetime import datetime, timedelta, time
 from uuid import uuid4
@@ -18,6 +20,32 @@ from .competition_workspace_planner_state_mixin import (
 from .planner_operation_rollback import PlannerOperationRollback
 
 _logger = logging.getLogger(__name__)
+
+
+class StageCommandService(models.AbstractModel):
+    _name = "federation.competition.workspace.stage.command.service"
+    _description = "Stage Commands"
+
+class GamedayCommandService(models.AbstractModel):
+    _name = "federation.competition.workspace.gameday.command.service"
+    _description = "Gameday Commands"
+
+class PlannerCommandService(models.AbstractModel):
+    _name = "federation.competition.workspace.planner.command.service"
+    _description = "Planner Commands"
+
+class PublicationCommandService(models.AbstractModel):
+    _name = "federation.competition.workspace.publication.command.service"
+    _description = "Publication Commands"
+
+class AutoScheduleSolver(models.AbstractModel):
+    _name = "federation.competition.auto.schedule.solver"
+    _description = "Auto Schedule Preview Solver"
+
+    @api.model
+    def preview(self, workspace, gameday_id):
+        root = workspace._get_planner_root_gameday(workspace._resolve_gameday(gameday_id))
+        return {"ok": True, "preview": True, "planner_revision": root.planner_revision, "validation": workspace.validate_gameday(root.id)}
 
 
 class CompetitionWorkspaceService(
@@ -4897,11 +4925,7 @@ class CompetitionWorkspaceService(
             or self._ensure_draft_schedule_revision(planner_root)
         )
         self._refresh_schedule_revision(draft_revision, planner_root)
-        draft_revision.write(
-            {
-                "state": "validated",
-            }
-        )
+        draft_revision.write({"state": "validated", "validated_planner_revision": planner_root.planner_revision + 1, "validated_on": fields.Datetime.now(), "validated_by_id": self.env.user.id, "validation_digest": self._schedule_validation_digest(planner_root)})
 
         linked_rounds = planner_root | planner_root.planner_linked_round_ids
         linked_rounds._competition_workspace_transition_planner_state(
@@ -4922,6 +4946,20 @@ class CompetitionWorkspaceService(
                 gameday.tournament_id.id,
             ),
         }
+
+    def _schedule_validation_digest(self, root):
+        payload = [{"slot_id": s.id, "match_id": s.match_id.id if s.match_id else False, "start": self._serialize_datetime(s.start_datetime), "end": self._serialize_datetime(s.end_datetime), "court_id": s.playing_area_id.id, "state": s.state} for s in root.slot_ids.sorted(lambda s: (s.start_datetime or fields.Datetime.now(), s.playing_area_id.id, s.id))]
+        return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+    def _assert_validated_revision_is_current(self, root):
+        revision = root.schedule_draft_revision_id
+        if not revision or revision.state != "validated" or revision.validated_planner_revision != root.planner_revision or revision.validation_digest != self._schedule_validation_digest(root):
+            raise ValidationError(_("Validate the current schedule again before publication."))
+        return revision
+
+    @api.model
+    def preview_auto_schedule_gameday(self, gameday_id):
+        return self.env["federation.competition.auto.schedule.solver"].preview(self, gameday_id)
 
     @api.model
     def validate_match_assignment(self, match_id, slot_id, simulated_slots=None):
@@ -4948,6 +4986,7 @@ class CompetitionWorkspaceService(
         )
         if conflict:
             return conflict
+        self._assert_validated_revision_is_current(planner_root)
         validation = self.validate_gameday(planner_root.id)
         if validation["blocking"]:
             return {"ok": False, "validation": validation}

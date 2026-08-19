@@ -4,6 +4,12 @@ from odoo import fields, models
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
+    federation_attachment_scan_required = fields.Boolean(
+        string="Require Attachment Malware Scan",
+        config_parameter="sports_federation.attachment_scan.required",
+        default=False,
+    )
+
     federation_attachment_scan_command = fields.Char(
         string="Attachment Scan Command",
         config_parameter="sports_federation.attachment_scan.command",

@@ -53,6 +53,11 @@ class FederationNotificationLog(models.Model):
     operator_message = fields.Text(string="Operator Message")
     message = fields.Text(string="Message")
     correlation_id = fields.Char(string="Correlation ID", index=True)
+    attempt_count = fields.Integer(default=0, readonly=True)
+    last_attempt_on = fields.Datetime(readonly=True)
+    acknowledged = fields.Boolean(default=False)
+    acknowledged_by_id = fields.Many2one("res.users", readonly=True)
+    acknowledged_on = fields.Datetime(readonly=True)
 
     target_display_name = fields.Char(
         string="Target",
@@ -75,6 +80,10 @@ class FederationNotificationLog(models.Model):
                 rec.target_display_name = record.display_name if record else False
             except Exception:
                 rec.target_display_name = False
+
+    def action_acknowledge_failure(self):
+        self.filtered(lambda log: log.state == "failed").write({"acknowledged": True, "acknowledged_by_id": self.env.user.id, "acknowledged_on": fields.Datetime.now()})
+        return True
 
     def action_view_target(self):
         """Return an act_window action to open the target record."""
