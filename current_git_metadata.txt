@@ -2,7 +2,7 @@
 main
 
 === CURRENT COMMIT ===
-bf8eb1e06ef2e3b4e793329d124a295d2891cba4
+10cb0e0a35a7cea5c72bdf2b5653eaca53412c93
 
 === WORKTREE STATUS ===
  M current_sources.txt
@@ -28,7 +28,14 @@ sports_federation_notifications: "version": "19.0.1.3.0",
 
 === RELEVANT RECENT HISTORY ===
 
-99d84a0 (origin/main, origin/HEAD) Implemented package 13.
+10cb0e0 (HEAD -> main) updated security_matrix
+d46c71f test(notifications): add post_install smoke test for templates and crons
+9cd846d Merge pull request #8 from cb-96/copilot/fix-odoo-tests-portal-public-ops
+d7fd311 Solved linting issues.
+af37d3b Reformatted with 'Black'
+1def31a fix: add explicit csrf=True to POST jsonrpc routes in tournament_operations.py
+80ae844 Revised documentation.
+99d84a0 Implemented package 13.
 d93dcdf Package 10 and 11 implemented.
 549694a Expanded on Tournament Flow Builder inside Schedule Planning.
 a05f8a6 Added Stage creation to Schedule Planning.
@@ -41,15 +48,8 @@ ffb762e feat(portal): add operational action queues
 0125507 Added source_collector.py
 437bbc9 chore: remove generated package artifacts
 cc31727 test: restore portal and public smoke contracts
-2487b0a Workspace and portal overhaul.
-b003fe3 Fixed Roster in test_tournament_tour.py
-2467331 feat(workspace): guide planning flow and enforce club referee duties
-e504f22 Implemented package 1 from Copilot.
-26360ee feat(observability): standardize correlation IDs across flows
-5be9512 (followup/decompose-workspace-ops-finalize) test: split workspace auto schedule suite
-f2bb481 refactor operations workspace service seams
 
 
 === DISCOVERED FILE COUNT ===
 
-209
+210
