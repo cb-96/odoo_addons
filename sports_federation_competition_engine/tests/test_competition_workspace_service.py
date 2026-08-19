@@ -1290,6 +1290,7 @@ class TestCompetitionWorkspaceService(TransactionCase):
                 match.id, slot.id
             )["ok"]
         )
+        self.service.with_user(self.manager_user).confirm_gameday_validation(gameday.id)
         self.assertTrue(
             self.service.with_user(self.manager_user).publish_gameday(gameday.id)["ok"]
         )
@@ -2062,6 +2063,7 @@ class TestCompetitionWorkspaceService(TransactionCase):
             )["ok"]
         )
 
+        self.service.with_user(self.manager_user).confirm_gameday_validation(gameday.id)
         first_publish = self.service.with_user(self.manager_user).publish_gameday(
             gameday.id
         )
@@ -2086,6 +2088,7 @@ class TestCompetitionWorkspaceService(TransactionCase):
         self.assertEqual(draft_revision.state, "draft")
         self.assertEqual(draft_revision.based_on_revision_id, first_live_revision)
 
+        self.service.with_user(self.manager_user).confirm_gameday_validation(gameday.id)
         republish_without_reason = self.service.with_user(
             self.manager_user
         ).publish_gameday(gameday.id)
@@ -2997,6 +3000,7 @@ class TestCompetitionWorkspaceService(TransactionCase):
                 match.id, slot.id
             )["ok"]
         )
+        self.service.with_user(self.manager_user).confirm_gameday_validation(gameday.id)
         self.assertTrue(
             self.service.with_user(self.manager_user).publish_gameday(gameday.id)["ok"]
         )
@@ -3027,6 +3031,8 @@ class TestCompetitionWorkspaceService(TransactionCase):
             slot.id,
         )
         self.assertTrue(assign_result["ok"])
+
+        self.service.with_user(self.planner_user).confirm_gameday_validation(gameday.id)
 
         with self.assertRaises(AccessError):
             self.service.with_user(self.planner_user).publish_gameday(gameday.id)

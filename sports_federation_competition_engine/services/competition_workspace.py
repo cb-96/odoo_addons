@@ -4986,10 +4986,10 @@ class CompetitionWorkspaceService(
         )
         if conflict:
             return conflict
-        self._assert_validated_revision_is_current(planner_root)
         validation = self.validate_gameday(planner_root.id)
         if validation["blocking"]:
             return {"ok": False, "validation": validation}
+        self._assert_validated_revision_is_current(planner_root)
         normalized_reason = self._normalize_override_reason(override_reason)
         if (
             validation["warnings"] or planner_root.schedule_live_revision_id

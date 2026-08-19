@@ -24,7 +24,6 @@ class TestCompetitionEngineWizardGuards(TransactionCase):
                 "code": "WTOUR",
                 "season_id": cls.season.id,
                 "date_start": "2026-02-01",
-                "state": "open",
             }
         )
         cls.stage = cls.env["federation.tournament.stage"].create(
@@ -124,6 +123,7 @@ class TestCompetitionEngineWizardGuards(TransactionCase):
             }
         )
         self.tournament.rule_set_id = rule_set.id
+        self.tournament.action_open()
         self.participants[0].state = "registered"
         wizard = self.env["federation.round.robin.wizard"].create(
             {
