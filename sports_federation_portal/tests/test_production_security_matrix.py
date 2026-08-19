@@ -19,8 +19,7 @@ class TestProductionSecurityMatrix(TransactionCase):
             for chunk in chunks:
                 declaration = chunk.split(")\n", 1)[0]
                 is_http_post = (
-                    'methods=["POST"]' in declaration
-                    and 'type="http"' in declaration
+                    'methods=["POST"]' in declaration and 'type="http"' in declaration
                 )
                 if is_http_post and "csrf=True" not in declaration:
                     violations.append(path.name)

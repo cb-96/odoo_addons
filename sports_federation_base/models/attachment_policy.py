@@ -87,10 +87,16 @@ class FederationAttachmentPolicy(models.AbstractModel):
             )
 
         params = self.env["ir.config_parameter"].sudo()
-        required = params.get_param("sports_federation.attachment_scan.required", "False") in (True, "True", "1", 1)
-        command = (params.get_param("sports_federation.attachment_scan.command") or "").strip()
+        required = params.get_param(
+            "sports_federation.attachment_scan.required", "False"
+        ) in (True, "True", "1", 1)
+        command = (
+            params.get_param("sports_federation.attachment_scan.command") or ""
+        ).strip()
         if required and not command:
-            raise ValidationError("Attachment malware scanning is required, but no scanner command is configured.")
+            raise ValidationError(
+                "Attachment malware scanning is required, but no scanner command is configured."
+            )
         scan_result = self.env["federation.attachment.scan.service"].scan_upload(
             policy_code,
             filename,

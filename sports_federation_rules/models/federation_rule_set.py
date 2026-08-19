@@ -92,19 +92,41 @@ class FederationRuleSet(models.Model):
 
     _code_unique = models.Constraint("unique (code)", "Rule set code must be unique.")
 
-    _LOCKED_FIELDS = {"points_win", "points_draw", "points_loss", "squad_min_size", "squad_max_size", "referee_required_count", "seeding_mode", "points_rule_ids", "tie_break_rule_ids", "eligibility_rule_ids", "qualification_rule_ids"}
+    _LOCKED_FIELDS = {
+        "points_win",
+        "points_draw",
+        "points_loss",
+        "squad_min_size",
+        "squad_max_size",
+        "referee_required_count",
+        "seeding_mode",
+        "points_rule_ids",
+        "tie_break_rule_ids",
+        "eligibility_rule_ids",
+        "qualification_rule_ids",
+    }
 
     def write(self, vals):
         if self.filtered("locked") and self._LOCKED_FIELDS.intersection(vals):
-            raise ValidationError("Locked rule sets cannot be changed. Duplicate the rule set instead.")
+            raise ValidationError(
+                "Locked rule sets cannot be changed. Duplicate the rule set instead."
+            )
         return super().write(vals)
 
     def action_lock(self):
-        self.filtered(lambda r: not r.locked).write({"locked": True, "locked_on": fields.Datetime.now(), "locked_by_id": self.env.user.id})
+        self.filtered(lambda r: not r.locked).write(
+            {
+                "locked": True,
+                "locked_on": fields.Datetime.now(),
+                "locked_by_id": self.env.user.id,
+            }
+        )
         return True
 
     def action_unlock(self):
-        if not self.env.user.has_group("sports_federation_base.group_federation_manager"):
+        if not self.env.user.has_group(
+            "sports_federation_base.group_federation_manager"
+        ):
             raise ValidationError("Only federation managers can unlock rule sets.")
         self.write({"locked": False, "locked_on": False, "locked_by_id": False})
         return True

@@ -342,10 +342,16 @@ class FederationAttachmentPolicy(models.AbstractModel):
             )
 
         params = self.env["ir.config_parameter"].sudo()
-        required = params.get_param("sports_federation.attachment_scan.required", "False") in (True, "True", "1", 1)
-        command = (params.get_param("sports_federation.attachment_scan.command") or "").strip()
+        required = params.get_param(
+            "sports_federation.attachment_scan.required", "False"
+        ) in (True, "True", "1", 1)
+        command = (
+            params.get_param("sports_federation.attachment_scan.command") or ""
+        ).strip()
         if required and not command:
-            raise ValidationError("Attachment malware scanning is required, but no scanner command is configured.")
+            raise ValidationError(
+                "Attachment malware scanning is required, but no scanner command is configured."
+            )
         scan_result = self.env["federation.attachment.scan.service"].scan_upload(
             policy_code,
             filename,
@@ -1622,7 +1628,9 @@ class FederationCompetitionScheduleRevision(models.Model):
     )
     validated_planner_revision = fields.Integer(copy=False, readonly=True, index=True)
     validated_on = fields.Datetime(copy=False, readonly=True)
-    validated_by_id = fields.Many2one("res.users", copy=False, readonly=True, ondelete="set null")
+    validated_by_id = fields.Many2one(
+        "res.users", copy=False, readonly=True, ondelete="set null"
+    )
     validation_digest = fields.Char(copy=False, readonly=True, index=True)
     warning_count = fields.Integer(
         string="Warning Count",
@@ -2576,17 +2584,21 @@ class StageCommandService(models.AbstractModel):
     _name = "federation.competition.workspace.stage.command.service"
     _description = "Stage Commands"
 
+
 class GamedayCommandService(models.AbstractModel):
     _name = "federation.competition.workspace.gameday.command.service"
     _description = "Gameday Commands"
+
 
 class PlannerCommandService(models.AbstractModel):
     _name = "federation.competition.workspace.planner.command.service"
     _description = "Planner Commands"
 
+
 class PublicationCommandService(models.AbstractModel):
     _name = "federation.competition.workspace.publication.command.service"
     _description = "Publication Commands"
+
 
 class AutoScheduleSolver(models.AbstractModel):
     _name = "federation.competition.auto.schedule.solver"
@@ -2594,8 +2606,15 @@ class AutoScheduleSolver(models.AbstractModel):
 
     @api.model
     def preview(self, workspace, gameday_id):
-        root = workspace._get_planner_root_gameday(workspace._resolve_gameday(gameday_id))
-        return {"ok": True, "preview": True, "planner_revision": root.planner_revision, "validation": workspace.validate_gameday(root.id)}
+        root = workspace._get_planner_root_gameday(
+            workspace._resolve_gameday(gameday_id)
+        )
+        return {
+            "ok": True,
+            "preview": True,
+            "planner_revision": root.planner_revision,
+            "validation": workspace.validate_gameday(root.id),
+        }
 
 
 class CompetitionWorkspaceService(
@@ -7475,7 +7494,15 @@ class CompetitionWorkspaceService(
             or self._ensure_draft_schedule_revision(planner_root)
         )
         self._refresh_schedule_revision(draft_revision, planner_root)
-        draft_revision.write({"state": "validated", "validated_planner_revision": planner_root.planner_revision + 1, "validated_on": fields.Datetime.now(), "validated_by_id": self.env.user.id, "validation_digest": self._schedule_validation_digest(planner_root)})
+        draft_revision.write(
+            {
+                "state": "validated",
+                "validated_planner_revision": planner_root.planner_revision + 1,
+                "validated_on": fields.Datetime.now(),
+                "validated_by_id": self.env.user.id,
+                "validation_digest": self._schedule_validation_digest(planner_root),
+            }
+        )
 
         linked_rounds = planner_root | planner_root.planner_linked_round_ids
         linked_rounds._competition_workspace_transition_planner_state(
@@ -7498,18 +7525,45 @@ class CompetitionWorkspaceService(
         }
 
     def _schedule_validation_digest(self, root):
-        payload = [{"slot_id": s.id, "match_id": s.match_id.id if s.match_id else False, "start": self._serialize_datetime(s.start_datetime), "end": self._serialize_datetime(s.end_datetime), "court_id": s.playing_area_id.id, "state": s.state} for s in root.slot_ids.sorted(lambda s: (s.start_datetime or fields.Datetime.now(), s.playing_area_id.id, s.id))]
-        return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        payload = [
+            {
+                "slot_id": s.id,
+                "match_id": s.match_id.id if s.match_id else False,
+                "start": self._serialize_datetime(s.start_datetime),
+                "end": self._serialize_datetime(s.end_datetime),
+                "court_id": s.playing_area_id.id,
+                "state": s.state,
+            }
+            for s in root.slot_ids.sorted(
+                lambda s: (
+                    s.start_datetime or fields.Datetime.now(),
+                    s.playing_area_id.id,
+                    s.id,
+                )
+            )
+        ]
+        return hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
 
     def _assert_validated_revision_is_current(self, root):
         revision = root.schedule_draft_revision_id
-        if not revision or revision.state != "validated" or revision.validated_planner_revision != root.planner_revision or revision.validation_digest != self._schedule_validation_digest(root):
-            raise ValidationError(_("Validate the current schedule again before publication."))
+        if (
+            not revision
+            or revision.state != "validated"
+            or revision.validated_planner_revision != root.planner_revision
+            or revision.validation_digest != self._schedule_validation_digest(root)
+        ):
+            raise ValidationError(
+                _("Validate the current schedule again before publication.")
+            )
         return revision
 
     @api.model
     def preview_auto_schedule_gameday(self, gameday_id):
-        return self.env["federation.competition.auto.schedule.solver"].preview(self, gameday_id)
+        return self.env["federation.competition.auto.schedule.solver"].preview(
+            self, gameday_id
+        )
 
     @api.model
     def validate_match_assignment(self, match_id, slot_id, simulated_slots=None):
@@ -16502,6 +16556,21 @@ class TestCompetitionWorkspaceStageBuilder(TransactionCase):
             )
 
 ====================================================================================================
+FILE: sports_federation_competition_engine/tests/test_production_like_simulation.py
+====================================================================================================
+
+from odoo.tests import tagged
+
+from .test_simulate_tournament import TestSimulateTournament
+
+
+@tagged("-at_install", "post_install", "sf_production_simulation")
+class TestProductionLikeTournamentSimulation(TestSimulateTournament):
+    """Dedicated RC lane for the existing 12-team portal-to-final simulation."""
+
+    pass
+
+====================================================================================================
 FILE: sports_federation_competition_engine/tests/test_simulate_tournament.py
 ====================================================================================================
 
@@ -18974,7 +19043,13 @@ class FederationNotificationLog(models.Model):
                 rec.target_display_name = False
 
     def action_acknowledge_failure(self):
-        self.filtered(lambda log: log.state == "failed").write({"acknowledged": True, "acknowledged_by_id": self.env.user.id, "acknowledged_on": fields.Datetime.now()})
+        self.filtered(lambda log: log.state == "failed").write(
+            {
+                "acknowledged": True,
+                "acknowledged_by_id": self.env.user.id,
+                "acknowledged_on": fields.Datetime.now(),
+            }
+        )
         return True
 
     def action_view_target(self):
@@ -21433,7 +21508,9 @@ class FederationMatchReferee(models.Model):
         """Confirm a draft assignment."""
         for rec in self:
             if rec.state != "draft":
-                raise ValidationError(_("Only assigned referee duties can be confirmed."))
+                raise ValidationError(
+                    _("Only assigned referee duties can be confirmed.")
+                )
             issues = rec._get_readiness_issues()
             if issues:
                 raise ValidationError("\n".join(issues))
@@ -21449,7 +21526,9 @@ class FederationMatchReferee(models.Model):
         """Complete a confirmed assignment."""
         for rec in self:
             if rec.state != "confirmed":
-                raise ValidationError(_("Only confirmed referee duties can be completed."))
+                raise ValidationError(
+                    _("Only confirmed referee duties can be completed.")
+                )
             rec.write(
                 {
                     "state": "done",
@@ -31276,7 +31355,9 @@ class FederationPortalPrivilege(models.AbstractModel):
                 )
             )
         if not method_name or method_name.startswith("_"):
-            raise AccessError(_("Private model methods cannot be invoked through the portal."))
+            raise AccessError(
+                _("Private model methods cannot be invoked through the portal.")
+            )
         self._assert_portal_owns(records, scope_domain, user=user)
         privileged_records = self.elevate(records, user=user)
         method = getattr(privileged_records, method_name, None)
@@ -36639,8 +36720,7 @@ class TestProductionSecurityMatrix(TransactionCase):
             for chunk in chunks:
                 declaration = chunk.split(")\n", 1)[0]
                 is_http_post = (
-                    'methods=["POST"]' in declaration
-                    and 'type="http"' in declaration
+                    'methods=["POST"]' in declaration and 'type="http"' in declaration
                 )
                 if is_http_post and "csrf=True" not in declaration:
                     violations.append(path.name)
@@ -43905,7 +43985,9 @@ class FederationMatchResultControl(models.Model):
         )
         for rec in self:
             if rec.result_state == "approved":
-                raise ValidationError("Approved results must use the correction workflow.")
+                raise ValidationError(
+                    "Approved results must use the correction workflow."
+                )
             from_state = rec.result_state
             rec.write(
                 {
@@ -45085,19 +45167,41 @@ class FederationRuleSet(models.Model):
 
     _code_unique = models.Constraint("unique (code)", "Rule set code must be unique.")
 
-    _LOCKED_FIELDS = {"points_win", "points_draw", "points_loss", "squad_min_size", "squad_max_size", "referee_required_count", "seeding_mode", "points_rule_ids", "tie_break_rule_ids", "eligibility_rule_ids", "qualification_rule_ids"}
+    _LOCKED_FIELDS = {
+        "points_win",
+        "points_draw",
+        "points_loss",
+        "squad_min_size",
+        "squad_max_size",
+        "referee_required_count",
+        "seeding_mode",
+        "points_rule_ids",
+        "tie_break_rule_ids",
+        "eligibility_rule_ids",
+        "qualification_rule_ids",
+    }
 
     def write(self, vals):
         if self.filtered("locked") and self._LOCKED_FIELDS.intersection(vals):
-            raise ValidationError("Locked rule sets cannot be changed. Duplicate the rule set instead.")
+            raise ValidationError(
+                "Locked rule sets cannot be changed. Duplicate the rule set instead."
+            )
         return super().write(vals)
 
     def action_lock(self):
-        self.filtered(lambda r: not r.locked).write({"locked": True, "locked_on": fields.Datetime.now(), "locked_by_id": self.env.user.id})
+        self.filtered(lambda r: not r.locked).write(
+            {
+                "locked": True,
+                "locked_on": fields.Datetime.now(),
+                "locked_by_id": self.env.user.id,
+            }
+        )
         return True
 
     def action_unlock(self):
-        if not self.env.user.has_group("sports_federation_base.group_federation_manager"):
+        if not self.env.user.has_group(
+            "sports_federation_base.group_federation_manager"
+        ):
             raise ValidationError("Only federation managers can unlock rule sets.")
         self.write({"locked": False, "locked_on": False, "locked_by_id": False})
         return True
@@ -47550,8 +47654,12 @@ class FederationTournament(models.Model):
 
     def write(self, vals):
         protected = {"rule_set_id", "competition_id", "edition_id", "season_id"}
-        if protected.intersection(vals) and self.filtered(lambda r: r.state != TOURNAMENT_STATE_DRAFT):
-            raise ValidationError(_("Competition identity and rules cannot change after opening."))
+        if protected.intersection(vals) and self.filtered(
+            lambda r: r.state != TOURNAMENT_STATE_DRAFT
+        ):
+            raise ValidationError(
+                _("Competition identity and rules cannot change after opening.")
+            )
         return super().write(vals)
 
     def action_open(self):
@@ -47568,7 +47676,9 @@ class FederationTournament(models.Model):
         for tournament in self:
             rule_set = tournament._get_effective_rule_set()
             if not rule_set:
-                raise ValidationError(_("Select a rule set before opening a tournament."))
+                raise ValidationError(
+                    _("Select a rule set before opening a tournament.")
+                )
             if hasattr(rule_set, "action_lock"):
                 rule_set.action_lock()
         self.write({"state": TOURNAMENT_STATE_OPEN})

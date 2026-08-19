@@ -2,10 +2,21 @@
 main
 
 === CURRENT COMMIT ===
-407b3c7ddb66a1ca6251cf37d2c5082bc5590721
+5fc6ed98b4d4a014594478563dc6ce00b664b2e7
 
 === WORKTREE STATUS ===
  M current_sources.txt
+ M sports_federation_base/models/attachment_policy.py
+ M sports_federation_competition_engine/models/competition_schedule_revision.py
+ M sports_federation_competition_engine/services/competition_workspace.py
+ M sports_federation_competition_engine/tests/test_true_concurrency.py
+ M sports_federation_notifications/models/notification_log.py
+ M sports_federation_officiating/models/federation_match_referee.py
+ M sports_federation_portal/models/portal_privilege.py
+ M sports_federation_portal/tests/test_production_security_matrix.py
+ M sports_federation_result_control/models/match_result_control.py
+ M sports_federation_rules/models/federation_rule_set.py
+ M sports_federation_tournament/models/federation_tournament.py
 
 === MODULE VERSIONS ===
 
@@ -28,7 +39,8 @@ sports_federation_notifications: "version": "19.0.1.3.0",
 
 === RELEVANT RECENT HISTORY ===
 
-407b3c7 (HEAD -> main) feat: harden federation modules for release candidate
+5fc6ed9 (HEAD -> main, origin/main, origin/HEAD) Validation CI / Concurrency test
+407b3c7 feat: harden federation modules for release candidate
 10cb0e0 updated security_matrix
 d46c71f test(notifications): add post_install smoke test for templates and crons
 9cd846d Merge pull request #8 from cb-96/copilot/fix-odoo-tests-portal-public-ops
@@ -47,9 +59,8 @@ ee3fccf QoL.patch
 3701057 New patch applied (patch_2608181501). Updated .gitignore.
 ffb762e feat(portal): add operational action queues
 0125507 Added source_collector.py
-437bbc9 chore: remove generated package artifacts
 
 
 === DISCOVERED FILE COUNT ===
 
-214
+215

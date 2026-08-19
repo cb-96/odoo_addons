@@ -82,7 +82,13 @@ class FederationNotificationLog(models.Model):
                 rec.target_display_name = False
 
     def action_acknowledge_failure(self):
-        self.filtered(lambda log: log.state == "failed").write({"acknowledged": True, "acknowledged_by_id": self.env.user.id, "acknowledged_on": fields.Datetime.now()})
+        self.filtered(lambda log: log.state == "failed").write(
+            {
+                "acknowledged": True,
+                "acknowledged_by_id": self.env.user.id,
+                "acknowledged_on": fields.Datetime.now(),
+            }
+        )
         return True
 
     def action_view_target(self):

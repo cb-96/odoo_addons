@@ -92,7 +92,9 @@ class FederationPortalPrivilege(models.AbstractModel):
                 )
             )
         if not method_name or method_name.startswith("_"):
-            raise AccessError(_("Private model methods cannot be invoked through the portal."))
+            raise AccessError(
+                _("Private model methods cannot be invoked through the portal.")
+            )
         self._assert_portal_owns(records, scope_domain, user=user)
         privileged_records = self.elevate(records, user=user)
         method = getattr(privileged_records, method_name, None)

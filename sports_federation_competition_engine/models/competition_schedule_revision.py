@@ -83,7 +83,9 @@ class FederationCompetitionScheduleRevision(models.Model):
     )
     validated_planner_revision = fields.Integer(copy=False, readonly=True, index=True)
     validated_on = fields.Datetime(copy=False, readonly=True)
-    validated_by_id = fields.Many2one("res.users", copy=False, readonly=True, ondelete="set null")
+    validated_by_id = fields.Many2one(
+        "res.users", copy=False, readonly=True, ondelete="set null"
+    )
     validation_digest = fields.Char(copy=False, readonly=True, index=True)
     warning_count = fields.Integer(
         string="Warning Count",

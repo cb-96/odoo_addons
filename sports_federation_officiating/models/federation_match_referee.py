@@ -282,7 +282,9 @@ class FederationMatchReferee(models.Model):
         """Confirm a draft assignment."""
         for rec in self:
             if rec.state != "draft":
-                raise ValidationError(_("Only assigned referee duties can be confirmed."))
+                raise ValidationError(
+                    _("Only assigned referee duties can be confirmed.")
+                )
             issues = rec._get_readiness_issues()
             if issues:
                 raise ValidationError("\n".join(issues))
@@ -298,7 +300,9 @@ class FederationMatchReferee(models.Model):
         """Complete a confirmed assignment."""
         for rec in self:
             if rec.state != "confirmed":
-                raise ValidationError(_("Only confirmed referee duties can be completed."))
+                raise ValidationError(
+                    _("Only confirmed referee duties can be completed.")
+                )
             rec.write(
                 {
                     "state": "done",
