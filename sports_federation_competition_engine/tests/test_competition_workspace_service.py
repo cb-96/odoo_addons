@@ -1,4 +1,3 @@
-from odoo.exceptions import ValidationError
 from unittest.mock import patch
 
 from odoo.exceptions import AccessError, ValidationError

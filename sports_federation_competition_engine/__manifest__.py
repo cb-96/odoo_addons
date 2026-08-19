@@ -9,6 +9,7 @@
     "license": "LGPL-3",
     "depends": [
         "web",
+        "sports_federation_base",
         "sports_federation_tournament",
         "sports_federation_standings",
         "sports_federation_venues",
