@@ -2412,7 +2412,9 @@ class CompetitionWorkspaceService(
         division = self._resolve_division(division_id)
         confirmed = self._get_generation_participants(division)
         if len(confirmed) < 2:
-            raise ValidationError(_("Add at least two confirmed teams before preparing the schedule."))
+            raise ValidationError(
+                _("Add at least two confirmed teams before preparing the schedule.")
+            )
         if not division.entries_locked:
             division.action_lock_team_entries()
         if not division.match_ids:
