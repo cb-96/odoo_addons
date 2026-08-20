@@ -377,6 +377,34 @@ export class CompetitionWorkspacePlannerDataMethods {
         this.notification.add(message, { type });
     }
 
+    toggleAdvancedMode() {
+        this.state.advancedMode = !this.state.advancedMode;
+    }
+
+    async prepareDivisionSchedule() {
+        if (!this.state.currentDivisionId || this.state.saving) {
+            return;
+        }
+        this.state.saving = true;
+        try {
+            const result = await this.orm.call(
+                "federation.competition.workspace.service",
+                "prepare_division_schedule",
+                [this.state.currentDivisionId]
+            );
+            this.state.payload = result.payload;
+            this.notify(
+                result.already_prepared ? "Schedule structure is already ready." : "Teams locked and matches created.",
+                "success"
+            );
+            this.setSection("gamedays");
+        } catch (error) {
+            this.notify(error.message || "The schedule could not be prepared.", "danger");
+        } finally {
+            this.state.saving = false;
+        }
+    }
+
     setSection(section) {
         this.state.activeSection = section;
         if (section === "planner" && (this.state.currentGamedayId || this.gamedayOptions[0]?.id)) {

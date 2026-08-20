@@ -13,12 +13,12 @@ const UI_STATE_STORAGE_KEY = "sports_federation_competition_engine.competition_w
 
 // Keep top-level workspace navigation and form options in one place.
 const WORKSPACE_SECTIONS = Object.freeze([
-    { key: "overview", label: "Overview" },
+    { key: "overview", label: "Setup" },
     { key: "teams", label: "Teams" },
-    { key: "rounds", label: "Rounds" },
-    { key: "gamedays", label: "Gamedays" },
-    { key: "planner", label: "Gameday Planner" },
-    { key: "publish", label: "Publish" },
+    { key: "rounds", label: "Format" },
+    { key: "gamedays", label: "Match days" },
+    { key: "planner", label: "Schedule" },
+    { key: "publish", label: "Go live" },
 ]);
 
 const DIVISION_PLANNING_FORMAT_OPTIONS = Object.freeze([
@@ -552,7 +552,9 @@ export class CompetitionWorkspaceAction extends Component {
                 season_id: "",
             },
             teamSearchLoading: false,
+            advancedMode: false,
             divisionForm: {
+                workflow_template: "league",
                 category: "",
                 date_end: "",
                 date_start: "",

@@ -430,3 +430,7 @@ set up the competition, add teams, build the schedule, create gamedays, plan
 matches, and validate/publish. Completed steps stay available, blocked steps
 explain their dependency, and previous/next controls preserve a predictable
 flow on desktop and mobile.
+
+Simplified operator workflow (2.0)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The default workspace now uses three competition templates (League, Tournament day, Cup), four user-facing status labels (Draft, Ready, Live, Finished), automatic confirmation of manually added teams, and a one-click Prepare schedule command. Technical formats, stage graphs, shared-day configuration, fairness tuning, collaboration diagnostics, and revision details remain available through Advanced tools. Internal states and audit safeguards remain unchanged.

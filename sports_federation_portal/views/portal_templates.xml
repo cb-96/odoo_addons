@@ -52,11 +52,18 @@
                 </div>
                 <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap mb-3">
                 <div>
-                    <h2 class="h4 o_fed_portal_section-title mb-1">Club operations</h2>
-                    <p class="text-muted mb-0">Everything your representatives need, grouped by the job to be done.</p>
+                    <h2 class="h4 o_fed_portal_section-title mb-1">Club administration</h2>
+                    <p class="text-muted mb-0">Common tasks first. Open the full catalogue only when you need it.</p>
                 </div>
             </div>
-            <div class="o_fed_portal_grid">
+            <div class="o_fed_portal_grid mb-4">
+                <a class="o_fed_portal_link" href="/my/teams"><i class="fa fa-users" aria-hidden="true"/><span><strong>My teams</strong><br/><small class="text-muted">Teams, players and rosters</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
+                <a class="o_fed_portal_link" href="/my/season-registrations"><i class="fa fa-pencil-square-o" aria-hidden="true"/><span><strong>Registrations</strong><br/><small class="text-muted">Season and tournament entries</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
+                <a class="o_fed_portal_link" href="/my/match-day"><i class="fa fa-calendar-check-o" aria-hidden="true"/><span><strong>Upcoming matches</strong><br/><small class="text-muted">Readiness, lineups and duties</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
+            </div>
+            <details class="mb-4">
+              <summary class="btn btn-outline-secondary">All club tools</summary>
+              <div class="o_fed_portal_grid mt-3">
                 <section class="o_fed_portal_group" aria-labelledby="portal-teams-heading">
                     <div class="o_fed_portal_group-header"><h3 id="portal-teams-heading">Teams and players</h3><p>Register squads and keep player information ready.</p></div>
                     <a class="o_fed_portal_link" href="/my/teams"><i class="fa fa-users" aria-hidden="true"/><span><strong>Teams</strong><br/><small class="text-muted">Manage club teams</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
@@ -76,7 +83,8 @@
                     <a class="o_fed_portal_link" href="/my/tournament-registrations"><i class="fa fa-trophy" aria-hidden="true"/><span><strong>Tournament entries</strong><br/><small class="text-muted">Apply and follow status</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
                     <a class="o_fed_portal_link" href="/my/club"><i class="fa fa-shield" aria-hidden="true"/><span><strong>Club details</strong><br/><small class="text-muted">Contacts and information</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
                 </section>
-            </div>
+              </div>
+            </details>
         </div>
 
         <div t-if="federation_referee and not federation_representative" class="o_fed_portal_shell mb-4">
