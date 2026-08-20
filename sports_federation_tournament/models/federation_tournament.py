@@ -128,14 +128,17 @@ class FederationTournament(models.Model):
     def write(self, vals):
         protected = {"rule_set_id", "competition_id", "edition_id", "season_id"}
         frozen = self.filtered(
-            lambda record: record.state in (
+            lambda record: record.state
+            in (
                 TOURNAMENT_STATE_IN_PROGRESS,
                 TOURNAMENT_STATE_CLOSED,
             )
         )
         if protected.intersection(vals) and frozen:
             raise ValidationError(
-                _("Competition identity and rules cannot change after the tournament starts.")
+                _(
+                    "Competition identity and rules cannot change after the tournament starts."
+                )
             )
         return super().write(vals)
 
