@@ -1,39 +1,30 @@
 # ADR-0001: Portal Trust Boundaries
 
-Last updated: 2026-04-18
+Last updated: 2026-08-20
 Owner: Federation Platform Team
-Last reviewed: 2026-04-18
+Last reviewed: 2026-08-20
 Review cadence: Every release
-
-## Status
-
-Accepted
+Status: Accepted
 
 ## Context
 
-Portal club representatives need to create and update federation records that
-their base ACLs do not own directly. The repository already separates portal
-ownership checks from broad backend access, but that policy was previously
-spread across controllers, model methods, and release notes.
+Portal club representatives and officials must create or update federation records without receiving broad backend ACLs. Controller-only checks are insufficient because direct model calls, guessed identifiers, or future routes could otherwise widen access.
 
 ## Decision
 
-Portal writes will continue to use explicit model-owned privilege boundaries:
+Portal writes use explicit, model-owned privilege boundaries:
 
-- controllers load the request user, resolve the allowed club scope, and reject
-  requests that fall outside that scope before any privileged write occurs
-- model helpers execute the actual create or state transition through
-  `with_user(user).sudo()` so the request user remains visible in audit fields
-  while ACL bypass stays narrow and intentional
-- ORM-level ownership constraints mirror the controller checks so bypassing a
-  browser route does not widen access
-- portal and `HttpCase` regression tests remain mandatory for any new privileged
-  write surface
+- Controllers resolve the request user and the candidate record, reject malformed input, and invoke a model-owned portal method.
+- Ownership and scope are enforced again in the model or shared privilege service.
+- Elevated reads and writes go through `federation.portal.privilege`, including helpers such as `elevate()`, `portal_search()`, `portal_create()`, `portal_write()`, and `portal_call()` where applicable.
+- The privilege boundary preserves the request user for audit attribution while keeping elevation narrow and explicit.
+- Controllers must not perform business writes through raw `sudo()`.
+- Positive in-scope, negative out-of-scope, direct-ID, and elevated-helper tests are mandatory for every privileged portal write surface.
 
 ## Consequences
 
-- privilege escalation logic stays centralized and reviewable instead of being
-  reimplemented in each controller
-- request-user ownership remains visible in `create_uid` and `write_uid`
-- new portal features must add or reuse model-level helpers instead of writing
-  through raw controller `sudo()` flows
+- Privilege escalation remains centralized and reviewable.
+- Controller and ORM boundaries fail closed independently.
+- Cross-club and team-scoped access can be regression-tested consistently.
+- New portal features must reuse the privilege service or add a reviewed model-owned equivalent.
+- Raw elevated controller writes are treated as security defects.

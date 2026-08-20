@@ -1,8 +1,8 @@
 # Integration Contracts
 
-Last updated: 2026-04-13
+Last updated: 2026-08-20
 Owner: Federation Platform Team
-Last reviewed: 2026-04-17
+Last reviewed: 2026-08-20
 Review cadence: Every release
 
 This document defines the stable partner-facing contracts currently supported by
@@ -57,7 +57,7 @@ Import contracts:
 
 ## Public Contracts
 
-### Tournament Feed
+## Tournament Feed
 
 - Canonical route: `/api/v1/tournaments/<slug>/feed`
 - Compatibility routes:
@@ -74,7 +74,7 @@ Import contracts:
   - additive nested fields are allowed in v1 when they do not alter existing
     semantics
 
-### Tournament Schedule Calendar
+## Tournament Schedule Calendar
 
 - Canonical route: `/tournaments/<slug>/schedule.ics`
 - Compatibility route: `/tournament/<id>/schedule.ics`
@@ -94,7 +94,7 @@ All authenticated CSV exports expose these headers:
 - `X-Federation-Contract`
 - `X-Federation-Contract-Version`
 
-### Standings Export
+## Standings Export
 
 - Route: `/reporting/export/standings/<tournament_id>`
 - Contract: `standings_csv`
@@ -102,19 +102,19 @@ All authenticated CSV exports expose these headers:
 - Notes:
   - intended for downstream standings review and board-pack style extracts
 
-### Participation Export
+## Participation Export
 
 - Route: `/reporting/export/participation/<season_id>`
 - Contract: `participation_csv`
 - Version: `csv_v1`
 
-### Finance Summary Export
+## Finance Summary Export
 
 - Route: `/reporting/export/finance`
 - Contract: `finance_summary_csv`
 - Version: `csv_v1`
 
-### Finance Event Handoff Export
+## Finance Event Handoff Export
 
 - Route: `/reporting/export/finance/events`
 - Contract: `finance_event_v1`
@@ -131,7 +131,7 @@ All authenticated CSV exports expose these headers:
 
 ## Managed Partner Contracts
 
-### Contract Manifest
+## Contract Manifest
 
 - Route: `/integration/v1/contracts`
 - Response type: `application/json`
@@ -144,7 +144,7 @@ All authenticated CSV exports expose these headers:
   - `available` flag for database-specific operational availability
   - partner subscription state and last-used timestamp
 
-### Partner Finance Event Handoff
+## Partner Finance Event Handoff
 
 - Route: `/integration/v1/outbound/finance/events`
 - Response type: `text/csv`
@@ -166,7 +166,7 @@ All authenticated CSV exports expose these headers:
   - `X-Federation-Partner-Code`
   - `X-Federation-Partner-Token`
 
-### Inbound Delivery Staging
+## Inbound Delivery Staging
 
 - Route: `/integration/v1/inbound/<contract_code>/deliveries`
 - Method: `POST`

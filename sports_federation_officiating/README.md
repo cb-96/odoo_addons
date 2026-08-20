@@ -1,127 +1,29 @@
 # Sports Federation Officiating
 
-Referee management and match assignment tracking. Maintains a registry of
-officials, their certifications, and automates the assignment workflow for matches.
+Version: 19.0.1.6.0
+Owner: Federation Platform Team
+Last reviewed: 2026-08-20
+Review cadence: Every release
 
-## Purpose
+Referee records, certifications, match assignments, club referee duties, reimbursement requests, and competition-workspace readiness checks.
 
-Manages the **referee lifecycle** separately from the club/team hierarchy. Referees
-operate across tournaments and are assigned to specific matches in defined roles
-(head referee, assistant, etc.).
+## Responsibilities
 
-## Competition Workspace integration
+- referee profiles and qualification data
+- match referee assignments and response lifecycle
+- club referee-duty nominations
+- officiating readiness validation
+- reimbursement request workflow
+- portal and backend actions through the portal addon integration
 
-The officiating extension contributes referee-duty visibility and conflict
-checks to the Competition Workspace without taking ownership of the core
-workspace model. The extension is safe to load when optional workspace fields
-are absent; upgrades should therefore validate both the officiating module and
-the workspace contract suites before release.
+## Competition integration
 
-## Dependencies
+The addon extends competition validation through the documented workspace extension contract. Officiating readiness should block or warn at the appropriate lifecycle stage without preventing early schedule construction.
 
-| Module | Reason |
-|--------|--------|
-| `sports_federation_base` | Core entities |
-| `sports_federation_tournament` | Matches |
-| `sports_federation_people` | Person concept reference |
+## Security
 
-## Models
+Officials may only access assignments linked to their portal identity. Club representatives may only manage duties inside their authorized club or team scope. Federation managers retain administrative control.
 
-### `federation.referee`
+## Tests
 
-Master record for each registered official.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | Char | Full name |
-| `user_id` | Many2one | Optional linked portal user for self-service assignment response |
-| `email` / `phone` / `mobile` | Char | Contact channels |
-| `certification_level` | Selection | national / regional / local / trainee |
-| `active` | Boolean | Active in the registry |
-| `certification_ids` | One2many | Certification history |
-| `match_assignment_ids` | One2many | Match assignments |
-| `certification_count` / `assignment_count` | Integer | Stat-button counters |
-| `notes` | Text | Free-form notes |
-
-### `federation.referee.certification`
-
-A specific certification held by a referee, with validity tracking.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | Char | Certificate title |
-| `referee_id` | Many2one | Referee |
-| `level` | Selection | national / regional / local / trainee |
-| `issue_date` / `expiry_date` | Date | Validity window |
-| `issuing_body` | Char | Certification authority |
-| `active` | Boolean | Currently valid |
-| `notes` | Text | Remarks |
-
-### `federation.match.referee`
-
-Links a referee to a match in a specific role.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `match_id` | Many2one | The match |
-| `referee_id` | Many2one | The official |
-| `tournament_id` | Many2one | Computed from match |
-| `role` | Selection | head / assistant_1 / assistant_2 / fourth / table |
-| `state` | Selection | assigned / confirmed / done / cancelled |
-| `assigned_on` / `confirmed_on` / `completed_on` / `cancelled_on` | Datetime | Lifecycle timestamps |
-| `confirmation_deadline` | Datetime | Match-based deadline, 48 hours before kick-off |
-| `is_confirmation_overdue` | Boolean | Draft assignments that missed the deadline |
-| `assignment_ready` | Boolean | Whether the assigned official can be confirmed |
-| `readiness_feedback` | Text | Operator-readable explanation for readiness gaps |
-| `response_note` | Text | Optional note supplied by the official when confirming or declining |
-| `notes` | Text | Assignment notes |
-
-- **SQL constraint**: unique (match_id, referee_id, role) — prevents duplicate
-  role assignments.
-
-### `federation.match` officiating extension
-
-Matches receive computed officiating-readiness fields so staff can spot issues
-before the match goes live.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `referee_assignment_count` | Integer | Number of linked officiating assignments |
-| `required_referee_count` | Integer | Expected official count from the tournament rule set |
-| `confirmed_referee_count` | Integer | Officials already confirmed |
-| `missing_referees_count` | Integer | Gap between required and confirmed assignments |
-| `overdue_referee_confirmation_count` | Integer | Draft assignments that missed the deadline |
-| `is_officially_ready` | Boolean | True when required roles are covered and no readiness issues remain |
-| `official_readiness_issues` | Text | Aggregated shortage / overdue / certification issues |
-
-## Key Behaviours
-
-1. **Certification tracking** — Expiry dates allow monitoring whether officials
-   meet current requirements.
-2. **Role-based assignment** — Each match can have multiple referees in distinct
-   roles.
-3. **Confirmation governance** — assignments expose a 48-hour confirmation deadline,
-   overdue status, and block confirmation when the referee is inactive, lacks a
-   valid certification window for the match, or is already double-booked in an
-   overlapping assignment window.
-4. **Match readiness visibility** — matches show confirmed counts, shortages, overdue
-   confirmations, and aggregated officiating issues in the form and list views.
-5. **Competition Workspace integration** — When
-   `sports_federation_competition_engine` is installed, officiating readiness
-   feeds planner validation and publish summaries. Double-booked referee
-   assignments block readiness, while uncovered availability remains visible as
-   a warning.
-6. **Assignment state machine** — assigned → confirmed → done / cancelled.
-7. **Tournament context** — Assignments carry a computed tournament reference for
-   filtering and reporting.
-8. **Odoo 19-safe view inheritance** — the match readiness stat button inherits the
-   base match form with `hasclass('oe_title')`, which avoids the platform warning
-   triggered by raw `@class` XPath selectors during module loading.
-9. **Finance bridge integration** — When `sports_federation_finance_bridge` is installed,
-   assignments that reach `done` automatically create reusable reimbursement events.
-10. **Portal self-service** — When `sports_federation_portal` is installed, linked officials can review, confirm, or decline their own draft assignments through the portal.
-
-11. **Club-duty planning constraint** — Open club referee duties are first-class
-    planner constraints. A club cannot play a match and supply an official for
-    another match in an overlapping timeslot. Match cards expose duty club, role,
-    and state directly in the Competition Workspace.
+Coverage includes assignment lifecycle, duties, reimbursements, portal access, match-day tours, and workspace integration.

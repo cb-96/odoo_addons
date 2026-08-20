@@ -1,87 +1,32 @@
 # Sports Federation Notifications
 
-Centralised notification helpers, email templates, and scheduled reminders.
-Provides a reusable service layer for sending emails and creating activities,
-with a log of all notifications sent.
+Version: 19.0.1.3.0
+Owner: Federation Platform Team
+Last reviewed: 2026-08-20
+Review cadence: Every release
 
-## Purpose
+Central notification templates, dispatch helpers, delivery logs, and scheduled reminders for federation workflows.
 
-Gives other modules a **single entry point** for sending notifications. Instead
-of each module implementing its own mail logic, they call the notification
-service, which handles template rendering, activity creation, sending, and logging.
+## Responsibilities
 
-## Dependencies
+- email and activity dispatch through a shared service
+- notification templates and scheduled actions
+- non-blocking business-event notifications
+- delivery outcome, retry metadata, failure category, and correlation ID logging
+- season-registration and other module-triggered notification hooks
 
-| Module | Reason |
-|--------|--------|
-| `sports_federation_base` | Core entities, federation manager group resolution |
-| `sports_federation_people` | Player and referee contact resolution |
-| `sports_federation_tournament` | Tournament, participant, and match event sources |
-| `sports_federation_portal` | Season-registration confirmation and rejection hooks |
-| `sports_federation_public_site` | Tournament publication trigger |
-| `sports_federation_result_control` | Result submission, approval, and contest triggers |
-| `sports_federation_standings` | Standing freeze trigger |
-| `sports_federation_finance_bridge` | Finance confirmation trigger |
-| `sports_federation_officiating` | Referee assignment and staffing alert triggers |
-| `mail` | Email engine and mail.activity support |
+## Reliability contract
 
-## Models
+Notification delivery must not roll back the business transaction. Failures are sanitized, categorized, recorded, and made available for retry or operator investigation.
 
-### `federation.notification.log`
+## Retention
 
-Audit record of every notification sent through the federation.
+Notification log cleanup follows `DATA_RETENTION_POLICY.md`. Changes to state-specific retention windows must update the policy, cleanup code, cron configuration, and tests together.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | Char | Notification title |
-| `target_model` / `target_res_id` | Char / Integer | What record triggered it |
-| `recipient_partner_id` | Many2one | Recipient partner |
-| `recipient_email` | Char | Recipient email address |
-| `notification_type` | Selection | email / activity / other |
-| `template_xmlid` | Char | Which template was used |
-| `correlation_id` | Char | End-to-end trace ID for support and incident debugging |
-| `sent_on` | Datetime | When sent |
-| `state` | Selection | pending / sent / failed |
-| `message` | Text | Content or error details |
+## Tests
 
-### `federation.notification.service` (AbstractModel)
+The test suite covers dispatch, triggers, templates, scheduled actions, failure handling, and post-install availability.
 
-Reusable service methods callable by any module.
+## Removed document
 
-| Method | Description |
-|--------|-------------|
-| `send_email_template(record, template_xmlid, ...)` | Send an email using a mail.template and log it |
-| `create_activity(record, activity_type_xmlid, ...)` | Create a mail.activity and log it |
-| `_cron_placeholder_notification_scan()` | Scheduled scan for overdue registrations and officiating gaps |
-
-## Data Files
-
-| File | Content |
-|------|---------|
-| `data/mail_templates.xml` | Generic contact, registration, publication, result, standings, finance, and referee assignment templates |
-| `data/ir_cron.xml` | Daily notification scan plus daily notification-log retention cleanup |
-
-## Key Behaviours
-
-1. **Service pattern** — AbstractModel with helper methods; no table, just logic.
-2. **Comprehensive logging** — Every send/activity creation produces a log entry.
-3. **Multi-recipient email delivery** — `send_email_template()` accepts a single email or a collection of emails and deduplicates them before sending.
-4. **QWeb templates** — Email templates use Odoo 19 QWeb syntax (`<t t-out=""/>`).
-5. **Live workflow coverage** — Season registration confirmation/rejection, tournament publication, participant confirmation, result approval/contest, standing freeze, finance confirmation, referee assignment, and suspension activation all dispatch concrete emails or direct mail deliveries.
-6. **Activity-based operational follow-up** — Result submission creates verifier activities, while overdue referee confirmations and officiating shortages create federation-manager activities.
-7. **Scheduled scan** — Cron logs stale draft registration reminders and triggers the officiating follow-up activities above.
-8. **Failure visibility without transaction rollback** — Missing recipients or template failures create `failed` notification logs instead of blocking the business workflow.
-9. **Suspension delivery fallback** — `send_suspension_issued()` now sends a direct email and logs the outcome even when no dedicated mail template exists yet.
-10. **Retention cleanup** — Notification logs are purged automatically after their state-specific retention windows in `DATA_RETENTION_POLICY.md` expire.
-11. **Correlation tracing** — Notification service actions and cron scans stamp each log with a correlation ID so failures can be traced across controllers, jobs, and service logs.
-
-## Integration configuration (env)
-
-The notification service and mail templates assume an external mail delivery configuration managed by the Odoo instance (SMTP or provider API). Do not hardcode credentials in code or data files. Recommended practice:
-
-- Store runtime credentials in environment variables and/or CI secret stores.
-- Use `ci/integrations.env.example` as a template for common variables (SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SENDGRID_API_KEY, etc.).
-- Keep real `.env` files out of source control (the repository `.gitignore` already excludes `.env` and `ci/.env`).
-
-To apply values to Odoo system parameters you can either configure them via the Odoo Settings UI or set `ir.config_parameter` entries using an Odoo shell script or the admin UI.
-
+`ROADMAP_RC.md` is deleted. Its remaining one-line item was not a durable roadmap and is now represented by the module's reliability contract and repository roadmap.

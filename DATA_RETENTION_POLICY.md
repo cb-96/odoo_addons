@@ -1,13 +1,18 @@
 # Data Retention Policy
 
-Last updated: 2026-04-18
+Last updated: 2026-08-20
 Owner: Federation Platform Team
-Last reviewed: 2026-04-18
+Last reviewed: 2026-08-20
 Review cadence: Every release
 
 This document defines the default retention windows for operational logs,
 staged inbound deliveries, and generated report files stored by the federation
 addons.
+
+
+## Review Status
+
+The policy remains the contract for terminal-state cleanup. Release review must verify the configured cron XML IDs, active defaults, date anchors, retention constants, attachment cleanup, and preservation of unresolved workflow records. A date update without those checks is not sufficient.
 
 ## Scope
 
