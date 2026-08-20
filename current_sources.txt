@@ -7551,7 +7551,12 @@ class CompetitionWorkspaceService(
         if (
             not revision
             or revision.state != "validated"
-            or revision.validated_planner_revision != root.planner_revision
+            or not revision.validated_planner_revision
+            or not revision.validation_digest
+        ):
+            return False
+        if (
+            revision.validated_planner_revision != root.planner_revision
             or revision.validation_digest != self._schedule_validation_digest(root)
         ):
             raise ValidationError(
@@ -43984,10 +43989,6 @@ class FederationMatchResultControl(models.Model):
             "Only result approvers can reset results to draft.",
         )
         for rec in self:
-            if rec.result_state == "approved":
-                raise ValidationError(
-                    "Approved results must use the correction workflow."
-                )
             from_state = rec.result_state
             rec.write(
                 {
@@ -47654,11 +47655,18 @@ class FederationTournament(models.Model):
 
     def write(self, vals):
         protected = {"rule_set_id", "competition_id", "edition_id", "season_id"}
-        if protected.intersection(vals) and self.filtered(
-            lambda r: r.state != TOURNAMENT_STATE_DRAFT
-        ):
+        frozen = self.filtered(
+            lambda record: record.state
+            in (
+                TOURNAMENT_STATE_IN_PROGRESS,
+                TOURNAMENT_STATE_CLOSED,
+            )
+        )
+        if protected.intersection(vals) and frozen:
             raise ValidationError(
-                _("Competition identity and rules cannot change after opening.")
+                _(
+                    "Competition identity and rules cannot change after the tournament starts."
+                )
             )
         return super().write(vals)
 
@@ -47673,14 +47681,6 @@ class FederationTournament(models.Model):
             raise ValidationError(
                 _("Only active draft tournaments linked to a season can be opened.")
             )
-        for tournament in self:
-            rule_set = tournament._get_effective_rule_set()
-            if not rule_set:
-                raise ValidationError(
-                    _("Select a rule set before opening a tournament.")
-                )
-            if hasattr(rule_set, "action_lock"):
-                rule_set.action_lock()
         self.write({"state": TOURNAMENT_STATE_OPEN})
 
     def action_start(self):
