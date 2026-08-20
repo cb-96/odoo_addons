@@ -1,150 +1,6 @@
 # Packages 3 and 4 current source bundle
 
 ====================================================================================================
-FILE: sports_federation_base/README.md
-====================================================================================================
-
-Sports Federation Base
-======================
-
-Foundation module for the entire Sports Federation suite. Provides the core data
-models that every other federation module depends on: **clubs**, **teams**,
-**seasons**, and **season registrations**.
-
-Purpose
--------
-
-This module establishes the organisational hierarchy of the federation and acts as
-the single source of truth for master data. All downstream modules
-(people, tournaments, compliance, etc.) reference these entities.
-
-Dependencies
-------------
-
-- `base`
-- `mail`
-
-Models
-------
-
-federation.club
-~~~~~~~~~~~~~~~
-
-Central record for each affiliated club. Stores contact details, full postal
-address, logo, and founding date. Each club owns one or more teams.
-
-Fields:
-
-- `name` (Char): Club name (required).
-- `code` (Char): Unique short code.
-- `email` / `phone` / `mobile` (Char): Contact channels.
-- `street` through `country_id` (Address): Full postal address.
-- `founded_date` (Date): Date the club was founded.
-- `logo` (Binary): Club emblem shown as the avatar.
-- `team_ids` (One2many): Teams belonging to this club.
-
-- **Mail thread** enabled for audit & chatter.
-- **Unique code** constraint.
-- **Stat button** to navigate to child teams.
-
-federation.team
-~~~~~~~~~~~~~~~
-
-Represents a single squad within a club, classified by age category and gender.
-
-Fields:
-
-- `name` (Char): Team name (required).
-- `code` (Char): Unique short code.
-- `club_id` (Many2one): Parent club (required).
-- `category` (Selection): `senior`, `youth`, `junior`, `cadet`, or `mini`.
-- `gender` (Selection): `male`, `female`, or `mixed`.
-
-- `name_search()` also matches on `code`.
-
-federation.season
-~~~~~~~~~~~~~~~~~
-
-A time-bounded period during which competitions take place.
-
-Fields:
-
-- `name` / `code` (Char): Season label and unique code.
-- `date_start` / `date_end` (Date): Season boundaries with `date_end >= date_start`.
-- `state` (Selection): `draft -> open -> closed / cancelled`.
-- `target_club_count` / `target_team_count` (Integer): Planned federation participation baseline.
-- `target_tournament_count` / `target_participant_count` (Integer): Planned delivery targets for the season.
-
-**Workflow:** active `draft` seasons can be opened, `open` seasons can be closed,
-`draft` or `open` seasons can be cancelled, and only `cancelled` seasons can be
-reset to `draft`.
-
-Planning target values are validated as zero-or-greater so downstream reporting
-and budgeting can safely compare actual activity against the season plan.
-
-federation.season.registration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Enrols a team into a season. Auto-generates a sequence-based reference number on
-creation (`FED/REG/YYYY/00001`).
-
-Fields:
-
-- `name` (Char): Auto-generated reference (readonly).
-- `season_id` (Many2one): Target season.
-- `team_id` (Many2one): Registering team.
-- `club_id` (Many2one): Derived from the team and stored.
-- `division` (Char): Optional division label.
-- `state` (Selection): `draft -> confirmed / cancelled`.
-
-**Constraint:** a team can register for a given season only once.
-
-Lifecycle guardrails
---------------------
-
-- Clubs can only be archived after their active teams are archived.
-- Teams can only be archived when linked season registrations are cancelled.
-- Open seasons must be closed or cancelled before archiving.
-- The module exposes explicit archive and restore actions so lifecycle changes stay auditable in the backend UI.
-
-Security
---------
-
-Groups:
-
-- **Federation User** (`group_federation_user`): Standard back-office users with read-only access on all models.
-- **Federation Manager** (`group_federation_manager`): Administrators with full CRUD access on all models.
-
-Both groups belong to the *Federation* app category (`module_category_federation`).
-
-Menu Structure
---------------
-
-Menu structure::
-
-		Federation (root)
-			Master Data
-				Clubs
-				Teams
-			Seasons
-			Registrations
-
-Data Files
-----------
-
-- `data/ir_sequence.xml` – auto-numbering sequence for season registrations.
-
-Extension Points
-----------------
-
-Other modules extend the base models:
-
-- **Tournament** adds `competition_id` and `rule_set_id` to registrations.
-- **Portal** adds `submitted` state and portal-user tracking.
-- **Venues** adds `venue_id` to tournaments and matches.
-- **Rosters**, **Result Control**, **Officiating** all extend `federation.match`.
-
-====================================================================================================
 FILE: sports_federation_base/__init__.py
 ====================================================================================================
 
@@ -962,443 +818,6 @@ FILE: sports_federation_base/views/res_config_settings_views.xml
 </odoo>
 
 ====================================================================================================
-FILE: sports_federation_competition_engine/README.md
-====================================================================================================
-
-Sports Federation Competition Engine
-====================================
-
-Schedule generation wizards for round-robin and knockout formats. Given a
-tournament with participants, the engine creates matches, assigns venues, and
-sets kickoff times automatically. It also provides the backend Competition
-Workspace for guided league planning, slot-based scheduling, and controlled
-publication.
-
-Purpose
--------
-
-Automates fixture creation. Instead of manually entering dozens or hundreds of
-matches, federation staff run a wizard that generates a complete schedule for
-the chosen format, seeding mode, and time intervals. For staged operational
-planning, the Competition Workspace guides administrators from competition
-creation through team confirmation, round generation, gameday setup, visual slot
-planning, validation, and publication. In the current backend navigation,
-`Planning Workspace` is the primary scheduling entry point and the direct
-round-robin or knockout buttons on tournament forms are explicitly labeled as
-advanced wizard paths.
-
-Dependencies
-------------
-
-Depends on sports_federation_tournament for tournaments, stages, groups,
-participants, and matches. Depends on sports_federation_venues for venue and
-playing-area scheduling and on web assets for the backend Owl client action.
-
-Competition Workspace
----------------------
-
-The Planning Workspace is a backend client action anchored on
-`federation.competition.edition`, `federation.tournament`, and
-`federation.tournament.round`.
-
-Operators reach it from the `Planning` menu bucket or from the `Open Planning
-Workspace` buttons on competition editions and divisions.
-
-In workspace and operator copy, use `season competition` for the season-specific
-`federation.competition.edition` record that holds the divisions, schedule
-planning, and publication status for one competition season. Older notes may
-still refer to this record as the `competition shell`, but that term is
-deprecated outside compatibility discussions.
-
-Guided flow
-~~~~~~~~~~~~
-
-1. Create the season competition or open an existing edition.
-  If the selected competition template already has an edition for that season,
-  the workspace reopens the existing competition instead of creating a
-  duplicate season record.
-2. Create a division and choose its planning format.
-3. Add and confirm team entries.
-  The team picker now uses server-side search with an optional club filter so
-  large catalogs stay usable on mobile and desktop.
-4. Lock the participant list.
-5. Generate unscheduled matches for single round robin, double round robin,
-  knockout, or pool-then-bracket planning.
-   Pool-then-bracket creates balanced pool play first and a linked knockout
-   stage for the configured qualifiers per pool.
-6. Create gamedays.
-  Multi-stage divisions can target a specific stage so pool work and knockout
-  work stay separate in the planner.
-  A gameday can now include one or more additional divisions from the same
-  competition when they share the same physical match day.
-  Empty draft or planned gamedays can be deleted from the same workspace with
-  confirmation. Deletion removes empty planner slots and linked shared-division
-  gamedays together; assigned, validated, published, locked, or completed
-  gamedays require the existing schedule workflow instead.
-6a. Use the Schedule tab to create additional ordered stages. A stage can be a
-  group/league phase, knockout, final, or placement phase. When the next stage
-  should receive qualifiers from the previous one, configure the source stage,
-  rank range, and optional automatic advancement. Rounds and gamedays remain
-  owned by their stage. Pool-then-bracket remains the one-step guided option
-  for generating pool play followed by knockouts.
-7. Generate court and timeslot slots for a gameday.
-8. Open the visual planner and assign matches to slots.
-  The planner now supports selected-match bulk assign and bulk unassign,
-  a dedicated unassign-all action with a confirmation prompt,
-  quick undo and redo of recent planner actions, and a visible action history
-  panel for the active gameday. Desktop users can still drag and drop, while
-  keyboard and mobile users can select one match and assign it directly into an
-  empty slot. Dragging one already scheduled match onto another occupied slot
-  now performs a validated safe swap when both matches can trade places.
-  Planner UI actions are grouped by intent (selection, scheduling, destructive),
-  report live selection and busy-state feedback, and support `Esc` to quickly
-  clear planner selection during high-volume scheduling edits.
-  Stage labels stay visible on previews, gamedays, and match cards, the
-  planner shows a fairness summary for the active division, and selecting one
-  unscheduled match surfaces ranked slot suggestions backed by the current
-  planner rules. Division planning fairness rules (minimum rest and maximum
-  consecutive short-rest matches per team) can be adjusted directly in the
-  workspace after creation.
-  The planner toolbar also includes a dedicated confirm-validation action that
-  moves a clean planned gameday to `validated` before publication.
-  Confirming validation also freezes the current pending schedule revision as a
-  `validated` snapshot; publication later promotes that validated snapshot to
-  the live revision.
-9. Refresh or reopen the workspace without losing the current section,
-  division, gameday, or planner filters.
-10. Review blocking conflicts and warnings.
-   Validation now groups blocking and warning issues by type, includes
-   operator-facing hints, and highlights affected slots or matches in the
-   planner. When the officiating and venues addons are installed, the same
-   review step also shows officiating readiness and venue-readiness issues.
-11. Publish a gameday or the full competition schedule.
-   Publish review now shows current draft and live revision status for each
-   gameday, and managers must record a reason before forcing warnings or
-   replacing a live schedule.
-12. Maintain schedule changes with server-side guardrails.
-   The workspace tracks live, draft, and superseded schedule revisions and
-   shows active operator presence so same-gameday edits are visible before a
-   stale write reaches the server.
-
-The workspace shell scrolls vertically inside the backend action, while the
-planner grid keeps its own horizontal overflow handling. This keeps long
-timeslot lists reachable without clipping the planner to a single viewport.
-
-Key models and services
-~~~~~~~~~~~~~~~~~~~~~~~
-
-- `federation.match.slot` stores the operational slot grid used by the visual
-  planner. A slot belongs to a gameday and may hold at most one match.
-- `federation.competition.schedule.revision` stores draft, live, and
-  superseded schedule snapshots so publication is revisioned instead of being a
-  single mutable state flip.
-- `federation.competition.workspace.presence` stores recent operator heartbeat
-  data for collaboration warnings and same-gameday edit indicators.
-- `federation.competition.planner.operation` stores recent planner actions so
-  assignment, move, unassignment, undo, and redo flows can be reviewed and
-  reversed without leaving the workspace.
-- `federation.competition.workspace.service` owns competition creation,
-  division creation, team-entry confirmation, format-aware schedule generation,
-  gameday creation and guarded deletion, slot generation, assignment validation, bulk planner
-  actions, planner history, revisioned publication, collaboration heartbeat,
-  and payload building for the Owl action.
-- The service internals now keep three stable seams: access helpers in
-  `competition_workspace_access_mixin.py`, auto-schedule config and fairness
-  objective helpers in
-  `competition_workspace_auto_schedule_config_mixin.py`, addon extension contract handling
-  in `competition_workspace_extension_mixin.py`, and planner revision,
-  idempotency, plus schedule-revision state handling in
-  `competition_workspace_planner_state_mixin.py`.
-- `federation.competition.workspace.validation.service` centralizes planner
-  assignment, gameday, and competition validation so the write service and the
-  read-model payload stay aligned.
-- `federation.competition.workspace.read.model.service` builds the workspace
-  payloads and can skip planner hydration until the UI explicitly opens a
-  gameday.
-- `federation.competition.workspace.extension.*` models are optional addon
-  extension points that can add validation issues, payload enrichments, score
-  components, and slot-suggestion logic without hard-coding every federation
-  rule into the core engine.
-- `federation.tournament.workspace_state` tracks the guided planning lifecycle
-  for a division without replacing the tournament lifecycle in
-  `sports_federation_tournament`.
-- `federation.tournament.round.planner_state` tracks operational gameday
-  planning and publication state.
-- `federation.tournament.round.planner_revision` increments whenever slot
-  assignments, slot grids, or publication state change so stale tabs are forced
-  to refresh before they overwrite newer planner data.
-- Shared match days reuse `federation.tournament.round` as a linked set of
-  per-division gamedays. One round owns the physical slot grid, while guest
-  divisions keep their own legal `round_id` records so match scope remains
-  inside the correct tournament and stage.
-
-Shared gamedays
-~~~~~~~~~~~~~~~
-
-- Create a shared gameday from one division and add the other participating
-  divisions in the same form.
-- The workspace creates one slot-owning root gameday plus one linked gameday
-  per extra division.
-- The visual planner shows one combined slot grid and can schedule matches from
-  all participating divisions in the same day.
-- Validation and publication always resolve through the slot-owning root
-  gameday so host and guest divisions see the same empty-slot, warning, and
-  blocking results before a manager publishes the day.
-- Match cards show their division label and the planner filters can narrow the
-  unscheduled list back down to one division when needed.
-- The planner selection toolbar can bulk-assign the current filtered
-  unscheduled set into the next open slots or bulk-unassign selected scheduled
-  matches from the active shared day.
-- A guest-division match keeps its own division round even when it is assigned
-  into a shared physical slot grid.
-
-Roles and safeguards
-~~~~~~~~~~~~~~~~~~~~
-
-- `Competition Planner` can open the workspace, prepare divisions, generate
-  rounds and slots, and plan assignments.
-- Federation managers keep full access and are the only users allowed to
-  create competitions from the workspace menu, publish schedules, or force
-  warning-only assignments.
-- Blocking validations stop unscheduled reuse of an occupied slot and prevent
-  any move that would create a team overlap across simultaneous matches.
-- When both matches are already assigned on the same planner root, the planner
-  can perform a validated safe swap across occupied slots instead of forcing an
-  unassign-first workflow.
-- Short-rest situations are warnings, not blocking errors, and require a
-  manager to force the assignment when accepted operationally.
-- Consecutive short-rest streaks are also validated using the division policy.
-  The planner warns when a placement would exceed
-  `max_consecutive_matches_per_team`.
-- Forced warning-only assignments and republishing a live schedule require a
-  manager override reason that is stored on the planner operation or schedule
-  revision.
-- Officiating readiness checks are deferred until the gameday moves beyond
-  planning (`published` and later) so planners can complete slot allocation
-  before final referee staffing decisions.
-- Planner writes carry the current `planner_revision`; stale sessions must
-  reload before they can generate slots, assign matches, unassign matches, or
-  publish a gameday.
-- The planner records assignment, move, and unassignment actions, exposes the
-  recent action history in the UI, and supports quick undo and redo on the
-  active gameday. A new planner write clears the redo branch so history stays
-  linear and auditable.
-- Planner presence heartbeats surface who else is active in the same workspace
-  and warn when another operator is editing the same gameday.
-- Validation payloads now include grouped blocking and warning sections,
-  actionable hints, and focus metadata that the UI uses to highlight affected
-  slots or matches.
-- Validation issue dedupe now keys on code plus match, slot, and team context
-  so distinct slot-specific conflicts stay visible while exact duplicates are
-  collapsed.
-- Write-path planner validation merges now use the same context-aware issue
-  signature so forced or batched operations do not collapse distinct conflicts
-  that happen on different slots.
-- Extension-provided validation issues are now contract-normalized before they
-  enter planner validation: malformed issue payloads are ignored, identifier
-  fields are coerced, and `team_ids` are normalized to integer lists.
-- Extension payload enrichments are now contract-normalized: non-dict payload
-  updates are ignored so malformed extensions cannot break workspace payload
-  assembly.
-- Extension slot-score components are now contract-normalized: components must
-  be dicts with a key, score values are coerced and clamped, and malformed
-  component shapes are skipped.
-- Extension hook execution is now fault-isolated: exceptions inside a single
-  extension hook are caught, logged, and ignored so other hooks can continue.
-  Validation hook failures emit a structured `extension_hook_failed` warning
-  payload with hook and extension model metadata.
-- Extension outputs now support schema-versioned contracts (`schema_version: 1` and
-  `schema_version: 2`)
-  for payload enrichments (`payload`), validation issues (`issues`), and slot
-  score components (`components`) while keeping legacy shapes backward
-  compatible. Contract v2 uses `data` as the envelope key for all hook types.
-  Migration policy: legacy and v1 outputs remain supported in the current
-  release train; new extension modules should emit v2 payloads.
-- Planner write endpoints now accept optional idempotency keys on assignment and
-  unassignment paths. Replayed keys return a deterministic success payload with
-  `replayed=true` and do not create duplicate planner operation rows.
-- Planner write endpoints now return a standardized conflict envelope for stale
-  or invalid revision tokens, including `code`, `operation`,
-  `expected_planner_revision`, and `current_planner_revision` metadata.
-- Validation issue severity now follows a centralized policy (`blocking`,
-  `warning`, alias support like `error`/`info`) so core and extension issues
-  are grouped consistently.
-- Planner read-model consistency payloads now expose source metadata
-  (`source_planner_root_id`, `source_planner_root_revision`) and
-  `normalization_warnings` when filter or expected-revision inputs are malformed.
-- Workspace ACL regressions now include a compact matrix covering planner,
-  manager, and regular-user behavior across read, assign, and publish
-  entrypoints.
-- Concurrency regressions now include deterministic interleaving checks for
-  stale revision handling on bulk-unassign and undo planner operations.
-- Planner stale/invalid revision conflicts and extension hook failures now emit
-  correlation IDs for faster support triage and log cross-referencing.
-- Destructive planner and publication actions now use an in-workspace
-  confirmation dialog instead of browser-native confirms, keeping operator
-  context and keyboard focus inside the client action.
-- Dedicated contract tags now exist for competition workspace reliability slices:
-  `sf_ws_read_model_contract`, `sf_ws_write_guard_contract`,
-  `sf_ws_extension_contract`, `sf_ws_concurrency_contract`, and
-  `sf_ws_acl_contract` (runnable via `ci/run_tests.sh --contract-suite ...`).
-- Frontend helper regressions for planner busy-state and keyboard-clear behavior
-  are now covered by `static/tests/competition_workspace_ui_tests.js` and
-  loaded through `web.qunit_suite_tests`.
-- The backend test asset includes a route-scoped `StorageManager` compatibility
-  shim so Odoo's RPC cache can initialize when `/web/tests` is served over plain
-  HTTP from a LAN IP. Production pages should use HTTPS for persistent browser
-  storage features.
-- Planner unscheduled match lists are now sliced by the active gameday sequence
-  (per linked division round), instead of showing every unscheduled match in the
-  stage.
-- Gameday creation now supports explicit round targeting via `round_number`.
-  Shared gamedays can also provide `shared_round_numbers` to map each shared
-  division to its own round number while still sharing one planner root grid.
-  Shared gamedays can additionally provide `shared_stage_ids` so each shared
-  division targets its own stage on that same planner root.
-  In the Competition Workspace UI, this is selected through the existing
-  Round options (not a separate round model).
-- Planner unscheduled slices now stay strict to each linked gameday round number
-  (no stage-wide fallback when a selected round has no unscheduled matches).
-- Auto-scheduling is available through `auto_schedule_gameday` with a full
-  fairness-driven rollout:
-  - deterministic base fill from the active gameday unscheduled slice;
-  - weighted global fairness objective (rest variance, home/away imbalance,
-    and timeslot variance);
-  - warning-aware ranking that prefers warning-free placements while still
-    allowing warning-only placements;
-  - configurable solver modes (`heuristic`, `hybrid`, `advanced`) and repair
-    controls (`enable_repair`, `repair_step_limit`, and fairness `weights`);
-  - bounded augmentation search (`enable_augmentation`,
-    `augmentation_step_limit`) that can re-route already scheduled matches into
-    open slots to unlock otherwise stuck unscheduled matches before giving up;
-  - bounded post-fill repair pass (swap in `hybrid`; swap + move in `advanced`)
-    to improve global fairness without breaking hard constraints;
-  - expanded diagnostics: per-assignment objective penalties/components,
-    `fairness_before`, `fairness_after`, `fairness_delta`, `augmentation`, `repair`, and
-    `auto_schedule_config` payloads, plus `skipped_reason_summary`.
-- Planner read-model inputs now tolerate malformed numeric filters
-  (`division_id`, `round_number`, `team_id`) and malformed `gameday_id`
-  selectors by ignoring invalid values instead of raising server errors.
-- Planner payloads now expose a `consistency` object with
-  `current_planner_revision`, optional `expected_planner_revision`, and
-  `is_stale` / `invalid_expected_planner_revision` flags so clients can detect
-  stale read-model snapshots before issuing write operations.
-- Write operations now normalize expected planner revision tokens consistently:
-  blank tokens are treated as missing, numeric tokens are coerced, and invalid
-  tokens are rejected with a clear validation error.
-- Any change that touches a validated or published day reopens the linked
-  gameday back to `planned` and the affected divisions back to `planning`
-  before another publication pass.
-- Published gamedays lock routine schedule edits for planners.
-
-Supported workspace generation modes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- `single_round_robin` generates one full cycle of unscheduled pairings.
-- `double_round_robin` generates home-and-away pairings while keeping later
-  gameday assignment separate.
-- `knockout` generates a seeded single-elimination bracket with linked future
-  rounds and byes when needed.
-- `manual` leaves match creation outside the guided generator.
-- `pool_then_bracket` generates balanced pool rounds first, then wires a staged
-  knockout bracket for the configured qualifiers from each pool.
-
-Wizards
--------
-
-Round-robin wizard
-~~~~~~~~~~~~~~~~~~
-
-Generates a full round-robin schedule where every participant plays every other
-participant once, or twice in a double round-robin.
-
-Main fields:
-
-- `tournament_id`
-- `stage_id`
-- `group_id`
-- `participant_ids`
-- `use_all_participants`
-- `round_type`
-- `start_datetime`
-- `interval_hours`
-- `venue`
-- `overwrite`
-- computed `summary` preview
-
-Algorithm details: the wizard uses the circle method with deterministic
-ordering, ensures no team plays itself, schedules each pairing once or twice,
-and inserts bye rounds automatically when participant counts are odd.
-
-Knockout wizard
-~~~~~~~~~~~~~~~
-
-Generates a single-elimination bracket.
-
-Main fields:
-
-- `tournament_id`
-- `stage_id`
-- `participant_source`
-- `participant_ids`
-- `source_stage_id`
-- `seeding`
-- `bracket_size`
-- `start_datetime`
-- `interval_hours`
-- `venue`
-- `overwrite`
-- computed `summary` preview
-
-Algorithm details: the wizard builds seeded single-elimination brackets,
-inserts byes when the participant count is not a power of two, and keeps top
-seeds separated when power-of-two placement is selected.
-
-Key Behaviours
---------------
-
-- Overwrite protection keeps existing matches unless overwrite is explicitly
-  checked.
-- Tournament state checks require the tournament to be open or in_progress
-  before either wizard generates fixtures.
-- Rule-set requirements force an effective rule set on the tournament or linked
-  competition before matches are created.
-- Preview-first UI shows a computed summary before confirmation, and the
-  knockout overwrite warning uses an explicit alert role so Odoo 19 view
-  validation stays clean.
-- At least 2 teams are required before schedule generation can proceed.
-- Tournament templates let `federation.tournament.template.action_apply()`
-  scaffold stages, groups, and progression rules with regression coverage.
-- Stage progression clears any stale source-group assignment when advancing an
-  existing participant into a target stage that has no explicit target group.
-- Wizard launch buttons are added to the tournament form view.
-
-Validation and safeguards
--------------------------
-
-- Round-robin generation rejects stages or groups that do not belong to the
-  selected tournament.
-- Knockout generation validates source-stage ownership before it seeds a
-  bracket from prior standings.
-- Both wizards require an effective rule set from the tournament or linked
-  competition before persisting matches.
-- Preview summaries are intended to be reviewed before confirmation, and
-  overwrite mode warns that existing matches in the selected scope will be
-  replaced.
-- Workspace publication requires all blocking validation issues to be cleared
-  and restricts warning-only overrides to federation managers.
-- Slot generation enforces one match per slot and one slot start time per
-  playing area and gameday.
-
-Guided workspace navigation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The Competition Workspace now presents setup as one dependency-aware journey:
-set up the competition, add teams, build the schedule, create gamedays, plan
-matches, and validate/publish. Completed steps stay available, blocked steps
-explain their dependency, and previous/next controls preserve a predictable
-flow on desktop and mobile.
-
-====================================================================================================
 FILE: sports_federation_competition_engine/__init__.py
 ====================================================================================================
 
@@ -1412,7 +831,7 @@ FILE: sports_federation_competition_engine/__manifest__.py
 
 {
     "name": "Sports Federation Competition Engine",
-    "version": "19.0.1.8.0",
+    "version": "19.0.2.0.0",
     "category": "Sports",
     "summary": "Competition engine with round-robin and knockout generation wizards",
     "description": "Competition generation services and wizards for round-robin and knockout tournaments.",
@@ -2638,6 +2057,48 @@ class CompetitionWorkspaceService(
         "timeslot_fairness": 0.5,
         "warning_penalty": 25.0,
     }
+    _workflow_templates = {
+        "league": {
+            "planning_format": "single_round_robin",
+            "tournament_type": "multi_day",
+            "minimum_rest_minutes": 30,
+            "max_consecutive_matches_per_team": 1,
+        },
+        "tournament_day": {
+            "planning_format": "pool_then_bracket",
+            "tournament_type": "single_day",
+            "minimum_rest_minutes": 30,
+            "max_consecutive_matches_per_team": 1,
+            "pool_count": 2,
+            "pool_qualifier_count": 2,
+        },
+        "cup": {
+            "planning_format": "knockout",
+            "tournament_type": "single_day",
+            "minimum_rest_minutes": 30,
+            "max_consecutive_matches_per_team": 1,
+        },
+    }
+
+    def _visible_division_state(self, division):
+        """Return the four-state product language shown to normal operators."""
+        if division.workspace_state in ("completed", "archived"):
+            return "finished", _("Finished")
+        if division.workspace_state == "in_progress":
+            return "live", _("Live")
+        if division.workspace_state == "published":
+            return "ready", _("Ready")
+        return "draft", _("Draft")
+
+    def _visible_gameday_state(self, gameday):
+        root = self._get_planner_root_gameday(gameday)
+        if root.planner_state == "completed":
+            return "finished", _("Finished")
+        if root.planner_state == "in_progress":
+            return "live", _("Live")
+        if root.planner_state in ("validated", "published", "locked"):
+            return "ready", _("Ready")
+        return "draft", _("Draft")
 
     def _copy_validation_result(self, validation):
         return {
@@ -4035,6 +3496,8 @@ class CompetitionWorkspaceService(
             "planner_state_label": self._get_state_label(
                 planner_root, "planner_state", planner_root.planner_state
             ),
+            "visible_state": self._visible_gameday_state(planner_root)[0],
+            "visible_state_label": self._visible_gameday_state(planner_root)[1],
             "planner_revision": planner_root.planner_revision,
             "venue_id": (
                 planner_root.venue_id.id
@@ -4083,6 +3546,8 @@ class CompetitionWorkspaceService(
             "workspace_state_label": self._get_state_label(
                 division, "workspace_state", division.workspace_state
             ),
+            "visible_state": self._visible_division_state(division)[0],
+            "visible_state_label": self._visible_division_state(division)[1],
             "planning_format": division.planning_format,
             "planning_format_label": self._get_state_label(
                 division, "planning_format", division.planning_format
@@ -4330,6 +3795,14 @@ class CompetitionWorkspaceService(
     def create_division(self, competition_id, vals):
         self._check_access()
         competition = self._resolve_competition(competition_id)
+        vals = dict(vals or {})
+        workflow_template = vals.pop("workflow_template", False) or "league"
+        template_defaults = self._workflow_templates.get(workflow_template)
+        if not template_defaults:
+            raise ValidationError(_("Select a supported competition type."))
+        # Explicit values remain available to expert mode; the template supplies
+        # safe defaults for the normal three-choice setup flow.
+        vals = {**template_defaults, **vals}
         division = self.env["federation.tournament"].create(
             {
                 "name": vals["name"],
@@ -4899,6 +4372,33 @@ class CompetitionWorkspaceService(
         division._competition_workspace_transition_state("schedule_generated")
         return {
             "match_count": len(created_matches),
+            "payload": self.get_competition_workspace_data(
+                division.edition_id.id if division.edition_id else False,
+                division.id,
+            ),
+        }
+
+    @api.model
+    def prepare_division_schedule(self, division_id):
+        """Lock confirmed entries and generate the standard match structure.
+
+        This is the normal-mode command. It deliberately stops before dates,
+        venues and slots because those inputs require an operator decision.
+        """
+        self._check_access()
+        division = self._resolve_division(division_id)
+        confirmed = self._get_generation_participants(division)
+        if len(confirmed) < 2:
+            raise ValidationError(
+                _("Add at least two confirmed teams before preparing the schedule.")
+            )
+        if not division.entries_locked:
+            division.action_lock_team_entries()
+        if not division.match_ids:
+            return self.generate_schedule_structure(division.id)
+        return {
+            "match_count": len(division.match_ids),
+            "already_prepared": True,
             "payload": self.get_competition_workspace_data(
                 division.edition_id.id if division.edition_id else False,
                 division.id,
@@ -8719,12 +8219,12 @@ const UI_STATE_STORAGE_KEY = "sports_federation_competition_engine.competition_w
 
 // Keep top-level workspace navigation and form options in one place.
 const WORKSPACE_SECTIONS = Object.freeze([
-    { key: "overview", label: "Overview" },
+    { key: "overview", label: "Setup" },
     { key: "teams", label: "Teams" },
-    { key: "rounds", label: "Rounds" },
-    { key: "gamedays", label: "Gamedays" },
-    { key: "planner", label: "Gameday Planner" },
-    { key: "publish", label: "Publish" },
+    { key: "rounds", label: "Format" },
+    { key: "gamedays", label: "Match days" },
+    { key: "planner", label: "Schedule" },
+    { key: "publish", label: "Go live" },
 ]);
 
 const DIVISION_PLANNING_FORMAT_OPTIONS = Object.freeze([
@@ -9258,7 +8758,9 @@ export class CompetitionWorkspaceAction extends Component {
                 season_id: "",
             },
             teamSearchLoading: false,
+            advancedMode: false,
             divisionForm: {
+                workflow_template: "league",
                 category: "",
                 date_end: "",
                 date_start: "",
@@ -11038,7 +10540,7 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                     <div>
-                        <h3 class="h6 mb-1">Publish and maintain schedule</h3>
+                        <h3 class="h6 mb-1">Make schedule available</h3>
                         <p class="text-muted small mb-0">Validate first, then publish a gameday or the full competition schedule.</p>
                         <div class="small text-muted mt-2">
                             <strong>Next action:</strong>
@@ -11047,8 +10549,8 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
                     </div>
                     <div class="d-flex gap-2 flex-wrap">
                         <button type="button" class="btn btn-outline-secondary" t-on-click="props.onValidate">Validate schedule</button>
-                        <button type="button" class="btn btn-outline-primary" t-att-disabled="props.publishing" t-on-click="props.onPublishGameday">Publish gameday</button>
-                        <button type="button" class="btn btn-primary" t-att-disabled="props.publishing" t-on-click="props.onPublishCompetition">Publish competition</button>
+                        <button type="button" class="btn btn-outline-primary" t-att-disabled="props.publishing" t-on-click="props.onPublishGameday">Make match day live</button>
+                        <button type="button" class="btn btn-primary" t-att-disabled="props.publishing" t-on-click="props.onPublishCompetition">Make schedule live</button>
                     </div>
                 </div>
                 <div class="text-muted small mb-3" aria-live="polite" t-if="props.publishing">Publishing in progress...</div>
@@ -11083,7 +10585,7 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
                         </div>
                     </t>
                 </div>
-                <ValidationPanel t-props="{ title: 'Publication summary', validation: props.validation }"/>
+                <ValidationPanel t-props="{ title: 'Readiness check', validation: props.validation }"/>
             </div>
         </section>
     </t>
@@ -11091,11 +10593,15 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
     <t t-name="sports_federation_competition_engine.CompetitionWorkspaceSectionNav">
         <div class="o_fed_cw_context_bar mb-4" t-if="payload.competition.id and this.activeWorkspaceSection">
             <div>
-                <div class="small text-uppercase text-muted">Current step</div>
+                <div class="small text-uppercase text-muted">Current task</div>
                 <div class="fw-semibold"><t t-esc="this.activeWorkspaceSection.label"/></div>
                 <div class="small text-muted"><t t-esc="this.activeWorkspaceSection.description"/></div>
             </div>
-            <div class="o_fed_cw_nav" role="tablist" aria-label="Competition workspace sections">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="button" class="btn btn-sm btn-link text-muted" t-on-click="toggleAdvancedMode">
+                    <i class="fa fa-sliders me-1" aria-hidden="true"/><t t-esc="state.advancedMode ? 'Hide advanced tools' : 'Advanced tools'"/>
+                </button>
+                <div class="o_fed_cw_nav" role="tablist" aria-label="Competition workspace sections">
                 <t t-foreach="this.workspaceSections" t-as="section" t-key="section.key">
                     <button type="button"
                             class="btn btn-sm btn-outline-secondary"
@@ -11109,6 +10615,7 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
                         <t t-esc="section.shortLabel"/>
                     </button>
                 </t>
+                </div>
             </div>
         </div>
     </t>
@@ -11130,7 +10637,7 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                                             <div class="fw-semibold"><t t-esc="division.name"/></div>
-                                            <StatusBadge t-props="{ label: division.workspace_state_label, state: division.workspace_state }"/>
+                                            <StatusBadge t-props="{ label: division.visible_state_label, state: division.visible_state }"/>
                                         </div>
                                         <div class="small text-muted"><t t-esc="division.confirmed_participant_count"/> teams · <t t-esc="division.match_count"/> matches · <t t-esc="division.gameday_count"/> gamedays</div>
                                         <div class="small mt-2"><t t-esc="division.next_action"/></div>
@@ -11146,19 +10653,27 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
                 <section class="card shadow-sm h-100">
                     <div class="card-body">
                         <h2 class="h5 mb-1">Create division</h2>
-                        <p class="text-muted small mb-3">This creates the working tournament record used for team entries, rounds, gamedays, and matches.</p>
+                        <p class="text-muted small mb-3">Choose a competition type. The app creates the technical structure for you.</p>
                         <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Competition type</label>
+                                <div class="o_fed_cw_template_picker" role="radiogroup" aria-label="Competition type">
+                                    <label class="card p-3 mb-2"><input class="form-check-input me-2" type="radio" name="workflow_template" value="league" t-att-checked="state.divisionForm.workflow_template === 'league'" t-on-change="updateDivisionField"/><strong>League</strong><span class="small text-muted d-block ms-4">Round robin across several match days.</span></label>
+                                    <label class="card p-3 mb-2"><input class="form-check-input me-2" type="radio" name="workflow_template" value="tournament_day" t-att-checked="state.divisionForm.workflow_template === 'tournament_day'" t-on-change="updateDivisionField"/><strong>Tournament day</strong><span class="small text-muted d-block ms-4">Pools followed by play-offs on one event day.</span></label>
+                                    <label class="card p-3 mb-2"><input class="form-check-input me-2" type="radio" name="workflow_template" value="cup" t-att-checked="state.divisionForm.workflow_template === 'cup'" t-on-change="updateDivisionField"/><strong>Cup</strong><span class="small text-muted d-block ms-4">Seeded knockout bracket.</span></label>
+                                </div>
+                            </div>
                             <div class="col-12"><label class="form-label fw-semibold">Division name</label><input type="text" class="form-control" name="name" t-att-value="state.divisionForm.name" t-on-input="updateDivisionField"/></div>
-                            <div class="col-12 col-md-6">
-                                <label class="form-label fw-semibold">Format</label>
+                            <div class="col-12 col-md-6" t-if="state.advancedMode">
+                                <label class="form-label fw-semibold">Technical format</label>
                                 <select class="form-select" name="planning_format" t-att-value="state.divisionForm.planning_format" t-on-change="updateDivisionField">
                                     <t t-foreach="this.divisionPlanningFormatOptions" t-as="option" t-key="option.value">
                                         <option t-att-value="option.value"><t t-esc="option.label"/></option>
                                     </t>
                                 </select>
                             </div>
-                            <div class="col-12 col-md-6"><label class="form-label fw-semibold">Minimum rest (minutes)</label><input type="number" min="0" class="form-control" name="minimum_rest_minutes" t-att-value="state.divisionForm.minimum_rest_minutes" t-on-input="updateDivisionField"/></div>
-                            <div class="col-12 col-md-6"><label class="form-label fw-semibold">Max consecutive matches per team</label><input type="number" min="1" class="form-control" name="max_consecutive_matches_per_team" t-att-value="state.divisionForm.max_consecutive_matches_per_team" t-on-input="updateDivisionField"/></div>
+                            <div class="col-12 col-md-6" t-if="state.advancedMode"><label class="form-label fw-semibold">Minimum rest (minutes)</label><input type="number" min="0" class="form-control" name="minimum_rest_minutes" t-att-value="state.divisionForm.minimum_rest_minutes" t-on-input="updateDivisionField"/></div>
+                            <div class="col-12 col-md-6" t-if="state.advancedMode"><label class="form-label fw-semibold">Max consecutive matches per team</label><input type="number" min="1" class="form-control" name="max_consecutive_matches_per_team" t-att-value="state.divisionForm.max_consecutive_matches_per_team" t-on-input="updateDivisionField"/></div>
                             <div class="col-12 col-md-6" t-if="state.divisionForm.planning_format === 'pool_then_bracket'"><label class="form-label fw-semibold">Pool count</label><input type="number" min="2" class="form-control" name="pool_count" t-att-value="state.divisionForm.pool_count" t-on-input="updateDivisionField"/></div>
                             <div class="col-12 col-md-6" t-if="state.divisionForm.planning_format === 'pool_then_bracket'"><label class="form-label fw-semibold">Qualifiers per pool</label><input type="number" min="1" class="form-control" name="pool_qualifier_count" t-att-value="state.divisionForm.pool_qualifier_count" t-on-input="updateDivisionField"/></div>
                             <div class="col-12 col-md-6">
@@ -11195,9 +10710,9 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
                         <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                             <div>
                                 <h2 class="h5 mb-1">Add team entry</h2>
-                                <p class="text-muted small mb-0">Reuses existing tournament participant records rather than a duplicate team-entry model.</p>
+                                <p class="text-muted small mb-0">Add participating teams. New entries are confirmed automatically.</p>
                             </div>
-                            <StatusBadge t-props="{ label: selectedDivision.workspace_state_label, state: selectedDivision.workspace_state }"/>
+                            <StatusBadge t-props="{ label: selectedDivision.visible_state_label, state: selectedDivision.visible_state }"/>
                         </div>
                         <div class="mb-3"><label class="form-label fw-semibold">Search teams</label><input type="search" class="form-control" name="search" placeholder="Type team name" t-att-value="state.teamEntryForm.search" t-on-input="updateTeamEntryField"/><div class="form-text">Search runs server-side and excludes teams already entered in this division.</div></div>
                         <div class="mb-3"><label class="form-label fw-semibold">Club filter</label><select class="form-select" name="club_id" t-att-value="state.teamEntryForm.club_id" t-on-change="updateTeamEntryField"><option value="">All clubs</option><t t-foreach="state.availableClubs" t-as="club" t-key="club.id"><option t-att-value="club.id"><t t-esc="club.display_name"/></option></t></select></div>
@@ -11205,16 +10720,16 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
                         <div class="mb-3"><label class="form-label fw-semibold">Seed</label><input type="number" min="1" class="form-control" name="seed" t-att-value="state.teamEntryForm.seed" t-on-input="updateTeamEntryField"/></div>
                         <div class="o_fed_cw_section_actions" t-att-aria-busy="state.saving ? 'true' : 'false'">
                             <div class="d-flex gap-2 flex-wrap justify-content-end o_fed_cw_toolbar_group">
-                                <button type="button" class="btn btn-outline-secondary" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="lockEntries">Lock participant list</button>
-                                <button type="button" class="btn btn-primary" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="createTeamEntry">Add team</button>
+                                <button type="button" class="btn btn-outline-secondary" t-if="state.advancedMode" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="lockEntries">Lock teams</button>
+                                <button type="button" class="btn btn-primary" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="createTeamEntry">Add and confirm team</button>
                             </div>
                             <div class="small text-muted" aria-live="polite" t-if="state.saving">Saving team updates...</div>
                         </div>
                     </div>
                 </section>
-                <section class="card shadow-sm mt-3">
+                <section class="card shadow-sm mt-3" t-if="state.advancedMode">
                     <div class="card-body">
-                        <h3 class="h6 mb-3">Planning fairness rules</h3>
+                        <h3 class="h6 mb-3">Advanced scheduling rules</h3>
                         <div class="row g-3">
                             <div class="col-12">
                                 <label class="form-label fw-semibold">Minimum rest (minutes)</label>
@@ -11257,7 +10772,16 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
     </t>
 
     <t t-name="sports_federation_competition_engine.CompetitionWorkspaceSectionRounds">
-        <section class="card shadow-sm mb-4">
+        <section class="card shadow-sm mb-4" t-if="!state.advancedMode">
+            <div class="card-body text-center py-5">
+                <div class="o_fed_cw_eyebrow">Recommended</div>
+                <h2 class="h4 mt-2">Prepare the match schedule</h2>
+                <p class="text-muted mx-auto" style="max-width: 42rem">The app will lock the confirmed teams and create the rounds, pools or bracket for the chosen competition type. Dates and courts are selected in the next task.</p>
+                <button type="button" class="btn btn-primary btn-lg" t-att-disabled="state.saving or selectedDivision.confirmed_participant_count &lt; 2" t-on-click="prepareDivisionSchedule">Prepare schedule</button>
+                <div class="form-text mt-2" t-if="selectedDivision.confirmed_participant_count &lt; 2">Add at least two teams first.</div>
+            </div>
+        </section>
+        <section class="card shadow-sm mb-4" t-if="state.advancedMode">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3"><div><h2 class="h5 mb-1">Tournament flow builder</h2><p class="text-muted small mb-0">Create stages, rounds and ranking-based branches without leaving Schedule Planning.</p></div><StatusBadge t-props="{ label: (selectedDivision.stage_options || []).length + ' stages', tone: 'info' }"/></div>
                 <div t-if="!(selectedDivision.stage_options || []).length" class="border rounded p-3 mb-4 bg-light">
@@ -11270,6 +10794,7 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
                 <div class="row g-2 align-items-end"><div class="col-6 col-lg-2"><label class="form-label">Rounds to ensure</label><input type="number" min="1" max="64" class="form-control" name="round_count" t-att-value="state.stageForm.round_count" t-on-input="updateStageField"/></div><div class="col-12 col-lg-4"><label class="form-check"><input class="form-check-input" type="checkbox" name="cascade_delete" t-att-checked="state.stageForm.cascade_delete" t-on-change="updateStageField"/><span class="form-check-label">Allow deletion of draft dependencies</span></label></div><div class="col-12 col-lg-6"><label class="form-label">Deletion reason</label><input type="text" class="form-control" name="delete_reason" placeholder="Required for dependency cascade" t-att-value="state.stageForm.delete_reason" t-on-input="updateStageField"/></div></div>
             </div>
         </section>
+        <div t-if="state.advancedMode">
         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
             <div>
                 <h2 class="h5 mb-1"><t t-esc="this.generationSectionTitle"/></h2>
@@ -11281,6 +10806,7 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
             <t t-esc="this.generationPreview.empty_message"/>
         </div>
         <GenerationPreview t-props="{ preview: this.generationPreview }"/>
+        </div>
     </t>
 
     <t t-name="sports_federation_competition_engine.CompetitionWorkspaceSectionGamedays">
@@ -11294,7 +10820,7 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
                         <div class="mb-3"><label class="form-label fw-semibold">Round</label><select class="form-select" name="round_number" t-att-value="state.gamedayForm.round_number" t-on-change="updateGamedayField"><option value="">Auto (next available)</option><t t-foreach="this.roundOptions || []" t-as="roundItem" t-key="'create-round-' + roundItem.stage_id + '-' + roundItem.round_number"><option t-att-value="roundItem.round_number"><t t-esc="roundItem.name"/> · #<t t-esc="roundItem.round_number"/></option></t></select></div>
                         <div class="mb-3"><label class="form-label fw-semibold">Date</label><input type="date" class="form-control" name="round_date" t-att-value="state.gamedayForm.round_date" t-on-input="updateGamedayField"/></div>
                         <div class="mb-3"><label class="form-label fw-semibold">Venue</label><select class="form-select" name="venue_id" t-att-value="state.gamedayForm.venue_id" t-on-change="updateGamedayField"><option value="">Select a venue</option><t t-foreach="payload.options.venues || []" t-as="venue" t-key="venue.id"><option t-att-value="venue.id"><t t-esc="venue.name"/></option></t></select></div>
-                        <div class="mb-3" t-if="this.sharedDivisionOptions.length">
+                        <div class="mb-3" t-if="state.advancedMode and this.sharedDivisionOptions.length">
                             <label class="form-label fw-semibold">Also include divisions</label>
                             <div class="o_fed_cw_court_picker">
                                 <t t-foreach="this.sharedDivisionOptions" t-as="divisionOption" t-key="divisionOption.id">
@@ -11306,7 +10832,7 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
                             </div>
                             <div class="form-text">Selected divisions share one physical planner grid for this gameday.</div>
                         </div>
-                        <div class="mb-3" t-if="this.selectedSharedDivisionOptions.length">
+                        <div class="mb-3" t-if="state.advancedMode and this.selectedSharedDivisionOptions.length">
                             <label class="form-label fw-semibold">Shared division match scope</label>
                             <div class="d-flex flex-column gap-2">
                                 <t t-foreach="this.selectedSharedDivisionOptions" t-as="divisionOption" t-key="'shared-config-' + divisionOption.id">
@@ -11411,7 +10937,7 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
         <details class="o_fed_cw_secondary_drawer mb-3">
             <summary><i class="fa fa-sliders me-2" aria-hidden="true"/>Insights and collaboration <span class="badge text-bg-light ms-2"><t t-esc="this.plannerCollaboration.active_count || 0"/> active</span></summary>
             <div class="row g-3 p-3">
-                <div class="col-12 col-xl-6"><CollaborationPanel t-props="{ collaboration: this.plannerCollaboration, title: 'Planner presence', emptyMessage: 'No other planners are active here.' }"/></div>
+                <div class="col-12 col-xl-6" t-if="state.advancedMode"><CollaborationPanel t-props="{ collaboration: this.plannerCollaboration, title: 'Planner presence', emptyMessage: 'No other planners are active here.' }"/></div>
                 <div class="col-12 col-xl-6"><RevisionSummaryPanel t-props="{ revisions: this.plannerScheduleRevisions, title: 'Schedule revisions' }"/></div>
             </div>
         </details>
@@ -11470,7 +10996,7 @@ FILE: sports_federation_competition_engine/static/src/client_actions/competition
                 <div class="o_fed_cw_inspector_body">
                     <div class="o_fed_cw_inspector_metrics"><div><strong><t t-esc="this.filteredUnscheduledMatches.length"/></strong><span>Unscheduled</span></div><div><strong><t t-esc="this.plannerOpenSlotCount"/></strong><span>Open slots</span></div></div>
                     <SlotSuggestionPanel t-if="this.shouldShowSlotSuggestions" t-props="{ loading: state.slotSuggestions.loading, suggestions: this.slotSuggestions }"/>
-                    <FairnessSummaryPanel t-else="" t-props="{ summary: this.plannerFairnessSummary, title: 'Schedule balance' }"/>
+                    <FairnessSummaryPanel t-elif="state.advancedMode" t-props="{ summary: this.plannerFairnessSummary, title: 'Schedule balance' }"/>
                 </div>
             </aside>
         </div>
@@ -11938,6 +11464,7 @@ export class CompetitionWorkspaceFormMethods {
         this.state.saving = true;
         try {
             const vals = {
+                workflow_template: this.state.divisionForm.workflow_template || "league",
                 category: this.state.divisionForm.category || false,
                 date_end: this.state.divisionForm.date_end || false,
                 date_start: this.state.divisionForm.date_start || false,
@@ -11986,6 +11513,7 @@ export class CompetitionWorkspaceFormMethods {
                 "create_team_entry",
                 [this.state.currentDivisionId, {
                     seed: this.state.teamEntryForm.seed ? Number(this.state.teamEntryForm.seed) : false,
+                    state: "confirmed",
                     team_id: Number(this.state.teamEntryForm.team_id),
                 }]
             );
@@ -12625,6 +12153,34 @@ export class CompetitionWorkspacePlannerDataMethods {
 
     notify(message, type = "info") {
         this.notification.add(message, { type });
+    }
+
+    toggleAdvancedMode() {
+        this.state.advancedMode = !this.state.advancedMode;
+    }
+
+    async prepareDivisionSchedule() {
+        if (!this.state.currentDivisionId || this.state.saving) {
+            return;
+        }
+        this.state.saving = true;
+        try {
+            const result = await this.orm.call(
+                "federation.competition.workspace.service",
+                "prepare_division_schedule",
+                [this.state.currentDivisionId]
+            );
+            this.state.payload = result.payload;
+            this.notify(
+                result.already_prepared ? "Schedule structure is already ready." : "Teams locked and matches created.",
+                "success"
+            );
+            this.setSection("gamedays");
+        } catch (error) {
+            this.notify(error.message || "The schedule could not be prepared.", "danger");
+        } finally {
+            this.state.saving = false;
+        }
     }
 
     setSection(section) {
@@ -18138,99 +17694,36 @@ FILE: sports_federation_notifications/README.md
 
 # Sports Federation Notifications
 
-Centralised notification helpers, email templates, and scheduled reminders.
-Provides a reusable service layer for sending emails and creating activities,
-with a log of all notifications sent.
+Version: 19.0.1.3.0
+Owner: Federation Platform Team
+Last reviewed: 2026-08-20
+Review cadence: Every release
 
-## Purpose
+Central notification templates, dispatch helpers, delivery logs, and scheduled reminders for federation workflows.
 
-Gives other modules a **single entry point** for sending notifications. Instead
-of each module implementing its own mail logic, they call the notification
-service, which handles template rendering, activity creation, sending, and logging.
+## Responsibilities
 
-## Dependencies
+- email and activity dispatch through a shared service
+- notification templates and scheduled actions
+- non-blocking business-event notifications
+- delivery outcome, retry metadata, failure category, and correlation ID logging
+- season-registration and other module-triggered notification hooks
 
-| Module | Reason |
-|--------|--------|
-| `sports_federation_base` | Core entities, federation manager group resolution |
-| `sports_federation_people` | Player and referee contact resolution |
-| `sports_federation_tournament` | Tournament, participant, and match event sources |
-| `sports_federation_portal` | Season-registration confirmation and rejection hooks |
-| `sports_federation_public_site` | Tournament publication trigger |
-| `sports_federation_result_control` | Result submission, approval, and contest triggers |
-| `sports_federation_standings` | Standing freeze trigger |
-| `sports_federation_finance_bridge` | Finance confirmation trigger |
-| `sports_federation_officiating` | Referee assignment and staffing alert triggers |
-| `mail` | Email engine and mail.activity support |
+## Reliability contract
 
-## Models
+Notification delivery must not roll back the business transaction. Failures are sanitized, categorized, recorded, and made available for retry or operator investigation.
 
-### `federation.notification.log`
+## Retention
 
-Audit record of every notification sent through the federation.
+Notification log cleanup follows `DATA_RETENTION_POLICY.md`. Changes to state-specific retention windows must update the policy, cleanup code, cron configuration, and tests together.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | Char | Notification title |
-| `target_model` / `target_res_id` | Char / Integer | What record triggered it |
-| `recipient_partner_id` | Many2one | Recipient partner |
-| `recipient_email` | Char | Recipient email address |
-| `notification_type` | Selection | email / activity / other |
-| `template_xmlid` | Char | Which template was used |
-| `correlation_id` | Char | End-to-end trace ID for support and incident debugging |
-| `sent_on` | Datetime | When sent |
-| `state` | Selection | pending / sent / failed |
-| `message` | Text | Content or error details |
+## Tests
 
-### `federation.notification.service` (AbstractModel)
+The test suite covers dispatch, triggers, templates, scheduled actions, failure handling, and post-install availability.
 
-Reusable service methods callable by any module.
+## Removed document
 
-| Method | Description |
-|--------|-------------|
-| `send_email_template(record, template_xmlid, ...)` | Send an email using a mail.template and log it |
-| `create_activity(record, activity_type_xmlid, ...)` | Create a mail.activity and log it |
-| `_cron_placeholder_notification_scan()` | Scheduled scan for overdue registrations and officiating gaps |
-
-## Data Files
-
-| File | Content |
-|------|---------|
-| `data/mail_templates.xml` | Generic contact, registration, publication, result, standings, finance, and referee assignment templates |
-| `data/ir_cron.xml` | Daily notification scan plus daily notification-log retention cleanup |
-
-## Key Behaviours
-
-1. **Service pattern** — AbstractModel with helper methods; no table, just logic.
-2. **Comprehensive logging** — Every send/activity creation produces a log entry.
-3. **Multi-recipient email delivery** — `send_email_template()` accepts a single email or a collection of emails and deduplicates them before sending.
-4. **QWeb templates** — Email templates use Odoo 19 QWeb syntax (`<t t-out=""/>`).
-5. **Live workflow coverage** — Season registration confirmation/rejection, tournament publication, participant confirmation, result approval/contest, standing freeze, finance confirmation, referee assignment, and suspension activation all dispatch concrete emails or direct mail deliveries.
-6. **Activity-based operational follow-up** — Result submission creates verifier activities, while overdue referee confirmations and officiating shortages create federation-manager activities.
-7. **Scheduled scan** — Cron logs stale draft registration reminders and triggers the officiating follow-up activities above.
-8. **Failure visibility without transaction rollback** — Missing recipients or template failures create `failed` notification logs instead of blocking the business workflow.
-9. **Suspension delivery fallback** — `send_suspension_issued()` now sends a direct email and logs the outcome even when no dedicated mail template exists yet.
-10. **Retention cleanup** — Notification logs are purged automatically after their state-specific retention windows in `DATA_RETENTION_POLICY.md` expire.
-11. **Correlation tracing** — Notification service actions and cron scans stamp each log with a correlation ID so failures can be traced across controllers, jobs, and service logs.
-
-## Integration configuration (env)
-
-The notification service and mail templates assume an external mail delivery configuration managed by the Odoo instance (SMTP or provider API). Do not hardcode credentials in code or data files. Recommended practice:
-
-- Store runtime credentials in environment variables and/or CI secret stores.
-- Use `ci/integrations.env.example` as a template for common variables (SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SENDGRID_API_KEY, etc.).
-- Keep real `.env` files out of source control (the repository `.gitignore` already excludes `.env` and `ci/.env`).
-
-To apply values to Odoo system parameters you can either configure them via the Odoo Settings UI or set `ir.config_parameter` entries using an Odoo shell script or the admin UI.
-
-
-====================================================================================================
-FILE: sports_federation_notifications/ROADMAP_RC.md
-====================================================================================================
-
-# Notifications RC roadmap
-
-- Failure acknowledgement metadata.
+`ROADMAP_RC.md` is deleted. Its remaining one-line item was not a durable roadmap and is now represented by the module's reliability contract and repository roadmap.
 
 ====================================================================================================
 FILE: sports_federation_notifications/__init__.py
@@ -20434,131 +19927,33 @@ FILE: sports_federation_officiating/README.md
 
 # Sports Federation Officiating
 
-Referee management and match assignment tracking. Maintains a registry of
-officials, their certifications, and automates the assignment workflow for matches.
+Version: 19.0.1.6.0
+Owner: Federation Platform Team
+Last reviewed: 2026-08-20
+Review cadence: Every release
 
-## Purpose
+Referee records, certifications, match assignments, club referee duties, reimbursement requests, and competition-workspace readiness checks.
 
-Manages the **referee lifecycle** separately from the club/team hierarchy. Referees
-operate across tournaments and are assigned to specific matches in defined roles
-(head referee, assistant, etc.).
+## Responsibilities
 
-## Competition Workspace integration
+- referee profiles and qualification data
+- match referee assignments and response lifecycle
+- club referee-duty nominations
+- officiating readiness validation
+- reimbursement request workflow
+- portal and backend actions through the portal addon integration
 
-The officiating extension contributes referee-duty visibility and conflict
-checks to the Competition Workspace without taking ownership of the core
-workspace model. The extension is safe to load when optional workspace fields
-are absent; upgrades should therefore validate both the officiating module and
-the workspace contract suites before release.
+## Competition integration
 
-## Dependencies
+The addon extends competition validation through the documented workspace extension contract. Officiating readiness should block or warn at the appropriate lifecycle stage without preventing early schedule construction.
 
-| Module | Reason |
-|--------|--------|
-| `sports_federation_base` | Core entities |
-| `sports_federation_tournament` | Matches |
-| `sports_federation_people` | Person concept reference |
+## Security
 
-## Models
+Officials may only access assignments linked to their portal identity. Club representatives may only manage duties inside their authorized club or team scope. Federation managers retain administrative control.
 
-### `federation.referee`
+## Tests
 
-Master record for each registered official.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | Char | Full name |
-| `user_id` | Many2one | Optional linked portal user for self-service assignment response |
-| `email` / `phone` / `mobile` | Char | Contact channels |
-| `certification_level` | Selection | national / regional / local / trainee |
-| `active` | Boolean | Active in the registry |
-| `certification_ids` | One2many | Certification history |
-| `match_assignment_ids` | One2many | Match assignments |
-| `certification_count` / `assignment_count` | Integer | Stat-button counters |
-| `notes` | Text | Free-form notes |
-
-### `federation.referee.certification`
-
-A specific certification held by a referee, with validity tracking.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | Char | Certificate title |
-| `referee_id` | Many2one | Referee |
-| `level` | Selection | national / regional / local / trainee |
-| `issue_date` / `expiry_date` | Date | Validity window |
-| `issuing_body` | Char | Certification authority |
-| `active` | Boolean | Currently valid |
-| `notes` | Text | Remarks |
-
-### `federation.match.referee`
-
-Links a referee to a match in a specific role.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `match_id` | Many2one | The match |
-| `referee_id` | Many2one | The official |
-| `tournament_id` | Many2one | Computed from match |
-| `role` | Selection | head / assistant_1 / assistant_2 / fourth / table |
-| `state` | Selection | assigned / confirmed / done / cancelled |
-| `assigned_on` / `confirmed_on` / `completed_on` / `cancelled_on` | Datetime | Lifecycle timestamps |
-| `confirmation_deadline` | Datetime | Match-based deadline, 48 hours before kick-off |
-| `is_confirmation_overdue` | Boolean | Draft assignments that missed the deadline |
-| `assignment_ready` | Boolean | Whether the assigned official can be confirmed |
-| `readiness_feedback` | Text | Operator-readable explanation for readiness gaps |
-| `response_note` | Text | Optional note supplied by the official when confirming or declining |
-| `notes` | Text | Assignment notes |
-
-- **SQL constraint**: unique (match_id, referee_id, role) — prevents duplicate
-  role assignments.
-
-### `federation.match` officiating extension
-
-Matches receive computed officiating-readiness fields so staff can spot issues
-before the match goes live.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `referee_assignment_count` | Integer | Number of linked officiating assignments |
-| `required_referee_count` | Integer | Expected official count from the tournament rule set |
-| `confirmed_referee_count` | Integer | Officials already confirmed |
-| `missing_referees_count` | Integer | Gap between required and confirmed assignments |
-| `overdue_referee_confirmation_count` | Integer | Draft assignments that missed the deadline |
-| `is_officially_ready` | Boolean | True when required roles are covered and no readiness issues remain |
-| `official_readiness_issues` | Text | Aggregated shortage / overdue / certification issues |
-
-## Key Behaviours
-
-1. **Certification tracking** — Expiry dates allow monitoring whether officials
-   meet current requirements.
-2. **Role-based assignment** — Each match can have multiple referees in distinct
-   roles.
-3. **Confirmation governance** — assignments expose a 48-hour confirmation deadline,
-   overdue status, and block confirmation when the referee is inactive, lacks a
-   valid certification window for the match, or is already double-booked in an
-   overlapping assignment window.
-4. **Match readiness visibility** — matches show confirmed counts, shortages, overdue
-   confirmations, and aggregated officiating issues in the form and list views.
-5. **Competition Workspace integration** — When
-   `sports_federation_competition_engine` is installed, officiating readiness
-   feeds planner validation and publish summaries. Double-booked referee
-   assignments block readiness, while uncovered availability remains visible as
-   a warning.
-6. **Assignment state machine** — assigned → confirmed → done / cancelled.
-7. **Tournament context** — Assignments carry a computed tournament reference for
-   filtering and reporting.
-8. **Odoo 19-safe view inheritance** — the match readiness stat button inherits the
-   base match form with `hasclass('oe_title')`, which avoids the platform warning
-   triggered by raw `@class` XPath selectors during module loading.
-9. **Finance bridge integration** — When `sports_federation_finance_bridge` is installed,
-   assignments that reach `done` automatically create reusable reimbursement events.
-10. **Portal self-service** — When `sports_federation_portal` is installed, linked officials can review, confirm, or decline their own draft assignments through the portal.
-
-11. **Club-duty planning constraint** — Open club referee duties are first-class
-    planner constraints. A club cannot play a match and supply an official for
-    another match in an overlapping timeslot. Match cards expose duty club, role,
-    and state directly in the Competition Workspace.
+Coverage includes assignment lifecycle, duties, reimbursements, portal access, match-day tours, and workspace integration.
 
 ====================================================================================================
 FILE: sports_federation_officiating/__init__.py
@@ -24314,508 +23709,68 @@ FILE: sports_federation_officiating/views/federation_reimbursement_request_views
 </odoo>
 
 ====================================================================================================
-FILE: sports_federation_portal/PORTAL_OWNERSHIP_COVERAGE.md
-====================================================================================================
-
-# Portal Ownership Coverage Dashboard
-
-Date: 2026-06-01
-Scope: Item 7 (Portal Ownership Boundary Hardening)
-
-## Coverage Summary
-
-| Category | Current status |
-|---|---|
-| Ownership guard unit tests | Covered |
-| Portal controller smoke routes | Covered |
-| Cross-club deny scenarios | Covered |
-| Out-of-scope operations-board actions | Covered |
-| Official-only assignment access | Covered |
-
-## Key Coverage Signals
-
-- Portal ownership guard tests verify ID-guess and missing-scope denial paths.
-- Tournament operations tests verify payload scoping and out-of-scope action denial.
-- Access-denied tests verify controller-level 403 handling while model-level access still fails closed.
-
-## Coverage Sources
-
-- `tests/test_portal_ownership_guard.py`
-- `tests/test_portal_access_denied.py`
-- `tests/test_tournament_operations.py`
-- `tests/test_roster_portal_access.py`
-- `tests/test_result_portal_access.py`
-- `tests/test_officiating_portal_access.py`
-
-## Ongoing Rule
-
-Any new ownership-sensitive portal route must include:
-
-1. A positive in-scope test.
-2. A negative out-of-scope test.
-3. A direct model/helper ownership assertion test if elevated calls are involved.
-
-====================================================================================================
-FILE: sports_federation_portal/PORTAL_OWNERSHIP_TEST_MATRIX.md
-====================================================================================================
-
-# Portal Ownership Test Matrix
-
-Date: 2026-06-01
-Scope: Item 7 (Portal Ownership Boundary Hardening)
-
-## Objective
-
-Ensure portal access remains deny-by-default across representative-, team-, and official-scoped flows, including direct ID-guess and elevated helper entrypoints.
-
-## Matrix
-
-| Surface | Positive scope test | Negative scope test | Source tests |
-|---|---|---|---|
-| Club representative ownership | own club/team records visible | cross-club records blocked | `tests/test_club_representative.py`, `tests/test_portal_ownership_guard.py` |
-| Team rosters | own roster + lines visible/editable | foreign roster/line blocked (403/model guard) | `tests/test_roster_portal_access.py`, `tests/test_portal_access_denied.py` |
-| Season registrations | own team registrations writable | foreign-club submission blocked | `tests/test_season_registration.py`, `tests/test_portal_ownership_guard.py` |
-| Tournament operations board | visible-tournament payload includes only scoped matches | out-of-scope tournament/match action blocked | `tests/test_tournament_operations.py` |
-| Match result portal pages | own-club result flow allowed | foreign match/result flow denied | `tests/test_result_portal_access.py` |
-| Officiating assignments | linked official can view/respond | unlinked user cannot access assignments | `tests/test_officiating_portal_access.py` |
-| Team-scoped representative filters | assigned team scope honored | same-club but unassigned team paths denied | `tests/test_team_portal_access.py` |
-| Player portal access | scoped players visible | hidden players blocked | `tests/test_player_portal_access.py` |
-
-## Deny-by-default Guards
-
-The following model/service-level guards are mandatory and regression-tested:
-
-- `federation.portal.privilege.portal_write(..., scope_domain=...)`
-- `federation.portal.privilege.portal_call(..., scope_domain=...)`
-- `federation.portal.privilege._assert_portal_owns(...)`
-- roster helper `_portal_assert_scope_access(...)`
-- roster helper `_portal_assert_registration_access(...)`
-
-Any new portal write route must prove ownership through one of these guards before elevated writes.
-
-====================================================================================================
 FILE: sports_federation_portal/README.md
 ====================================================================================================
 
-# Sports Federation Portal
+# Sports Federation Club Roles and Portal
 
-## Solution Design
+Version: 19.0.2.2.0
+Owner: Federation Platform Team
+Last reviewed: 2026-08-20
+Review cadence: Every release
 
-### Overview
-The `sports_federation_portal` module adds public website pages and portal flows for club representatives to register for tournaments and seasons, to work from a unified active-tournament workspace, to review operational rosters and match sheets with their audit history, and for linked match officials to respond to their own officiating assignments. It sits on top of `sports_federation_base`, `sports_federation_tournament`, `sports_federation_officiating`, `sports_federation_rosters`, and `sports_federation_result_control`, using `website` and `portal` from Odoo core.
+Role-oriented self-service portal for club representatives, officials, and tournament operators.
 
-The current portal navigation intentionally treats `Club Operations Workspace`
-as the primary first step for club representatives. Portal home, My Club, and
-the tournament workspace list page now steer users into that workspace first,
-while direct queues such as Preparation Queue, Result Follow-Up Queue, or
-registration lists remain available as secondary or advanced shortcuts.
-The current portal match-day language also distinguishes the operating phases:
-the workspace and preparation queue are for pre-kick-off work, the live
-operations board is for in-progress play, and the results queue is for
-post-match follow-up.
+## Primary user journeys
 
-### Operational Action Queue
+### Club representative
 
-The portal now provides a shared operational projection model,
-`federation.operation.task`, for the first daily-control-layer slice. Tasks
-are generated from authoritative registration, roster readiness, club referee
-duty, and result-control records; they do not replace those workflows.
+- manage club teams and players
+- submit season and tournament registrations
+- prepare and activate rosters
+- complete match sheets and readiness tasks
+- nominate officials
+- review result actions and deadlines
 
-- `source_key` makes synchronization idempotent and prevents duplicate tasks.
-- Source resolution marks a task done; if the source becomes actionable again,
-    synchronization reopens the task.
-- Blocking tasks must be resolved in their linked source record. Managers can
-    acknowledge non-blocking warnings or escalate a task, but cannot use task
-    state as a sporting override.
-- Club representatives see only tasks for their representative club scope at
-    `/my/action-items`.
-- Federation managers get the backend **Operational Action Queue**, with
-    filters for task type, club, tournament, state, priority, and blocking
-    status.
-
-The synchronization entrypoint is `federation.operation.task.sync_for_user()`.
-It is safe to call repeatedly and should remain the single projection refresh
-path for future scheduled jobs or notification triggers.
-
-### Key Design Decisions
-
-#### 1. Ownership Mapping Strategy
-
-**Club Representative Model (`federation.club.representative`)**
-
-A dedicated model links `res.users` to `federation.club` records. This is the single source of truth for "which portal user owns which club."
-
-- One user can represent multiple clubs (rare but supported).
-- One club can have multiple representatives (primary + secondary).
-- Controllers use `_get_clubs_for_user()` to resolve ownership before every operation.
-
-**Why a dedicated model instead of a Many2many on `res.users`?**
-- Keeps the portal layer cleanly separated from the base module.
-- Allows adding role, active flag, and audit fields without touching `federation.club`.
-- Record rules can reference `user.representative_ids.mapped('club_id')` directly.
-
-#### 2. Tournament Registration Model (`federation.tournament.registration`)
-
-A new intermediate model captures portal-side registration requests with a full workflow:
-
-```
-draft -> submitted -> confirmed / rejected / cancelled
-```
-
-**Why not reuse `federation.tournament.participant` directly?**
-- `federation.tournament.participant` is a backend-managed record. It should only be created after federation staff reviews the request.
-- The registration model adds a review step, rejection reason, and links back to the submitting user.
-- On confirmation, the system auto-creates a `federation.tournament.participant` record.
-
-#### 3. Season Registration Extension
-
-The existing `federation.season.registration` model is extended with a `submitted` state and portal fields (`user_id`, `partner_id`, `rejection_reason`). This avoids creating a duplicate model while adding the portal workflow.
-The same model now also enforces club ownership at ORM level so portal-created season registrations cannot bypass controller checks.
-Federation staff review the same record in the backend, where they can submit, confirm, reject back to draft with a reason, or cancel the registration without creating a second review model. There is no persistent `rejected` state on season registrations; rejection is represented by `state='draft'` plus `rejection_reason`.
-
-#### 4. Public vs Portal Separation
-
-| Layer | Auth | Access |
-|-------|------|--------|
-| Public (`/tournaments`, `/tournament/<id>`) | `auth="public"` | Anyone can view open/in-progress/closed tournaments. Read-only. Uses `sudo()`. |
-| Registration form (`/tournament/<id>/register`) | `auth="user"` | Logged-in users only. Ownership verified server-side. |
-| Portal (`/my/*`) | `auth="user"` | Only records belonging to user's club. Record rules enforce this. |
-
-#### 5. Match-Official Self-Service
-
-Referee assignments now support a second portal ownership path alongside club representation.
-
-- `federation.referee.user_id` links an official profile to a portal user.
-- officials in `group_federation_portal_official` can see only their own referee profile and assignment records.
-- the portal exposes `/my/referee-assignments` and assignment-detail response pages.
-- officials can confirm or decline draft assignments from the portal while reusing the existing officiating readiness checks.
-- the assignments list now surfaces one explicit **Next step** (nearest pending response), plus pending/overdue counters on both portal home and the assignments page so officials can prioritize urgent confirmations without scanning every row.
-
-**Why keep this separate from club representative ownership?**
-- officials are not club-owned records and often work across unrelated clubs and tournaments.
-- a dedicated official access path avoids leaking club data just to allow assignment confirmation.
-- the self-service flow reuses the same `federation.match.referee` lifecycle rather than inventing a parallel response model.
-
-#### 7. Live Tournament Operations Board
-
-An Owl-based, mobile-friendly operations board is available at `/sports/tournament/<id>/operations` for any user who has access to the tournament:
-
-- **Portal users** (`group_federation_portal_club`) must have provable tournament-scoped activity: a non-cancelled registration, a tournament participant record, or at least one match visible in their club/team scope. Tournament-wide portal ACL alone does not grant access.
-- **Internal users** (federation managers, validators, etc.) access the board through the same route with their normal Odoo session.
-
-The board is powered by two JSON-RPC endpoints in `controllers/tournament_operations.py` and the business logic lives in `models/federation_tournament_operations.py` (`_inherit = "federation.tournament"`). No new persistent models are introduced.
-
-Key design decisions:
-- All writes go through the existing result-control action methods (`action_submit_result`, `action_verify_result`, `action_approve_result`, `action_contest_result`, `action_correct_result`) rather than direct ORM writes.
-- Portal writes use `federation.portal.privilege.elevate()` so the acting user identity is preserved for audit trails and self-verification guards.
-- `federation.portal.privilege.portal_write()` and `portal_call()` now require an explicit scope domain and fail closed when omitted, forcing each portal mutation path to re-declare ownership boundaries.
-- The Owl app uses Owl `mount()` (not the backend web-client `mountComponent`) so it works correctly inside the website/portal frontend context.
-- The Owl app mounts immediately and renders its own loading/error states; the initial JSON-RPC payload is no longer awaited before first paint, and the first load times out after 30 seconds so operators get visible retry feedback instead of a page that appears frozen.
-- The Owl app polls every 60 seconds but skips polls while the result panel is dirty or an action is in flight.
-- The payload stays server-shaped: ranked action-queue rows, court-status summaries, next-step hints, and schedule labels are computed in `federation_tournament_operations.py` from the existing match, result-control, officiating, venue, and match-sheet data instead of duplicating workflow logic in JavaScript.
-- The tournament operations model now splits responsibilities explicitly: `tournament_operations_access.py` owns safe portal/internal write and call boundaries, while `tournament_operations_board.py` owns board serialization, action-queue ranking, court summaries, and payload assembly.
-- The frontend adapts by screen size: desktop keeps a sticky side panel, while compact screens use an explicit bottom-sheet task panel and do not auto-open a match until the operator selects one.
-
-#### 8. Active Tournament Workspace (renamed from §7)
-
-Club and team-scoped portal users now get a tournament-first workspace for active obligations.
-
-- `/my/tournament-workspaces` groups visible teams by active tournament (`open` or `in_progress`).
-- each entry summarizes registration state, the preferred roster checkpoint, upcoming match-day sheet work, and done matches whose results still need follow-up.
-- `/my/tournament-workspaces/<tournament>/<team>` expands that entry into operational detail with direct links to the roster, match-day queue, and team match sheets.
-- portal home and My Club now present this workspace as the default day-to-day
-    starting point for club representatives.
-- direct links to match-day queues, registration queues, and live operations
-    boards remain available, but the UI now labels those paths as secondary or
-    advanced so they no longer compete with the workspace as equal-weight entry
-    points.
-- the portal now makes the phase boundary explicit: the workspace and
-    preparation queue cover pre-match work, the live operations board covers the
-    active tournament day, and the result follow-up queue covers post-match result
-    review and contest follow-up.
-- the workspace model itself revalidates team scope and active-tournament scope through `federation.portal.privilege` before any elevated reads, so direct model or RPC callers cannot bypass the controller filters.
-- current whole-club access comes only from `portal_club_scope_ids`, while current team-scoped roles stay pinned to `portal_team_scope_ids`; historical or inactive representative rows do not widen workspace visibility.
-
-**Why add a separate workspace instead of more dashboard counters?**
-- recurring club operations are tournament-scoped, not model-scoped.
-- operators need to answer “what still needs attention for this team in this tournament?” without jumping across registration, roster, and result pages.
-- the workspace reuses existing portal security and underlying record pages rather than duplicating those workflows.
-
-#### 7. Record Rule Strategy
-
-Portal users (`group_federation_portal_club`) get these record rules:
-
-| Model | Rule | Effect |
-|-------|------|--------|
-| `federation.club.representative` | `('user_id', '=', user.id)` | See only own representative records |
-| `federation.club` | `('id', 'in', user.representative_ids.mapped('club_id').ids)` | See only own clubs |
-| `federation.team` | `('club_id', 'in', ...)` | See only own teams |
-| `federation.season.registration` | `('club_id', 'in', ...)` | See only own season registrations |
-| `federation.tournament.registration` | `('club_id', 'in', ...)` | See only own tournament registrations |
-| `federation.tournament` | `[(1, '=', 1)]` | See all tournaments (read-only, for listing) |
-| `federation.tournament.participant` | `('club_id', 'in', ...)` | See only own participants |
-| `federation.team.roster` | `('club_id', 'in', ...)` | See only own season rosters |
-| `federation.team.roster.line` | `('roster_id.club_id', 'in', ...)` | See only own roster lines |
-| `federation.match.sheet` | `('team_id.club_id', 'in', ...)` | See only own match sheets |
-| `federation.match.sheet.line` | `('match_sheet_id.team_id.club_id', 'in', ...)` | See only own match-sheet lines |
-| `federation.participation.audit` | `('team_id.club_id', 'in', ...)` | See only own participation audit events |
-| `federation.match.result.audit` | home/away team club ownership | See only own result dispute and approval history |
-
-Additionally, controllers validate ownership on every write operation as defense-in-depth and then delegate the privileged create or submit step into explicit model entry points.
-Official portal users also receive own-record rules for `federation.referee` and
-`federation.match.referee`.
-For season and tournament registrations, the models also enforce that `user_id` can only submit teams for represented clubs.
-
-## Module Tree
-
-```
-sports_federation_portal/
-    __init__.py
-    __manifest__.py
-    controllers/
-        __init__.py
-        main.py
-        officiating.py
-        result_portal.py
-        referee_duty_portal.py
-        rosters.py
-        tournament_operations.py
-        web_auth.py
-    data/
-        ir_sequence.xml
-    models/
-        __init__.py
-        federation_club.py
-        federation_club_representative.py
-        federation_club_role_type.py
-        federation_match_referee.py
-        federation_match_sheet.py
-        federation_referee.py
-        federation_season_registration.py
-        federation_team.py
-        federation_team_roster.py
-        federation_tournament.py
-        federation_tournament_operations.py
-        federation_tournament_registration.py
-        portal_privilege.py
-        res_partner.py
-        res_users.py
-    security/
-        ir.model.access.csv
-        ir_rule.xml
-        res_groups.xml
-    static/
-        src/
-            components/
-                tournament_operations/
-                    tournament_operations.js
-                    tournament_operations.xml
-                    tournament_operations.scss
-    views/
-        federation_club_representative_portal_views.xml
-        federation_club_representative_views.xml
-        federation_club_role_type_views.xml
-        federation_club_views.xml
-        federation_referee_views.xml
-        federation_season_registration_views.xml
-        federation_tournament_registration_views.xml
-        federation_tournament_views.xml
-        menu_items.xml
-        portal_officiating_templates.xml
-        portal_templates.xml
-        portal_tournament_operations_templates.xml
-        portal_tournament_workspace_templates.xml
-        portal_roster_templates.xml
-        portal_result_templates.xml
-        portal_referee_duty_templates.xml
-        res_partner_views.xml
-        res_users_views.xml
-        website_menus.xml
-```
-
-## Security Explanation
-
-### Groups
-- **`group_federation_portal_club`**: Portal Club Representative. Implies `base.group_portal`. Users in this group get ACL and record rules that restrict them to their club's data.
-- **`group_federation_portal_official`**: Portal Match Official. Implies `base.group_portal`. Users in this group get ACL and record rules that restrict them to their own referee profile and officiating assignments.
-
-### ACL (Access Control List)
-Portal group gets:
-- **Read** on clubs, teams, seasons, tournaments, participants (for display).
-- **Read/Create/Write** on season registrations and tournament registrations (to submit and cancel).
-- **Read-only** on club representatives (to resolve ownership).
-- **No unlink** on anything (portal users cannot delete records).
-
-Official portal group gets:
-- **Read-only** on referee profiles and match-referee assignments.
-- portal-driven confirm and decline actions execute through controller helpers with explicit ownership checks and `sudo()`.
-
-Manager group gets full CRUD on all new models.
-
-### Record Rules
-Portal access now distinguishes between current whole-club scope and current team scope. Match-day record rules use `user.portal_club_scope_ids` for whole-club visibility and `user.portal_team_scope_ids` for assigned-team visibility so inactive or historical representative rows do not widen access.
-
-### Controller-Level Validation
-Every write operation in the controllers:
-1. Resolves the user's clubs via `_get_clubs_for_user()`.
-2. Verifies the target team/registration belongs to those clubs.
-3. Checks for duplicates and capacity limits.
-4. Hands the mutation to a model helper such as `federation.team._portal_create_team()`, `federation.season.registration._portal_submit_registration_request()`, or `federation.tournament.registration._portal_submit_registration_request()`.
-
-The same ownership rules are also enforced in the ORM for portal-managed registration models. That second layer matters whenever data is created from tests, server actions, imports, or future controllers.
-Roster portal helpers also revalidate roster and season-registration scope through `federation.portal.privilege` before any elevated reuse or create lookup, so team-scoped representatives cannot reach same-club rosters outside their assigned team through helper calls.
-Roster-line player submission now reuses the same portal-scoped player domain as the picker, so forged POST values cannot add inactive or wrong-gender players that the form intentionally hid.
-Roster detail, roster-line route helpers, and roster-line license submission now also resolve ids through `federation.portal.privilege`, so hidden roster, roster-line, or license ids cannot be recovered through raw elevated browse paths.
-Roster state transitions now include a portal reopen helper and route (`/my/rosters/<id>/reopen`) so authorized representatives can undo premature closure while preserving roster readiness and active-uniqueness safeguards.
-
-### Public Routes
-Public routes use `sudo()` to bypass ACL (since anonymous users have no federation access). They only expose:
-- Tournament name, dates, location, status, participant count.
-- No sensitive internal data (no email, phone, notes from clubs, etc.).
-
-## Verification Checklist
-
-### Security Flows
-- [ ] **Public user cannot access `/my/club`** - Should redirect to login.
-- [ ] **Portal user without representative record sees "not assigned" message** on `/my/club`.
-- [ ] **Portal user A cannot see portal user B's registrations** - Record rules prevent this.
-- [ ] **Portal user cannot register a team from another club** - Controller validates `team.club_id in clubs`.
-- [ ] **Portal user cannot cancel a registration from another club** - Controller checks ownership.
-- [ ] **Anonymous user cannot POST to `/tournament/<id>/register`** - `auth="user"` blocks it.
-- [ ] **CSRF tokens are required on all POST forms** - All forms include `csrf_token`.
-
-### Functional Flows
-- [ ] **Tournament listing** (`/tournaments`) shows open/in_progress/closed tournaments.
-- [ ] **Tournament detail** (`/tournament/<id>`) shows participants and register button when state is `open`.
-- [ ] **Tournament registration** creates a `federation.tournament.registration` in `submitted` state.
-- [ ] **Roster portal pages** (`/my/rosters`, `/my/rosters/<id>`) show only the representative's clubs, including lock feedback and audit events.
-- [ ] **Team-scoped portal users** only see their assigned team's rosters, teams, match sheets, and workspace entries; same-club foreign-team records stay hidden.
-- [ ] **Inactive or expired representatives** lose live team, roster, match-sheet, and workspace visibility.
-- [ ] **Match-sheet portal pages** (`/my/match-sheets`, `/my/match-sheets/<id>`) show substitutions plus related result disputes and corrections.
-- [ ] **Duplicate registration** is rejected with an error message.
-- [ ] **Max participants** limit is enforced.
-- [ ] **Season registration** creates a `federation.season.registration` in `submitted` state.
-- [ ] **Season registration backend review** shows submit, confirm, reject, and portal metadata (`user_id`, `partner_id`, `rejection_reason`).
-- [ ] **Season registration rejection** returns the record to `draft` and preserves the rejection reason for the submitting representative.
-- [ ] **Cancel registration** sets state to `cancelled`.
-- [ ] **Confirm registration** in backend creates `federation.tournament.participant`.
-- [ ] **Portal dashboard** shows federation cards for club representatives.
-- [ ] **Tournament workspace** (`/my/tournament-workspaces`) groups active tournament obligations by visible team.
-- [ ] **Tournament workspace detail** shows registration checkpoint, roster checkpoint, upcoming match-day sheets, and result follow-up links.
-- [ ] **Operations board** (`/sports/tournament/<id>/operations`) opens for authorized portal and internal users.
-- [ ] **Operations board** is blocked for portal users with no tournament-scoped activity.
-- [ ] **Operations board summary cards** show correct counts for now-playing, next matches, missing results, needs validation, court issues, and completed.
-- [ ] **Operations action queue** ranks the highest-priority tournament-day tasks and selecting a queue item opens the right match task panel.
-- [ ] **Court summary strip** shows blocked, delayed, live, and result-follow-up courts in operator-friendly order.
-- [ ] **Operations board match cards** display scheduled time, teams, score, state, court, and referee.
-- [ ] **Operations board filters** filter by court, match state, result state, timeline, and team search.
-- [ ] **Result panel opens** when a match card is selected.
-- [ ] **Result save** calls backend validation; invalid score shows clear error.
-- [ ] **Saved result** updates UI without full page reload.
-- [ ] **Compact layout** opens the selected match in a bottom-sheet task panel without pushing the board overview off screen.
-- [ ] **Board refreshes** via the refresh button and auto-polls every 60 seconds when the panel is clean.
-- [ ] **Offline banner** appears when the browser loses connectivity.
-- [ ] **Portal dashboard** shows officiating cards for linked match officials.
-- [ ] **Match official portal** (`/my/referee-assignments`) shows only the current official's assignments.
-- [ ] **Match official response** can confirm or decline draft assignments with an optional or required response note respectively.
-- [ ] **Breadcrumb navigation** works on all pages.
-
-### Backend Flows
-- [ ] **Tournament registration form** shows statusbar, buttons, and chatter.
-- [ ] **Tournament registration form** explains why teams are unavailable in backend dropdowns.
-- [ ] **Submit/Confirm/Reject/Cancel** buttons work with correct visibility.
-- [ ] **Club representative** can be created from club form view.
-- [ ] **Menu items** appear under Federation > Portal.
-- [ ] **Search/filters** work on tournament registration tree view.
-
-## Live Browser Verification
-
-Use this procedure when you need to validate the real website flow against the running Docker stack instead of only relying on tests.
-
-### 1. Seed deterministic portal data
-
-Create or update a small set of records through Odoo shell so the browser check is repeatable.
-
-```bash
-docker compose exec odoo odoo shell -c /etc/odoo/odoo.conf -d odoo
-```
-
-Recommended dataset:
-- one club with a representative user
-- one open tournament with explicit `category` and `gender`
-- one eligible team for that tournament
-- one ineligible team for that tournament
-
-Important details:
-- use `group_ids` on `res.users`, not `groups_id`
-- write a plain password value if helper signatures differ across versions
-- call `env.cr.commit()` before leaving the shell so the browser can see the records
-
-### 2. Restart Odoo after model or view changes
-
-If Python models, XML views, or manifests changed, restart the running service before opening the website.
-
-```bash
-docker compose restart odoo
-```
-
-Without a restart, the browser may hit stale-runtime errors even when tests passed. During verification of the tournament registration page, a stale process raised an `AttributeError` for a newly added tournament field until the container was restarted.
-
-### 3. Verify the website flow in a browser
-
-Open the registration page directly:
-
-```text
-http://localhost:10019/tournament/<tournament_id>/register
-```
-
-Then confirm all of the following:
-- anonymous access redirects to login because the route uses `auth="user"`
-- after login, the page renders without server errors
-- the Team dropdown only shows selectable teams
-- the page shows an "Unavailable Teams" section with explicit reasons for exclusions
-- tournament category and gender badges match the seeded data
-
-### 4. Check live logs when the browser does not match expectations
-
-Use the running container logs immediately after reproducing the issue:
-
-```bash
-docker compose logs --tail=200 odoo
-```
-
-This is the fastest way to distinguish between:
-- routing issues
-- stale runtime state
-- missing upgraded fields
-- template rendering errors
-
-## Required Changes in Existing Modules
-
-**None.** The module is designed to work purely as an extension. It:
-- Inherits `federation.season.registration` to add states and fields (no breaking changes).
-- Inherits `federation.club` to add `representative_ids` One2many (additive only).
-- Uses existing `federation.tournament` and `federation.tournament.participant` models as-is.
-
-## Dependencies
-
-- `website` - For public pages and website layout.
-- `portal` - For portal layout, pager, and `CustomerPortal` base class.
-- `sports_federation_base` - For clubs, teams, seasons, season registrations.
-- `sports_federation_tournament` - For tournaments and participants.
-
-## Ownership Hardening References
-
-- `PORTAL_OWNERSHIP_TEST_MATRIX.md` defines the ownership test matrix across representative, team, and official-scoped surfaces.
-- `PORTAL_OWNERSHIP_COVERAGE.md` tracks deny-by-default coverage for ownership-sensitive routes and helpers.
-
-====================================================================================================
-FILE: sports_federation_portal/ROADMAP_RC.md
-====================================================================================================
-
-# Portal RC roadmap
-
-- Fail-closed ownership scopes and method calls.
+### Official
+
+- view assignments
+- confirm or decline within the authorized scope
+- access relevant match information
+
+### Tournament operator
+
+- use the tournament operations board
+- monitor courts, matches, readiness, and action queues
+- execute scoped result and operational actions
+
+## Trust boundary
+
+All privileged portal writes must use a model-owned method and the shared `federation.portal.privilege` boundary. Controllers validate input and resolve scope but do not perform raw elevated business writes. See `adr/0001-portal-trust-boundaries.md`.
+
+Every new privileged route requires:
+
+1. positive in-scope coverage
+2. negative out-of-scope coverage
+3. direct-ID or guessed-record coverage
+4. model/helper ownership assertions when elevation is used
+5. CSRF enforcement for state-changing browser or JSON-RPC routes
+
+## Portal UX direction
+
+The landing page should remain task-first. Common tasks are teams, registrations, upcoming matches, and action items. Specialist tools should be progressively disclosed instead of presented as an undifferentiated module catalogue.
+
+## Operations board
+
+The board loads through scoped JSON-RPC, supports polling and structured failures, and exposes only matches and actions available to the current user. Server-side checks remain authoritative.
+
+## Tests
+
+The module includes HTTP smoke, ownership, access-denied, team, player, roster, registration, officiating, result, accessibility, mobile, operations-board, and end-to-end portal workflow tests.
+
+## Consolidated documentation
+
+`PORTAL_OWNERSHIP_COVERAGE.md`, `PORTAL_OWNERSHIP_TEST_MATRIX.md`, and `ROADMAP_RC.md` are deleted. Their durable rules are consolidated here and in ADR-0001; the test files are the authoritative live coverage map.
 
 ====================================================================================================
 FILE: sports_federation_portal/__init__.py
@@ -24830,7 +23785,7 @@ FILE: sports_federation_portal/__manifest__.py
 
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.2.2.0",
+    "version": "19.0.3.0.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -42264,11 +41219,18 @@ FILE: sports_federation_portal/views/portal_templates.xml
                 </div>
                 <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap mb-3">
                 <div>
-                    <h2 class="h4 o_fed_portal_section-title mb-1">Club operations</h2>
-                    <p class="text-muted mb-0">Everything your representatives need, grouped by the job to be done.</p>
+                    <h2 class="h4 o_fed_portal_section-title mb-1">Club administration</h2>
+                    <p class="text-muted mb-0">Common tasks first. Open the full catalogue only when you need it.</p>
                 </div>
             </div>
-            <div class="o_fed_portal_grid">
+            <div class="o_fed_portal_grid mb-4">
+                <a class="o_fed_portal_link" href="/my/teams"><i class="fa fa-users" aria-hidden="true"/><span><strong>My teams</strong><br/><small class="text-muted">Teams, players and rosters</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
+                <a class="o_fed_portal_link" href="/my/season-registrations"><i class="fa fa-pencil-square-o" aria-hidden="true"/><span><strong>Registrations</strong><br/><small class="text-muted">Season and tournament entries</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
+                <a class="o_fed_portal_link" href="/my/match-day"><i class="fa fa-calendar-check-o" aria-hidden="true"/><span><strong>Upcoming matches</strong><br/><small class="text-muted">Readiness, lineups and duties</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
+            </div>
+            <details class="mb-4">
+              <summary class="btn btn-outline-secondary">All club tools</summary>
+              <div class="o_fed_portal_grid mt-3">
                 <section class="o_fed_portal_group" aria-labelledby="portal-teams-heading">
                     <div class="o_fed_portal_group-header"><h3 id="portal-teams-heading">Teams and players</h3><p>Register squads and keep player information ready.</p></div>
                     <a class="o_fed_portal_link" href="/my/teams"><i class="fa fa-users" aria-hidden="true"/><span><strong>Teams</strong><br/><small class="text-muted">Manage club teams</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
@@ -42288,7 +41250,8 @@ FILE: sports_federation_portal/views/portal_templates.xml
                     <a class="o_fed_portal_link" href="/my/tournament-registrations"><i class="fa fa-trophy" aria-hidden="true"/><span><strong>Tournament entries</strong><br/><small class="text-muted">Apply and follow status</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
                     <a class="o_fed_portal_link" href="/my/club"><i class="fa fa-shield" aria-hidden="true"/><span><strong>Club details</strong><br/><small class="text-muted">Contacts and information</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
                 </section>
-            </div>
+              </div>
+            </details>
         </div>
 
         <div t-if="federation_referee and not federation_representative" class="o_fed_portal_shell mb-4">
@@ -43475,95 +42438,37 @@ FILE: sports_federation_result_control/README.md
 
 # Sports Federation Result Control
 
-Result lifecycle and approval workflow for match scores. Adds a formal
-submit → verify → approve pipeline to match results, ensuring scores are
-reviewed before being used in official standings.
+Version: 19.0.1.2.0
+Owner: Federation Platform Team
+Last reviewed: 2026-08-20
+Review cadence: Every release
 
-## Purpose
+Controlled result lifecycle, audit history, separation of duties, and standings officiality for federation matches.
 
-Prevents unchecked score entry from flowing directly into standings or public
-results. Federation staff submit results, verifiers check them, and approvers
-sign off before the result is considered official.
+## Workflow
 
-## Dependencies
+The result path supports draft, submission, verification, approval, contest, and correction as implemented by the match result controls. Approved results are protected against uncontrolled mutation.
 
-| Module | Reason |
-|--------|--------|
-| `sports_federation_tournament` | Matches |
-| `mail` | Chatter and tracking |
+## Safeguards
 
-## Models
+- submit, verify, and approve permissions are checked at action time
+- separation-of-duties rules prevent forbidden actor reuse
+- approved-score changes require the correction workflow
+- audit rows retain actor, action, and before/after context
+- standings only consume results that meet the officiality rules
+- contested and corrected paths remain traceable
 
-### `federation.match` (inherited)
+## Integration
 
-Extends the match model with result-control fields.
+Portal and tournament-operation actions call the same model-owned result methods as backend flows. Standings recomputation follows successful official result transitions.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `result_state` | Selection | not_submitted / submitted / verified / approved / contested / corrected |
-| `result_submitted_by_id` | Many2one | Who submitted |
-| `result_submitted_on` | Datetime | Submission timestamp |
-| `result_verified_by_id` | Many2one | Who verified |
-| `result_verified_on` | Datetime | Verification timestamp |
-| `result_approved_by_id` | Many2one | Who approved |
-| `result_approved_on` | Datetime | Approval timestamp |
-| `result_contest_reason` | Text | Why the result was disputed |
-| `result_correction_reason` | Text | Why the result was changed |
-| `include_in_official_standings` | Boolean | Flag for standings computation |
-| `result_audit_ids` | One2many | Detailed transition timeline for disputes and approvals |
+## Tests
 
-### `federation.match.result.audit`
+Coverage includes lifecycle transitions, immutability, duty separation, contest/correction recovery, audit records, and end-to-end result pipeline tours.
 
-Immutable result-workflow timeline for a match.
+## Removed document
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `match_id` | Many2one | The audited match |
-| `event_type` | Selection | submitted / verified / approved / contested / corrected / reset |
-| `from_state` / `to_state` | Char | Transition boundary |
-| `reason` | Text | Contest or correction rationale |
-| `description` | Text | Human-readable summary |
-| `author_id` / `created_on` | Many2one / Datetime | Attribution and timestamp |
-
-### Actions
-
-| Method | Transition | Description |
-|--------|-----------|-------------|
-| `action_submit_result()` | `draft` or `corrected` → `submitted` | Staff records the score |
-| `action_verify_result()` | → verified | Verifier confirms accuracy |
-| `action_approve_result()` | → approved | Final sign-off; includes in standings |
-| `action_contest_result()` | → contested | A party disputes the result |
-| `action_correct_result()` | → corrected | Revised after contest |
-| `action_reset_result_to_draft()` | contested or corrected → draft | Re-open the record for a controlled restart |
-
-## Security Groups
-
-| Group | Purpose |
-|-------|---------|
-| Result Verifier | Can verify submitted results |
-| Result Approver | Can approve verified results |
-
-## Key Behaviours
-
-1. **Three-step approval** — submit → verify → approve ensures multiple eyes.
-2. **Contest / correction** — Disputed results can be flagged and later corrected.
-3. **Standings gating** — Only approved results set `include_in_official_standings = True`.
-4. **Audit trail** — Every transition records who and when via user/datetime fields and a persistent `federation.match.result.audit` entry.
-5. **Separation of duties** — Submitter, verifier, and approver must be distinct users for the same match.
-6. **Auto recomputation** — Approve, contest, correct, and reset actions recompute linked non-frozen standings automatically.
-7. **Approved score immutability** — Home and away scores cannot be edited while a result remains approved.
-8. **Corrected resubmission** — A corrected result is expected to re-enter the pipeline through `submitted` before it becomes official again.
-9. **Guided standings handoff** — Match forms now direct operators back to the owning tournament when the next task is standings review, standings publication, or public follow-up rather than another score edit.
-10. **Role-conflict diagnostics** — Separation-of-duties violations now surface explicit operator-facing error messages (submitter/validator/approver conflicts).
-11. **Correction-loop duty guard** — Regression tests enforce that duty-separation rules still apply after contest/correct/resubmit loops.
-
-====================================================================================================
-FILE: sports_federation_result_control/ROADMAP_RC.md
-====================================================================================================
-
-# Result Control RC roadmap
-
-- Approved result immutability.
+`ROADMAP_RC.md` is deleted. Approved-result immutability is an implemented invariant and belongs in this README and its regression tests, not a permanent mini-roadmap.
 
 ====================================================================================================
 FILE: sports_federation_result_control/__init__.py
@@ -44750,123 +43655,38 @@ FILE: sports_federation_rules/README.md
 
 # Sports Federation Rules
 
-Competition rule configuration layer. Defines reusable **rule sets** with scoring
-tables, tie-break criteria, eligibility requirements, and qualification rules —
-all as configurable data rather than hard-coded logic.
+Version: 19.0.1.2.0
+Owner: Federation Platform Team
+Last reviewed: 2026-08-20
+Review cadence: Every release
 
-## Purpose
+Competition definitions and reusable rule sets for scoring, tie-breaks, eligibility, and qualification.
 
-Decouples competition logic from code. Any competition or tournament can reference
-a rule set, and modules like Standings, Competition Engine, and Rosters consume
-these rules to compute points, resolve ties, validate squads, and determine
-progression.
+## Responsibilities
 
-## Dependencies
+- competition master definitions
+- versioned rule sets
+- points rules
+- ordered tie-break rules
+- eligibility rules
+- qualification rules
+- season-registration and competition eligibility checks
 
-- `sports_federation_base`: Core entities.
+## Eligibility service
 
-## Models
+The shared eligibility service validates applicable age, gender, licence, suspension, registration, and rule-set requirements before participant acceptance where configured.
 
-### `federation.rule.set`
+## Versioning rule
 
-A named, reusable collection of rules. Attach it to a competition or tournament
-to govern how that event works.
+A rule set used by historical or active competition records must not be silently reinterpreted. Material rule changes require an explicit new version or controlled copy so previously calculated standings remain explainable.
 
-- `name` / `code`: Char identity fields, with a unique code.
-- `description`: Human-readable explanation.
-- `points_win` / `points_draw` / `points_loss`: Integer default scoring.
-- `points_rule_ids`: One2many extended result-type scoring entries.
-- `tie_break_rule_ids`: One2many ordered tie-break criteria.
-- `eligibility_rule_ids`: One2many player and team eligibility rules.
-- `qualification_rule_ids`: One2many stage progression rules.
-- `squad_min_size` / `squad_max_size`: Integer roster limits.
-- `referee_required_count`: Integer officials required per match.
-- `seeding_mode`: Selection describing participant seeding.
+## Tests
 
-### `federation.points.rule`
+Coverage includes competition configuration, rule-set behavior, eligibility resolution, child rules, ordering, and historical compatibility expectations.
 
-Maps a result type to a point value within a rule set.
+## Removed document
 
-- `rule_set_id`: Many2one parent rule set.
-- `result_type`: Selection with `win`, `draw`, `loss`, `bye`, or `forfeit`.
-- `points`: Integer points awarded.
-
-- **Unique constraint**: one entry per (rule_set, result_type).
-
-### `federation.tie_break_rule`
-
-Ordered criteria to resolve teams with equal points.
-
-- `rule_set_id`: Many2one parent rule set.
-- `sequence`: Integer priority order.
-- `tie_break_type`: Selection with `head_to_head`, `goal_difference`, `goals_scored`, `goals_against`, `fair_play`, `drawing_lots`, `ranking_points`, or `custom`.
-- `description`: Char label.
-- `reverse_order`: Boolean that inverts sort direction.
-
-### `federation.eligibility.rule`
-
-Defines who is allowed to participate.
-
-- `rule_set_id`: Many2one parent rule set.
-- `sequence`: Integer evaluation order.
-- `name`: Char rule label.
-- `eligibility_type`: Selection with `age_min`, `age_max`, `gender`, `license_valid`, `suspension`, `registration`, or `custom`.
-- `age_limit`: Integer limit for age-based rules.
-- `allowed_categories`: Char list of comma-separated category codes.
-- `is_placeholder`: Boolean flag for not-yet-implemented rules.
-
-### `federation.qualification.rule`
-
-Determines how teams advance between stages.
-
-- `rule_set_id`: Many2one parent rule set.
-- `sequence`: Integer evaluation order.
-- `name`: Char rule label.
-- `qualification_type`: Selection with `top_n`, `top_percent`, `min_points`, `min_position`, `group_winner`, `group_runner_up`, or `custom`.
-- `value_integer` / `value_percent`: Numeric threshold values.
-- `target_stage_id`: Char extension point for stage linking.
-
-## Services
-
-### `federation.eligibility.service`
-
-Central evaluation service consumed by rosters and match-day workflows.
-
-- `check_player_eligibility(player, rule_set, context)`: Evaluate one player and return `eligible` plus human-readable `reasons`.
-- `check_roster_eligibility(roster, rule_set=None)`: Evaluate every roster line in season, team, and club context.
-- `check_match_eligibility(match, team, players)`: Evaluate players for a specific match and tournament context.
-
-Important context keys:
-
-- `season_id` and `club_id` scope license validation to the actual competition context.
-- `team_id` scopes registration checks to the team that is trying to compete.
-- `license_id` validates an explicitly selected roster-line license.
-- `match_date` evaluates age and license windows against the operational date.
-
-## Key Behaviours
-
-1. **Reusable rule sets** — One rule set can be shared by many competitions.
-2. **Configurable scoring** — Default win/draw/loss points plus extended result types.
-3. **Ordered tie-breaks** — Sequence-based priority resolves equal points systematically.
-4. **Operational eligibility enforcement** — Age, gender, license, suspension,
-   and registration rules are enforced through the shared eligibility service.
-5. **Context-aware license validation** — License rules can require the correct
-   season, club, selected license, and active date window instead of checking
-   only for any generic active license.
-6. **Date-aware suspensions** — Suspension rules honor active
-   `federation.suspension` windows for the operational match or roster date,
-   instead of relying only on a player's static master-data state.
-7. **Readable failure reasons** — Eligibility checks return structured reasons so
-   workflow layers can block actions with operator-friendly messages.
-
-====================================================================================================
-FILE: sports_federation_rules/ROADMAP_RC.md
-====================================================================================================
-
-# Rules RC roadmap
-
-- Immutable rule-set versions.
-- Complete child-rule and historical standings regression coverage.
+`ROADMAP_RC.md` is deleted. Its remaining concerns, rule-set immutability and regression coverage, are durable invariants documented here and enforced by tests.
 
 ====================================================================================================
 FILE: sports_federation_rules/__init__.py
