@@ -4,6 +4,7 @@ Last updated: 2026-08-20
 Owner: Federation Platform Team
 Last reviewed: 2026-08-20
 Review cadence: Every release
+Release train: 2026.2
 Planning horizon: 12 months
 Scope: All federation addons, shared CI, documentation, runbooks, and release operations
 
