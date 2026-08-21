@@ -3,9 +3,9 @@
 
     <!-- Competition Rules submenu -->
     <menuitem id="menu_federation_competition_rules"
-              name="Rules"
+              name="Rules &amp; Policies"
               parent="sports_federation_base.menu_federation_competitions"
-              sequence="35"/>
+              sequence="40"/>
 
     <menuitem id="menu_federation_rule_set"
               name="Rule Sets &amp; Policies"

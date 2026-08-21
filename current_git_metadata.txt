@@ -1,8 +1,8 @@
 === CURRENT BRANCH ===
-breaking/simplified-federation-workflows
+main
 
 === CURRENT COMMIT ===
-07314fd1c6059846ddeecbe81699052afd570ddf
+d750eac63da3584889984ec4649d0630f330e489
 
 === WORKTREE STATUS ===
 
@@ -27,8 +27,8 @@ sports_federation_notifications: "version": "19.0.1.3.0",
 
 === RELEVANT RECENT HISTORY ===
 
-07314fd (HEAD -> breaking/simplified-federation-workflows) Introduced update route-inventory strategy. No longer should be using .md to keep track of routes.
-01bd19e (origin/breaking/simplified-federation-workflows) Removed outdated docs in sports_federation_portal.
+07314fd Introduced update route-inventory strategy. No longer should be using .md to keep track of routes.
+01bd19e Removed outdated docs in sports_federation_portal.
 d6c5d7f Documentation consolidation.
 bc156bf Reviewed linting checks. Updated black version.
 6167529 feat!: simplify federation competition and portal workflows

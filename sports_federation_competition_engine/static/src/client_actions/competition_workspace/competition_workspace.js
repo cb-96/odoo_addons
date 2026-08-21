@@ -10,6 +10,11 @@ import { CompetitionWorkspacePublishingMethods } from "./methods/competition_wor
 
 const MOBILE_QUERY = "(max-width: 991.98px)";
 const UI_STATE_STORAGE_KEY = "sports_federation_competition_engine.competition_workspace.ui_state";
+const WORKSPACE_MODE_SECTIONS = Object.freeze({
+    creation: ["overview", "teams", "rounds"],
+    planner: ["gamedays", "planner", "publish"],
+    full: ["overview", "teams", "rounds", "gamedays", "planner", "publish"],
+});
 
 // Keep top-level workspace navigation and form options in one place.
 const WORKSPACE_SECTIONS = Object.freeze([
@@ -114,7 +119,7 @@ export function formatPlannerSelectionSummary({
     return `${selectedCount} selected: ${unscheduledCount} unscheduled and ${assignedCount} assigned.`;
 }
 
-export function resolveWorkspaceSections({ competition = {}, division = false } = {}) {
+export function resolveWorkspaceSections({ competition = {}, division = false, mode = "full" } = {}) {
     const hasCompetition = Boolean(competition?.id);
     const hasDivision = Boolean(division?.id);
     const entriesLocked = Boolean(division?.entries_locked);
@@ -123,7 +128,7 @@ export function resolveWorkspaceSections({ competition = {}, division = false } 
     const scheduleComplete = Boolean(
         hasDivision && division.slot_count > 0 && division.unscheduled_match_count === 0
     );
-    return [
+    const sections = [
         {
             key: "overview",
             label: "Set up",
@@ -185,6 +190,21 @@ export function resolveWorkspaceSections({ competition = {}, division = false } 
             complete: division?.workspace_state === "published",
         },
     ];
+    const allowedSections = WORKSPACE_MODE_SECTIONS[mode] || WORKSPACE_MODE_SECTIONS.full;
+    return sections.filter((section) => allowedSections.includes(section.key));
+}
+
+export function resolveWorkspaceMode(actionTag, explicitMode = false) {
+    if (explicitMode && WORKSPACE_MODE_SECTIONS[explicitMode]) {
+        return explicitMode;
+    }
+    if (actionTag === "sports_federation_competition_engine.tournament_creation") {
+        return "creation";
+    }
+    if (actionTag === "sports_federation_competition_engine.schedule_planner") {
+        return "planner";
+    }
+    return "full";
 }
 
 export function shouldHandlePlannerEscape({
@@ -454,10 +474,19 @@ export class CompetitionWorkspaceAction extends Component {
         this.orm = useService("orm");
         this.notification = useService("notification");
         const params = this.props.action?.params || {};
+        this.workspaceMode = resolveWorkspaceMode(
+            this.props.action?.tag,
+            params.workspace_mode
+        );
         const restoredState = this.readPersistedUiState(params);
+        const allowedSections = WORKSPACE_MODE_SECTIONS[this.workspaceMode];
+        const defaultSection = allowedSections[0];
+        const restoredSection = allowedSections.includes(restoredState.activeSection)
+            ? restoredState.activeSection
+            : defaultSection;
         this.heartbeatTimer = null;
         this.state = useState({
-            activeSection: restoredState.activeSection || "overview",
+            activeSection: restoredSection,
             availableClubs: [],
             availableCourts: [],
             availableTeams: [],
@@ -629,6 +658,9 @@ export class CompetitionWorkspaceAction extends Component {
             if (!parsedValue || typeof parsedValue !== "object") {
                 return {};
             }
+            if (parsedValue.workspaceMode && parsedValue.workspaceMode !== this.workspaceMode) {
+                return {};
+            }
             if (
                 params.competition_id
                 && parsedValue.competitionId
@@ -656,6 +688,7 @@ export class CompetitionWorkspaceAction extends Component {
             UI_STATE_STORAGE_KEY,
             JSON.stringify({
                 activeSection: this.state.activeSection,
+                workspaceMode: this.workspaceMode,
                 competitionId,
                 divisionId,
                 filters: { ...this.state.filters },
@@ -705,6 +738,7 @@ export class CompetitionWorkspaceAction extends Component {
         return resolveWorkspaceSections({
             competition: this.payload.competition,
             division: this.selectedDivision,
+            mode: this.workspaceMode,
         }).map((section) => ({
             ...section,
             active: section.key === this.state.activeSection,
@@ -1244,5 +1278,13 @@ applyPrototypeMethods(CompetitionWorkspaceAction.prototype, CompetitionWorkspace
 
 registry.category("actions").add(
     "sports_federation_competition_engine.competition_workspace",
+    CompetitionWorkspaceAction
+);
+registry.category("actions").add(
+    "sports_federation_competition_engine.tournament_creation",
+    CompetitionWorkspaceAction
+);
+registry.category("actions").add(
+    "sports_federation_competition_engine.schedule_planner",
     CompetitionWorkspaceAction
 );

@@ -180,7 +180,7 @@
             <div class="o_fed_cw_product_identity">
                 <div class="o_fed_cw_brand_mark" aria-hidden="true">DB</div>
                 <div>
-                    <div class="o_fed_cw_eyebrow">Dodgeball Belgium · Competition control</div>
+                    <div class="o_fed_cw_eyebrow">Dodgeball Belgium · <t t-esc="props.workspaceLabel || 'Competition control'"/></div>
                     <h1 class="o_fed_cw_product_title"><t t-esc="props.overview.competition_name || 'Competition Workspace'"/></h1>
                     <div class="o_fed_cw_next_action"><i class="fa fa-arrow-circle-right me-1" aria-hidden="true"/><t t-esc="props.overview.next_action"/></div>
                 </div>
@@ -1002,7 +1002,7 @@
                 </div>
             </t>
             <t t-else="">
-                <CompetitionOverviewCard t-props="{ overview: payload.overview }"/>
+                <CompetitionOverviewCard t-props="{ overview: payload.overview, workspaceLabel: this.workspaceMode === 'creation' ? 'Tournament Creation' : this.workspaceMode === 'planner' ? 'Schedule Planner' : 'Competition control' }"/>
                 <t t-call="sports_federation_competition_engine.CompetitionWorkspaceSectionNav"/>
 
                 <t t-if="!payload.competition.id and payload.capabilities.is_manager">

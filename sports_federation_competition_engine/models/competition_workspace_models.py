@@ -70,8 +70,9 @@ class FederationCompetitionEdition(models.Model):
         return {
             "type": "ir.actions.client",
             "tag": "sports_federation_competition_engine.competition_workspace",
-            "name": _("Competition Workspace"),
+            "name": _("Tournament Creation"),
             "params": {
+                "workspace_mode": "creation",
                 "competition_id": self.id,
             },
         }
@@ -314,8 +315,9 @@ class FederationTournament(models.Model):
         return {
             "type": "ir.actions.client",
             "tag": "sports_federation_competition_engine.competition_workspace",
-            "name": _("Competition Workspace"),
+            "name": _("Tournament Creation"),
             "params": {
+                "workspace_mode": "creation",
                 "competition_id": self.edition_id.id if self.edition_id else False,
                 "division_id": self.id,
             },
@@ -606,8 +608,9 @@ class FederationTournamentRound(models.Model):
         return {
             "type": "ir.actions.client",
             "tag": "sports_federation_competition_engine.competition_workspace",
-            "name": _("Competition Planner"),
+            "name": _("Schedule Planner"),
             "params": {
+                "workspace_mode": "planner",
                 "competition_id": (
                     self.tournament_id.edition_id.id
                     if self.tournament_id.edition_id

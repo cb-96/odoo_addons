@@ -8,13 +8,17 @@ policy; this registry is the stable machine-readable source used by tests.
 import json
 from pathlib import Path
 
-
 _REQUIRED_FIELDS = {"method", "path", "owner_module", "coverage_key"}
 _ALLOWED_METHODS = {"DELETE", "GET", "PATCH", "POST", "PUT"}
 
 
 def _inventory_path():
-    return Path(__file__).resolve().parents[2] / "ci" / "contracts" / "route_inventory.json"
+    return (
+        Path(__file__).resolve().parents[2]
+        / "ci"
+        / "contracts"
+        / "route_inventory.json"
+    )
 
 
 def _validated_routes(payload):

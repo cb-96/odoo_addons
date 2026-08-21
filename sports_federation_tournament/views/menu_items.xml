@@ -2,21 +2,21 @@
 <odoo>
 
     <menuitem id="menu_federation_competition"
-              name="Competition Setup"
+              name="Competition Templates"
               parent="sports_federation_base.menu_federation_competitions"
               action="federation_competition_action"
               sequence="10"/>
 
     <menuitem id="menu_federation_competition_edition"
-              name="Seasons &amp; Competitions"
+              name="Season Competitions"
               parent="sports_federation_base.menu_federation_competitions"
               action="federation_competition_edition_action"
               sequence="20"/>
 
     <menuitem id="menu_federation_tournament"
-              name="Advanced Planning Records"
+              name="Advanced Records"
               parent="sports_federation_base.menu_federation_planning"
-              sequence="20"/>
+              sequence="90"/>
 
     <menuitem id="menu_federation_tournament_config"
               name="Tournament Structure"

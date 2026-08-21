@@ -397,7 +397,11 @@ export class CompetitionWorkspacePlannerDataMethods {
                 result.already_prepared ? "Schedule structure is already ready." : "Teams locked and matches created.",
                 "success"
             );
-            this.setSection("gamedays");
+            if (this.workspaceMode === "creation") {
+                this.notify("Tournament structure is ready. Continue in Schedule Planner.", "info");
+            } else {
+                this.setSection("gamedays");
+            }
         } catch (error) {
             this.notify(error.message || "The schedule could not be prepared.", "danger");
         } finally {
@@ -406,7 +410,12 @@ export class CompetitionWorkspacePlannerDataMethods {
     }
 
     setSection(section) {
-        this.state.activeSection = section;
+        const target = this.workspaceSections.find((item) => item.key === section && !item.disabled);
+        if (!target) {
+            return;
+        }
+        this.state.activeSection = target.key;
+        section = target.key;
         if (section === "planner" && (this.state.currentGamedayId || this.gamedayOptions[0]?.id)) {
             this.loadPlanner(this.state.currentGamedayId || this.gamedayOptions[0].id, {
                 includeReferenceData: !this.planner,
