@@ -1,0 +1,8 @@
+<odoo>
+  <data>
+    <record id="group_competition_administrator" model="res.groups">
+      <field name="name">Competition Administrator</field>
+      <field name="category_id" ref="base.module_category_services"/>
+    </record>
+  </data>
+</odoo>

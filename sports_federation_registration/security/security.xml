@@ -1,0 +1,8 @@
+<odoo>
+  <data>
+    <record id="group_registration_manager" model="res.groups">
+      <field name="name">Registration Manager</field>
+      <field name="category_id" ref="base.module_category_services"/>
+    </record>
+  </data>
+</odoo>

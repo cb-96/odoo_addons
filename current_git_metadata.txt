@@ -1,10 +1,12 @@
 === CURRENT BRANCH ===
-main
+refactor/simplification-competition-engine
 
 === CURRENT COMMIT ===
-d750eac63da3584889984ec4649d0630f330e489
+c84c10e186f1eb880c48529be5d6e15a44b64aae
 
 === WORKTREE STATUS ===
+ M current_git_metadata.txt
+ M current_sources.txt
 
 === MODULE VERSIONS ===
 
@@ -27,6 +29,7 @@ sports_federation_notifications: "version": "19.0.1.3.0",
 
 === RELEVANT RECENT HISTORY ===
 
+c84c10e (HEAD -> refactor/simplification-competition-engine, origin/main, origin/HEAD, main) Refactored scheduler.
 07314fd Introduced update route-inventory strategy. No longer should be using .md to keep track of routes.
 01bd19e Removed outdated docs in sports_federation_portal.
 d6c5d7f Documentation consolidation.
@@ -46,7 +49,6 @@ af37d3b Reformatted with 'Black'
 99d84a0 Implemented package 13.
 d93dcdf Package 10 and 11 implemented.
 549694a Expanded on Tournament Flow Builder inside Schedule Planning.
-a05f8a6 Added Stage creation to Schedule Planning.
 
 
 === DISCOVERED FILE COUNT ===
