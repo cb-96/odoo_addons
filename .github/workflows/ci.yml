@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - breaking/*
   pull_request:
   schedule:
     - cron: '15 2 * * *'

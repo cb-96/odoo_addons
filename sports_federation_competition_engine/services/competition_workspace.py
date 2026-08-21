@@ -80,6 +80,48 @@ class CompetitionWorkspaceService(
         "timeslot_fairness": 0.5,
         "warning_penalty": 25.0,
     }
+    _workflow_templates = {
+        "league": {
+            "planning_format": "single_round_robin",
+            "tournament_type": "multi_day",
+            "minimum_rest_minutes": 30,
+            "max_consecutive_matches_per_team": 1,
+        },
+        "tournament_day": {
+            "planning_format": "pool_then_bracket",
+            "tournament_type": "single_day",
+            "minimum_rest_minutes": 30,
+            "max_consecutive_matches_per_team": 1,
+            "pool_count": 2,
+            "pool_qualifier_count": 2,
+        },
+        "cup": {
+            "planning_format": "knockout",
+            "tournament_type": "single_day",
+            "minimum_rest_minutes": 30,
+            "max_consecutive_matches_per_team": 1,
+        },
+    }
+
+    def _visible_division_state(self, division):
+        """Return the four-state product language shown to normal operators."""
+        if division.workspace_state in ("completed", "archived"):
+            return "finished", _("Finished")
+        if division.workspace_state == "in_progress":
+            return "live", _("Live")
+        if division.workspace_state == "published":
+            return "ready", _("Ready")
+        return "draft", _("Draft")
+
+    def _visible_gameday_state(self, gameday):
+        root = self._get_planner_root_gameday(gameday)
+        if root.planner_state == "completed":
+            return "finished", _("Finished")
+        if root.planner_state == "in_progress":
+            return "live", _("Live")
+        if root.planner_state in ("validated", "published", "locked"):
+            return "ready", _("Ready")
+        return "draft", _("Draft")
 
     def _copy_validation_result(self, validation):
         return {
@@ -1477,6 +1519,8 @@ class CompetitionWorkspaceService(
             "planner_state_label": self._get_state_label(
                 planner_root, "planner_state", planner_root.planner_state
             ),
+            "visible_state": self._visible_gameday_state(planner_root)[0],
+            "visible_state_label": self._visible_gameday_state(planner_root)[1],
             "planner_revision": planner_root.planner_revision,
             "venue_id": (
                 planner_root.venue_id.id
@@ -1525,6 +1569,8 @@ class CompetitionWorkspaceService(
             "workspace_state_label": self._get_state_label(
                 division, "workspace_state", division.workspace_state
             ),
+            "visible_state": self._visible_division_state(division)[0],
+            "visible_state_label": self._visible_division_state(division)[1],
             "planning_format": division.planning_format,
             "planning_format_label": self._get_state_label(
                 division, "planning_format", division.planning_format
@@ -1772,6 +1818,14 @@ class CompetitionWorkspaceService(
     def create_division(self, competition_id, vals):
         self._check_access()
         competition = self._resolve_competition(competition_id)
+        vals = dict(vals or {})
+        workflow_template = vals.pop("workflow_template", False) or "league"
+        template_defaults = self._workflow_templates.get(workflow_template)
+        if not template_defaults:
+            raise ValidationError(_("Select a supported competition type."))
+        # Explicit values remain available to expert mode; the template supplies
+        # safe defaults for the normal three-choice setup flow.
+        vals = {**template_defaults, **vals}
         division = self.env["federation.tournament"].create(
             {
                 "name": vals["name"],
@@ -2341,6 +2395,33 @@ class CompetitionWorkspaceService(
         division._competition_workspace_transition_state("schedule_generated")
         return {
             "match_count": len(created_matches),
+            "payload": self.get_competition_workspace_data(
+                division.edition_id.id if division.edition_id else False,
+                division.id,
+            ),
+        }
+
+    @api.model
+    def prepare_division_schedule(self, division_id):
+        """Lock confirmed entries and generate the standard match structure.
+
+        This is the normal-mode command. It deliberately stops before dates,
+        venues and slots because those inputs require an operator decision.
+        """
+        self._check_access()
+        division = self._resolve_division(division_id)
+        confirmed = self._get_generation_participants(division)
+        if len(confirmed) < 2:
+            raise ValidationError(
+                _("Add at least two confirmed teams before preparing the schedule.")
+            )
+        if not division.entries_locked:
+            division.action_lock_team_entries()
+        if not division.match_ids:
+            return self.generate_schedule_structure(division.id)
+        return {
+            "match_count": len(division.match_ids),
+            "already_prepared": True,
             "payload": self.get_competition_workspace_data(
                 division.edition_id.id if division.edition_id else False,
                 division.id,

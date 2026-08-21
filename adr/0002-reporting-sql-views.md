@@ -2,37 +2,29 @@
 
 Last updated: 2026-04-18
 Owner: Federation Platform Team
-Last reviewed: 2026-04-18
+Last reviewed: 2026-08-20
 Review cadence: Every release
-
-## Status
-
-Accepted
+Status: Accepted
 
 ## Context
 
-The reporting module aggregates finance, standings, compliance, notification,
-and workflow data across multiple addons. Those rollups are too expensive and
-too cross-cutting to duplicate in controllers or ad hoc ORM loops.
+Federation reporting combines finance, standings, compliance, notification, planning, and workflow data across multiple addons. Rebuilding those joins in controllers or repeated ORM loops would duplicate logic and create unpredictable performance.
 
 ## Decision
 
-Operational and planning reports will remain read-only analytical models backed
-by PostgreSQL views:
+Operational and planning projections remain read-only analytical models backed by PostgreSQL views when their data is naturally cross-module or aggregation-heavy.
 
-- report models use `_auto = False` and rebuild their SQL view definitions in
-  `init()`
-- export controllers and operator screens consume the reporting models instead
-  of issuing inline SQL or assembling large cross-module joins in controllers
-- the heaviest planning reports keep explicit query budgets and `EXPLAIN`
-  watchpoints in CI so plan regressions are visible before release
-- SQL view changes are treated as upgrade-sensitive and must travel with
-  migration review evidence
+- SQL-backed report models use `_auto = False`.
+- View definitions are recreated deterministically from `init()` or the repository's approved view helper.
+- Controllers and exports consume report models instead of embedding substantial SQL or cross-module aggregation logic.
+- Report models are read-only and must not masquerade as writable business records.
+- Heavy reports retain query budgets, representative fixtures, and performance watchpoints.
+- SQL view changes are upgrade-sensitive and require migration review evidence.
+- A normal stored Odoo model is preferred when the data has its own lifecycle or must be edited.
 
 ## Consequences
 
-- large cross-module reporting logic stays centralized in one reporting layer
-- read-only analytical surfaces remain easier to reason about than mixed ORM and
-  controller implementations
-- maintainers must preserve migration discipline and performance baselines when a
-  reporting view changes
+- Cross-module reporting logic remains centralized.
+- Export and operator surfaces share the same projection semantics.
+- View dependencies and upgrade order require explicit review.
+- Maintainers must preserve query plans, migration safety, and read-only behavior.

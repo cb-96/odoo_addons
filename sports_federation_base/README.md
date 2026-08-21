@@ -1,139 +1,39 @@
-Sports Federation Base
-======================
+# Sports Federation Base
 
-Foundation module for the entire Sports Federation suite. Provides the core data
-models that every other federation module depends on: **clubs**, **teams**,
-**seasons**, and **season registrations**.
+Version: 19.0.1.2.0
+Owner: Federation Platform Team
+Last reviewed: 2026-08-20
+Review cadence: Every release
 
-Purpose
--------
+Foundation addon for clubs, teams, seasons, and season registrations. It also provides shared security groups and infrastructure used across the federation suite.
 
-This module establishes the organisational hierarchy of the federation and acts as
-the single source of truth for master data. All downstream modules
-(people, tournaments, compliance, etc.) reference these entities.
+## Responsibilities
 
-Dependencies
-------------
+- `federation.club`: affiliated clubs and contact data
+- `federation.team`: club-owned teams by category and gender
+- `federation.season`: dated federation seasons and lifecycle
+- `federation.season.registration`: unique team enrollment per season
+- shared manager and user security groups
+- sequences, audit events, operational health, failure feedback, rate limiting, correlation helpers, and attachment policy services
 
-- `base`
-- `mail`
+## Lifecycle safeguards
 
-Models
-------
-
-federation.club
-~~~~~~~~~~~~~~~
-
-Central record for each affiliated club. Stores contact details, full postal
-address, logo, and founding date. Each club owns one or more teams.
-
-Fields:
-
-- `name` (Char): Club name (required).
-- `code` (Char): Unique short code.
-- `email` / `phone` / `mobile` (Char): Contact channels.
-- `street` through `country_id` (Address): Full postal address.
-- `founded_date` (Date): Date the club was founded.
-- `logo` (Binary): Club emblem shown as the avatar.
-- `team_ids` (One2many): Teams belonging to this club.
-
-- **Mail thread** enabled for audit & chatter.
-- **Unique code** constraint.
-- **Stat button** to navigate to child teams.
-
-federation.team
-~~~~~~~~~~~~~~~
-
-Represents a single squad within a club, classified by age category and gender.
-
-Fields:
-
-- `name` (Char): Team name (required).
-- `code` (Char): Unique short code.
-- `club_id` (Many2one): Parent club (required).
-- `category` (Selection): `senior`, `youth`, `junior`, `cadet`, or `mini`.
-- `gender` (Selection): `male`, `female`, or `mixed`.
-
-- `name_search()` also matches on `code`.
-
-federation.season
-~~~~~~~~~~~~~~~~~
-
-A time-bounded period during which competitions take place.
-
-Fields:
-
-- `name` / `code` (Char): Season label and unique code.
-- `date_start` / `date_end` (Date): Season boundaries with `date_end >= date_start`.
-- `state` (Selection): `draft -> open -> closed / cancelled`.
-- `target_club_count` / `target_team_count` (Integer): Planned federation participation baseline.
-- `target_tournament_count` / `target_participant_count` (Integer): Planned delivery targets for the season.
-
-**Workflow:** active `draft` seasons can be opened, `open` seasons can be closed,
-`draft` or `open` seasons can be cancelled, and only `cancelled` seasons can be
-reset to `draft`.
-
-Planning target values are validated as zero-or-greater so downstream reporting
-and budgeting can safely compare actual activity against the season plan.
-
-federation.season.registration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Enrols a team into a season. Auto-generates a sequence-based reference number on
-creation (`FED/REG/YYYY/00001`).
-
-Fields:
-
-- `name` (Char): Auto-generated reference (readonly).
-- `season_id` (Many2one): Target season.
-- `team_id` (Many2one): Registering team.
-- `club_id` (Many2one): Derived from the team and stored.
-- `division` (Char): Optional division label.
-- `state` (Selection): `draft -> confirmed / cancelled`.
-
-**Constraint:** a team can register for a given season only once.
-
-Lifecycle guardrails
---------------------
-
-- Clubs can only be archived after their active teams are archived.
-- Teams can only be archived when linked season registrations are cancelled.
+- Teams must be archived before their club.
+- Linked registrations must be cancelled before a team is archived.
 - Open seasons must be closed or cancelled before archiving.
-- The module exposes explicit archive and restore actions so lifecycle changes stay auditable in the backend UI.
+- Uploads are validated for extension, MIME type, size, checksum, and optional malware scanning.
 
-Security
---------
+## Security
 
-Groups:
+- Federation User: standard read-oriented backend access
+- Federation Manager: federation administration and full model management
 
-- **Federation User** (`group_federation_user`): Standard back-office users with read-only access on all models.
-- **Federation Manager** (`group_federation_manager`): Administrators with full CRUD access on all models.
+Downstream modules must declare this addon when they import its Python helpers, reference its XML IDs, or inherit its models.
 
-Both groups belong to the *Federation* app category (`module_category_federation`).
+## Configuration
 
-Menu Structure
---------------
+Settings include the optional external attachment scanner command and timeout. Production environments that require scanning must configure a scanner before enabling the mandatory-scan flag.
 
-Menu structure::
+## Tests
 
-		Federation (root)
-			Master Data
-				Clubs
-				Teams
-			Seasons
-			Registrations
-
-Data Files
-----------
-
-- `data/ir_sequence.xml` – auto-numbering sequence for season registrations.
-
-Extension Points
-----------------
-
-Other modules extend the base models:
-
-- **Tournament** adds `competition_id` and `rule_set_id` to registrations.
-- **Portal** adds `submitted` state and portal-user tracking.
-- **Venues** adds `venue_id` to tournaments and matches.
-- **Rosters**, **Result Control**, **Officiating** all extend `federation.match`.
+The module includes attachment-policy, scanner, route-inventory, and shared infrastructure tests. Run the repository strict lint and the base module test suite after changing shared contracts.

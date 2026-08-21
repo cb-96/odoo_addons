@@ -318,6 +318,7 @@ export class CompetitionWorkspaceFormMethods {
         this.state.saving = true;
         try {
             const vals = {
+                workflow_template: this.state.divisionForm.workflow_template || "league",
                 category: this.state.divisionForm.category || false,
                 date_end: this.state.divisionForm.date_end || false,
                 date_start: this.state.divisionForm.date_start || false,
@@ -366,6 +367,7 @@ export class CompetitionWorkspaceFormMethods {
                 "create_team_entry",
                 [this.state.currentDivisionId, {
                     seed: this.state.teamEntryForm.seed ? Number(this.state.teamEntryForm.seed) : false,
+                    state: "confirmed",
                     team_id: Number(this.state.teamEntryForm.team_id),
                 }]
             );

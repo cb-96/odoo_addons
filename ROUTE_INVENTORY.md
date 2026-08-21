@@ -1,57 +1,114 @@
 # Route Inventory
 
-Last updated: 2026-04-18
+Last updated: 2026-08-20
 Owner: Federation Platform Team
-Last reviewed: 2026-04-18
+Last reviewed: 2026-08-20
 Review cadence: Every release
 
-This is the maintainer-facing inventory of the primary browser and API entry
-points that carry federation workflows. The goal is traceability: a maintainer
-should be able to answer "which controller owns this route and which model or
-service performs the write?" without reading source first.
+## Purpose
 
-Detailed route tables still live in module READMEs. This file highlights the
-critical workflows, write boundaries, and external contracts.
+This file inventories critical browser, portal, public, reporting, and managed-integration entry points. It is not intended to duplicate every controller decorator. A route belongs here when it is public, partner-facing, privileged, contract-versioned, or operationally important.
 
-These routes are backed by module-owned smoke suites in the portal,
-public-site, compliance, and reporting addons. Inventory changes should land
-with matching smoke coverage in the same branch so new owner modules or routes
-cannot drift without test coverage.
+The machine-readable route inventory and controller tests remain the authoritative completeness checks. Update this document, route tests, and ownership metadata in the same change.
 
-## Browser and Portal Flows
+## Portal and Operations Routes
 
-| Route | Owner Module | Controller Entry Point | Downstream Model / Service | Notes |
-|---|---|---|---|---|
-| `GET /web/login` | `sports_federation_portal` | `FederationWebsiteLogin.web_login` | Website login wrapper | Preserves website context and recovers stale-CSRF submissions with a guided retry message. |
-| `GET /sports/tournament/<id>/operations` | `sports_federation_portal` | `FederationTournamentOperationsPortal.portal_tournament_operations_page` | `federation.tournament._operations_get_payload` | Owl-powered tournament-day operations board with server-side access scoping and fast result actions. |
-| `POST /my/teams/new` | `sports_federation_portal` | `FederationClubPortal.portal_my_teams_create` | `federation.team._portal_create_team` | Portal club ownership is validated before the privileged create. |
-| `POST /my/players/new` | `sports_federation_portal` | `FederationClubPortal.portal_my_players_create` | `federation.player._portal_create_player` | Portal club ownership is validated before the privileged create; triggers optional member registration finance event. |
-| `POST /my/season-registration/new` | `sports_federation_portal` | `FederationRegistrationPortal.portal_season_registration_submit` | `federation.season.registration._portal_submit_registration_request` | Submits season registrations through the shared ORM entry point. |
-| `POST /my/referee-assignments/<id>/respond` | `sports_federation_portal` | `FederationOfficiatingPortal.portal_my_referee_assignment_respond` | `federation.match.referee._portal_action_confirm` / `_portal_action_decline` | Official self-service confirm / decline flow. |
-| `POST /tournaments/<slug>/register` | `sports_federation_public_site` | `PublicTournamentHubController.tournament_register_submit` | `federation.tournament.registration._portal_submit_registration_request` | Shared registration helper used by both public-site and portal flows. |
-| `POST /my/compliance/<requirement>/<target_model>/<target_id>/submit` | `sports_federation_compliance` | `FederationCompliancePortal.portal_my_compliance_submit` | `federation.document.submission._portal_submit_submission` | Portal uploads and submission writes stay inside the model boundary. |
+### Tournament operations board
 
-## Reporting and Export Routes
+- `GET /sports/tournament/<tournament_id>/operations`
+  - Owner: `sports_federation_portal`
+  - Controller: `FederationTournamentOperationsPortal.portal_tournament_operations_page`
+  - Downstream boundary: tournament operations access resolver
+  - Purpose: authenticated operations-board shell
 
-| Route | Owner Module | Controller Entry Point | Downstream Model / Service | Notes |
-|---|---|---|---|---|
-| `GET /reporting/export/standings/<tournament_id>` | `sports_federation_reporting` | `KpiExportController.export_standings_csv` | `federation.standing` | Authenticated CSV contract `standings_csv`. |
-| `GET /reporting/export/participation/<season_id>` | `sports_federation_reporting` | `KpiExportController.export_participation_csv` | `federation.tournament.participant` | Authenticated CSV contract `participation_csv`. |
-| `GET /reporting/export/finance` | `sports_federation_reporting` | `KpiExportController.export_finance_csv` | `federation.report.finance` | Authenticated CSV contract `finance_summary_csv`. |
-| `GET /reporting/export/finance/events` | `sports_federation_reporting` | `KpiExportController.export_finance_event_handoff_csv` | `federation.finance.event.get_handoff_export_row` | Authenticated CSV contract `finance_event_v1`. |
+- `POST /sports/tournament/<tournament_id>/operations/data`
+  - Owner: `sports_federation_portal`
+  - Controller: `FederationTournamentOperationsPortal.portal_tournament_operations_data`
+  - Downstream boundary: `federation.tournament._operations_get_payload`
+  - Purpose: scoped JSON-RPC board payload
+  - Safeguards: authenticated user, CSRF, model-owned access scope
+
+- `POST /sports/tournament/<tournament_id>/operations/matches/<match_id>/action`
+  - Owner: `sports_federation_portal`
+  - Controller: `FederationTournamentOperationsPortal.portal_tournament_operations_action`
+  - Downstream boundary: tournament operations action service
+  - Purpose: result and operational match actions
+  - Safeguards: authenticated user, CSRF, tournament and match scope checks
+
+### Club self-service
+
+- `POST /my/teams/new`
+  - Owner: `sports_federation_portal`
+  - Controller: `FederationClubPortal.portal_my_teams_create`
+  - Downstream boundary: `federation.team._portal_create_team`
+
+- `POST /my/players/new`
+  - Owner: `sports_federation_portal`
+  - Controller: `FederationClubPortal.portal_my_players_create`
+  - Downstream boundary: `federation.player._portal_create_player`
+
+- `POST /my/season-registration/new`
+  - Owner: `sports_federation_portal`
+  - Controller: `FederationRegistrationPortal.portal_season_registration_submit`
+  - Downstream boundary: `federation.season.registration._portal_submit_registration_request`
+
+- `POST /my/referee-assignments/<assignment_id>/respond`
+  - Owner: `sports_federation_portal`
+  - Controller: `FederationOfficiatingPortal.portal_my_referee_assignment_respond`
+  - Downstream boundary: assignment portal access and confirmation/decline methods
+
+All portal writes must resolve the request-user scope before calling a model-owned method. Raw controller `sudo()` writes are not an accepted boundary.
+
+## Public Routes
+
+Canonical public tournament pages, feeds, calendars, and publication helpers are owned by `sports_federation_public_site`. Slug-first routes are canonical. Numeric and competition-named routes are compatibility aliases only.
+
+Critical public contracts include:
+
+- `GET /api/v1/tournaments/<slug>/feed`
+- `GET /tournaments/<slug>/schedule.ics`
+- `POST /tournaments/<slug>/register`
+
+Public reads must enforce applicable publication flags. Public registration writes must use the shared registration model boundary.
+
+## Reporting Routes
+
+Authenticated reporting exports are owned by `sports_federation_reporting`:
+
+- `GET /reporting/export/standings/<tournament_id>`
+- `GET /reporting/export/participation/<season_id>`
+- `GET /reporting/export/finance`
+- `GET /reporting/export/finance/events`
+
+Responses must retain their documented contract and version headers.
 
 ## Managed Integration Routes
 
-| Route | Owner Module | Controller Entry Point | Downstream Model / Service | Notes |
-|---|---|---|---|---|
-| `GET /integration/v1/contracts` | `sports_federation_import_tools` | `FederationIntegrationApi.integration_contracts` | `federation.integration.partner.authenticate_partner` | Contract manifest for subscribed partners. |
-| `GET /integration/v1/outbound/finance/events` | `sports_federation_import_tools` | `FederationIntegrationApi.integration_finance_events` | `federation.finance.event` | Partner-authenticated outbound finance handoff. |
-| `POST /integration/v1/inbound/<contract_code>/deliveries` | `sports_federation_import_tools` | `FederationIntegrationApi.integration_stage_inbound_delivery` | `federation.integration.delivery.stage_partner_delivery` | Stages inbound payloads into the governed import pipeline. |
+Managed partner routes are owned by `sports_federation_import_tools`:
+
+- `GET /integration/v1/contracts`
+- `GET /integration/v1/outbound/finance/events`
+- `POST /integration/v1/inbound/<contract_code>/deliveries`
+
+These routes require partner authentication, subscription checks, stable error envelopes, bounded pagination where applicable, and documented idempotency behavior.
 
 ## Operator Surfaces
 
-| Surface | Owner Module | Entry Point | Backing Model |
-|---|---|---|---|
-| Reporting operator checklist | `sports_federation_reporting` | Federation > Reporting > Operator Checklist | `federation.report.operator.checklist` |
-| Scheduled report monitoring | `sports_federation_reporting` | Federation > Reporting > Report Schedules | `federation.report.schedule` |
-| Inbound delivery monitoring | `sports_federation_import_tools` | Federation > Import Tools > Inbound Deliveries | `federation.integration.delivery` |
+- Competition Planning Workspace: `sports_federation_competition_engine`
+- Tournament Operations Board: `sports_federation_portal`
+- Reporting Operator Checklist: `sports_federation_reporting`
+- Report Schedules: `sports_federation_reporting`
+- Inbound Deliveries: `sports_federation_import_tools`
+
+## Review Rules
+
+A route change must include:
+
+1. an explicit owner module
+2. authentication and CSRF review
+3. model or service write boundary
+4. positive and negative access tests
+5. route-inventory and OpenAPI updates when contract-facing
+6. compatibility and removal notes when replacing an existing route
+
+The previous `/web/login` entry was removed from this inventory because no matching `FederationWebsiteLogin.web_login` implementation was present in the reviewed source snapshot. Re-add it only with an implementation and smoke coverage.

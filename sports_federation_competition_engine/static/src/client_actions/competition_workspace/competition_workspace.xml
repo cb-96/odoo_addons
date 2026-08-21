@@ -475,7 +475,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
                     <div>
-                        <h3 class="h6 mb-1">Publish and maintain schedule</h3>
+                        <h3 class="h6 mb-1">Make schedule available</h3>
                         <p class="text-muted small mb-0">Validate first, then publish a gameday or the full competition schedule.</p>
                         <div class="small text-muted mt-2">
                             <strong>Next action:</strong>
@@ -484,8 +484,8 @@
                     </div>
                     <div class="d-flex gap-2 flex-wrap">
                         <button type="button" class="btn btn-outline-secondary" t-on-click="props.onValidate">Validate schedule</button>
-                        <button type="button" class="btn btn-outline-primary" t-att-disabled="props.publishing" t-on-click="props.onPublishGameday">Publish gameday</button>
-                        <button type="button" class="btn btn-primary" t-att-disabled="props.publishing" t-on-click="props.onPublishCompetition">Publish competition</button>
+                        <button type="button" class="btn btn-outline-primary" t-att-disabled="props.publishing" t-on-click="props.onPublishGameday">Make match day live</button>
+                        <button type="button" class="btn btn-primary" t-att-disabled="props.publishing" t-on-click="props.onPublishCompetition">Make schedule live</button>
                     </div>
                 </div>
                 <div class="text-muted small mb-3" aria-live="polite" t-if="props.publishing">Publishing in progress...</div>
@@ -520,7 +520,7 @@
                         </div>
                     </t>
                 </div>
-                <ValidationPanel t-props="{ title: 'Publication summary', validation: props.validation }"/>
+                <ValidationPanel t-props="{ title: 'Readiness check', validation: props.validation }"/>
             </div>
         </section>
     </t>
@@ -528,11 +528,15 @@
     <t t-name="sports_federation_competition_engine.CompetitionWorkspaceSectionNav">
         <div class="o_fed_cw_context_bar mb-4" t-if="payload.competition.id and this.activeWorkspaceSection">
             <div>
-                <div class="small text-uppercase text-muted">Current step</div>
+                <div class="small text-uppercase text-muted">Current task</div>
                 <div class="fw-semibold"><t t-esc="this.activeWorkspaceSection.label"/></div>
                 <div class="small text-muted"><t t-esc="this.activeWorkspaceSection.description"/></div>
             </div>
-            <div class="o_fed_cw_nav" role="tablist" aria-label="Competition workspace sections">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="button" class="btn btn-sm btn-link text-muted" t-on-click="toggleAdvancedMode">
+                    <i class="fa fa-sliders me-1" aria-hidden="true"/><t t-esc="state.advancedMode ? 'Hide advanced tools' : 'Advanced tools'"/>
+                </button>
+                <div class="o_fed_cw_nav" role="tablist" aria-label="Competition workspace sections">
                 <t t-foreach="this.workspaceSections" t-as="section" t-key="section.key">
                     <button type="button"
                             class="btn btn-sm btn-outline-secondary"
@@ -546,6 +550,7 @@
                         <t t-esc="section.shortLabel"/>
                     </button>
                 </t>
+                </div>
             </div>
         </div>
     </t>
@@ -567,7 +572,7 @@
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                                             <div class="fw-semibold"><t t-esc="division.name"/></div>
-                                            <StatusBadge t-props="{ label: division.workspace_state_label, state: division.workspace_state }"/>
+                                            <StatusBadge t-props="{ label: division.visible_state_label, state: division.visible_state }"/>
                                         </div>
                                         <div class="small text-muted"><t t-esc="division.confirmed_participant_count"/> teams · <t t-esc="division.match_count"/> matches · <t t-esc="division.gameday_count"/> gamedays</div>
                                         <div class="small mt-2"><t t-esc="division.next_action"/></div>
@@ -583,19 +588,27 @@
                 <section class="card shadow-sm h-100">
                     <div class="card-body">
                         <h2 class="h5 mb-1">Create division</h2>
-                        <p class="text-muted small mb-3">This creates the working tournament record used for team entries, rounds, gamedays, and matches.</p>
+                        <p class="text-muted small mb-3">Choose a competition type. The app creates the technical structure for you.</p>
                         <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Competition type</label>
+                                <div class="o_fed_cw_template_picker" role="radiogroup" aria-label="Competition type">
+                                    <label class="card p-3 mb-2"><input class="form-check-input me-2" type="radio" name="workflow_template" value="league" t-att-checked="state.divisionForm.workflow_template === 'league'" t-on-change="updateDivisionField"/><strong>League</strong><span class="small text-muted d-block ms-4">Round robin across several match days.</span></label>
+                                    <label class="card p-3 mb-2"><input class="form-check-input me-2" type="radio" name="workflow_template" value="tournament_day" t-att-checked="state.divisionForm.workflow_template === 'tournament_day'" t-on-change="updateDivisionField"/><strong>Tournament day</strong><span class="small text-muted d-block ms-4">Pools followed by play-offs on one event day.</span></label>
+                                    <label class="card p-3 mb-2"><input class="form-check-input me-2" type="radio" name="workflow_template" value="cup" t-att-checked="state.divisionForm.workflow_template === 'cup'" t-on-change="updateDivisionField"/><strong>Cup</strong><span class="small text-muted d-block ms-4">Seeded knockout bracket.</span></label>
+                                </div>
+                            </div>
                             <div class="col-12"><label class="form-label fw-semibold">Division name</label><input type="text" class="form-control" name="name" t-att-value="state.divisionForm.name" t-on-input="updateDivisionField"/></div>
-                            <div class="col-12 col-md-6">
-                                <label class="form-label fw-semibold">Format</label>
+                            <div class="col-12 col-md-6" t-if="state.advancedMode">
+                                <label class="form-label fw-semibold">Technical format</label>
                                 <select class="form-select" name="planning_format" t-att-value="state.divisionForm.planning_format" t-on-change="updateDivisionField">
                                     <t t-foreach="this.divisionPlanningFormatOptions" t-as="option" t-key="option.value">
                                         <option t-att-value="option.value"><t t-esc="option.label"/></option>
                                     </t>
                                 </select>
                             </div>
-                            <div class="col-12 col-md-6"><label class="form-label fw-semibold">Minimum rest (minutes)</label><input type="number" min="0" class="form-control" name="minimum_rest_minutes" t-att-value="state.divisionForm.minimum_rest_minutes" t-on-input="updateDivisionField"/></div>
-                            <div class="col-12 col-md-6"><label class="form-label fw-semibold">Max consecutive matches per team</label><input type="number" min="1" class="form-control" name="max_consecutive_matches_per_team" t-att-value="state.divisionForm.max_consecutive_matches_per_team" t-on-input="updateDivisionField"/></div>
+                            <div class="col-12 col-md-6" t-if="state.advancedMode"><label class="form-label fw-semibold">Minimum rest (minutes)</label><input type="number" min="0" class="form-control" name="minimum_rest_minutes" t-att-value="state.divisionForm.minimum_rest_minutes" t-on-input="updateDivisionField"/></div>
+                            <div class="col-12 col-md-6" t-if="state.advancedMode"><label class="form-label fw-semibold">Max consecutive matches per team</label><input type="number" min="1" class="form-control" name="max_consecutive_matches_per_team" t-att-value="state.divisionForm.max_consecutive_matches_per_team" t-on-input="updateDivisionField"/></div>
                             <div class="col-12 col-md-6" t-if="state.divisionForm.planning_format === 'pool_then_bracket'"><label class="form-label fw-semibold">Pool count</label><input type="number" min="2" class="form-control" name="pool_count" t-att-value="state.divisionForm.pool_count" t-on-input="updateDivisionField"/></div>
                             <div class="col-12 col-md-6" t-if="state.divisionForm.planning_format === 'pool_then_bracket'"><label class="form-label fw-semibold">Qualifiers per pool</label><input type="number" min="1" class="form-control" name="pool_qualifier_count" t-att-value="state.divisionForm.pool_qualifier_count" t-on-input="updateDivisionField"/></div>
                             <div class="col-12 col-md-6">
@@ -632,9 +645,9 @@
                         <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                             <div>
                                 <h2 class="h5 mb-1">Add team entry</h2>
-                                <p class="text-muted small mb-0">Reuses existing tournament participant records rather than a duplicate team-entry model.</p>
+                                <p class="text-muted small mb-0">Add participating teams. New entries are confirmed automatically.</p>
                             </div>
-                            <StatusBadge t-props="{ label: selectedDivision.workspace_state_label, state: selectedDivision.workspace_state }"/>
+                            <StatusBadge t-props="{ label: selectedDivision.visible_state_label, state: selectedDivision.visible_state }"/>
                         </div>
                         <div class="mb-3"><label class="form-label fw-semibold">Search teams</label><input type="search" class="form-control" name="search" placeholder="Type team name" t-att-value="state.teamEntryForm.search" t-on-input="updateTeamEntryField"/><div class="form-text">Search runs server-side and excludes teams already entered in this division.</div></div>
                         <div class="mb-3"><label class="form-label fw-semibold">Club filter</label><select class="form-select" name="club_id" t-att-value="state.teamEntryForm.club_id" t-on-change="updateTeamEntryField"><option value="">All clubs</option><t t-foreach="state.availableClubs" t-as="club" t-key="club.id"><option t-att-value="club.id"><t t-esc="club.display_name"/></option></t></select></div>
@@ -642,16 +655,16 @@
                         <div class="mb-3"><label class="form-label fw-semibold">Seed</label><input type="number" min="1" class="form-control" name="seed" t-att-value="state.teamEntryForm.seed" t-on-input="updateTeamEntryField"/></div>
                         <div class="o_fed_cw_section_actions" t-att-aria-busy="state.saving ? 'true' : 'false'">
                             <div class="d-flex gap-2 flex-wrap justify-content-end o_fed_cw_toolbar_group">
-                                <button type="button" class="btn btn-outline-secondary" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="lockEntries">Lock participant list</button>
-                                <button type="button" class="btn btn-primary" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="createTeamEntry">Add team</button>
+                                <button type="button" class="btn btn-outline-secondary" t-if="state.advancedMode" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="lockEntries">Lock teams</button>
+                                <button type="button" class="btn btn-primary" t-att-disabled="selectedDivision.entries_locked or state.saving" t-on-click="createTeamEntry">Add and confirm team</button>
                             </div>
                             <div class="small text-muted" aria-live="polite" t-if="state.saving">Saving team updates...</div>
                         </div>
                     </div>
                 </section>
-                <section class="card shadow-sm mt-3">
+                <section class="card shadow-sm mt-3" t-if="state.advancedMode">
                     <div class="card-body">
-                        <h3 class="h6 mb-3">Planning fairness rules</h3>
+                        <h3 class="h6 mb-3">Advanced scheduling rules</h3>
                         <div class="row g-3">
                             <div class="col-12">
                                 <label class="form-label fw-semibold">Minimum rest (minutes)</label>
@@ -694,7 +707,16 @@
     </t>
 
     <t t-name="sports_federation_competition_engine.CompetitionWorkspaceSectionRounds">
-        <section class="card shadow-sm mb-4">
+        <section class="card shadow-sm mb-4" t-if="!state.advancedMode">
+            <div class="card-body text-center py-5">
+                <div class="o_fed_cw_eyebrow">Recommended</div>
+                <h2 class="h4 mt-2">Prepare the match schedule</h2>
+                <p class="text-muted mx-auto" style="max-width: 42rem">The app will lock the confirmed teams and create the rounds, pools or bracket for the chosen competition type. Dates and courts are selected in the next task.</p>
+                <button type="button" class="btn btn-primary btn-lg" t-att-disabled="state.saving or selectedDivision.confirmed_participant_count &lt; 2" t-on-click="prepareDivisionSchedule">Prepare schedule</button>
+                <div class="form-text mt-2" t-if="selectedDivision.confirmed_participant_count &lt; 2">Add at least two teams first.</div>
+            </div>
+        </section>
+        <section class="card shadow-sm mb-4" t-if="state.advancedMode">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3"><div><h2 class="h5 mb-1">Tournament flow builder</h2><p class="text-muted small mb-0">Create stages, rounds and ranking-based branches without leaving Schedule Planning.</p></div><StatusBadge t-props="{ label: (selectedDivision.stage_options || []).length + ' stages', tone: 'info' }"/></div>
                 <div t-if="!(selectedDivision.stage_options || []).length" class="border rounded p-3 mb-4 bg-light">
@@ -707,6 +729,7 @@
                 <div class="row g-2 align-items-end"><div class="col-6 col-lg-2"><label class="form-label">Rounds to ensure</label><input type="number" min="1" max="64" class="form-control" name="round_count" t-att-value="state.stageForm.round_count" t-on-input="updateStageField"/></div><div class="col-12 col-lg-4"><label class="form-check"><input class="form-check-input" type="checkbox" name="cascade_delete" t-att-checked="state.stageForm.cascade_delete" t-on-change="updateStageField"/><span class="form-check-label">Allow deletion of draft dependencies</span></label></div><div class="col-12 col-lg-6"><label class="form-label">Deletion reason</label><input type="text" class="form-control" name="delete_reason" placeholder="Required for dependency cascade" t-att-value="state.stageForm.delete_reason" t-on-input="updateStageField"/></div></div>
             </div>
         </section>
+        <div t-if="state.advancedMode">
         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
             <div>
                 <h2 class="h5 mb-1"><t t-esc="this.generationSectionTitle"/></h2>
@@ -718,6 +741,7 @@
             <t t-esc="this.generationPreview.empty_message"/>
         </div>
         <GenerationPreview t-props="{ preview: this.generationPreview }"/>
+        </div>
     </t>
 
     <t t-name="sports_federation_competition_engine.CompetitionWorkspaceSectionGamedays">
@@ -731,7 +755,7 @@
                         <div class="mb-3"><label class="form-label fw-semibold">Round</label><select class="form-select" name="round_number" t-att-value="state.gamedayForm.round_number" t-on-change="updateGamedayField"><option value="">Auto (next available)</option><t t-foreach="this.roundOptions || []" t-as="roundItem" t-key="'create-round-' + roundItem.stage_id + '-' + roundItem.round_number"><option t-att-value="roundItem.round_number"><t t-esc="roundItem.name"/> · #<t t-esc="roundItem.round_number"/></option></t></select></div>
                         <div class="mb-3"><label class="form-label fw-semibold">Date</label><input type="date" class="form-control" name="round_date" t-att-value="state.gamedayForm.round_date" t-on-input="updateGamedayField"/></div>
                         <div class="mb-3"><label class="form-label fw-semibold">Venue</label><select class="form-select" name="venue_id" t-att-value="state.gamedayForm.venue_id" t-on-change="updateGamedayField"><option value="">Select a venue</option><t t-foreach="payload.options.venues || []" t-as="venue" t-key="venue.id"><option t-att-value="venue.id"><t t-esc="venue.name"/></option></t></select></div>
-                        <div class="mb-3" t-if="this.sharedDivisionOptions.length">
+                        <div class="mb-3" t-if="state.advancedMode and this.sharedDivisionOptions.length">
                             <label class="form-label fw-semibold">Also include divisions</label>
                             <div class="o_fed_cw_court_picker">
                                 <t t-foreach="this.sharedDivisionOptions" t-as="divisionOption" t-key="divisionOption.id">
@@ -743,7 +767,7 @@
                             </div>
                             <div class="form-text">Selected divisions share one physical planner grid for this gameday.</div>
                         </div>
-                        <div class="mb-3" t-if="this.selectedSharedDivisionOptions.length">
+                        <div class="mb-3" t-if="state.advancedMode and this.selectedSharedDivisionOptions.length">
                             <label class="form-label fw-semibold">Shared division match scope</label>
                             <div class="d-flex flex-column gap-2">
                                 <t t-foreach="this.selectedSharedDivisionOptions" t-as="divisionOption" t-key="'shared-config-' + divisionOption.id">
@@ -848,7 +872,7 @@
         <details class="o_fed_cw_secondary_drawer mb-3">
             <summary><i class="fa fa-sliders me-2" aria-hidden="true"/>Insights and collaboration <span class="badge text-bg-light ms-2"><t t-esc="this.plannerCollaboration.active_count || 0"/> active</span></summary>
             <div class="row g-3 p-3">
-                <div class="col-12 col-xl-6"><CollaborationPanel t-props="{ collaboration: this.plannerCollaboration, title: 'Planner presence', emptyMessage: 'No other planners are active here.' }"/></div>
+                <div class="col-12 col-xl-6" t-if="state.advancedMode"><CollaborationPanel t-props="{ collaboration: this.plannerCollaboration, title: 'Planner presence', emptyMessage: 'No other planners are active here.' }"/></div>
                 <div class="col-12 col-xl-6"><RevisionSummaryPanel t-props="{ revisions: this.plannerScheduleRevisions, title: 'Schedule revisions' }"/></div>
             </div>
         </details>
@@ -907,7 +931,7 @@
                 <div class="o_fed_cw_inspector_body">
                     <div class="o_fed_cw_inspector_metrics"><div><strong><t t-esc="this.filteredUnscheduledMatches.length"/></strong><span>Unscheduled</span></div><div><strong><t t-esc="this.plannerOpenSlotCount"/></strong><span>Open slots</span></div></div>
                     <SlotSuggestionPanel t-if="this.shouldShowSlotSuggestions" t-props="{ loading: state.slotSuggestions.loading, suggestions: this.slotSuggestions }"/>
-                    <FairnessSummaryPanel t-else="" t-props="{ summary: this.plannerFairnessSummary, title: 'Schedule balance' }"/>
+                    <FairnessSummaryPanel t-elif="state.advancedMode" t-props="{ summary: this.plannerFairnessSummary, title: 'Schedule balance' }"/>
                 </div>
             </aside>
         </div>
