@@ -2,7 +2,7 @@
 refactor/simplification-competition-engine
 
 === CURRENT COMMIT ===
-2a3e3786a96d9ffdaa808b71a32ec5bda3bc9b78
+0edadfc69e0779587a60318c81780b63e9e1c96d
 
 === WORKTREE STATUS ===
  M current_sources.txt
@@ -11,19 +11,19 @@ refactor/simplification-competition-engine
 
 sports_federation_base: "version": "19.0.1.2.0",
 
-sports_federation_calendar: 'version': '19.0.1.1.0',
+sports_federation_calendar: "version": "19.0.1.1.0",
 
-sports_federation_format: {'name': 'Competition Format', 'version': '19.0.2.1.0', 'category': 'Sports', 'summary': 'Versioned competition structures, stages, progression and fixtures', 'author': 'Sports Federation', 'license': 'LGPL-3', 'depends': ['sports_federation_registration'], 'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/format_views.xml', 'views/stage_graph_views.xml', 'views/menu.xml'], 'installable': True, 'application': False, 'auto_install': False}
+sports_federation_format: "version": "19.0.2.1.0",
 
-sports_federation_scheduling: 'version': '19.0.1.1.0',
+sports_federation_scheduling: "version": "19.0.2.1.0",
 
-sports_federation_registration: 'version': '19.0.1.1.0',
+sports_federation_registration: "version": "19.0.1.1.0",
 
-sports_federation_competition_core: 'version': '19.0.1.1.0',
+sports_federation_competition_core: "version": "19.0.1.1.0",
 
-sports_federation_schedule_approval: 'version': '19.0.1.1.0',
+sports_federation_schedule_approval: "version": "19.0.1.1.0",
 
-sports_federation_matchday: 'version': '19.0.1.1.0',
+sports_federation_matchday: "version": "19.0.1.1.0",
 
 sports_federation_rules: "version": "19.0.1.2.0",
 
@@ -42,7 +42,9 @@ sports_federation_notifications: "version": "19.0.1.3.0",
 
 === RELEVANT RECENT HISTORY ===
 
-2a3e378 (HEAD -> refactor/simplification-competition-engine) feat!: add generic full-placement bracket generation
+0edadfc (HEAD -> refactor/simplification-competition-engine) Solved KeyError: 'fairness_access' + reformatted files with black.
+cdc8728 feat: add weighted fairness auto-scheduling to V2 planner
+2a3e378 feat!: add generic full-placement bracket generation
 09f5622 Implemented Stage Graph tool.
 71dac69 Added registration desk team filtering based on gender and category.
 a78119f Corrected errors in security files.
@@ -60,10 +62,8 @@ ecaeca5 Removed 3 hardening changes that were to strict.
 10cb0e0 updated security_matrix
 d46c71f (origin/copilot/fix-odoo-integration-matrix) test(notifications): add post_install smoke test for templates and crons
 9cd846d Merge pull request #8 from cb-96/copilot/fix-odoo-tests-portal-public-ops
-d7fd311 Solved linting issues.
-af37d3b Reformatted with 'Black'
 
 
 === DISCOVERED FILE COUNT ===
 
-250
+253

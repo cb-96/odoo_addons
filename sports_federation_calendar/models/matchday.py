@@ -1,4 +1,6 @@
-from odoo import api, fields, models
+from datetime import datetime, time, timedelta
+
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 
@@ -34,6 +36,28 @@ class FederationMatchday(models.Model):
     fixture_count = fields.Integer(compute="_compute_capacity")
     playable_slot_count = fields.Integer(compute="_compute_capacity")
     spare_capacity = fields.Integer(compute="_compute_capacity")
+    default_day_start_hour = fields.Float(
+        string="Default slot start",
+        default=9.0,
+        required=True,
+        help="Local start time used for the first slot on a court.",
+    )
+    default_slot_duration_minutes = fields.Integer(
+        string="Default slot duration",
+        default=40,
+        required=True,
+        help="Duration proposed for a new slot when no previous slot duration is available.",
+    )
+
+    @api.constrains("default_day_start_hour", "default_slot_duration_minutes")
+    def _check_slot_defaults(self):
+        for rec in self:
+            if rec.default_day_start_hour < 0 or rec.default_day_start_hour >= 24:
+                raise ValidationError(
+                    _("The default slot start must be between 00:00 and 23:59.")
+                )
+            if rec.default_slot_duration_minutes <= 0:
+                raise ValidationError(_("The default slot duration must be positive."))
 
     @api.depends("allocation_ids.fixture_ids", "slot_ids.state")
     def _compute_capacity(self):
@@ -107,6 +131,90 @@ class FederationScheduleSlot(models.Model):
         index=True,
     )
     note = fields.Char()
+
+    @api.model
+    def default_get(self, field_list):
+        values = super().default_get(field_list)
+        matchday_id = values.get("matchday_id") or self.env.context.get(
+            "default_matchday_id"
+        )
+        court_id = values.get("court_id") or self.env.context.get("default_court_id")
+        matchday = self.env["federation.matchday"].browse(matchday_id).exists()
+        court = self.env["federation.playing.area"].browse(court_id).exists()
+        if matchday:
+            start, end = self._suggest_slot_window(matchday, court)
+            values.setdefault("start_datetime", start)
+            values.setdefault("end_datetime", end)
+        return values
+
+    @api.onchange("matchday_id", "court_id")
+    def _onchange_slot_context(self):
+        for rec in self:
+            if not rec.matchday_id:
+                continue
+            start, end = rec._suggest_slot_window(rec.matchday_id, rec.court_id)
+            rec.start_datetime = start
+            rec.end_datetime = end
+
+    @api.onchange("start_datetime")
+    def _onchange_start_datetime(self):
+        for rec in self:
+            if not rec.start_datetime or not rec.matchday_id:
+                continue
+            duration = rec._suggest_duration_minutes(rec.matchday_id, rec.court_id)
+            rec.end_datetime = rec.start_datetime + timedelta(minutes=duration)
+
+    @api.model
+    def _local_datetime_to_utc(self, local_value):
+        """Convert a naive user-local datetime to the naive UTC value Odoo stores."""
+        if not self.env.user.tz:
+            return local_value
+        import pytz
+
+        timezone = pytz.timezone(self.env.user.tz)
+        aware = timezone.localize(local_value, is_dst=None)
+        return aware.astimezone(pytz.UTC).replace(tzinfo=None)
+
+    @api.model
+    def _first_start_for_matchday(self, matchday):
+        hour = int(matchday.default_day_start_hour)
+        minute = int(round((matchday.default_day_start_hour - hour) * 60))
+        if minute == 60:
+            hour += 1
+            minute = 0
+        local_start = datetime.combine(
+            fields.Date.to_date(matchday.date), time(hour, minute)
+        )
+        return self._local_datetime_to_utc(local_start)
+
+    @api.model
+    def _suggest_duration_minutes(self, matchday, court=False):
+        domain = [("matchday_id", "=", matchday.id)]
+        if court:
+            domain.append(("court_id", "=", court.id))
+        previous = self.search(domain, order="end_datetime desc, id desc", limit=1)
+        if previous and previous.start_datetime and previous.end_datetime:
+            minutes = int(
+                (previous.end_datetime - previous.start_datetime).total_seconds() // 60
+            )
+            if minutes > 0:
+                return minutes
+        return matchday.default_slot_duration_minutes or 40
+
+    @api.model
+    def _suggest_slot_window(self, matchday, court=False):
+        """Start after the last slot on this court, otherwise on the match-day date."""
+        domain = [("matchday_id", "=", matchday.id)]
+        if court:
+            domain.append(("court_id", "=", court.id))
+        previous = self.search(domain, order="end_datetime desc, id desc", limit=1)
+        start = (
+            previous.end_datetime
+            if previous
+            else self._first_start_for_matchday(matchday)
+        )
+        duration = self._suggest_duration_minutes(matchday, court)
+        return start, start + timedelta(minutes=duration)
 
     @api.constrains("start_datetime", "end_datetime")
     def _check_window(self):

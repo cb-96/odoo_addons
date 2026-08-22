@@ -1,0 +1,18 @@
+<odoo>
+  <record id="matchday_form_slot_defaults" model="ir.ui.view">
+    <field name="name">federation.matchday.form.slot.defaults</field>
+    <field name="model">federation.matchday</field>
+    <field name="inherit_id" ref="sports_federation_calendar.matchday_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//group[field[@name='fixture_count']]" position="after">
+        <group string="Slot entry defaults" col="4">
+          <field name="default_day_start_hour" widget="float_time"/>
+          <field name="default_slot_duration_minutes"/>
+        </group>
+      </xpath>
+      <xpath expr="//field[@name='slot_ids']" position="attributes">
+        <attribute name="context">{'default_matchday_id': id}</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

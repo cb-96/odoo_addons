@@ -1,6 +1,6 @@
 {
     "name": "Competition Calendar",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "category": "Sports",
     "summary": "Physical match days, allocations, court availability and slots",
     "author": "Sports Federation",
@@ -10,6 +10,7 @@
         "security/security.xml",
         "security/ir.model.access.csv",
         "views/calendar_views.xml",
+        "views/slot_defaults_views.xml",
         "views/menu.xml",
     ],
     "installable": True,

@@ -829,17 +829,22 @@ FILE: sports_federation_calendar/__manifest__.py
 ====================================================================================================
 
 {
-    'name': 'Competition Calendar',
-    'version': '19.0.1.1.0',
-    'category': 'Sports',
-    'summary': 'Physical match days, allocations, court availability and slots',
-    'author': 'Sports Federation',
-    'license': 'LGPL-3',
-    'depends': ['sports_federation_format', 'sports_federation_venues'],
-    'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/calendar_views.xml', 'views/menu.xml'],
-    'installable': True,
-    'application': False,
-    'auto_install': False,
+    "name": "Competition Calendar",
+    "version": "19.0.1.1.0",
+    "category": "Sports",
+    "summary": "Physical match days, allocations, court availability and slots",
+    "author": "Sports Federation",
+    "license": "LGPL-3",
+    "depends": ["sports_federation_format", "sports_federation_venues"],
+    "data": [
+        "security/security.xml",
+        "security/ir.model.access.csv",
+        "views/calendar_views.xml",
+        "views/menu.xml",
+    ],
+    "installable": True,
+    "application": False,
+    "auto_install": False,
 }
 
 ====================================================================================================
@@ -1034,17 +1039,22 @@ FILE: sports_federation_competition_core/__manifest__.py
 ====================================================================================================
 
 {
-    'name': 'Competition Core',
-    'version': '19.0.1.1.0',
-    'category': 'Sports',
-    'summary': 'Stable competition lifecycle, role ownership, and domain events',
-    'author': 'Sports Federation',
-    'license': 'LGPL-3',
-    'depends': ['sports_federation_base', 'sports_federation_tournament'],
-    'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/competition_edition_views.xml', 'views/menu.xml'],
-    'installable': True,
-    'application': False,
-    'auto_install': False,
+    "name": "Competition Core",
+    "version": "19.0.1.1.0",
+    "category": "Sports",
+    "summary": "Stable competition lifecycle, role ownership, and domain events",
+    "author": "Sports Federation",
+    "license": "LGPL-3",
+    "depends": ["sports_federation_base", "sports_federation_tournament"],
+    "data": [
+        "security/security.xml",
+        "security/ir.model.access.csv",
+        "views/competition_edition_views.xml",
+        "views/menu.xml",
+    ],
+    "installable": True,
+    "application": False,
+    "auto_install": False,
 }
 
 ====================================================================================================
@@ -1208,6 +1218,7 @@ FILE: sports_federation_competition_core/models/competition_overview.py
 
 from odoo import _, api, fields, models
 
+
 class FederationCompetitionEdition(models.Model):
     _inherit = "federation.competition.edition"
 
@@ -1226,10 +1237,16 @@ class FederationCompetitionEdition(models.Model):
         self.ensure_one()
         steps = [bool(self.tournament_ids), bool(self.role_assignment_ids)]
         optional_fields = (
-            "registration_window_ids", "structure_ids", "matchday_ids",
-            "schedule_ids", "publication_ids",
+            "registration_window_ids",
+            "structure_ids",
+            "matchday_ids",
+            "schedule_ids",
+            "publication_ids",
         )
-        steps.extend(bool(self[field]) if field in self._fields else False for field in optional_fields)
+        steps.extend(
+            bool(self[field]) if field in self._fields else False
+            for field in optional_fields
+        )
         return steps
 
     @api.depends("tournament_ids", "role_assignment_ids", "engine_state")
@@ -1241,7 +1258,10 @@ class FederationCompetitionEdition(models.Model):
                 rec.workflow_next_action = _("Add at least one division")
             elif not rec.role_assignment_ids:
                 rec.workflow_next_action = _("Assign responsible users")
-            elif "registration_window_ids" in rec._fields and not rec.registration_window_ids:
+            elif (
+                "registration_window_ids" in rec._fields
+                and not rec.registration_window_ids
+            ):
                 rec.workflow_next_action = _("Create registration windows")
             elif "structure_ids" in rec._fields and not rec.structure_ids:
                 rec.workflow_next_action = _("Finalize registrations and build formats")
@@ -1256,11 +1276,24 @@ class FederationCompetitionEdition(models.Model):
 
     def action_v2_role_assignments(self):
         self.ensure_one()
-        return {"type":"ir.actions.act_window","name":_("Responsibilities"),"res_model":"federation.competition.role.assignment","view_mode":"list,form","domain":[("edition_id","=",self.id)],"context":{"default_edition_id":self.id}}
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Responsibilities"),
+            "res_model": "federation.competition.role.assignment",
+            "view_mode": "list,form",
+            "domain": [("edition_id", "=", self.id)],
+            "context": {"default_edition_id": self.id},
+        }
 
     def action_v2_events(self):
         self.ensure_one()
-        return {"type":"ir.actions.act_window","name":_("Competition history"),"res_model":"federation.competition.event","view_mode":"list,form","domain":[("edition_id","=",self.id)]}
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Competition history"),
+            "res_model": "federation.competition.event",
+            "view_mode": "list,form",
+            "domain": [("edition_id", "=", self.id)],
+        }
 
 ====================================================================================================
 FILE: sports_federation_competition_core/services/__init__.py
@@ -18251,7 +18284,25 @@ from . import services
 FILE: sports_federation_format/__manifest__.py
 ====================================================================================================
 
-{'name': 'Competition Format', 'version': '19.0.2.1.0', 'category': 'Sports', 'summary': 'Versioned competition structures, stages, progression and fixtures', 'author': 'Sports Federation', 'license': 'LGPL-3', 'depends': ['sports_federation_registration'], 'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/format_views.xml', 'views/stage_graph_views.xml', 'views/menu.xml'], 'installable': True, 'application': False, 'auto_install': False}
+{
+    "name": "Competition Format",
+    "version": "19.0.2.1.0",
+    "category": "Sports",
+    "summary": "Versioned competition structures, stages, progression and fixtures",
+    "author": "Sports Federation",
+    "license": "LGPL-3",
+    "depends": ["sports_federation_registration"],
+    "data": [
+        "security/security.xml",
+        "security/ir.model.access.csv",
+        "views/format_views.xml",
+        "views/stage_graph_views.xml",
+        "views/menu.xml",
+    ],
+    "installable": True,
+    "application": False,
+    "auto_install": False,
+}
 
 ====================================================================================================
 FILE: sports_federation_format/models/__init__.py
@@ -18314,7 +18365,9 @@ class FederationCompetitionStructure(models.Model):
 
     def action_generate(self):
         for rec in self:
-            roots = rec.stage_ids.filtered(lambda stage: not stage.incoming_progression_ids)
+            roots = rec.stage_ids.filtered(
+                lambda stage: not stage.incoming_progression_ids
+            )
             if not roots:
                 raise ValidationError("Add at least one root stage.")
             self.env["federation.stage.graph.engine"].validate_graph(rec)
@@ -18414,64 +18467,210 @@ FILE: sports_federation_format/models/stage_graph.py
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
+
 class FederationStructureStage(models.Model):
     _inherit = "federation.structure.stage"
-    format_type = fields.Selection([("single_round_robin","Single Round Robin"),("double_round_robin","Double Round Robin"),("knockout","Knockout"),("placement_bracket","Full Placement Bracket"),("manual","Manual")],default="single_round_robin",required=True)
-    source_type = fields.Selection([("registration","Finalized Registration"),("progression","Previous Stage Progression"),("manual","Manual")],default="registration",required=True)
-    carryover_policy = fields.Selection([("none","None"),("same_group_results","Results Between Advancing Teams"),("full_points","Complete Source Standings")],default="none",required=True)
-    graph_state = fields.Selection([("draft","Draft"),("waiting","Waiting"),("ready","Ready"),("active","Active"),("frozen","Standings Frozen"),("completed","Completed")],default="draft",required=True,index=True)
-    final_rank_from=fields.Integer(); final_rank_to=fields.Integer()
-    stage_participant_ids=fields.One2many("federation.stage.participant","stage_id")
-    stage_fixture_ids=fields.One2many("federation.fixture","stage_id")
-    incoming_progression_ids=fields.One2many("federation.structure.stage.progression","target_stage_id")
-    outgoing_progression_ids=fields.One2many("federation.structure.stage.progression","source_stage_id")
-    standing_snapshot_id=fields.Many2one("federation.stage.standing.snapshot",readonly=True,copy=False)
-    standing_line_ids=fields.One2many(related="standing_snapshot_id.line_ids",readonly=True)
+    format_type = fields.Selection(
+        [
+            ("single_round_robin", "Single Round Robin"),
+            ("double_round_robin", "Double Round Robin"),
+            ("knockout", "Knockout"),
+            ("placement_bracket", "Full Placement Bracket"),
+            ("manual", "Manual"),
+        ],
+        default="single_round_robin",
+        required=True,
+    )
+    source_type = fields.Selection(
+        [
+            ("registration", "Finalized Registration"),
+            ("progression", "Previous Stage Progression"),
+            ("manual", "Manual"),
+        ],
+        default="registration",
+        required=True,
+    )
+    carryover_policy = fields.Selection(
+        [
+            ("none", "None"),
+            ("same_group_results", "Results Between Advancing Teams"),
+            ("full_points", "Complete Source Standings"),
+        ],
+        default="none",
+        required=True,
+    )
+    graph_state = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("waiting", "Waiting"),
+            ("ready", "Ready"),
+            ("active", "Active"),
+            ("frozen", "Standings Frozen"),
+            ("completed", "Completed"),
+        ],
+        default="draft",
+        required=True,
+        index=True,
+    )
+    final_rank_from = fields.Integer()
+    final_rank_to = fields.Integer()
+    stage_participant_ids = fields.One2many("federation.stage.participant", "stage_id")
+    stage_fixture_ids = fields.One2many("federation.fixture", "stage_id")
+    incoming_progression_ids = fields.One2many(
+        "federation.structure.stage.progression", "target_stage_id"
+    )
+    outgoing_progression_ids = fields.One2many(
+        "federation.structure.stage.progression", "source_stage_id"
+    )
+    standing_snapshot_id = fields.Many2one(
+        "federation.stage.standing.snapshot", readonly=True, copy=False
+    )
+    standing_line_ids = fields.One2many(
+        related="standing_snapshot_id.line_ids", readonly=True
+    )
+
     def action_prepare_stage(self):
-        for rec in self:self.env["federation.stage.graph.engine"].prepare_stage(rec)
+        for rec in self:
+            self.env["federation.stage.graph.engine"].prepare_stage(rec)
         return True
+
     def action_start_stage(self):
         for rec in self:
-            if rec.graph_state!="ready":raise ValidationError("Only ready stages can start.")
-            rec.graph_state="active"
+            if rec.graph_state != "ready":
+                raise ValidationError("Only ready stages can start.")
+            rec.graph_state = "active"
         return True
+
     def action_freeze_standings(self):
-        for rec in self:self.env["federation.stage.graph.engine"].freeze_standings(rec)
+        for rec in self:
+            self.env["federation.stage.graph.engine"].freeze_standings(rec)
         return True
+
 
 class FederationFixture(models.Model):
-    _inherit="federation.fixture"
-    home_source_fixture_id=fields.Many2one("federation.fixture",ondelete="set null");home_source_outcome=fields.Selection([("winner","Winner"),("loser","Loser")])
-    away_source_fixture_id=fields.Many2one("federation.fixture",ondelete="set null");away_source_outcome=fields.Selection([("winner","Winner"),("loser","Loser")])
-    home_score=fields.Integer();away_score=fields.Integer();result_state=fields.Selection([("draft","Draft"),("approved","Approved")],default="draft",required=True,index=True)
-    placement_from=fields.Integer();placement_to=fields.Integer()
+    _inherit = "federation.fixture"
+    home_source_fixture_id = fields.Many2one("federation.fixture", ondelete="set null")
+    home_source_outcome = fields.Selection([("winner", "Winner"), ("loser", "Loser")])
+    away_source_fixture_id = fields.Many2one("federation.fixture", ondelete="set null")
+    away_source_outcome = fields.Selection([("winner", "Winner"), ("loser", "Loser")])
+    home_score = fields.Integer()
+    away_score = fields.Integer()
+    result_state = fields.Selection(
+        [("draft", "Draft"), ("approved", "Approved")],
+        default="draft",
+        required=True,
+        index=True,
+    )
+    placement_from = fields.Integer()
+    placement_to = fields.Integer()
+
     def action_approve_result(self):
         for rec in self:
-            if rec.stage_id.stage_type in ("knockout","placement") and rec.home_score==rec.away_score:raise ValidationError("Bracket fixtures require a winner.")
-            rec.write({"result_state":"approved","state":"completed"});self.env["federation.stage.graph.engine"].resolve_dependants(rec)
+            if (
+                rec.stage_id.stage_type in ("knockout", "placement")
+                and rec.home_score == rec.away_score
+            ):
+                raise ValidationError("Bracket fixtures require a winner.")
+            rec.write({"result_state": "approved", "state": "completed"})
+            self.env["federation.stage.graph.engine"].resolve_dependants(rec)
         return True
 
+
 class FederationStageParticipant(models.Model):
-    _name="federation.stage.participant";_description="Stage Participant";_order="seed,id"
-    stage_id=fields.Many2one("federation.structure.stage",required=True,ondelete="cascade",index=True);team_id=fields.Many2one("federation.team",required=True,ondelete="restrict",index=True);seed=fields.Integer(required=True);source_rank=fields.Integer();carried_points=fields.Integer();carried_played=fields.Integer();carried_score_for=fields.Integer();carried_score_against=fields.Integer()
-    _uniq_team=models.Constraint("unique(stage_id,team_id)","A team occurs once per stage.");_uniq_seed=models.Constraint("unique(stage_id,seed)","Stage seeds must be unique.")
+    _name = "federation.stage.participant"
+    _description = "Stage Participant"
+    _order = "seed,id"
+    stage_id = fields.Many2one(
+        "federation.structure.stage", required=True, ondelete="cascade", index=True
+    )
+    team_id = fields.Many2one(
+        "federation.team", required=True, ondelete="restrict", index=True
+    )
+    seed = fields.Integer(required=True)
+    source_rank = fields.Integer()
+    carried_points = fields.Integer()
+    carried_played = fields.Integer()
+    carried_score_for = fields.Integer()
+    carried_score_against = fields.Integer()
+    _uniq_team = models.Constraint(
+        "unique(stage_id,team_id)", "A team occurs once per stage."
+    )
+    _uniq_seed = models.Constraint(
+        "unique(stage_id,seed)", "Stage seeds must be unique."
+    )
+
 
 class FederationStageProgression(models.Model):
-    _name="federation.structure.stage.progression";_description="Competition Structure Stage Progression";_order="source_stage_id,rank_from,id"
-    structure_id=fields.Many2one(related="source_stage_id.structure_id",store=True,index=True);name=fields.Char(required=True);source_stage_id=fields.Many2one("federation.structure.stage",required=True,ondelete="cascade",index=True);target_stage_id=fields.Many2one("federation.structure.stage",required=True,ondelete="cascade",index=True);rank_from=fields.Integer(default=1,required=True);rank_to=fields.Integer(default=1,required=True);target_seed_from=fields.Integer(default=1,required=True);active=fields.Boolean(default=True);applied=fields.Boolean(readonly=True)
-    @api.constrains("source_stage_id","target_stage_id","rank_from","rank_to")
+    _name = "federation.structure.stage.progression"
+    _description = "Competition Structure Stage Progression"
+    _order = "source_stage_id,rank_from,id"
+    structure_id = fields.Many2one(
+        related="source_stage_id.structure_id", store=True, index=True
+    )
+    name = fields.Char(required=True)
+    source_stage_id = fields.Many2one(
+        "federation.structure.stage", required=True, ondelete="cascade", index=True
+    )
+    target_stage_id = fields.Many2one(
+        "federation.structure.stage", required=True, ondelete="cascade", index=True
+    )
+    rank_from = fields.Integer(default=1, required=True)
+    rank_to = fields.Integer(default=1, required=True)
+    target_seed_from = fields.Integer(default=1, required=True)
+    active = fields.Boolean(default=True)
+    applied = fields.Boolean(readonly=True)
+
+    @api.constrains("source_stage_id", "target_stage_id", "rank_from", "rank_to")
     def _check(self):
         for r in self:
-            if r.source_stage_id==r.target_stage_id or r.source_stage_id.structure_id!=r.target_stage_id.structure_id:raise ValidationError("Progression must connect different stages in one structure.")
-            if r.rank_from<1 or r.rank_to<r.rank_from:raise ValidationError("Invalid rank range.")
+            if (
+                r.source_stage_id == r.target_stage_id
+                or r.source_stage_id.structure_id != r.target_stage_id.structure_id
+            ):
+                raise ValidationError(
+                    "Progression must connect different stages in one structure."
+                )
+            if r.rank_from < 1 or r.rank_to < r.rank_from:
+                raise ValidationError("Invalid rank range.")
+
 
 class FederationStageStandingSnapshot(models.Model):
-    _name="federation.stage.standing.snapshot";_description="Frozen Stage Standings"
-    stage_id=fields.Many2one("federation.structure.stage",required=True,ondelete="restrict",index=True);frozen_at=fields.Datetime(default=fields.Datetime.now,readonly=True);frozen_by_id=fields.Many2one("res.users",default=lambda s:s.env.user,readonly=True);line_ids=fields.One2many("federation.stage.standing.line","snapshot_id",readonly=True)
-    def unlink(self):raise ValidationError("Frozen standings are immutable.")
+    _name = "federation.stage.standing.snapshot"
+    _description = "Frozen Stage Standings"
+    stage_id = fields.Many2one(
+        "federation.structure.stage", required=True, ondelete="restrict", index=True
+    )
+    frozen_at = fields.Datetime(default=fields.Datetime.now, readonly=True)
+    frozen_by_id = fields.Many2one(
+        "res.users", default=lambda s: s.env.user, readonly=True
+    )
+    line_ids = fields.One2many(
+        "federation.stage.standing.line", "snapshot_id", readonly=True
+    )
+
+    def unlink(self):
+        raise ValidationError("Frozen standings are immutable.")
+
+
 class FederationStageStandingLine(models.Model):
-    _name="federation.stage.standing.line";_description="Frozen Stage Standing";_order="rank,id"
-    snapshot_id=fields.Many2one("federation.stage.standing.snapshot",required=True,ondelete="cascade",index=True);team_id=fields.Many2one("federation.team",required=True,ondelete="restrict");rank=fields.Integer(required=True);played=fields.Integer();won=fields.Integer();drawn=fields.Integer();lost=fields.Integer();score_for=fields.Integer();score_against=fields.Integer();points=fields.Integer()
+    _name = "federation.stage.standing.line"
+    _description = "Frozen Stage Standing"
+    _order = "rank,id"
+    snapshot_id = fields.Many2one(
+        "federation.stage.standing.snapshot",
+        required=True,
+        ondelete="cascade",
+        index=True,
+    )
+    team_id = fields.Many2one("federation.team", required=True, ondelete="restrict")
+    rank = fields.Integer(required=True)
+    played = fields.Integer()
+    won = fields.Integer()
+    drawn = fields.Integer()
+    lost = fields.Integer()
+    score_for = fields.Integer()
+    score_against = fields.Integer()
+    points = fields.Integer()
 
 ====================================================================================================
 FILE: sports_federation_format/services/__init__.py
@@ -18484,119 +18683,429 @@ FILE: sports_federation_format/services/stage_graph_engine.py
 ====================================================================================================
 
 from collections import defaultdict
-from math import ceil,log2
-from odoo import _,api,models
+from math import ceil, log2
+from odoo import _, api, models
 from odoo.exceptions import ValidationError
+
+
 class FederationStageGraphEngine(models.AbstractModel):
-    _name="federation.stage.graph.engine";_description="Stage Graph Engine"
+    _name = "federation.stage.graph.engine"
+    _description = "Stage Graph Engine"
+
     @api.model
-    def validate_graph(self,structure):
-        adj={s.id:[] for s in structure.stage_ids};visiting=set();done=set()
-        for e in self.env["federation.structure.stage.progression"].search([("structure_id","=",structure.id),("active","=",True)]):adj[e.source_stage_id.id].append(e.target_stage_id.id)
+    def validate_graph(self, structure):
+        adj = {s.id: [] for s in structure.stage_ids}
+        visiting = set()
+        done = set()
+        for e in self.env["federation.structure.stage.progression"].search(
+            [("structure_id", "=", structure.id), ("active", "=", True)]
+        ):
+            adj[e.source_stage_id.id].append(e.target_stage_id.id)
+
         def visit(n):
-            if n in visiting:raise ValidationError(_("Stage graph contains a cycle."))
-            if n in done:return
+            if n in visiting:
+                raise ValidationError(_("Stage graph contains a cycle."))
+            if n in done:
+                return
             visiting.add(n)
-            for x in adj[n]:visit(x)
-            visiting.remove(n);done.add(n)
-        for stage in structure.stage_ids:visit(stage.id)
+            for x in adj[n]:
+                visit(x)
+            visiting.remove(n)
+            done.add(n)
+
+        for stage in structure.stage_ids:
+            visit(stage.id)
         return True
-    def _participants(self,stage):return stage.stage_participant_ids.sorted(lambda p:(p.seed,p.id))
+
+    def _participants(self, stage):
+        return stage.stage_participant_ids.sorted(lambda p: (p.seed, p.id))
+
     @api.model
-    def prepare_stage(self,stage):
+    def prepare_stage(self, stage):
         self.validate_graph(stage.structure_id)
-        if stage.source_type=="registration":
-            stage.stage_participant_ids.unlink();self.env["federation.stage.participant"].create([{"stage_id":stage.id,"team_id":x.team_id.id,"seed":x.seed or i,"source_rank":x.seed or i} for i,x in enumerate(stage.structure_id.participant_set_id.line_ids.sorted(lambda x:(x.seed or 9999,x.id)),1)])
-        elif stage.source_type=="progression" and not stage.stage_participant_ids:stage.graph_state="waiting";return True
-        if len(stage.stage_participant_ids)<2:raise ValidationError(_("A stage requires at least two teams."))
+        if stage.source_type == "registration":
+            stage.stage_participant_ids.unlink()
+            self.env["federation.stage.participant"].create(
+                [
+                    {
+                        "stage_id": stage.id,
+                        "team_id": x.team_id.id,
+                        "seed": x.seed or i,
+                        "source_rank": x.seed or i,
+                    }
+                    for i, x in enumerate(
+                        stage.structure_id.participant_set_id.line_ids.sorted(
+                            lambda x: (x.seed or 9999, x.id)
+                        ),
+                        1,
+                    )
+                ]
+            )
+        elif stage.source_type == "progression" and not stage.stage_participant_ids:
+            stage.graph_state = "waiting"
+            return True
+        if len(stage.stage_participant_ids) < 2:
+            raise ValidationError(_("A stage requires at least two teams."))
         stage.stage_fixture_ids.unlink()
-        if stage.format_type in ("single_round_robin","double_round_robin"):self._round_robin(stage,stage.format_type=="double_round_robin")
-        elif stage.format_type=="knockout":self._knockout(stage,False)
-        elif stage.format_type=="placement_bracket":self._knockout(stage,True)
-        stage.graph_state="ready";return True
-    def _round_robin(self,stage,double):
-        teams=list(self._participants(stage).mapped("team_id"));work=teams+[False] if len(teams)%2 else teams[:];rounds=[]
-        for rnd in range(len(work)-1):
-            pairs=[]
-            for i in range(len(work)//2):
-                a,b=work[i],work[-i-1]
-                if a and b:pairs.append((a,b) if rnd%2==0 else (b,a))
-            rounds.append(pairs);work=[work[0],work[-1],*work[1:-1]]
-        if double:rounds += [[(b,a) for a,b in pairs] for pairs in rounds]
-        self.env["federation.fixture"].create([{"structure_id":stage.structure_id.id,"stage_id":stage.id,"round_number":rn,"sequence":seq*10,"home_team_id":a.id,"away_team_id":b.id} for rn,pairs in enumerate(rounds,1) for seq,(a,b) in enumerate(pairs,1)])
-    def _seed_order(self,size):
-        order=[1,2]
-        while len(order)<size:
-            mirror=len(order)*2+1;order=[x for seed in order for x in (seed,mirror-seed)]
-        return order
-    def _knockout(self,stage,full_placement):
-        participants=self._participants(stage);count=len(participants);by_seed={p.seed:p.team_id for p in participants}
-        if set(by_seed)!=set(range(1,count+1)):raise ValidationError(_("Bracket seeds must be consecutive from 1 to %(count)s.",count=count))
-        size=2**ceil(log2(count));order=self._seed_order(size);F=self.env["federation.fixture"];common={"structure_id":stage.structure_id.id,"stage_id":stage.id};current=[];cohorts=[]
-        for i in range(0,size,2):
-            a,b=by_seed.get(order[i]),by_seed.get(order[i+1]);current.append(F.create({**common,"round_number":1,"sequence":i*5+10,"home_team_id":a.id if a else False,"away_team_id":b.id if b else False,"placement_from":1,"placement_to":count}))
-        rnd=1
-        while len(current)>1:
-            cohorts.append(current);rnd+=1;nxt=[]
-            for i in range(0,len(current),2):nxt.append(F.create({**common,"round_number":rnd,"sequence":i*5+10,"home_source_fixture_id":current[i].id,"home_source_outcome":"winner","away_source_fixture_id":current[i+1].id,"away_source_outcome":"winner"}))
-            current=nxt
-        current[0].write({"placement_from":1,"placement_to":2})
-        if full_placement:
-            rank=3
-            for cohort in reversed(cohorts):
-                sources=[(f,"loser") for f in cohort if self._can_produce_loser(f)]
-                if len(sources)>1:
-                    rnd=self._classification(stage,sources,rank,min(count,rank+len(sources)-1),rnd+1);rank+=len(sources)
-        for f in stage.stage_fixture_ids.sorted(lambda x:(x.round_number,x.sequence,x.id)):self._resolve_bye(f)
-    def _can_produce_loser(self,f):return sum(bool(x) for x in (f.home_team_id,f.away_team_id,f.home_source_fixture_id,f.away_source_fixture_id))>=2
-    def _classification(self,stage,sources,lo,hi,rnd):
-        F=self.env["federation.fixture"];common={"structure_id":stage.structure_id.id,"stage_id":stage.id}
-        if len(sources)==2:
-            a,ao=sources[0];b,bo=sources[1];F.create({**common,"round_number":rnd,"sequence":1000+lo*10,"home_source_fixture_id":a.id,"home_source_outcome":ao,"away_source_fixture_id":b.id,"away_source_outcome":bo,"placement_from":lo,"placement_to":hi});return rnd
-        winners=[];losers=[]
-        for i in range(0,len(sources)-1,2):
-            a,ao=sources[i];b,bo=sources[i+1];f=F.create({**common,"round_number":rnd,"sequence":1000+lo*10+i,"home_source_fixture_id":a.id,"home_source_outcome":ao,"away_source_fixture_id":b.id,"away_source_outcome":bo,"placement_from":lo,"placement_to":hi});winners.append((f,"winner"));losers.append((f,"loser"))
-        if len(sources)%2:winners.append(sources[-1])
-        split=lo+len(winners)-1;last=rnd
-        if len(winners)>1:last=max(last,self._classification(stage,winners,lo,split,rnd+1))
-        if len(losers)>1:last=max(last,self._classification(stage,losers,split+1,hi,rnd+1))
-        return last
-    def _result(self,f):
-        if f.result_state!="approved":return False,False
-        return (f.home_team_id,f.away_team_id) if f.home_score>f.away_score else (f.away_team_id,f.home_team_id)
-    def _resolve_bye(self,f):
-        if f.result_state=="approved":return
-        if f.home_team_id and not f.away_team_id and not f.away_source_fixture_id:f.write({"home_score":1,"away_score":0,"result_state":"approved","state":"completed"});self.resolve_dependants(f)
-        elif f.away_team_id and not f.home_team_id and not f.home_source_fixture_id:f.write({"home_score":0,"away_score":1,"result_state":"approved","state":"completed"});self.resolve_dependants(f)
-    @api.model
-    def resolve_dependants(self,f):
-        winner,loser=self._result(f)
-        if not winner:return True
-        for target in self.env["federation.fixture"].search(["|",("home_source_fixture_id","=",f.id),("away_source_fixture_id","=",f.id)]):
-            vals={}
-            if target.home_source_fixture_id==f:vals["home_team_id"]=(winner if target.home_source_outcome=="winner" else loser).id
-            if target.away_source_fixture_id==f:vals["away_team_id"]=(winner if target.away_source_outcome=="winner" else loser).id
-            target.write(vals);self._resolve_bye(target)
+        if stage.format_type in ("single_round_robin", "double_round_robin"):
+            self._round_robin(stage, stage.format_type == "double_round_robin")
+        elif stage.format_type == "knockout":
+            self._knockout(stage, False)
+        elif stage.format_type == "placement_bracket":
+            self._knockout(stage, True)
+        stage.graph_state = "ready"
         return True
-    def _standings(self,stage):
-        stats={p.team_id.id:{"team":p.team_id,"played":p.carried_played,"won":0,"drawn":0,"lost":0,"score_for":p.carried_score_for,"score_against":p.carried_score_against,"points":p.carried_points} for p in stage.stage_participant_ids}
-        for f in stage.stage_fixture_ids.filtered(lambda x:x.result_state=="approved" and x.home_team_id and x.away_team_id):
-            h,a=stats[f.home_team_id.id],stats[f.away_team_id.id];h["played"]+=1;a["played"]+=1;h["score_for"]+=f.home_score;h["score_against"]+=f.away_score;a["score_for"]+=f.away_score;a["score_against"]+=f.home_score
-            if f.home_score>f.away_score:h["won"]+=1;a["lost"]+=1;h["points"]+=3
-            elif f.away_score>f.home_score:a["won"]+=1;h["lost"]+=1;a["points"]+=3
-            else:h["drawn"]+=1;a["drawn"]+=1;h["points"]+=1;a["points"]+=1
-        rows=sorted(stats.values(),key=lambda x:(-x["points"],-(x["score_for"]-x["score_against"]),-x["score_for"],x["team"].name))
-        for i,x in enumerate(rows,1):x["rank"]=i
-        return rows
+
+    def _round_robin(self, stage, double):
+        teams = list(self._participants(stage).mapped("team_id"))
+        work = teams + [False] if len(teams) % 2 else teams[:]
+        rounds = []
+        for rnd in range(len(work) - 1):
+            pairs = []
+            for i in range(len(work) // 2):
+                a, b = work[i], work[-i - 1]
+                if a and b:
+                    pairs.append((a, b) if rnd % 2 == 0 else (b, a))
+            rounds.append(pairs)
+            work = [work[0], work[-1], *work[1:-1]]
+        if double:
+            rounds += [[(b, a) for a, b in pairs] for pairs in rounds]
+        self.env["federation.fixture"].create(
+            [
+                {
+                    "structure_id": stage.structure_id.id,
+                    "stage_id": stage.id,
+                    "round_number": rn,
+                    "sequence": seq * 10,
+                    "home_team_id": a.id,
+                    "away_team_id": b.id,
+                }
+                for rn, pairs in enumerate(rounds, 1)
+                for seq, (a, b) in enumerate(pairs, 1)
+            ]
+        )
+
+    def _seed_order(self, size):
+        order = [1, 2]
+        while len(order) < size:
+            mirror = len(order) * 2 + 1
+            order = [x for seed in order for x in (seed, mirror - seed)]
+        return order
+
+    def _knockout(self, stage, full_placement):
+        participants = self._participants(stage)
+        count = len(participants)
+        by_seed = {p.seed: p.team_id for p in participants}
+        if set(by_seed) != set(range(1, count + 1)):
+            raise ValidationError(
+                _("Bracket seeds must be consecutive from 1 to %(count)s.", count=count)
+            )
+        size = 2 ** ceil(log2(count))
+        order = self._seed_order(size)
+        F = self.env["federation.fixture"]
+        common = {"structure_id": stage.structure_id.id, "stage_id": stage.id}
+        current = []
+        cohorts = []
+        for i in range(0, size, 2):
+            a, b = by_seed.get(order[i]), by_seed.get(order[i + 1])
+            current.append(
+                F.create(
+                    {
+                        **common,
+                        "round_number": 1,
+                        "sequence": i * 5 + 10,
+                        "home_team_id": a.id if a else False,
+                        "away_team_id": b.id if b else False,
+                        "placement_from": 1,
+                        "placement_to": count,
+                    }
+                )
+            )
+        rnd = 1
+        while len(current) > 1:
+            cohorts.append(current)
+            rnd += 1
+            nxt = []
+            for i in range(0, len(current), 2):
+                nxt.append(
+                    F.create(
+                        {
+                            **common,
+                            "round_number": rnd,
+                            "sequence": i * 5 + 10,
+                            "home_source_fixture_id": current[i].id,
+                            "home_source_outcome": "winner",
+                            "away_source_fixture_id": current[i + 1].id,
+                            "away_source_outcome": "winner",
+                        }
+                    )
+                )
+            current = nxt
+        current[0].write({"placement_from": 1, "placement_to": 2})
+        if full_placement:
+            rank = 3
+            for cohort in reversed(cohorts):
+                sources = [(f, "loser") for f in cohort if self._can_produce_loser(f)]
+                if len(sources) > 1:
+                    rnd = self._classification(
+                        stage,
+                        sources,
+                        rank,
+                        min(count, rank + len(sources) - 1),
+                        rnd + 1,
+                    )
+                    rank += len(sources)
+        for f in stage.stage_fixture_ids.sorted(
+            lambda x: (x.round_number, x.sequence, x.id)
+        ):
+            self._resolve_bye(f)
+
+    def _can_produce_loser(self, f):
+        return (
+            sum(
+                bool(x)
+                for x in (
+                    f.home_team_id,
+                    f.away_team_id,
+                    f.home_source_fixture_id,
+                    f.away_source_fixture_id,
+                )
+            )
+            >= 2
+        )
+
+    def _classification(self, stage, sources, lo, hi, rnd):
+        F = self.env["federation.fixture"]
+        common = {"structure_id": stage.structure_id.id, "stage_id": stage.id}
+        if len(sources) == 2:
+            a, ao = sources[0]
+            b, bo = sources[1]
+            F.create(
+                {
+                    **common,
+                    "round_number": rnd,
+                    "sequence": 1000 + lo * 10,
+                    "home_source_fixture_id": a.id,
+                    "home_source_outcome": ao,
+                    "away_source_fixture_id": b.id,
+                    "away_source_outcome": bo,
+                    "placement_from": lo,
+                    "placement_to": hi,
+                }
+            )
+            return rnd
+        winners = []
+        losers = []
+        for i in range(0, len(sources) - 1, 2):
+            a, ao = sources[i]
+            b, bo = sources[i + 1]
+            f = F.create(
+                {
+                    **common,
+                    "round_number": rnd,
+                    "sequence": 1000 + lo * 10 + i,
+                    "home_source_fixture_id": a.id,
+                    "home_source_outcome": ao,
+                    "away_source_fixture_id": b.id,
+                    "away_source_outcome": bo,
+                    "placement_from": lo,
+                    "placement_to": hi,
+                }
+            )
+            winners.append((f, "winner"))
+            losers.append((f, "loser"))
+        if len(sources) % 2:
+            winners.append(sources[-1])
+        split = lo + len(winners) - 1
+        last = rnd
+        if len(winners) > 1:
+            last = max(last, self._classification(stage, winners, lo, split, rnd + 1))
+        if len(losers) > 1:
+            last = max(
+                last, self._classification(stage, losers, split + 1, hi, rnd + 1)
+            )
+        return last
+
+    def _result(self, f):
+        if f.result_state != "approved":
+            return False, False
+        return (
+            (f.home_team_id, f.away_team_id)
+            if f.home_score > f.away_score
+            else (f.away_team_id, f.home_team_id)
+        )
+
+    def _resolve_bye(self, f):
+        if f.result_state == "approved":
+            return
+        if f.home_team_id and not f.away_team_id and not f.away_source_fixture_id:
+            f.write(
+                {
+                    "home_score": 1,
+                    "away_score": 0,
+                    "result_state": "approved",
+                    "state": "completed",
+                }
+            )
+            self.resolve_dependants(f)
+        elif f.away_team_id and not f.home_team_id and not f.home_source_fixture_id:
+            f.write(
+                {
+                    "home_score": 0,
+                    "away_score": 1,
+                    "result_state": "approved",
+                    "state": "completed",
+                }
+            )
+            self.resolve_dependants(f)
+
     @api.model
-    def freeze_standings(self,stage):
-        if stage.stage_fixture_ids.filtered(lambda f:f.result_state!="approved"):raise ValidationError(_("Approve all results first."))
-        snap=self.env["federation.stage.standing.snapshot"].create({"stage_id":stage.id});self.env["federation.stage.standing.line"].create([{"snapshot_id":snap.id,"team_id":x["team"].id,**{k:x[k] for k in ("rank","played","won","drawn","lost","score_for","score_against","points")}} for x in self._standings(stage)]);stage.write({"standing_snapshot_id":snap.id,"graph_state":"frozen"})
-        for edge in stage.outgoing_progression_ids.filtered(lambda e:e.active and not e.applied):self.apply_progression(edge)
-    def apply_progression(self,e):
-        lines=e.source_stage_id.standing_snapshot_id.line_ids.filtered(lambda l:e.rank_from<=l.rank<=e.rank_to).sorted("rank");target=e.target_stage_id;self.env["federation.stage.participant"].create([{"stage_id":target.id,"team_id":x.team_id.id,"seed":e.target_seed_from+i,"source_rank":x.rank,"carried_points":x.points if target.carryover_policy=="full_points" else 0,"carried_played":x.played if target.carryover_policy=="full_points" else 0,"carried_score_for":x.score_for if target.carryover_policy=="full_points" else 0,"carried_score_against":x.score_against if target.carryover_policy=="full_points" else 0} for i,x in enumerate(lines)]);e.applied=True
-        expected=sum(x.rank_to-x.rank_from+1 for x in target.incoming_progression_ids.filtered(lambda x:x.active))
-        if len(target.stage_participant_ids)>=expected:self.prepare_stage(target)
+    def resolve_dependants(self, f):
+        winner, loser = self._result(f)
+        if not winner:
+            return True
+        for target in self.env["federation.fixture"].search(
+            [
+                "|",
+                ("home_source_fixture_id", "=", f.id),
+                ("away_source_fixture_id", "=", f.id),
+            ]
+        ):
+            vals = {}
+            if target.home_source_fixture_id == f:
+                vals["home_team_id"] = (
+                    winner if target.home_source_outcome == "winner" else loser
+                ).id
+            if target.away_source_fixture_id == f:
+                vals["away_team_id"] = (
+                    winner if target.away_source_outcome == "winner" else loser
+                ).id
+            target.write(vals)
+            self._resolve_bye(target)
+        return True
+
+    def _standings(self, stage):
+        stats = {
+            p.team_id.id: {
+                "team": p.team_id,
+                "played": p.carried_played,
+                "won": 0,
+                "drawn": 0,
+                "lost": 0,
+                "score_for": p.carried_score_for,
+                "score_against": p.carried_score_against,
+                "points": p.carried_points,
+            }
+            for p in stage.stage_participant_ids
+        }
+        for f in stage.stage_fixture_ids.filtered(
+            lambda x: x.result_state == "approved" and x.home_team_id and x.away_team_id
+        ):
+            h, a = stats[f.home_team_id.id], stats[f.away_team_id.id]
+            h["played"] += 1
+            a["played"] += 1
+            h["score_for"] += f.home_score
+            h["score_against"] += f.away_score
+            a["score_for"] += f.away_score
+            a["score_against"] += f.home_score
+            if f.home_score > f.away_score:
+                h["won"] += 1
+                a["lost"] += 1
+                h["points"] += 3
+            elif f.away_score > f.home_score:
+                a["won"] += 1
+                h["lost"] += 1
+                a["points"] += 3
+            else:
+                h["drawn"] += 1
+                a["drawn"] += 1
+                h["points"] += 1
+                a["points"] += 1
+        rows = sorted(
+            stats.values(),
+            key=lambda x: (
+                -x["points"],
+                -(x["score_for"] - x["score_against"]),
+                -x["score_for"],
+                x["team"].name,
+            ),
+        )
+        for i, x in enumerate(rows, 1):
+            x["rank"] = i
+        return rows
+
+    @api.model
+    def freeze_standings(self, stage):
+        if stage.stage_fixture_ids.filtered(lambda f: f.result_state != "approved"):
+            raise ValidationError(_("Approve all results first."))
+        snap = self.env["federation.stage.standing.snapshot"].create(
+            {"stage_id": stage.id}
+        )
+        self.env["federation.stage.standing.line"].create(
+            [
+                {
+                    "snapshot_id": snap.id,
+                    "team_id": x["team"].id,
+                    **{
+                        k: x[k]
+                        for k in (
+                            "rank",
+                            "played",
+                            "won",
+                            "drawn",
+                            "lost",
+                            "score_for",
+                            "score_against",
+                            "points",
+                        )
+                    },
+                }
+                for x in self._standings(stage)
+            ]
+        )
+        stage.write({"standing_snapshot_id": snap.id, "graph_state": "frozen"})
+        for edge in stage.outgoing_progression_ids.filtered(
+            lambda e: e.active and not e.applied
+        ):
+            self.apply_progression(edge)
+
+    def apply_progression(self, e):
+        lines = e.source_stage_id.standing_snapshot_id.line_ids.filtered(
+            lambda l: e.rank_from <= l.rank <= e.rank_to
+        ).sorted("rank")
+        target = e.target_stage_id
+        self.env["federation.stage.participant"].create(
+            [
+                {
+                    "stage_id": target.id,
+                    "team_id": x.team_id.id,
+                    "seed": e.target_seed_from + i,
+                    "source_rank": x.rank,
+                    "carried_points": (
+                        x.points if target.carryover_policy == "full_points" else 0
+                    ),
+                    "carried_played": (
+                        x.played if target.carryover_policy == "full_points" else 0
+                    ),
+                    "carried_score_for": (
+                        x.score_for if target.carryover_policy == "full_points" else 0
+                    ),
+                    "carried_score_against": (
+                        x.score_against
+                        if target.carryover_policy == "full_points"
+                        else 0
+                    ),
+                }
+                for i, x in enumerate(lines)
+            ]
+        )
+        e.applied = True
+        expected = sum(
+            x.rank_to - x.rank_from + 1
+            for x in target.incoming_progression_ids.filtered(lambda x: x.active)
+        )
+        if len(target.stage_participant_ids) >= expected:
+            self.prepare_stage(target)
 
 ====================================================================================================
 FILE: sports_federation_format/views/stage_graph_views.xml
@@ -18617,17 +19126,22 @@ FILE: sports_federation_matchday/__manifest__.py
 ====================================================================================================
 
 {
-    'name': 'Match-Day Operations',
-    'version': '19.0.1.1.0',
-    'category': 'Sports',
-    'summary': 'Live court control, delays and operational incidents',
-    'author': 'Sports Federation',
-    'license': 'LGPL-3',
-    'depends': ['sports_federation_schedule_approval'],
-    'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/matchday_views.xml', 'views/menu.xml'],
-    'installable': True,
-    'application': False,
-    'auto_install': False,
+    "name": "Match-Day Operations",
+    "version": "19.0.1.1.0",
+    "category": "Sports",
+    "summary": "Live court control, delays and operational incidents",
+    "author": "Sports Federation",
+    "license": "LGPL-3",
+    "depends": ["sports_federation_schedule_approval"],
+    "data": [
+        "security/security.xml",
+        "security/ir.model.access.csv",
+        "views/matchday_views.xml",
+        "views/menu.xml",
+    ],
+    "installable": True,
+    "application": False,
+    "auto_install": False,
 }
 
 ====================================================================================================
@@ -43432,17 +43946,23 @@ FILE: sports_federation_registration/__manifest__.py
 ====================================================================================================
 
 {
-    'name': 'Competition Registration',
-    'version': '19.0.1.1.0',
-    'category': 'Sports',
-    'summary': 'Role-separated registration desk and finalized participant sets',
-    'author': 'Sports Federation',
-    'license': 'LGPL-3',
-    'depends': ['sports_federation_competition_core'],
-    'data': ['security/security.xml', 'security/ir.model.access.csv', 'wizards/create_competition_wizard_views.xml', 'views/registration_views.xml', 'views/menu.xml'],
-    'installable': True,
-    'application': False,
-    'auto_install': False,
+    "name": "Competition Registration",
+    "version": "19.0.1.1.0",
+    "category": "Sports",
+    "summary": "Role-separated registration desk and finalized participant sets",
+    "author": "Sports Federation",
+    "license": "LGPL-3",
+    "depends": ["sports_federation_competition_core"],
+    "data": [
+        "security/security.xml",
+        "security/ir.model.access.csv",
+        "wizards/create_competition_wizard_views.xml",
+        "views/registration_views.xml",
+        "views/menu.xml",
+    ],
+    "installable": True,
+    "application": False,
+    "auto_install": False,
 }
 
 ====================================================================================================
@@ -43835,10 +44355,13 @@ FILE: sports_federation_registration/wizards/create_competition_wizard.py
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
+
 class FederationCreateCompetitionWizard(models.TransientModel):
     _name = "federation.create.competition.wizard"
     _description = "Create Competition Workflow"
-    competition_id = fields.Many2one("federation.competition", required=True, string="Competition Template")
+    competition_id = fields.Many2one(
+        "federation.competition", required=True, string="Competition Template"
+    )
     name = fields.Char(required=True)
     season_id = fields.Many2one("federation.season", required=True)
     date_start = fields.Date(required=True)
@@ -43846,8 +44369,14 @@ class FederationCreateCompetitionWizard(models.TransientModel):
     rule_set_id = fields.Many2one("federation.rule.set")
     registration_open = fields.Datetime()
     registration_close = fields.Datetime()
-    division_line_ids = fields.One2many("federation.create.competition.division.wizard", "wizard_id", string="Divisions")
-    role_line_ids = fields.One2many("federation.create.competition.role.wizard", "wizard_id", string="Responsibilities")
+    division_line_ids = fields.One2many(
+        "federation.create.competition.division.wizard", "wizard_id", string="Divisions"
+    )
+    role_line_ids = fields.One2many(
+        "federation.create.competition.role.wizard",
+        "wizard_id",
+        string="Responsibilities",
+    )
 
     @api.onchange("competition_id")
     def _onchange_competition(self):
@@ -43860,46 +44389,118 @@ class FederationCreateCompetitionWizard(models.TransientModel):
     def _check_dates(self):
         for rec in self:
             if rec.date_end and rec.date_end < rec.date_start:
-                raise ValidationError(_("The competition end date cannot precede its start date."))
-            if rec.registration_open and rec.registration_close and rec.registration_close <= rec.registration_open:
+                raise ValidationError(
+                    _("The competition end date cannot precede its start date.")
+                )
+            if (
+                rec.registration_open
+                and rec.registration_close
+                and rec.registration_close <= rec.registration_open
+            ):
                 raise ValidationError(_("Registration must close after it opens."))
 
     def action_create_competition(self):
         self.ensure_one()
         if not self.division_line_ids:
             raise ValidationError(_("Add at least one division."))
-        edition = self.env["federation.competition.edition"].create({
-            "name": self.name, "competition_id": self.competition_id.id,
-            "season_id": self.season_id.id, "date_start": self.date_start,
-            "date_end": self.date_end, "rule_set_id": self.rule_set_id.id,
-            "engine_state": "draft",
-        })
+        edition = self.env["federation.competition.edition"].create(
+            {
+                "name": self.name,
+                "competition_id": self.competition_id.id,
+                "season_id": self.season_id.id,
+                "date_start": self.date_start,
+                "date_end": self.date_end,
+                "rule_set_id": self.rule_set_id.id,
+                "engine_state": "draft",
+            }
+        )
         for line in self.division_line_ids:
-            division = self.env["federation.tournament"].create({
-                "name": line.name, "code": line.code or False,
-                "edition_id": edition.id, "competition_id": self.competition_id.id,
-                "season_id": self.season_id.id, "rule_set_id": self.rule_set_id.id,
-                "date_start": self.date_start, "date_end": self.date_end,
-                "category": line.category or False, "gender": line.gender or False,
-                "tournament_type": line.tournament_type,
-            })
-            self.env["federation.registration.window"].create({
-                "name": _("Registration - %(division)s", division=division.name),
-                "edition_id": edition.id, "division_id": division.id,
-                "date_open": self.registration_open, "date_close": self.registration_close,
-            })
+            division = self.env["federation.tournament"].create(
+                {
+                    "name": line.name,
+                    "code": line.code or False,
+                    "edition_id": edition.id,
+                    "competition_id": self.competition_id.id,
+                    "season_id": self.season_id.id,
+                    "rule_set_id": self.rule_set_id.id,
+                    "date_start": self.date_start,
+                    "date_end": self.date_end,
+                    "category": line.category or False,
+                    "gender": line.gender or False,
+                    "tournament_type": line.tournament_type,
+                }
+            )
+            self.env["federation.registration.window"].create(
+                {
+                    "name": _("Registration - %(division)s", division=division.name),
+                    "edition_id": edition.id,
+                    "division_id": division.id,
+                    "date_open": self.registration_open,
+                    "date_close": self.registration_close,
+                }
+            )
         for line in self.role_line_ids.filtered("user_id"):
-            self.env["federation.competition.role.assignment"].create({"edition_id":edition.id,"role":line.role,"user_id":line.user_id.id})
-        self.env["federation.competition.event"].emit(edition, "competition_workflow_created", {"division_count":len(self.division_line_ids)})
-        return {"type":"ir.actions.act_window","res_model":"federation.competition.edition","res_id":edition.id,"view_mode":"form","target":"current"}
+            self.env["federation.competition.role.assignment"].create(
+                {
+                    "edition_id": edition.id,
+                    "role": line.role,
+                    "user_id": line.user_id.id,
+                }
+            )
+        self.env["federation.competition.event"].emit(
+            edition,
+            "competition_workflow_created",
+            {"division_count": len(self.division_line_ids)},
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": "federation.competition.edition",
+            "res_id": edition.id,
+            "view_mode": "form",
+            "target": "current",
+        }
+
 
 class FederationCreateCompetitionDivisionWizard(models.TransientModel):
-    _name="federation.create.competition.division.wizard"; _description="Competition Division Setup"
-    wizard_id=fields.Many2one("federation.create.competition.wizard",required=True,ondelete="cascade")
-    name=fields.Char(required=True); code=fields.Char(); category=fields.Selection([("senior","Senior"),("youth","Youth"),("junior","Junior"),("cadet","Cadet"),("mini","Mini")]); gender=fields.Selection([("male","Male"),("female","Female"),("mixed","Mixed")]); tournament_type=fields.Selection([("single_day","Single Day"),("multi_day","Multi Day")],default="multi_day",required=True)
+    _name = "federation.create.competition.division.wizard"
+    _description = "Competition Division Setup"
+    wizard_id = fields.Many2one(
+        "federation.create.competition.wizard", required=True, ondelete="cascade"
+    )
+    name = fields.Char(required=True)
+    code = fields.Char()
+    category = fields.Selection(
+        [
+            ("senior", "Senior"),
+            ("youth", "Youth"),
+            ("junior", "Junior"),
+            ("cadet", "Cadet"),
+            ("mini", "Mini"),
+        ]
+    )
+    gender = fields.Selection(
+        [("male", "Male"), ("female", "Female"), ("mixed", "Mixed")]
+    )
+    tournament_type = fields.Selection(
+        [("single_day", "Single Day"), ("multi_day", "Multi Day")],
+        default="multi_day",
+        required=True,
+    )
+
+
 class FederationCreateCompetitionRoleWizard(models.TransientModel):
-    _name="federation.create.competition.role.wizard"; _description="Competition Responsibility Setup"
-    wizard_id=fields.Many2one("federation.create.competition.wizard",required=True,ondelete="cascade"); role=fields.Selection(selection=lambda self:self.env["federation.competition.role.assignment"]._fields["role"].selection,required=True); user_id=fields.Many2one("res.users",required=True)
+    _name = "federation.create.competition.role.wizard"
+    _description = "Competition Responsibility Setup"
+    wizard_id = fields.Many2one(
+        "federation.create.competition.wizard", required=True, ondelete="cascade"
+    )
+    role = fields.Selection(
+        selection=lambda self: self.env["federation.competition.role.assignment"]
+        ._fields["role"]
+        .selection,
+        required=True,
+    )
+    user_id = fields.Many2one("res.users", required=True)
 
 ====================================================================================================
 FILE: sports_federation_result_control/README.md
@@ -47400,17 +48001,22 @@ FILE: sports_federation_schedule_approval/__manifest__.py
 ====================================================================================================
 
 {
-    'name': 'Schedule Approval',
-    'version': '19.0.1.1.0',
-    'category': 'Sports',
-    'summary': 'Independent review, approval and immutable publication snapshots',
-    'author': 'Sports Federation',
-    'license': 'LGPL-3',
-    'depends': ['sports_federation_scheduling'],
-    'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/approval_views.xml', 'views/menu.xml'],
-    'installable': True,
-    'application': False,
-    'auto_install': False,
+    "name": "Schedule Approval",
+    "version": "19.0.1.1.0",
+    "category": "Sports",
+    "summary": "Independent review, approval and immutable publication snapshots",
+    "author": "Sports Federation",
+    "license": "LGPL-3",
+    "depends": ["sports_federation_scheduling"],
+    "data": [
+        "security/security.xml",
+        "security/ir.model.access.csv",
+        "views/approval_views.xml",
+        "views/menu.xml",
+    ],
+    "installable": True,
+    "application": False,
+    "auto_install": False,
 }
 
 ====================================================================================================
@@ -47431,23 +48037,30 @@ FILE: sports_federation_scheduling/__init__.py
 
 from . import models
 from . import services
+from . import wizards
 
 ====================================================================================================
 FILE: sports_federation_scheduling/__manifest__.py
 ====================================================================================================
 
 {
-    'name': 'Competition Scheduling',
-    'version': '19.0.1.1.0',
-    'category': 'Sports',
-    'summary': 'Working schedules, assignments, validation and deterministic proposals',
-    'author': 'Sports Federation',
-    'license': 'LGPL-3',
-    'depends': ['sports_federation_calendar'],
-    'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/scheduling_views.xml', 'views/menu.xml'],
-    'installable': True,
-    'application': False,
-    'auto_install': False,
+    "name": "Competition Scheduling",
+    "version": "19.0.2.1.0",
+    "category": "Sports",
+    "summary": "Working schedules, assignments, validation and deterministic proposals",
+    "author": "Sports Federation",
+    "license": "LGPL-3",
+    "depends": ["sports_federation_calendar"],
+    "data": [
+        "security/security.xml",
+        "security/ir.model.access.csv",
+        "views/scheduling_views.xml",
+        "views/fairness_views.xml",
+        "views/menu.xml",
+    ],
+    "installable": True,
+    "application": False,
+    "auto_install": False,
 }
 
 ====================================================================================================
@@ -47461,6 +48074,7 @@ FILE: sports_federation_scheduling/models/schedule.py
 ====================================================================================================
 
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class FederationSchedule(models.Model):
@@ -47496,6 +48110,77 @@ class FederationSchedule(models.Model):
         index=True,
     )
     revision = fields.Integer(default=0, required=True, copy=False, index=True)
+    fairness_same_club_weight = fields.Float(
+        string="Same-club overlap weight",
+        default=40.0,
+        required=True,
+        help="Penalty when teams belonging to the same club play simultaneously.",
+    )
+    fairness_rest_weight = fields.Float(
+        string="Rest shortfall weight",
+        default=3.0,
+        required=True,
+        help="Penalty per missing minute below the preferred break.",
+    )
+    fairness_consecutive_weight = fields.Float(
+        string="Consecutive-games weight",
+        default=60.0,
+        required=True,
+        help="Penalty for each game above the configured consecutive-game limit.",
+    )
+    fairness_time_balance_weight = fields.Float(
+        string="Time-balance weight",
+        default=1.0,
+        required=True,
+        help="Penalty for uneven early/late play distribution between teams.",
+    )
+    fairness_court_balance_weight = fields.Float(
+        string="Court-repeat weight",
+        default=2.0,
+        required=True,
+        help="Penalty for repeatedly scheduling a team on the same court.",
+    )
+    preferred_rest_minutes = fields.Integer(default=40, required=True)
+    max_consecutive_games = fields.Integer(default=2, required=True)
+    fairness_last_score = fields.Float(readonly=True, copy=False)
+    fairness_last_report = fields.Json(readonly=True, copy=False)
+
+    @api.constrains(
+        "fairness_same_club_weight",
+        "fairness_rest_weight",
+        "fairness_consecutive_weight",
+        "fairness_time_balance_weight",
+        "fairness_court_balance_weight",
+        "preferred_rest_minutes",
+        "max_consecutive_games",
+    )
+    def _check_fairness_configuration(self):
+        for rec in self:
+            weights = (
+                rec.fairness_same_club_weight,
+                rec.fairness_rest_weight,
+                rec.fairness_consecutive_weight,
+                rec.fairness_time_balance_weight,
+                rec.fairness_court_balance_weight,
+            )
+            if any(weight < 0 for weight in weights):
+                raise ValidationError("Fairness weights cannot be negative.")
+            if rec.preferred_rest_minutes < 0:
+                raise ValidationError("Preferred rest cannot be negative.")
+            if rec.max_consecutive_games < 1:
+                raise ValidationError("Maximum consecutive games must be at least one.")
+
+    def action_open_auto_schedule(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Auto-schedule matches",
+            "res_model": "federation.schedule.auto.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_schedule_id": self.id},
+        }
+
     assignment_ids = fields.One2many("federation.schedule.assignment", "schedule_id")
     change_ids = fields.One2many(
         "federation.schedule.change", "schedule_id", readonly=True
@@ -47569,6 +48254,363 @@ from . import schedule_commands
 from . import schedule_queries
 from . import schedule_validator
 from . import deterministic_solver
+from . import fairness_solver
+
+====================================================================================================
+FILE: sports_federation_scheduling/services/fairness_solver.py
+====================================================================================================
+
+from collections import Counter, defaultdict
+from datetime import timedelta
+from odoo import api, models
+
+
+class FederationScheduleFairnessSolver(models.AbstractModel):
+    _name = "federation.schedule.fairness.solver"
+    _description = "Weighted Fairness Schedule Solver"
+
+    @api.model
+    def propose(self, schedule, configuration=None, replace_automatic=False):
+        schedule.ensure_one()
+        cfg = configuration or {
+            "same_club_weight": schedule.fairness_same_club_weight,
+            "rest_weight": schedule.fairness_rest_weight,
+            "consecutive_weight": schedule.fairness_consecutive_weight,
+            "time_balance_weight": schedule.fairness_time_balance_weight,
+            "court_balance_weight": schedule.fairness_court_balance_weight,
+            "preferred_rest_minutes": schedule.preferred_rest_minutes,
+            "max_consecutive_games": schedule.max_consecutive_games,
+        }
+        retained = schedule.assignment_ids.filtered(
+            lambda a: not replace_automatic or a.method != "automatic"
+        )
+        assignment_map = {a.fixture_id.id: a.slot_id.id for a in retained}
+        allocated = schedule.matchday_id.allocation_ids.mapped("fixture_ids")
+        if schedule.structure_id:
+            allocated = allocated.filtered(
+                lambda f: f.structure_id == schedule.structure_id
+            )
+        fixtures = allocated.filtered(lambda f: f.id not in assignment_map).sorted(
+            lambda f: (f.round_number, f.sequence, f.id)
+        )
+        used_slots = set(assignment_map.values())
+        available = schedule.matchday_id.slot_ids.filtered(
+            lambda s: s.state == "available" and s.id not in used_slots
+        ).sorted(lambda s: (s.start_datetime, s.court_id.id, s.id))
+        proposed = []
+        for fixture in fixtures:
+            best = None
+            for slot in available:
+                candidate = {**assignment_map, fixture.id: slot.id}
+                validation = self.env["federation.schedule.validator"].validate_map(
+                    schedule, candidate
+                )
+                if validation["errors"]:
+                    continue
+                report = self.evaluate(schedule, candidate, cfg)
+                key = (
+                    report["weighted_score"],
+                    slot.start_datetime,
+                    slot.court_id.id,
+                    slot.id,
+                )
+                if best is None or key < best[0]:
+                    best = (key, slot, report)
+            if best:
+                slot = best[1]
+                assignment_map[fixture.id] = slot.id
+                proposed.append({"fixture_id": fixture.id, "slot_id": slot.id})
+                available -= slot
+        final_validation = self.env["federation.schedule.validator"].validate_map(
+            schedule, assignment_map
+        )
+        return {
+            "assignments": proposed,
+            "unassigned_fixture_ids": final_validation["unassigned_fixture_ids"],
+            "validation": final_validation,
+            "fairness": self.evaluate(schedule, assignment_map, cfg),
+        }
+
+    @api.model
+    def evaluate(self, schedule, assignment_map, cfg):
+        fixture_by_id = {
+            f.id: f for f in schedule.matchday_id.allocation_ids.mapped("fixture_ids")
+        }
+        slot_by_id = {s.id: s for s in schedule.matchday_id.slot_ids}
+        team_events = defaultdict(list)
+        simultaneous_clubs = defaultdict(list)
+        for fixture_id, slot_id in assignment_map.items():
+            fixture, slot = fixture_by_id.get(fixture_id), slot_by_id.get(slot_id)
+            if not fixture or not slot:
+                continue
+            for team in (fixture.home_team_id, fixture.away_team_id):
+                if not team:
+                    continue
+                team_events[team.id].append(
+                    (slot.start_datetime, slot.end_datetime, slot.court_id.id)
+                )
+                club = getattr(team, "club_id", False)
+                if club:
+                    simultaneous_clubs[
+                        (slot.start_datetime, slot.end_datetime, club.id)
+                    ].append(team.id)
+        metrics = {
+            "same_club_simultaneous_pairs": 0,
+            "rest_shortfall_minutes": 0,
+            "excess_consecutive_games": 0,
+            "time_balance_spread": 0,
+            "same_court_repeats": 0,
+        }
+        for teams in simultaneous_clubs.values():
+            distinct = len(set(teams))
+            metrics["same_club_simultaneous_pairs"] += distinct * (distinct - 1) // 2
+        starts = []
+        for events in team_events.values():
+            events.sort()
+            starts.append([event[0] for event in events])
+            court_counts = Counter(event[2] for event in events)
+            metrics["same_court_repeats"] += sum(
+                max(0, count - 1) for count in court_counts.values()
+            )
+            streak = 1
+            for previous, current in zip(events, events[1:]):
+                gap = max(0, int((current[0] - previous[1]).total_seconds() // 60))
+                metrics["rest_shortfall_minutes"] += max(
+                    0, cfg["preferred_rest_minutes"] - gap
+                )
+                if gap < cfg["preferred_rest_minutes"]:
+                    streak += 1
+                    metrics["excess_consecutive_games"] += max(
+                        0, streak - cfg["max_consecutive_games"]
+                    )
+                else:
+                    streak = 1
+        if starts:
+            day_start = min(value for values in starts for value in values)
+            centroids = [
+                sum((value - day_start).total_seconds() / 60 for value in values)
+                / len(values)
+                for values in starts
+                if values
+            ]
+            if centroids:
+                metrics["time_balance_spread"] = round(
+                    max(centroids) - min(centroids), 2
+                )
+        components = {
+            "same_club": metrics["same_club_simultaneous_pairs"]
+            * cfg["same_club_weight"],
+            "rest": metrics["rest_shortfall_minutes"] * cfg["rest_weight"],
+            "consecutive": metrics["excess_consecutive_games"]
+            * cfg["consecutive_weight"],
+            "time_balance": metrics["time_balance_spread"] * cfg["time_balance_weight"],
+            "court_balance": metrics["same_court_repeats"]
+            * cfg["court_balance_weight"],
+        }
+        return {
+            "weighted_score": round(sum(components.values()), 2),
+            "metrics": metrics,
+            "components": components,
+            "configuration": cfg,
+        }
+
+====================================================================================================
+FILE: sports_federation_scheduling/views/fairness_views.xml
+====================================================================================================
+
+<odoo>
+  <record id="schedule_form_fair_auto" model="ir.ui.view">
+    <field name="name">federation.schedule.form.fair.auto</field>
+    <field name="model">federation.schedule</field>
+    <field name="inherit_id" ref="sports_federation_scheduling.schedule_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_open_auto_schedule" type="object" string="Auto-schedule" class="btn-primary" invisible="state not in ('draft','changes_requested')"/>
+      </xpath>
+      <xpath expr="//notebook" position="inside">
+        <page string="Scheduling Fairness" name="scheduling_fairness">
+          <group><group string="Constraints"><field name="preferred_rest_minutes"/><field name="max_consecutive_games"/></group>
+          <group string="Weights"><field name="fairness_same_club_weight"/><field name="fairness_rest_weight"/><field name="fairness_consecutive_weight"/><field name="fairness_time_balance_weight"/><field name="fairness_court_balance_weight"/></group></group>
+          <group string="Last automatic plan"><field name="fairness_last_score" readonly="1"/><field name="fairness_last_report" readonly="1"/></group>
+        </page>
+      </xpath>
+    </field>
+  </record>
+  <record id="schedule_auto_wizard_form" model="ir.ui.view">
+    <field name="name">federation.schedule.auto.wizard.form</field><field name="model">federation.schedule.auto.wizard</field>
+    <field name="arch" type="xml"><form string="Fair Auto-schedule"><sheet>
+      <div class="alert alert-info" role="status">The solver first obeys hard constraints, then minimizes the weighted fairness penalty. Lower scores are better.</div>
+      <group><field name="schedule_id" readonly="1"/><field name="replace_automatic_assignments"/></group>
+      <group string="Fairness formula"><group><field name="same_club_weight"/><field name="rest_weight"/><field name="consecutive_weight"/></group><group><field name="time_balance_weight"/><field name="court_balance_weight"/><field name="preferred_rest_minutes"/><field name="max_consecutive_games"/></group></group>
+      <group string="Preview" invisible="not preview_ready"><field name="proposed_count"/><field name="unassigned_count"/><field name="fairness_score"/><field name="preview_report" nolabel="1"/></group>
+      <field name="preview_ready" invisible="1"/>
+    </sheet><footer><button name="action_preview" type="object" string="Preview" class="btn-secondary"/><button name="action_apply" type="object" string="Apply Auto-schedule" class="btn-primary" invisible="not preview_ready"/><button string="Cancel" special="cancel"/></footer></form></field>
+  </record>
+</odoo>
+
+====================================================================================================
+FILE: sports_federation_scheduling/wizards/auto_schedule_wizard.py
+====================================================================================================
+
+import json
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationScheduleAutoWizard(models.TransientModel):
+    _name = "federation.schedule.auto.wizard"
+    _description = "Fair Auto-Schedule Preview"
+    schedule_id = fields.Many2one(
+        "federation.schedule", required=True, ondelete="cascade"
+    )
+    same_club_weight = fields.Float(required=True)
+    rest_weight = fields.Float(required=True)
+    consecutive_weight = fields.Float(required=True)
+    time_balance_weight = fields.Float(required=True)
+    court_balance_weight = fields.Float(required=True)
+    preferred_rest_minutes = fields.Integer(required=True)
+    max_consecutive_games = fields.Integer(required=True)
+    replace_automatic_assignments = fields.Boolean(default=False)
+    preview_ready = fields.Boolean(readonly=True)
+    proposed_count = fields.Integer(readonly=True)
+    unassigned_count = fields.Integer(readonly=True)
+    fairness_score = fields.Float(readonly=True)
+    preview_report = fields.Text(readonly=True)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            schedule = self.env["federation.schedule"].browse(vals.get("schedule_id"))
+            vals.setdefault("same_club_weight", schedule.fairness_same_club_weight)
+            vals.setdefault("rest_weight", schedule.fairness_rest_weight)
+            vals.setdefault("consecutive_weight", schedule.fairness_consecutive_weight)
+            vals.setdefault(
+                "time_balance_weight", schedule.fairness_time_balance_weight
+            )
+            vals.setdefault(
+                "court_balance_weight", schedule.fairness_court_balance_weight
+            )
+            vals.setdefault("preferred_rest_minutes", schedule.preferred_rest_minutes)
+            vals.setdefault("max_consecutive_games", schedule.max_consecutive_games)
+        return super().create(vals_list)
+
+    def _configuration(self):
+        self.ensure_one()
+        if (
+            min(
+                self.same_club_weight,
+                self.rest_weight,
+                self.consecutive_weight,
+                self.time_balance_weight,
+                self.court_balance_weight,
+            )
+            < 0
+        ):
+            raise ValidationError(_("Fairness weights cannot be negative."))
+        if self.preferred_rest_minutes < 0 or self.max_consecutive_games < 1:
+            raise ValidationError(
+                _("Enter a valid rest target and consecutive-game limit.")
+            )
+        return {
+            "same_club_weight": self.same_club_weight,
+            "rest_weight": self.rest_weight,
+            "consecutive_weight": self.consecutive_weight,
+            "time_balance_weight": self.time_balance_weight,
+            "court_balance_weight": self.court_balance_weight,
+            "preferred_rest_minutes": self.preferred_rest_minutes,
+            "max_consecutive_games": self.max_consecutive_games,
+        }
+
+    def action_preview(self):
+        self.ensure_one()
+        proposal = self.env["federation.schedule.fairness.solver"].propose(
+            self.schedule_id, self._configuration(), self.replace_automatic_assignments
+        )
+        report = proposal["fairness"]
+        self.write(
+            {
+                "preview_ready": True,
+                "proposed_count": len(proposal["assignments"]),
+                "unassigned_count": len(proposal["unassigned_fixture_ids"]),
+                "fairness_score": report["weighted_score"],
+                "preview_report": json.dumps(report, indent=2, sort_keys=True),
+            }
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": self._name,
+            "res_id": self.id,
+            "view_mode": "form",
+            "target": "new",
+        }
+
+    def action_apply(self):
+        self.ensure_one()
+        schedule = self.schedule_id
+        self.env["federation.competition.role.assignment"].assert_role(
+            schedule.edition_id, "schedule_planner", "competition_director"
+        )
+        proposal = self.env["federation.schedule.fairness.solver"].propose(
+            schedule, self._configuration(), self.replace_automatic_assignments
+        )
+        if not proposal["assignments"]:
+            raise ValidationError(_("The solver found no assignments to apply."))
+        expected_revision = schedule.revision
+        self.env.cr.execute(
+            "UPDATE federation_schedule SET revision=revision+1 WHERE id=%s AND revision=%s RETURNING revision",
+            (schedule.id, expected_revision),
+        )
+        row = self.env.cr.fetchone()
+        if not row:
+            raise ValidationError(
+                _("The schedule changed in another session. Reopen the preview.")
+            )
+        new_revision = row[0]
+        if self.replace_automatic_assignments:
+            schedule.assignment_ids.filtered(lambda a: a.method == "automatic").unlink()
+        existing = {a.fixture_id.id: a for a in schedule.assignment_ids}
+        created = self.env["federation.schedule.assignment"]
+        for item in proposal["assignments"]:
+            assignment = existing.get(item["fixture_id"])
+            if assignment:
+                old_slot = assignment.slot_id
+                assignment.write({"slot_id": item["slot_id"], "method": "automatic"})
+            else:
+                old_slot = self.env["federation.schedule.slot"]
+                assignment = self.env["federation.schedule.assignment"].create(
+                    {
+                        "schedule_id": schedule.id,
+                        "fixture_id": item["fixture_id"],
+                        "slot_id": item["slot_id"],
+                        "method": "automatic",
+                    }
+                )
+                created |= assignment
+            self.env["federation.schedule.change"].create(
+                {
+                    "schedule_id": schedule.id,
+                    "revision": new_revision,
+                    "command": "fair_auto_schedule",
+                    "fixture_id": item["fixture_id"],
+                    "old_slot_id": old_slot.id,
+                    "new_slot_id": item["slot_id"],
+                    "reason": _("Weighted fairness auto-schedule"),
+                }
+            )
+        schedule.write(
+            {
+                "fairness_same_club_weight": self.same_club_weight,
+                "fairness_rest_weight": self.rest_weight,
+                "fairness_consecutive_weight": self.consecutive_weight,
+                "fairness_time_balance_weight": self.time_balance_weight,
+                "fairness_court_balance_weight": self.court_balance_weight,
+                "preferred_rest_minutes": self.preferred_rest_minutes,
+                "max_consecutive_games": self.max_consecutive_games,
+                "fairness_last_score": proposal["fairness"]["weighted_score"],
+                "fairness_last_report": proposal["fairness"],
+            }
+        )
+        return {"type": "ir.actions.act_window_close"}
 
 ====================================================================================================
 FILE: sports_federation_tournament/__init__.py
