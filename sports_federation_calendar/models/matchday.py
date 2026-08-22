@@ -250,7 +250,9 @@ class FederationScheduleSlot(models.Model):
             )
             if duration <= 0:
                 duration = matchday.default_slot_duration_minutes or 40
-            return previous.end_datetime, previous.end_datetime + timedelta(minutes=duration)
+            return previous.end_datetime, previous.end_datetime + timedelta(
+                minutes=duration
+            )
         return self._suggest_slot_window(matchday, court)
 
     @api.model
@@ -285,8 +287,14 @@ class FederationScheduleSlot(models.Model):
         """Continue one court only; never borrow another court's timeline."""
         matchday = matchday._origin if matchday and matchday._origin.id else matchday
         court = court._origin if court and court._origin.id else court
-        previous = self._latest_court_slot(matchday, court) if court and court.id else False
-        start = previous.end_datetime if previous else self._first_start_for_matchday(matchday)
+        previous = (
+            self._latest_court_slot(matchday, court) if court and court.id else False
+        )
+        start = (
+            previous.end_datetime
+            if previous
+            else self._first_start_for_matchday(matchday)
+        )
         duration = self._suggest_duration_minutes(matchday, court)
         return start, start + timedelta(minutes=duration)
 
@@ -303,21 +311,40 @@ class FederationScheduleSlot(models.Model):
         for incoming in vals_list:
             vals = dict(incoming)
             if vals.get("continue_court_timeline", True):
-                matchday = self.env["federation.matchday"].browse(vals.get("matchday_id")).exists()
-                court = self.env["federation.playing.area"].browse(vals.get("court_id")).exists()
+                matchday = (
+                    self.env["federation.matchday"]
+                    .browse(vals.get("matchday_id"))
+                    .exists()
+                )
+                court = (
+                    self.env["federation.playing.area"]
+                    .browse(vals.get("court_id"))
+                    .exists()
+                )
                 if matchday and court:
                     previous = self._latest_court_slot(matchday, court)
-                    provided_start = fields.Datetime.to_datetime(vals.get("start_datetime"))
+                    provided_start = fields.Datetime.to_datetime(
+                        vals.get("start_datetime")
+                    )
                     provided_end = fields.Datetime.to_datetime(vals.get("end_datetime"))
                     provided_duration = (
                         int((provided_end - provided_start).total_seconds() // 60)
-                        if provided_start and provided_end and provided_end > provided_start
+                        if provided_start
+                        and provided_end
+                        and provided_end > provided_start
                         else matchday.default_slot_duration_minutes or 40
                     )
                     if previous:
-                        duration = int(
-                            (previous.end_datetime - previous.start_datetime).total_seconds() // 60
-                        ) or matchday.default_slot_duration_minutes or 40
+                        duration = (
+                            int(
+                                (
+                                    previous.end_datetime - previous.start_datetime
+                                ).total_seconds()
+                                // 60
+                            )
+                            or matchday.default_slot_duration_minutes
+                            or 40
+                        )
                         start = previous.end_datetime
                     else:
                         # Keep a deliberately entered first-slot duration, but
