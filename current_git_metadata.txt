@@ -2,16 +2,17 @@
 refactor/simplification-competition-engine
 
 === CURRENT COMMIT ===
-75af3c46ee676351a9a478514404322394e93f90
+65de9f59db076c6f857abd49db6d3bb56f42addc
 
 === WORKTREE STATUS ===
+ M current_git_metadata.txt
  M current_sources.txt
 
 === MODULE VERSIONS ===
 
 sports_federation_base: "version": "19.0.1.2.0",
 
-sports_federation_calendar: "version": "19.0.1.2.0",
+sports_federation_calendar: {'name': 'Competition Calendar', 'version': '19.0.1.5.0', 'category': 'Sports', 'summary': 'Physical match days, allocations, court availability and slots', 'author': 'Sports Federation', 'license': 'LGPL-3', 'depends': ['sports_federation_format', 'sports_federation_venues'], 'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/calendar_views.xml', 'views/slot_defaults_views.xml', 'views/menu.xml'], 'installable': True, 'application': False, 'auto_install': False}
 
 sports_federation_format: "version": "19.0.2.1.0",
 
@@ -42,7 +43,8 @@ sports_federation_notifications: "version": "19.0.1.3.0",
 
 === RELEVANT RECENT HISTORY ===
 
-75af3c4 (HEAD -> refactor/simplification-competition-engine) feat(calendar): add smart defaults for match-day slot entry
+65de9f5 (HEAD -> refactor/simplification-competition-engine) fix(calendar): make slot timelines deterministic per court
+75af3c4 feat(calendar): add smart defaults for match-day slot entry
 0edadfc Solved KeyError: 'fairness_access' + reformatted files with black.
 cdc8728 feat: add weighted fairness auto-scheduling to V2 planner
 2a3e378 feat!: add generic full-placement bracket generation
@@ -61,9 +63,8 @@ ecaeca5 Removed 3 hardening changes that were to strict.
 5fc6ed9 Validation CI / Concurrency test
 407b3c7 feat: harden federation modules for release candidate
 10cb0e0 updated security_matrix
-d46c71f (origin/copilot/fix-odoo-integration-matrix) test(notifications): add post_install smoke test for templates and crons
 
 
 === DISCOVERED FILE COUNT ===
 
-253
+254

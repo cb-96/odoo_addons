@@ -7,8 +7,10 @@ __pycache__/
 current_sources.txt
 *.patch
 
+# Generated review bundles
 current_git_metadata.txt
 current_sources.txt
+source_collector.py
 
 # Local environment and generated runtime config
 .env

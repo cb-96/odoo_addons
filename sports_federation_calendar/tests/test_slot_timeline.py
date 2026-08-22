@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from odoo import Command
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -75,3 +76,48 @@ class TestCalendarSlotTimeline(TransactionCase):
         self.Slot.create({"matchday_id": self.matchday.id, "court_id": self.court_1.id, "start_datetime": self._utc(9), "end_datetime": self._utc(10)})
         manual = self.Slot.create({"matchday_id": self.matchday.id, "court_id": self.court_1.id, "start_datetime": self._utc(13), "end_datetime": self._utc(14), "continue_court_timeline": False})
         self.assertEqual((manual.start_datetime, manual.end_datetime), (self._utc(13), self._utc(14)))
+
+    def test_unsaved_inline_siblings_continue_without_parent_save(self):
+        draft = self.matchday.new({
+            "slot_ids": [
+                Command.create({
+                    "court_id": self.court_1.id,
+                    "start_datetime": self._utc(9),
+                    "end_datetime": self._utc(10),
+                }),
+                Command.create({
+                    "court_id": self.court_1.id,
+                    "start_datetime": self._utc(9),
+                    "end_datetime": self._utc(9, 40),
+                }),
+                Command.create({
+                    "court_id": self.court_2.id,
+                    "start_datetime": self._utc(9),
+                    "end_datetime": self._utc(9, 40),
+                }),
+            ]
+        })
+        first, second, other_court = draft.slot_ids
+        second._onchange_court_id()
+        self.assertEqual(
+            (second.start_datetime, second.end_datetime),
+            (self._utc(10), self._utc(11)),
+        )
+        third = self.env["federation.schedule.slot"].new({
+            "matchday_id": draft,
+            "court_id": self.court_1.id,
+            "start_datetime": self._utc(9),
+            "end_datetime": self._utc(9, 40),
+        })
+        draft.slot_ids += third
+        third._onchange_court_id()
+        self.assertEqual(
+            (third.start_datetime, third.end_datetime),
+            (self._utc(11), self._utc(12)),
+        )
+        other_court._onchange_court_id()
+        self.assertEqual(
+            (other_court.start_datetime, other_court.end_datetime),
+            (self._utc(9), self._utc(9, 40)),
+        )
+

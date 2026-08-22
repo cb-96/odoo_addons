@@ -176,7 +176,7 @@ class FederationScheduleSlot(models.Model):
             court = rec._persisted_court()
             if not matchday or not court:
                 continue
-            start, end = rec._suggest_slot_window(matchday, court)
+            start, end = rec._suggest_slot_window_with_buffer(matchday, court)
             rec.update({"start_datetime": start, "end_datetime": end})
 
     def _persisted_matchday(self):
@@ -224,6 +224,34 @@ class FederationScheduleSlot(models.Model):
             fields.Date.to_date(matchday.date), time(hour, minute)
         )
         return self._local_datetime_to_utc(local_start)
+
+    def _latest_buffered_court_slot(self, court):
+        """Return latest sibling row, including unsaved one2many commands."""
+        self.ensure_one()
+        if not self.matchday_id or not court:
+            return self.env["federation.schedule.slot"]
+        candidates = self.matchday_id.slot_ids.filtered(
+            lambda slot: slot != self
+            and slot.court_id
+            and slot.court_id._origin == court._origin
+            and slot.end_datetime
+        )
+        return candidates.sorted(
+            lambda slot: (slot.end_datetime, slot.id or 0), reverse=True
+        )[:1]
+
+    def _suggest_slot_window_with_buffer(self, matchday, court):
+        """Prefer the newest unsaved sibling before querying persisted slots."""
+        self.ensure_one()
+        previous = self._latest_buffered_court_slot(court)
+        if previous:
+            duration = int(
+                (previous.end_datetime - previous.start_datetime).total_seconds() // 60
+            )
+            if duration <= 0:
+                duration = matchday.default_slot_duration_minutes or 40
+            return previous.end_datetime, previous.end_datetime + timedelta(minutes=duration)
+        return self._suggest_slot_window(matchday, court)
 
     @api.model
     def _suggest_duration_minutes(self, matchday, court=False):
