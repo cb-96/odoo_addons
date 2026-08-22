@@ -23,7 +23,9 @@ class FederationMatch(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         matches = super().create(vals_list)
-        if not self.env.context.get("skip_auto_match_sheets"):
+        if not self.env.context.get("skip_auto_match_sheets") and not self.env.context.get(
+            "install_mode"
+        ):
             matches._create_auto_match_sheets()
         return matches
 

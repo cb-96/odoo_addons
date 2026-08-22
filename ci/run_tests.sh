@@ -112,6 +112,7 @@ resolve_suite_modules() {
       cat <<'EOF'
 sports_federation_base
 sports_federation_tournament
+sports_federation_competition_core
 sports_federation_competition_engine
 sports_federation_result_control
 sports_federation_standings
@@ -239,6 +240,7 @@ ALL_MODULES=(
   sports_federation_rules
   sports_federation_people
   sports_federation_tournament
+  sports_federation_competition_core
   sports_federation_standings
   sports_federation_venues
   sports_federation_result_control

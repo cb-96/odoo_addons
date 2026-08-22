@@ -106,7 +106,7 @@ Print the resolved module list and backup target before touching the database:
 ./scripts/upgrade_sports_federation.sh --db odoo --dry-run
 ```
 
-If you need to restrict the release to a subset of installed modules:
+If you need to restrict the release to a subset of modules:
 
 ```bash
 ./scripts/upgrade_sports_federation.sh --db odoo --modules sports_federation_reporting,sports_federation_portal --dry-run
@@ -116,7 +116,7 @@ If you need to restrict the release to a subset of installed modules:
 
 The upgrade script performs backups by default. It stores:
 
-- `modules.txt` with the exact upgraded module list
+- `modules.txt` with the exact install/upgrade module list
 - `<db>_<timestamp>.dump` as a PostgreSQL custom-format dump
 - `filestore_<db>_<timestamp>.tar.gz` when a filestore exists under
   `./odoo-data/filestore/<db>`
@@ -136,13 +136,21 @@ Run the upgrade and let the script restart the live Odoo service afterward so
 Python changes are loaded by the running web container:
 
 ```bash
-./scripts/upgrade_sports_federation.sh --db odoo --yes
+./scripts/upgrade_sports_federation.sh --db odoo
 ```
 
-The script runs:
+For a non-interactive upgrade that excludes demo data, use `--yes`. To include
+the demo addon non-interactively, add `--install-demo`.
 
-- `odoo -c /etc/odoo/odoo.conf -d <db> -u <module_csv> --stop-after-init`
+The script installs modules that are missing or uninstalled, upgrades modules
+that are already installed, and restarts the Odoo service. It runs:
+
+- `odoo -c /etc/odoo/odoo.conf -d <db> -i <install_module_csv> -u <upgrade_module_csv> --stop-after-init`
 - `docker compose restart odoo`
+
+The demo addon is excluded by default. Interactive runs ask whether
+`sports_federation_demo` should be installed. Use `--install-demo` when that
+choice is intentional and the upgrade is non-interactive.
 
 ## Post-Upgrade Verification
 

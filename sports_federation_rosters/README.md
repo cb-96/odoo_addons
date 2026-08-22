@@ -109,6 +109,10 @@ State machine:
 - ``draft -> submitted -> approved -> locked``.
 - Submitted sheets may return to draft for operator corrections before
    approval.
+- Matches created interactively receive draft home and away sheets when the
+   rosters module is installed. XML/data loading runs without this side effect,
+   so explicit fixtures such as the demo pack can define their own sheets
+   without colliding with automatically created records.
 
 ``federation.match.sheet.line``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

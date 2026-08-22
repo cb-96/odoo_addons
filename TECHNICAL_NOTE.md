@@ -485,6 +485,11 @@ Inter-module rules
 - Use `depends` in `__manifest__.py` for compile-time coupling and prefer runtime loose coupling in service code.
 - Avoid importing models directly across modules in shared utils; reference them through the ORM (`env['federation.model']`).
 
+Security-group compatibility
+
+- Odoo 19 classifies application groups through `res.groups.privilege` records. Addons must assign a group with `privilege_id`; `category_id` belongs on the privilege and is no longer a valid field on `res.groups`.
+- Federation privileges should reference an existing module category such as `base.module_category_services` and remain in the addon security XML beside the groups they classify. This preserves the access-rights UI grouping without relying on the removed pre-Odoo-19 group field.
+
 ## Data model conventions and patterns
 
 - Names: all domain models use the `federation.` prefix.

@@ -148,6 +148,16 @@ class TestDemoDataPack(TransactionCase):
             self.assertIn(roster_ref[0], records_by_id)
             self.assertIn(match_ref[0], records_by_id)
 
+    def test_demo_match_sheets_are_not_duplicated_by_match_creation_hook(self):
+        """Explicit demo sheets remain the only sheets for the demo matches."""
+        match = self.env.ref("sports_federation_demo.match_rcs_atc")
+        sheets = self.env["federation.match.sheet"].search(
+            [("match_id", "=", match.id)]
+        )
+
+        self.assertEqual(len(sheets), 2)
+        self.assertEqual(set(sheets.mapped("side")), {"home", "away"})
+
     def test_demo_pack_has_tournament_matches_and_standings(self):
         """Ensure the demo pack has at least 1 tournament, 6 matches, and 2 standings."""
         model_counts = Counter(record.get("model") for record in self.records)
