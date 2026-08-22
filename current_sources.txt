@@ -818,6 +818,495 @@ FILE: sports_federation_base/views/res_config_settings_views.xml
 </odoo>
 
 ====================================================================================================
+FILE: sports_federation_calendar/__init__.py
+====================================================================================================
+
+from . import models
+from . import services
+
+====================================================================================================
+FILE: sports_federation_calendar/__manifest__.py
+====================================================================================================
+
+{
+    'name': 'Competition Calendar',
+    'version': '19.0.1.1.0',
+    'category': 'Sports',
+    'summary': 'Physical match days, allocations, court availability and slots',
+    'author': 'Sports Federation',
+    'license': 'LGPL-3',
+    'depends': ['sports_federation_format', 'sports_federation_venues'],
+    'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/calendar_views.xml', 'views/menu.xml'],
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+}
+
+====================================================================================================
+FILE: sports_federation_calendar/models/__init__.py
+====================================================================================================
+
+from . import matchday
+
+====================================================================================================
+FILE: sports_federation_calendar/models/matchday.py
+====================================================================================================
+
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationMatchday(models.Model):
+    _name = "federation.matchday"
+    _description = "Physical Competition Match Day"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _order = "date,id"
+    name = fields.Char(required=True)
+    edition_id = fields.Many2one(
+        "federation.competition.edition", required=True, ondelete="cascade", index=True
+    )
+    date = fields.Date(required=True, index=True)
+    venue_id = fields.Many2one(
+        "federation.venue", required=True, ondelete="restrict", index=True
+    )
+    state = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("capacity_ready", "Capacity Ready"),
+            ("scheduled", "Scheduled"),
+            ("open", "Open"),
+            ("closed", "Closed"),
+            ("cancelled", "Cancelled"),
+        ],
+        default="draft",
+        required=True,
+        tracking=True,
+        index=True,
+    )
+    allocation_ids = fields.One2many("federation.matchday.allocation", "matchday_id")
+    slot_ids = fields.One2many("federation.schedule.slot", "matchday_id")
+    fixture_count = fields.Integer(compute="_compute_capacity")
+    playable_slot_count = fields.Integer(compute="_compute_capacity")
+    spare_capacity = fields.Integer(compute="_compute_capacity")
+
+    @api.depends("allocation_ids.fixture_ids", "slot_ids.state")
+    def _compute_capacity(self):
+        for r in self:
+            r.fixture_count = len(r.allocation_ids.mapped("fixture_ids"))
+            r.playable_slot_count = len(
+                r.slot_ids.filtered(lambda s: s.state == "available")
+            )
+            r.spare_capacity = r.playable_slot_count - r.fixture_count
+
+    def action_capacity_ready(self):
+        for r in self:
+            if not r.slot_ids.filtered(lambda s: s.state == "available"):
+                raise ValidationError("Generate playable slots first.")
+            if not r.allocation_ids:
+                raise ValidationError("Allocate fixtures or rounds first.")
+            r.state = "capacity_ready"
+        return True
+
+
+class FederationMatchdayAllocation(models.Model):
+    _name = "federation.matchday.allocation"
+    _description = "Match-Day Fixture Allocation"
+    matchday_id = fields.Many2one(
+        "federation.matchday", required=True, ondelete="cascade", index=True
+    )
+    structure_id = fields.Many2one(
+        "federation.competition.structure",
+        required=True,
+        ondelete="restrict",
+        index=True,
+    )
+    stage_id = fields.Many2one(
+        "federation.structure.stage", ondelete="restrict", index=True
+    )
+    round_number = fields.Integer(index=True)
+    fixture_ids = fields.Many2many("federation.fixture", compute="_compute_fixtures")
+
+    @api.depends("structure_id", "stage_id", "round_number")
+    def _compute_fixtures(self):
+        Fixture = self.env["federation.fixture"]
+        for r in self:
+            domain = (
+                [("structure_id", "=", r.structure_id.id)]
+                if r.structure_id
+                else [("id", "=", False)]
+            )
+            if r.stage_id:
+                domain.append(("stage_id", "=", r.stage_id.id))
+            if r.round_number:
+                domain.append(("round_number", "=", r.round_number))
+            r.fixture_ids = Fixture.search(domain)
+
+
+class FederationScheduleSlot(models.Model):
+    _name = "federation.schedule.slot"
+    _description = "Physical Schedule Slot"
+    _order = "start_datetime,court_id,id"
+    matchday_id = fields.Many2one(
+        "federation.matchday", required=True, ondelete="cascade", index=True
+    )
+    court_id = fields.Many2one(
+        "federation.playing.area", required=True, ondelete="restrict", index=True
+    )
+    start_datetime = fields.Datetime(required=True, index=True)
+    end_datetime = fields.Datetime(required=True, index=True)
+    state = fields.Selection(
+        [("available", "Available"), ("break", "Break"), ("blocked", "Blocked")],
+        default="available",
+        required=True,
+        index=True,
+    )
+    note = fields.Char()
+
+    @api.constrains("start_datetime", "end_datetime")
+    def _check_window(self):
+        for r in self:
+            if r.end_datetime <= r.start_datetime:
+                raise ValidationError("A slot must end after it starts.")
+
+====================================================================================================
+FILE: sports_federation_calendar/services/__init__.py
+====================================================================================================
+
+from . import slot_generator
+
+====================================================================================================
+FILE: sports_federation_calendar/services/slot_generator.py
+====================================================================================================
+
+from datetime import datetime, timedelta
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationSlotGenerator(models.AbstractModel):
+    _name = "federation.slot.generator"
+    _description = "Match-Day Slot Generator"
+
+    @api.model
+    def generate(
+        self, matchday, courts, start_time, end_time, duration_minutes, buffer_minutes=0
+    ):
+        matchday.ensure_one()
+        if matchday.state not in ("draft", "capacity_ready"):
+            raise ValidationError(
+                _("Slots can only be regenerated before scheduling starts.")
+            )
+        start = datetime.combine(
+            fields.Date.to_date(matchday.date),
+            datetime.strptime(start_time, "%H:%M").time(),
+        )
+        end = datetime.combine(
+            fields.Date.to_date(matchday.date),
+            datetime.strptime(end_time, "%H:%M").time(),
+        )
+        if end <= start or duration_minutes <= 0:
+            raise ValidationError(_("Provide a valid positive slot window."))
+        matchday.slot_ids.unlink()
+        vals = []
+        for court in courts:
+            pointer = start
+            while pointer + timedelta(minutes=duration_minutes) <= end:
+                vals.append(
+                    {
+                        "matchday_id": matchday.id,
+                        "court_id": court.id,
+                        "start_datetime": pointer,
+                        "end_datetime": pointer + timedelta(minutes=duration_minutes),
+                    }
+                )
+                pointer += timedelta(minutes=duration_minutes + max(buffer_minutes, 0))
+        return self.env["federation.schedule.slot"].create(vals)
+
+====================================================================================================
+FILE: sports_federation_competition_core/__init__.py
+====================================================================================================
+
+from . import models
+from . import services
+
+====================================================================================================
+FILE: sports_federation_competition_core/__manifest__.py
+====================================================================================================
+
+{
+    'name': 'Competition Core',
+    'version': '19.0.1.1.0',
+    'category': 'Sports',
+    'summary': 'Stable competition lifecycle, role ownership, and domain events',
+    'author': 'Sports Federation',
+    'license': 'LGPL-3',
+    'depends': ['sports_federation_base', 'sports_federation_tournament'],
+    'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/competition_edition_views.xml', 'views/menu.xml'],
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+}
+
+====================================================================================================
+FILE: sports_federation_competition_core/models/__init__.py
+====================================================================================================
+
+from . import competition_core
+from . import competition_event
+from . import competition_overview
+
+====================================================================================================
+FILE: sports_federation_competition_core/models/competition_core.py
+====================================================================================================
+
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
+
+ROLE_SELECTION = [
+    ("administrator", "Competition Administrator"),
+    ("registration_manager", "Registration Manager"),
+    ("competition_designer", "Competition Designer"),
+    ("calendar_planner", "Calendar Planner"),
+    ("schedule_planner", "Schedule Planner"),
+    ("schedule_approver", "Schedule Approver"),
+    ("matchday_manager", "Match-Day Manager"),
+    ("results_officer", "Results Officer"),
+    ("competition_director", "Competition Director"),
+]
+
+
+class FederationCompetitionEdition(models.Model):
+    _inherit = "federation.competition.edition"
+    engine_state = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("active", "Active"),
+            ("finished", "Finished"),
+            ("cancelled", "Cancelled"),
+            ("archived", "Archived"),
+        ],
+        default="draft",
+        required=True,
+        tracking=True,
+        index=True,
+    )
+    role_assignment_ids = fields.One2many(
+        "federation.competition.role.assignment", "edition_id"
+    )
+    event_ids = fields.One2many(
+        "federation.competition.event", "edition_id", readonly=True
+    )
+
+    def transition_engine_state(self, target, reason=False):
+        allowed = {
+            "draft": {"active", "cancelled"},
+            "active": {"finished", "cancelled"},
+            "finished": {"archived"},
+            "cancelled": {"archived"},
+            "archived": set(),
+        }
+        for rec in self:
+            if target == rec.engine_state:
+                continue
+            if target not in allowed.get(rec.engine_state, set()):
+                raise ValidationError(
+                    _(
+                        "Invalid competition transition from %(source)s to %(target)s.",
+                        source=rec.engine_state,
+                        target=target,
+                    )
+                )
+            old = rec.engine_state
+            rec.engine_state = target
+            self.env["federation.competition.event"].emit(
+                rec,
+                "competition_state_changed",
+                {"from": old, "to": target, "reason": reason or False},
+            )
+        return True
+
+
+class FederationCompetitionRoleAssignment(models.Model):
+    _name = "federation.competition.role.assignment"
+    _description = "Competition Role Assignment"
+    _order = "edition_id, role, user_id"
+    edition_id = fields.Many2one(
+        "federation.competition.edition", required=True, ondelete="cascade", index=True
+    )
+    role = fields.Selection(ROLE_SELECTION, required=True, index=True)
+    user_id = fields.Many2one(
+        "res.users", required=True, ondelete="cascade", index=True
+    )
+    active = fields.Boolean(default=True)
+    _unique_role_user = models.Constraint(
+        "unique(edition_id, role, user_id)",
+        "A user can hold a competition role only once.",
+    )
+
+    @api.model
+    def assert_role(self, edition, *roles):
+        if self.env.user.has_group("sports_federation_base.group_federation_manager"):
+            return True
+        if not self.search_count(
+            [
+                ("edition_id", "=", edition.id),
+                ("user_id", "=", self.env.user.id),
+                ("role", "in", list(roles)),
+                ("active", "=", True),
+            ]
+        ):
+            raise ValidationError(
+                _("You are not assigned to the required competition role.")
+            )
+        return True
+
+====================================================================================================
+FILE: sports_federation_competition_core/models/competition_event.py
+====================================================================================================
+
+import json
+from odoo import api, fields, models
+
+
+class FederationCompetitionEvent(models.Model):
+    _name = "federation.competition.event"
+    _description = "Competition Domain Event"
+    _order = "occurred_at desc, id desc"
+    edition_id = fields.Many2one(
+        "federation.competition.edition", required=True, ondelete="cascade", index=True
+    )
+    event_type = fields.Char(required=True, index=True, readonly=True)
+    aggregate_model = fields.Char(required=True, readonly=True)
+    aggregate_id = fields.Integer(required=True, index=True, readonly=True)
+    actor_id = fields.Many2one("res.users", readonly=True, ondelete="set null")
+    occurred_at = fields.Datetime(
+        default=fields.Datetime.now, required=True, readonly=True, index=True
+    )
+    payload_json = fields.Text(readonly=True)
+
+    @api.model
+    def emit(self, aggregate, event_type, payload=None):
+        edition = (
+            aggregate
+            if aggregate._name == "federation.competition.edition"
+            else getattr(aggregate, "edition_id", False)
+        )
+        return self.sudo().create(
+            {
+                "edition_id": edition.id,
+                "event_type": event_type,
+                "aggregate_model": aggregate._name,
+                "aggregate_id": aggregate.id,
+                "actor_id": self.env.user.id,
+                "payload_json": json.dumps(payload or {}, sort_keys=True, default=str),
+            }
+        )
+
+====================================================================================================
+FILE: sports_federation_competition_core/models/competition_overview.py
+====================================================================================================
+
+from odoo import _, api, fields, models
+
+class FederationCompetitionEdition(models.Model):
+    _inherit = "federation.competition.edition"
+
+    role_assignment_count = fields.Integer(compute="_compute_v2_core_counts")
+    event_count = fields.Integer(compute="_compute_v2_core_counts")
+    workflow_progress = fields.Integer(compute="_compute_workflow_progress")
+    workflow_next_action = fields.Char(compute="_compute_workflow_progress")
+
+    @api.depends("role_assignment_ids", "event_ids", "engine_state")
+    def _compute_v2_core_counts(self):
+        for rec in self:
+            rec.role_assignment_count = len(rec.role_assignment_ids)
+            rec.event_count = len(rec.event_ids)
+
+    def _workflow_steps(self):
+        self.ensure_one()
+        steps = [bool(self.tournament_ids), bool(self.role_assignment_ids)]
+        optional_fields = (
+            "registration_window_ids", "structure_ids", "matchday_ids",
+            "schedule_ids", "publication_ids",
+        )
+        steps.extend(bool(self[field]) if field in self._fields else False for field in optional_fields)
+        return steps
+
+    @api.depends("tournament_ids", "role_assignment_ids", "engine_state")
+    def _compute_workflow_progress(self):
+        for rec in self:
+            steps = rec._workflow_steps()
+            rec.workflow_progress = round(100 * sum(steps) / len(steps)) if steps else 0
+            if not rec.tournament_ids:
+                rec.workflow_next_action = _("Add at least one division")
+            elif not rec.role_assignment_ids:
+                rec.workflow_next_action = _("Assign responsible users")
+            elif "registration_window_ids" in rec._fields and not rec.registration_window_ids:
+                rec.workflow_next_action = _("Create registration windows")
+            elif "structure_ids" in rec._fields and not rec.structure_ids:
+                rec.workflow_next_action = _("Finalize registrations and build formats")
+            elif "matchday_ids" in rec._fields and not rec.matchday_ids:
+                rec.workflow_next_action = _("Create match days and capacity")
+            elif "schedule_ids" in rec._fields and not rec.schedule_ids:
+                rec.workflow_next_action = _("Create working schedules")
+            elif "publication_ids" in rec._fields and not rec.publication_ids:
+                rec.workflow_next_action = _("Review and publish schedules")
+            else:
+                rec.workflow_next_action = _("Monitor competition operations")
+
+    def action_v2_role_assignments(self):
+        self.ensure_one()
+        return {"type":"ir.actions.act_window","name":_("Responsibilities"),"res_model":"federation.competition.role.assignment","view_mode":"list,form","domain":[("edition_id","=",self.id)],"context":{"default_edition_id":self.id}}
+
+    def action_v2_events(self):
+        self.ensure_one()
+        return {"type":"ir.actions.act_window","name":_("Competition history"),"res_model":"federation.competition.event","view_mode":"list,form","domain":[("edition_id","=",self.id)]}
+
+====================================================================================================
+FILE: sports_federation_competition_core/services/__init__.py
+====================================================================================================
+
+
+
+====================================================================================================
+FILE: sports_federation_competition_core/views/competition_edition_views.xml
+====================================================================================================
+
+<odoo>
+  <record id="competition_edition_form_v2_workflow" model="ir.ui.view">
+    <field name="name">federation.competition.edition.form.v2.workflow</field>
+    <field name="model">federation.competition.edition</field>
+    <field name="inherit_id" ref="sports_federation_tournament.view_federation_competition_edition_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@name='button_box']" position="inside">
+        <button name="action_v2_role_assignments" type="object" class="oe_stat_button" icon="fa-users">
+          <field name="role_assignment_count" widget="statinfo" string="Responsibilities"/>
+        </button>
+        <button name="action_v2_events" type="object" class="oe_stat_button" icon="fa-history">
+          <field name="event_count" widget="statinfo" string="History"/>
+        </button>
+      </xpath>
+      <xpath expr="//notebook" position="before">
+        <group string="Competition workflow">
+          <field name="workflow_progress" widget="progressbar"/>
+          <field name="workflow_next_action" readonly="1"/>
+        </group>
+      </xpath>
+      <xpath expr="//notebook" position="inside">
+        <page string="Responsibilities" name="v2_responsibilities">
+          <field name="role_assignment_ids" context="{'default_edition_id': id}">
+            <list editable="bottom"><field name="role"/><field name="user_id"/><field name="active"/></list>
+          </field>
+        </page>
+      </xpath>
+    </field>
+  </record>
+  <record id="action_competition_overview_v2" model="ir.actions.act_window">
+    <field name="name">Competition Overview</field><field name="res_model">federation.competition.edition</field><field name="view_mode">kanban,list,form</field>
+  </record>
+</odoo>
+
+====================================================================================================
 FILE: sports_federation_competition_engine/__init__.py
 ====================================================================================================
 
@@ -17750,6 +18239,214 @@ class RoundRobinWizard(models.TransientModel):
         )
         if invalid_participants:
             raise UserError(self._get_participant_requirement_message(participants))
+
+====================================================================================================
+FILE: sports_federation_format/__init__.py
+====================================================================================================
+
+from . import models
+from . import services
+
+====================================================================================================
+FILE: sports_federation_format/__manifest__.py
+====================================================================================================
+
+{
+    'name': 'Competition Format',
+    'version': '19.0.1.1.0',
+    'category': 'Sports',
+    'summary': 'Versioned competition structures, stages, progression and fixtures',
+    'author': 'Sports Federation',
+    'license': 'LGPL-3',
+    'depends': ['sports_federation_registration'],
+    'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/format_views.xml', 'views/menu.xml'],
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+}
+
+====================================================================================================
+FILE: sports_federation_format/models/__init__.py
+====================================================================================================
+
+from . import competition_structure
+
+====================================================================================================
+FILE: sports_federation_format/models/competition_structure.py
+====================================================================================================
+
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationCompetitionStructure(models.Model):
+    _name = "federation.competition.structure"
+    _description = "Competition Structure Version"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _order = "version desc,id desc"
+    name = fields.Char(required=True)
+    edition_id = fields.Many2one(
+        "federation.competition.edition", required=True, ondelete="cascade", index=True
+    )
+    division_id = fields.Many2one(
+        "federation.tournament", required=True, ondelete="cascade", index=True
+    )
+    participant_set_id = fields.Many2one(
+        "federation.participant.set", required=True, ondelete="restrict"
+    )
+    version = fields.Integer(default=1, required=True)
+    format_type = fields.Selection(
+        [
+            ("single_round_robin", "League"),
+            ("double_round_robin", "Double League"),
+            ("knockout", "Knockout Cup"),
+            ("pool_knockout", "Pools then Knockout"),
+            ("custom", "Custom"),
+        ],
+        required=True,
+    )
+    state = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("generated", "Generated"),
+            ("frozen", "Frozen"),
+            ("superseded", "Superseded"),
+        ],
+        default="draft",
+        required=True,
+        tracking=True,
+        index=True,
+    )
+    stage_ids = fields.One2many("federation.structure.stage", "structure_id")
+    fixture_ids = fields.One2many("federation.fixture", "structure_id", readonly=True)
+    _unique_version = models.Constraint(
+        "unique(division_id,version)", "Structure versions must be unique per division."
+    )
+
+    def action_generate(self):
+        return self.env["federation.structure.generator"].generate(self)
+
+    def action_freeze(self):
+        for rec in self:
+            if not rec.fixture_ids:
+                raise ValidationError(
+                    "Generate fixtures before freezing the structure."
+                )
+            rec.state = "frozen"
+            self.env["federation.competition.event"].emit(
+                rec,
+                "competition_structure_frozen",
+                {"fixture_count": len(rec.fixture_ids), "version": rec.version},
+            )
+        return True
+
+
+class FederationStructureStage(models.Model):
+    _name = "federation.structure.stage"
+    _description = "Competition Structure Stage"
+    _order = "sequence,id"
+    name = fields.Char(required=True)
+    structure_id = fields.Many2one(
+        "federation.competition.structure",
+        required=True,
+        ondelete="cascade",
+        index=True,
+    )
+    sequence = fields.Integer(default=10, required=True)
+    stage_type = fields.Selection(
+        [
+            ("league", "League"),
+            ("pool", "Pool"),
+            ("knockout", "Knockout"),
+            ("placement", "Placement"),
+        ],
+        required=True,
+    )
+
+
+class FederationFixture(models.Model):
+    _name = "federation.fixture"
+    _description = "Logical Competition Fixture"
+    _order = "stage_id,round_number,sequence,id"
+    name = fields.Char(compute="_compute_name", store=True)
+    structure_id = fields.Many2one(
+        "federation.competition.structure",
+        required=True,
+        ondelete="cascade",
+        index=True,
+    )
+    edition_id = fields.Many2one(
+        related="structure_id.edition_id", store=True, index=True
+    )
+    division_id = fields.Many2one(
+        related="structure_id.division_id", store=True, index=True
+    )
+    stage_id = fields.Many2one(
+        "federation.structure.stage", required=True, ondelete="cascade", index=True
+    )
+    round_number = fields.Integer(required=True, index=True)
+    sequence = fields.Integer(default=10)
+    home_team_id = fields.Many2one("federation.team", ondelete="restrict", index=True)
+    away_team_id = fields.Many2one("federation.team", ondelete="restrict", index=True)
+    state = fields.Selection(
+        [
+            ("pending", "Pending"),
+            ("ready", "Ready"),
+            ("cancelled", "Cancelled"),
+            ("completed", "Completed"),
+        ],
+        default="ready",
+        required=True,
+        index=True,
+    )
+
+    @api.depends("home_team_id", "away_team_id")
+    def _compute_name(self):
+        for r in self:
+            r.name = f"{r.home_team_id.display_name or 'TBD'} vs {r.away_team_id.display_name or 'TBD'}"
+
+====================================================================================================
+FILE: sports_federation_format/services/__init__.py
+====================================================================================================
+
+from . import structure_generator
+
+====================================================================================================
+FILE: sports_federation_matchday/__init__.py
+====================================================================================================
+
+from . import models
+from . import services
+
+====================================================================================================
+FILE: sports_federation_matchday/__manifest__.py
+====================================================================================================
+
+{
+    'name': 'Match-Day Operations',
+    'version': '19.0.1.1.0',
+    'category': 'Sports',
+    'summary': 'Live court control, delays and operational incidents',
+    'author': 'Sports Federation',
+    'license': 'LGPL-3',
+    'depends': ['sports_federation_schedule_approval'],
+    'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/matchday_views.xml', 'views/menu.xml'],
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+}
+
+====================================================================================================
+FILE: sports_federation_matchday/models/__init__.py
+====================================================================================================
+
+from . import matchday_operation
+
+====================================================================================================
+FILE: sports_federation_matchday/services/__init__.py
+====================================================================================================
+
+from . import matchday_commands
 
 ====================================================================================================
 FILE: sports_federation_notifications/README.md
@@ -42496,6 +43193,525 @@ FILE: sports_federation_portal/views/website_menus.xml
 </odoo>
 
 ====================================================================================================
+FILE: sports_federation_registration/README.md
+====================================================================================================
+
+# Competition Registration
+
+The Registration Desk manages team entries for a competition edition and division.
+
+## Team selection
+
+When creating or editing a competition entry, the team dropdown is limited to:
+
+- active teams;
+- teams eligible for the selected division's category and gender;
+- teams that are not already entered in the same registration window.
+
+The available-team list is computed per division and the form applies it as a
+selection domain. The model also validates the same rules on create and write,
+so direct ORM or API requests cannot bypass the desk filter. Changing a window
+clears an existing team selection when it is no longer valid.
+
+Eligibility uses the tournament module's existing `search_eligible_teams()` and
+`get_team_eligibility_error()` APIs. No historical registration entries are
+rewritten by this filtering; it only affects new selections and invalid direct
+writes.
+
+## Regression tests
+
+The regression coverage is in
+`tests/test_registration_team_selection.py`. Run it with the repository's
+module-level Odoo test workflow after installing the registration addon and its
+declared dependencies.
+
+====================================================================================================
+FILE: sports_federation_registration/__init__.py
+====================================================================================================
+
+from . import models
+from . import services
+from . import wizards
+
+====================================================================================================
+FILE: sports_federation_registration/__manifest__.py
+====================================================================================================
+
+{
+    'name': 'Competition Registration',
+    'version': '19.0.1.1.0',
+    'category': 'Sports',
+    'summary': 'Role-separated registration desk and finalized participant sets',
+    'author': 'Sports Federation',
+    'license': 'LGPL-3',
+    'depends': ['sports_federation_competition_core'],
+    'data': ['security/security.xml', 'security/ir.model.access.csv', 'wizards/create_competition_wizard_views.xml', 'views/registration_views.xml', 'views/menu.xml'],
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+}
+
+====================================================================================================
+FILE: sports_federation_registration/models/__init__.py
+====================================================================================================
+
+from . import registration
+
+====================================================================================================
+FILE: sports_federation_registration/models/registration.py
+====================================================================================================
+
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationRegistrationWindow(models.Model):
+    _name = "federation.registration.window"
+    _description = "Competition Registration Window"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
+    name = fields.Char(required=True)
+    edition_id = fields.Many2one(
+        "federation.competition.edition", required=True, ondelete="cascade", index=True
+    )
+    division_id = fields.Many2one(
+        "federation.tournament", required=True, ondelete="cascade", index=True
+    )
+    date_open = fields.Datetime()
+    date_close = fields.Datetime()
+    state = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("open", "Open"),
+            ("closed", "Closed"),
+            ("finalized", "Finalized"),
+        ],
+        default="draft",
+        required=True,
+        tracking=True,
+    )
+    entry_ids = fields.One2many("federation.competition.entry", "window_id")
+    participant_set_id = fields.Many2one(
+        "federation.participant.set", readonly=True, copy=False
+    )
+
+    def action_open(self):
+        self.write({"state": "open"})
+        return True
+
+    def action_close(self):
+        self.write({"state": "closed"})
+        return True
+
+    def action_finalize(self):
+        roles = self.env["federation.competition.role.assignment"]
+        roles.assert_role(
+            self.edition_id, "registration_manager", "competition_director"
+        )
+        for rec in self:
+            if rec.state != "closed":
+                raise ValidationError(
+                    _("Close registration before finalizing participants.")
+                )
+            approved = rec.entry_ids.filtered(lambda x: x.state == "approved")
+            if len(approved) < 2:
+                raise ValidationError(_("At least two approved teams are required."))
+            if len(approved.mapped("team_id")) != len(approved):
+                raise ValidationError(_("The approved list contains duplicate teams."))
+            pset = self.env["federation.participant.set"].create(
+                {
+                    "name": _("Participants - %s") % rec.division_id.display_name,
+                    "edition_id": rec.edition_id.id,
+                    "division_id": rec.division_id.id,
+                    "state": "finalized",
+                }
+            )
+            self.env["federation.participant.set.line"].create(
+                [
+                    {
+                        "participant_set_id": pset.id,
+                        "team_id": e.team_id.id,
+                        "seed": e.seed,
+                    }
+                    for e in approved
+                ]
+            )
+            rec.write({"state": "finalized", "participant_set_id": pset.id})
+            self.env["federation.competition.event"].emit(
+                pset, "participant_set_finalized", {"team_count": len(approved)}
+            )
+        return True
+
+
+class FederationCompetitionEntry(models.Model):
+    _name = "federation.competition.entry"
+    _description = "Competition Entry"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
+    window_id = fields.Many2one(
+        "federation.registration.window", required=True, ondelete="cascade", index=True
+    )
+    edition_id = fields.Many2one(related="window_id.edition_id", store=True, index=True)
+    team_id = fields.Many2one(
+        "federation.team", required=True, ondelete="restrict", index=True
+    )
+    available_team_ids = fields.Many2many(
+        "federation.team",
+        compute="_compute_available_team_ids",
+        string="Available Teams",
+    )
+    seed = fields.Integer()
+    state = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("submitted", "Submitted"),
+            ("approved", "Approved"),
+            ("rejected", "Rejected"),
+            ("withdrawn", "Withdrawn"),
+        ],
+        default="draft",
+        required=True,
+        tracking=True,
+        index=True,
+    )
+    review_note = fields.Text()
+    _unique_team = models.Constraint(
+        "unique(window_id,team_id)", "A team can enter a registration window only once."
+    )
+
+    @api.depends(
+        "window_id",
+        "window_id.division_id",
+        "window_id.division_id.category",
+        "window_id.division_id.gender",
+        "window_id.entry_ids.team_id",
+    )
+    def _compute_available_team_ids(self):
+        """Compute teams eligible and not already entered in this window."""
+        Team = self.env["federation.team"]
+        eligible_teams_by_division = {}
+        for division in self.mapped("window_id.division_id"):
+            eligible_teams_by_division[division.id] = division.search_eligible_teams(
+                extra_domain=[("active", "=", True)]
+            )
+
+        for rec in self:
+            rec.available_team_ids = Team.browse([])
+            if not rec.window_id or not rec.window_id.division_id:
+                continue
+
+            eligible_teams = eligible_teams_by_division.get(
+                rec.window_id.division_id.id, Team.browse([])
+            )
+            registered_teams = (rec.window_id.entry_ids - rec).mapped("team_id")
+            rec.available_team_ids = eligible_teams - registered_teams
+
+    def _get_team_selection_error(self, team=None):
+        """Return the reason a team cannot be used for this registration."""
+        self.ensure_one()
+        team = team or self.team_id
+        if not team or not self.window_id or not self.window_id.division_id:
+            return False
+
+        duplicate = self.window_id.entry_ids.filtered(
+            lambda entry: entry != self and entry.team_id == team
+        )
+        if duplicate:
+            return _(
+                "Team '%(team)s' is already registered for this division."
+            ) % {"team": team.display_name}
+
+        if not team.active:
+            return _("Only active teams can be registered.")
+
+        return self.window_id.division_id.get_team_eligibility_error(team)
+
+    @api.onchange("window_id")
+    def _onchange_window_id(self):
+        """Limit team choices to eligible teams not already entered."""
+        domain = [("id", "in", self.available_team_ids.ids)]
+        if self.team_id and self.team_id not in self.available_team_ids:
+            warning = {
+                "title": _("Invalid Team"),
+                "message": self._get_team_selection_error(),
+            }
+            self.team_id = False
+            return {"domain": {"team_id": domain}, "warning": warning}
+        return {"domain": {"team_id": domain}}
+
+    @api.constrains("window_id", "team_id")
+    def _check_team_selection(self):
+        """Keep invalid team selections blocked server-side."""
+        for rec in self:
+            error = rec._get_team_selection_error()
+            if error:
+                raise ValidationError(error)
+
+    def action_submit(self):
+        self.write({"state": "submitted"})
+        return True
+
+    def action_approve(self):
+        self.mapped("window_id.edition_id") and self.env[
+            "federation.competition.role.assignment"
+        ].assert_role(
+            self[:1].edition_id, "registration_manager", "competition_director"
+        )
+        self.write({"state": "approved"})
+        return True
+
+    def action_reject(self):
+        self.write({"state": "rejected"})
+        return True
+
+
+class FederationParticipantSet(models.Model):
+    _name = "federation.participant.set"
+    _description = "Finalized Participant Set"
+    _order = "id desc"
+    name = fields.Char(required=True)
+    edition_id = fields.Many2one(
+        "federation.competition.edition", required=True, ondelete="cascade", index=True
+    )
+    division_id = fields.Many2one(
+        "federation.tournament", required=True, ondelete="cascade", index=True
+    )
+    state = fields.Selection(
+        [("draft", "Draft"), ("finalized", "Finalized"), ("superseded", "Superseded")],
+        default="draft",
+        required=True,
+        index=True,
+    )
+    line_ids = fields.One2many(
+        "federation.participant.set.line", "participant_set_id", readonly=True
+    )
+
+
+class FederationParticipantSetLine(models.Model):
+    _name = "federation.participant.set.line"
+    _description = "Participant Set Line"
+    _order = "seed,id"
+    participant_set_id = fields.Many2one(
+        "federation.participant.set", required=True, ondelete="cascade", index=True
+    )
+    team_id = fields.Many2one(
+        "federation.team", required=True, ondelete="restrict", index=True
+    )
+    seed = fields.Integer()
+    _unique_team = models.Constraint(
+        "unique(participant_set_id,team_id)",
+        "A finalized participant set cannot contain duplicate teams.",
+    )
+
+====================================================================================================
+FILE: sports_federation_registration/services/__init__.py
+====================================================================================================
+
+
+
+====================================================================================================
+FILE: sports_federation_registration/tests/test_registration_team_selection.py
+====================================================================================================
+
+from odoo.exceptions import ValidationError
+from odoo.tests import TransactionCase
+
+
+class TestRegistrationTeamSelection(TransactionCase):
+    """Tests for the registration desk team selection rules."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.season = cls.env["federation.season"].create(
+            {
+                "name": "Registration Selection Season",
+                "date_start": "2025-09-01",
+                "date_end": "2026-06-30",
+            }
+        )
+        cls.competition = cls.env["federation.competition"].create(
+            {
+                "name": "Registration Selection Competition",
+                "competition_type": "league",
+            }
+        )
+        cls.edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Registration Selection Edition",
+                "competition_id": cls.competition.id,
+                "season_id": cls.season.id,
+            }
+        )
+        cls.division = cls.env["federation.tournament"].create(
+            {
+                "name": "Senior Men Division",
+                "edition_id": cls.edition.id,
+                "competition_id": cls.competition.id,
+                "season_id": cls.season.id,
+                "date_start": "2025-10-01",
+                "category": "senior",
+                "gender": "male",
+            }
+        )
+        cls.club = cls.env["federation.club"].create(
+            {"name": "Registration Selection Club"}
+        )
+        cls.window = cls.env["federation.registration.window"].create(
+            {
+                "name": "Senior Men Registration",
+                "edition_id": cls.edition.id,
+                "division_id": cls.division.id,
+            }
+        )
+
+    def _make_team(self, name, category="senior", gender="male"):
+        return self.env["federation.team"].create(
+            {
+                "name": name,
+                "club_id": self.club.id,
+                "category": category,
+                "gender": gender,
+            }
+        )
+
+    def test_available_teams_exclude_registered_and_mismatched_teams(self):
+        eligible_team = self._make_team("Eligible Team")
+        registered_team = self._make_team("Registered Team")
+        wrong_gender_team = self._make_team(
+            "Wrong Gender Team", gender="female"
+        )
+        wrong_category_team = self._make_team(
+            "Wrong Category Team", category="junior"
+        )
+        self.env["federation.competition.entry"].create(
+            {
+                "window_id": self.window.id,
+                "team_id": registered_team.id,
+            }
+        )
+
+        entry = self.env["federation.competition.entry"].new(
+            {"window_id": self.window.id}
+        )
+        entry._compute_available_team_ids()
+
+        available_team_ids = entry.available_team_ids._origin.ids
+        self.assertIn(eligible_team.id, available_team_ids)
+        self.assertNotIn(registered_team.id, available_team_ids)
+        self.assertNotIn(wrong_gender_team.id, available_team_ids)
+        self.assertNotIn(wrong_category_team.id, available_team_ids)
+
+    def test_invalid_gender_and_category_are_rejected_server_side(self):
+        for name, category, gender in (
+            ("Invalid Gender Team", "senior", "female"),
+            ("Invalid Category Team", "junior", "male"),
+        ):
+            with self.subTest(name=name):
+                with self.assertRaises(ValidationError):
+                    self.env["federation.competition.entry"].create(
+                        {
+                            "window_id": self.window.id,
+                            "team_id": self._make_team(
+                                name, category=category, gender=gender
+                            ).id,
+                        }
+                    )
+
+    def test_onchange_returns_available_team_domain(self):
+        eligible_team = self._make_team("Onchange Eligible Team")
+        registered_team = self._make_team("Onchange Registered Team")
+        self.env["federation.competition.entry"].create(
+            {
+                "window_id": self.window.id,
+                "team_id": registered_team.id,
+            }
+        )
+
+        entry = self.env["federation.competition.entry"].new(
+            {"window_id": self.window.id}
+        )
+        result = entry._onchange_window_id()
+
+        self.assertEqual(
+            result["domain"]["team_id"],
+            [("id", "in", entry.available_team_ids.ids)],
+        )
+        self.assertIn(eligible_team.id, entry.available_team_ids.ids)
+        self.assertNotIn(registered_team.id, entry.available_team_ids.ids)
+
+====================================================================================================
+FILE: sports_federation_registration/wizards/create_competition_wizard.py
+====================================================================================================
+
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
+
+class FederationCreateCompetitionWizard(models.TransientModel):
+    _name = "federation.create.competition.wizard"
+    _description = "Create Competition Workflow"
+    competition_id = fields.Many2one("federation.competition", required=True, string="Competition Template")
+    name = fields.Char(required=True)
+    season_id = fields.Many2one("federation.season", required=True)
+    date_start = fields.Date(required=True)
+    date_end = fields.Date()
+    rule_set_id = fields.Many2one("federation.rule.set")
+    registration_open = fields.Datetime()
+    registration_close = fields.Datetime()
+    division_line_ids = fields.One2many("federation.create.competition.division.wizard", "wizard_id", string="Divisions")
+    role_line_ids = fields.One2many("federation.create.competition.role.wizard", "wizard_id", string="Responsibilities")
+
+    @api.onchange("competition_id")
+    def _onchange_competition(self):
+        if self.competition_id:
+            self.rule_set_id = self.competition_id.rule_set_id
+            if not self.name and self.season_id:
+                self.name = f"{self.competition_id.name} - {self.season_id.name}"
+
+    @api.constrains("date_start", "date_end", "registration_open", "registration_close")
+    def _check_dates(self):
+        for rec in self:
+            if rec.date_end and rec.date_end < rec.date_start:
+                raise ValidationError(_("The competition end date cannot precede its start date."))
+            if rec.registration_open and rec.registration_close and rec.registration_close <= rec.registration_open:
+                raise ValidationError(_("Registration must close after it opens."))
+
+    def action_create_competition(self):
+        self.ensure_one()
+        if not self.division_line_ids:
+            raise ValidationError(_("Add at least one division."))
+        edition = self.env["federation.competition.edition"].create({
+            "name": self.name, "competition_id": self.competition_id.id,
+            "season_id": self.season_id.id, "date_start": self.date_start,
+            "date_end": self.date_end, "rule_set_id": self.rule_set_id.id,
+            "engine_state": "draft",
+        })
+        for line in self.division_line_ids:
+            division = self.env["federation.tournament"].create({
+                "name": line.name, "code": line.code or False,
+                "edition_id": edition.id, "competition_id": self.competition_id.id,
+                "season_id": self.season_id.id, "rule_set_id": self.rule_set_id.id,
+                "date_start": self.date_start, "date_end": self.date_end,
+                "category": line.category or False, "gender": line.gender or False,
+                "tournament_type": line.tournament_type,
+            })
+            self.env["federation.registration.window"].create({
+                "name": _("Registration - %(division)s", division=division.name),
+                "edition_id": edition.id, "division_id": division.id,
+                "date_open": self.registration_open, "date_close": self.registration_close,
+            })
+        for line in self.role_line_ids.filtered("user_id"):
+            self.env["federation.competition.role.assignment"].create({"edition_id":edition.id,"role":line.role,"user_id":line.user_id.id})
+        self.env["federation.competition.event"].emit(edition, "competition_workflow_created", {"division_count":len(self.division_line_ids)})
+        return {"type":"ir.actions.act_window","res_model":"federation.competition.edition","res_id":edition.id,"view_mode":"form","target":"current"}
+
+class FederationCreateCompetitionDivisionWizard(models.TransientModel):
+    _name="federation.create.competition.division.wizard"; _description="Competition Division Setup"
+    wizard_id=fields.Many2one("federation.create.competition.wizard",required=True,ondelete="cascade")
+    name=fields.Char(required=True); code=fields.Char(); category=fields.Selection([("senior","Senior"),("youth","Youth"),("junior","Junior"),("cadet","Cadet"),("mini","Mini")]); gender=fields.Selection([("male","Male"),("female","Female"),("mixed","Mixed")]); tournament_type=fields.Selection([("single_day","Single Day"),("multi_day","Multi Day")],default="multi_day",required=True)
+class FederationCreateCompetitionRoleWizard(models.TransientModel):
+    _name="federation.create.competition.role.wizard"; _description="Competition Responsibility Setup"
+    wizard_id=fields.Many2one("federation.create.competition.wizard",required=True,ondelete="cascade"); role=fields.Selection(selection=lambda self:self.env["federation.competition.role.assignment"]._fields["role"].selection,required=True); user_id=fields.Many2one("res.users",required=True)
+
+====================================================================================================
 FILE: sports_federation_result_control/README.md
 ====================================================================================================
 
@@ -45981,6 +47197,188 @@ FILE: sports_federation_rules/views/menu_items.xml
               sequence="50"/>
 
 </odoo>
+
+====================================================================================================
+FILE: sports_federation_schedule_approval/__init__.py
+====================================================================================================
+
+from . import models
+from . import services
+
+====================================================================================================
+FILE: sports_federation_schedule_approval/__manifest__.py
+====================================================================================================
+
+{
+    'name': 'Schedule Approval',
+    'version': '19.0.1.1.0',
+    'category': 'Sports',
+    'summary': 'Independent review, approval and immutable publication snapshots',
+    'author': 'Sports Federation',
+    'license': 'LGPL-3',
+    'depends': ['sports_federation_scheduling'],
+    'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/approval_views.xml', 'views/menu.xml'],
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+}
+
+====================================================================================================
+FILE: sports_federation_schedule_approval/models/__init__.py
+====================================================================================================
+
+from . import approval
+
+====================================================================================================
+FILE: sports_federation_schedule_approval/services/__init__.py
+====================================================================================================
+
+from . import approval_commands
+
+====================================================================================================
+FILE: sports_federation_scheduling/__init__.py
+====================================================================================================
+
+from . import models
+from . import services
+
+====================================================================================================
+FILE: sports_federation_scheduling/__manifest__.py
+====================================================================================================
+
+{
+    'name': 'Competition Scheduling',
+    'version': '19.0.1.1.0',
+    'category': 'Sports',
+    'summary': 'Working schedules, assignments, validation and deterministic proposals',
+    'author': 'Sports Federation',
+    'license': 'LGPL-3',
+    'depends': ['sports_federation_calendar'],
+    'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/scheduling_views.xml', 'views/menu.xml'],
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+}
+
+====================================================================================================
+FILE: sports_federation_scheduling/models/__init__.py
+====================================================================================================
+
+from . import schedule
+
+====================================================================================================
+FILE: sports_federation_scheduling/models/schedule.py
+====================================================================================================
+
+from odoo import api, fields, models
+
+
+class FederationSchedule(models.Model):
+    _name = "federation.schedule"
+    _description = "Competition Working Schedule"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _order = "id desc"
+    name = fields.Char(required=True)
+    edition_id = fields.Many2one(
+        "federation.competition.edition", required=True, ondelete="cascade", index=True
+    )
+    structure_id = fields.Many2one(
+        "federation.competition.structure",
+        required=True,
+        ondelete="restrict",
+        index=True,
+    )
+    matchday_id = fields.Many2one(
+        "federation.matchday", required=True, ondelete="restrict", index=True
+    )
+    state = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("ready_for_review", "Ready for Review"),
+            ("changes_requested", "Changes Requested"),
+            ("approved", "Approved"),
+            ("published", "Published"),
+            ("superseded", "Superseded"),
+        ],
+        default="draft",
+        required=True,
+        tracking=True,
+        index=True,
+    )
+    revision = fields.Integer(default=0, required=True, copy=False, index=True)
+    assignment_ids = fields.One2many("federation.schedule.assignment", "schedule_id")
+    change_ids = fields.One2many(
+        "federation.schedule.change", "schedule_id", readonly=True
+    )
+    _unique_matchday = models.Constraint(
+        "unique(matchday_id)", "A match day can have only one active working schedule."
+    )
+
+
+class FederationScheduleAssignment(models.Model):
+    _name = "federation.schedule.assignment"
+    _description = "Fixture Slot Assignment"
+    _order = "slot_id,id"
+    schedule_id = fields.Many2one(
+        "federation.schedule", required=True, ondelete="cascade", index=True
+    )
+    fixture_id = fields.Many2one(
+        "federation.fixture", required=True, ondelete="restrict", index=True
+    )
+    slot_id = fields.Many2one(
+        "federation.schedule.slot", required=True, ondelete="restrict", index=True
+    )
+    method = fields.Selection(
+        [
+            ("manual", "Manual"),
+            ("automatic", "Automatic"),
+            ("operational", "Operational"),
+        ],
+        default="manual",
+        required=True,
+    )
+    assigned_by_id = fields.Many2one(
+        "res.users",
+        default=lambda self: self.env.user,
+        required=True,
+        ondelete="restrict",
+    )
+    _unique_fixture = models.Constraint(
+        "unique(schedule_id,fixture_id)",
+        "A fixture can be assigned only once in a schedule.",
+    )
+    _unique_slot = models.Constraint(
+        "unique(schedule_id,slot_id)",
+        "A slot can contain only one fixture in a schedule.",
+    )
+
+
+class FederationScheduleChange(models.Model):
+    _name = "federation.schedule.change"
+    _description = "Schedule Change"
+    _order = "create_date desc,id desc"
+    schedule_id = fields.Many2one(
+        "federation.schedule", required=True, ondelete="cascade", index=True
+    )
+    revision = fields.Integer(required=True, index=True)
+    command = fields.Char(required=True, index=True)
+    fixture_id = fields.Many2one("federation.fixture", ondelete="set null")
+    old_slot_id = fields.Many2one("federation.schedule.slot", ondelete="set null")
+    new_slot_id = fields.Many2one("federation.schedule.slot", ondelete="set null")
+    actor_id = fields.Many2one(
+        "res.users", default=lambda self: self.env.user, ondelete="set null"
+    )
+    reason = fields.Text()
+    idempotency_key = fields.Char(index=True)
+
+====================================================================================================
+FILE: sports_federation_scheduling/services/__init__.py
+====================================================================================================
+
+from . import schedule_commands
+from . import schedule_queries
+from . import schedule_validator
+from . import deterministic_solver
 
 ====================================================================================================
 FILE: sports_federation_tournament/__init__.py

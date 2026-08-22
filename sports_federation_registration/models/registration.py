@@ -90,6 +90,11 @@ class FederationCompetitionEntry(models.Model):
     team_id = fields.Many2one(
         "federation.team", required=True, ondelete="restrict", index=True
     )
+    available_team_ids = fields.Many2many(
+        "federation.team",
+        compute="_compute_available_team_ids",
+        string="Available Teams",
+    )
     seed = fields.Integer()
     state = fields.Selection(
         [
@@ -108,6 +113,74 @@ class FederationCompetitionEntry(models.Model):
     _unique_team = models.Constraint(
         "unique(window_id,team_id)", "A team can enter a registration window only once."
     )
+
+    @api.depends(
+        "window_id",
+        "window_id.division_id",
+        "window_id.division_id.category",
+        "window_id.division_id.gender",
+        "window_id.entry_ids.team_id",
+    )
+    def _compute_available_team_ids(self):
+        """Compute teams eligible and not already entered in this window."""
+        Team = self.env["federation.team"]
+        eligible_teams_by_division = {}
+        for division in self.mapped("window_id.division_id"):
+            eligible_teams_by_division[division.id] = division.search_eligible_teams(
+                extra_domain=[("active", "=", True)]
+            )
+
+        for rec in self:
+            rec.available_team_ids = Team.browse([])
+            if not rec.window_id or not rec.window_id.division_id:
+                continue
+
+            eligible_teams = eligible_teams_by_division.get(
+                rec.window_id.division_id.id, Team.browse([])
+            )
+            registered_teams = (rec.window_id.entry_ids - rec).mapped("team_id")
+            rec.available_team_ids = eligible_teams - registered_teams
+
+    def _get_team_selection_error(self, team=None):
+        """Return the reason a team cannot be used for this registration."""
+        self.ensure_one()
+        team = team or self.team_id
+        if not team or not self.window_id or not self.window_id.division_id:
+            return False
+
+        duplicate = self.window_id.entry_ids.filtered(
+            lambda entry: entry != self and entry.team_id == team
+        )
+        if duplicate:
+            return _(
+                "Team '%(team)s' is already registered for this division."
+            ) % {"team": team.display_name}
+
+        if not team.active:
+            return _("Only active teams can be registered.")
+
+        return self.window_id.division_id.get_team_eligibility_error(team)
+
+    @api.onchange("window_id")
+    def _onchange_window_id(self):
+        """Limit team choices to eligible teams not already entered."""
+        domain = [("id", "in", self.available_team_ids.ids)]
+        if self.team_id and self.team_id not in self.available_team_ids:
+            warning = {
+                "title": _("Invalid Team"),
+                "message": self._get_team_selection_error(),
+            }
+            self.team_id = False
+            return {"domain": {"team_id": domain}, "warning": warning}
+        return {"domain": {"team_id": domain}}
+
+    @api.constrains("window_id", "team_id")
+    def _check_team_selection(self):
+        """Keep invalid team selections blocked server-side."""
+        for rec in self:
+            error = rec._get_team_selection_error()
+            if error:
+                raise ValidationError(error)
 
     def action_submit(self):
         self.write({"state": "submitted"})

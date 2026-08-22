@@ -1,8 +1,1 @@
-<odoo>
-  <record id="action_sports_federation_matchday" model="ir.actions.act_window">
-    <field name="name">Match-Day Operations</field>
-    <field name="res_model">federation.matchday.incident</field>
-    <field name="view_mode">list,form</field>
-  </record>
-  <menuitem id="menu_sports_federation_matchday" name="Match-Day Operations" action="action_sports_federation_matchday" parent="sports_federation_competition_core.menu_competition_engine_v2_root" sequence="70"/>
-</odoo>
+<odoo><menuitem id="menu_matchday_control" name="Match-Day Control" parent="sports_federation_competition_core.menu_competition_engine_v2_root" action="action_matchday_control" sequence="70"/><menuitem id="menu_matchday_incidents" name="Incidents" parent="sports_federation_competition_core.menu_competition_engine_v2_technical" action="action_matchday_incidents" sequence="60"/></odoo>
