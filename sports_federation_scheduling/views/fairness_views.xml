@@ -1,0 +1,29 @@
+<odoo>
+  <record id="schedule_form_fair_auto" model="ir.ui.view">
+    <field name="name">federation.schedule.form.fair.auto</field>
+    <field name="model">federation.schedule</field>
+    <field name="inherit_id" ref="sports_federation_scheduling.schedule_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_open_auto_schedule" type="object" string="Auto-schedule" class="btn-primary" invisible="state not in ('draft','changes_requested')"/>
+      </xpath>
+      <xpath expr="//notebook" position="inside">
+        <page string="Scheduling Fairness" name="scheduling_fairness">
+          <group><group string="Constraints"><field name="preferred_rest_minutes"/><field name="max_consecutive_games"/></group>
+          <group string="Weights"><field name="fairness_same_club_weight"/><field name="fairness_rest_weight"/><field name="fairness_consecutive_weight"/><field name="fairness_time_balance_weight"/><field name="fairness_court_balance_weight"/></group></group>
+          <group string="Last automatic plan"><field name="fairness_last_score" readonly="1"/><field name="fairness_last_report" readonly="1"/></group>
+        </page>
+      </xpath>
+    </field>
+  </record>
+  <record id="schedule_auto_wizard_form" model="ir.ui.view">
+    <field name="name">federation.schedule.auto.wizard.form</field><field name="model">federation.schedule.auto.wizard</field>
+    <field name="arch" type="xml"><form string="Fair Auto-schedule"><sheet>
+      <div class="alert alert-info" role="status">The solver first obeys hard constraints, then minimizes the weighted fairness penalty. Lower scores are better.</div>
+      <group><field name="schedule_id" readonly="1"/><field name="replace_automatic_assignments"/></group>
+      <group string="Fairness formula"><group><field name="same_club_weight"/><field name="rest_weight"/><field name="consecutive_weight"/></group><group><field name="time_balance_weight"/><field name="court_balance_weight"/><field name="preferred_rest_minutes"/><field name="max_consecutive_games"/></group></group>
+      <group string="Preview" invisible="not preview_ready"><field name="proposed_count"/><field name="unassigned_count"/><field name="fairness_score"/><field name="preview_report" nolabel="1"/></group>
+      <field name="preview_ready" invisible="1"/>
+    </sheet><footer><button name="action_preview" type="object" string="Preview" class="btn-secondary"/><button name="action_apply" type="object" string="Apply Auto-schedule" class="btn-primary" invisible="not preview_ready"/><button string="Cancel" special="cancel"/></footer></form></field>
+  </record>
+</odoo>

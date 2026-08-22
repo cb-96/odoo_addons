@@ -1,4 +1,5 @@
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class FederationSchedule(models.Model):
@@ -34,6 +35,62 @@ class FederationSchedule(models.Model):
         index=True,
     )
     revision = fields.Integer(default=0, required=True, copy=False, index=True)
+    fairness_same_club_weight = fields.Float(
+        string="Same-club overlap weight", default=40.0, required=True,
+        help="Penalty when teams belonging to the same club play simultaneously.",
+    )
+    fairness_rest_weight = fields.Float(
+        string="Rest shortfall weight", default=3.0, required=True,
+        help="Penalty per missing minute below the preferred break.",
+    )
+    fairness_consecutive_weight = fields.Float(
+        string="Consecutive-games weight", default=60.0, required=True,
+        help="Penalty for each game above the configured consecutive-game limit.",
+    )
+    fairness_time_balance_weight = fields.Float(
+        string="Time-balance weight", default=1.0, required=True,
+        help="Penalty for uneven early/late play distribution between teams.",
+    )
+    fairness_court_balance_weight = fields.Float(
+        string="Court-repeat weight", default=2.0, required=True,
+        help="Penalty for repeatedly scheduling a team on the same court.",
+    )
+    preferred_rest_minutes = fields.Integer(default=40, required=True)
+    max_consecutive_games = fields.Integer(default=2, required=True)
+    fairness_last_score = fields.Float(readonly=True, copy=False)
+    fairness_last_report = fields.Json(readonly=True, copy=False)
+
+    @api.constrains(
+        "fairness_same_club_weight", "fairness_rest_weight",
+        "fairness_consecutive_weight", "fairness_time_balance_weight",
+        "fairness_court_balance_weight", "preferred_rest_minutes",
+        "max_consecutive_games",
+    )
+    def _check_fairness_configuration(self):
+        for rec in self:
+            weights = (
+                rec.fairness_same_club_weight, rec.fairness_rest_weight,
+                rec.fairness_consecutive_weight, rec.fairness_time_balance_weight,
+                rec.fairness_court_balance_weight,
+            )
+            if any(weight < 0 for weight in weights):
+                raise ValidationError("Fairness weights cannot be negative.")
+            if rec.preferred_rest_minutes < 0:
+                raise ValidationError("Preferred rest cannot be negative.")
+            if rec.max_consecutive_games < 1:
+                raise ValidationError("Maximum consecutive games must be at least one.")
+
+    def action_open_auto_schedule(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Auto-schedule matches",
+            "res_model": "federation.schedule.auto.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_schedule_id": self.id},
+        }
+
     assignment_ids = fields.One2many("federation.schedule.assignment", "schedule_id")
     change_ids = fields.One2many(
         "federation.schedule.change", "schedule_id", readonly=True
