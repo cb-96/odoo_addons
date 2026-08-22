@@ -24,7 +24,7 @@ ENV_FILE="$SCRIPT_DIR/.env"
 EXAMPLE_ENV_FILE="$SCRIPT_DIR/.env.example"
 GENERATED_CONF="$SCRIPT_DIR/odoo-ci.generated.runtime.conf"
 
-if [[ -d "$GENERATED_CONF" ]]; then
+if [[ -e "$GENERATED_CONF" ]]; then
   GENERATED_CONF="$(mktemp "$SCRIPT_DIR/odoo-ci.generated.conf.XXXXXX")"
 fi
 
@@ -588,6 +588,11 @@ PY
   fi
 fi
 
+DEMO_OPTION=""
+if contains_module "sports_federation_demo" "${MODULES[@]}"; then
+  DEMO_OPTION="--without-demo=False"
+fi
+
 TEST_CONTAINER_CMD=$(cat <<EOF
 python3 -m pip show websocket-client >/dev/null 2>&1 || python3 -m pip install --break-system-packages --no-cache-dir websocket-client==1.8.0
 if [ "$CI_SKIP_BROWSER_BOOTSTRAP" != "1" ]; then
@@ -603,7 +608,7 @@ if [ "$CI_SKIP_BROWSER_BOOTSTRAP" != "1" ]; then
     ln -sf "\$(command -v google-chrome)" /usr/local/bin/chromium-browser
   fi
 fi
-exec odoo --stop-after-init --test-enable --test-tags="$TEST_TAGS" -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+exec odoo --stop-after-init --test-enable --test-tags="$TEST_TAGS" $DEMO_OPTION -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
 EOF
 )
 

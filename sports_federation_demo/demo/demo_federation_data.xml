@@ -437,8 +437,9 @@
         <record id="tournament_spring_cup" model="federation.tournament">
             <field name="name">Spring Cup 2026</field>
             <field name="code">SC2026</field>
-            <field name="category">senior</field>
-            <field name="gender">male</field>
+            <!-- The fixture includes senior, youth, and women's participants
+                 so the seeded tournament intentionally has no single
+                 category or gender restriction. -->
             <field name="date_start">2026-04-20</field>
             <field name="date_end">2026-05-10</field>
             <field name="location">Brussels National Stadium</field>
@@ -1295,6 +1296,8 @@
             <field name="name">FCU – Player License Certificate 2025-2026</field>
             <field name="requirement_id" ref="req_player_license"/>
             <field name="club_id" ref="club_fc_united"/>
+            <field name="issue_date">2025-09-01</field>
+            <field name="expiry_date">2026-06-30</field>
             <field name="status">approved</field>
         </record>
 
@@ -1302,6 +1305,8 @@
             <field name="name">FCU – Medical Clearance 2025-2026</field>
             <field name="requirement_id" ref="req_player_medical"/>
             <field name="club_id" ref="club_fc_united"/>
+            <field name="issue_date">2025-09-01</field>
+            <field name="expiry_date">2026-06-30</field>
             <field name="status">submitted</field>
         </record>
 
@@ -1309,6 +1314,8 @@
             <field name="name">RCS – Player License Certificate 2025-2026</field>
             <field name="requirement_id" ref="req_player_license"/>
             <field name="club_id" ref="club_racing_stars"/>
+            <field name="issue_date">2025-09-01</field>
+            <field name="expiry_date">2026-06-30</field>
             <field name="status">approved</field>
         </record>
 
@@ -1316,6 +1323,8 @@
             <field name="name">RCS – Medical Clearance 2025-2026</field>
             <field name="requirement_id" ref="req_player_medical"/>
             <field name="club_id" ref="club_racing_stars"/>
+            <field name="issue_date">2025-09-01</field>
+            <field name="expiry_date">2026-06-30</field>
             <field name="status">approved</field>
         </record>
 

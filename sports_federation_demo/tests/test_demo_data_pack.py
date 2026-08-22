@@ -150,7 +150,12 @@ class TestDemoDataPack(TransactionCase):
 
     def test_demo_match_sheets_are_not_duplicated_by_match_creation_hook(self):
         """Explicit demo sheets remain the only sheets for the demo matches."""
-        match = self.env.ref("sports_federation_demo.match_rcs_atc")
+        match = self.env.ref(
+            "sports_federation_demo.match_rcs_atc", raise_if_not_found=False
+        )
+        if not match:
+            self.skipTest("Demo data is disabled for this test database.")
+
         sheets = self.env["federation.match.sheet"].search(
             [("match_id", "=", match.id)]
         )

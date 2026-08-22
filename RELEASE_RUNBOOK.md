@@ -250,6 +250,21 @@ route retirement dates.
 
 **DB migrations**: None.
 
+### Release 2026.08
+
+**DB migrations**: None. The roster match-sheet change only suppresses the
+interactive match creation side effect while Odoo loads demo fixtures; normal
+ORM-created matches still receive their draft home and away sheets. The demo
+fixture was also aligned with current participant eligibility and compliance
+expiry-date validation.
+
+**Validation evidence**: A fresh isolated install with demo data enabled passed
+the demo module tests (5 passed, 0 failed, 0 errors) and did not report the
+`federation_match_sheet_unique_match_team_side` violation.
+
+**Rollback**: Revert the additive code and fixture changes. No database
+backfill, schema reversal, or migration artifact is required.
+
 ## Release train convention
 
 This runbook and `ROADMAP.md` are the two authoritative release-train

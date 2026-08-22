@@ -18,6 +18,9 @@ How to use
 Scope and constraints
 - This module is for non-production environments.
 - Demo records prioritize workflow coverage over real-world data volume.
+- The seeded Spring Cup intentionally omits category and gender restrictions
+  because its participant fixture demonstrates senior, youth, and women's
+  teams in one navigable competition.
 - Data is versioned with the addon and intended to stay reproducible across installs.
 
 Validation checklist
