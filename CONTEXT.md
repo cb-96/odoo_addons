@@ -70,6 +70,8 @@ The competition engine and related modules received several new models to suppor
 
 See `odoo/TECHNICAL_NOTE.md` → "New competition models and behaviours (2026-04-07)" for details.
 
+The `sports_federation_format` addon also provides structure-scoped stage graphs. Its progression edges use the `federation.structure.stage.progression` model; this is intentionally distinct from the tournament-level `federation.stage.progression` rules owned by the competition engine. Keep these model namespaces separate because their relations and lifecycle responsibilities differ.
+
 Recent additions (2026-05-25)
 
 - `sports_federation_competition_engine/models/competition_workspace_models.py` — guided planning fields on competition editions, divisions, and gamedays, plus backend entrypoints to open the workspace.

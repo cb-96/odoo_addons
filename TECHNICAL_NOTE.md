@@ -382,6 +382,12 @@ workflow boundaries instead of leaving them as isolated checks.
 
 Several new models and scheduling behaviours were added to support more realistic tournaments and automated stage progression:
 
+### Structure stage graph compatibility
+
+The `sports_federation_format` addon owns the versioned structure graph used by Format Studio. Its stage-to-stage edges are represented by `federation.structure.stage.progression`, with `structure_id`, source-stage, and target-stage relations. This model must not reuse the competition engine's `federation.stage.progression` name: the engine model is tournament-oriented and has a different inverse relation contract (`tournament_id`). The distinction allows both addons to be installed in the same registry without field-resolution collisions.
+
+Stage-graph ACLs are loaded through the addon's conventional `security/ir.model.access.csv` file. Format Studio's inherited view selects the stage tab structurally by its `stage_ids` field rather than by the translated page label.
+
 - `federation.stage.progression` (in `sports_federation_competition_engine`) — a rule model that formalises how teams advance from a source stage/group into a target stage/group. It supports per-group and cross-group selection (`cross_group`), rank windows (`rank_from` / `rank_to`), seeding strategies (`keep_rank`, `reseed`, `random`) and an `auto_advance` flag. Use `action_execute()` to apply a progression and the model is used automatically when standings are frozen and `auto_advance=True`.
 
 - `federation.tournament.round` (in `sports_federation_tournament`) — materialises a logical round inside a stage. Rounds own shared schedule metadata such as sequence and calendar date, and matches attach to them for per-round planning and reporting.

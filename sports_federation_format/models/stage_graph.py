@@ -10,8 +10,8 @@ class FederationStructureStage(models.Model):
     final_rank_from=fields.Integer(); final_rank_to=fields.Integer()
     stage_participant_ids=fields.One2many("federation.stage.participant","stage_id")
     stage_fixture_ids=fields.One2many("federation.fixture","stage_id")
-    incoming_progression_ids=fields.One2many("federation.stage.progression","target_stage_id")
-    outgoing_progression_ids=fields.One2many("federation.stage.progression","source_stage_id")
+    incoming_progression_ids=fields.One2many("federation.structure.stage.progression","target_stage_id")
+    outgoing_progression_ids=fields.One2many("federation.structure.stage.progression","source_stage_id")
     standing_snapshot_id=fields.Many2one("federation.stage.standing.snapshot",readonly=True,copy=False)
     standing_line_ids=fields.One2many(related="standing_snapshot_id.line_ids",readonly=True)
     def action_prepare_stage(self):
@@ -44,7 +44,7 @@ class FederationStageParticipant(models.Model):
     _uniq_team=models.Constraint("unique(stage_id,team_id)","A team occurs once per stage.");_uniq_seed=models.Constraint("unique(stage_id,seed)","Stage seeds must be unique.")
 
 class FederationStageProgression(models.Model):
-    _name="federation.stage.progression";_description="Stage Progression";_order="source_stage_id,rank_from,id"
+    _name="federation.structure.stage.progression";_description="Competition Structure Stage Progression";_order="source_stage_id,rank_from,id"
     structure_id=fields.Many2one(related="source_stage_id.structure_id",store=True,index=True);name=fields.Char(required=True);source_stage_id=fields.Many2one("federation.structure.stage",required=True,ondelete="cascade",index=True);target_stage_id=fields.Many2one("federation.structure.stage",required=True,ondelete="cascade",index=True);rank_from=fields.Integer(default=1,required=True);rank_to=fields.Integer(default=1,required=True);target_seed_from=fields.Integer(default=1,required=True);active=fields.Boolean(default=True);applied=fields.Boolean(readonly=True)
     @api.constrains("source_stage_id","target_stage_id","rank_from","rank_to")
     def _check(self):

@@ -7,7 +7,7 @@ class FederationStageGraphEngine(models.AbstractModel):
     @api.model
     def validate_graph(self,structure):
         adj={s.id:[] for s in structure.stage_ids};visiting=set();done=set()
-        for e in self.env["federation.stage.progression"].search([("structure_id","=",structure.id),("active","=",True)]):adj[e.source_stage_id.id].append(e.target_stage_id.id)
+        for e in self.env["federation.structure.stage.progression"].search([("structure_id","=",structure.id),("active","=",True)]):adj[e.source_stage_id.id].append(e.target_stage_id.id)
         def visit(n):
             if n in visiting:raise ValidationError(_("Stage graph contains a cycle."))
             if n in done:return

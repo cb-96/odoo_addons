@@ -347,6 +347,10 @@ separates pairing generation from operational slot assignment:
    can be single-group, cross-group (e.g. "best third-placed teams"), and
    include seeding/placement strategies. A progression rule can be executed
    manually (`action_execute()`) or set to `auto_advance=True`.
+    - When designing a versioned structure in Format Studio, use the
+       structure-scoped `federation.structure.stage.progression` edges instead.
+       These graph edges are separate from the competition engine's tournament
+       progression rules and are validated before the structure is generated.
    - When a standings record is `frozen`/`computed`, any progression rules for
      that stage with `auto_advance=True` will be executed automatically — new
      participants are created in the target stage and (optionally) a new stage
