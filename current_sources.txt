@@ -43415,9 +43415,9 @@ class FederationCompetitionEntry(models.Model):
             lambda entry: entry != self and entry.team_id == team
         )
         if duplicate:
-            return _(
-                "Team '%(team)s' is already registered for this division."
-            ) % {"team": team.display_name}
+            return _("Team '%(team)s' is already registered for this division.") % {
+                "team": team.display_name
+            }
 
         if not team.active:
             return _("Only active teams can be registered.")
@@ -43576,12 +43576,8 @@ class TestRegistrationTeamSelection(TransactionCase):
     def test_available_teams_exclude_registered_and_mismatched_teams(self):
         eligible_team = self._make_team("Eligible Team")
         registered_team = self._make_team("Registered Team")
-        wrong_gender_team = self._make_team(
-            "Wrong Gender Team", gender="female"
-        )
-        wrong_category_team = self._make_team(
-            "Wrong Category Team", category="junior"
-        )
+        wrong_gender_team = self._make_team("Wrong Gender Team", gender="female")
+        wrong_category_team = self._make_team("Wrong Category Team", category="junior")
         self.env["federation.competition.entry"].create(
             {
                 "window_id": self.window.id,

@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_stage_participant_manager,stage.participant.manager,model_federation_stage_participant,sports_federation_base.group_federation_manager,1,1,1,1
+access_stage_progression_manager,stage.progression.manager,model_federation_stage_progression,sports_federation_base.group_federation_manager,1,1,1,1
+access_stage_snapshot_manager,stage.snapshot.manager,model_federation_stage_standing_snapshot,sports_federation_base.group_federation_manager,1,1,1,0
+access_stage_line_manager,stage.line.manager,model_federation_stage_standing_line,sports_federation_base.group_federation_manager,1,0,0,0

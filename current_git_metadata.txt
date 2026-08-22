@@ -2,42 +2,13 @@
 refactor/simplification-competition-engine
 
 === CURRENT COMMIT ===
-61de73c3dacc496013899865b66bcbbeb35b129f
+71dac69f110d317d4c26cde6683fd6c6e94157a3
 
 === WORKTREE STATUS ===
- M current_git_metadata.txt
  M current_sources.txt
- M sports_federation_calendar/__manifest__.py
- M sports_federation_calendar/views/menu.xml
- M sports_federation_competition_core/__manifest__.py
- M sports_federation_competition_core/models/__init__.py
- M sports_federation_competition_core/views/menu.xml
- M sports_federation_format/__manifest__.py
- M sports_federation_format/views/menu.xml
- M sports_federation_matchday/__manifest__.py
- M sports_federation_matchday/views/menu.xml
- M sports_federation_registration/__init__.py
- M sports_federation_registration/__manifest__.py
  M sports_federation_registration/models/registration.py
- M sports_federation_registration/security/ir.model.access.csv
- M sports_federation_registration/views/menu.xml
- M sports_federation_schedule_approval/__manifest__.py
- M sports_federation_schedule_approval/views/menu.xml
- M sports_federation_scheduling/__manifest__.py
- M sports_federation_scheduling/views/menu.xml
-?? ci/odoo-ci.generated.conf.DbpJMA
-?? ci/odoo-ci.generated.conf.hAhBbF
-?? sports_federation_calendar/views/calendar_views.xml
-?? sports_federation_competition_core/models/competition_overview.py
-?? sports_federation_competition_core/views/competition_edition_views.xml
-?? sports_federation_format/views/format_views.xml
-?? sports_federation_matchday/views/matchday_views.xml
-?? sports_federation_registration/README.md
-?? sports_federation_registration/tests/
-?? sports_federation_registration/views/registration_views.xml
-?? sports_federation_registration/wizards/
-?? sports_federation_schedule_approval/views/approval_views.xml
-?? sports_federation_scheduling/views/scheduling_views.xml
+ M sports_federation_registration/tests/__init__.py
+ M sports_federation_registration/tests/test_registration_team_selection.py
 
 === MODULE VERSIONS ===
 
@@ -74,6 +45,7 @@ sports_federation_notifications: "version": "19.0.1.3.0",
 
 === RELEVANT RECENT HISTORY ===
 
+71dac69 (HEAD -> refactor/simplification-competition-engine) Added registration desk team filtering based on gender and category.
 a78119f Corrected errors in security files.
 40b539f Implemented a full refactor of competition engine (v2). Original still existing for testing.
 c84c10e (origin/main, origin/HEAD, main) Refactored scheduler.
@@ -93,7 +65,6 @@ d7fd311 Solved linting issues.
 af37d3b Reformatted with 'Black'
 1def31a (origin/copilot/fix-odoo-tests-portal-public-ops) fix: add explicit csrf=True to POST jsonrpc routes in tournament_operations.py
 80ae844 Revised documentation.
-99d84a0 Implemented package 13.
 
 
 === DISCOVERED FILE COUNT ===

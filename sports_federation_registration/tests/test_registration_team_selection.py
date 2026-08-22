@@ -63,12 +63,8 @@ class TestRegistrationTeamSelection(TransactionCase):
     def test_available_teams_exclude_registered_and_mismatched_teams(self):
         eligible_team = self._make_team("Eligible Team")
         registered_team = self._make_team("Registered Team")
-        wrong_gender_team = self._make_team(
-            "Wrong Gender Team", gender="female"
-        )
-        wrong_category_team = self._make_team(
-            "Wrong Category Team", category="junior"
-        )
+        wrong_gender_team = self._make_team("Wrong Gender Team", gender="female")
+        wrong_category_team = self._make_team("Wrong Category Team", category="junior")
         self.env["federation.competition.entry"].create(
             {
                 "window_id": self.window.id,

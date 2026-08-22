@@ -152,9 +152,9 @@ class FederationCompetitionEntry(models.Model):
             lambda entry: entry != self and entry.team_id == team
         )
         if duplicate:
-            return _(
-                "Team '%(team)s' is already registered for this division."
-            ) % {"team": team.display_name}
+            return _("Team '%(team)s' is already registered for this division.") % {
+                "team": team.display_name
+            }
 
         if not team.active:
             return _("Only active teams can be registered.")
