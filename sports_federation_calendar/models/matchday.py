@@ -131,6 +131,11 @@ class FederationScheduleSlot(models.Model):
         index=True,
     )
     note = fields.Char()
+    continue_court_timeline = fields.Boolean(
+        string="Continue court timeline",
+        default=True,
+        help="When enabled, saved slots continue from the latest slot on the selected court and inherit its duration.",
+    )
 
     @api.model
     def default_get(self, field_list):
@@ -147,14 +152,47 @@ class FederationScheduleSlot(models.Model):
             values.setdefault("end_datetime", end)
         return values
 
-    @api.onchange("matchday_id", "court_id")
-    def _onchange_slot_context(self):
+    @api.onchange("matchday_id")
+    def _onchange_matchday_id(self):
+        """Keep the initial proposal on the selected physical match-day date."""
         for rec in self:
-            if not rec.matchday_id:
+            matchday = rec._persisted_matchday()
+            if not matchday:
                 continue
-            start, end = rec._suggest_slot_window(rec.matchday_id, rec.court_id)
-            rec.start_datetime = start
-            rec.end_datetime = end
+            start, end = rec._suggest_slot_window(matchday, False)
+            rec.update({"start_datetime": start, "end_datetime": end})
+
+    @api.onchange("court_id")
+    def _onchange_court_id(self):
+        """Rebase the row on the latest persisted slot for the selected court.
+
+        Inline one2many rows can hold the parent as a virtual NewId. Searching
+        with that virtual identifier returns no records, which previously made
+        every court selection fall back to the match-day default. Resolve the
+        persisted parent explicitly before querying prior slots.
+        """
+        for rec in self:
+            matchday = rec._persisted_matchday()
+            court = rec._persisted_court()
+            if not matchday or not court:
+                continue
+            start, end = rec._suggest_slot_window(matchday, court)
+            rec.update({"start_datetime": start, "end_datetime": end})
+
+    def _persisted_matchday(self):
+        self.ensure_one()
+        matchday = self.matchday_id
+        if matchday and matchday._origin and matchday._origin.id:
+            return matchday._origin
+        context_id = self.env.context.get("default_matchday_id")
+        return self.env["federation.matchday"].browse(context_id).exists()
+
+    def _persisted_court(self):
+        self.ensure_one()
+        court = self.court_id
+        if court and court._origin and court._origin.id:
+            return court._origin
+        return self.env["federation.playing.area"]
 
     @api.onchange("start_datetime")
     def _onchange_start_datetime(self):
@@ -189,10 +227,11 @@ class FederationScheduleSlot(models.Model):
 
     @api.model
     def _suggest_duration_minutes(self, matchday, court=False):
-        domain = [("matchday_id", "=", matchday.id)]
-        if court:
-            domain.append(("court_id", "=", court.id))
-        previous = self.search(domain, order="end_datetime desc, id desc", limit=1)
+        matchday = matchday._origin if matchday and matchday._origin.id else matchday
+        court = court._origin if court and court._origin.id else court
+        if not court or not court.id:
+            return matchday.default_slot_duration_minutes or 40
+        previous = self._latest_court_slot(matchday, court)
         if previous and previous.start_datetime and previous.end_datetime:
             minutes = int(
                 (previous.end_datetime - previous.start_datetime).total_seconds() // 60
@@ -202,19 +241,65 @@ class FederationScheduleSlot(models.Model):
         return matchday.default_slot_duration_minutes or 40
 
     @api.model
-    def _suggest_slot_window(self, matchday, court=False):
-        """Start after the last slot on this court, otherwise on the match-day date."""
-        domain = [("matchday_id", "=", matchday.id)]
-        if court:
-            domain.append(("court_id", "=", court.id))
-        previous = self.search(domain, order="end_datetime desc, id desc", limit=1)
-        start = (
-            previous.end_datetime
-            if previous
-            else self._first_start_for_matchday(matchday)
+    def _latest_court_slot(self, matchday, court):
+        matchday = matchday._origin if matchday and matchday._origin.id else matchday
+        court = court._origin if court and court._origin.id else court
+        if not matchday or not matchday.id or not court or not court.id:
+            return self.env["federation.schedule.slot"]
+        return self.search(
+            [("matchday_id", "=", matchday.id), ("court_id", "=", court.id)],
+            order="end_datetime desc, id desc",
+            limit=1,
         )
+
+    @api.model
+    def _suggest_slot_window(self, matchday, court=False):
+        """Continue one court only; never borrow another court's timeline."""
+        matchday = matchday._origin if matchday and matchday._origin.id else matchday
+        court = court._origin if court and court._origin.id else court
+        previous = self._latest_court_slot(matchday, court) if court and court.id else False
+        start = previous.end_datetime if previous else self._first_start_for_matchday(matchday)
         duration = self._suggest_duration_minutes(matchday, court)
         return start, start + timedelta(minutes=duration)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Normalize buffered inline rows as they are persisted.
+
+        Odoo may keep several editable one2many rows client-side until the parent
+        is saved. Their onchange calls cannot see those unsaved sibling rows.
+        During create, rows are persisted sequentially, so each row can reliably
+        continue from the row created immediately before it on the same court.
+        """
+        created = self.browse()
+        for incoming in vals_list:
+            vals = dict(incoming)
+            if vals.get("continue_court_timeline", True):
+                matchday = self.env["federation.matchday"].browse(vals.get("matchday_id")).exists()
+                court = self.env["federation.playing.area"].browse(vals.get("court_id")).exists()
+                if matchday and court:
+                    previous = self._latest_court_slot(matchday, court)
+                    provided_start = fields.Datetime.to_datetime(vals.get("start_datetime"))
+                    provided_end = fields.Datetime.to_datetime(vals.get("end_datetime"))
+                    provided_duration = (
+                        int((provided_end - provided_start).total_seconds() // 60)
+                        if provided_start and provided_end and provided_end > provided_start
+                        else matchday.default_slot_duration_minutes or 40
+                    )
+                    if previous:
+                        duration = int(
+                            (previous.end_datetime - previous.start_datetime).total_seconds() // 60
+                        ) or matchday.default_slot_duration_minutes or 40
+                        start = previous.end_datetime
+                    else:
+                        # Keep a deliberately entered first-slot duration, but
+                        # rebase stale defaults from another court to this day.
+                        duration = provided_duration
+                        start = self._first_start_for_matchday(matchday)
+                    vals["start_datetime"] = start
+                    vals["end_datetime"] = start + timedelta(minutes=duration)
+            created |= super(FederationScheduleSlot, self).create([vals])
+        return created
 
     @api.constrains("start_datetime", "end_datetime")
     def _check_window(self):
