@@ -168,7 +168,7 @@ containers/database/filestore/configuration on failure. For fast UI work use
 combined with:
 
 ```bash
-bash ./ci/run_tests.sh --suite competition_workspace_contracts
+bash ./ci/run_tests.sh --suite v2_competition_contracts
 ```
 
 ### Pre-push checks
@@ -232,7 +232,7 @@ affected modules and release train, then verify:
 
 ## Architecture summary
 
-The dependency direction is `base → tournament → competition_engine`, followed
+The dependency direction is `base → tournament → competition_core → registration → format → calendar → scheduling`, followed
 by domain modules such as people, rules, rosters, officiating, results,
 standings, compliance, discipline, governance, venues, and finance. Portal,
 public-site, notification, reporting, and import modules are integration or

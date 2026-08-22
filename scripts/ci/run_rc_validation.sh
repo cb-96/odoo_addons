@@ -5,7 +5,7 @@ lane="${1:-all}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
-modules="sports_federation_base,sports_federation_rules,sports_federation_tournament,sports_federation_competition_engine,sports_federation_officiating,sports_federation_result_control,sports_federation_notifications,sports_federation_portal"
+modules="sports_federation_base,sports_federation_rules,sports_federation_tournament,sports_federation_competition_core,sports_federation_registration,sports_federation_format,sports_federation_calendar,sports_federation_scheduling,sports_federation_schedule_approval,sports_federation_matchday,sports_federation_officiating,sports_federation_result_control,sports_federation_notifications,sports_federation_portal"
 odoo_bin="${ODOO_BIN:-$repo_root/_odoo/odoo-bin}"
 addons_path="${ADDONS_PATH:-$repo_root,$repo_root/_odoo/addons}"
 db_name="${DB_NAME:-sf_rc_validation}"
@@ -38,7 +38,7 @@ for path in Path('.').glob('sports_federation_*'):
         ElementTree.parse(xml)
 print('XML parse check passed')
 PY
-  git diff --check
+  git -c core.whitespace=cr-at-eol diff --check
   if command -v node >/dev/null 2>&1; then
     while IFS= read -r -d '' file; do node --check "$file"; done < <(
       find sports_federation_* -path '*/static/src/*.js' -type f -print0
@@ -58,18 +58,14 @@ case "$lane" in
     require_odoo
     "${common[@]}" -i "$modules" --test-enable --test-tags '/sports_federation_base,/sports_federation_rules,/sports_federation_tournament'
     ;;
-  core) run_tags 'sf_competition_workspace,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications' ;;
+  core) run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications' ;;
   portal) run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile' ;;
-  concurrency) run_tags 'sf_ws_true_concurrency' ;;
-  simulation) run_tags 'sf_production_simulation' ;;
   all)
     static_checks
     require_odoo
     "${common[@]}" -i "$modules" --test-enable --test-tags '/sports_federation_base,/sports_federation_rules,/sports_federation_tournament'
-    run_tags 'sf_competition_workspace,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications'
+    run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications'
     run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile'
-    run_tags 'sf_ws_true_concurrency'
-    run_tags 'sf_production_simulation'
     ;;
-  *) echo "Usage: $0 {static|install|core|portal|concurrency|simulation|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {static|install|core|portal|all}" >&2; exit 2 ;;
 esac

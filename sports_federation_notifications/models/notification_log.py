@@ -1,9 +1,13 @@
+import logging
+
 from datetime import timedelta
 
 from odoo import api, fields, models
 from odoo.addons.sports_federation_base.models.failure_feedback import (
     FAILURE_CATEGORY_SELECTION,
 )
+
+_logger = logging.getLogger(__name__)
 
 
 class FederationNotificationLog(models.Model):
@@ -78,7 +82,12 @@ class FederationNotificationLog(models.Model):
             try:
                 record = model.sudo().browse(rec.target_res_id).exists()
                 rec.target_display_name = record.display_name if record else False
-            except Exception:
+            except Exception:  # integration boundary: optional target model
+                _logger.exception(
+                    "Could not resolve notification target %s,%s",
+                    rec.target_model,
+                    rec.target_res_id,
+                )
                 rec.target_display_name = False
 
     def action_acknowledge_failure(self):

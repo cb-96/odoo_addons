@@ -120,10 +120,9 @@ Key Behaviours
   venue or date combinations.
 - **Duplicate-pairing guardrails**: teams in the same category cannot play the
   same opponent more than once inside the same round.
-- **Competition Workspace integration**: when
-  ``sports_federation_competition_engine`` is installed, blackout windows,
-  maintenance closures, and capability mismatches feed planner validation and
-  venue-readiness summaries.
+- **Scheduling integration**: blackout windows, maintenance closures, and
+  capability mismatches are validated by the scheduling workflow before a
+  schedule can be approved.
 - **Finance bridge integration**: when ``sports_federation_finance_bridge`` is
   installed, scheduling a match with a venue automatically creates or reuses a
   draft venue-booking charge for passthrough settlement.

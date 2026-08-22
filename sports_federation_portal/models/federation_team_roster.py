@@ -427,7 +427,7 @@ class FederationTeamRoster(models.Model):
                 self.env[line._name].sudo().create(values)
                 existing.add(player.id)
                 copied += 1
-            except Exception:
+            except (AccessError, ValidationError):
                 skipped += 1
         return copied, skipped
 

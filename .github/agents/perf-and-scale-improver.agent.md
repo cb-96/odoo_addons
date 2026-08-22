@@ -14,7 +14,7 @@ Your job is to perform a focused maintenance and improvement pass on this custom
 
 ## Context
 - This is the **Sports Federation Management System** — Odoo 19 Community addons managing clubs, teams, seasons, tournaments, referees, rosters, results, standings, and a public/portal website.
-- Addons: `sports_federation_base` (clubs/teams/seasons), `sports_federation_tournament` (competitions/stages/matches), `sports_federation_competition_engine` (scheduling wizards), `sports_federation_people` (player registry), `sports_federation_rosters` (match sheets), `sports_federation_officiating` (referee assignments), `sports_federation_result_control` (submit→verify→approve pipeline), `sports_federation_standings`, `sports_federation_portal`, `sports_federation_public_site`. Domain models use the `federation.` prefix.
+- Addons: `sports_federation_base` (clubs/teams/seasons), `sports_federation_tournament` (competitions/stages/matches), `sports_federation_format` and `sports_federation_scheduling` (scheduling wizards), `sports_federation_people` (player registry), `sports_federation_rosters` (match sheets), `sports_federation_officiating` (referee assignments), `sports_federation_result_control` (submit→verify→approve pipeline), `sports_federation_standings`, `sports_federation_portal`, `sports_federation_public_site`. Domain models use the `federation.` prefix.
 - Authoritative behavioural specs: `addons/_workflows/` (e.g. `WORKFLOW_TOURNAMENT_LIFECYCLE.md`, `WORKFLOW_MATCH_DAY_OPERATIONS.md`, `WORKFLOW_RESULT_PIPELINE.md`). Always read these before changing business behaviour.
 - Architecture notes: `addons/TECHNICAL_NOTE.md`. Tests: `addons/<module>/tests/`.
 - Prefer Odoo Community compatible solutions unless explicitly told otherwise.
@@ -125,6 +125,6 @@ Start with the most business-critical modules and the highest-traffic user flows
 Key performance hot-spots for this codebase:
 - **Standings recomputation** (`sports_federation_standings`): triggered on every result change — check for N+1 queries across all participating teams.
 - **Match list views** (`sports_federation_tournament`): large tournaments can have hundreds of matches per stage; inspect list/search view efficiency.
-- **Scheduling algorithms** (`sports_federation_competition_engine`): round-robin and knockout generators run in loops — confirm batch `create()` is used and no per-record writes occur.
+- **Scheduling algorithms** (`sports_federation_format` and `sports_federation_scheduling`): round-robin and knockout generators run in loops — confirm batch `create()` is used and no per-record writes occur.
 - **Public site** (`sports_federation_public_site`): public tournament and standings pages must not run heavy unrestricted queries; check for missing caches or heavy related-field loads.
 - **Reporting** (`sports_federation_reporting`): scheduled CSV snapshot generation and operational KPI views — verify they use search() + mapped() rather than browse loops.

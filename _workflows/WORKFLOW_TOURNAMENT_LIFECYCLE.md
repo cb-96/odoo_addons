@@ -34,7 +34,12 @@ Blocking vs warning-only model:
 | `sports_federation_base` | Seasons, clubs, teams |
 | `sports_federation_rules` | Rule sets governing scoring, tie-breaks, eligibility |
 | `sports_federation_tournament` | Competition, tournament, stage, group, participant, match models |
-| `sports_federation_competition_engine` | Round-robin and knockout schedule generation wizards |
+| `sports_federation_competition_core`, `sports_federation_registration` | Competition identity, lifecycle, registration, and participant finalization |
+| `sports_federation_format` | Versioned logical structures and stage graphs |
+| `sports_federation_calendar` | Physical match days, capacity, slots, and timelines |
+| `sports_federation_scheduling` | Deterministic fixture assignment and schedule validation |
+| `sports_federation_schedule_approval` | Schedule review and immutable publication snapshots |
+| `sports_federation_matchday` | Live operations after schedule publication |
 | `sports_federation_venues` | Venue and playing-area assignment |
 | `sports_federation_standings` | Standings computation at each stage |
 | `sports_federation_notifications` | Participant-confirmation and publication notifications |
@@ -122,197 +127,45 @@ Bulk enrolment is available via the **Import Tournament Participants** wizard.
 ### 6. Schedule Generation
 
 **Actor**: Federation administrator
-**Module**: `sports_federation_competition_engine`
+**Modules**: `sports_federation_format`, `sports_federation_calendar`,
+`sports_federation_scheduling`, `sports_federation_schedule_approval`, and
+`sports_federation_matchday`
 
-Two operator flows are supported: classic generation wizards and the guided
-Competition Workspace.
+The V2 path is an explicit sequence of handovers:
 
-Canonical path:
+- Freeze the logical structure and stage graph in `sports_federation_format`.
+- Prepare physical match days and playable capacity in
+   `sports_federation_calendar`.
+- Generate or assign fixtures and validate the complete draft in
+   `sports_federation_scheduling`.
+- Submit the draft for review and publish an immutable snapshot through
+   `sports_federation_schedule_approval`.
+- Start live operations only from the published snapshot through
+   `sports_federation_matchday`.
 
-- Use **Planning Workspace** as the default scheduling surface when operators
-   need to manage entries, generate matches, create gamedays, assign slots, and
-   publish schedules as one guided flow.
-- Use the classic **Round Robin Wizard** or **Knockout Wizard** only as
-   advanced or specialist tools when the federation wants direct one-step format
-   generation on an already prepared tournament.
-- After Planning Workspace creates gamedays, use the round-level
-   **Gameday Planner** for one-day preparation. Once matches are underway, move
-   to the **Live Operations Board** for in-progress play and result handling.
+1. Move the competition into the state that permits scheduling.
+2. Registration finalizes and locks the confirmed participant set.
+3. Format freezes the structure and stage graph for the competition edition.
+   Round-robin and knockout generation remain deterministic and scoped to the
+   frozen structure.
+4. Calendar creates match days and `federation.schedule.slot` capacity for the
+   required venues and courts. Slot lifecycle and court timelines are owned by
+   `sports_federation_calendar`.
+5. Scheduling assigns fixtures to available slots, applies fairness and rest
+   validation, and returns a complete draft schedule. Blocking conflicts must be
+   resolved before review; warnings remain visible and auditable.
+6. Schedule approval reviews the draft and publishes an immutable schedule
+   snapshot. Federation managers may approve configured warning-only overrides,
+   with the reason retained in the audit trail.
+7. Match-day operations open and close only published schedules. Referee
+   readiness, venue readiness, result follow-up, and incidents are handled by
+   their owning modules without changing the approved snapshot.
 
-1. Move tournament to `in_progress` state.
-2. Open **Planning Workspace** from the competition edition, tournament, or
-    gameday when the federation wants the canonical guided path.
-3. Open the **Round Robin Wizard** or **Knockout Wizard** from the tournament form only when the advanced direct-generation path is the better fit.
-4. Configure scheduling options in the wizard:
-   - Select participants and (optionally) a group.
-   - `Use All Confirmed Participants` only includes `federation.tournament.participant`
-     records in state `confirmed` inside the selected stage/group scope. Tournament
-     registration requests on their own are not enough.
-   - Ensure the tournament or linked competition already has an effective rule set; the wizard will block generation otherwise.
-   - Set `Start Date/Time` and `Interval (hours)` — the intra-round spacing.
-   - Use `Full Cycles (repeats)` to repeat the entire round-robin cycle N times
-     (useful for formats that play multiple cycles; combined with the double-round
-     option this enables 4+ meetings per pair).
-    - Toggle `Schedule By Round` to allocate each round as a shared date/time
-       block. When enabled, `Round Interval (hours)` controls spacing between rounds
-       (e.g., 24 hours for daily rounds). Intra-round spacing still uses
-       `Interval (hours)`.
-       - Generated matches always bind to `federation.tournament.round` records.
-          Existing stage rounds are reused by sequence order; missing rounds are
-          created automatically.
-       - Round dates and venues live on the round. The scheduler can fill those
-          from the wizard inputs, but if the stage already has planned rounds with
-          dates or venues, those values are respected.
-       - The round scheduler will attempt to alternate `male` / `female` fixtures
-          inside each round to provide rest; this is a best-effort interleaving and
-          does not change seeding or pairings.
-   - Set a default `Venue` and enable `Overwrite Existing` to replace prior matches.
-5. Preview the generated schedule via the wizard `Summary` (shows total matches
-   given participants, cycles, and round type). When overwrite is enabled, the
-   wizard shows an explicit warning before confirmation.
-6. Confirm to create all match records automatically.
-7. If venues or exact days were not known during initial planning, update the
-   generated stage rounds later. Matches linked to those rounds will inherit the
-   round venue, and any scheduled match times must stay on the same calendar date.
+**Round Robin**: The format service generates a complete deterministic pairing
+set where every team plays every other team once or twice according to policy.
 
-**Round Robin**: Circle method generates a complete schedule where every team plays
-every other team once (single) or twice (double).
-
-**Knockout**: Seeded single-elimination bracket with automatic byes for non-power-of-two counts.
-
-Competition Workspace
-
-**Actors**:
-- Competition planner for draft planning work.
-- Federation manager for publication and any warning-only overrides.
-
-Use the Competition Workspace when the federation wants a guided workflow that
-separates pairing generation from operational slot assignment:
-
-1. Open **Competition Workspace** from the competition edition, division, or
-   gameday form.
-2. Create or select the season competition, then create a division and choose
-   the planning format.
-   - Use `season competition` for this top-level season record. Older
-     technical notes may still call it the `competition shell`, but that term
-     is deprecated in operator-facing guidance.
-   - Federation managers create the competition from the empty workspace menu
-     state; planners continue once a competition or division already exists.
-   - If the selected competition template already has an edition for that
-     season, the workspace reopens the existing competition instead of creating
-     a duplicate edition.
-3. Add team entries and confirm them. Only `confirmed`
-   `federation.tournament.participant` records count for planning.
-   - The workspace team picker uses server-side search and an optional club
-     filter so large team catalogs remain manageable.
-4. Lock the participant list. This prevents planning drift once round generation
-   starts.
-5. Generate unscheduled matches for a supported planning format.
-   - Single round robin creates one cycle of pairings.
-   - Double round robin creates home-and-away pairings.
-   - Knockout creates a seeded bracket with byes and linked future rounds.
-   - Manual divisions skip the guided generator.
-    - Pool-then-bracket creates balanced pool play first and then wires a staged
-       knockout bracket for the configured qualifiers from each pool.
-   The workspace stores logical rounds on `federation.match.round_number`
-   without forcing an immediate gameday assignment.
-6. Create one or more gamedays (`federation.tournament.round`) and attach a
-   venue when known.
-    - Multi-stage divisions can target a specific stage so pool work and
-       knockout work stay separated operationally.
-   - A gameday may include multiple divisions from the same competition when
-     they share one physical match day.
-   - The workspace creates one slot-owning gameday plus one linked gameday per
-     extra division so each scheduled match still keeps a division-local round.
-    - The Schedule tab can create additional ordered stages directly. For a
-       round-robin phase followed by knockouts, create the knockout stage after
-       the round-robin stage and configure the qualification rank range; the
-       workspace records the stage progression and can auto-advance qualifiers
-       after standings are frozen. Pool Then Bracket remains the one-step guided
-       option for generating this structure automatically.
-7. Generate court/time slots. The workspace creates `federation.match.slot`
-   records on the slot-owning gameday and reuses that physical grid for every
-   linked division in the same shared day.
-   - Empty draft or planned gamedays can be deleted from the Planning
-     Workspace with confirmation. Shared gameday deletion removes the
-     slot-owning root and linked guest records together; assigned, validated,
-     published, locked, or completed gamedays are protected.
-8. Open the visual planner and assign matches to slots.
-   - Desktop and tablet users can drag and drop.
-   - Mobile users use the tap-to-assign fallback.
-   - Keyboard users can select one match and assign it into an empty slot
-     without drag-and-drop.
-   - Dragging one already scheduled match onto another occupied slot now
-     performs a validated safe swap when both matches can legally exchange
-     places.
-   - When a gameday is shared, the unscheduled list can contain matches from
-     every participating division and operators can filter the pool back down
-     by division or team.
-   - The planner selection toolbar can bulk-assign the current filtered
-     unscheduled set into the next open slots and bulk-unassign selected
-     scheduled matches from the active gameday.
-   - Recent assignment, move, and unassignment actions stay visible in the
-     planner history panel and can be undone or redone directly from the
-     workspace.
-   - The workspace remembers the current section, division, gameday, and
-     planner filters across refreshes so operators can recover their place.
-    - If a remembered gameday or stage is deleted, reopening Schedule Planning
-       discards the stale selection and returns to the division overview instead
-       of raising a server error.
-   - The planner also shows recent operator presence and warns when another
-     user is active on the same gameday.
-    - Stage labels stay visible on previews, gameday controls, and match cards,
-       and the planner surfaces fairness metrics plus ranked slot suggestions for
-       the selected unscheduled match.
-    - Division-level fairness settings can be tuned from the workspace while
-       planning: minimum rest minutes plus max consecutive short-rest matches per
-       team.
-9. Review validation results before publishing.
-   - Blocking conflicts stop unscheduled reuse of an occupied slot and prevent
-     any move that would create a team overlap across simultaneous matches.
-   - Short-rest issues use the division's `minimum_rest_minutes` threshold and
-     surface as warnings.
-    - Consecutive short-rest streaks beyond the division limit
-       (`max_consecutive_matches_per_team`) surface as warnings.
-    - The planner can confirm a clean planned gameday as `validated` once the
-       operator approves the review.
-    - Confirming validation freezes the pending schedule revision as a
-       `validated` snapshot rather than publishing it.
-    - Optional venue extensions can add blackout, maintenance, and capability
-       issues to the same planner review step.
-    - Officiating extension checks are staged after planning (`published` and
-       later) so referee readiness does not block early slot allocation.
-   - Shared match days validate against the slot-owning root gameday so every
-     linked division sees the same planner issues for that physical day.
-   - Validation output is grouped by issue type and severity, includes
-     operator-facing hints, and highlights the affected slot or match in the
-     planner.
-10. Publish the gameday or the overall competition schedule.
-   - Federation managers alone can publish.
-   - Federation managers alone can force assignments that only contain
-     warnings.
-   - Publishing a guest-linked gameday still checks the slot-owning root
-     gameday before the shared day can move live.
-   - Publishing now creates or updates explicit schedule revisions so live,
-     draft, and superseded plans remain distinguishable.
-    - A previously confirmed `validated` revision is promoted to `live` during
-       publication.
-   - Republishing a live plan or forcing warnings requires a manager reason
-     that stays attached to the resulting planner operation or revision.
-11. Maintain schedule changes from the same workspace.
-   - Published gamedays lock routine planner edits for non-managers.
-      - Planner writes carry the current `planner_revision`; if another operator
-         changed the planner first, the stale session must refresh before writing
-         again.
-      - Planner history stays linear: when a new planner write happens after an
-         undo, the old redo branch is superseded instead of silently mixing two
-         competing edit branches.
-      - Any assignment, unassignment, or slot-grid regeneration that changes a
-         validated or published day reopens the linked gameday to `planned` and
-         the linked divisions to `planning` so publication is an explicit second
-         pass, not an accidental side effect of a late edit.
-      - Later edits create a draft revision alongside the live schedule until a
-         manager republishes the updated plan.
+**Knockout**: The format service creates a seeded single-elimination bracket,
+including byes and future-round wiring for non-power-of-two participant counts.
 
 ### 7. Match Execution
 

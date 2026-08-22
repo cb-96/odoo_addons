@@ -94,7 +94,7 @@ These routes require partner authentication, subscription checks, stable error e
 
 ## Operator Surfaces
 
-- Competition Planning Workspace: `sports_federation_competition_engine`
+- Competition planning and schedule publication: `sports_federation_scheduling`, `sports_federation_schedule_approval`
 - Tournament Operations Board: `sports_federation_portal`
 - Reporting Operator Checklist: `sports_federation_reporting`
 - Report Schedules: `sports_federation_reporting`

@@ -7,10 +7,8 @@
 #   bash ci/run_tests.sh --module sports_federation_base
 #   bash ci/run_tests.sh --suite portal_public_ops
 #   bash ci/run_tests.sh --module sports_federation_rosters --test-tags sf_rosters_participant_readiness --require-post-tests 1
-#   bash ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_read_model --require-post-tests 1
 #   bash ci/run_tests.sh --frontend-module sports_federation_portal
 #   bash ci/run_tests.sh --affected-from origin/main --include-dependents
-#   bash ci/run_tests.sh --suite competition_workspace_contracts
 #   bash ci/run_tests.sh --list-suites
 #   bash ci/run_tests.sh --keep                  # keep containers for debugging
 #
@@ -36,13 +34,11 @@ Usage:
   bash ci/run_tests.sh --suite competition_core
   bash ci/run_tests.sh --suite portal_public_ops --keep-on-failure
   bash ci/run_tests.sh --module sports_federation_rosters --test-tags sf_rosters_participant_readiness --require-post-tests 1
-  bash ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_read_model --require-post-tests 1
   bash ci/run_tests.sh --list-suites
 
 Options:
   --module, -m        Add a module to the install/test list. Repeatable.
   --suite, -s         Add a named test suite. Repeatable.
-  --contract-suite, -c Select a named contract tag suite. Repeatable.
   --test-tags         Override Odoo --test-tags expression used for discovery.
   --require-post-tests Fail if discovered post-tests are below the provided minimum.
   --frontend-module   Run frontend-only checks for a module. Repeatable.
@@ -68,42 +64,7 @@ Available suites:
   release_surfaces       Broader portal/public, match-day, compliance, and notification release verification
   people_rosters_rules   People, rosters, rules, and officiating modules
   ops_and_notifications  Discipline, governance, notifications, import_tools, and demo modules
-  competition_workspace_contracts All Workspace contract tags in one invocation
 EOF
-}
-
-list_contract_suites() {
-  cat <<'EOF'
-Available contract suites:
-  ws_read_model      sf_ws_read_model_contract
-  ws_write_guards    sf_ws_write_guard_contract
-  ws_extensions      sf_ws_extension_contract
-  ws_concurrency     sf_ws_concurrency_contract
-  ws_acl             sf_ws_acl_contract
-EOF
-}
-
-resolve_contract_suite_tag() {
-  case "$1" in
-    ws_read_model)
-      echo "sf_ws_read_model_contract"
-      ;;
-    ws_write_guards)
-      echo "sf_ws_write_guard_contract"
-      ;;
-    ws_extensions)
-      echo "sf_ws_extension_contract"
-      ;;
-    ws_concurrency)
-      echo "sf_ws_concurrency_contract"
-      ;;
-    ws_acl)
-      echo "sf_ws_acl_contract"
-      ;;
-    *)
-      return 1
-      ;;
-  esac
 }
 
 resolve_suite_modules() {
@@ -113,7 +74,12 @@ resolve_suite_modules() {
 sports_federation_base
 sports_federation_tournament
 sports_federation_competition_core
-sports_federation_competition_engine
+sports_federation_registration
+sports_federation_format
+sports_federation_calendar
+sports_federation_scheduling
+sports_federation_schedule_approval
+sports_federation_matchday
 sports_federation_result_control
 sports_federation_standings
 EOF
@@ -169,11 +135,6 @@ sports_federation_import_tools
 sports_federation_demo
 EOF
       ;;
-    competition_workspace_contracts)
-      cat <<'EOF'
-sports_federation_competition_engine
-EOF
-      ;;
     *)
       return 1
       ;;
@@ -216,6 +177,9 @@ set +a
 : "${CI_ODOO_DB_PORT:=5432}"
 : "${CI_LOG_RETENTION_RUNS:=30}"
 : "${CI_SKIP_BROWSER_BOOTSTRAP:=0}"
+export CI_PROJECT_NAME CI_POSTGRES_USER CI_POSTGRES_PASSWORD CI_POSTGRES_DB \
+  CI_ODOO_DB_NAME CI_ODOO_DB_HOST CI_ODOO_DB_PORT CI_LOG_RETENTION_RUNS \
+  CI_SKIP_BROWSER_BOOTSTRAP
 
 PROJECT_NAME="$CI_PROJECT_NAME"
 
@@ -246,7 +210,12 @@ ALL_MODULES=(
   sports_federation_result_control
   sports_federation_portal
   sports_federation_rosters
-  sports_federation_competition_engine
+  sports_federation_registration
+  sports_federation_format
+  sports_federation_calendar
+  sports_federation_scheduling
+  sports_federation_schedule_approval
+  sports_federation_matchday
   sports_federation_officiating
   sports_federation_discipline
   sports_federation_governance
@@ -285,7 +254,6 @@ contains_module() {
 # ── CLI parsing ──────────────────────────────────────────────────────
 MODULES=()
 SUITES=()
-CONTRACT_SUITES=()
 FRONTEND_MODULES=()
 CUSTOM_TEST_TAGS=""
 REQUIRE_POST_TESTS=0
@@ -304,11 +272,6 @@ while [[ $# -gt 0 ]]; do
     --suite|-s)
       [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; usage >&2; exit 1; }
       SUITES+=("$2")
-      shift 2
-      ;;
-    --contract-suite|-c)
-      [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; usage >&2; exit 1; }
-      CONTRACT_SUITES+=("$2")
       shift 2
       ;;
     --frontend-module)
@@ -400,7 +363,7 @@ fi
 
 if [[ ${#FRONTEND_MODULES[@]} -gt 0 ]]; then
   if [[ -n "$CUSTOM_TEST_TAGS" ]]; then
-    echo "--frontend-module cannot be combined with --test-tags or --contract-suite" >&2
+    echo "--frontend-module cannot be combined with --test-tags" >&2
     exit 1
   fi
   MODULES+=("${FRONTEND_MODULES[@]}")
@@ -408,39 +371,14 @@ if [[ ${#FRONTEND_MODULES[@]} -gt 0 ]]; then
   REQUIRE_POST_TESTS=1
 fi
 
-if [[ ${#CONTRACT_SUITES[@]} -gt 0 ]]; then
-  if [[ -n "$CUSTOM_TEST_TAGS" ]]; then
-    echo "--contract-suite cannot be combined with --test-tags" >&2
-    exit 1
-  fi
-
-  contract_tags=()
-  for contract_suite in "${CONTRACT_SUITES[@]}"; do
-    if ! contract_tag="$(resolve_contract_suite_tag "$contract_suite")"; then
-      echo "Unknown contract suite: $contract_suite" >&2
-      list_contract_suites >&2
-      exit 1
-    fi
-    contract_tags+=("$contract_tag")
-  done
-
-  CUSTOM_TEST_TAGS="$(IFS=,; echo "${contract_tags[*]}")"
-  if (( REQUIRE_POST_TESTS < 1 )); then
-    REQUIRE_POST_TESTS=1
-  fi
-fi
-
 for suite in "${SUITES[@]}"; do
   case "$suite" in
-    competition_core|portal_public_ops|finance_reporting|release_surfaces|people_rosters_rules|ops_and_notifications|competition_workspace_contracts)
+    competition_core|portal_public_ops|finance_reporting|release_surfaces|people_rosters_rules|ops_and_notifications)
       if (( REQUIRE_POST_TESTS < 1 )); then
         REQUIRE_POST_TESTS=1
       fi
       ;;
   esac
-  if [[ "$suite" == "competition_workspace_contracts" ]]; then
-    CUSTOM_TEST_TAGS="sf_competition_workspace,sf_ws_read_model_contract,sf_ws_write_guard_contract,sf_ws_extension_contract,sf_ws_concurrency_contract,sf_ws_acl_contract"
-  fi
   if [[ "$suite" == "rosters_readiness_guard" ]]; then
     if [[ -z "$CUSTOM_TEST_TAGS" ]]; then
       CUSTOM_TEST_TAGS="sf_rosters_participant_readiness"
@@ -572,10 +510,6 @@ import xml.etree.ElementTree as ET
 root = pathlib.Path(sys.argv[1])
 for path in root.rglob("*.xml"):
     ET.parse(path)
-if root.name == "sports_federation_competition_engine":
-    manifest = (root / "__manifest__.py").read_text(encoding="utf-8")
-    assert "web.qunit_suite_tests" in manifest, "QUnit suite is not registered"
-    assert (root / "static/tests/competition_workspace_ui_tests.js").is_file()
 print(f"frontend static checks passed: {root.name}")
 PY
     then

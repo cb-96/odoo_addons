@@ -112,7 +112,7 @@ Blocking vs warning-only standard:
 - Blocking: current step cannot proceed until resolved.
 - Warning-only: current step can proceed, but follow-up is required; manager
     override reason is mandatory where configured (for example publication
-    overrides in Competition Workspace).
+    publication overrides in `sports_federation_schedule_approval`).
 
 Exception and publication recovery standard:
 
@@ -122,101 +122,39 @@ Exception and publication recovery standard:
 
 ## Canonical planning and match-day flows (2026-05-25)
 
-- `sports_federation_competition_engine` now frames `Planning Workspace` as the
-    canonical scheduling surface on competition editions and tournaments. The
-    classic round-robin and knockout wizards remain available, but the UI now
-    positions them as advanced or recovery-only tools when a federation needs a
-    direct format-specific generation path.
-- `federation.tournament.round` now exposes `Gameday Planner` as the day-level
-    preparation surface. That keeps slot assignment and one-day readiness work
-    separate from both season-wide schedule building and live tournament-day
-    operations.
+- `sports_federation_registration` finalizes participant sets for a competition.
+- `sports_federation_format` freezes the versioned logical structure and stage
+    graph.
+- `sports_federation_calendar` prepares physical match days, capacity, and slots.
+- `sports_federation_scheduling` validates and proposes deterministic fixture
+    assignments.
+- `sports_federation_schedule_approval` reviews schedules and publishes an
+    immutable snapshot; `sports_federation_matchday` executes only that snapshot.
 - `sports_federation_portal` now names three distinct club-operator phases:
     match-day preparation in the workspace or preparation queue, live play in
     the live operations board, and result follow-up in the results queue. Those
     portal surfaces now explain when operators should move from one phase to the
     next instead of presenting the routes as equal-weight peers.
 
-## Competition Workspace planning flow (2026-05-25)
+## V2 competition planning flow (2026-05-25)
 
-`sports_federation_competition_engine` now includes a guided backend
-Competition Workspace for season competition setup, format-aware generation,
-and slot-based scheduling.
+The competition workflow is implemented by small, role-owned V2 addons rather
+than a monolithic workspace service. Each handover is explicit and the server
+remains authoritative for validation and publication.
 
 ### Phase completion snapshot
 
-- Phase 0 through Phase 3 of the Competition Workspace roadmap are now in the
-    implemented baseline.
-- The delivered baseline covers shared-gameday validation through the planner
-    root, split orchestration and validation services, stale-write protection,
-    planner history and safe swaps, scalable planner payload loading,
-    revisioned publication, manager override reasons, operator presence,
-    accessible planner interactions, officiating-aware and venue-aware
-    validation, fairness analytics, stage-aware multi-stage planning, and live
-    extension-backed slot suggestions.
-
-- `federation.competition.edition` is the season-specific competition record
-    exposed by the workspace menu and form buttons. Operator-facing guidance
-    should call this the season competition. Older technical notes may still
-    mention `competition shell`, but that term is deprecated outside
-    compatibility discussions.
-- `federation.tournament` remains the persistent division record and now carries
-    workspace-oriented fields such as `workspace_state`, `planning_format`,
-    `entries_locked`, `minimum_rest_minutes`, `workspace_stage_id`, and planner
-    helper relations to gamedays and slots.
-- `federation.tournament.round` is reused as the gameday object, with
-    `planner_state`, `publish_locked`, and slot relations that feed the visual
-    planner. Shared match days now link one slot-owning root round to one guest
-    round per extra division, so a single physical planner grid can serve
-    multiple divisions without breaking `federation.match.round_id` scope.
-- `federation.match.slot` is the only new persistent model introduced for the
-    workspace. It materializes court/time slots, keeps slot-to-match assignment
-    unique, and allows the planner to separate round-robin pairing generation
-    from operational venue scheduling.
-- `federation.competition.schedule.revision` now keeps draft, live, and
-    superseded schedule snapshots so publication is revisioned instead of being
-    a single mutable schedule state.
-- `federation.competition.workspace.presence` stores recent operator heartbeat
-    data so the UI can show same-workspace and same-gameday collaboration
-    indicators.
-- `federation.competition.workspace.service` centralizes the end-to-end flow:
-    create the season competition, create divisions, create and confirm team
-    entries, lock entries, generate unscheduled single round robin, double
-    round robin, knockout, or pool-then-bracket structures, create stage-aware
-    gamedays, generate slots, validate assignments, build fairness summaries,
-    return ranked slot suggestions, track planner history, maintain draft and
-    live schedule revisions, publish gamedays, publish the overall schedule,
-    and build the Owl payloads. When a manager selects a competition template
-    that already has an edition for the chosen season, the workspace reopens
-    that existing season competition instead of attempting a duplicate edition.
-    `manual` remains available for planner-led match entry, and addon
-    extensions register under `federation.competition.workspace.extension.*`
-    to add validation, payload, and scoring rules.
-    Internally, the service now isolates access helpers in
-    `competition_workspace_access_mixin.py`, extension-contract handling in
-    `competition_workspace_extension_mixin.py`, and planner revision,
-    idempotency, plus schedule-revision state handling in
-    `competition_workspace_planner_state_mixin.py`.
-- `sports_federation_officiating` now contributes workspace validation and
-    payload extension rules so double-booked referee assignments block planner
-    readiness and uncovered availability remains visible as a warning.
-- `sports_federation_venues` now contributes workspace validation and payload
-    extension rules for venue blackout windows, maintenance closures, and
-    playing-area capability requirements.
-- The backend client action is implemented as an Owl action loaded through
-    `web.assets_backend`. It provides guided sections for overview, team entry,
-    round generation, gameday setup, planner assignment, and publication. When
-    the workspace is opened without a selected competition, federation managers
-    can create one directly and planners see an instruction to continue from an
-    existing competition or division. Shared gamedays expose combined
-    participating-division metadata, mixed unscheduled match cards, planner
-    filters for division and team selection, grouped validation panels,
-    revision summaries, collaboration warnings, keyboard/mobile assignment
-    controls, validated safe swaps across occupied slots, stage-aware previews,
-    fairness summaries, and ranked slot suggestions.
-- Access is role-aware: `group_federation_competition_planner` can plan, while
-    federation managers retain the only create, publish, and force-override
-    capabilities.
+- Registration finalizes a participant set before format work begins.
+- Format creates a versioned structure and stage graph; it does not create
+    physical slots.
+- Calendar creates physical match days and slots from capacity and timeline
+    rules.
+- Scheduling accepts the frozen structure and calendar capacity, then writes
+    validated fixture-to-slot assignments through its server-side commands.
+- Approval is a separate review boundary and stores the immutable publication
+    snapshot. Match-day commands reject unpublished or superseded schedules.
+- Portal and officiating modules extend their own surfaces without becoming the
+    authoritative owner of competition transitions.
 
 ## Portal/public intuitiveness baseline (2026-05-26)
 
@@ -388,11 +326,7 @@ The `sports_federation_format` addon owns the versioned structure graph used by 
 
 Stage-graph ACLs are loaded through the addon's conventional `security/ir.model.access.csv` file. Format Studio's inherited view selects the stage tab structurally by its `stage_ids` field rather than by the translated page label.
 
-- `federation.stage.progression` (in `sports_federation_competition_engine`) — a rule model that formalises how teams advance from a source stage/group into a target stage/group. It supports per-group and cross-group selection (`cross_group`), rank windows (`rank_from` / `rank_to`), seeding strategies (`keep_rank`, `reseed`, `random`) and an `auto_advance` flag. Use `action_execute()` to apply a progression and the model is used automatically when standings are frozen and `auto_advance=True`.
-
 - `federation.tournament.round` (in `sports_federation_tournament`) — materialises a logical round inside a stage. Rounds own shared schedule metadata such as sequence and calendar date, and matches attach to them for per-round planning and reporting.
-
-- `federation.tournament.template` (in `sports_federation_competition_engine`) — templates to predefine stage/group layouts and progression rules. A template's `action_apply(tournament)` will create stages, groups and progression rules automatically, enabling one-click tournament scaffolding (useful for repeatable event formats).
 
 - Round venue extensions (in `sports_federation_venues`) — add `venue_id` to `federation.tournament.round` so venue ownership sits on the same round object that already owns the schedule date and sequence.
 
@@ -459,7 +393,7 @@ helper module instead of repeating raw string tuples in each model.
 
 ## Executive summary
 
-The project is a modular suite of Odoo 19 addons implementing a sports federation management system. Modules are intentionally small and focused: `sports_federation_base` owns master data (clubs, teams, seasons), `sports_federation_tournament` implements tournament structure and match records, and `sports_federation_competition_engine` contains deterministic scheduling algorithms and wizards. Domain features (`people`, `rosters`, `officiating`, `result_control`, `standings`, `public_site`, `notifications`, `reporting`) extend core behaviour without mixing responsibilities.
+The project is a modular suite of Odoo 19 addons implementing a sports federation management system. Modules are intentionally small and focused: `sports_federation_base` owns master data (clubs, teams, seasons), `sports_federation_tournament` implements tournament structure and match records, and the V2 competition addons own registration, format, calendar, scheduling, approval, and match-day operations. Domain features (`people`, `rosters`, `officiating`, `result_control`, `standings`, `public_site`, `notifications`, `reporting`) extend core behaviour without mixing responsibilities.
 
 Design goals
 
@@ -472,7 +406,7 @@ Design goals
 
 - `sports_federation_base` — Master data: `federation.club`, `federation.team`, `federation.season`, `federation.season.registration`. Ownership of base security groups and global menus. Holds common `ir.sequence` definitions.
 - `sports_federation_tournament` — Tournament structure: `federation.competition`, `federation.tournament`, `federation.tournament.stage`, `federation.group`, `federation.tournament.participant`, and `federation.match`. Implements match lifecycle and basic match behaviour.
-- `sports_federation_competition_engine` — Service layer for schedule/fixture generation (round-robin, knockout), and helper algorithms. Prefer stateless services and transient wizard models here.
+- `sports_federation_format` and `sports_federation_scheduling` — Structure generation, deterministic fixture assignment, validation, and fairness services. Keep algorithmic code stateless and place transient entrypoints in the owning module's `wizards/` package.
 - `sports_federation_people` — Player and license models used for eligibility checks and rosters.
 - `sports_federation_rosters` — Season rosters and match sheet management.
 - `sports_federation_officiating` — Referee registry and assignment workflows.
@@ -650,7 +584,6 @@ CI recommendations
 - `ci/run_tests.sh` also provides named suites (`competition_core`, `portal_public_ops`, `finance_reporting`) so maintainers can run the same focused coverage locally and in GitHub Actions.
 - The runner supports a frontend-only mode (`--frontend-module`) that performs XML/QWeb parsing, JavaScript syntax and QUnit-registration checks, asset checks, portal accessibility/mobile checks, and selected HTTP tests without scheduling or standings suites.
 - `--affected-from <ref> --include-dependents` resolves changed addons from git and expands their manifest reverse-dependency closure before testing.
-- `competition_workspace_contracts` combines all Workspace contract tags in one installed database and Odoo invocation.
 - Each run retains `test_failures.log`, `expected_diagnostics.log`, `infrastructure.log`, and `full.log`; `--keep-on-failure` additionally preserves runtime artifacts and writes exact inspection commands.
 - Public-site, portal, and reporting performance hotspots should carry explicit `assertQueryCount(...)` budgets in their regression suites; the current enforced budgets are summarized in `TESTING_GUIDE.md`.
 - Do not commit runtime credentials. Keep local CI values in `ci/.env`, commit only `ci/.env.example`, and let CI generate ephemeral values at runtime.
@@ -660,7 +593,7 @@ CI recommendations
 Example test command
 
 ```bash
-bash ./ci/run_tests.sh --module sports_federation_competition_engine
+bash ./ci/run_tests.sh --suite competition_core
 bash ./ci/run_tests.sh --suite competition_core
 ```
 
@@ -767,6 +700,6 @@ Related docs and entry points
 
 - High-level context: [odoo/CONTEXT.md](odoo/CONTEXT.md#L1)
 - Workflows (authoritative): [odoo/_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md](odoo/_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md#L1), [odoo/_workflows/WORKFLOW_MATCH_DAY_OPERATIONS.md](odoo/_workflows/WORKFLOW_MATCH_DAY_OPERATIONS.md#L1), [odoo/_workflows/WORKFLOW_RESULT_PIPELINE.md](odoo/_workflows/WORKFLOW_RESULT_PIPELINE.md#L1)
-- Competition engine README: [odoo/sports_federation_competition_engine/README.md](odoo/sports_federation_competition_engine/README.md#L1)
+- V2 competition architecture: [odoo/COMPETITION_ENGINE_V2.md](odoo/COMPETITION_ENGINE_V2.md#L1)
 
 If you'd like, I can now: (1) open a PR draft for this change, (2) run a repo scan of `README` and `INSTALL_LOG` files and fold additional implementation notes into this document, or (3) run the tests for a selected module to validate there are no immediate regressions.

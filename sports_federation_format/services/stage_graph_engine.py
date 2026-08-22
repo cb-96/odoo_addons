@@ -1,5 +1,5 @@
-from collections import defaultdict
 from math import ceil, log2
+
 from odoo import _, api, models
 from odoo.exceptions import ValidationError
 
@@ -387,7 +387,7 @@ class FederationStageGraphEngine(models.AbstractModel):
 
     def apply_progression(self, e):
         lines = e.source_stage_id.standing_snapshot_id.line_ids.filtered(
-            lambda l: e.rank_from <= l.rank <= e.rank_to
+            lambda line: e.rank_from <= line.rank <= e.rank_to
         ).sorted("rank")
         target = e.target_stage_id
         self.env["federation.stage.participant"].create(

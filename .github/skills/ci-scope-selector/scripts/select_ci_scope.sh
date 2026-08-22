@@ -86,7 +86,7 @@ fi
 declare -a modules=()
 declare -a reasons=()
 declare -A suite_map=(
-  [competition_core]="sports_federation_base sports_federation_tournament sports_federation_competition_engine sports_federation_result_control sports_federation_standings"
+  [competition_core]="sports_federation_base sports_federation_tournament sports_federation_competition_core sports_federation_registration sports_federation_format sports_federation_calendar sports_federation_scheduling sports_federation_schedule_approval sports_federation_matchday sports_federation_result_control sports_federation_standings"
   [portal_public_ops]="sports_federation_portal sports_federation_public_site sports_federation_standings sports_federation_venues"
   [finance_reporting]="sports_federation_finance_bridge sports_federation_reporting"
 )

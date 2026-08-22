@@ -92,7 +92,9 @@ class FederationResultPortal(FederationPortalBase):
     )
     def portal_my_result_detail(self, match_id, **kw):
         """Show a single match result."""
-        match = request.env["federation.match"].sudo().browse(match_id)
+        match = (
+            request.env["federation.match"].sudo().browse(match_id)
+        )
         if not match.exists():
             self._raise_not_found()
         if not self._assert_result_access(match):
@@ -120,7 +122,9 @@ class FederationResultPortal(FederationPortalBase):
     )
     def portal_my_result_approve(self, match_id, **kw):
         """Club representative approves a verified result."""
-        match = request.env["federation.match"].sudo().browse(match_id)
+        match = (
+            request.env["federation.match"].sudo().browse(match_id)
+        )
         if not match.exists():
             self._raise_not_found()
         if not self._assert_result_access(match):
@@ -155,7 +159,9 @@ class FederationResultPortal(FederationPortalBase):
     )
     def portal_my_result_contest(self, match_id, **kw):
         """Club representative contests a submitted, verified, or approved result."""
-        match = request.env["federation.match"].sudo().browse(match_id)
+        match = (
+            request.env["federation.match"].sudo().browse(match_id)
+        )
         if not match.exists():
             self._raise_not_found()
         if not self._assert_result_access(match):

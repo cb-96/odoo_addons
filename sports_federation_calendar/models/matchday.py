@@ -192,6 +192,8 @@ class FederationScheduleSlot(models.Model):
         court = self.court_id
         if court and court._origin and court._origin.id:
             return court._origin
+        if court and court.id:
+            return court
         return self.env["federation.playing.area"]
 
     @api.onchange("start_datetime")
@@ -230,10 +232,16 @@ class FederationScheduleSlot(models.Model):
         self.ensure_one()
         if not self.matchday_id or not court:
             return self.env["federation.schedule.slot"]
+        target_court = court._origin if court._origin and court._origin.id else court
         candidates = self.matchday_id.slot_ids.filtered(
             lambda slot: slot != self
             and slot.court_id
-            and slot.court_id._origin == court._origin
+            and (
+                slot.court_id._origin
+                if slot.court_id._origin and slot.court_id._origin.id
+                else slot.court_id
+            )
+            == target_court
             and slot.end_datetime
         )
         return candidates.sorted(

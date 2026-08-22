@@ -142,7 +142,7 @@ class FederationQoLPortal(FederationPortalBase):
         ]
         registrations = (
             request.env["federation.tournament.registration"]
-            .sudo()
+            .sudo()  # noguard: federation manager group checked above
             .browse(ids)
             .exists()
         )
@@ -200,7 +200,7 @@ class FederationQoLPortal(FederationPortalBase):
         ]
         tasks = (
             request.env["federation.operation.task"]
-            .sudo()
+            .sudo()  # noguard: federation manager group checked above
             .browse(ids)
             .exists()
             .filtered(lambda task: task.state != "done")

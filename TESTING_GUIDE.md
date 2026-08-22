@@ -190,12 +190,12 @@ These are the current CI budgets for the most sensitive read paths:
 | `federation.report.schedule._build_season_portfolio_rows()` | 3 queries |
 | `federation.report.schedule._build_club_performance_rows()` | 4 queries |
 | `federation.report.snapshot._compliance_pending_total()` | 1 aggregate query |
-| Workspace planner payload smoke | ≤ 20 seconds |
-| Workspace auto-schedule smoke | ≤ 25 seconds |
+| V2 scheduling validation smoke | ≤ 25 seconds |
 
-The authoritative tests are in the public-site, portal, reporting, and
-competition-engine test suites. Planner scenarios live in
-`sports_federation_competition_engine/tests/data/planner_performance_scenarios.json`.
+The authoritative tests are in the V2 competition, public-site, portal,
+reporting, and domain test suites. Scheduling regressions belong in
+`sports_federation_scheduling/tests/` and calendar regressions belong in
+`sports_federation_calendar/tests/`.
 When a budget changes, update the assertion, explain the cause, and review the
 corresponding SQL plan or index before changing the documented value.
         # Link users to clubs via representative records
@@ -316,23 +316,11 @@ bash addons/ci/run_tests.sh --suite rosters_readiness_guard
 bash addons/ci/run_tests.sh --module sports_federation_rosters --test-tags sf_rosters_participant_readiness --require-post-tests 1
 
 # Skip browser bootstrap when the run has no HttpCase/browser coverage
-CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --test-tags sf_competition_workspace --require-post-tests 1
+CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --suite competition_core
 
-# Run dedicated competition workspace contract suites
-CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_read_model
-CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_write_guards
-CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_extensions
-CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_concurrency
-CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --module sports_federation_competition_engine --contract-suite ws_acl
-
-# Run all Workspace contract tags in one installed database/invocation
-CI_SKIP_BROWSER_BOOTSTRAP=1 bash addons/ci/run_tests.sh --suite competition_workspace_contracts
-
-# Frontend-only feedback loop: XML/QWeb, JS syntax, QUnit registration/assets,
-# portal accessibility/mobile templates, and selected HTTP rendering tests
-bash addons/ci/run_tests.sh \
-    --frontend-module sports_federation_competition_engine \
-    --frontend-module sports_federation_portal
+# Frontend-only feedback loop: portal accessibility/mobile templates and
+# selected HTTP rendering tests
+bash addons/ci/run_tests.sh --frontend-module sports_federation_portal
 
 # Detect changed addons and expand to all manifest reverse dependents
 bash addons/ci/run_tests.sh --affected-from origin/main --include-dependents
@@ -403,11 +391,6 @@ validated on every push and pull request.
 | `people_rosters_rules` | 1 | Domain rules and roster workflow guard |
 | `ops_and_notifications` | 1 | Operations and notification guard |
 | `rosters_readiness_guard` | 1 | Explicit tag `sf_rosters_participant_readiness` |
-| `ws_read_model` | 1 | Explicit tag `sf_ws_read_model_contract` |
-| `ws_write_guards` | 1 | Explicit tag `sf_ws_write_guard_contract` |
-| `ws_extensions` | 1 | Explicit tag `sf_ws_extension_contract` |
-| `ws_concurrency` | 1 | Explicit tag `sf_ws_concurrency_contract` |
-| `ws_acl` | 1 | Explicit tag `sf_ws_acl_contract` |
 
 ---
 

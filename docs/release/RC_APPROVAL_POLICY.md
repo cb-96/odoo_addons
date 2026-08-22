@@ -4,11 +4,11 @@ An RC may be tagged only after all automated gates pass and the approvals below 
 
 ## Mandatory automated evidence
 
-- Fresh installation of all eight federation modules
+- Fresh installation of the V2 competition stack and affected integration addons
 - Upgrade of all modules on the same database
-- Complete backend and portal suites
-- True multi-cursor concurrency contracts
-- Production-like tournament simulation
+- Complete V2 backend and portal suites
+- Deterministic stage-graph, calendar-timeline, fairness, officiating,
+  result-control, and notification contracts
 - Static Python, XML, JavaScript, and whitespace checks
 - No critical or high-severity security findings
 

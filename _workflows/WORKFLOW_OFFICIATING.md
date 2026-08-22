@@ -214,9 +214,9 @@ When the coordinator assigns a referee to a match:
    assignment window, the draft assignment can still be recorded for follow-up,
    but `assignment_ready` becomes `False` and confirmation is blocked until the
    clash is resolved.
-6. When `sports_federation_competition_engine` is installed, the Competition
-   Workspace reuses the same officiating checks so double-booking blocks planner
-   readiness while uncovered availability remains visible as a warning.
+6. The scheduling workflow reuses the same officiating checks so double-booking
+   blocks schedule readiness while uncovered availability remains visible as a
+   warning. The officiating addon remains the owner of these checks.
 
 ### Portal Accept / Decline Flow
 

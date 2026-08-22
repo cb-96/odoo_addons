@@ -145,8 +145,14 @@ docker compose exec odoo odoo \
 sports_federation_people,\
 sports_federation_rules,\
 sports_federation_tournament,\
-sports_federation_competition_engine,\
 sports_federation_venues,\
+sports_federation_competition_core,\
+sports_federation_registration,\
+sports_federation_format,\
+sports_federation_calendar,\
+sports_federation_scheduling,\
+sports_federation_schedule_approval,\
+sports_federation_matchday,\
 sports_federation_officiating,\
 sports_federation_rosters,\
 sports_federation_result_control,\
@@ -174,8 +180,11 @@ before tier 3 (portal/public):
 ```
 Tier 1: sports_federation_base
 Tier 2: sports_federation_people, sports_federation_rules,
-        sports_federation_tournament, sports_federation_competition_engine,
-        sports_federation_venues, sports_federation_officiating,
+   sports_federation_tournament, sports_federation_venues,
+   sports_federation_competition_core, sports_federation_registration,
+   sports_federation_format, sports_federation_calendar,
+   sports_federation_scheduling, sports_federation_schedule_approval,
+   sports_federation_matchday, sports_federation_officiating,
         sports_federation_rosters, sports_federation_result_control,
         sports_federation_standings, sports_federation_compliance,
         sports_federation_discipline, sports_federation_governance,

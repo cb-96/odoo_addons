@@ -1,5 +1,4 @@
 from collections import Counter, defaultdict
-from datetime import timedelta
 from odoo import api, models
 
 
@@ -135,19 +134,16 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
                 metrics["time_balance_spread"] = round(
                     max(centroids) - min(centroids), 2
                 )
+        return self.score_metrics(metrics, cfg)
+
+    @api.model
+    def score_metrics(self, metrics, cfg):
+        """Score already calculated metrics; kept pure for contract testing."""
         components = {
-            "same_club": metrics["same_club_simultaneous_pairs"]
-            * cfg["same_club_weight"],
+            "same_club": metrics["same_club_simultaneous_pairs"] * cfg["same_club_weight"],
             "rest": metrics["rest_shortfall_minutes"] * cfg["rest_weight"],
-            "consecutive": metrics["excess_consecutive_games"]
-            * cfg["consecutive_weight"],
+            "consecutive": metrics["excess_consecutive_games"] * cfg["consecutive_weight"],
             "time_balance": metrics["time_balance_spread"] * cfg["time_balance_weight"],
-            "court_balance": metrics["same_court_repeats"]
-            * cfg["court_balance_weight"],
+            "court_balance": metrics["same_court_repeats"] * cfg["court_balance_weight"],
         }
-        return {
-            "weighted_score": round(sum(components.values()), 2),
-            "metrics": metrics,
-            "components": components,
-            "configuration": cfg,
-        }
+        return {"weighted_score": round(sum(components.values()), 2), "metrics": dict(metrics), "components": components, "configuration": dict(cfg)}

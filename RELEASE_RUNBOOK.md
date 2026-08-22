@@ -112,6 +112,55 @@ If you need to restrict the release to a subset of modules:
 ./scripts/upgrade_sports_federation.sh --db odoo --modules sports_federation_reporting,sports_federation_portal --dry-run
 ```
 
+### Competition V2 ownership change evidence
+
+The legacy monolithic competition engine is removed from the addon tree. The
+replacement ownership chain is `sports_federation_competition_core`,
+`sports_federation_registration`, `sports_federation_format`,
+`sports_federation_calendar`, `sports_federation_scheduling`,
+`sports_federation_schedule_approval`, and `sports_federation_matchday`.
+
+Before upgrading a database that previously installed the legacy engine:
+
+1. Take the database and filestore backups described above.
+2. Run the upgrade script with `--dry-run` and confirm that the resolved module
+   list contains the V2 chain and does not contain the removed addon.
+3. Run the upgrade in a disposable restore of the backup first, then verify
+   registration, format freeze, calendar capacity, scheduling, approval
+   publication, and match-day operations.
+4. Record the dry-run output and restore-drill result with the release ticket;
+   do not silently reinterpret legacy planner or published-schedule records.
+
+If the restore drill or production upgrade fails, stop Odoo, preserve the
+failed logs, restore the database and filestore backup, and restart the prior
+release. Do not reinstall the removed engine as an ad-hoc rollback; use the
+reviewed database migration or rollback procedure for the target release.
+
+### Legacy ownership-removal review record
+
+The repository-side review for this ownership change was completed against the
+recorded base commit before preparing the release patch. The following checks
+are the minimum evidence to attach to the release ticket:
+
+```bash
+bash -n addons/ci/run_tests.sh
+bash -n addons/scripts/ci/run_rc_validation.sh
+python3 addons/ci/check_legacy_engine_removed.py
+git -C addons apply --check addons/legacy_removal.patch
+```
+
+The shell checks, loadability guard, and clean-worktree patch check must all
+pass. The database restore drill remains mandatory before production upgrade;
+its output must be attached to the release ticket rather than inferred from
+repository checks. No historical migration directory is reused for this
+ownership removal, and no production record is silently rewritten.
+
+Rollback is backup-based: stop the target release, preserve logs and the failed
+database state for review, restore the pre-upgrade database and filestore, and
+restart the previous release. If a data transformation is later required, it
+must be introduced in a new reviewed migration with an explicit backfill and
+rollback plan; reinstalling the removed addon is not an approved rollback.
+
 ## Backups
 
 The upgrade script performs backups by default. It stores:

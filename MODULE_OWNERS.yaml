@@ -7,10 +7,34 @@ modules:
     primary_owner: Federation Platform Team
     secondary_owner: Federation Competition Operations
     surface: Core clubs, teams, seasons, and shared registration models
-  sports_federation_competition_engine:
+  sports_federation_competition_core:
     primary_owner: Federation Competition Operations
     secondary_owner: Federation Platform Team
-    surface: Deterministic scheduling services and bracket generation
+    surface: Competition identity, roles, lifecycle, and events
+  sports_federation_registration:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Competition registration queues and finalized participant sets
+  sports_federation_format:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Versioned competition structures and stage graphs
+  sports_federation_calendar:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Physical match days, capacity, slots, and timelines
+  sports_federation_scheduling:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Deterministic fixture assignment, validation, and fairness
+  sports_federation_schedule_approval:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Schedule review and immutable publication snapshots
+  sports_federation_matchday:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Live match-day operations and incident control
   sports_federation_compliance:
     primary_owner: Federation Finance and Compliance
     secondary_owner: Federation Platform Team

@@ -35,19 +35,16 @@ Status: In progress
 
 Success criterion: a normal competition can be configured, scheduled, and published without users understanding the underlying Odoo data model.
 
-### P0: Complete Competition Workspace decomposition
+### P0: Maintain V2 competition ownership boundaries
 
-Status: Partially complete
+Status: Complete for the current release
 
-Completed seams include access control, extension contracts, planner state, read models, and validation. The main workspace service still owns too much orchestration.
-
-Remaining work:
-
-- Move stage and progression commands into the stage command service.
-- Move gameday and slot commands into the gameday command service.
-- Move planner writes and publication into their dedicated command services.
-- Separate fairness reporting and auto-schedule execution from the workspace facade.
-- Set and enforce file-size and method-count review thresholds.
+- Keep registration, format, calendar, scheduling, schedule approval, and
+	match-day operations as explicit handovers.
+- Keep fairness, validation, publication, and operational commands in their
+	owning V2 modules rather than recreating a shared orchestration facade.
+- Preserve immutable published snapshots, audit events, and optimistic
+	concurrency guards while extending the V2 flow.
 
 ### P0: Release and migration confidence
 
@@ -91,7 +88,8 @@ Default cleanup windows and scheduled actions exist for notification logs, inbou
 Status: In progress
 
 - Maintain smoke, contract, focused-module, and release-candidate tiers.
-- Keep ownership, concurrency, migration, and production-like simulations mandatory.
+- Keep ownership, optimistic-concurrency, migration, and production-like
+	restore-drill checks mandatory.
 - Pin lint-tool versions so local and CI behavior remain identical.
 - Track suite runtime and quarantine only with an owner and expiry date.
 

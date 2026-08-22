@@ -25,6 +25,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify removed legacy engine and portal privilege inventory
+        run: |
+          python ci/check_legacy_engine_removed.py
+          python ci/check_portal_sudo_guard.py
       - run: scripts/ci/run_rc_validation.sh static
 
   odoo-rc:
@@ -79,10 +83,6 @@ jobs:
         run: |
           scripts/ci/run_rc_validation.sh core
           scripts/ci/run_rc_validation.sh portal
-      - name: True concurrency contracts
-        run: scripts/ci/run_rc_validation.sh concurrency
-      - name: Production-like simulation
-        run: scripts/ci/run_rc_validation.sh simulation
       - name: Upload Odoo logs
         if: always()
         uses: actions/upload-artifact@v4

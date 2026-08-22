@@ -142,4 +142,4 @@ Before finishing, verify:
 
 - `/module-change-scaffold add a new tournament registration helper in sports_federation_portal with ACLs, tests, and docs`
 - `/module-change-scaffold extend sports_federation_venues with a new scheduling field and the required view, test, and README updates`
-- `/module-change-scaffold create a wizard in sports_federation_competition_engine and wire the manifest, tests, and workflow docs`
+- `/module-change-scaffold create a wizard spanning sports_federation_format and sports_federation_scheduling and wire the manifests, tests, and workflow docs`

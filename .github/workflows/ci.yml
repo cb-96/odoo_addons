@@ -80,6 +80,15 @@ jobs:
       - name: Check CI hygiene
         run: python ci/check_ci_hygiene.py
 
+      - name: Verify legacy competition engine removal
+        run: python ci/check_legacy_engine_removed.py
+
+      - name: Verify portal privilege boundaries
+        run: python ci/check_portal_sudo_guard.py
+
+      - name: Verify source collector completeness
+        run: python ci/check_source_collector_contract.py
+
       - name: Report module dependency drift
         run: python ci/check_module_dependency_drift.py
 

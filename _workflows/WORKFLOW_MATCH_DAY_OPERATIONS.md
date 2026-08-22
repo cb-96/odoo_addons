@@ -118,7 +118,7 @@ Portal workspace note:
 4. Assignments inherit a 48-hour confirmation deadline from the scheduled match time and stay visible as overdue until confirmed, cancelled, or the match closes.
 5. Confirmation is blocked if the official is inactive, their certification is missing / expired for the match date, or another assignment overlaps the same match window.
 6. Matches aggregate readiness from the rule set's `referee_required_count`, confirmed assignments, overdue confirmations, and assignment-level readiness issues.
-7. Competition Workspace validation applies these readiness rules after planning moves to `published` (and later states): double-booked officials block assignment moves while uncovered availability remains a warning.
+7. Scheduling and schedule approval apply these readiness rules before publication: double-booked officials block assignment moves while uncovered availability remains a warning.
 8. Creating an assignment sends an email to the assigned referee with the role and confirmation deadline.
 9. The scheduled notification scan creates federation-manager activities for overdue confirmations and staffing shortages.
 10. SQL constraint prevents duplicate (match, referee, role) combinations.
@@ -131,10 +131,10 @@ Portal workspace note:
 
 1. Confirm the match venue is set (via `venue_id` on the match).
 2. Verify the playing area is available and suitable.
-    - Competition Workspace validation blocks slots that fall inside venue or
-       playing-area blackout and maintenance windows.
-    - Divisions can require playing-area capabilities, and mismatched courts are
-       rejected before assignment.
+   - Calendar capacity preparation excludes unavailable venue or
+      playing-area windows.
+    - Scheduling validates the selected court against the effective division
+       requirements before assignment.
 3. Contact venue via stored contact details if needed.
 4. If the venue incurs passthrough costs, scheduling the match with a venue
    automatically creates or reuses a draft venue booking finance event. Staff can

@@ -12,7 +12,7 @@ user-invocable: true
 This skill creates compact, deterministic regression tests around the smallest public behavior that proves a service or workflow rule works in this repository.
 
 Use it when:
-- changing scheduling or generation logic in `sports_federation_competition_engine`
+- changing scheduling or generation logic in `sports_federation_format` or `sports_federation_scheduling`
 - changing standings or stage progression behavior
 - changing result approval or official standings behavior
 - changing roster deadlines, eligibility, or readiness checks
@@ -21,9 +21,8 @@ Use it when:
 ## Repo Examples
 
 Good anchors in this repo:
-- `sports_federation_competition_engine/tests/test_stage_progression.py`
-- `sports_federation_competition_engine/tests/test_tournament_template.py`
-- `sports_federation_competition_engine/tests/test_round_robin.py`
+- `sports_federation_format/tests/test_stage_graph_engine.py`
+- `sports_federation_scheduling/tests/test_fairness_solver.py`
 - `sports_federation_result_control/tests/test_result_control.py`
 - `sports_federation_rosters/tests/test_participant_readiness.py`
 

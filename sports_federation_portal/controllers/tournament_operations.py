@@ -33,7 +33,10 @@ class FederationTournamentOperationsPortal(FederationPortalBase):
             tournament = Tournament.browse([])
         if tournament:
             return tournament, False
-        if not Tournament.sudo().browse(tournament_id).exists():
+        if (
+            # noguard: existence-only lookup after the user-scoped lookup failed
+            not Tournament.sudo().browse(tournament_id).exists()
+        ):
             return False, self._operations_error(
                 "not_found", _("Tournament not found.")
             )
@@ -54,7 +57,7 @@ class FederationTournamentOperationsPortal(FederationPortalBase):
             match = Match.browse([])
         if match:
             return match, False
-        if not Match.sudo().search(
+        if not Match.sudo().search(  # noguard: existence-only after tournament-scoped lookup
             [("id", "=", match_id), ("tournament_id", "=", tournament.id)],
             limit=1,
         ):

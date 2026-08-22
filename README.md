@@ -40,7 +40,7 @@ graph LR
   subgraph Core
     Base[sports_federation_base]
     Tournament[sports_federation_tournament]
-    Engine[sports_federation_competition_engine]
+    Engine[sports_federation_format / sports_federation_scheduling]
     Standings[sports_federation_standings]
   end
   subgraph Support
@@ -129,7 +129,7 @@ Notes and tips
 - To run module tests (example):
 
 ```bash
-bash ./ci/run_tests.sh --module sports_federation_competition_engine
+bash ./ci/run_tests.sh --module sports_federation_format / sports_federation_scheduling
 ```
 
 Development & tests
@@ -155,7 +155,7 @@ Contributing & docs
 Module list (high level)
 - `sports_federation_base` — master data (clubs, teams, seasons)
 - `sports_federation_tournament` — tournaments, stages, groups, matches
-- `sports_federation_competition_engine` — scheduling services and wizards
+- `sports_federation_format / sports_federation_scheduling` — scheduling services and wizards
 - `sports_federation_standings` — standings computation and publishing
 - `sports_federation_rosters` — rosters and match-sheets
 - `sports_federation_officiating` — referee registry and assignments

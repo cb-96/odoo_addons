@@ -17,6 +17,7 @@ source_collector.py
 .env.local
 ci/.env
 ci/odoo-ci.generated.conf
+ci/odoo-ci.generated.conf.*
 
 # CI logs (keep .gitkeep, ignore run output)
 ci/logs/

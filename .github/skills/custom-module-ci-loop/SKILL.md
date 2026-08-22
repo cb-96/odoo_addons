@@ -152,6 +152,6 @@ Keep non-failing warnings separate from real failures.
 
 ## Example Invocations
 
-- `/custom-module-ci-loop sports_federation_competition_engine and sports_federation_venues; keep fixing until both pass`
+- `/custom-module-ci-loop sports_federation_format, sports_federation_scheduling, and sports_federation_venues; keep fixing until all pass`
 - `/custom-module-ci-loop run CI for the portal_public_ops suite, report the first real failure, and fix it`
 - `/custom-module-ci-loop inspect failing custom module CI, rerun the affected module first, then full CI when green`

@@ -1,6 +1,6 @@
 # Competition Engine V2
 
-This implementation replaces the monolithic Competition Workspace with role-owned capabilities and explicit handovers.
+This implementation provides role-owned capabilities and explicit handovers for competition planning and operations.
 
 ## Addons
 
@@ -18,4 +18,4 @@ Registration finalizes a participant set. Format freezes a structure. Calendar p
 
 ## Migration policy
 
-The existing `sports_federation_competition_engine` remains installed and unchanged during parallel verification. New competitions should use V2. Existing planner-root rounds and bidirectional slot bindings require an explicit data migration after parity tests. Do not silently reinterpret existing production records.
+The legacy monolithic engine has been removed from the addon set. New and existing operational flows use the V2 ownership split. Databases upgraded from a release that installed the legacy addon require the normal reviewed upgrade/migration procedure before production rollout; do not silently reinterpret existing production records.

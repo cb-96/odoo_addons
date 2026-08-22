@@ -4,7 +4,7 @@
 -- **Primary docs**: See [odoo/CONTEXT.md](odoo/CONTEXT.md#L1), [odoo/TECHNICAL_NOTE.md](odoo/TECHNICAL_NOTE.md#L1), and the Workflows in [odoo/_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md](odoo/_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md#L1).
 
 **Architecture & Patterns**
-- **Module split**: `sports_federation_base` (master data), `sports_federation_tournament` (tournaments, matches, participants), `sports_federation_competition_engine` (service/wizards), plus domain modules (`people`, `rules`, `officiating`, `rosters`, `result_control`, `public_site`, `reporting`, `finance_bridge`, `venues`, `discipline`, `standings`, ...).
+- **Module split**: `sports_federation_base` (master data), `sports_federation_tournament` (tournaments, matches, participants), `sports_federation_format / sports_federation_scheduling` (service/wizards), plus domain modules (`people`, `rules`, `officiating`, `rosters`, `result_control`, `public_site`, `reporting`, `finance_bridge`, `venues`, `discipline`, `standings`, ...).
 - **Model naming**: Domain models use the `federation.` prefix (e.g. `federation.player`, `federation.match`).
 - **Common patterns**: `ir.sequence` for identifiers, `state` selection fields for workflows, wizards for batch operations (under `wizards/`), `controllers/` for portal/website endpoints, and `security/` for groups/record rules/ACLs.
 
@@ -17,7 +17,7 @@
 
 **Development Guidelines (how to implement changes)**
 - **Add/modify a model**: create/modify `models/*.py`, export package in `models/__init__.py`, add access rules in `security/ir.model.access.csv`, add any initial `data/*.xml` and register them in `__manifest__.py` `data` or `demo` lists, add views in `views/*.xml`, update `menu_items.xml` as needed, and add tests under `tests/`.
-- **Add a wizard or service**: put transient models under `wizards/` and views under `views/` (manifest `data`), keep service logic in modules like `sports_federation_competition_engine` (no persistent models if not required).
+- **Add a wizard or service**: put transient models under `wizards/` and views under `views/` (manifest `data`), keep service logic in modules like `sports_federation_format / sports_federation_scheduling` (no persistent models if not required).
 - **Add a controller / portal flow**: use `controllers/` and add templates under `views/` or `templates/`; respect portal record rules (see `sports_federation_portal`).
 - **Security**: always add or update `security/ir.model.access.csv` and any `security/*.xml` groups/rules for new models or new endpoints.
 - **Manifest hygiene**: update `__manifest__.py` `depends`, `data`, and `version` fields when introducing DB changes or new data files.
