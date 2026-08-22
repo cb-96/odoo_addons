@@ -2,6 +2,7 @@ from collections import Counter, defaultdict
 from datetime import timedelta
 from odoo import api, models
 
+
 class FederationScheduleFairnessSolver(models.AbstractModel):
     _name = "federation.schedule.fairness.solver"
     _description = "Weighted Fairness Schedule Solver"
@@ -24,7 +25,9 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
         assignment_map = {a.fixture_id.id: a.slot_id.id for a in retained}
         allocated = schedule.matchday_id.allocation_ids.mapped("fixture_ids")
         if schedule.structure_id:
-            allocated = allocated.filtered(lambda f: f.structure_id == schedule.structure_id)
+            allocated = allocated.filtered(
+                lambda f: f.structure_id == schedule.structure_id
+            )
         fixtures = allocated.filtered(lambda f: f.id not in assignment_map).sorted(
             lambda f: (f.round_number, f.sequence, f.id)
         )
@@ -43,7 +46,12 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
                 if validation["errors"]:
                     continue
                 report = self.evaluate(schedule, candidate, cfg)
-                key = (report["weighted_score"], slot.start_datetime, slot.court_id.id, slot.id)
+                key = (
+                    report["weighted_score"],
+                    slot.start_datetime,
+                    slot.court_id.id,
+                    slot.id,
+                )
                 if best is None or key < best[0]:
                     best = (key, slot, report)
             if best:
@@ -63,7 +71,9 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
 
     @api.model
     def evaluate(self, schedule, assignment_map, cfg):
-        fixture_by_id = {f.id: f for f in schedule.matchday_id.allocation_ids.mapped("fixture_ids")}
+        fixture_by_id = {
+            f.id: f for f in schedule.matchday_id.allocation_ids.mapped("fixture_ids")
+        }
         slot_by_id = {s.id: s for s in schedule.matchday_id.slot_ids}
         team_events = defaultdict(list)
         simultaneous_clubs = defaultdict(list)
@@ -74,13 +84,19 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
             for team in (fixture.home_team_id, fixture.away_team_id):
                 if not team:
                     continue
-                team_events[team.id].append((slot.start_datetime, slot.end_datetime, slot.court_id.id))
+                team_events[team.id].append(
+                    (slot.start_datetime, slot.end_datetime, slot.court_id.id)
+                )
                 club = getattr(team, "club_id", False)
                 if club:
-                    simultaneous_clubs[(slot.start_datetime, slot.end_datetime, club.id)].append(team.id)
+                    simultaneous_clubs[
+                        (slot.start_datetime, slot.end_datetime, club.id)
+                    ].append(team.id)
         metrics = {
-            "same_club_simultaneous_pairs": 0, "rest_shortfall_minutes": 0,
-            "excess_consecutive_games": 0, "time_balance_spread": 0,
+            "same_club_simultaneous_pairs": 0,
+            "rest_shortfall_minutes": 0,
+            "excess_consecutive_games": 0,
+            "time_balance_spread": 0,
             "same_court_repeats": 0,
         }
         for teams in simultaneous_clubs.values():
@@ -91,26 +107,47 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
             events.sort()
             starts.append([event[0] for event in events])
             court_counts = Counter(event[2] for event in events)
-            metrics["same_court_repeats"] += sum(max(0, count - 1) for count in court_counts.values())
+            metrics["same_court_repeats"] += sum(
+                max(0, count - 1) for count in court_counts.values()
+            )
             streak = 1
             for previous, current in zip(events, events[1:]):
                 gap = max(0, int((current[0] - previous[1]).total_seconds() // 60))
-                metrics["rest_shortfall_minutes"] += max(0, cfg["preferred_rest_minutes"] - gap)
+                metrics["rest_shortfall_minutes"] += max(
+                    0, cfg["preferred_rest_minutes"] - gap
+                )
                 if gap < cfg["preferred_rest_minutes"]:
                     streak += 1
-                    metrics["excess_consecutive_games"] += max(0, streak - cfg["max_consecutive_games"])
+                    metrics["excess_consecutive_games"] += max(
+                        0, streak - cfg["max_consecutive_games"]
+                    )
                 else:
                     streak = 1
         if starts:
             day_start = min(value for values in starts for value in values)
-            centroids = [sum((value-day_start).total_seconds()/60 for value in values)/len(values) for values in starts if values]
+            centroids = [
+                sum((value - day_start).total_seconds() / 60 for value in values)
+                / len(values)
+                for values in starts
+                if values
+            ]
             if centroids:
-                metrics["time_balance_spread"] = round(max(centroids)-min(centroids), 2)
+                metrics["time_balance_spread"] = round(
+                    max(centroids) - min(centroids), 2
+                )
         components = {
-            "same_club": metrics["same_club_simultaneous_pairs"] * cfg["same_club_weight"],
+            "same_club": metrics["same_club_simultaneous_pairs"]
+            * cfg["same_club_weight"],
             "rest": metrics["rest_shortfall_minutes"] * cfg["rest_weight"],
-            "consecutive": metrics["excess_consecutive_games"] * cfg["consecutive_weight"],
+            "consecutive": metrics["excess_consecutive_games"]
+            * cfg["consecutive_weight"],
             "time_balance": metrics["time_balance_spread"] * cfg["time_balance_weight"],
-            "court_balance": metrics["same_court_repeats"] * cfg["court_balance_weight"],
+            "court_balance": metrics["same_court_repeats"]
+            * cfg["court_balance_weight"],
         }
-        return {"weighted_score": round(sum(components.values()), 2), "metrics": metrics, "components": components, "configuration": cfg}
+        return {
+            "weighted_score": round(sum(components.values()), 2),
+            "metrics": metrics,
+            "components": components,
+            "configuration": cfg,
+        }

@@ -36,23 +36,33 @@ class FederationSchedule(models.Model):
     )
     revision = fields.Integer(default=0, required=True, copy=False, index=True)
     fairness_same_club_weight = fields.Float(
-        string="Same-club overlap weight", default=40.0, required=True,
+        string="Same-club overlap weight",
+        default=40.0,
+        required=True,
         help="Penalty when teams belonging to the same club play simultaneously.",
     )
     fairness_rest_weight = fields.Float(
-        string="Rest shortfall weight", default=3.0, required=True,
+        string="Rest shortfall weight",
+        default=3.0,
+        required=True,
         help="Penalty per missing minute below the preferred break.",
     )
     fairness_consecutive_weight = fields.Float(
-        string="Consecutive-games weight", default=60.0, required=True,
+        string="Consecutive-games weight",
+        default=60.0,
+        required=True,
         help="Penalty for each game above the configured consecutive-game limit.",
     )
     fairness_time_balance_weight = fields.Float(
-        string="Time-balance weight", default=1.0, required=True,
+        string="Time-balance weight",
+        default=1.0,
+        required=True,
         help="Penalty for uneven early/late play distribution between teams.",
     )
     fairness_court_balance_weight = fields.Float(
-        string="Court-repeat weight", default=2.0, required=True,
+        string="Court-repeat weight",
+        default=2.0,
+        required=True,
         help="Penalty for repeatedly scheduling a team on the same court.",
     )
     preferred_rest_minutes = fields.Integer(default=40, required=True)
@@ -61,16 +71,21 @@ class FederationSchedule(models.Model):
     fairness_last_report = fields.Json(readonly=True, copy=False)
 
     @api.constrains(
-        "fairness_same_club_weight", "fairness_rest_weight",
-        "fairness_consecutive_weight", "fairness_time_balance_weight",
-        "fairness_court_balance_weight", "preferred_rest_minutes",
+        "fairness_same_club_weight",
+        "fairness_rest_weight",
+        "fairness_consecutive_weight",
+        "fairness_time_balance_weight",
+        "fairness_court_balance_weight",
+        "preferred_rest_minutes",
         "max_consecutive_games",
     )
     def _check_fairness_configuration(self):
         for rec in self:
             weights = (
-                rec.fairness_same_club_weight, rec.fairness_rest_weight,
-                rec.fairness_consecutive_weight, rec.fairness_time_balance_weight,
+                rec.fairness_same_club_weight,
+                rec.fairness_rest_weight,
+                rec.fairness_consecutive_weight,
+                rec.fairness_time_balance_weight,
                 rec.fairness_court_balance_weight,
             )
             if any(weight < 0 for weight in weights):

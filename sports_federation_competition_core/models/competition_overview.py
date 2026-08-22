@@ -1,5 +1,6 @@
 from odoo import _, api, fields, models
 
+
 class FederationCompetitionEdition(models.Model):
     _inherit = "federation.competition.edition"
 
@@ -18,10 +19,16 @@ class FederationCompetitionEdition(models.Model):
         self.ensure_one()
         steps = [bool(self.tournament_ids), bool(self.role_assignment_ids)]
         optional_fields = (
-            "registration_window_ids", "structure_ids", "matchday_ids",
-            "schedule_ids", "publication_ids",
+            "registration_window_ids",
+            "structure_ids",
+            "matchday_ids",
+            "schedule_ids",
+            "publication_ids",
         )
-        steps.extend(bool(self[field]) if field in self._fields else False for field in optional_fields)
+        steps.extend(
+            bool(self[field]) if field in self._fields else False
+            for field in optional_fields
+        )
         return steps
 
     @api.depends("tournament_ids", "role_assignment_ids", "engine_state")
@@ -33,7 +40,10 @@ class FederationCompetitionEdition(models.Model):
                 rec.workflow_next_action = _("Add at least one division")
             elif not rec.role_assignment_ids:
                 rec.workflow_next_action = _("Assign responsible users")
-            elif "registration_window_ids" in rec._fields and not rec.registration_window_ids:
+            elif (
+                "registration_window_ids" in rec._fields
+                and not rec.registration_window_ids
+            ):
                 rec.workflow_next_action = _("Create registration windows")
             elif "structure_ids" in rec._fields and not rec.structure_ids:
                 rec.workflow_next_action = _("Finalize registrations and build formats")
@@ -48,8 +58,21 @@ class FederationCompetitionEdition(models.Model):
 
     def action_v2_role_assignments(self):
         self.ensure_one()
-        return {"type":"ir.actions.act_window","name":_("Responsibilities"),"res_model":"federation.competition.role.assignment","view_mode":"list,form","domain":[("edition_id","=",self.id)],"context":{"default_edition_id":self.id}}
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Responsibilities"),
+            "res_model": "federation.competition.role.assignment",
+            "view_mode": "list,form",
+            "domain": [("edition_id", "=", self.id)],
+            "context": {"default_edition_id": self.id},
+        }
 
     def action_v2_events(self):
         self.ensure_one()
-        return {"type":"ir.actions.act_window","name":_("Competition history"),"res_model":"federation.competition.event","view_mode":"list,form","domain":[("edition_id","=",self.id)]}
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Competition history"),
+            "res_model": "federation.competition.event",
+            "view_mode": "list,form",
+            "domain": [("edition_id", "=", self.id)],
+        }

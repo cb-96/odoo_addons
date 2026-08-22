@@ -48,7 +48,9 @@ class FederationCompetitionStructure(models.Model):
 
     def action_generate(self):
         for rec in self:
-            roots = rec.stage_ids.filtered(lambda stage: not stage.incoming_progression_ids)
+            roots = rec.stage_ids.filtered(
+                lambda stage: not stage.incoming_progression_ids
+            )
             if not roots:
                 raise ValidationError("Add at least one root stage.")
             self.env["federation.stage.graph.engine"].validate_graph(rec)

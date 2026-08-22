@@ -1,1 +1,19 @@
-{'name': 'Competition Scheduling', 'version': '19.0.2.0.0', 'category': 'Sports', 'summary': 'Working schedules, assignments, validation and deterministic proposals', 'author': 'Sports Federation', 'license': 'LGPL-3', 'depends': ['sports_federation_calendar'], 'data': ['security/security.xml', 'security/ir.model.access.csv', 'security/fairness_access.csv', 'views/scheduling_views.xml', 'views/fairness_views.xml', 'views/menu.xml'], 'installable': True, 'application': False, 'auto_install': False}
+{
+    "name": "Competition Scheduling",
+    "version": "19.0.2.1.0",
+    "category": "Sports",
+    "summary": "Working schedules, assignments, validation and deterministic proposals",
+    "author": "Sports Federation",
+    "license": "LGPL-3",
+    "depends": ["sports_federation_calendar"],
+    "data": [
+        "security/security.xml",
+        "security/ir.model.access.csv",
+        "views/scheduling_views.xml",
+        "views/fairness_views.xml",
+        "views/menu.xml",
+    ],
+    "installable": True,
+    "application": False,
+    "auto_install": False,
+}
