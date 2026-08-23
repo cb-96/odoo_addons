@@ -196,17 +196,8 @@ class FederationStanding(models.Model):
         return False
 
     def _get_points_values(self):
-        """Get points values for win/draw/loss."""
         self.ensure_one()
-        rule_set = self._get_rule_set()
-        if rule_set:
-            return {
-                "win": rule_set.points_win or 3,
-                "draw": rule_set.points_draw or 1,
-                "loss": rule_set.points_loss or 0,
-            }
-        # Default fallback
-        return {"win": 3, "draw": 1, "loss": 0}
+        return self.env["federation.standings.rules"].points_map(self._get_rule_set())
 
     def _get_relevant_matches(self):
         """Get matches relevant for this standing computation.
@@ -312,63 +303,48 @@ class FederationStanding(models.Model):
 
         return stats
 
-    def _sort_standings(self, stats):
-        """Sort standings according to the specified order.
-
-        Order:
-        1. points desc
-        2. wins desc
-        3. score_for - score_against desc
-        4. score_for desc
-        5. team display name asc
-        """
+    def _ranking_context(self, stats):
         participants = self._get_participants()
-        participant_map = {p.id: p for p in participants}
+        participant_map = {participant.id: participant for participant in participants}
+        team_to_pid = {
+            participant.team_id.id: participant.id for participant in participants
+        }
+        matches = []
+        for match in self._get_relevant_matches():
+            home = team_to_pid.get(match.home_team_id.id)
+            away = team_to_pid.get(match.away_team_id.id)
+            if home and away:
+                matches.append((home, away, match.home_score, match.away_score))
+        names = {
+            pid: participant.team_id.name or ""
+            for pid, participant in participant_map.items()
+        }
+        return participant_map, matches, names
 
-        # Build list of (participant_id, stats) tuples for sorting
-        items = list(stats.items())
-
-        def sort_key(item):
-            """Handle sort key."""
-            pid, s = item
-            participant = participant_map.get(pid)
-            team_name = participant.team_id.name if participant else ""
-            return (
-                -s["points"],
-                -s["won"],
-                -(s["score_for"] - s["score_against"]),
-                -s["score_for"],
-                team_name,
-            )
-
-        items.sort(key=sort_key)
-        return items
+    def _sort_standings(self, stats):
+        participant_map, matches, names = self._ranking_context(stats)
+        ranked, notes = self.env["federation.standings.rules"].rank(
+            stats,
+            rule_set=self._get_rule_set(),
+            matches=matches,
+            names=names,
+            lot_seed=self.id,
+        )
+        self._phase2_tiebreak_notes = notes
+        return ranked
 
     def _compute_tiebreak_notes(self, sorted_items, participant_map):
-        """Return {pid: tiebreak_notes_str} explaining rank vs the item above.
-
-        For each item that shares the same point total as the item ranked
-        immediately above it, the note records which criterion separated them.
-        Items ranked by points alone (no tie) receive an empty string.
-        """
-        notes = {}
-        for i, (pid, s) in enumerate(sorted_items):
-            if i == 0:
-                notes[pid] = ""
-                continue
-            prev_pid, prev_s = sorted_items[i - 1]
-            if prev_s["points"] != s["points"]:
-                notes[pid] = ""
-            elif prev_s["won"] != s["won"]:
-                notes[pid] = _("Ranked by wins")
-            elif (prev_s["score_for"] - prev_s["score_against"]) != (
-                s["score_for"] - s["score_against"]
-            ):
-                notes[pid] = _("Ranked by goal difference")
-            elif prev_s["score_for"] != s["score_for"]:
-                notes[pid] = _("Ranked by goals scored")
-            else:
-                notes[pid] = _("Ranked alphabetically by team name")
+        notes = getattr(self, "_phase2_tiebreak_notes", None)
+        if notes is not None:
+            return notes
+        _participant_map, matches, names = self._ranking_context(dict(sorted_items))
+        _ranked, notes = self.env["federation.standings.rules"].rank(
+            dict(sorted_items),
+            rule_set=self._get_rule_set(),
+            matches=matches,
+            names=names,
+            lot_seed=self.id,
+        )
         return notes
 
     def action_recompute(self):

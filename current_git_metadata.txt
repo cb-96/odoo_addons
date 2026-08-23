@@ -2,13 +2,13 @@
 refactor/simplification-competition-engine
 
 === CURRENT COMMIT ===
-d57ad4b1b47b0f8abb51c6a9bbe285057bfc7cfc
+b9a2daa7a13e37147f8ab709f60cdd8d449a1161
 
 === REPOSITORY ROOT ===
 /home/cedric/odoo/addons
 
 === WORKTREE STATUS ===
- M current_git_metadata.txt
+ M current_sources.txt
 
 === MODULE MANIFESTS ===
 {"application": true, "auto_install": false, "data": ["security/res_groups.xml", "security/ir.model.access.csv", "data/ir_sequence.xml", "views/res_config_settings_views.xml", "views/federation_season_registration_views.xml", "views/federation_season_views.xml", "views/federation_team_views.xml", "views/federation_club_views.xml", "views/menu_items.xml"], "depends": ["base", "mail", "base_setup"], "explicit_assets": [], "installable": true, "module": "sports_federation_base", "name": "Sports Federation Base", "version": "19.0.1.2.0"}
@@ -18,7 +18,7 @@ d57ad4b1b47b0f8abb51c6a9bbe285057bfc7cfc
 {"application": false, "auto_install": false, "data": [], "depends": ["sports_federation_base", "sports_federation_rules", "sports_federation_people", "sports_federation_tournament", "sports_federation_rosters", "sports_federation_standings", "sports_federation_compliance", "sports_federation_discipline", "sports_federation_notifications"], "explicit_assets": [], "installable": true, "module": "sports_federation_demo", "name": "Sports Federation Demo Data", "version": "19.0.1.0.0"}
 {"application": false, "auto_install": false, "data": ["security/discipline_security.xml", "security/ir.model.access.csv", "data/ir_sequence.xml", "views/incident_views.xml", "views/disciplinary_case_views.xml", "views/sanction_views.xml", "views/suspension_views.xml", "views/player_views_inherit.xml", "views/match_views_inherit.xml", "views/menu_views.xml"], "depends": ["sports_federation_base", "sports_federation_people", "sports_federation_tournament", "sports_federation_officiating", "mail"], "explicit_assets": [], "installable": true, "module": "sports_federation_discipline", "name": "Sports Federation Discipline", "version": "19.0.1.1.0"}
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "data/fee_type_data.xml", "views/fee_type_views.xml", "views/fee_schedule_views.xml", "views/finance_event_views.xml", "views/season_budget_views.xml", "views/menu_views.xml"], "depends": ["sports_federation_base", "sports_federation_people", "sports_federation_tournament", "sports_federation_result_control", "sports_federation_officiating", "sports_federation_discipline", "sports_federation_venues"], "explicit_assets": [], "installable": true, "module": "sports_federation_finance_bridge", "name": "Sports Federation Finance Bridge", "version": "19.0.1.2.0"}
-{"application": false, "auto_install": false, "data": ["security/security.xml", "security/ir.model.access.csv", "views/format_views.xml", "views/stage_graph_views.xml", "views/menu.xml"], "depends": ["sports_federation_registration"], "explicit_assets": [], "installable": true, "module": "sports_federation_format", "name": "Competition Format", "version": "19.0.2.1.0"}
+{"application": false, "auto_install": false, "data": ["security/security.xml", "security/ir.model.access.csv", "views/format_views.xml", "views/stage_graph_views.xml", "views/menu.xml"], "depends": ["sports_federation_registration", "sports_federation_result_control"], "explicit_assets": [], "installable": true, "module": "sports_federation_format", "name": "Competition Format", "version": "19.0.3.0.0"}
 {"application": false, "auto_install": false, "data": ["security/governance_security.xml", "security/ir.model.access.csv", "views/override_request_views.xml", "views/override_decision_views.xml", "views/override_outcome_views.xml", "views/audit_note_views.xml", "views/menu_views.xml"], "depends": ["sports_federation_base", "sports_federation_people", "sports_federation_tournament", "mail"], "explicit_assets": [], "installable": true, "module": "sports_federation_governance", "name": "Sports Federation Governance", "version": "19.0.1.1.0"}
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "data/import_template_data.xml", "data/integration_contract_data.xml", "data/integration_retention_cron.xml", "data/integration_token_rotation_cron.xml", "views/import_governance_views.xml", "views/integration_partner_views.xml", "views/import_wizard_views.xml", "views/menu_views.xml"], "depends": ["sports_federation_base", "sports_federation_people", "sports_federation_tournament"], "explicit_assets": [], "installable": true, "module": "sports_federation_import_tools", "name": "Sports Federation Import Tools", "version": "19.0.1.2.0"}
 {"application": false, "auto_install": false, "data": ["security/security.xml", "security/ir.model.access.csv", "views/matchday_views.xml", "views/menu.xml"], "depends": ["sports_federation_schedule_approval"], "explicit_assets": [], "installable": true, "module": "sports_federation_matchday", "name": "Match-Day Operations", "version": "19.0.1.1.0"}
@@ -39,7 +39,8 @@ d57ad4b1b47b0f8abb51c6a9bbe285057bfc7cfc
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "views/venue_views.xml", "views/round_views_inherit.xml", "views/tournament_views_inherit.xml", "views/match_views_inherit.xml", "views/menu_views.xml"], "depends": ["sports_federation_base", "sports_federation_tournament"], "explicit_assets": [], "installable": true, "module": "sports_federation_venues", "name": "Sports Federation Venues", "version": "19.0.1.1.0"}
 
 === RELEVANT RECENT HISTORY ===
-d57ad4b (HEAD -> refactor/simplification-competition-engine) Source truth for external use.
+b9a2daa (HEAD -> refactor/simplification-competition-engine) feat!: establish authoritative fixture-to-result ownership
+d57ad4b Source truth for external use.
 f118ec6 Moving toward full removal of legacy competition workspace.
 33a1341 Formatting.
 72ae84a build: collect complete source baseline for reviews
@@ -68,10 +69,10 @@ af37d3b Reformatted with 'Black'
 1def31a (origin/copilot/fix-odoo-tests-portal-public-ops) fix: add explicit csrf=True to POST jsonrpc routes in tournament_operations.py
 80ae844 Revised documentation.
 99d84a0 Implemented package 13.
-d93dcdf Package 10 and 11 implemented.
 
 === RECENT REPOSITORY HISTORY ===
-d57ad4b (HEAD -> refactor/simplification-competition-engine) Source truth for external use.
+b9a2daa (HEAD -> refactor/simplification-competition-engine) feat!: establish authoritative fixture-to-result ownership
+d57ad4b Source truth for external use.
 f118ec6 Moving toward full removal of legacy competition workspace.
 33a1341 Formatting.
 bc9ecb3 Stabilization patch.
@@ -85,20 +86,19 @@ cdc8728 feat: add weighted fairness auto-scheduling to V2 planner
 71dac69 Added registration desk team filtering based on gender and category.
 61de73c Corrected some errors with demo addon.
 a78119f Corrected errors in security files.
-40b539f Implemented a full refactor of competition engine (v2). Original still existing for testing.
 
 === UNSTAGED DIFF STAT ===
- current_git_metadata.txt | 100 ++++++++++++++---------------------------------
- 1 file changed, 30 insertions(+), 70 deletions(-)
+ current_sources.txt | 489 ++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 434 insertions(+), 55 deletions(-)
 
 === STAGED DIFF STAT ===
 
 
 === FILE SUMMARY ===
-Discovered bundle files: 803
+Discovered bundle files: 806
 Configured modules found: 26
 Configured modules missing: 0
-Git tracked files: 817
+Git tracked files: 820
 Git modified or staged files: 1
 Git untracked files: 0
 
@@ -364,20 +364,23 @@ sports_federation_finance_bridge/views/menu_views.xml	1195	a3f6bcd1c716875ae3e1f
 sports_federation_finance_bridge/views/season_budget_views.xml	4085	6d99e8eb3e17b20caa997948507c030ff7ef19387eb9b5b27ec2a6df7ac209b8	tracked
 sports_federation_format/README.md	961	d73a40dc3d2f572086142936fee47b7fec58ba86686176bb29f43ca4be7f0ef2	tracked
 sports_federation_format/__init__.py	44	88b20932acb13c6696e006185ff31f7eaccfd4a8e5748fd8aedc94bdc90e01b7	tracked
-sports_federation_format/__manifest__.py	560	196abbc0aad7fee57d9910ee2229025f2483a4f86cbb866db6910d502f40dc7b	tracked
-sports_federation_format/models/__init__.py	62	10f22090f2f5a5f1823c608ee97b0d8382cfb3c5548740f628de1787807afa39	tracked
+sports_federation_format/__manifest__.py	619	2f29c4732bf0853a1393c8c7fca3c5af283e2d40451cd5491f12404b937ec44a	tracked
+sports_federation_format/models/__init__.py	98	b7f99b5ed0300af81cb818259bcc5c8ec067c1c0fad4f6a5d234d429b093dbfe	tracked
 sports_federation_format/models/competition_structure.py	4958	9be19259e67ebb7e6849d7cdec43f01568fd48e4c16930365e7807b83416106b	tracked
-sports_federation_format/models/stage_graph.py	7488	367ba2cca6ba9dd4fa68228a641d50d16996811d82afc88a5e96011f13724302	tracked
+sports_federation_format/models/fixture_result_bridge.py	3876	f8e3afebcda92cdd236766070745629b0a1905a61b9445ca42733ac736e56e39	tracked
+sports_federation_format/models/stage_graph.py	8251	acb8d0cf0a5876e4a5276eb2a983b544cf63a0f38f3de9eb798b9bb30ca250c3	tracked
 sports_federation_format/security/ir.model.access.csv	1293	1a1a5fb4f925132cb4e600ba8687713b7ffc2ba69dd6590b88ceccfe689f02d9	tracked
 sports_federation_format/security/security.xml	447	04c02abc1b2483d8f476f9c13ec1e44b1e01f4eff6480b777a027d3b225e3209	tracked
-sports_federation_format/services/__init__.py	33	de55c4176777e9b3aab3e61ba9ac8d664ad91088533d5edd91f490f715ffe397	tracked
-sports_federation_format/services/stage_graph_engine.py	15369	94419f6751a65aefec0b88058b519479df648c0ec7f49b27e341ef78642fefd9	tracked
+sports_federation_format/services/__init__.py	68	16e12b8265c6435959f409f29d593e2e951e95f2260eecb043acbb01a17db954	tracked
+sports_federation_format/services/fixture_materializer.py	2130	e38a96649723316fdcb8b9c795250dc4f3576292b97697aae0457a7dec5a380c	tracked
+sports_federation_format/services/stage_graph_engine.py	16906	3739fb3ca0783f203d535448add7fd3c2dfd61c79a8226cfb1aea915a22720c7	tracked
 sports_federation_format/services/structure_generator.py	2811	d96d7b0b515383b15762f48222fcd9001e5eb341f86dbefde9fbdca1c7eee098	tracked
-sports_federation_format/tests/__init__.py	38	dcb5f50dfdcb858641e8606cf9825137ceb27a94f48312e6a2962a4f03a0c783	tracked
+sports_federation_format/tests/__init__.py	82	4cb4c506f9b97ded4e8351517c0513a14e05b779353a1d3241826df2df9d78ee	tracked
+sports_federation_format/tests/test_fixture_result_ownership.py	6133	77ae86ac378c6ec50ef941ccc269de8696acda3fac4ae88f1d5c2eb756ff27e0	tracked
 sports_federation_format/tests/test_stage_graph_engine.py	7396	ac557427bfdbe4b8f43d68794987de45d913dfd777ba07b8cdc8e4f65ea7b296	tracked
 sports_federation_format/views/format_views.xml	2000	93b4ddb0bf32399c149057ffdc8d68100df4c7f14c70459028fa0ff659722743	tracked
 sports_federation_format/views/menu.xml	190	bd0229e7057b66f5879006ef110487088cdbbd741f156818e8e169642e1201fb	tracked
-sports_federation_format/views/stage_graph_views.xml	3459	0f6fbd142561ae7ae087eda942a9c734a8081a9544d78c038de3f2cb79b5f9d3	tracked
+sports_federation_format/views/stage_graph_views.xml	3453	b310dd2c3cf1a348224e45a3cac80d83b2000d1f2c59164cb26d9ef8e9c8ddc8	tracked
 sports_federation_governance/README.md	3774	5b144bcb8041f3846030ae7d874f1ea6232fc044c118d4b12bb404952ad3a8d6	tracked
 sports_federation_governance/__init__.py	21	5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e	tracked
 sports_federation_governance/__manifest__.py	923	48ac6d034d0bd714dbdbd1f35f2737ad2f1f3d50c40e8e993f7d1bfc6c96a999	tracked

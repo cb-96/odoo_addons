@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Rules",
-    "version": "19.0.1.2.0",
+    "version": "19.0.2.0.0",
     "category": "Sports",
     "summary": "Competition definitions, rule sets, scoring, tie-break, eligibility, and qualification configuration",
     "author": "Dodgeball Belgium: Cedric Bouckaert",

@@ -2,7 +2,7 @@
 
 Last updated: 2026-08-20
 Owner: Federation Platform Team
-Last reviewed: 2026-08-20
+Last reviewed: 2026-08-23
 Review cadence: Every release
 
 This document defines the stable partner-facing contracts currently supported by

@@ -165,7 +165,7 @@
     "file": "sports_federation_portal/controllers/referee_duty_portal.py",
     "function": "portal_my_referee_duty_detail",
     "reason": "adjacent ownership scope check",
-    "statement": "duty = ( request.env[\"federation.match.club.referee.duty\"].sudo().browse(duty_id) )"
+    "statement": "duty = request.env[\"federation.match.club.referee.duty\"].sudo().browse(duty_id)"
   },
   {
     "file": "sports_federation_portal/controllers/referee_duty_portal.py",
@@ -177,31 +177,31 @@
     "file": "sports_federation_portal/controllers/referee_duty_portal.py",
     "function": "portal_nominate_duty",
     "reason": "adjacent ownership scope check",
-    "statement": "duty = ( request.env[\"federation.match.club.referee.duty\"].sudo().browse(duty_id) )"
+    "statement": "duty = request.env[\"federation.match.club.referee.duty\"].sudo().browse(duty_id)"
   },
   {
     "file": "sports_federation_portal/controllers/referee_duty_portal.py",
     "function": "portal_nominate_duty",
     "reason": "duty ownership was asserted before validating the nomination",
-    "statement": "duty.with_user(request.env.user).sudo().action_nominate( player_id )"
+    "statement": "duty.with_user(request.env.user).sudo().action_nominate(player_id)"
   },
   {
     "file": "sports_federation_portal/controllers/result_portal.py",
     "function": "portal_my_result_approve",
     "reason": "adjacent ownership scope check",
-    "statement": "match = ( request.env[\"federation.match\"].sudo().browse(match_id) )"
+    "statement": "match = request.env[\"federation.match\"].sudo().browse(match_id)"
   },
   {
     "file": "sports_federation_portal/controllers/result_portal.py",
     "function": "portal_my_result_contest",
     "reason": "adjacent ownership scope check",
-    "statement": "match = ( request.env[\"federation.match\"].sudo().browse(match_id) )"
+    "statement": "match = request.env[\"federation.match\"].sudo().browse(match_id)"
   },
   {
     "file": "sports_federation_portal/controllers/result_portal.py",
     "function": "portal_my_result_detail",
     "reason": "adjacent ownership scope check",
-    "statement": "match = ( request.env[\"federation.match\"].sudo().browse(match_id) )"
+    "statement": "match = request.env[\"federation.match\"].sudo().browse(match_id)"
   },
   {
     "file": "sports_federation_portal/controllers/result_portal.py",
@@ -237,6 +237,6 @@
     "file": "sports_federation_portal/controllers/tournament_operations.py",
     "function": "_operations_resolve_tournament",
     "reason": "existence-only lookup after the user-scoped lookup failed",
-    "statement": "if ( # noguard: existence-only lookup after the user-scoped lookup failed not Tournament.sudo().browse(tournament_id).exists() ): return False, self._operations_error( \"not_found\", _(\"Tournament not found.\") )"
+    "statement": "if ( # noguard: existence-only lookup after the user-scoped lookup failed not Tournament.sudo() .browse(tournament_id) .exists() ): return False, self._operations_error( \"not_found\", _(\"Tournament not found.\") )"
   }
 ]

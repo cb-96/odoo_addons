@@ -59,6 +59,18 @@ class FederationStructureStage(models.Model):
     standing_snapshot_id = fields.Many2one(
         "federation.stage.standing.snapshot", readonly=True, copy=False
     )
+    rule_set_id = fields.Many2one(
+        "federation.rule.set",
+        string="Rule Set Override",
+        help="Optional stage-specific scoring and tie-break rules. Falls back to the division rule set.",
+    )
+
+    def _get_effective_rule_set(self):
+        self.ensure_one()
+        return (
+            self.rule_set_id or self.structure_id.division_id._get_effective_rule_set()
+        )
+
     standing_line_ids = fields.One2many(
         related="standing_snapshot_id.line_ids", readonly=True
     )
@@ -195,12 +207,19 @@ class FederationStageStandingSnapshot(models.Model):
         "federation.structure.stage", required=True, ondelete="restrict", index=True
     )
     frozen_at = fields.Datetime(default=fields.Datetime.now, readonly=True)
+    rule_set_id = fields.Many2one(
+        "federation.rule.set", readonly=True, ondelete="restrict"
+    )
+    rules_signature = fields.Text(readonly=True)
     frozen_by_id = fields.Many2one(
         "res.users", default=lambda s: s.env.user, readonly=True
     )
     line_ids = fields.One2many(
         "federation.stage.standing.line", "snapshot_id", readonly=True
     )
+
+    def write(self, vals):
+        raise ValidationError("Frozen standings are immutable.")
 
     def unlink(self):
         raise ValidationError("Frozen standings are immutable.")
@@ -225,3 +244,10 @@ class FederationStageStandingLine(models.Model):
     score_for = fields.Integer()
     score_against = fields.Integer()
     points = fields.Integer()
+    tiebreak_notes = fields.Char(readonly=True)
+
+    def write(self, vals):
+        raise ValidationError("Frozen standing lines are immutable.")
+
+    def unlink(self):
+        raise ValidationError("Frozen standing lines are immutable.")

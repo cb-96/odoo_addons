@@ -156823,12 +156823,15 @@ FILE: sports_federation_format/__manifest__.py
 
 {
     "name": "Competition Format",
-    "version": "19.0.2.1.0",
+    "version": "19.0.3.0.0",
     "category": "Sports",
     "summary": "Versioned competition structures, stages, progression and fixtures",
     "author": "Sports Federation",
     "license": "LGPL-3",
-    "depends": ["sports_federation_registration"],
+    "depends": [
+        "sports_federation_registration",
+        "sports_federation_result_control",
+    ],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
@@ -156847,6 +156850,7 @@ FILE: sports_federation_format/models/__init__.py
 
 from . import competition_structure
 from . import stage_graph
+from . import fixture_result_bridge
 
 ====================================================================================================
 FILE: sports_federation_format/models/competition_structure.py
@@ -156998,6 +157002,112 @@ class FederationFixture(models.Model):
             r.name = f"{r.home_team_id.display_name or 'TBD'} vs {r.away_team_id.display_name or 'TBD'}"
 
 ====================================================================================================
+FILE: sports_federation_format/models/fixture_result_bridge.py
+====================================================================================================
+
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationMatchFixtureBridge(models.Model):
+    _inherit = "federation.match"
+
+    logical_fixture_id = fields.Many2one(
+        "federation.fixture",
+        string="Logical Fixture",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
+        index=True,
+    )
+
+    _unique_logical_fixture = models.Constraint(
+        "unique(logical_fixture_id)",
+        "A logical fixture can materialize into only one operational match.",
+    )
+
+    @api.constrains(
+        "logical_fixture_id", "tournament_id", "home_team_id", "away_team_id"
+    )
+    def _check_logical_fixture_alignment(self):
+        for match in self.filtered("logical_fixture_id"):
+            fixture = match.logical_fixture_id
+            if match.tournament_id != fixture.division_id:
+                raise ValidationError(
+                    "The operational match must belong to the fixture division."
+                )
+            if (
+                match.home_team_id != fixture.home_team_id
+                or match.away_team_id != fixture.away_team_id
+            ):
+                raise ValidationError(
+                    "Operational match participants must match the logical fixture."
+                )
+
+    def _sync_logical_fixture_result(self):
+        for match in self.filtered("logical_fixture_id"):
+            fixture = match.logical_fixture_id
+            if match.result_state == "approved" and match.include_in_official_standings:
+                if (
+                    fixture.stage_id.stage_type in ("knockout", "placement")
+                    and match.home_score == match.away_score
+                ):
+                    raise ValidationError("Bracket matches require a winner.")
+                fixture.state = "completed"
+                self.env["federation.stage.graph.engine"].resolve_dependants(fixture)
+                continue
+
+            if match.result_state in ("contested", "corrected", "draft"):
+                applied = fixture.stage_id.outgoing_progression_ids.filtered("applied")
+                if applied:
+                    raise ValidationError(
+                        "This result already fed a later stage. Reopen the progression through an explicit competition correction workflow first."
+                    )
+                fixture.state = "ready"
+                if fixture.stage_id.standing_snapshot_id:
+                    fixture.stage_id.write(
+                        {"standing_snapshot_id": False, "graph_state": "active"}
+                    )
+        return True
+
+    def action_approve_result(self):
+        result = super().action_approve_result()
+        self._sync_logical_fixture_result()
+        return result
+
+    def action_contest_result(self):
+        result = super().action_contest_result()
+        self._sync_logical_fixture_result()
+        return result
+
+    def action_correct_result(self):
+        result = super().action_correct_result()
+        self._sync_logical_fixture_result()
+        return result
+
+    def action_reset_result_to_draft(self):
+        result = super().action_reset_result_to_draft()
+        self._sync_logical_fixture_result()
+        return result
+
+
+class FederationFixtureBridgeConstraint(models.Model):
+    _inherit = "federation.fixture"
+
+    _unique_operational_match = models.Constraint(
+        "unique(operational_match_id)",
+        "An operational match can belong to only one logical fixture.",
+    )
+
+    @api.constrains("operational_match_id")
+    def _check_operational_match_backlink(self):
+        for fixture in self.filtered("operational_match_id"):
+            if fixture.operational_match_id.logical_fixture_id != fixture:
+                raise ValidationError(
+                    "Fixture and operational match links must reference each other."
+                )
+
+====================================================================================================
 FILE: sports_federation_format/models/stage_graph.py
 ====================================================================================================
 
@@ -157090,27 +157200,47 @@ class FederationFixture(models.Model):
     home_source_outcome = fields.Selection([("winner", "Winner"), ("loser", "Loser")])
     away_source_fixture_id = fields.Many2one("federation.fixture", ondelete="set null")
     away_source_outcome = fields.Selection([("winner", "Winner"), ("loser", "Loser")])
-    home_score = fields.Integer()
-    away_score = fields.Integer()
-    result_state = fields.Selection(
-        [("draft", "Draft"), ("approved", "Approved")],
-        default="draft",
-        required=True,
+    operational_match_id = fields.Many2one(
+        "federation.match",
+        string="Operational Match",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
         index=True,
+    )
+    home_score = fields.Integer(
+        related="operational_match_id.home_score", readonly=True
+    )
+    away_score = fields.Integer(
+        related="operational_match_id.away_score", readonly=True
+    )
+    result_state = fields.Selection(
+        related="operational_match_id.result_state", readonly=True
+    )
+    include_in_official_standings = fields.Boolean(
+        related="operational_match_id.include_in_official_standings", readonly=True
+    )
+    bye_team_id = fields.Many2one(
+        "federation.team", readonly=True, copy=False, ondelete="restrict"
     )
     placement_from = fields.Integer()
     placement_to = fields.Integer()
 
+    def action_materialize_match(self):
+        """Create or return the single operational match for each playable fixture."""
+        return self.env["federation.fixture.materializer"].materialize(self)
+
     def action_approve_result(self):
-        for rec in self:
-            if (
-                rec.stage_id.stage_type in ("knockout", "placement")
-                and rec.home_score == rec.away_score
-            ):
-                raise ValidationError("Bracket fixtures require a winner.")
-            rec.write({"result_state": "approved", "state": "completed"})
-            self.env["federation.stage.graph.engine"].resolve_dependants(rec)
-        return True
+        raise ValidationError(
+            "Fixture results are read-only. Submit, verify and approve the operational match through Result Control."
+        )
+
+    def unlink(self):
+        if self.filtered("operational_match_id"):
+            raise ValidationError(
+                "Fixtures with operational matches cannot be deleted. Cancel or supersede the competition structure instead."
+            )
+        return super().unlink()
 
 
 class FederationStageParticipant(models.Model):
@@ -157245,6 +157375,63 @@ FILE: sports_federation_format/services/__init__.py
 ====================================================================================================
 
 from . import stage_graph_engine
+from . import fixture_materializer
+
+====================================================================================================
+FILE: sports_federation_format/services/fixture_materializer.py
+====================================================================================================
+
+from odoo import api, models
+from odoo.exceptions import ValidationError
+
+
+class FederationFixtureMaterializer(models.AbstractModel):
+    _name = "federation.fixture.materializer"
+    _description = "Logical Fixture to Operational Match Materializer"
+
+    @api.model
+    def materialize(self, fixtures):
+        fixtures = fixtures.exists()
+        matches = self.env["federation.match"]
+        for fixture in fixtures.sorted("id"):
+            self.env.cr.execute(
+                "SELECT id FROM federation_fixture WHERE id = %s FOR UPDATE",
+                [fixture.id],
+            )
+            fixture.invalidate_recordset(["operational_match_id"])
+            if fixture.operational_match_id:
+                matches |= fixture.operational_match_id
+                continue
+            if fixture.state == "cancelled":
+                raise ValidationError("Cancelled fixtures cannot be materialized.")
+            if fixture.bye_team_id:
+                raise ValidationError(
+                    "A structural bye does not create an operational match."
+                )
+            if not fixture.home_team_id or not fixture.away_team_id:
+                raise ValidationError(
+                    "Resolve both fixture participants before materializing an operational match."
+                )
+            existing = self.env["federation.match"].search(
+                [("logical_fixture_id", "=", fixture.id)], limit=1
+            )
+            if existing:
+                fixture.operational_match_id = existing
+                matches |= existing
+                continue
+            match = self.env["federation.match"].create(
+                {
+                    "tournament_id": fixture.division_id.id,
+                    "home_team_id": fixture.home_team_id.id,
+                    "away_team_id": fixture.away_team_id.id,
+                    "round_number": fixture.round_number,
+                    "state": "draft",
+                    "logical_fixture_id": fixture.id,
+                }
+            )
+            fixture.operational_match_id = match
+            matches |= match
+        return matches
 
 ====================================================================================================
 FILE: sports_federation_format/services/stage_graph_engine.py
@@ -157322,6 +157509,15 @@ class FederationStageGraphEngine(models.AbstractModel):
         elif stage.format_type == "placement_bracket":
             self._knockout(stage, True)
         stage.graph_state = "ready"
+        self._resolve_stage_byes(stage)
+        playable = stage.stage_fixture_ids.filtered(
+            lambda fixture: fixture.state == "ready"
+            and fixture.home_team_id
+            and fixture.away_team_id
+            and not fixture.operational_match_id
+        )
+        if playable:
+            self.env["federation.fixture.materializer"].materialize(playable)
         return True
 
     def _round_robin(self, stage, double):
@@ -157494,38 +157690,40 @@ class FederationStageGraphEngine(models.AbstractModel):
             )
         return last
 
-    def _result(self, f):
-        if f.result_state != "approved":
+    def _result(self, fixture):
+        if fixture.bye_team_id:
+            return fixture.bye_team_id, self.env["federation.team"]
+        match = fixture.operational_match_id
+        if (
+            not match
+            or match.result_state != "approved"
+            or not match.include_in_official_standings
+        ):
             return False, False
         return (
-            (f.home_team_id, f.away_team_id)
-            if f.home_score > f.away_score
-            else (f.away_team_id, f.home_team_id)
+            (match.home_team_id, match.away_team_id)
+            if match.home_score > match.away_score
+            else (match.away_team_id, match.home_team_id)
         )
 
-    def _resolve_bye(self, f):
-        if f.result_state == "approved":
+    def _resolve_bye(self, fixture):
+        if fixture.operational_match_id or fixture.bye_team_id:
             return
-        if f.home_team_id and not f.away_team_id and not f.away_source_fixture_id:
-            f.write(
-                {
-                    "home_score": 1,
-                    "away_score": 0,
-                    "result_state": "approved",
-                    "state": "completed",
-                }
-            )
-            self.resolve_dependants(f)
-        elif f.away_team_id and not f.home_team_id and not f.home_source_fixture_id:
-            f.write(
-                {
-                    "home_score": 0,
-                    "away_score": 1,
-                    "result_state": "approved",
-                    "state": "completed",
-                }
-            )
-            self.resolve_dependants(f)
+        unresolved_home = fixture.home_source_fixture_id and not fixture.home_team_id
+        unresolved_away = fixture.away_source_fixture_id and not fixture.away_team_id
+        if unresolved_home or unresolved_away:
+            return
+        team = fixture.home_team_id or fixture.away_team_id
+        if team and bool(fixture.home_team_id) != bool(fixture.away_team_id):
+            fixture.write({"bye_team_id": team.id, "state": "completed"})
+            self.resolve_dependants(fixture)
+
+    def _resolve_stage_byes(self, stage):
+        for fixture in stage.stage_fixture_ids.sorted(
+            lambda item: (item.round_number, item.sequence, item.id)
+        ):
+            self._resolve_bye(fixture)
+        return True
 
     @api.model
     def resolve_dependants(self, f):
@@ -157550,6 +157748,13 @@ class FederationStageGraphEngine(models.AbstractModel):
                 ).id
             target.write(vals)
             self._resolve_bye(target)
+            if (
+                target.state == "ready"
+                and target.home_team_id
+                and target.away_team_id
+                and not target.operational_match_id
+            ):
+                self.env["federation.fixture.materializer"].materialize(target)
         return True
 
     def _standings(self, stage):
@@ -157567,20 +157772,25 @@ class FederationStageGraphEngine(models.AbstractModel):
             for p in stage.stage_participant_ids
         }
         for f in stage.stage_fixture_ids.filtered(
-            lambda x: x.result_state == "approved" and x.home_team_id and x.away_team_id
+            lambda x: x.operational_match_id
+            and x.operational_match_id.result_state == "approved"
+            and x.operational_match_id.include_in_official_standings
+            and x.home_team_id
+            and x.away_team_id
         ):
-            h, a = stats[f.home_team_id.id], stats[f.away_team_id.id]
+            match = f.operational_match_id
+            h, a = stats[match.home_team_id.id], stats[match.away_team_id.id]
             h["played"] += 1
             a["played"] += 1
-            h["score_for"] += f.home_score
-            h["score_against"] += f.away_score
-            a["score_for"] += f.away_score
-            a["score_against"] += f.home_score
-            if f.home_score > f.away_score:
+            h["score_for"] += match.home_score
+            h["score_against"] += match.away_score
+            a["score_for"] += match.away_score
+            a["score_against"] += match.home_score
+            if match.home_score > match.away_score:
                 h["won"] += 1
                 a["lost"] += 1
                 h["points"] += 3
-            elif f.away_score > f.home_score:
+            elif match.away_score > match.home_score:
                 a["won"] += 1
                 h["lost"] += 1
                 a["points"] += 3
@@ -157604,8 +157814,16 @@ class FederationStageGraphEngine(models.AbstractModel):
 
     @api.model
     def freeze_standings(self, stage):
-        if stage.stage_fixture_ids.filtered(lambda f: f.result_state != "approved"):
-            raise ValidationError(_("Approve all results first."))
+        incomplete = stage.stage_fixture_ids.filtered(
+            lambda fixture: not fixture.bye_team_id
+            and (
+                not fixture.operational_match_id
+                or fixture.operational_match_id.result_state != "approved"
+                or not fixture.operational_match_id.include_in_official_standings
+            )
+        )
+        if incomplete:
+            raise ValidationError(_("Approve all operational match results first."))
         snap = self.env["federation.stage.standing.snapshot"].create(
             {"stage_id": stage.id}
         )
@@ -157761,6 +157979,167 @@ FILE: sports_federation_format/tests/__init__.py
 ====================================================================================================
 
 from . import test_stage_graph_engine
+from . import test_fixture_result_ownership
+
+====================================================================================================
+FILE: sports_federation_format/tests/test_fixture_result_ownership.py
+====================================================================================================
+
+from odoo.exceptions import ValidationError
+from odoo.tests import tagged
+from odoo.tests.common import TransactionCase
+
+
+@tagged("post_install", "-at_install", "sf_fixture_result_ownership")
+class TestFixtureResultOwnership(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        club = cls.env["federation.club"].create({"name": "Ownership Club"})
+        cls.teams = cls.env["federation.team"].create(
+            [
+                {"name": "Ownership A", "club_id": club.id},
+                {"name": "Ownership B", "club_id": club.id},
+                {"name": "Ownership C", "club_id": club.id},
+            ]
+        )
+        season = cls.env["federation.season"].create(
+            {
+                "name": "Ownership Season",
+                "date_start": "2026-09-01",
+                "date_end": "2027-06-30",
+            }
+        )
+        competition = cls.env["federation.competition"].create(
+            {"name": "Ownership Competition", "competition_type": "league"}
+        )
+        edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Ownership Edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+            }
+        )
+        cls.division = cls.env["federation.tournament"].create(
+            {
+                "name": "Ownership Division",
+                "edition_id": edition.id,
+                "competition_id": competition.id,
+                "season_id": season.id,
+                "date_start": "2026-10-01",
+            }
+        )
+        participant_set = cls.env["federation.participant.set"].create(
+            {
+                "name": "Ownership Participants",
+                "edition_id": edition.id,
+                "division_id": cls.division.id,
+                "state": "finalized",
+            }
+        )
+        cls.env["federation.participant.set.line"].create(
+            [
+                {
+                    "participant_set_id": participant_set.id,
+                    "team_id": team.id,
+                    "seed": seed,
+                }
+                for seed, team in enumerate(cls.teams, 1)
+            ]
+        )
+        cls.structure = cls.env["federation.competition.structure"].create(
+            {
+                "name": "Ownership Structure",
+                "edition_id": edition.id,
+                "division_id": cls.division.id,
+                "participant_set_id": participant_set.id,
+                "format_type": "custom",
+            }
+        )
+
+    def _stage(self, format_type="single_round_robin", stage_type="league"):
+        return self.env["federation.structure.stage"].create(
+            {
+                "name": "Ownership Stage",
+                "structure_id": self.structure.id,
+                "stage_type": stage_type,
+                "format_type": format_type,
+                "source_type": "registration",
+            }
+        )
+
+    def test_playable_fixture_materializes_exactly_one_match(self):
+        stage = self._stage()
+        stage.action_prepare_stage()
+        fixture = stage.stage_fixture_ids[0]
+        self.assertTrue(fixture.operational_match_id)
+        self.assertEqual(fixture.operational_match_id.logical_fixture_id, fixture)
+        self.assertEqual(fixture.operational_match_id.tournament_id, self.division)
+        first = fixture.operational_match_id
+        second = fixture.action_materialize_match()
+        self.assertEqual(second, first)
+        self.assertEqual(
+            self.env["federation.match"].search_count(
+                [("logical_fixture_id", "=", fixture.id)]
+            ),
+            1,
+        )
+
+    def test_unresolved_fixture_cannot_materialize(self):
+        stage = self._stage("knockout", "knockout")
+        fixture = self.env["federation.fixture"].create(
+            {
+                "structure_id": self.structure.id,
+                "stage_id": stage.id,
+                "round_number": 2,
+                "home_team_id": self.teams[0].id,
+                "state": "pending",
+            }
+        )
+        with self.assertRaises(ValidationError):
+            fixture.action_materialize_match()
+
+    def test_bye_is_structural_and_has_no_fake_result(self):
+        stage = self._stage("knockout", "knockout")
+        stage.action_prepare_stage()
+        byes = stage.stage_fixture_ids.filtered("bye_team_id")
+        self.assertTrue(byes)
+        self.assertFalse(byes.mapped("operational_match_id"))
+        self.assertTrue(all(fixture.state == "completed" for fixture in byes))
+
+    def test_fixture_result_is_read_only_and_match_approval_completes_fixture(self):
+        stage = self._stage()
+        stage.action_prepare_stage()
+        fixture = stage.stage_fixture_ids[0]
+        match = fixture.operational_match_id.sudo()
+        match.write({"home_score": 2, "away_score": 1, "result_state": "verified"})
+        match.action_approve_result()
+        self.assertEqual(fixture.state, "completed")
+        self.assertEqual(fixture.result_state, "approved")
+        self.assertEqual(fixture.home_score, 2)
+        with self.assertRaises(ValidationError):
+            fixture.action_approve_result()
+
+    def test_contest_invalidates_unprogressed_snapshot(self):
+        stage = self._stage()
+        stage.action_prepare_stage()
+        for fixture in stage.stage_fixture_ids:
+            fixture.operational_match_id.sudo().write(
+                {
+                    "home_score": 1,
+                    "away_score": 0,
+                    "result_state": "approved",
+                    "include_in_official_standings": True,
+                }
+            )
+            fixture.operational_match_id._sync_logical_fixture_result()
+        stage.action_freeze_standings()
+        match = stage.stage_fixture_ids[0].operational_match_id.sudo()
+        match.result_contest_reason = "Score sheet review"
+        match.action_contest_result()
+        self.assertFalse(stage.standing_snapshot_id)
+        self.assertEqual(stage.graph_state, "active")
+        self.assertEqual(stage.stage_fixture_ids[0].state, "ready")
 
 ====================================================================================================
 FILE: sports_federation_format/tests/test_stage_graph_engine.py
@@ -157979,7 +158358,7 @@ FILE: sports_federation_format/views/stage_graph_views.xml
 ====================================================================================================
 
 <odoo><record id="structure_form_stage_graph" model="ir.ui.view"><field name="name">competition.structure.stage.graph</field><field name="model">federation.competition.structure</field><field name="inherit_id" ref="sports_federation_format.structure_form"/><field name="arch" type="xml"><xpath expr="//header" position="inside"><button name="action_validate_graph" type="object" string="Validate Stage Graph"/></xpath><xpath expr="//page[field[@name='stage_ids']]" position="replace"><page string="Stage Graph"><field name="stage_ids"><list editable="bottom"><field name="sequence"/><field name="name"/><field name="stage_type"/><field name="format_type"/><field name="source_type"/><field name="carryover_policy"/><field name="final_rank_from"/><field name="final_rank_to"/><field name="graph_state" widget="badge"/><button name="action_prepare_stage" type="object" string="Prepare"/><button name="action_start_stage" type="object" string="Start"/><button name="action_freeze_standings" type="object" string="Freeze &amp; Progress"/></list></field></page></xpath><xpath expr="//notebook" position="inside"><page string="Progression"><field name="stage_ids"><list><field name="name"/><field name="outgoing_progression_ids" widget="many2many_tags"/></list></field></page></xpath></field></record>
-<record id="stage_form_graph" model="ir.ui.view"><field name="name">structure.stage.graph.form</field><field name="model">federation.structure.stage</field><field name="arch" type="xml"><form><header><button name="action_prepare_stage" type="object" string="Prepare" class="btn-primary"/><button name="action_start_stage" type="object" string="Start"/><button name="action_freeze_standings" type="object" string="Freeze &amp; Progress"/><field name="graph_state" widget="statusbar"/></header><sheet><group><field name="structure_id"/><field name="name"/><field name="stage_type"/><field name="format_type"/><field name="source_type"/><field name="carryover_policy"/><field name="final_rank_from"/><field name="final_rank_to"/></group><notebook><page string="Participants"><field name="stage_participant_ids"><list editable="bottom"><field name="seed"/><field name="team_id"/><field name="source_rank"/><field name="carried_points"/></list></field></page><page string="Incoming"><field name="incoming_progression_ids"><list editable="bottom"><field name="name"/><field name="source_stage_id"/><field name="rank_from"/><field name="rank_to"/><field name="target_seed_from"/><field name="applied"/></list></field></page><page string="Outgoing"><field name="outgoing_progression_ids"><list editable="bottom"><field name="name"/><field name="target_stage_id"/><field name="rank_from"/><field name="rank_to"/><field name="target_seed_from"/><field name="applied"/></list></field></page><page string="Fixtures"><field name="stage_fixture_ids"><list editable="bottom"><field name="round_number"/><field name="home_team_id"/><field name="away_team_id"/><field name="placement_from"/><field name="placement_to"/><field name="home_score"/><field name="away_score"/><field name="result_state"/><button name="action_approve_result" type="object" string="Approve"/></list></field></page><page string="Frozen Standings"><field name="standing_line_ids"><list><field name="rank"/><field name="team_id"/><field name="played"/><field name="won"/><field name="drawn"/><field name="lost"/><field name="points"/></list></field></page></notebook></sheet></form></field></record></odoo>
+<record id="stage_form_graph" model="ir.ui.view"><field name="name">structure.stage.graph.form</field><field name="model">federation.structure.stage</field><field name="arch" type="xml"><form><header><button name="action_prepare_stage" type="object" string="Prepare" class="btn-primary"/><button name="action_start_stage" type="object" string="Start"/><button name="action_freeze_standings" type="object" string="Freeze &amp; Progress"/><field name="graph_state" widget="statusbar"/></header><sheet><group><field name="structure_id"/><field name="name"/><field name="stage_type"/><field name="format_type"/><field name="source_type"/><field name="carryover_policy"/><field name="final_rank_from"/><field name="final_rank_to"/></group><notebook><page string="Participants"><field name="stage_participant_ids"><list editable="bottom"><field name="seed"/><field name="team_id"/><field name="source_rank"/><field name="carried_points"/></list></field></page><page string="Incoming"><field name="incoming_progression_ids"><list editable="bottom"><field name="name"/><field name="source_stage_id"/><field name="rank_from"/><field name="rank_to"/><field name="target_seed_from"/><field name="applied"/></list></field></page><page string="Outgoing"><field name="outgoing_progression_ids"><list editable="bottom"><field name="name"/><field name="target_stage_id"/><field name="rank_from"/><field name="rank_to"/><field name="target_seed_from"/><field name="applied"/></list></field></page><page string="Fixtures"><field name="stage_fixture_ids"><list editable="bottom"><field name="round_number"/><field name="home_team_id"/><field name="away_team_id"/><field name="placement_from"/><field name="placement_to"/><field name="operational_match_id"/><field name="home_score"/><field name="away_score"/><field name="result_state"/><field name="bye_team_id"/></list></field></page><page string="Frozen Standings"><field name="standing_line_ids"><list><field name="rank"/><field name="team_id"/><field name="played"/><field name="won"/><field name="drawn"/><field name="lost"/><field name="points"/></list></field></page></notebook></sheet></form></field></record></odoo>
 
 ====================================================================================================
 FILE: sports_federation_governance/README.md

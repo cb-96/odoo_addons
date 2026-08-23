@@ -318,60 +318,62 @@ class FederationStageGraphEngine(models.AbstractModel):
                 self.env["federation.fixture.materializer"].materialize(target)
         return True
 
-    def _standings(self, stage):
+    def _standings(self, stage, team_ids=None):
+        engine = self.env["federation.standings.rules"]
+        rule_set = stage._get_effective_rule_set()
+        points = engine.points_map(rule_set)
+        participants = stage.stage_participant_ids
+        if team_ids is not None:
+            participants = participants.filtered(
+                lambda participant: participant.team_id.id in set(team_ids)
+            )
         stats = {
-            p.team_id.id: {
-                "team": p.team_id,
-                "played": p.carried_played,
-                "won": 0,
-                "drawn": 0,
-                "lost": 0,
-                "score_for": p.carried_score_for,
-                "score_against": p.carried_score_against,
-                "points": p.carried_points,
-            }
-            for p in stage.stage_participant_ids
+            participant.team_id.id: engine.initial_stats(
+                {
+                    "played": participant.carried_played,
+                    "score_for": participant.carried_score_for,
+                    "score_against": participant.carried_score_against,
+                    "points": participant.carried_points,
+                }
+            )
+            for participant in participants
         }
-        for f in stage.stage_fixture_ids.filtered(
-            lambda x: x.operational_match_id
-            and x.operational_match_id.result_state == "approved"
-            and x.operational_match_id.include_in_official_standings
-            and x.home_team_id
-            and x.away_team_id
+        matches = []
+        for fixture in stage.stage_fixture_ids.filtered(
+            lambda item: item.operational_match_id
+            and item.operational_match_id.result_state == "approved"
+            and item.operational_match_id.include_in_official_standings
+            and item.home_team_id
+            and item.away_team_id
         ):
-            match = f.operational_match_id
-            h, a = stats[match.home_team_id.id], stats[match.away_team_id.id]
-            h["played"] += 1
-            a["played"] += 1
-            h["score_for"] += match.home_score
-            h["score_against"] += match.away_score
-            a["score_for"] += match.away_score
-            a["score_against"] += match.home_score
-            if match.home_score > match.away_score:
-                h["won"] += 1
-                a["lost"] += 1
-                h["points"] += 3
-            elif match.away_score > match.home_score:
-                a["won"] += 1
-                h["lost"] += 1
-                a["points"] += 3
-            else:
-                h["drawn"] += 1
-                a["drawn"] += 1
-                h["points"] += 1
-                a["points"] += 1
-        rows = sorted(
-            stats.values(),
-            key=lambda x: (
-                -x["points"],
-                -(x["score_for"] - x["score_against"]),
-                -x["score_for"],
-                x["team"].name,
-            ),
+            match = fixture.operational_match_id
+            home_key = match.home_team_id.id
+            away_key = match.away_team_id.id
+            if home_key not in stats or away_key not in stats:
+                continue
+            engine.apply_match(
+                stats, home_key, away_key, match.home_score, match.away_score, points
+            )
+            matches.append((home_key, away_key, match.home_score, match.away_score))
+        names = {
+            participant.team_id.id: participant.team_id.name or ""
+            for participant in stage.stage_participant_ids
+        }
+        ranked, notes = engine.rank(
+            stats,
+            rule_set=rule_set,
+            matches=matches,
+            names=names,
+            lot_seed=stage.id,
         )
-        for i, x in enumerate(rows, 1):
-            x["rank"] = i
-        return rows
+        team_by_id = {
+            participant.team_id.id: participant.team_id
+            for participant in stage.stage_participant_ids
+        }
+        return [
+            dict(row, team=team_by_id[key], tiebreak_notes=notes[key])
+            for key, row in ranked
+        ]
 
     @api.model
     def freeze_standings(self, stage):
@@ -385,9 +387,17 @@ class FederationStageGraphEngine(models.AbstractModel):
         )
         if incomplete:
             raise ValidationError(_("Approve all operational match results first."))
+        rule_set = stage._get_effective_rule_set()
+        rules_engine = self.env["federation.standings.rules"]
         snap = self.env["federation.stage.standing.snapshot"].create(
-            {"stage_id": stage.id}
+            {
+                "stage_id": stage.id,
+                "rule_set_id": rule_set.id if rule_set else False,
+                "rules_signature": rules_engine.rules_signature(rule_set),
+            }
         )
+        if rule_set and not rule_set.locked:
+            rule_set.action_lock()
         self.env["federation.stage.standing.line"].create(
             [
                 {
@@ -404,6 +414,7 @@ class FederationStageGraphEngine(models.AbstractModel):
                             "score_for",
                             "score_against",
                             "points",
+                            "tiebreak_notes",
                         )
                     },
                 }
@@ -421,6 +432,15 @@ class FederationStageGraphEngine(models.AbstractModel):
             lambda line: e.rank_from <= line.rank <= e.rank_to
         ).sorted("rank")
         target = e.target_stage_id
+        same_group = {}
+        if target.carryover_policy == "same_group_results":
+            same_group = {
+                row["team"].id: row
+                for row in self._standings(
+                    e.source_stage_id,
+                    team_ids=lines.mapped("team_id").ids,
+                )
+            }
         self.env["federation.stage.participant"].create(
             [
                 {
@@ -429,18 +449,24 @@ class FederationStageGraphEngine(models.AbstractModel):
                     "seed": e.target_seed_from + i,
                     "source_rank": x.rank,
                     "carried_points": (
-                        x.points if target.carryover_policy == "full_points" else 0
+                        x.points
+                        if target.carryover_policy == "full_points"
+                        else same_group.get(x.team_id.id, {}).get("points", 0)
                     ),
                     "carried_played": (
-                        x.played if target.carryover_policy == "full_points" else 0
+                        x.played
+                        if target.carryover_policy == "full_points"
+                        else same_group.get(x.team_id.id, {}).get("played", 0)
                     ),
                     "carried_score_for": (
-                        x.score_for if target.carryover_policy == "full_points" else 0
+                        x.score_for
+                        if target.carryover_policy == "full_points"
+                        else same_group.get(x.team_id.id, {}).get("score_for", 0)
                     ),
                     "carried_score_against": (
                         x.score_against
                         if target.carryover_policy == "full_points"
-                        else 0
+                        else same_group.get(x.team_id.id, {}).get("score_against", 0)
                     ),
                 }
                 for i, x in enumerate(lines)

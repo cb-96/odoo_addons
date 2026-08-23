@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Standings",
-    "version": "19.0.1.2.0",
+    "version": "19.0.2.0.0",
     "category": "Sports",
     "summary": "Compute and store standings for tournament stages/groups",
     "description": """

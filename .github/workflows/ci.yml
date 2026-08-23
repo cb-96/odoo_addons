@@ -95,6 +95,12 @@ jobs:
       - name: Verify workflow state contracts
         run: python ci/check_workflow_state_contracts.py
 
+      - name: Verify Phase 1 fixture contract
+        run: python ci/check_phase1_fixture_contract.py
+
+      - name: Verify Phase 2 rules contract
+        run: python ci/check_phase2_rules_contract.py
+
       - name: Report module dependency drift
         run: python ci/check_module_dependency_drift.py
 

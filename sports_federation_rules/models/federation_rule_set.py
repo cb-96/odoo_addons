@@ -131,6 +131,14 @@ class FederationRuleSet(models.Model):
         self.write({"locked": False, "locked_on": False, "locked_by_id": False})
         return True
 
+    def get_points_map(self):
+        self.ensure_one()
+        return self.env["federation.standings.rules"].points_map(self)
+
+    def get_ordered_tie_breaks(self):
+        self.ensure_one()
+        return self.env["federation.standings.rules"].tie_breaks(self)
+
     @api.constrains("squad_min_size", "squad_max_size")
     def _check_squad_sizes(self):
         """Validate squad sizes."""

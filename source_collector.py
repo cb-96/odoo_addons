@@ -93,6 +93,7 @@ EXCLUDED_DIRECTORY_NAMES = {
 EXCLUDED_FILENAMES = {
     SOURCE_OUT.name,
     META_OUT.name,
+    "odoo_addons_code_review.txt",
 }
 
 EXCLUDED_PATH_PREFIXES = {
