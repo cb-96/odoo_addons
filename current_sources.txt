@@ -3485,6 +3485,8 @@ jobs:
         run: python ci/check_portal_sudo_guard.py
           python ci/check_portal_v2_ownership.py
           python ci/check_v2_officiating_contract.py
+          python ci/check_v2_registration_contract.py
+          python ci/check_access_csv_integrity.py
 
       - name: Verify source collector completeness
         run: python ci/check_source_collector_contract.py
@@ -3761,6 +3763,8 @@ jobs:
           python ci/check_portal_sudo_guard.py
           python ci/check_portal_v2_ownership.py
           python ci/check_v2_officiating_contract.py
+          python ci/check_v2_registration_contract.py
+          python ci/check_access_csv_integrity.py
           python ci/check_source_collector_contract.py
           python ci/check_addon_integrity.py
           python ci/check_workflow_state_contracts.py
@@ -5864,6 +5868,18 @@ Verify that the standalone-match count is zero, create officials through a
 current live match-day publication, and confirm that the official self-service
 portal shows current assignments plus retained V2 history.
 
+## V2 competition-entry cutover 19.0.5.0.0
+
+Upgrade registration, portal, public site and reporting together after a verified
+backup. The portal migration permanently drops the test-only V1 tournament
+registration table.
+
+```bash
+odoo-bin -d RC_DATABASE -u sports_federation_registration,sports_federation_portal,sports_federation_public_site,sports_federation_reporting --stop-after-init
+python ci/check_v2_registration_contract.py
+python ci/check_access_csv_integrity.py
+```
+
 ====================================================================================================
 FILE: ROADMAP.md
 ====================================================================================================
@@ -6168,7 +6184,7 @@ controllers, record rules, tests, and workflow docs aligned with the code.
 | `federation.schedule.slot` | `sports_federation_calendar` | Calendar operations prepare capacity; scheduling assigns fixtures; approval publishes the resulting schedule | Match-day calendar and scheduling views | `available`, `break`, `blocked` | Federation-owned match day / playing-area scope | A slot belongs to one match day. Fixture assignment and overlap validation are enforced server-side. |
 | `federation.standing` | `sports_federation_standings` | Federation competition operations | Backend UI, recompute/freeze actions | `draft`, `computed`, `frozen` | Federation-owned tournament/stage/group | Only computed or frozen standings are publication candidates. |
 | `federation.tournament.participant` | `sports_federation_tournament` | Federation competition operations | Backend UI or confirmed tournament registration | `registered`, `confirmed`, `withdrawn` | Team's club within a federation tournament | Portal users do not write participants directly; confirmed registrations may create them. |
-| `federation.tournament.registration` | `sports_federation_portal` | Shared: club representative submits, federation staff reviews | Portal form or backend UI | `draft`, `submitted`, `confirmed`, `rejected`, `cancelled` | Team must belong to one of the submitting user's represented clubs | This is the review buffer before participant creation. |
+| `federation.competition.entry` | `sports_federation_portal` | Shared: club representative submits, federation staff reviews | Portal form or backend UI | `draft`, `submitted`, `confirmed`, `rejected`, `cancelled` | Team must belong to one of the submitting user's represented clubs | This is the review buffer before participant creation. |
 | `federation.season.registration` | `sports_federation_base` + `sports_federation_portal` | Shared: club representative submits, federation staff confirms | Portal form or backend UI | `draft`, `submitted`, `confirmed`, `cancelled` | Team must belong to one of the submitting user's represented clubs | Portal extension adds `submitted`, `user_id`, and `rejection_reason`. Rejecting a registration returns it to `draft`; there is no persistent `rejected` enum. |
 | `federation.finance.event` | `sports_federation_finance_bridge` | Federation finance operations and approved workflow hooks | Backend UI or workflow automation | `draft`, `confirmed`, `settled`, `cancelled` | Source record remains authoritative; finance staff own settlement/cancellation | Season-registration confirmation and match finance hooks create events automatically. |
 
@@ -6194,7 +6210,7 @@ the backend UI so operational records do not disappear through ad hoc writes to
 | `federation.schedule.slot` | Calendar owns slot capacity and lifecycle; scheduling assigns fixtures; schedule approval publishes the resulting schedule | Slot availability and capacity are prepared by `sports_federation_calendar`; assignment validation is enforced by `sports_federation_scheduling`; approved schedules are immutable and published by `sports_federation_schedule_approval`. |
 | `federation.standing` | Federation staff | Frozen standings block recomputation unless forced. |
 | `federation.tournament.participant` | Federation staff, confirmed registration flow | Tournament/team eligibility is validated on create and update. |
-| `federation.tournament.registration` | Portal club representatives for submission/cancel, federation staff for confirm/reject | Controllers validate club ownership and the model enforces ownership as defense in depth. |
+| `federation.competition.entry` | Portal club representatives for submission/cancel, federation staff for confirm/reject | Controllers validate club ownership and the model enforces ownership as defense in depth. |
 | `federation.season.registration` | Portal club representatives for submission/cancel, federation staff for confirm | Controllers validate club ownership and the model must enforce ownership as defense in depth. |
 | `federation.finance.event` | Federation finance staff for confirm/settle/cancel; approved workflow hooks for draft creation | Auto-created events must stay idempotent per source record and fee type. |
 
@@ -10801,7 +10817,7 @@ Blocking vs warning-only model:
 
 1. Add **participants** to the tournament — each links a team to the tournament.
     - If the flow starts from portal registration requests, an administrator first
-       confirms the `federation.tournament.registration` record. That creates or links
+       confirms the `federation.competition.entry` record. That creates or links
        a `federation.tournament.participant` record in state `registered`.
     - That participant must still be moved to state `confirmed` before schedule
        generation can use it.
@@ -11433,6 +11449,63 @@ if __name__ == "__main__":
     except RuntimeError as error:
         print(error)
         raise SystemExit(1)
+
+====================================================================================================
+FILE: ci/check_access_csv_integrity.py
+====================================================================================================
+
+#!/usr/bin/env python3
+import csv, sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+errors = []
+seen = {}
+header = [
+    "id",
+    "name",
+    "model_id:id",
+    "group_id:id",
+    "perm_read",
+    "perm_write",
+    "perm_create",
+    "perm_unlink",
+]
+for path in sorted(ROOT.glob("sports_federation_*/security/ir.model.access.csv")):
+    rows = list(csv.reader(path.open(newline="", encoding="utf-8")))
+    if not rows or rows[0] != header:
+        errors.append(f"{path.relative_to(ROOT)}: invalid header")
+        continue
+    for n, row in enumerate(rows[1:], 2):
+        if not row or not any(v.strip() for v in row):
+            continue
+        if len(row) != 8:
+            errors.append(
+                f"{path.relative_to(ROOT)}:{n}: expected 8 columns, got {len(row)}"
+            )
+            continue
+        xmlid, _name, model, group, *perms = row
+        if not xmlid:
+            errors.append(f"{path.relative_to(ROOT)}:{n}: empty external id")
+        if xmlid in seen:
+            errors.append(
+                f"duplicate ACL id {xmlid}: {seen[xmlid]} and {path.relative_to(ROOT)}:{n}"
+            )
+        seen[xmlid] = f"{path.relative_to(ROOT)}:{n}"
+        if not model.startswith("model_") and ".model_" not in model:
+            errors.append(f"{path.relative_to(ROOT)}:{n}: invalid model id {model}")
+        if group and not (
+            group.startswith("group_")
+            or ".group_" in group
+            or group == "base.group_portal"
+        ):
+            errors.append(f"{path.relative_to(ROOT)}:{n}: invalid group id {group}")
+        if any(v not in ("0", "1") for v in perms):
+            errors.append(f"{path.relative_to(ROOT)}:{n}: permissions must be 0 or 1")
+if errors:
+    print("ACL CSV integrity failed:\n- " + "\n- ".join(errors))
+    sys.exit(1)
+print(f"ACL CSV integrity passed for {len(seen)} access records.")
 
 ====================================================================================================
 FILE: ci/check_addon_integrity.py
@@ -13524,6 +13597,64 @@ if errors:
 print("V2 officiating and legacy-match contract passed.")
 
 ====================================================================================================
+FILE: ci/check_v2_registration_contract.py
+====================================================================================================
+
+#!/usr/bin/env python3
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+errors = []
+required = {
+    "sports_federation_portal/models/federation_competition_entry.py": [
+        "_portal_submit_entry",
+        "_portal_open_window_for_division",
+    ],
+    "sports_federation_public_site/controllers/public_competitions.py": [
+        "federation.competition.entry",
+        "_portal_submit_entry",
+    ],
+    "sports_federation_reporting/models/report_season_checklist.py": [
+        "federation_competition_entry",
+        "federation_registration_window",
+    ],
+    "sports_federation_portal/migrations/19.0.5.0.0/post-migrate.py": [
+        "federation_tournament_registration",
+        "DROP TABLE",
+    ],
+}
+for rel, needles in required.items():
+    p = ROOT / rel
+    if not p.exists():
+        errors.append(f"missing {rel}")
+        continue
+    t = p.read_text()
+    for needle in needles:
+        if needle not in t:
+            errors.append(f"{rel}: missing {needle!r}")
+for rel in [
+    "sports_federation_portal/models/federation_tournament_registration.py",
+    "sports_federation_portal/views/federation_tournament_registration_views.xml",
+    "sports_federation_portal/data/ir_sequence.xml",
+    "sports_federation_portal/tests/test_tournament_registration.py",
+]:
+    if (ROOT / rel).exists():
+        errors.append(f"obsolete V1 registration artifact remains: {rel}")
+for p in ROOT.glob("sports_federation_*/**/*"):
+    if (
+        p.is_file()
+        and "migrations" not in p.parts
+        and p.suffix in {".py", ".xml", ".csv"}
+        and "federation.tournament.registration" in p.read_text(errors="ignore")
+    ):
+        errors.append(f"active V1 registration reference: {p.relative_to(ROOT)}")
+if errors:
+    print("V2 registration contract failed:\n- " + "\n- ".join(errors))
+    sys.exit(1)
+print("V2 registration ownership contract passed.")
+
+====================================================================================================
 FILE: ci/check_workflow_state_contracts.py
 ====================================================================================================
 
@@ -13804,11 +13935,11 @@ FILE: ci/contracts/constraint_index_contracts.json
       ]
     },
     {
-      "model": "federation.tournament.registration",
-      "source": "sports_federation_portal/models/federation_tournament_registration.py",
+      "model": "federation.competition.entry",
+      "source": "sports_federation_registration/models/registration.py",
       "required_indexed_fields": [],
       "required_constraint_symbols": [
-        "_team_tournament_unique"
+        "_unique_team"
       ]
     }
   ]
@@ -16150,6 +16281,12 @@ FILE: docs/portal_sudo_inventory.json
     "statement": "Task = request.env[\"federation.operation.task\"].sudo()"
   },
   {
+    "file": "sports_federation_portal/controllers/officiating.py",
+    "function": "portal_my_referee_assignments",
+    "reason": "adjacent ownership scope check",
+    "statement": "current_publications = ( request.env[\"federation.matchday\"] .sudo() .search([(\"current_publication_id.state\", \"=\", \"live\")]) .mapped(\"current_publication_id\") )"
+  },
+  {
     "file": "sports_federation_portal/controllers/operation_tasks.py",
     "function": "portal_my_action_items",
     "reason": "adjacent ownership scope check",
@@ -16279,7 +16416,7 @@ FILE: docs/portal_sudo_inventory.json
     "file": "sports_federation_portal/controllers/qol.py",
     "function": "bulk_registrations",
     "reason": "federation manager group checked above",
-    "statement": "registrations = ( request.env[\"federation.tournament.registration\"] .sudo() # noguard: federation manager group checked above .browse(ids) .exists() )"
+    "statement": "registrations = ( request.env[\"federation.competition.entry\"] .sudo() # noguard: federation manager group checked above .browse(ids) .exists() )"
   },
   {
     "file": "sports_federation_portal/controllers/qol.py",
@@ -16615,6 +16752,73 @@ SELECT COUNT(*) FROM federation_match WHERE logical_fixture_id IS NULL;
 ```
 
 After upgrading, that count must be zero. A non-zero count should block release.
+
+====================================================================================================
+FILE: docs/v2_registration_cutover.md
+====================================================================================================
+
+# V2 registration cutover
+
+The authoritative chain is `federation.registration.window` →
+`federation.competition.entry` → `federation.participant.set`. Public
+registration resolves the open V2 window for the selected division and enforces
+club ownership, eligibility, duplicate-entry and capacity rules.
+
+The portal 19.0.5.0.0 migration drops the test-only V1 tournament-registration
+table. Take a verified backup before upgrading. Federation staff review entries
+through **Competition Engine V2 → Registration Desk**.
+
+====================================================================================================
+FILE: removal.sh
+====================================================================================================
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+PATCH_FILE="${1:-registration_cutover.patch}"
+SEQUENCE_FILE="sports_federation_portal/data/ir_sequence.xml"
+V1_VIEW_FILE="sports_federation_portal/views/federation_tournament_registration_views.xml"
+
+if [[ ! -f "$PATCH_FILE" ]]; then
+  echo "ERROR: patch not found: $PATCH_FILE" >&2
+  exit 2
+fi
+
+echo "[1/5] Validating patch against the current tree"
+git apply --check --whitespace=error-all \
+  --exclude="$SEQUENCE_FILE" \
+  --exclude="$V1_VIEW_FILE" \
+  "$PATCH_FILE"
+
+echo "[2/5] Applying non-conflicting package changes"
+git apply --whitespace=error-all \
+  --exclude="$SEQUENCE_FILE" \
+  --exclude="$V1_VIEW_FILE" \
+  "$PATCH_FILE"
+
+echo "[3/5] Removing V1 artifacts idempotently"
+rm -f "$SEQUENCE_FILE" "$V1_VIEW_FILE"
+
+echo "[4/5] Checking manifest references and patch whitespace"
+if grep -Fq 'data/ir_sequence.xml' sports_federation_portal/__manifest__.py; then
+  echo "ERROR: obsolete sequence file remains referenced by the portal manifest." >&2
+  exit 4
+fi
+if grep -Fq 'views/federation_tournament_registration_views.xml' sports_federation_portal/__manifest__.py; then
+  echo "ERROR: obsolete V1 views remain referenced by the portal manifest." >&2
+  exit 5
+fi
+git diff --check
+
+echo "[5/5] Running focused source contracts"
+python ci/check_access_csv_integrity.py
+python ci/check_v2_registration_contract.py
+python ci/check_addon_integrity.py
+python ci/check_portal_v2_ownership.py
+python ci/check_v2_officiating_contract.py
+
+echo "OK: V2 registration cutover package applied."
+git status --short
 
 ====================================================================================================
 FILE: requirements.txt
@@ -51023,7 +51227,7 @@ FILE: sports_federation_portal/__manifest__.py
 
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.4.1.0",
+    "version": "19.0.5.0.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -51057,7 +51261,6 @@ on top of the federation base modules.
         "security/ir.model.access.csv",
         "security/ir_rule.xml",
         "data/federation_club_role_type.xml",
-        "data/ir_sequence.xml",
         "data/operation_task_cron.xml",
         "views/federation_club_role_type_views.xml",
         "views/federation_club_representative_views.xml",
@@ -51067,7 +51270,6 @@ on top of the federation base modules.
         "views/res_users_views.xml",
         "views/federation_season_registration_views.xml",
         "views/federation_match_sheet_views.xml",
-        "views/federation_tournament_registration_views.xml",
         "views/federation_club_representative_portal_views.xml",
         "views/qol_views.xml",
         "views/portal_templates.xml",
@@ -52182,19 +52384,6 @@ class FederationRegistrationPortal(FederationPortalBase):
         )
 
     @http.route(
-        [
-            "/my/tournament-registrations",
-            "/my/tournament-registrations/page/<int:page>",
-        ],
-        type="http",
-        auth="user",
-        website=True,
-    )
-    def portal_my_tournament_registrations(self, page=1, **kw):
-        """Redirect the deprecated V1 registration queue to V2 entries."""
-        return self._redirect_with_query("/my/competition-entries")
-
-    @http.route(
         ["/my/season-registration/new"],
         type="http",
         auth="user",
@@ -52279,30 +52468,6 @@ class FederationRegistrationPortal(FederationPortalBase):
             "/my/season-registrations",
             success="Season registration submitted",
         )
-
-    @http.route(
-        ["/my/tournament-registration/<int:reg_id>/resubmit"],
-        type="http",
-        auth="user",
-        website=True,
-        methods=["POST"],
-        csrf=True,
-    )
-    def portal_tournament_registration_resubmit(self, reg_id, notes="", **kw):
-        """V1 endpoint retained only as a safe redirect."""
-        return self._redirect_with_query("/my/competition-entries")
-
-    @http.route(
-        ["/my/tournament-registration/<int:reg_id>/cancel"],
-        type="http",
-        auth="user",
-        website=True,
-        methods=["POST"],
-        csrf=True,
-    )
-    def portal_tournament_registration_cancel(self, reg_id, **kw):
-        """V1 endpoint retained only as a safe redirect."""
-        return self._redirect_with_query("/my/competition-entries")
 
     @http.route(
         ["/my/season-registration/<int:reg_id>/cancel"],
@@ -52788,7 +52953,7 @@ class FederationQoLPortal(FederationPortalBase):
             if value.strip().isdigit()
         ]
         registrations = (
-            request.env["federation.tournament.registration"]
+            request.env["federation.competition.entry"]
             .sudo()  # noguard: federation manager group checked above
             .browse(ids)
             .exists()
@@ -52798,7 +52963,7 @@ class FederationQoLPortal(FederationPortalBase):
         ):
             return self._redirect_with_query(
                 "/federation/operations/action-items",
-                error=_("Select submitted registrations only."),
+                error=_("Select submitted competition entries only."),
             )
         if decision in ("return", "reject") and not reason.strip():
             return self._redirect_with_query(
@@ -52808,7 +52973,7 @@ class FederationQoLPortal(FederationPortalBase):
         for record in registrations:
             try:
                 if decision == "accept":
-                    record.action_confirm()
+                    record.action_approve()
                 elif decision == "return":
                     record.action_return(reason.strip())
                 elif decision == "reject":
@@ -52826,7 +52991,7 @@ class FederationQoLPortal(FederationPortalBase):
             )
         return self._redirect_with_query(
             "/federation/operations/action-items",
-            success=_("Selected registrations processed."),
+            success=_("Selected competition entries processed."),
         )
 
     @http.route(
@@ -53971,23 +54136,6 @@ FILE: sports_federation_portal/data/federation_club_role_type.xml
 </odoo>
 
 ====================================================================================================
-FILE: sports_federation_portal/data/ir_sequence.xml
-====================================================================================================
-
-<?xml version="1.0" encoding="utf-8"?>
-<odoo>
-
-    <record id="seq_tournament_registration" model="ir.sequence">
-        <field name="name">Tournament Registration</field>
-        <field name="code">federation.tournament.registration</field>
-        <field name="prefix">TRG/%(year)s/</field>
-        <field name="padding">5</field>
-        <field name="company_id" eval="False"/>
-    </record>
-
-</odoo>
-
-====================================================================================================
 FILE: sports_federation_portal/data/operation_task_cron.xml
 ====================================================================================================
 
@@ -54075,6 +54223,24 @@ def migrate(cr, version):
         """)
 
 ====================================================================================================
+FILE: sports_federation_portal/migrations/19.0.5.0.0/post-migrate.py
+====================================================================================================
+
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
+def migrate(cr, version):
+    cr.execute("SELECT to_regclass('public.federation_tournament_registration')")
+    if cr.fetchone()[0]:
+        cr.execute("DROP TABLE federation_tournament_registration CASCADE")
+        _logger.warning("Removed V1 federation_tournament_registration table")
+    cr.execute(
+        """DELETE FROM ir_model_data WHERE module = 'sports_federation_portal' AND name IN ('model_federation_tournament_registration','seq_tournament_registration','action_federation_tournament_registration','rule_tournament_registration_portal_own','access_tournament_registration_portal','access_tournament_registration_manager')"""
+    )
+
+====================================================================================================
 FILE: sports_federation_portal/models/__init__.py
 ====================================================================================================
 
@@ -54085,7 +54251,6 @@ from . import federation_club
 from . import federation_team
 from . import res_partner
 from . import res_users
-from . import federation_tournament_registration
 from . import federation_season_registration
 from . import federation_referee
 from . import federation_match_referee
@@ -54095,6 +54260,7 @@ from . import federation_player
 from . import portal_status_labels
 from . import operation_task
 from . import portal_v2_queries
+from . import federation_competition_entry
 
 ====================================================================================================
 FILE: sports_federation_portal/models/federation_club.py
@@ -54672,6 +54838,107 @@ class FederationClubRoleType(models.Model):
     def get_by_code(self, code):
         """Return the role type record for the given code, or empty recordset."""
         return self.search([("code", "=", code)], limit=1)
+
+====================================================================================================
+FILE: sports_federation_portal/models/federation_competition_entry.py
+====================================================================================================
+
+from odoo import _, api, fields, models
+from odoo.exceptions import AccessError, ValidationError
+
+
+class FederationCompetitionEntry(models.Model):
+    _inherit = "federation.competition.entry"
+
+    @api.model
+    def _portal_open_window_for_division(self, division):
+        now = fields.Datetime.now()
+        return (
+            self.env["federation.registration.window"]
+            .sudo()
+            .search(
+                [
+                    ("division_id", "=", division.id),
+                    ("edition_id", "=", division.edition_id.id),
+                    ("state", "=", "open"),
+                    "|",
+                    ("date_open", "=", False),
+                    ("date_open", "<=", now),
+                    "|",
+                    ("date_close", "=", False),
+                    ("date_close", ">=", now),
+                ],
+                order="date_close asc, id desc",
+                limit=1,
+            )
+        )
+
+    @api.model
+    def _portal_submit_entry(self, division, team, notes=None, user=None):
+        user = user or self.env.user
+        privilege = self.env["federation.portal.privilege"]
+        division = privilege.elevate(division, user=user)
+        team = privilege.elevate(team, user=user)
+        if not division.exists() or not division.edition_id:
+            raise ValidationError(_("Select a valid V2 competition division."))
+        window = self._portal_open_window_for_division(division)
+        if not window:
+            raise ValidationError(_("Registration is not open for this division."))
+        clubs = privilege.elevate(
+            self.env["federation.club.representative"], user=user
+        )._get_clubs_for_user(user=user)
+        if team.club_id not in clubs:
+            raise AccessError(_("You can only register your own teams."))
+        error = division.get_team_eligibility_error(team)
+        if error:
+            raise ValidationError(error)
+        if self.sudo().search(
+            [
+                ("window_id", "=", window.id),
+                ("team_id", "=", team.id),
+                ("state", "!=", "withdrawn"),
+            ],
+            limit=1,
+        ):
+            raise ValidationError(_("This team already has an active entry."))
+        if (
+            division.max_participants > 0
+            and self.sudo().search_count(
+                [
+                    ("window_id", "=", window.id),
+                    ("state", "in", ("submitted", "approved")),
+                ]
+            )
+            >= division.max_participants
+        ):
+            raise ValidationError(_("This division has reached its entry capacity."))
+        entry = privilege.portal_create(
+            self,
+            {
+                "window_id": window.id,
+                "team_id": team.id,
+                "submission_note": (notes or "").strip() or False,
+                "submitted_by_id": user.id,
+            },
+            user=user,
+        )
+        privilege.portal_call(
+            entry,
+            "action_submit",
+            scope_domain=[("window_id", "=", window.id), ("team_id", "=", team.id)],
+            user=user,
+        )
+        return entry
+
+    def get_portal_state_label(self):
+        self.ensure_one()
+        return {
+            "draft": _("Draft"),
+            "submitted": _("Awaiting federation review"),
+            "approved": _("Approved"),
+            "rejected": _("Returned or rejected"),
+            "withdrawn": _("Withdrawn"),
+        }.get(self.state, self.state or "")
 
 ====================================================================================================
 FILE: sports_federation_portal/models/federation_match_referee.py
@@ -56094,477 +56361,6 @@ class FederationTeamRosterLine(models.Model):
         )
 
 ====================================================================================================
-FILE: sports_federation_portal/models/federation_tournament_registration.py
-====================================================================================================
-
-from markupsafe import escape
-
-from odoo import api, fields, models, _
-from odoo.exceptions import AccessError, ValidationError
-
-
-class FederationTournamentRegistration(models.Model):
-    """Tournament registration request submitted by portal users.
-
-    This model captures the portal-side registration intent. Federation
-    staff reviews submissions and, upon confirmation, the system can
-    optionally create a ``federation.tournament.participant`` record.
-
-    Workflow: draft -> submitted -> confirmed / rejected / cancelled
-    """
-
-    _name = "federation.tournament.registration"
-    _description = "Tournament Registration Request"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
-    _order = "create_date desc"
-
-    name = fields.Char(
-        string="Reference",
-        readonly=True,
-        copy=False,
-        default="New",
-    )
-    tournament_id = fields.Many2one(
-        "federation.tournament",
-        string="Tournament",
-        required=True,
-        tracking=True,
-        ondelete="cascade",
-    )
-    team_id = fields.Many2one(
-        "federation.team",
-        string="Team",
-        required=True,
-        tracking=True,
-        ondelete="restrict",
-    )
-    eligible_team_ids = fields.Many2many(
-        "federation.team",
-        string="Eligible Teams",
-        compute="_compute_team_selection",
-    )
-    available_team_ids = fields.Many2many(
-        "federation.team",
-        string="Available Teams",
-        compute="_compute_team_selection",
-    )
-    excluded_team_feedback_html = fields.Html(
-        string="Unavailable Teams",
-        compute="_compute_team_selection",
-    )
-    club_id = fields.Many2one(
-        "federation.club",
-        string="Club",
-        related="team_id.club_id",
-        store=True,
-        readonly=True,
-    )
-    season_id = fields.Many2one(
-        "federation.season",
-        string="Season",
-        related="tournament_id.season_id",
-        store=True,
-        readonly=True,
-    )
-    user_id = fields.Many2one(
-        "res.users",
-        string="Submitted By",
-        default=lambda self: self.env.user,
-        readonly=True,
-    )
-    partner_id = fields.Many2one(
-        "res.partner",
-        string="Contact",
-        related="user_id.partner_id",
-        store=True,
-        readonly=True,
-    )
-    registration_date = fields.Date(
-        string="Registration Date",
-        default=fields.Date.context_today,
-        required=True,
-    )
-    state = fields.Selection(
-        [
-            ("draft", "Draft"),
-            ("submitted", "Submitted"),
-            ("returned", "Returned for correction"),
-            ("confirmed", "Confirmed"),
-            ("rejected", "Rejected"),
-            ("cancelled", "Cancelled"),
-        ],
-        string="Status",
-        default="draft",
-        required=True,
-        tracking=True,
-    )
-    notes = fields.Text(string="Notes")
-    rejection_reason = fields.Text(
-        string="Rejection Reason",
-        readonly=True,
-        tracking=True,
-    )
-    reviewed_by_id = fields.Many2one(
-        "res.users", string="Reviewed By", readonly=True, copy=False, tracking=True
-    )
-    reviewed_on = fields.Datetime(
-        string="Reviewed On", readonly=True, copy=False, tracking=True
-    )
-    decision_reason = fields.Text(
-        string="Decision Reason",
-        tracking=True,
-        help="Required when returning or rejecting a registration.",
-    )
-    participant_id = fields.Many2one(
-        "federation.tournament.participant",
-        string="Linked Participant",
-        readonly=True,
-        copy=False,
-        ondelete="set null",
-    )
-
-    _team_tournament_unique = models.Constraint(
-        "UNIQUE(team_id, tournament_id)",
-        "A team can only submit one registration request per tournament.",
-    )
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        """Create records with module-specific defaults and side effects."""
-        if isinstance(vals_list, dict):
-            vals_list = [vals_list]
-
-        for vals in vals_list:
-            if vals.get("name", "New") == "New":
-                vals["name"] = (
-                    self.env["ir.sequence"]
-                    .sudo()
-                    .next_by_code("federation.tournament.registration")
-                    or "New"
-                )
-        return super().create(vals_list)
-
-    @api.depends("tournament_id", "team_id")
-    def _compute_team_selection(self):
-        """Compute team selection."""
-        Team = self.env["federation.team"]
-        for rec in self:
-            if not rec.tournament_id:
-                rec.eligible_team_ids = Team.browse([])
-                rec.available_team_ids = Team.browse([])
-                rec.excluded_team_feedback_html = False
-                continue
-
-            rec.eligible_team_ids = rec.tournament_id.search_eligible_teams()
-            selection_snapshot = rec.tournament_id.get_team_selection_snapshot(
-                blocked_reason_by_team_id=rec._get_blocked_team_reason_by_team_id()
-            )
-            rec.available_team_ids = selection_snapshot["available_teams"]
-            rec.excluded_team_feedback_html = rec._render_excluded_team_feedback_html(
-                selection_snapshot["excluded_teams"]
-            )
-
-    def _get_blocked_team_reason_by_team_id(self):
-        """Return blocked team reason by team ID."""
-        self.ensure_one()
-        if not self.tournament_id:
-            return {}
-
-        domain = [
-            ("tournament_id", "=", self.tournament_id.id),
-            ("state", "!=", "cancelled"),
-        ]
-        if self.id:
-            domain.append(("id", "!=", self.id))
-
-        existing = self.search(domain)
-        return {
-            record.team_id.id: _("Already registered or currently awaiting review.")
-            for record in existing
-            if record.team_id
-        }
-
-    def _render_excluded_team_feedback_html(self, excluded_teams):
-        """Handle render excluded team feedback HTML."""
-        if not excluded_teams:
-            return False
-
-        intro = escape(
-            _("Only teams that can currently be selected appear in the Team dropdown.")
-        )
-        items = "".join(
-            "<li><strong>{team}</strong> ({club}): {reason}</li>".format(
-                team=escape(item["team"].name),
-                club=escape(item["team"].club_id.display_name or _("No Club")),
-                reason=escape(item["reason"]),
-            )
-            for item in excluded_teams
-        )
-        return f"<p>{intro}</p><ul>{items}</ul>"
-
-    def _get_team_unavailability_reason(self, team):
-        """Return team unavailability reason."""
-        self.ensure_one()
-        blocked_reason = self._get_blocked_team_reason_by_team_id().get(team.id)
-        if blocked_reason:
-            return blocked_reason
-        return self.tournament_id.get_team_eligibility_error(team)
-
-    @api.model
-    def _portal_submit_registration_request(
-        self, tournament, team, notes=None, user=None
-    ):
-        """Create and submit a portal-managed tournament registration request."""
-        user = user or self.env.user
-        PortalPrivilege = self.env["federation.portal.privilege"]
-        tournament = PortalPrivilege.elevate(tournament, user=user)
-        team = PortalPrivilege.elevate(team, user=user)
-        if not tournament.exists() or tournament.state != "open":
-            raise ValidationError(
-                _("This tournament is not currently open for registrations.")
-            )
-        if not team.exists():
-            raise ValidationError(_("Select a valid team before continuing."))
-
-        clubs = PortalPrivilege.elevate(
-            self.env["federation.club.representative"],
-            user=user,
-        )._get_clubs_for_user(user=user)
-        if team.club_id not in clubs:
-            raise AccessError(_("You can only register your own teams."))
-
-        eligibility_error = tournament.get_team_eligibility_error(team)
-        if eligibility_error:
-            raise ValidationError(eligibility_error)
-
-        existing = PortalPrivilege.portal_search(
-            self,
-            [
-                ("tournament_id", "=", tournament.id),
-                ("team_id", "=", team.id),
-                ("state", "!=", "cancelled"),
-            ],
-            limit=1,
-            user=user,
-        )
-        if existing:
-            raise ValidationError(_("This team is already registered."))
-
-        if tournament.max_participants > 0:
-            current_count = PortalPrivilege.portal_search_count(
-                self.env["federation.tournament.participant"],
-                [
-                    ("tournament_id", "=", tournament.id),
-                    ("state", "!=", "withdrawn"),
-                ],
-                user=user,
-            )
-            pending_count = PortalPrivilege.portal_search_count(
-                self,
-                [
-                    ("tournament_id", "=", tournament.id),
-                    ("state", "=", "submitted"),
-                ],
-                user=user,
-            )
-            if current_count + pending_count >= tournament.max_participants:
-                raise ValidationError(_("Tournament is full"))
-
-        registration = PortalPrivilege.portal_create(
-            self,
-            {
-                "tournament_id": tournament.id,
-                "team_id": team.id,
-                "notes": (notes or "").strip() or False,
-                "user_id": user.id,
-            },
-            user=user,
-        )
-        PortalPrivilege.portal_call(
-            registration,
-            "action_submit",
-            scope_domain=[
-                ("team_id", "=", team.id),
-                ("tournament_id", "=", tournament.id),
-            ],
-            user=user,
-        )
-        return registration
-
-    @api.onchange("tournament_id")
-    def _onchange_tournament_id(self):
-        """Handle onchange tournament ID."""
-        domain = [("id", "in", self.available_team_ids.ids)]
-        if (
-            self.team_id
-            and self.tournament_id
-            and self.team_id not in self.available_team_ids
-        ):
-            warning = {
-                "title": _("Ineligible Team"),
-                "message": self._get_team_unavailability_reason(self.team_id),
-            }
-            self.team_id = False
-            return {"domain": {"team_id": domain}, "warning": warning}
-        return {"domain": {"team_id": domain}}
-
-    @api.constrains("team_id", "club_id")
-    def _check_portal_ownership(self):
-        """Ensure that when created via portal, the team belongs to the
-        submitting user's club."""
-        for rec in self:
-            if rec.user_id and rec.team_id and rec.club_id:
-                rep = self.env["federation.club.representative"].search(
-                    [
-                        ("user_id", "=", rec.user_id.id),
-                        ("club_id", "=", rec.club_id.id),
-                    ],
-                    limit=1,
-                )
-                if not rep and not rec.user_id.has_group(
-                    "sports_federation_base.group_federation_manager"
-                ):
-                    raise ValidationError(
-                        "You can only register teams that belong to your club."
-                    )
-
-    @api.constrains("team_id", "tournament_id")
-    def _check_team_category_gender(self):
-        """Ensure the team is eligible for the selected tournament."""
-        for rec in self:
-            if not rec.team_id or not rec.tournament_id:
-                continue
-            error = rec.tournament_id.get_team_eligibility_error(rec.team_id)
-            if error:
-                raise ValidationError(error)
-
-    # ------------------------------------------------------------------
-    # Actions
-    # ------------------------------------------------------------------
-
-    def action_submit(self):
-        """Submit a new or corrected registration for federation review."""
-        for rec in self:
-            if rec.state not in ("draft", "returned"):
-                raise ValidationError(
-                    _("Only draft or returned registrations can be submitted.")
-                )
-            rec.write(
-                {
-                    "state": "submitted",
-                    "reviewed_by_id": False,
-                    "reviewed_on": False,
-                    "rejection_reason": False,
-                }
-            )
-
-    def action_return(self, reason=None):
-        """Return a submitted registration to the club for correction."""
-        reason = (reason or self[:1].decision_reason or "").strip()
-        if not reason:
-            raise ValidationError(
-                _("A reason is required when returning a registration.")
-            )
-        for rec in self:
-            if rec.state != "submitted":
-                raise ValidationError(
-                    _("Only submitted registrations can be returned.")
-                )
-            rec.write(
-                {
-                    "state": "returned",
-                    "decision_reason": reason,
-                    "rejection_reason": False,
-                    "reviewed_by_id": self.env.user.id,
-                    "reviewed_on": fields.Datetime.now(),
-                }
-            )
-
-    def action_confirm(self):
-        """Confirm the registration and optionally create a participant."""
-        for rec in self:
-            if rec.state == "confirmed" and rec.participant_id:
-                continue
-            if rec.state != "submitted":
-                raise ValidationError(
-                    _("Only submitted registrations can be confirmed.")
-                )
-            rec.write(
-                {
-                    "state": "confirmed",
-                    "decision_reason": False,
-                    "rejection_reason": False,
-                    "reviewed_by_id": self.env.user.id,
-                    "reviewed_on": fields.Datetime.now(),
-                }
-            )
-            # Create or reuse the scheduling participant idempotently.
-            if not rec.participant_id:
-                existing = self.env["federation.tournament.participant"].search(
-                    [
-                        ("tournament_id", "=", rec.tournament_id.id),
-                        ("team_id", "=", rec.team_id.id),
-                    ],
-                    limit=1,
-                )
-                if existing:
-                    rec.participant_id = existing.id
-                else:
-                    participant = self.env["federation.tournament.participant"].create(
-                        {
-                            "tournament_id": rec.tournament_id.id,
-                            "team_id": rec.team_id.id,
-                            "registration_date": rec.registration_date,
-                            "state": "registered",
-                        }
-                    )
-                    rec.participant_id = participant.id
-
-    def action_reject(self, reason=None):
-        """Reject a submitted registration and persist the required reason."""
-        reason = (reason or self[:1].decision_reason or "").strip()
-        if not reason:
-            raise ValidationError(
-                _("A reason is required when rejecting a registration.")
-            )
-        for rec in self:
-            if rec.state != "submitted":
-                raise ValidationError(
-                    _("Only submitted registrations can be rejected.")
-                )
-            rec.write(
-                {
-                    "state": "rejected",
-                    "decision_reason": reason,
-                    "rejection_reason": reason,
-                    "reviewed_by_id": self.env.user.id,
-                    "reviewed_on": fields.Datetime.now(),
-                }
-            )
-
-    def action_cancel(self):
-        """Cancel the registration (portal or backend)."""
-        for rec in self:
-            if rec.state in ("confirmed",):
-                raise ValidationError("Confirmed registrations cannot be cancelled.")
-            rec.state = "cancelled"
-
-    def action_reset_draft(self):
-        """Reset to draft (backend only)."""
-        for rec in self:
-            rec.state = "draft"
-
-    def action_view_participant(self):
-        """Execute the view participant action."""
-        self.ensure_one()
-        action = self.env["ir.actions.act_window"]._for_xml_id(
-            "sports_federation_tournament.federation_tournament_participant_action"
-        )
-        action["res_id"] = self.participant_id.id
-        action["views"] = [(False, "form")]
-        return action
-
-====================================================================================================
 FILE: sports_federation_portal/models/operation_task.py
 ====================================================================================================
 
@@ -57215,28 +57011,6 @@ class FederationTournament(models.Model):
     def get_portal_state_label(self):
         self.ensure_one()
         return self._PORTAL_TOURNAMENT_STATE_LABELS.get(
-            self.state, self._portal_label_from_selection("state")
-        )
-
-
-class FederationTournamentRegistration(models.Model):
-    _name = "federation.tournament.registration"
-    _inherit = [
-        "federation.tournament.registration",
-        "federation.portal.label.mixin",
-    ]
-
-    _PORTAL_TOURNAMENT_REGISTRATION_STATE_LABELS = {
-        "draft": "Draft",
-        "submitted": "Awaiting federation review",
-        "confirmed": "Confirmed",
-        "rejected": "Not accepted",
-        "cancelled": "Cancelled",
-    }
-
-    def get_portal_state_label(self):
-        self.ensure_one()
-        return self._PORTAL_TOURNAMENT_REGISTRATION_STATE_LABELS.get(
             self.state, self._portal_label_from_selection("state")
         )
 
@@ -57899,8 +57673,6 @@ access_club_role_type_manager,federation.club.role.type.manager,model_federation
 access_club_representative_user,federation.club.representative.user,model_federation_club_representative,sports_federation_base.group_federation_user,1,0,0,0
 access_club_representative_manager,federation.club.representative.manager,model_federation_club_representative,sports_federation_base.group_federation_manager,1,1,1,1
 access_club_representative_portal,federation.club.representative.portal,model_federation_club_representative,sports_federation_portal.group_federation_portal_club,1,0,0,0
-access_tournament_registration_portal,federation.tournament.registration.portal,model_federation_tournament_registration,sports_federation_portal.group_federation_portal_club,1,1,1,0
-access_tournament_registration_manager,federation.tournament.registration.manager,model_federation_tournament_registration,sports_federation_base.group_federation_manager,1,1,1,1
 access_club_portal,federation.club.portal,sports_federation_base.model_federation_club,sports_federation_portal.group_federation_portal_club,1,0,0,0
 access_team_portal,federation.team.portal,sports_federation_base.model_federation_team,sports_federation_portal.group_federation_portal_club,1,1,1,0
 access_season_portal,federation.season.portal,sports_federation_base.model_federation_season,sports_federation_portal.group_federation_portal_club,1,0,0,0
@@ -57953,13 +57725,6 @@ FILE: sports_federation_portal/security/ir_rule.xml
     <record id="rule_season_registration_portal_own" model="ir.rule">
         <field name="name">Portal: own season registrations only</field>
         <field name="model_id" ref="sports_federation_base.model_federation_season_registration"/>
-        <field name="domain_force">[('club_id', 'in', user.representative_ids.mapped('club_id').ids)]</field>
-        <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
-    </record>
-
-    <record id="rule_tournament_registration_portal_own" model="ir.rule">
-        <field name="name">Portal: own tournament registrations only</field>
-        <field name="model_id" ref="model_federation_tournament_registration"/>
         <field name="domain_force">[('club_id', 'in', user.representative_ids.mapped('club_id').ids)]</field>
         <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
     </record>
@@ -59102,17 +58867,6 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     "gender": "male",
                 }
             )
-            tournament_registration = env["federation.tournament.registration"].create(
-                {
-                    "tournament_id": live_tournament.id,
-                    "team_id": workspace_team.id,
-                    "user_id": self.season_user.id,
-                }
-            )
-            tournament_registration.action_submit()
-            tournament_registration.action_confirm()
-            if tournament_registration.participant_id:
-                tournament_registration.participant_id.action_confirm()
 
             opponent_club = env["federation.club"].create(
                 {
@@ -59779,40 +59533,6 @@ class TestFederationOperationTasks(TransactionCase):
                 "state": "open",
             }
         )
-
-    def test_registration_task_is_idempotent_and_reopens_after_resolution(self):
-        registration = self.env["federation.competition.entry"].create(
-            {
-                "window_id": self.window.id,
-                "team_id": self.team.id,
-                "state": "submitted",
-            }
-        )
-        Task = self.env["federation.operation.task"]
-
-        Task.with_user(self.manager).sync_for_user(user=self.manager)
-        task = Task.search(
-            [
-                ("source_model", "=", registration._name),
-                ("source_record_id", "=", registration.id),
-            ]
-        )
-        self.assertEqual(len(task), 1)
-        self.assertEqual(task.audience, "manager")
-        self.assertEqual(task.state, "open")
-
-        Task.with_user(self.manager).sync_for_user(user=self.manager)
-        self.assertEqual(Task.search_count([("source_key", "=", task.source_key)]), 1)
-
-        registration.state = "approved"
-        Task.with_user(self.manager).sync_for_user(user=self.manager)
-        self.assertEqual(task.state, "done")
-        self.assertTrue(task.completed_on)
-
-        registration.state = "submitted"
-        Task.with_user(self.manager).sync_for_user(user=self.manager)
-        self.assertEqual(task.state, "open")
-        self.assertFalse(task.completed_on)
 
     def test_blocking_task_cannot_be_manually_acknowledged(self):
         task = self.env["federation.operation.task"].create(
@@ -62301,755 +62021,6 @@ class TestPortalTemplateMobile(TransactionCase):
         )
 
 ====================================================================================================
-FILE: sports_federation_portal/tests/test_tour_portal_workflows.py
-====================================================================================================
-
-"""Tour T-15: Portal Workflows — Club Representative End-to-End
-
-Exercises the full portal workflow from a club representative's perspective
-without HTTP (pure ORM-layer with portal user context).  Models that belong
-to optional modules (rosters, result_control, officiating) are skipped when
-those modules are not installed.
-
-  1. Setup: portal user bound to a club via federation.club.representative
-  2. Season registration: portal user submits registration; staff confirms
-  3. Roster management (skipped when rosters module absent)
-  4. Referee duty nomination (skipped when officiating module absent)
-  5. Result submission (skipped when result_control module absent)
-  6. Access isolation: portal user cannot see or modify other club's records
-  7. Direct count assertions for pending-duty badge logic
-
-The test relies on the record rules defined in portal security rather than
-HTTP routing, so it exercises the same access checks the portal routes invoke
-internally.
-
-Key invariants:
-- Registration.club_id auto-populated from representative's club
-- Duty nomination succeeds when player belongs to rep's club
-- Duty nomination raises when player belongs to another club
-- portal_club_scope_ids only yields rep's own club
-"""
-
-from datetime import timedelta
-
-from odoo import fields
-from odoo.exceptions import ValidationError
-from odoo.tests.common import TransactionCase
-
-
-class TestTourPortalWorkflows(TransactionCase):
-    """T-15: Portal workflows — club representative full journey."""
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        cls.portal_group = cls.env.ref(
-            "sports_federation_portal.group_federation_portal_club"
-        )
-        cls.role_type = cls.env.ref(
-            "sports_federation_portal.role_type_competition_contact"
-        )
-
-        # My club
-        cls.club = cls.env["federation.club"].create(
-            {"name": "Portal Journey FC", "code": "PJFC"}
-        )
-        cls.other_club = cls.env["federation.club"].create(
-            {"name": "Rival FC", "code": "RIV"}
-        )
-
-        cls.team = cls.env["federation.team"].create(
-            {"name": "Journey Team", "club_id": cls.club.id, "code": "JT1"}
-        )
-        cls.rival_team = cls.env["federation.team"].create(
-            {"name": "Rival Team", "club_id": cls.other_club.id, "code": "RT1"}
-        )
-
-        cls.player = cls.env["federation.player"].create(
-            {
-                "first_name": "Jordan",
-                "last_name": "Portal",
-                "club_id": cls.club.id,
-                "birth_date": "2000-01-01",
-            }
-        )
-        cls.rival_player = cls.env["federation.player"].create(
-            {
-                "first_name": "Rival",
-                "last_name": "Player",
-                "club_id": cls.other_club.id,
-                "birth_date": "2000-01-01",
-            }
-        )
-
-        cls.season = cls.env["federation.season"].create(
-            {
-                "name": "Portal Journey Season",
-                "code": "PJS26",
-                "date_start": "2026-01-01",
-                "date_end": "2026-12-31",
-            }
-        )
-        rule_set = cls.env["federation.rule.set"].create(
-            {
-                "name": "Journey Rules",
-                "code": "JR",
-                "points_win": 3,
-                "points_draw": 1,
-                "points_loss": 0,
-            }
-        )
-        cls.tournament = cls.env["federation.tournament"].create(
-            {
-                "name": "Portal Journey Cup",
-                "code": "PJC26",
-                "season_id": cls.season.id,
-                "rule_set_id": rule_set.id,
-                "date_start": "2026-06-01",
-            }
-        )
-
-        future_dt = fields.Datetime.now() + timedelta(days=14)
-        cls.match = cls.env["federation.match"].create(
-            {
-                "tournament_id": cls.tournament.id,
-                "home_team_id": cls.team.id,
-                "away_team_id": cls.rival_team.id,
-                "state": "scheduled",
-                "date_scheduled": future_dt,
-            }
-        )
-
-        # Portal user bound to cls.club
-        cls.portal_user = (
-            cls.env["res.users"]
-            .with_context(no_reset_password=True)
-            .create(
-                {
-                    "name": "Portal Journey User",
-                    "login": "portal.journey@example.com",
-                    "email": "portal.journey@example.com",
-                    "group_ids": [(6, 0, [cls.portal_group.id])],
-                }
-            )
-        )
-        cls.representative = cls.env["federation.club.representative"].create(
-            {
-                "club_id": cls.club.id,
-                "partner_id": cls.portal_user.partner_id.id,
-                "user_id": cls.portal_user.id,
-                "role_type_id": cls.role_type.id,
-            }
-        )
-
-        # Portal user for rival club (to test isolation)
-        cls.rival_user = (
-            cls.env["res.users"]
-            .with_context(no_reset_password=True)
-            .create(
-                {
-                    "name": "Rival Portal User",
-                    "login": "portal.rival@example.com",
-                    "email": "portal.rival@example.com",
-                    "group_ids": [(6, 0, [cls.portal_group.id])],
-                }
-            )
-        )
-        cls.env["federation.club.representative"].create(
-            {
-                "club_id": cls.other_club.id,
-                "partner_id": cls.rival_user.partner_id.id,
-                "user_id": cls.rival_user.id,
-                "role_type_id": cls.role_type.id,
-            }
-        )
-
-    # -----------------------------------------------------------------------
-    # Step 1 – Representative club scoping
-    # -----------------------------------------------------------------------
-
-    def test_portal_club_scope_ids_returns_own_club(self):
-        """portal_club_scope_ids resolves to the representative's club."""
-        scoped = self.portal_user.portal_club_scope_ids
-        self.assertIn(self.club, scoped)
-        self.assertNotIn(self.other_club, scoped)
-
-    # -----------------------------------------------------------------------
-    # Step 2 – Season registration
-    # -----------------------------------------------------------------------
-
-    def test_portal_user_can_submit_season_registration(self):
-        """Portal user creates and submits a season registration for own team."""
-        reg = (
-            self.env["federation.season.registration"]
-            .with_user(self.portal_user)
-            .create({"season_id": self.season.id, "team_id": self.team.id})
-        )
-        self.assertEqual(reg.club_id, self.club)
-        reg.with_user(self.portal_user).action_submit()
-        self.assertEqual(reg.state, "submitted")
-
-    def test_portal_user_cannot_register_rival_team(self):
-        """Portal user cannot create a registration for another club's team."""
-        try:
-            self.env["federation.season.registration"].with_user(
-                self.portal_user
-            ).create({"season_id": self.season.id, "team_id": self.rival_team.id})
-            self.fail("Expected ValidationError but no exception was raised")
-        except (ValidationError, Exception) as exc:
-            # Any access-level or validation exception is acceptable here
-            self.assertTrue(str(exc) or True)
-
-    # -----------------------------------------------------------------------
-    # Step 3 – Roster management
-    # -----------------------------------------------------------------------
-
-    def test_portal_user_can_create_roster(self):
-        """Portal user can create a roster for own team."""
-        if "federation.roster" not in self.env:
-            self.skipTest("sports_federation_rosters not installed")
-        roster = (
-            self.env["federation.roster"]
-            .with_user(self.portal_user)
-            .create(
-                {
-                    "team_id": self.team.id,
-                    "season_id": self.season.id,
-                    "tournament_id": self.tournament.id,
-                }
-            )
-        )
-        self.assertTrue(roster.id)
-
-    def test_portal_user_cannot_see_rival_roster(self):
-        """Portal user record rule hides rival club's rosters."""
-        if "federation.roster" not in self.env:
-            self.skipTest("sports_federation_rosters not installed")
-        rival_roster = self.env["federation.roster"].create(
-            {
-                "team_id": self.rival_team.id,
-                "season_id": self.season.id,
-                "tournament_id": self.tournament.id,
-            }
-        )
-        visible = (
-            self.env["federation.roster"]
-            .with_user(self.portal_user)
-            .search([("id", "=", rival_roster.id)])
-        )
-        self.assertFalse(visible)
-
-    # -----------------------------------------------------------------------
-    # Step 4 – Referee duty nomination
-    # -----------------------------------------------------------------------
-
-    def test_portal_user_can_nominate_player_for_open_duty(self):
-        """Portal user can nominate a player from their club for an open duty."""
-        if "federation.match.club.referee.duty" not in self.env:
-            self.skipTest("sports_federation_officiating not installed")
-        duty = self.env["federation.match.club.referee.duty"].create(
-            {
-                "match_id": self.match.id,
-                "club_id": self.club.id,
-                "role": "table",
-                "state": "open",
-            }
-        )
-        duty.with_user(self.portal_user).action_nominate(self.player.id)
-        self.assertEqual(duty.state, "nominated")
-        self.assertEqual(duty.nominated_player_id, self.player)
-
-    def test_portal_user_cannot_nominate_player_from_wrong_club(self):
-        """Portal user cannot nominate a player from a different club."""
-        if "federation.match.club.referee.duty" not in self.env:
-            self.skipTest("sports_federation_officiating not installed")
-        duty = self.env["federation.match.club.referee.duty"].create(
-            {
-                "match_id": self.match.id,
-                "club_id": self.club.id,
-                "role": "assistant_1",
-                "state": "open",
-            }
-        )
-        with self.assertRaises(ValidationError):
-            duty.with_user(self.portal_user).action_nominate(self.rival_player.id)
-
-    def test_rival_user_cannot_see_own_clubs_duty(self):
-        """Rival club portal user cannot see duties that belong to our club."""
-        if "federation.match.club.referee.duty" not in self.env:
-            self.skipTest("sports_federation_officiating not installed")
-        duty = self.env["federation.match.club.referee.duty"].create(
-            {
-                "match_id": self.match.id,
-                "club_id": self.club.id,
-                "role": "fourth",
-                "state": "open",
-            }
-        )
-        visible = (
-            self.env["federation.match.club.referee.duty"]
-            .with_user(self.rival_user)
-            .search([("id", "=", duty.id)])
-        )
-        self.assertFalse(visible)
-
-    # -----------------------------------------------------------------------
-    # Step 5 – Result submission
-    # -----------------------------------------------------------------------
-
-    def test_portal_user_can_submit_match_result(self):
-        """Portal user submits a match result for a match involving their team."""
-        if "federation.match.result" not in self.env:
-            self.skipTest("sports_federation_result_control not installed")
-        result = (
-            self.env["federation.match.result"]
-            .with_user(self.portal_user)
-            .create(
-                {
-                    "match_id": self.match.id,
-                    "reporting_club_id": self.club.id,
-                    "home_score": 2,
-                    "away_score": 1,
-                }
-            )
-        )
-        result.with_user(self.portal_user).action_submit()
-        self.assertEqual(result.state, "pending_approval")
-
-    def test_rival_user_cannot_access_our_pending_result(self):
-        """Rival portal user cannot see results submitted by our club."""
-        if "federation.match.result" not in self.env:
-            self.skipTest("sports_federation_result_control not installed")
-        result = self.env["federation.match.result"].create(
-            {
-                "match_id": self.match.id,
-                "reporting_club_id": self.club.id,
-                "home_score": 3,
-                "away_score": 0,
-                "state": "pending_approval",
-            }
-        )
-        visible = (
-            self.env["federation.match.result"]
-            .with_user(self.rival_user)
-            .search([("id", "=", result.id)])
-        )
-        self.assertFalse(visible)
-
-    # -----------------------------------------------------------------------
-    # Step 6 – Count badge logic (direct ORM, not HTTP controller)
-    # -----------------------------------------------------------------------
-
-    def test_pending_duty_count_increments_for_own_club(self):
-        """Pending duties for a club increment when an open duty is created."""
-        if "federation.match.club.referee.duty" not in self.env:
-            self.skipTest("sports_federation_officiating not installed")
-
-        club_ids = [self.club.id]
-        before = (
-            self.env["federation.match.club.referee.duty"]
-            .sudo()
-            .search_count(
-                [("club_id", "in", club_ids), ("state", "in", ("open", "rejected"))]
-            )
-        )
-        duty = self.env["federation.match.club.referee.duty"].create(
-            {
-                "match_id": self.match.id,
-                "club_id": self.club.id,
-                "role": "table",
-                "state": "open",
-            }
-        )
-        after = (
-            self.env["federation.match.club.referee.duty"]
-            .sudo()
-            .search_count(
-                [("club_id", "in", club_ids), ("state", "in", ("open", "rejected"))]
-            )
-        )
-        self.assertEqual(after, before + 1)
-
-        # Confirming the duty removes it from pending count
-        duty.action_nominate(self.player.id)
-        duty.action_confirm()
-        confirmed = (
-            self.env["federation.match.club.referee.duty"]
-            .sudo()
-            .search_count(
-                [("club_id", "in", club_ids), ("state", "in", ("open", "rejected"))]
-            )
-        )
-        self.assertEqual(confirmed, before)
-
-    def test_pending_duty_count_excludes_rival_club(self):
-        """Open duties for our club are not visible to the rival club's scope."""
-        if "federation.match.club.referee.duty" not in self.env:
-            self.skipTest("sports_federation_officiating not installed")
-
-        self.env["federation.match.club.referee.duty"].create(
-            {
-                "match_id": self.match.id,
-                "club_id": self.club.id,
-                "role": "assistant_2",
-                "state": "open",
-            }
-        )
-        rival_club_ids = [self.other_club.id]
-        # Rival club's pending count does not include our duties
-        rival_pending = (
-            self.env["federation.match.club.referee.duty"]
-            .sudo()
-            .search(
-                [
-                    ("club_id", "in", rival_club_ids),
-                    ("state", "in", ("open", "rejected")),
-                ]
-            )
-            .mapped("club_id")
-        )
-        for club in rival_pending:
-            self.assertNotEqual(club.id, self.club.id)
-
-====================================================================================================
-FILE: sports_federation_portal/tests/test_tournament_registration.py
-====================================================================================================
-
-from odoo.exceptions import AccessError, ValidationError
-from odoo.tests.common import TransactionCase
-
-
-class TestTournamentRegistration(TransactionCase):
-    @classmethod
-    def setUpClass(cls):
-        """Set up shared test data for the test case."""
-        super().setUpClass()
-        cls.club = cls.env["federation.club"].create(
-            {
-                "name": "Portal Registration Club",
-                "code": "PRC",
-            }
-        )
-        cls.season = cls.env["federation.season"].create(
-            {
-                "name": "Portal Registration Season",
-                "code": "PRS",
-                "date_start": "2025-01-01",
-                "date_end": "2025-12-31",
-            }
-        )
-        cls.portal_group = cls.env.ref(
-            "sports_federation_portal.group_federation_portal_club"
-        )
-        cls.role_type = cls.env.ref(
-            "sports_federation_portal.role_type_competition_contact"
-        )
-        cls.eligible_team = cls.env["federation.team"].create(
-            {
-                "name": "Eligible Portal Team",
-                "club_id": cls.club.id,
-                "code": "EPT",
-                "category": "senior",
-                "gender": "male",
-            }
-        )
-        cls.other_club = cls.env["federation.club"].create(
-            {
-                "name": "Other Portal Registration Club",
-                "code": "OPRC",
-            }
-        )
-        cls.other_team = cls.env["federation.team"].create(
-            {
-                "name": "Other Eligible Portal Team",
-                "club_id": cls.other_club.id,
-                "code": "OEPT",
-                "category": "senior",
-                "gender": "male",
-            }
-        )
-        cls.ineligible_team = cls.env["federation.team"].create(
-            {
-                "name": "Ineligible Portal Team",
-                "club_id": cls.club.id,
-                "code": "IPT",
-                "category": "senior",
-                "gender": "female",
-            }
-        )
-        cls.tournament = cls.env["federation.tournament"].create(
-            {
-                "name": "Portal Tournament",
-                "code": "PT",
-                "season_id": cls.season.id,
-                "date_start": "2025-06-01",
-                "gender": "male",
-                "category": "senior",
-            }
-        )
-        cls.user_a = (
-            cls.env["res.users"]
-            .with_context(no_reset_password=True)
-            .create(
-                {
-                    "name": "Portal Registration User A",
-                    "login": "portal.registration.a@example.com",
-                    "email": "portal.registration.a@example.com",
-                    "group_ids": [(6, 0, [cls.portal_group.id])],
-                }
-            )
-        )
-        cls.user_b = (
-            cls.env["res.users"]
-            .with_context(no_reset_password=True)
-            .create(
-                {
-                    "name": "Portal Registration User B",
-                    "login": "portal.registration.b@example.com",
-                    "email": "portal.registration.b@example.com",
-                    "group_ids": [(6, 0, [cls.portal_group.id])],
-                }
-            )
-        )
-        cls.env["federation.club.representative"].create(
-            {
-                "club_id": cls.club.id,
-                "partner_id": cls.user_a.partner_id.id,
-                "user_id": cls.user_a.id,
-                "role_type_id": cls.role_type.id,
-            }
-        )
-        cls.env["federation.club.representative"].create(
-            {
-                "club_id": cls.other_club.id,
-                "partner_id": cls.user_b.partner_id.id,
-                "user_id": cls.user_b.id,
-                "role_type_id": cls.role_type.id,
-            }
-        )
-
-    def test_registration_accepts_eligible_team(self):
-        """Test that registration accepts eligible team."""
-        registration = self.env["federation.tournament.registration"].create(
-            {
-                "tournament_id": self.tournament.id,
-                "team_id": self.eligible_team.id,
-            }
-        )
-        self.assertEqual(registration.team_id, self.eligible_team)
-
-    def test_registration_rejects_ineligible_team(self):
-        """Test that registration rejects ineligible team."""
-        with self.assertRaises(ValidationError):
-            self.env["federation.tournament.registration"].create(
-                {
-                    "tournament_id": self.tournament.id,
-                    "team_id": self.ineligible_team.id,
-                }
-            )
-
-    def test_registration_backend_domain_uses_eligible_teams(self):
-        """Test that registration backend domain uses eligible teams."""
-        registration = self.env["federation.tournament.registration"].new(
-            {
-                "tournament_id": self.tournament.id,
-            }
-        )
-        registration._compute_team_selection()
-
-        eligible_team_ids = registration.eligible_team_ids._origin.ids
-        self.assertIn(self.eligible_team.id, eligible_team_ids)
-        self.assertNotIn(self.ineligible_team.id, eligible_team_ids)
-
-        available_team_ids = registration.available_team_ids._origin.ids
-        self.assertIn(self.eligible_team.id, available_team_ids)
-        self.assertNotIn(self.ineligible_team.id, available_team_ids)
-        self.assertIn(
-            "Ineligible Portal Team", registration.excluded_team_feedback_html
-        )
-
-    def test_registration_backend_feedback_explains_duplicate_team(self):
-        """Test that registration backend feedback explains duplicate team."""
-        self.env["federation.tournament.registration"].create(
-            {
-                "tournament_id": self.tournament.id,
-                "team_id": self.eligible_team.id,
-                "state": "submitted",
-            }
-        )
-
-        registration = self.env["federation.tournament.registration"].new(
-            {
-                "tournament_id": self.tournament.id,
-            }
-        )
-        registration._compute_team_selection()
-
-        self.assertNotIn(
-            self.eligible_team.id, registration.available_team_ids._origin.ids
-        )
-        self.assertIn(
-            "Already registered or currently awaiting review.",
-            registration.excluded_team_feedback_html,
-        )
-
-    def test_portal_user_only_sees_own_tournament_registrations(self):
-        """Test that portal user only sees own tournament registrations."""
-        own_registration = (
-            self.env["federation.tournament.registration"]
-            .with_user(self.user_a)
-            .create(
-                {
-                    "tournament_id": self.tournament.id,
-                    "team_id": self.eligible_team.id,
-                }
-            )
-        )
-        other_registration = (
-            self.env["federation.tournament.registration"]
-            .with_user(self.user_b)
-            .create(
-                {
-                    "tournament_id": self.tournament.id,
-                    "team_id": self.other_team.id,
-                }
-            )
-        )
-
-        visible_to_user_a = (
-            self.env["federation.tournament.registration"]
-            .with_user(self.user_a)
-            .search([])
-        )
-        self.assertIn(own_registration, visible_to_user_a)
-        self.assertNotIn(other_registration, visible_to_user_a)
-
-        with self.assertRaises(AccessError):
-            other_registration.with_user(self.user_a).write({"notes": "Not allowed"})
-
-    def test_tournament_action_view_registration_requests(self):
-        """Test that tournament action view registration requests."""
-        other_tournament = self.env["federation.tournament"].create(
-            {
-                "name": "Other Portal Tournament",
-                "code": "OPT",
-                "season_id": self.season.id,
-                "date_start": "2025-07-01",
-                "gender": "male",
-                "category": "senior",
-            }
-        )
-        self.env["federation.tournament.registration"].create(
-            {
-                "tournament_id": self.tournament.id,
-                "team_id": self.eligible_team.id,
-            }
-        )
-        self.env["federation.tournament.registration"].create(
-            {
-                "tournament_id": other_tournament.id,
-                "team_id": self.other_team.id,
-            }
-        )
-
-        self.assertEqual(self.tournament.registration_request_count, 1)
-
-        action = self.tournament.action_view_registration_requests()
-
-        self.assertEqual(
-            action["res_model"],
-            "federation.tournament.registration",
-        )
-        self.assertEqual(action["domain"], [("tournament_id", "=", self.tournament.id)])
-        self.assertEqual(
-            action["context"], {"default_tournament_id": self.tournament.id}
-        )
-
-    def test_portal_submit_registration_request_creates_submitted_request(self):
-        """Service helper should create and submit a portal tournament request."""
-        self.tournament.state = "open"
-
-        registration = self.env[
-            "federation.tournament.registration"
-        ]._portal_submit_registration_request(
-            self.tournament,
-            self.eligible_team,
-            notes="Submitted through the portal helper.",
-            user=self.user_a,
-        )
-
-        self.assertEqual(registration.state, "submitted")
-        self.assertEqual(registration.create_uid, self.user_a)
-        self.assertEqual(registration.notes, "Submitted through the portal helper.")
-
-    def test_portal_submit_registration_request_blocks_full_tournament(self):
-        """Service helper should count non-withdrawn participants toward capacity."""
-        self.tournament.write({"state": "open", "max_participants": 1})
-        self.env["federation.tournament.participant"].create(
-            {
-                "tournament_id": self.tournament.id,
-                "team_id": self.other_team.id,
-                "state": "registered",
-            }
-        )
-
-        with self.assertRaises(ValidationError):
-            self.env[
-                "federation.tournament.registration"
-            ]._portal_submit_registration_request(
-                self.tournament,
-                self.eligible_team,
-                user=self.user_a,
-            )
-
-    def test_return_requires_reason_and_can_be_resubmitted(self):
-        registration = self.env["federation.tournament.registration"].create(
-            {"tournament_id": self.tournament.id, "team_id": self.eligible_team.id}
-        )
-        registration.action_submit()
-        with self.assertRaises(ValidationError):
-            registration.action_return()
-        registration.action_return("Please correct the team contact details.")
-        self.assertEqual(registration.state, "returned")
-        self.assertTrue(registration.reviewed_by_id)
-        self.assertTrue(registration.reviewed_on)
-        registration.action_submit()
-        self.assertEqual(registration.state, "submitted")
-
-    def test_reject_requires_reason(self):
-        registration = self.env["federation.tournament.registration"].create(
-            {"tournament_id": self.tournament.id, "team_id": self.eligible_team.id}
-        )
-        registration.action_submit()
-        with self.assertRaises(ValidationError):
-            registration.action_reject()
-        registration.action_reject("Tournament eligibility was not met.")
-        self.assertEqual(registration.state, "rejected")
-        self.assertEqual(
-            registration.rejection_reason, "Tournament eligibility was not met."
-        )
-
-    def test_confirmation_is_idempotent(self):
-        registration = self.env["federation.tournament.registration"].create(
-            {"tournament_id": self.tournament.id, "team_id": self.eligible_team.id}
-        )
-        registration.action_submit()
-        registration.action_confirm()
-        participant = registration.participant_id
-        registration.action_confirm()
-        self.assertEqual(registration.participant_id, participant)
-        self.assertEqual(
-            self.env["federation.tournament.participant"].search_count(
-                [
-                    ("tournament_id", "=", self.tournament.id),
-                    ("team_id", "=", self.eligible_team.id),
-                ]
-            ),
-            1,
-        )
-
-====================================================================================================
 FILE: sports_federation_portal/views/federation_club_representative_portal_views.xml
 ====================================================================================================
 
@@ -63566,146 +62537,6 @@ FILE: sports_federation_portal/views/federation_season_registration_views.xml
 </odoo>
 
 ====================================================================================================
-FILE: sports_federation_portal/views/federation_tournament_registration_views.xml
-====================================================================================================
-
-<?xml version="1.0" encoding="utf-8"?>
-<odoo>
-
-    <!-- List view -->
-    <record id="view_federation_tournament_registration_list" model="ir.ui.view">
-        <field name="name">federation.tournament.registration.list</field>
-        <field name="model">federation.tournament.registration</field>
-        <field name="arch" type="xml">
-            <list>
-                <field name="name"/>
-                <field name="tournament_id"/>
-                <field name="team_id"/>
-                <field name="club_id"/>
-                <field name="user_id"/>
-                <field name="registration_date"/>
-                <field name="state" widget="badge"
-                       decoration-success="state == 'confirmed'"
-                       decoration-warning="state in ('submitted', 'returned')"
-                       decoration-danger="state == 'rejected'"
-                       decoration-info="state == 'draft'"/>
-            </list>
-        </field>
-    </record>
-
-    <!-- Form view -->
-    <record id="view_federation_tournament_registration_form" model="ir.ui.view">
-        <field name="name">federation.tournament.registration.form</field>
-        <field name="model">federation.tournament.registration</field>
-        <field name="arch" type="xml">
-            <form string="Tournament Registration">
-                <header>
-                    <button name="action_submit" string="Submit" type="object"
-                            class="btn-primary"
-                            invisible="state != 'draft'"/>
-                    <button name="action_confirm" string="Confirm" type="object"
-                            class="btn-success"
-                            invisible="state != 'submitted'"/>
-                    <button name="action_return" string="Return for Correction" type="object"
-                            class="btn-warning"
-                            invisible="state != 'submitted'"/>
-                    <button name="action_reject" string="Reject" type="object"
-                            class="btn-danger"
-                            invisible="state != 'submitted'"/>
-                    <button name="action_cancel" string="Cancel" type="object"
-                            class="btn-warning"
-                            invisible="state in ('confirmed', 'cancelled')"/>
-                    <button name="action_reset_draft" string="Reset to Draft" type="object"
-                            invisible="state not in ('rejected', 'cancelled')"/>
-                    <field name="state" widget="statusbar"
-                           statusbar_visible="draft,submitted,returned,confirmed"/>
-                </header>
-                <sheet>
-                    <div class="oe_button_box" name="button_box">
-                        <button name="action_view_participant"
-                                type="object" class="oe_stat_button"
-                                icon="fa-users"
-                                invisible="not participant_id">
-                            <field name="participant_id" string="Participant" widget="statinfo"/>
-                        </button>
-                    </div>
-                    <div class="oe_title">
-                        <label for="name"/>
-                        <h1><field name="name"/></h1>
-                    </div>
-                    <group>
-                        <group>
-                            <field name="tournament_id"/>
-                            <field name="eligible_team_ids" invisible="1"/>
-                            <field name="available_team_ids" invisible="1"/>
-                            <field name="team_id" domain="[('id', 'in', available_team_ids)]"/>
-                            <field name="excluded_team_feedback_html"
-                                   widget="html"
-                                   nolabel="1"
-                                   readonly="1"
-                                   invisible="not excluded_team_feedback_html"/>
-                            <field name="club_id"/>
-                            <field name="season_id"/>
-                        </group>
-                        <group>
-                            <field name="registration_date"/>
-                            <field name="user_id"/>
-                            <field name="partner_id"/>
-                            <field name="participant_id"
-                                   invisible="not participant_id"/>
-                        </group>
-                    </group>
-                    <group>
-                        <field name="notes"/>
-                        <field name="decision_reason"
-                               placeholder="Required before returning or rejecting a submitted registration"
-                               invisible="state not in ('submitted', 'returned', 'rejected')"/>
-                        <field name="rejection_reason"
-                               invisible="state != 'rejected'"/>
-                    </group>
-                </sheet>
-                <chatter/>
-            </form>
-        </field>
-    </record>
-
-    <!-- Search view -->
-    <record id="view_federation_tournament_registration_search" model="ir.ui.view">
-        <field name="name">federation.tournament.registration.search</field>
-        <field name="model">federation.tournament.registration</field>
-        <field name="arch" type="xml">
-            <search string="Tournament Registrations">
-                <field name="name"/>
-                <field name="tournament_id"/>
-                <field name="team_id"/>
-                <field name="club_id"/>
-                <field name="user_id"/>
-                <filter name="filter_draft" string="Draft" domain="[('state', '=', 'draft')]"/>
-                <filter name="filter_submitted" string="Submitted" domain="[('state', '=', 'submitted')]"/>
-                <filter name="filter_returned" string="Returned" domain="[('state', '=', 'returned')]"/>
-                <filter name="filter_confirmed" string="Confirmed" domain="[('state', '=', 'confirmed')]"/>
-                <filter name="filter_rejected" string="Rejected" domain="[('state', '=', 'rejected')]"/>
-                <separator/>
-                <group>
-                    <filter name="group_tournament" string="Tournament" context="{'group_by': 'tournament_id'}"/>
-                    <filter name="group_club" string="Club" context="{'group_by': 'club_id'}"/>
-                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
-                </group>
-            </search>
-        </field>
-    </record>
-
-    <!-- Action -->
-    <record id="action_federation_tournament_registration" model="ir.actions.act_window">
-        <field name="name">Tournament Registrations</field>
-        <field name="res_model">federation.tournament.registration</field>
-        <field name="view_mode">list,form</field>
-        <field name="search_view_id" ref="view_federation_tournament_registration_search"/>
-    </record>
-
-</odoo>
-
-====================================================================================================
 FILE: sports_federation_portal/views/federation_tournament_views.xml
 ====================================================================================================
 
@@ -63758,12 +62589,6 @@ FILE: sports_federation_portal/views/menu_items.xml
               parent="sports_federation_base.menu_federation_administration"
               action="action_federation_club_representative"
               sequence="40"/>
-
-    <menuitem id="menu_federation_tournament_registration_competition"
-              name="Tournament Registrations"
-              parent="sports_federation_base.menu_federation_planning"
-              action="action_federation_tournament_registration"
-              sequence="15"/>
 
     <menuitem id="menu_federation_operation_task"
               name="Operational Action Queue"
@@ -66522,12 +65347,6 @@ FILE: sports_federation_portal/views/website_menus.xml
               parent="sports_federation_base.menu_federation_root"
               sequence="50"/>
 
-    <menuitem id="menu_federation_tournament_registration"
-              name="Team Registrations"
-              parent="sports_federation_base.menu_federation_competitions"
-              action="action_federation_tournament_registration"
-              sequence="30"/>
-
     <menuitem id="menu_federation_club_representative_portal"
               name="Representatives &amp; Access"
               parent="menu_federation_portal_root"
@@ -66651,7 +65470,7 @@ Canonical public routes:
 | `GET /api/v1/tournaments/<slug>/feed` | public | Stable v1 JSON tournament feed |
 | `GET /teams/<slug>` | public | Public team profile page |
 | `GET /tournaments/<slug>/register` | user | Website registration form |
-| `POST /tournaments/<slug>/register` | user | Website registration submission via `federation.tournament.registration._portal_submit_registration_request()` |
+| `POST /tournaments/<slug>/register` | user | Website registration submission via `federation.competition.entry._portal_submit_entry()` |
 
 Compatibility routes remain available for older links, including `/competitions`,
 `/competitions/archive`, numeric `/tournament/<id>` paths, numeric register/feed
@@ -66714,7 +65533,7 @@ FILE: sports_federation_public_site/__manifest__.py
 
 {
     "name": "Sports Federation Public Site",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.3.0",
     "category": "Sports",
     "summary": "Public tournament coverage integrated into the website tournament hub",
     "description": "Public website pages for tournament coverage, standings, results, schedules, and federation events.",
@@ -67389,16 +66208,16 @@ class PublicTournamentHubController(
                 "sports_federation_public_site.page_tournament_register", values
             )
 
-        existing = (
-            request.env["federation.tournament.registration"]
-            .sudo()
-            .search(
-                [
-                    ("tournament_id", "=", tournament.id),
-                    ("team_id.club_id", "in", clubs.ids),
-                    ("state", "!=", "cancelled"),
-                ]
-            )
+        Entry = request.env["federation.competition.entry"]
+        window = Entry._portal_open_window_for_division(tournament)
+        if not window:
+            return request.redirect("/tournaments")
+        existing = Entry.sudo().search(
+            [
+                ("window_id", "=", window.id),
+                ("team_id.club_id", "in", clubs.ids),
+                ("state", "!=", "withdrawn"),
+            ]
         )
         blocked_reason_by_team_id = {
             team.id: "Already registered or currently awaiting review."
@@ -67477,15 +66296,9 @@ class PublicTournamentHubController(
                 "Invalid team selection",
             )
 
-        Registration = request.env["federation.tournament.registration"]
-        if not hasattr(Registration, "_portal_submit_registration_request"):
-            return self._redirect_with_error(
-                tournament.get_public_register_path(),
-                "Online registration is not available at this time.",
-            )
-
+        Entry = request.env["federation.competition.entry"]
         try:
-            Registration._portal_submit_registration_request(
+            Entry._portal_submit_entry(
                 tournament,
                 request.env["federation.team"].sudo().browse(team_id),
                 notes=notes,
@@ -70503,6 +69316,30 @@ class TestPublicSiteHttpSmoke(HttpCase):
                     "state": "registered",
                 }
             )
+            competition = env["federation.competition"].create(
+                {"name": "Public Registration Competition", "code": "PRCOMP"}
+            )
+            edition = env["federation.competition.edition"].create(
+                {
+                    "name": "Public Registration 2026",
+                    "competition_id": competition.id,
+                    "season_id": season.id,
+                }
+            )
+            for division, window_name in (
+                (tournament, "Public Registration Window"),
+                (unpublished_tournament, "Hidden Registration Window"),
+                (full_tournament, "Full Capacity Window"),
+            ):
+                division.write({"edition_id": edition.id})
+                env["federation.registration.window"].create(
+                    {
+                        "name": window_name,
+                        "edition_id": edition.id,
+                        "division_id": division.id,
+                        "state": "open",
+                    }
+                )
             cr.commit()
 
         cls.portal_club_group = cls.env.ref(
@@ -70611,9 +69448,9 @@ class TestPublicSiteHttpSmoke(HttpCase):
     def test_unpublished_tournament_register_routes_fail_closed(self):
         self.authenticate(self.club_user.login, "ignored")
 
-        Registration = self.env["federation.tournament.registration"].sudo()
-        before_count = Registration.search_count(
-            [("tournament_id", "=", self.unpublished_tournament.id)]
+        Entry = self.env["federation.competition.entry"].sudo()
+        before_count = Entry.search_count(
+            [("window_id.division_id", "=", self.unpublished_tournament.id)]
         )
 
         for path in (
@@ -70634,8 +69471,8 @@ class TestPublicSiteHttpSmoke(HttpCase):
                 submit_response.headers["Location"].endswith("/tournaments")
             )
 
-        after_count = Registration.search_count(
-            [("tournament_id", "=", self.unpublished_tournament.id)]
+        after_count = Entry.search_count(
+            [("window_id.division_id", "=", self.unpublished_tournament.id)]
         )
         self.assertEqual(after_count, before_count)
 
@@ -74567,7 +73404,7 @@ FILE: sports_federation_registration/__manifest__.py
 
 {
     "name": "Competition Registration",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "category": "Sports",
     "summary": "Role-separated registration desk and finalized participant sets",
     "author": "Sports Federation",
@@ -74707,6 +73544,11 @@ class FederationCompetitionEntry(models.Model):
         index=True,
     )
     review_note = fields.Text()
+    submission_note = fields.Text()
+    submitted_by_id = fields.Many2one("res.users", readonly=True, copy=False)
+    submitted_on = fields.Datetime(readonly=True, copy=False)
+    reviewed_by_id = fields.Many2one("res.users", readonly=True, copy=False)
+    reviewed_on = fields.Datetime(readonly=True, copy=False)
     _unique_team = models.Constraint(
         "unique(window_id,team_id)", "A team can enter a registration window only once."
     )
@@ -74780,7 +73622,18 @@ class FederationCompetitionEntry(models.Model):
                 raise ValidationError(error)
 
     def action_submit(self):
-        self.write({"state": "submitted"})
+        invalid = self.filtered(lambda entry: entry.state not in ("draft", "rejected"))
+        if invalid:
+            raise ValidationError(_("Only draft or rejected entries can be submitted."))
+        self.write(
+            {
+                "state": "submitted",
+                "submitted_by_id": self.env.user.id,
+                "submitted_on": fields.Datetime.now(),
+                "reviewed_by_id": False,
+                "reviewed_on": False,
+            }
+        )
         return True
 
     def action_approve(self):
@@ -74789,11 +73642,43 @@ class FederationCompetitionEntry(models.Model):
         ].assert_role(
             self[:1].edition_id, "registration_manager", "competition_director"
         )
-        self.write({"state": "approved"})
+        self.write(
+            {
+                "state": "approved",
+                "reviewed_by_id": self.env.user.id,
+                "reviewed_on": fields.Datetime.now(),
+            }
+        )
         return True
 
-    def action_reject(self):
-        self.write({"state": "rejected"})
+    def action_return(self, reason):
+        if not reason or not reason.strip():
+            raise ValidationError(_("A review reason is required."))
+        self.write(
+            {
+                "state": "draft",
+                "review_note": reason.strip(),
+                "reviewed_by_id": self.env.user.id,
+                "reviewed_on": fields.Datetime.now(),
+            }
+        )
+        return True
+
+    def action_reject(self, reason=False):
+        self.write(
+            {
+                "state": "rejected",
+                "review_note": reason.strip() if reason else self.review_note,
+                "reviewed_by_id": self.env.user.id,
+                "reviewed_on": fields.Datetime.now(),
+            }
+        )
+        return True
+
+    def action_withdraw(self):
+        if self.filtered(lambda entry: entry.state == "approved"):
+            raise ValidationError(_("Approved entries cannot be withdrawn directly."))
+        self.write({"state": "withdrawn"})
         return True
 
 
@@ -75520,7 +74405,7 @@ FILE: sports_federation_reporting/__manifest__.py
 
 {
     "name": "Sports Federation Reporting",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.3.0",
     "category": "Sports",
     "summary": "Reporting models for federation data",
     "description": "Reporting models and dashboards for participation, officiating, compliance, and finance.",
@@ -77893,9 +76778,11 @@ class FederationReportSeasonChecklist(models.Model):
                         t.season_id,
                         COUNT(*) FILTER (WHERE reg.state = 'draft') AS draft_tournament_registration_count,
                         COUNT(*) FILTER (WHERE reg.state = 'submitted') AS submitted_tournament_registration_count
-                    FROM federation_tournament_registration reg
-                    JOIN federation_tournament t ON t.id = reg.tournament_id
-                    GROUP BY t.season_id
+                    FROM federation_competition_entry reg
+                    JOIN federation_registration_window win ON win.id = reg.window_id
+                    JOIN federation_competition_edition edition ON edition.id = win.edition_id
+                    JOIN federation_season t ON t.id = edition.season_id
+                    GROUP BY t.id
                 ),
                 -- block: tournament_stats
                 tournament_stats AS (
@@ -77964,10 +76851,10 @@ class FederationReportSeasonChecklist(models.Model):
                     END AS checklist_status,
                     CASE
                         WHEN COALESCE(srs.submitted_season_registration_count, 0) > 0 THEN 'Season registrations are waiting for staff review.'
-                        WHEN COALESCE(trs.submitted_tournament_registration_count, 0) > 0 THEN 'Tournament registrations are waiting for staff review.'
+                        WHEN COALESCE(trs.submitted_tournament_registration_count, 0) > 0 THEN 'Competition entries are waiting for staff review.'
                         WHEN COALESCE(ws.workflow_exception_count, 0) > 0 THEN 'Workflow exceptions must be cleared before seasonal operations are considered healthy.'
                         WHEN COALESCE(srs.draft_season_registration_count, 0) > 0 THEN 'Draft season registrations still need operator follow-up.'
-                        WHEN COALESCE(trs.draft_tournament_registration_count, 0) > 0 THEN 'Draft tournament registrations still need operator follow-up.'
+                        WHEN COALESCE(trs.draft_tournament_registration_count, 0) > 0 THEN 'Draft competition entries still need operator follow-up.'
                         WHEN COALESCE(ts.live_tournament_count, 0) > 0 AND COALESCE(ts.unpublished_tournament_count, 0) > 0 THEN 'Some live tournaments are not yet published on the public site.'
                         ELSE 'Season operations checklist is currently clear.'
                     END AS checklist_note
@@ -80012,14 +78899,6 @@ class TestOperationalReporting(TransactionCase):
                 "name": "Ops Team D",
                 "club_id": cls.club.id,
                 "code": "OPSD",
-            }
-        )
-        cls.tournament_registration = cls.env[
-            "federation.tournament.registration"
-        ].create(
-            {
-                "tournament_id": cls.tournament.id,
-                "team_id": cls.team_d.id,
             }
         )
 

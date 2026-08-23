@@ -66,14 +66,13 @@ class FederationReportSeasonChecklist(models.Model):
                 -- block: tournament_registration_stats
                 tournament_registration_stats AS (
                     SELECT
-                        t.season_id,
+                        edition.season_id,
                         COUNT(*) FILTER (WHERE reg.state = 'draft') AS draft_tournament_registration_count,
                         COUNT(*) FILTER (WHERE reg.state = 'submitted') AS submitted_tournament_registration_count
                     FROM federation_competition_entry reg
                     JOIN federation_registration_window win ON win.id = reg.window_id
                     JOIN federation_competition_edition edition ON edition.id = win.edition_id
-                    JOIN federation_season t ON t.id = edition.season_id
-                    GROUP BY t.id
+                    GROUP BY edition.season_id
                 ),
                 -- block: tournament_stats
                 tournament_stats AS (
