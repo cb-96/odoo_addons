@@ -109,7 +109,7 @@ Canonical public routes:
 | `GET /api/v1/tournaments/<slug>/feed` | public | Stable v1 JSON tournament feed |
 | `GET /teams/<slug>` | public | Public team profile page |
 | `GET /tournaments/<slug>/register` | user | Website registration form |
-| `POST /tournaments/<slug>/register` | user | Website registration submission via `federation.tournament.registration._portal_submit_registration_request()` |
+| `POST /tournaments/<slug>/register` | user | Website registration submission via `federation.competition.entry._portal_submit_entry()` |
 
 Compatibility routes remain available for older links, including `/competitions`,
 `/competitions/archive`, numeric `/tournament/<id>` paths, numeric register/feed

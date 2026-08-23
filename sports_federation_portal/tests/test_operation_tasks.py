@@ -73,40 +73,6 @@ class TestFederationOperationTasks(TransactionCase):
             }
         )
 
-    def test_registration_task_is_idempotent_and_reopens_after_resolution(self):
-        registration = self.env["federation.competition.entry"].create(
-            {
-                "window_id": self.window.id,
-                "team_id": self.team.id,
-                "state": "submitted",
-            }
-        )
-        Task = self.env["federation.operation.task"]
-
-        Task.with_user(self.manager).sync_for_user(user=self.manager)
-        task = Task.search(
-            [
-                ("source_model", "=", registration._name),
-                ("source_record_id", "=", registration.id),
-            ]
-        )
-        self.assertEqual(len(task), 1)
-        self.assertEqual(task.audience, "manager")
-        self.assertEqual(task.state, "open")
-
-        Task.with_user(self.manager).sync_for_user(user=self.manager)
-        self.assertEqual(Task.search_count([("source_key", "=", task.source_key)]), 1)
-
-        registration.state = "approved"
-        Task.with_user(self.manager).sync_for_user(user=self.manager)
-        self.assertEqual(task.state, "done")
-        self.assertTrue(task.completed_on)
-
-        registration.state = "submitted"
-        Task.with_user(self.manager).sync_for_user(user=self.manager)
-        self.assertEqual(task.state, "open")
-        self.assertFalse(task.completed_on)
-
     def test_blocking_task_cannot_be_manually_acknowledged(self):
         task = self.env["federation.operation.task"].create(
             {

@@ -31,28 +31,6 @@ class FederationTournament(models.Model):
         )
 
 
-class FederationTournamentRegistration(models.Model):
-    _name = "federation.tournament.registration"
-    _inherit = [
-        "federation.tournament.registration",
-        "federation.portal.label.mixin",
-    ]
-
-    _PORTAL_TOURNAMENT_REGISTRATION_STATE_LABELS = {
-        "draft": "Draft",
-        "submitted": "Awaiting federation review",
-        "confirmed": "Confirmed",
-        "rejected": "Not accepted",
-        "cancelled": "Cancelled",
-    }
-
-    def get_portal_state_label(self):
-        self.ensure_one()
-        return self._PORTAL_TOURNAMENT_REGISTRATION_STATE_LABELS.get(
-            self.state, self._portal_label_from_selection("state")
-        )
-
-
 class FederationSeasonRegistration(models.Model):
     _name = "federation.season.registration"
     _inherit = ["federation.season.registration", "federation.portal.label.mixin"]

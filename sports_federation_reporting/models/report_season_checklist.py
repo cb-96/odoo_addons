@@ -69,9 +69,11 @@ class FederationReportSeasonChecklist(models.Model):
                         t.season_id,
                         COUNT(*) FILTER (WHERE reg.state = 'draft') AS draft_tournament_registration_count,
                         COUNT(*) FILTER (WHERE reg.state = 'submitted') AS submitted_tournament_registration_count
-                    FROM federation_tournament_registration reg
-                    JOIN federation_tournament t ON t.id = reg.tournament_id
-                    GROUP BY t.season_id
+                    FROM federation_competition_entry reg
+                    JOIN federation_registration_window win ON win.id = reg.window_id
+                    JOIN federation_competition_edition edition ON edition.id = win.edition_id
+                    JOIN federation_season t ON t.id = edition.season_id
+                    GROUP BY t.id
                 ),
                 -- block: tournament_stats
                 tournament_stats AS (
@@ -140,10 +142,10 @@ class FederationReportSeasonChecklist(models.Model):
                     END AS checklist_status,
                     CASE
                         WHEN COALESCE(srs.submitted_season_registration_count, 0) > 0 THEN 'Season registrations are waiting for staff review.'
-                        WHEN COALESCE(trs.submitted_tournament_registration_count, 0) > 0 THEN 'Tournament registrations are waiting for staff review.'
+                        WHEN COALESCE(trs.submitted_tournament_registration_count, 0) > 0 THEN 'Competition entries are waiting for staff review.'
                         WHEN COALESCE(ws.workflow_exception_count, 0) > 0 THEN 'Workflow exceptions must be cleared before seasonal operations are considered healthy.'
                         WHEN COALESCE(srs.draft_season_registration_count, 0) > 0 THEN 'Draft season registrations still need operator follow-up.'
-                        WHEN COALESCE(trs.draft_tournament_registration_count, 0) > 0 THEN 'Draft tournament registrations still need operator follow-up.'
+                        WHEN COALESCE(trs.draft_tournament_registration_count, 0) > 0 THEN 'Draft competition entries still need operator follow-up.'
                         WHEN COALESCE(ts.live_tournament_count, 0) > 0 AND COALESCE(ts.unpublished_tournament_count, 0) > 0 THEN 'Some live tournaments are not yet published on the public site.'
                         ELSE 'Season operations checklist is currently clear.'
                     END AS checklist_note

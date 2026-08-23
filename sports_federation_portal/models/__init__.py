@@ -5,7 +5,6 @@ from . import federation_club
 from . import federation_team
 from . import res_partner
 from . import res_users
-from . import federation_tournament_registration
 from . import federation_season_registration
 from . import federation_referee
 from . import federation_match_referee
@@ -15,3 +14,4 @@ from . import federation_player
 from . import portal_status_labels
 from . import operation_task
 from . import portal_v2_queries
+from . import federation_competition_entry

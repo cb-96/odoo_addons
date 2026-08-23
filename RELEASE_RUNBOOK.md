@@ -497,3 +497,15 @@ python ci/check_v2_officiating_contract.py
 Verify that the standalone-match count is zero, create officials through a
 current live match-day publication, and confirm that the official self-service
 portal shows current assignments plus retained V2 history.
+
+## V2 competition-entry cutover 19.0.5.0.0
+
+Upgrade registration, portal, public site and reporting together after a verified
+backup. The portal migration permanently drops the test-only V1 tournament
+registration table.
+
+```bash
+odoo-bin -d RC_DATABASE -u sports_federation_registration,sports_federation_portal,sports_federation_public_site,sports_federation_reporting --stop-after-init
+python ci/check_v2_registration_contract.py
+python ci/check_access_csv_integrity.py
+```

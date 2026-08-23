@@ -51,19 +51,6 @@ class FederationRegistrationPortal(FederationPortalBase):
         )
 
     @http.route(
-        [
-            "/my/tournament-registrations",
-            "/my/tournament-registrations/page/<int:page>",
-        ],
-        type="http",
-        auth="user",
-        website=True,
-    )
-    def portal_my_tournament_registrations(self, page=1, **kw):
-        """Redirect the deprecated V1 registration queue to V2 entries."""
-        return self._redirect_with_query("/my/competition-entries")
-
-    @http.route(
         ["/my/season-registration/new"],
         type="http",
         auth="user",
@@ -148,30 +135,6 @@ class FederationRegistrationPortal(FederationPortalBase):
             "/my/season-registrations",
             success="Season registration submitted",
         )
-
-    @http.route(
-        ["/my/tournament-registration/<int:reg_id>/resubmit"],
-        type="http",
-        auth="user",
-        website=True,
-        methods=["POST"],
-        csrf=True,
-    )
-    def portal_tournament_registration_resubmit(self, reg_id, notes="", **kw):
-        """V1 endpoint retained only as a safe redirect."""
-        return self._redirect_with_query("/my/competition-entries")
-
-    @http.route(
-        ["/my/tournament-registration/<int:reg_id>/cancel"],
-        type="http",
-        auth="user",
-        website=True,
-        methods=["POST"],
-        csrf=True,
-    )
-    def portal_tournament_registration_cancel(self, reg_id, **kw):
-        """V1 endpoint retained only as a safe redirect."""
-        return self._redirect_with_query("/my/competition-entries")
 
     @http.route(
         ["/my/season-registration/<int:reg_id>/cancel"],

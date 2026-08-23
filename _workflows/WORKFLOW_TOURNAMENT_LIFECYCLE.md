@@ -89,7 +89,7 @@ Blocking vs warning-only model:
 
 1. Add **participants** to the tournament — each links a team to the tournament.
     - If the flow starts from portal registration requests, an administrator first
-       confirms the `federation.tournament.registration` record. That creates or links
+       confirms the `federation.competition.entry` record. That creates or links
        a `federation.tournament.participant` record in state `registered`.
     - That participant must still be moved to state `confirmed` before schedule
        generation can use it.

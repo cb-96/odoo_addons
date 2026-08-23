@@ -337,16 +337,16 @@ class PublicTournamentHubController(
                 "sports_federation_public_site.page_tournament_register", values
             )
 
-        existing = (
-            request.env["federation.tournament.registration"]
-            .sudo()
-            .search(
-                [
-                    ("tournament_id", "=", tournament.id),
-                    ("team_id.club_id", "in", clubs.ids),
-                    ("state", "!=", "cancelled"),
-                ]
-            )
+        Entry = request.env["federation.competition.entry"]
+        window = Entry._portal_open_window_for_division(tournament)
+        if not window:
+            return request.redirect("/tournaments")
+        existing = Entry.sudo().search(
+            [
+                ("window_id", "=", window.id),
+                ("team_id.club_id", "in", clubs.ids),
+                ("state", "!=", "withdrawn"),
+            ]
         )
         blocked_reason_by_team_id = {
             team.id: "Already registered or currently awaiting review."
@@ -425,15 +425,9 @@ class PublicTournamentHubController(
                 "Invalid team selection",
             )
 
-        Registration = request.env["federation.tournament.registration"]
-        if not hasattr(Registration, "_portal_submit_registration_request"):
-            return self._redirect_with_error(
-                tournament.get_public_register_path(),
-                "Online registration is not available at this time.",
-            )
-
+        Entry = request.env["federation.competition.entry"]
         try:
-            Registration._portal_submit_registration_request(
+            Entry._portal_submit_entry(
                 tournament,
                 request.env["federation.team"].sudo().browse(team_id),
                 notes=notes,

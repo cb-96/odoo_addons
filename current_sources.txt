@@ -5366,9 +5366,9 @@ FILE: RELEASE_RUNBOOK.md
 
 # Release Runbook
 
-Last updated: 2026-04-30
+Last updated: 2026-08-23
 Owner: Federation Platform Team
-Last reviewed: 2026-04-30
+Last reviewed: 2026-08-23
 Review cadence: Every release
 Release train: 2026.08
 
@@ -5418,6 +5418,34 @@ this runbook:
 # add the commands, outcomes, rollback triggers, and SQL/drop steps
 ${EDITOR:-vi} addons/RELEASE_RUNBOOK.md
 ```
+
+### Portal V2 controller-load repair evidence
+
+The portal V2 repair removes the stale re-export of the deleted V1 workspace
+controller, restores the tournament-registration view in the manifest data
+order, and keeps officiating assignment visibility limited to live current
+publications. No database migration is required; the portal manifest is bumped
+from `19.0.4.0.0` to `19.0.4.1.0`.
+
+Dry-run evidence captured on 2026-08-23:
+
+```text
+./scripts/upgrade_sports_federation.sh --db odoo --dry-run
+Exit code: 0
+Upgrade: sports_federation_base,...,sports_federation_portal,...,sports_federation_venues
+Install: none
+```
+
+Focused verification:
+
+```text
+bash ci/run_tests.sh --module sports_federation_portal
+Exit code: 0; 116 tests run, 116 passed, 0 failed, 0 errors; 30 post-tests
+```
+
+Rollback is the standard backup restore procedure in this runbook. Do not
+restore the deleted V1 controller or broaden portal publication access as a
+rollback workaround.
 
 If the release changes addon responsibility boundaries or adds a new
 `sports_federation_*` module, update `MODULE_OWNERS.yaml` in the same release
@@ -16587,119 +16615,6 @@ SELECT COUNT(*) FROM federation_match WHERE logical_fixture_id IS NULL;
 ```
 
 After upgrading, that count must be zero. A non-zero count should block release.
-
-====================================================================================================
-FILE: phase_0_completion.py
-====================================================================================================
-
-#!/usr/bin/env python3
-"""Complete Phase 0 maintenance on the current repository without patch contexts."""
-
-from pathlib import Path
-import json
-import re
-import subprocess
-import sys
-
-ROOT = Path.cwd()
-TODAY = "2026-08-23"
-
-
-def replace_once(path, old, new):
-    text = path.read_text(encoding="utf-8")
-    if old in text:
-        path.write_text(text.replace(old, new), encoding="utf-8")
-
-
-# Refresh reviewed metadata after an actual source review.
-for rel in (
-    "INTEGRATION_CONTRACTS.md",
-    "ROUTE_INVENTORY.md",
-    "DATA_RETENTION_POLICY.md",
-):
-    path = ROOT / rel
-    if path.is_file():
-        text = path.read_text(encoding="utf-8")
-        text = re.sub(
-            r"(?m)^Last reviewed: \d{4}-\d{2}-\d{2}$",
-            f"Last reviewed: {TODAY}",
-            text,
-            count=1,
-        )
-        path.write_text(text, encoding="utf-8")
-
-# Generated review output must not enter source bundles.
-collector = ROOT / "source_collector.py"
-if collector.is_file():
-    text = collector.read_text(encoding="utf-8")
-    if '"odoo_addons_code_review.txt"' not in text:
-        text = text.replace(
-            "    META_OUT.name,\n",
-            '    META_OUT.name,\n    "odoo_addons_code_review.txt",\n',
-            1,
-        )
-        collector.write_text(text, encoding="utf-8")
-
-# Remove the obsolete module ownership entry while preserving surrounding YAML.
-owners = ROOT / "MODULE_OWNERS.yaml"
-if owners.is_file():
-    lines = owners.read_text(encoding="utf-8").splitlines()
-    output = []
-    skip = False
-    for line in lines:
-        if line.startswith("  sports_federation_competition_engine:"):
-            skip = True
-            continue
-        if (
-            skip
-            and line.startswith("  sports_federation_")
-            and not line.startswith("    ")
-        ):
-            skip = False
-        if not skip:
-            output.append(line)
-    owners.write_text("\n".join(output) + "\n", encoding="utf-8")
-
-# Active docs may keep historical prose, but not runtime ownership claims for the removed addon.
-replacements = {
-    "README.md": {
-        "sports_federation_competition_engine": "sports_federation_format / sports_federation_scheduling",
-    },
-    "ROADMAP.md": {
-        "sports_federation_competition_engine": "the modular competition pipeline",
-        "Competition Workspace": "competition planning workflow",
-    },
-    "TECHNICAL_NOTE.md": {
-        "sports_federation_competition_engine": "the modular competition pipeline",
-        "Competition Workspace": "legacy planning workspace",
-        "competition_workspace": "legacy_planning_workspace",
-    },
-}
-for rel, mapping in replacements.items():
-    path = ROOT / rel
-    if not path.is_file():
-        continue
-    text = path.read_text(encoding="utf-8")
-    for old, new in mapping.items():
-        text = text.replace(old, new)
-    path.write_text(text, encoding="utf-8")
-
-# Regenerate formatting-sensitive privileged access inventory from source.
-subprocess.run(
-    [sys.executable, "ci/check_portal_sudo_guard.py", "--write-inventory"], check=True
-)
-
-checks = [
-    "ci/check_source_collector_contract.py",
-    "ci/check_addon_integrity.py",
-    "ci/check_workflow_state_contracts.py",
-    "ci/check_doc_freshness.py",
-    "ci/check_legacy_engine_removed.py",
-    "ci/check_portal_sudo_guard.py",
-]
-for check in checks:
-    subprocess.run([sys.executable, check], check=True)
-print("Phase 0 completion checks passed.")
 
 ====================================================================================================
 FILE: requirements.txt
@@ -47073,7 +46988,8 @@ access_federation_match_club_referee_duty_user,federation.match.club.referee.dut
 access_federation_match_club_referee_duty_manager,federation.match.club.referee.duty.manager,model_federation_match_club_referee_duty,sports_federation_base.group_federation_manager,1,1,1,1
 access_federation_match_club_referee_duty_portal,federation.match.club.referee.duty.portal,model_federation_match_club_referee_duty,base.group_portal,1,1,0,0
 access_federation_reimbursement_request_user,federation.reimbursement.request.user,model_federation_reimbursement_request,sports_federation_base.group_federation_user,1,1,1,0
-access_federation_reimbursement_request_manager,federation.reimbursement.request.manager,model_federation_reimbursement_request,sports_federation_base.group_federation_manager,1,1,1,1access_matchday_assign_official_wizard_manager,federation.matchday.assign.official.wizard.manager,model_federation_matchday_assign_official_wizard,sports_federation_base.group_federation_manager,1,1,1,1
+access_federation_reimbursement_request_manager,federation.reimbursement.request.manager,model_federation_reimbursement_request,sports_federation_base.group_federation_manager,1,1,1,1
+access_matchday_assign_official_wizard_manager,federation.matchday.assign.official.wizard.manager,model_federation_matchday_assign_official_wizard,sports_federation_base.group_federation_manager,1,1,1,1
 
 ====================================================================================================
 FILE: sports_federation_officiating/tests/__init__.py
@@ -51017,9 +50933,9 @@ FILE: sports_federation_portal/README.md
 
 # Sports Federation Club Roles and Portal
 
-Version: 19.0.2.2.0
+Version: 19.0.4.1.0
 Owner: Federation Platform Team
-Last reviewed: 2026-08-20
+Last reviewed: 2026-08-23
 Review cadence: Every release
 
 Role-oriented self-service portal for club representatives, officials, and tournament operators.
@@ -51090,6 +51006,9 @@ Primary routes:
 - `/sports/match-days/<id>/operations`
 
 Legacy tournament workspace routes are redirect-only and render no V1 data.
+The backend tournament-registration action is loaded before the menus that use
+it, so a fresh module install and an upgrade both build the registration menu
+without relying on stale database metadata.
 
 ====================================================================================================
 FILE: sports_federation_portal/__init__.py
@@ -51104,7 +51023,7 @@ FILE: sports_federation_portal/__manifest__.py
 
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.4.0.0",
+    "version": "19.0.4.1.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -51148,6 +51067,7 @@ on top of the federation base modules.
         "views/res_users_views.xml",
         "views/federation_season_registration_views.xml",
         "views/federation_match_sheet_views.xml",
+        "views/federation_tournament_registration_views.xml",
         "views/federation_club_representative_portal_views.xml",
         "views/qol_views.xml",
         "views/portal_templates.xml",
@@ -51194,12 +51114,10 @@ FILE: sports_federation_portal/controllers/main.py
 
 from .portal_club import FederationClubPortal
 from .portal_registrations import FederationRegistrationPortal
-from .portal_workspaces import FederationWorkspacePortal
 
 __all__ = [
     "FederationClubPortal",
     "FederationRegistrationPortal",
-    "FederationWorkspacePortal",
 ]
 
 ====================================================================================================
@@ -51637,16 +51555,25 @@ class FederationOfficiatingPortal(http.Controller):
 
         Assignment = self._portal_assignment_model()
         base_domain = self._portal_assignment_domain()
+        current_publications = (
+            request.env["federation.matchday"]
+            .sudo()
+            .search([("current_publication_id.state", "=", "live")])
+            .mapped("current_publication_id")
+        )
+        current_publication_domain = [
+            ("publication_id", "in", current_publications.ids)
+        ]
         domain = list(base_domain)
         filter_map = {
             "upcoming": [
                 ("match_kickoff", "!=", False),
                 ("state", "in", ("draft", "confirmed")),
-                ("is_current_publication", "=", True),
+                *current_publication_domain,
             ],
             "pending": [
                 ("state", "=", "draft"),
-                ("is_current_publication", "=", True),
+                *current_publication_domain,
             ],
             "history": [("state", "in", ("done", "cancelled"))],
             "all": [],
@@ -51675,7 +51602,7 @@ class FederationOfficiatingPortal(http.Controller):
         )
         pending_domain = base_domain + [
             ("state", "=", "draft"),
-            ("is_current_publication", "=", True),
+            *current_publication_domain,
         ]
         pending_assignments = PortalPrivilege.portal_search(
             Assignment,
@@ -58926,6 +58853,61 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     "date_start": "2026-06-01",
                 }
             )
+            competition = env["federation.competition"].create(
+                {
+                    "name": "Portal Officiating Smoke Competition",
+                    "competition_type": "league",
+                }
+            )
+            edition = env["federation.competition.edition"].create(
+                {
+                    "name": "Portal Officiating Smoke Edition",
+                    "competition_id": competition.id,
+                    "season_id": officiating_season.id,
+                }
+            )
+            officiating_tournament.write(
+                {
+                    "competition_id": competition.id,
+                    "edition_id": edition.id,
+                }
+            )
+            participant_set = env["federation.participant.set"].create(
+                {
+                    "name": "Portal Officiating Smoke Participants",
+                    "edition_id": edition.id,
+                    "division_id": officiating_tournament.id,
+                    "state": "finalized",
+                }
+            )
+            structure = env["federation.competition.structure"].create(
+                {
+                    "name": "Portal Officiating Smoke Structure",
+                    "edition_id": edition.id,
+                    "division_id": officiating_tournament.id,
+                    "participant_set_id": participant_set.id,
+                    "format_type": "custom",
+                }
+            )
+            stage = env["federation.structure.stage"].create(
+                {
+                    "name": "Portal Officiating Smoke Stage",
+                    "structure_id": structure.id,
+                    "stage_type": "league",
+                    "format_type": "manual",
+                    "source_type": "manual",
+                }
+            )
+            fixture = env["federation.fixture"].create(
+                {
+                    "structure_id": structure.id,
+                    "stage_id": stage.id,
+                    "round_number": 1,
+                    "home_team_id": home_team.id,
+                    "away_team_id": away_team.id,
+                    "state": "ready",
+                }
+            )
             official_user = (
                 env["res.users"]
                 .with_context(no_reset_password=True)
@@ -58946,14 +58928,60 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     "user_id": official_user.id,
                 }
             )
-            assignment_match = env["federation.match"].create(
+            assignment_match = fixture.action_materialize_match()
+            assignment_match.write({"date_scheduled": "2026-12-12 18:00:00"})
+            venue = env["federation.venue"].create(
+                {"name": "Portal Officiating Smoke Venue"}
+            )
+            matchday = env["federation.matchday"].create(
                 {
-                    "tournament_id": officiating_tournament.id,
-                    "home_team_id": home_team.id,
-                    "away_team_id": away_team.id,
-                    "date_scheduled": "2026-06-12 18:00:00",
+                    "name": "Portal Officiating Smoke Match Day",
+                    "edition_id": edition.id,
+                    "date": "2026-12-12",
+                    "venue_id": venue.id,
                 }
             )
+            schedule = env["federation.schedule"].create(
+                {
+                    "name": "Portal Officiating Smoke Schedule",
+                    "edition_id": edition.id,
+                    "structure_id": structure.id,
+                    "matchday_id": matchday.id,
+                    "state": "published",
+                }
+            )
+            snapshot = [{"fixture_id": fixture.id}]
+            digest = env["federation.schedule.publication"].digest_snapshot(snapshot)
+            review = (
+                env["federation.schedule.review"]
+                .sudo()
+                .create(
+                    {
+                        "schedule_id": schedule.id,
+                        "submitted_revision": schedule.revision,
+                        "state": "pending",
+                        "assignment_snapshot": snapshot,
+                        "snapshot_digest": digest,
+                        "submitted_by_id": SUPERUSER_ID,
+                    }
+                )
+            )
+            review.with_context(allow_schedule_review_decision=True).sudo().write(
+                {"state": "approved", "reviewer_id": SUPERUSER_ID}
+            )
+            publication = env["federation.schedule.publication"].create(
+                {
+                    "schedule_id": schedule.id,
+                    "version": 1,
+                    "state": "live",
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": digest,
+                    "source_revision": schedule.revision,
+                    "review_id": review.id,
+                }
+            )
+            matchday.sudo().write({"current_publication_id": publication.id})
+            assignment_match.write({"schedule_publication_id": publication.id})
             assignment = env["federation.match.referee"].create(
                 {
                     "match_id": assignment_match.id,
@@ -59444,30 +59472,128 @@ class TestOfficiatingPortalAccess(TransactionCase):
                 "date_end": "2026-12-31",
             }
         )
+        cls.competition = cls.env["federation.competition"].create(
+            {"name": "Portal Official Competition", "competition_type": "league"}
+        )
+        cls.edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Portal Official Edition",
+                "competition_id": cls.competition.id,
+                "season_id": cls.season.id,
+            }
+        )
         cls.tournament = cls.env["federation.tournament"].create(
             {
                 "name": "Portal Official Tournament",
                 "code": "POT",
                 "season_id": cls.season.id,
+                "competition_id": cls.competition.id,
+                "edition_id": cls.edition.id,
                 "date_start": "2026-06-01",
             }
         )
-        cls.match = cls.env["federation.match"].create(
+        participant_set = cls.env["federation.participant.set"].create(
             {
-                "tournament_id": cls.tournament.id,
-                "home_team_id": cls.home_team.id,
-                "away_team_id": cls.away_team.id,
-                "date_scheduled": "2026-06-15 18:00:00",
+                "name": "Portal Official Participants",
+                "edition_id": cls.edition.id,
+                "division_id": cls.tournament.id,
+                "state": "finalized",
             }
         )
-        cls.other_match = cls.env["federation.match"].create(
+        structure = cls.env["federation.competition.structure"].create(
             {
-                "tournament_id": cls.tournament.id,
-                "home_team_id": cls.away_team.id,
-                "away_team_id": cls.home_team.id,
-                "date_scheduled": "2026-06-21 14:00:00",
+                "name": "Portal Official Structure",
+                "edition_id": cls.edition.id,
+                "division_id": cls.tournament.id,
+                "participant_set_id": participant_set.id,
+                "format_type": "custom",
             }
         )
+        stage = cls.env["federation.structure.stage"].create(
+            {
+                "name": "Portal Official Stage",
+                "structure_id": structure.id,
+                "stage_type": "league",
+                "format_type": "manual",
+                "source_type": "manual",
+            }
+        )
+        fixtures = cls.env["federation.fixture"].create(
+            [
+                {
+                    "structure_id": structure.id,
+                    "stage_id": stage.id,
+                    "round_number": 1,
+                    "sequence": 1,
+                    "home_team_id": cls.home_team.id,
+                    "away_team_id": cls.away_team.id,
+                    "state": "ready",
+                },
+                {
+                    "structure_id": structure.id,
+                    "stage_id": stage.id,
+                    "round_number": 1,
+                    "sequence": 2,
+                    "home_team_id": cls.away_team.id,
+                    "away_team_id": cls.home_team.id,
+                    "state": "ready",
+                },
+            ]
+        )
+        cls.match = fixtures[0].action_materialize_match()
+        cls.other_match = fixtures[1].action_materialize_match()
+        cls.match.write({"date_scheduled": "2026-06-15 18:00:00"})
+        cls.other_match.write({"date_scheduled": "2026-06-21 14:00:00"})
+        venue = cls.env["federation.venue"].create({"name": "Portal Official Venue"})
+        matchday = cls.env["federation.matchday"].create(
+            {
+                "name": "Portal Official Match Day",
+                "edition_id": cls.edition.id,
+                "date": "2026-06-15",
+                "venue_id": venue.id,
+            }
+        )
+        schedule = cls.env["federation.schedule"].create(
+            {
+                "name": "Portal Official Schedule",
+                "edition_id": cls.edition.id,
+                "structure_id": structure.id,
+                "matchday_id": matchday.id,
+                "state": "published",
+            }
+        )
+        snapshot = [{"fixture_id": fixtures[0].id}]
+        digest = cls.env["federation.schedule.publication"].digest_snapshot(snapshot)
+        review = (
+            cls.env["federation.schedule.review"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "submitted_revision": schedule.revision,
+                    "state": "pending",
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": digest,
+                    "submitted_by_id": cls.env.user.id,
+                }
+            )
+        )
+        review.with_context(allow_schedule_review_decision=True).sudo().write(
+            {"state": "approved", "reviewer_id": cls.env.user.id}
+        )
+        publication = cls.env["federation.schedule.publication"].create(
+            {
+                "schedule_id": schedule.id,
+                "version": 1,
+                "state": "live",
+                "assignment_snapshot": snapshot,
+                "snapshot_digest": digest,
+                "source_revision": schedule.revision,
+                "review_id": review.id,
+            }
+        )
+        matchday.sudo().write({"current_publication_id": publication.id})
+        (cls.match | cls.other_match).write({"schedule_publication_id": publication.id})
         cls.official_user = (
             cls.env["res.users"]
             .with_context(no_reset_password=True)
@@ -59629,11 +59755,35 @@ class TestFederationOperationTasks(TransactionCase):
                 "state": "open",
             }
         )
+        cls.competition = cls.env["federation.competition"].create(
+            {"name": "Action Queue Competition", "competition_type": "league"}
+        )
+        cls.edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Action Queue Edition",
+                "competition_id": cls.competition.id,
+                "season_id": cls.season.id,
+            }
+        )
+        cls.tournament.write(
+            {
+                "edition_id": cls.edition.id,
+                "competition_id": cls.competition.id,
+            }
+        )
+        cls.window = cls.env["federation.registration.window"].create(
+            {
+                "name": "Action Queue Window",
+                "edition_id": cls.edition.id,
+                "division_id": cls.tournament.id,
+                "state": "open",
+            }
+        )
 
     def test_registration_task_is_idempotent_and_reopens_after_resolution(self):
-        registration = self.env["federation.tournament.registration"].create(
+        registration = self.env["federation.competition.entry"].create(
             {
-                "tournament_id": self.tournament.id,
+                "window_id": self.window.id,
                 "team_id": self.team.id,
                 "state": "submitted",
             }
@@ -59654,7 +59804,7 @@ class TestFederationOperationTasks(TransactionCase):
         Task.with_user(self.manager).sync_for_user(user=self.manager)
         self.assertEqual(Task.search_count([("source_key", "=", task.source_key)]), 1)
 
-        registration.state = "confirmed"
+        registration.state = "approved"
         Task.with_user(self.manager).sync_for_user(user=self.manager)
         self.assertEqual(task.state, "done")
         self.assertTrue(task.completed_on)
@@ -61068,9 +61218,6 @@ class TestRosterPortalAccess(TransactionCase):
         self.assertFalse(visible_teams)
         self.assertFalse(visible_rosters)
         self.assertFalse(visible_sheets)
-        self.assertFalse(
-            self.tournament._portal_has_workspace_access(user=self.inactive_user)
-        )
 
         with self.assertRaises(AccessError):
             self.roster_a._portal_assert_scope_access(user=self.inactive_user)
@@ -61920,7 +62067,7 @@ class TestPortalTemplateAccessibility(TransactionCase):
         )
         self._assert_tables_have_captions_and_scoped_headers(
             "portal_v2_templates",
-            "portal_my_tournament_workspace_detail",
+            "portal_my_competition_detail",
         )
 
     def test_portal_templates_use_human_state_labels(self):
@@ -62135,7 +62282,7 @@ class TestPortalTemplateMobile(TransactionCase):
     def test_workspace_portal_wide_tables_wrapped(self):
         self._assert_wide_tables_wrapped_responsive(
             "portal_v2_templates",
-            "portal_my_tournament_workspace_detail",
+            "portal_my_competition_detail",
         )
 
     # ------------------------------------------------------------------
@@ -66274,7 +66421,7 @@ FILE: sports_federation_portal/views/portal_v2_templates.xml
             <article class="card h-100"><div class="card-body"><div class="d-flex justify-content-between gap-3"><div><h3 class="h5 mb-1"><t t-esc="card['edition'].display_name"/></h3><p class="text-muted mb-2"><t t-esc="', '.join(card['teams'].mapped('display_name'))"/></p></div><span t-attf-class="badge text-bg-#{card['status_tone']}"><t t-esc="card['status_label']"/></span></div><p class="mb-1"><strong>Published match days:</strong> <t t-esc="card['published_matchday_count']"/></p><p class="mb-3"><strong>Result follow-up:</strong> <t t-esc="card['result_follow_up_count']"/></p><a t-attf-href="/my/competitions/#{card['edition'].id}" class="btn btn-primary">Open competition</a></div></article>
           </div>
         </div>
-        <div class="alert alert-info" t-else="">No V2 competition currently contains one of your represented teams.</div>
+        <div class="alert alert-info" role="alert" t-else="">No V2 competition currently contains one of your represented teams.</div>
       </div>
     </t>
   </template>
@@ -66282,7 +66429,7 @@ FILE: sports_federation_portal/views/portal_v2_templates.xml
     <t t-call="portal.portal_layout"><div class="container py-3"><a href="/my/competitions" class="text-decoration-none">← Competitions</a><div class="d-flex justify-content-between align-items-start mt-2 mb-4"><div><h2><t t-esc="workspace['edition'].display_name"/></h2><p class="text-muted"><t t-esc="', '.join(workspace['teams'].mapped('display_name'))"/></p></div><span t-attf-class="badge text-bg-#{workspace['status_tone']}"><t t-esc="workspace['status_label']"/></span></div>
       <div class="row g-3"><section class="col-12 col-lg-6"><div class="card h-100"><div class="card-header"><strong>Participation</strong></div><div class="card-body"><div t-foreach="workspace['entries']" t-as="entry" class="mb-2"><t t-esc="entry.team_id.display_name"/> · <span class="badge text-bg-light"><t t-esc="entry.state"/></span></div><div t-foreach="workspace['participant_sets']" t-as="pset"><strong><t t-esc="pset.division_id.display_name"/></strong>: <t t-esc="', '.join(pset.line_ids.filtered(lambda l: l.team_id in workspace['teams']).mapped('team_id.display_name'))"/></div></div></div></section>
       <section class="col-12 col-lg-6"><div class="card h-100"><div class="card-header"><strong>Upcoming published match days</strong></div><div class="list-group list-group-flush"><a t-foreach="workspace['matchdays']" t-as="day" t-attf-href="/my/match-days/#{day.id}" class="list-group-item list-group-item-action"><strong><t t-esc="day.display_name"/></strong><br/><span class="text-muted"><t t-esc="day.date"/> · <t t-esc="day.venue_id.display_name"/> · publication v<t t-esc="day.current_publication_id.version"/></span></a><div class="list-group-item text-muted" t-if="not workspace['matchdays']">No current publication is available.</div></div></div></section></div>
-      <section class="card mt-3"><div class="card-header"><strong>Fixtures and results</strong></div><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Kickoff</th><th>Match</th><th>Published slot</th><th>Status</th></tr></thead><tbody><tr t-foreach="workspace['matches']" t-as="match"><td><t t-esc="match.date_scheduled"/></td><td><t t-esc="match.display_name"/></td><td><t t-esc="match.published_slot_id.display_name"/></td><td><t t-esc="match.state"/></td></tr></tbody></table></div></section>
+      <section class="card mt-3"><div class="card-header"><strong>Fixtures and results</strong></div><div class="table-responsive"><table class="table mb-0"><caption class="visually-hidden">Fixtures and results</caption><thead><tr><th scope="col">Kickoff</th><th scope="col">Match</th><th scope="col">Published slot</th><th scope="col">Status</th></tr></thead><tbody><tr t-foreach="workspace['matches']" t-as="match"><td><t t-esc="match.date_scheduled"/></td><td><t t-esc="match.display_name"/></td><td><t t-esc="match.published_slot_id.display_name"/></td><td><t t-esc="match.state"/></td></tr></tbody></table></div></section>
     </div></t>
   </template>
   <template id="portal_my_competition_entries" name="Competition Entries">

@@ -36,11 +36,11 @@
       ]
     },
     {
-      "model": "federation.tournament.registration",
-      "source": "sports_federation_portal/models/federation_tournament_registration.py",
+      "model": "federation.competition.entry",
+      "source": "sports_federation_registration/models/registration.py",
       "required_indexed_fields": [],
       "required_constraint_symbols": [
-        "_team_tournament_unique"
+        "_unique_team"
       ]
     }
   ]

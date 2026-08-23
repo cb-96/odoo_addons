@@ -110,6 +110,11 @@ class FederationCompetitionEntry(models.Model):
         index=True,
     )
     review_note = fields.Text()
+    submission_note = fields.Text()
+    submitted_by_id = fields.Many2one("res.users", readonly=True, copy=False)
+    submitted_on = fields.Datetime(readonly=True, copy=False)
+    reviewed_by_id = fields.Many2one("res.users", readonly=True, copy=False)
+    reviewed_on = fields.Datetime(readonly=True, copy=False)
     _unique_team = models.Constraint(
         "unique(window_id,team_id)", "A team can enter a registration window only once."
     )
@@ -183,7 +188,18 @@ class FederationCompetitionEntry(models.Model):
                 raise ValidationError(error)
 
     def action_submit(self):
-        self.write({"state": "submitted"})
+        invalid = self.filtered(lambda entry: entry.state not in ("draft", "rejected"))
+        if invalid:
+            raise ValidationError(_("Only draft or rejected entries can be submitted."))
+        self.write(
+            {
+                "state": "submitted",
+                "submitted_by_id": self.env.user.id,
+                "submitted_on": fields.Datetime.now(),
+                "reviewed_by_id": False,
+                "reviewed_on": False,
+            }
+        )
         return True
 
     def action_approve(self):
@@ -192,11 +208,43 @@ class FederationCompetitionEntry(models.Model):
         ].assert_role(
             self[:1].edition_id, "registration_manager", "competition_director"
         )
-        self.write({"state": "approved"})
+        self.write(
+            {
+                "state": "approved",
+                "reviewed_by_id": self.env.user.id,
+                "reviewed_on": fields.Datetime.now(),
+            }
+        )
         return True
 
-    def action_reject(self):
-        self.write({"state": "rejected"})
+    def action_return(self, reason):
+        if not reason or not reason.strip():
+            raise ValidationError(_("A review reason is required."))
+        self.write(
+            {
+                "state": "draft",
+                "review_note": reason.strip(),
+                "reviewed_by_id": self.env.user.id,
+                "reviewed_on": fields.Datetime.now(),
+            }
+        )
+        return True
+
+    def action_reject(self, reason=False):
+        self.write(
+            {
+                "state": "rejected",
+                "review_note": reason.strip() if reason else self.review_note,
+                "reviewed_by_id": self.env.user.id,
+                "reviewed_on": fields.Datetime.now(),
+            }
+        )
+        return True
+
+    def action_withdraw(self):
+        if self.filtered(lambda entry: entry.state == "approved"):
+            raise ValidationError(_("Approved entries cannot be withdrawn directly."))
+        self.write({"state": "withdrawn"})
         return True
 
 

@@ -6,6 +6,12 @@
     "statement": "Task = request.env[\"federation.operation.task\"].sudo()"
   },
   {
+    "file": "sports_federation_portal/controllers/officiating.py",
+    "function": "portal_my_referee_assignments",
+    "reason": "adjacent ownership scope check",
+    "statement": "current_publications = ( request.env[\"federation.matchday\"] .sudo() .search([(\"current_publication_id.state\", \"=\", \"live\")]) .mapped(\"current_publication_id\") )"
+  },
+  {
     "file": "sports_federation_portal/controllers/operation_tasks.py",
     "function": "portal_my_action_items",
     "reason": "adjacent ownership scope check",
@@ -135,7 +141,7 @@
     "file": "sports_federation_portal/controllers/qol.py",
     "function": "bulk_registrations",
     "reason": "federation manager group checked above",
-    "statement": "registrations = ( request.env[\"federation.tournament.registration\"] .sudo() # noguard: federation manager group checked above .browse(ids) .exists() )"
+    "statement": "registrations = ( request.env[\"federation.competition.entry\"] .sudo() # noguard: federation manager group checked above .browse(ids) .exists() )"
   },
   {
     "file": "sports_federation_portal/controllers/qol.py",

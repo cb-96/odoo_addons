@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Public Site",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.3.0",
     "category": "Sports",
     "summary": "Public tournament coverage integrated into the website tournament hub",
     "description": "Public website pages for tournament coverage, standings, results, schedules, and federation events.",

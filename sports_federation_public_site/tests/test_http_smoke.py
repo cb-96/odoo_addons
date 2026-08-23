@@ -189,6 +189,30 @@ class TestPublicSiteHttpSmoke(HttpCase):
                     "state": "registered",
                 }
             )
+            competition = env["federation.competition"].create(
+                {"name": "Public Registration Competition", "code": "PRCOMP"}
+            )
+            edition = env["federation.competition.edition"].create(
+                {
+                    "name": "Public Registration 2026",
+                    "competition_id": competition.id,
+                    "season_id": season.id,
+                }
+            )
+            for division, window_name in (
+                (tournament, "Public Registration Window"),
+                (unpublished_tournament, "Hidden Registration Window"),
+                (full_tournament, "Full Capacity Window"),
+            ):
+                division.write({"edition_id": edition.id})
+                env["federation.registration.window"].create(
+                    {
+                        "name": window_name,
+                        "edition_id": edition.id,
+                        "division_id": division.id,
+                        "state": "open",
+                    }
+                )
             cr.commit()
 
         cls.portal_club_group = cls.env.ref(
@@ -297,9 +321,9 @@ class TestPublicSiteHttpSmoke(HttpCase):
     def test_unpublished_tournament_register_routes_fail_closed(self):
         self.authenticate(self.club_user.login, "ignored")
 
-        Registration = self.env["federation.tournament.registration"].sudo()
-        before_count = Registration.search_count(
-            [("tournament_id", "=", self.unpublished_tournament.id)]
+        Entry = self.env["federation.competition.entry"].sudo()
+        before_count = Entry.search_count(
+            [("window_id.division_id", "=", self.unpublished_tournament.id)]
         )
 
         for path in (
@@ -320,8 +344,8 @@ class TestPublicSiteHttpSmoke(HttpCase):
                 submit_response.headers["Location"].endswith("/tournaments")
             )
 
-        after_count = Registration.search_count(
-            [("tournament_id", "=", self.unpublished_tournament.id)]
+        after_count = Entry.search_count(
+            [("window_id.division_id", "=", self.unpublished_tournament.id)]
         )
         self.assertEqual(after_count, before_count)
 

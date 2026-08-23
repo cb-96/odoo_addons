@@ -2,7 +2,7 @@
 refactor/simplification-competition-engine
 
 === CURRENT COMMIT ===
-4cc973b405c0ef7db90ea43644eeba0bc53c61b3
+f4c1852b219c46df797bce640a14de57a6ce9455
 
 === REPOSITORY ROOT ===
 /home/cedric/odoo/addons
@@ -25,7 +25,7 @@ refactor/simplification-competition-engine
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "data/mail_templates.xml", "data/ir_cron.xml", "views/notification_log_views.xml", "views/menu_views.xml"], "depends": ["sports_federation_base", "sports_federation_people", "sports_federation_tournament", "sports_federation_portal", "sports_federation_public_site", "sports_federation_result_control", "sports_federation_standings", "sports_federation_finance_bridge", "sports_federation_officiating", "mail"], "explicit_assets": [], "installable": true, "module": "sports_federation_notifications", "name": "Sports Federation Notifications", "version": "19.0.1.3.0"}
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "views/federation_referee_views.xml", "views/federation_referee_availability_views.xml", "views/federation_referee_certification_views.xml", "views/federation_match_referee_views.xml", "views/federation_match_club_referee_duty_views.xml", "views/federation_matchday_assign_wizard_views.xml", "views/federation_match_views_inherit.xml", "views/federation_reimbursement_request_views.xml", "views/menu_items.xml"], "depends": ["sports_federation_base", "sports_federation_tournament", "sports_federation_people", "sports_federation_result_control", "sports_federation_matchday"], "explicit_assets": [], "installable": true, "module": "sports_federation_officiating", "name": "Sports Federation Officiating", "version": "19.0.2.0.0"}
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "data/ir_sequence.xml", "views/federation_player_views.xml", "views/federation_player_license_views.xml", "views/menu_items.xml"], "depends": ["sports_federation_base"], "explicit_assets": [], "installable": true, "module": "sports_federation_people", "name": "Sports Federation People", "version": "19.0.1.1.0"}
-{"application": false, "auto_install": false, "data": ["security/res_groups.xml", "security/ir.model.access.csv", "security/ir_rule.xml", "data/federation_club_role_type.xml", "data/ir_sequence.xml", "data/operation_task_cron.xml", "views/federation_club_role_type_views.xml", "views/federation_club_representative_views.xml", "views/federation_club_views.xml", "views/federation_referee_views.xml", "views/res_partner_views.xml", "views/res_users_views.xml", "views/federation_season_registration_views.xml", "views/federation_match_sheet_views.xml", "views/federation_club_representative_portal_views.xml", "views/qol_views.xml", "views/portal_templates.xml", "views/portal_v2_templates.xml", "views/portal_officiating_templates.xml", "views/portal_roster_templates.xml", "views/portal_result_templates.xml", "views/portal_referee_duty_templates.xml", "views/operation_task_views.xml", "views/menu_items.xml", "views/website_menus.xml"], "depends": ["website", "portal", "sports_federation_base", "sports_federation_people", "sports_federation_tournament", "sports_federation_officiating", "sports_federation_rosters", "sports_federation_result_control", "sports_federation_competition_core", "sports_federation_registration", "sports_federation_format", "sports_federation_schedule_approval", "sports_federation_matchday", "sports_federation_standings"], "explicit_assets": ["sports_federation_portal/static/src/scss/federation_portal.scss", "sports_federation_portal/static/src/js/qol_draft_guard.js"], "installable": true, "module": "sports_federation_portal", "name": "Sports Federation Club Roles & Portal", "version": "19.0.4.0.0"}
+{"application": false, "auto_install": false, "data": ["security/res_groups.xml", "security/ir.model.access.csv", "security/ir_rule.xml", "data/federation_club_role_type.xml", "data/ir_sequence.xml", "data/operation_task_cron.xml", "views/federation_club_role_type_views.xml", "views/federation_club_representative_views.xml", "views/federation_club_views.xml", "views/federation_referee_views.xml", "views/res_partner_views.xml", "views/res_users_views.xml", "views/federation_season_registration_views.xml", "views/federation_match_sheet_views.xml", "views/federation_tournament_registration_views.xml", "views/federation_club_representative_portal_views.xml", "views/qol_views.xml", "views/portal_templates.xml", "views/portal_v2_templates.xml", "views/portal_officiating_templates.xml", "views/portal_roster_templates.xml", "views/portal_result_templates.xml", "views/portal_referee_duty_templates.xml", "views/operation_task_views.xml", "views/menu_items.xml", "views/website_menus.xml"], "depends": ["website", "portal", "sports_federation_base", "sports_federation_people", "sports_federation_tournament", "sports_federation_officiating", "sports_federation_rosters", "sports_federation_result_control", "sports_federation_competition_core", "sports_federation_registration", "sports_federation_format", "sports_federation_schedule_approval", "sports_federation_matchday", "sports_federation_standings"], "explicit_assets": ["sports_federation_portal/static/src/scss/federation_portal.scss", "sports_federation_portal/static/src/js/qol_draft_guard.js"], "installable": true, "module": "sports_federation_portal", "name": "Sports Federation Club Roles & Portal", "version": "19.0.4.1.0"}
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "views/website_templates.xml", "views/website_hub_templates.xml", "views/website_editorial_templates.xml", "views/website_clubs_players_templates.xml", "views/website_menu.xml", "views/season_views_inherit.xml", "views/tournament_views_inherit.xml", "views/team_views_inherit.xml", "views/standing_views_inherit.xml", "views/editorial_views.xml"], "depends": ["website", "portal", "sports_federation_base", "sports_federation_tournament", "sports_federation_standings", "sports_federation_venues", "sports_federation_result_control", "sports_federation_people"], "explicit_assets": [], "installable": true, "module": "sports_federation_public_site", "name": "Sports Federation Public Site", "version": "19.0.1.2.0"}
 {"application": false, "auto_install": false, "data": ["security/security.xml", "security/ir.model.access.csv", "wizards/create_competition_wizard_views.xml", "views/registration_views.xml", "views/menu.xml"], "depends": ["sports_federation_competition_core"], "explicit_assets": [], "installable": true, "module": "sports_federation_registration", "name": "Competition Registration", "version": "19.0.1.1.0"}
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "data/report_schedule_cron.xml", "data/report_snapshot_cron.xml", "views/report_participation_views.xml", "views/report_officiating_views.xml", "views/report_compliance_views.xml", "views/report_finance_views.xml", "views/report_operational_views.xml", "views/report_operator_checklist_views.xml", "views/report_planning_views.xml", "views/report_audit_event_views.xml", "views/report_snapshot_views.xml", "views/report_schedule_views.xml", "views/report_club_compliance_summary_views.xml", "views/report_officiating_coverage_views.xml", "views/menu_views.xml"], "depends": ["web", "sports_federation_base", "sports_federation_people", "sports_federation_tournament", "sports_federation_officiating", "sports_federation_standings", "sports_federation_discipline", "sports_federation_compliance", "sports_federation_finance_bridge", "sports_federation_notifications", "sports_federation_result_control", "sports_federation_governance", "sports_federation_import_tools"], "explicit_assets": [], "installable": true, "module": "sports_federation_reporting", "name": "Sports Federation Reporting", "version": "19.0.1.2.0"}
@@ -39,7 +39,8 @@ refactor/simplification-competition-engine
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "views/venue_views.xml", "views/round_views_inherit.xml", "views/tournament_views_inherit.xml", "views/match_views_inherit.xml", "views/menu_views.xml"], "depends": ["sports_federation_base", "sports_federation_tournament"], "explicit_assets": [], "installable": true, "module": "sports_federation_venues", "name": "Sports Federation Venues", "version": "19.0.1.1.0"}
 
 === RELEVANT RECENT HISTORY ===
-4cc973b (HEAD -> refactor/simplification-competition-engine) feat!: complete V2 officiating and remove legacy match workflows
+f4c1852 (HEAD -> refactor/simplification-competition-engine) Further removal of old data.
+4cc973b feat!: complete V2 officiating and remove legacy match workflows
 0034ba2 Updated portal to V2. Still open points: references to old implementation.
 d60214a Fixed full approval workflow.
 b95bbbf Patch 5.1: schedule approval.
@@ -68,10 +69,10 @@ d6c5d7f Documentation consolidation.
 e2f8cdd Ran linting check.
 ecaeca5 Removed 3 hardening changes that were to strict.
 407b3c7 feat: harden federation modules for release candidate
-10cb0e0 updated security_matrix
 
 === RECENT REPOSITORY HISTORY ===
-4cc973b (HEAD -> refactor/simplification-competition-engine) feat!: complete V2 officiating and remove legacy match workflows
+f4c1852 (HEAD -> refactor/simplification-competition-engine) Further removal of old data.
+4cc973b feat!: complete V2 officiating and remove legacy match workflows
 0034ba2 Updated portal to V2. Still open points: references to old implementation.
 d60214a Fixed full approval workflow.
 b95bbbf Patch 5.1: schedule approval.
@@ -85,20 +86,19 @@ bc9ecb3 Stabilization patch.
 72ae84a build: collect complete source baseline for reviews
 65de9f5 fix(calendar): make slot timelines deterministic per court
 75af3c4 feat(calendar): add smart defaults for match-day slot entry
-0edadfc Solved KeyError: 'fairness_access' + reformatted files with black.
 
 === UNSTAGED DIFF STAT ===
- current_sources.txt | 7270 ++++++++-------------------------------------------
- 1 file changed, 1102 insertions(+), 6168 deletions(-)
+ current_sources.txt | 445 ++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 296 insertions(+), 149 deletions(-)
 
 === STAGED DIFF STAT ===
 
 
 === FILE SUMMARY ===
-Discovered bundle files: 834
+Discovered bundle files: 833
 Configured modules found: 26
 Configured modules missing: 0
-Git tracked files: 849
+Git tracked files: 848
 Git modified or staged files: 1
 Git untracked files: 0
 
@@ -140,7 +140,7 @@ DOCUMENTATION_REVIEW.md	2577	451359091e3442515201255e180d8998303e2d40db386d9eaab
 INTEGRATION_CONTRACTS.md	13664	927e31edb96bf567ef2c5976ccbdac8f60d1bfd72ec7063ad51c68e8efdb5e71	tracked
 MODULE_OWNERS.yaml	5445	84b265fb74d0a6a2083023dd32dc700c0e1add84984de26601a44ebf7050fbaf	tracked
 README.md	6867	ce0d9b6e692f961c09b9b4fd44a475852f33b6a8c081820e533e17f08fda5c5f	tracked
-RELEASE_RUNBOOK.md	19386	7e563d93ead9f51615ddda051d79968e5957f632e48901dce6af98b389991a4e	tracked
+RELEASE_RUNBOOK.md	20344	72401ca9e9054195ce1716bf0d912a5b96010725167c68d36a71846c9d3377bb	tracked
 ROADMAP.md	6116	0e4af109704815bea037e644b06c2393f3ed4c650eefcef72dc6853e314056d6	tracked
 ROUTE_INVENTORY.md	5847	ec8d2d9ed17b45275b461c7ae80a965276da91ff4d2bedb1f3b83da1e1f295f2	tracked
 STATE_AND_OWNERSHIP_MATRIX.md	7947	171ff6bd831d0ea2e3e780c28d1c988e1944f12e8bfdbc8763b6008d306f8286	tracked
@@ -225,7 +225,6 @@ docs/portal_v2_ownership.md	900	682e783f229c845de6a3c494ae907549155fe484d345b172
 docs/release/HUMAN_ACCEPTANCE_TEST.md	6743	78a37e92ec260a1e20dec57f1ea1bfc9704ea3e2c8c49510447a85e6da49ffa8	tracked
 docs/release/RC_APPROVAL_POLICY.md	1631	bd1b884a76560d30d559a7586237472a5894f3a87d7efdd2399bba3142e198bd	tracked
 docs/v2_officiating_and_match_cleanup.md	1227	3717e1a125a5dc9a964992afcb9f85c2c7abf0cfb584e44afc985df252bb45fd	tracked
-phase_0_completion.py	3450	ee1ed3e6a3193f830646dd3562a58b92d01249c69a800a9228fb50bd1ed035e2	tracked
 requirements.txt	65	ae976dc68dd5b3a6096ac59a762a9aaa9c63a5af01b651e8cd77c9a2095cdacd	tracked
 scripts/ci/run_rc_validation.sh	2849	a397fb2807f3fe7b5259a35d7a1746c6d8140d6dbc7304ce3aeab9131b7ada0d	tracked
 source_collector.py	16885	97dcc372ef049ec146e735ca2687568c024e8e15e1a7b559f6be8d1933ce282a	tracked
@@ -509,7 +508,7 @@ sports_federation_officiating/models/federation_referee.py	3019	e830ed9014717f93
 sports_federation_officiating/models/federation_referee_availability.py	1816	6946c2dbaa5c6c87becd0caa73587197152040f0454717780988650172e8b392	tracked
 sports_federation_officiating/models/federation_referee_certification.py	1494	da60af055fdf009058f3832068215c3d5a9561b333706862a9ae96ce3c5231c4	tracked
 sports_federation_officiating/models/federation_reimbursement_request.py	5146	b68c3ebc99d81f445e94e282e45359d97721a7a650966e92acbeb294faac2f81	tracked
-sports_federation_officiating/security/ir.model.access.csv	2465	ea445588a1a9e62c69d489f6478f9a21089dae707ebc783d978b7cbe9011f19a	tracked
+sports_federation_officiating/security/ir.model.access.csv	2466	72527a3c654db66ef5e28739f82785a7e88251735f46d6def19f997f0a7a819b	tracked
 sports_federation_officiating/tests/__init__.py	294	74a23c802fae374aaca48a527664906ed13bfe74ae686a9d331a9df4f4675606	tracked
 sports_federation_officiating/tests/test_club_referee_duty.py	12670	2c240662fd98a8110d8f03fc1a41e0aa26eef9bf5a145131bb5807c36975261f	tracked
 sports_federation_officiating/tests/test_officiating.py	19969	6e7c1229f8bb92b79952d1e1bf847a4233b444dcdf92427c8bcb93b077b525f2	tracked
@@ -546,14 +545,14 @@ sports_federation_people/tests/test_player_license.py	3614	7f5c99d4cdd6a855bf5d7
 sports_federation_people/views/federation_player_license_views.xml	4501	fd6ec0971c1082d366128130959ae4820f9989cff84b20e491059b862934b5f0	tracked
 sports_federation_people/views/federation_player_views.xml	5503	cf3083772d057b7f6b7e80e6a9718284e5de5c8abdd91cd036f1b93e35f0498d	tracked
 sports_federation_people/views/menu_items.xml	800	7d3fa87d254d4e9341c22dd9b5cb0c756d598c546f97d74755c4f8484195eee0	tracked
-sports_federation_portal/README.md	2799	0858004bb57004d597086da02f9da930d4f8459529a31fe5815937acbe1ced2e	tracked
+sports_federation_portal/README.md	3000	1a76802d1b3cd5d5483b4682b67de6bdb86502f5df09d2f2071eb63fce48c98f	tracked
 sports_federation_portal/__init__.py	47	ccd4f636f19c123c1080e56c6af9292e21dedb8d886ce9dc558e040b49aa8709	tracked
-sports_federation_portal/__manifest__.py	2546	8181c323b7aa39db975d8545aaee2707cf5fecbdcc805e669606a5155bb05628	tracked
+sports_federation_portal/__manifest__.py	2608	2252f756833f392753dbe9833b36878d5d98bc35ce1812aae5e76541484365e4	tracked
 sports_federation_portal/controllers/__init__.py	262	55478307547220fae93eaa8ae0da6475e7546e782fc320c42871286d31f06fb6	tracked
-sports_federation_portal/controllers/main.py	278	8e26f488773c3df249765009e5d6edfcfc53606ee75237533247328eb423e426	tracked
+sports_federation_portal/controllers/main.py	188	44a3e98ba771efa6290bfe3a6fb03cb1d4fdff6d710926dce5aa1d7c86ccad65	tracked
 sports_federation_portal/controllers/manager_operation_tasks.py	2960	7de13ed7d05d94a412e8df90cdc0adf200047af20706c3619fc5f0c32741ed4b	tracked
 sports_federation_portal/controllers/match_portal.py	10209	18adc095d4ecc0cf8b78e187c0cd39fbed126c51d07ed6ff9aba2c04cfad14d3	tracked
-sports_federation_portal/controllers/officiating.py	7119	5c564fa02e36ecc7dd948d772feeb74644b4a1dc5e98af8eee9d5a9a8edde914	tracked
+sports_federation_portal/controllers/officiating.py	7426	ff80967d230f239daaedb3621d9b6798bcb5c4d6dcdb5ca279a95a3194d29e57	tracked
 sports_federation_portal/controllers/operation_tasks.py	767	b2360d80a99636d4a385adf5090982cbbcb896ff48fd41c02ccc07a1965613d3	tracked
 sports_federation_portal/controllers/portal_club.py	7302	203abfdafee5895c49e8ce3fd55c8163754934324b01f97114a66a9e4d5b8b26	tracked
 sports_federation_portal/controllers/portal_helpers.py	5728	e13bad3024de10682ee477ab08bfa2714833db1415801acd7a16e3339e920b8b	tracked
@@ -596,9 +595,9 @@ sports_federation_portal/static/src/js/qol_draft_guard.js	417	b0f4fe44d1cfba23c4
 sports_federation_portal/static/src/scss/federation_portal.scss	5859	04d958be5474dcee74317341e48984d1d7148672a517bc7c61fd10939e0c5801	tracked
 sports_federation_portal/tests/__init__.py	605	d0d588fd34d8b5c20e1f5e4f80471ccffaf0a136125eac1508f128a3fa2d8b96	tracked
 sports_federation_portal/tests/test_club_representative.py	12685	e8c7204489e12568ef065ad2bca2b4f7e8f82b3d38f924597733a8f3882bc2f4	tracked
-sports_federation_portal/tests/test_http_smoke.py	26491	28ff7163d681340535019ef695f3449a04399609806ec669ed65afcf17e24f1d	tracked
-sports_federation_portal/tests/test_officiating_portal_access.py	6389	4c268a4d7701bfb28f768ed53dc22c86fff8624db946cf47981ff0f1d067df8c	tracked
-sports_federation_portal/tests/test_operation_tasks.py	3553	cacbef9b4ea2bebce73f719fca83a7f747aad91bb3ee4e1668442df738f964a4	tracked
+sports_federation_portal/tests/test_http_smoke.py	30706	c353949b15f0c8349aa4b6e6422ecf927d347db03ad3ba691208b30da3fc2b54	tracked
+sports_federation_portal/tests/test_officiating_portal_access.py	10342	cb45d8bc60e396873bb30cbc14677a02e672ee4a39e9267fde8e51066b720a3f	tracked
+sports_federation_portal/tests/test_operation_tasks.py	4404	8d3615b56ee6858ed8d49395d171ae1eae3464118d3a4494d3e4ffab4d066e80	tracked
 sports_federation_portal/tests/test_player_portal_access.py	5056	543c4b9da63a1407198ee5f1639150dbf2ebd7f1f8ff981ec05784caf2c0510f	tracked
 sports_federation_portal/tests/test_portal_access_denied.py	5328	d71b1fdf06a9d268cd4bd1677384eea33573003eb424fc8d4d7e94d5a55839e3	tracked
 sports_federation_portal/tests/test_portal_ownership_guard.py	11081	f9461f8c2ec55e605fbc2b70f50965ec3a423fa39d07500abe6c8b88c3373ab0	tracked
@@ -606,11 +605,11 @@ sports_federation_portal/tests/test_portal_v2.py	1669	1d6c3cdbbdc58b66b27c760766
 sports_federation_portal/tests/test_production_security_matrix.py	1890	1d59f6c8a15f718e74d8f7a4741a0c5e673c4b8d9c53547447b003d3cfc37482	tracked
 sports_federation_portal/tests/test_qol.py	2026	d721e5b0d3190fff9fe57c89c0a8843d158b453fa6bb92d72e9d971dc45da79b	tracked
 sports_federation_portal/tests/test_result_portal_access.py	12881	0b104bcda4b9fbb6861a81766b08725284e6239be5ae9bdf8bd291cbee121fa3	tracked
-sports_federation_portal/tests/test_roster_portal_access.py	27608	ad73b9d388f1a6e4911c1871486bd76178ff8934ebdab0d54381f87a2fe085e6	tracked
+sports_federation_portal/tests/test_roster_portal_access.py	27490	543e2de58a24e99ab4512032ba24cfa43f7bd1960424e86f2a1dce082c06b83a	tracked
 sports_federation_portal/tests/test_season_registration.py	5838	748f28b5f510b852176a28e93eb93a94b7385bc46070838b9388cb9bcbf8b934	tracked
 sports_federation_portal/tests/test_team_portal_access.py	3167	6c6026bf3f14cc2d55ca37670e078790cc501894256d0b3ad3b24af6cb70c726	tracked
-sports_federation_portal/tests/test_template_accessibility.py	8456	f7e855dee38f52dee6e1e1d4c40fdced2dd315c9aeefcf9d27883597a0c61dba	tracked
-sports_federation_portal/tests/test_template_mobile.py	8163	de50b0bdf5b59eaf8c2000397ad0c0b0e5909b1e06622576ce5223e109002203	tracked
+sports_federation_portal/tests/test_template_accessibility.py	8447	954a60eabd0c9682d939a4a02cb918a1a0eb52076db5a7dc376e747745b098ec	tracked
+sports_federation_portal/tests/test_template_mobile.py	8154	fe4239e959dc693733ddceff605cfc5bd37bc8e0b48be50f530404a95c0ea404	tracked
 sports_federation_portal/tests/test_tour_portal_workflows.py	15787	f41b516e70377d3b9ce5c97792aff8ed5cef96f89a0ca95b00236e79203bd30e	tracked
 sports_federation_portal/tests/test_tournament_registration.py	12458	b4ac1a3e864a6350787f4c4a43f02f791dc35a78f886c8b13f748c9d557efb6f	tracked
 sports_federation_portal/views/federation_club_representative_portal_views.xml	2435	02fcf770951792dd99f3ade8091ec2247baf6b99c1d0fb50d8326ffacbbf2521	tracked
@@ -629,7 +628,7 @@ sports_federation_portal/views/portal_referee_duty_templates.xml	11406	45ee82130
 sports_federation_portal/views/portal_result_templates.xml	15007	7499f0c31a5a073bf4b1392f73ca0ded62a881d3a07867b80f6baa5feef79df1	tracked
 sports_federation_portal/views/portal_roster_templates.xml	63797	381fa4b6e129596842284e768d8ba4d4f7bc6ec956dd574ec78a7f66655eea75	tracked
 sports_federation_portal/views/portal_templates.xml	53894	6224a7622ebfc6a70dbf42d2b4f36011b44fed95fcf5991815b3a4b533182fa8	tracked
-sports_federation_portal/views/portal_v2_templates.xml	9867	af7f6a4b4eae43bd168b8b99e53117d465ba1f54f98c299469bbdcedb754ee0a	tracked
+sports_federation_portal/views/portal_v2_templates.xml	9991	d2937ca4246d62b6c8e32587ed088df19ff923a351d84ee75d6f6f78fd221485	tracked
 sports_federation_portal/views/qol_views.xml	627	10946c0eaefd4d991f8a8806ecb9f2a4fc1382aa0e20a10b50d721f0ca5cdda7	tracked
 sports_federation_portal/views/res_partner_views.xml	990	c6509dbacc1a2ce581f3c7757f0149a23200bfbaa69553693ad69914abb5fa12	tracked
 sports_federation_portal/views/res_users_views.xml	957	52bc10e6f40eef92f0f328f00ff700d1568cbc9c94b95d5c04fed8a5101684af	tracked

@@ -141,7 +141,7 @@ class FederationQoLPortal(FederationPortalBase):
             if value.strip().isdigit()
         ]
         registrations = (
-            request.env["federation.tournament.registration"]
+            request.env["federation.competition.entry"]
             .sudo()  # noguard: federation manager group checked above
             .browse(ids)
             .exists()
@@ -151,7 +151,7 @@ class FederationQoLPortal(FederationPortalBase):
         ):
             return self._redirect_with_query(
                 "/federation/operations/action-items",
-                error=_("Select submitted registrations only."),
+                error=_("Select submitted competition entries only."),
             )
         if decision in ("return", "reject") and not reason.strip():
             return self._redirect_with_query(
@@ -161,7 +161,7 @@ class FederationQoLPortal(FederationPortalBase):
         for record in registrations:
             try:
                 if decision == "accept":
-                    record.action_confirm()
+                    record.action_approve()
                 elif decision == "return":
                     record.action_return(reason.strip())
                 elif decision == "reject":
@@ -179,7 +179,7 @@ class FederationQoLPortal(FederationPortalBase):
             )
         return self._redirect_with_query(
             "/federation/operations/action-items",
-            success=_("Selected registrations processed."),
+            success=_("Selected competition entries processed."),
         )
 
     @http.route(

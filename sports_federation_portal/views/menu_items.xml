@@ -14,12 +14,6 @@
               action="action_federation_club_representative"
               sequence="40"/>
 
-    <menuitem id="menu_federation_tournament_registration_competition"
-              name="Tournament Registrations"
-              parent="sports_federation_base.menu_federation_planning"
-              action="action_federation_tournament_registration"
-              sequence="15"/>
-
     <menuitem id="menu_federation_operation_task"
               name="Operational Action Queue"
               parent="sports_federation_base.menu_federation_planning"

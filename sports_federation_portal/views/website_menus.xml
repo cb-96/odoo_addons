@@ -11,12 +11,6 @@
               parent="sports_federation_base.menu_federation_root"
               sequence="50"/>
 
-    <menuitem id="menu_federation_tournament_registration"
-              name="Team Registrations"
-              parent="sports_federation_base.menu_federation_competitions"
-              action="action_federation_tournament_registration"
-              sequence="30"/>
-
     <menuitem id="menu_federation_club_representative_portal"
               name="Representatives &amp; Access"
               parent="menu_federation_portal_root"

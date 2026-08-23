@@ -250,14 +250,6 @@ class TestOperationalReporting(TransactionCase):
                 "code": "OPSD",
             }
         )
-        cls.tournament_registration = cls.env[
-            "federation.tournament.registration"
-        ].create(
-            {
-                "tournament_id": cls.tournament.id,
-                "team_id": cls.team_d.id,
-            }
-        )
 
     def test_operational_report_surfaces_tournament_kpis(self):
         """Test that operational report surfaces tournament kpis."""

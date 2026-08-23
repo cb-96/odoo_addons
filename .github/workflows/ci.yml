@@ -87,6 +87,8 @@ jobs:
         run: python ci/check_portal_sudo_guard.py
           python ci/check_portal_v2_ownership.py
           python ci/check_v2_officiating_contract.py
+          python ci/check_v2_registration_contract.py
+          python ci/check_access_csv_integrity.py
 
       - name: Verify source collector completeness
         run: python ci/check_source_collector_contract.py

@@ -431,17 +431,6 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     "gender": "male",
                 }
             )
-            tournament_registration = env["federation.tournament.registration"].create(
-                {
-                    "tournament_id": live_tournament.id,
-                    "team_id": workspace_team.id,
-                    "user_id": self.season_user.id,
-                }
-            )
-            tournament_registration.action_submit()
-            tournament_registration.action_confirm()
-            if tournament_registration.participant_id:
-                tournament_registration.participant_id.action_confirm()
 
             opponent_club = env["federation.club"].create(
                 {
