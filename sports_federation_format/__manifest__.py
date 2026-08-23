@@ -1,11 +1,14 @@
 {
     "name": "Competition Format",
-    "version": "19.0.2.1.0",
+    "version": "19.0.3.0.0",
     "category": "Sports",
     "summary": "Versioned competition structures, stages, progression and fixtures",
     "author": "Sports Federation",
     "license": "LGPL-3",
-    "depends": ["sports_federation_registration"],
+    "depends": [
+        "sports_federation_registration",
+        "sports_federation_result_control",
+    ],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",

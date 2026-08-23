@@ -87,27 +87,47 @@ class FederationFixture(models.Model):
     home_source_outcome = fields.Selection([("winner", "Winner"), ("loser", "Loser")])
     away_source_fixture_id = fields.Many2one("federation.fixture", ondelete="set null")
     away_source_outcome = fields.Selection([("winner", "Winner"), ("loser", "Loser")])
-    home_score = fields.Integer()
-    away_score = fields.Integer()
-    result_state = fields.Selection(
-        [("draft", "Draft"), ("approved", "Approved")],
-        default="draft",
-        required=True,
+    operational_match_id = fields.Many2one(
+        "federation.match",
+        string="Operational Match",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
         index=True,
+    )
+    home_score = fields.Integer(
+        related="operational_match_id.home_score", readonly=True
+    )
+    away_score = fields.Integer(
+        related="operational_match_id.away_score", readonly=True
+    )
+    result_state = fields.Selection(
+        related="operational_match_id.result_state", readonly=True
+    )
+    include_in_official_standings = fields.Boolean(
+        related="operational_match_id.include_in_official_standings", readonly=True
+    )
+    bye_team_id = fields.Many2one(
+        "federation.team", readonly=True, copy=False, ondelete="restrict"
     )
     placement_from = fields.Integer()
     placement_to = fields.Integer()
 
+    def action_materialize_match(self):
+        """Create or return the single operational match for each playable fixture."""
+        return self.env["federation.fixture.materializer"].materialize(self)
+
     def action_approve_result(self):
-        for rec in self:
-            if (
-                rec.stage_id.stage_type in ("knockout", "placement")
-                and rec.home_score == rec.away_score
-            ):
-                raise ValidationError("Bracket fixtures require a winner.")
-            rec.write({"result_state": "approved", "state": "completed"})
-            self.env["federation.stage.graph.engine"].resolve_dependants(rec)
-        return True
+        raise ValidationError(
+            "Fixture results are read-only. Submit, verify and approve the operational match through Result Control."
+        )
+
+    def unlink(self):
+        if self.filtered("operational_match_id"):
+            raise ValidationError(
+                "Fixtures with operational matches cannot be deleted. Cancel or supersede the competition structure instead."
+            )
+        return super().unlink()
 
 
 class FederationStageParticipant(models.Model):

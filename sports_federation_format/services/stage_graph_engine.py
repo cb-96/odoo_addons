@@ -70,6 +70,15 @@ class FederationStageGraphEngine(models.AbstractModel):
         elif stage.format_type == "placement_bracket":
             self._knockout(stage, True)
         stage.graph_state = "ready"
+        self._resolve_stage_byes(stage)
+        playable = stage.stage_fixture_ids.filtered(
+            lambda fixture: fixture.state == "ready"
+            and fixture.home_team_id
+            and fixture.away_team_id
+            and not fixture.operational_match_id
+        )
+        if playable:
+            self.env["federation.fixture.materializer"].materialize(playable)
         return True
 
     def _round_robin(self, stage, double):
@@ -242,38 +251,40 @@ class FederationStageGraphEngine(models.AbstractModel):
             )
         return last
 
-    def _result(self, f):
-        if f.result_state != "approved":
+    def _result(self, fixture):
+        if fixture.bye_team_id:
+            return fixture.bye_team_id, self.env["federation.team"]
+        match = fixture.operational_match_id
+        if (
+            not match
+            or match.result_state != "approved"
+            or not match.include_in_official_standings
+        ):
             return False, False
         return (
-            (f.home_team_id, f.away_team_id)
-            if f.home_score > f.away_score
-            else (f.away_team_id, f.home_team_id)
+            (match.home_team_id, match.away_team_id)
+            if match.home_score > match.away_score
+            else (match.away_team_id, match.home_team_id)
         )
 
-    def _resolve_bye(self, f):
-        if f.result_state == "approved":
+    def _resolve_bye(self, fixture):
+        if fixture.operational_match_id or fixture.bye_team_id:
             return
-        if f.home_team_id and not f.away_team_id and not f.away_source_fixture_id:
-            f.write(
-                {
-                    "home_score": 1,
-                    "away_score": 0,
-                    "result_state": "approved",
-                    "state": "completed",
-                }
-            )
-            self.resolve_dependants(f)
-        elif f.away_team_id and not f.home_team_id and not f.home_source_fixture_id:
-            f.write(
-                {
-                    "home_score": 0,
-                    "away_score": 1,
-                    "result_state": "approved",
-                    "state": "completed",
-                }
-            )
-            self.resolve_dependants(f)
+        unresolved_home = fixture.home_source_fixture_id and not fixture.home_team_id
+        unresolved_away = fixture.away_source_fixture_id and not fixture.away_team_id
+        if unresolved_home or unresolved_away:
+            return
+        team = fixture.home_team_id or fixture.away_team_id
+        if team and bool(fixture.home_team_id) != bool(fixture.away_team_id):
+            fixture.write({"bye_team_id": team.id, "state": "completed"})
+            self.resolve_dependants(fixture)
+
+    def _resolve_stage_byes(self, stage):
+        for fixture in stage.stage_fixture_ids.sorted(
+            lambda item: (item.round_number, item.sequence, item.id)
+        ):
+            self._resolve_bye(fixture)
+        return True
 
     @api.model
     def resolve_dependants(self, f):
@@ -298,6 +309,13 @@ class FederationStageGraphEngine(models.AbstractModel):
                 ).id
             target.write(vals)
             self._resolve_bye(target)
+            if (
+                target.state == "ready"
+                and target.home_team_id
+                and target.away_team_id
+                and not target.operational_match_id
+            ):
+                self.env["federation.fixture.materializer"].materialize(target)
         return True
 
     def _standings(self, stage):
@@ -315,20 +333,25 @@ class FederationStageGraphEngine(models.AbstractModel):
             for p in stage.stage_participant_ids
         }
         for f in stage.stage_fixture_ids.filtered(
-            lambda x: x.result_state == "approved" and x.home_team_id and x.away_team_id
+            lambda x: x.operational_match_id
+            and x.operational_match_id.result_state == "approved"
+            and x.operational_match_id.include_in_official_standings
+            and x.home_team_id
+            and x.away_team_id
         ):
-            h, a = stats[f.home_team_id.id], stats[f.away_team_id.id]
+            match = f.operational_match_id
+            h, a = stats[match.home_team_id.id], stats[match.away_team_id.id]
             h["played"] += 1
             a["played"] += 1
-            h["score_for"] += f.home_score
-            h["score_against"] += f.away_score
-            a["score_for"] += f.away_score
-            a["score_against"] += f.home_score
-            if f.home_score > f.away_score:
+            h["score_for"] += match.home_score
+            h["score_against"] += match.away_score
+            a["score_for"] += match.away_score
+            a["score_against"] += match.home_score
+            if match.home_score > match.away_score:
                 h["won"] += 1
                 a["lost"] += 1
                 h["points"] += 3
-            elif f.away_score > f.home_score:
+            elif match.away_score > match.home_score:
                 a["won"] += 1
                 h["lost"] += 1
                 a["points"] += 3
@@ -352,8 +375,16 @@ class FederationStageGraphEngine(models.AbstractModel):
 
     @api.model
     def freeze_standings(self, stage):
-        if stage.stage_fixture_ids.filtered(lambda f: f.result_state != "approved"):
-            raise ValidationError(_("Approve all results first."))
+        incomplete = stage.stage_fixture_ids.filtered(
+            lambda fixture: not fixture.bye_team_id
+            and (
+                not fixture.operational_match_id
+                or fixture.operational_match_id.result_state != "approved"
+                or not fixture.operational_match_id.include_in_official_standings
+            )
+        )
+        if incomplete:
+            raise ValidationError(_("Approve all operational match results first."))
         snap = self.env["federation.stage.standing.snapshot"].create(
             {"stage_id": stage.id}
         )
