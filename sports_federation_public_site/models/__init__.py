@@ -7,3 +7,4 @@ from . import public_player_flags
 from . import public_editorial
 from . import website
 from . import website_menu
+from . import public_competition_edition

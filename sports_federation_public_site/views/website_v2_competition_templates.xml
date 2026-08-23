@@ -1,0 +1,104 @@
+<odoo>
+  <template id="public_v2_competition_card" name="V2 competition card">
+    <article class="sf-competition-card card h-100 shadow-sm border-0">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex justify-content-between gap-2 mb-2">
+          <span class="badge text-bg-primary"><t t-esc="edition.engine_state"/></span>
+          <small class="text-muted"><t t-esc="edition.season_id.display_name"/></small>
+        </div>
+        <h2 class="h5"><t t-esc="edition.name"/></h2>
+        <p class="text-muted flex-grow-1"><t t-esc="edition.public_summary or 'Competition details, schedules and results.'"/></p>
+        <div class="d-flex flex-wrap gap-1 mb-3">
+          <span class="badge rounded-pill text-bg-light" t-foreach="edition.tournament_ids.filtered(lambda d: d.website_published and d.edition_id == edition)" t-as="division"><t t-esc="division.name"/></span>
+        </div>
+        <a class="btn btn-outline-primary stretched-link" t-att-href="'/competitions/%s' % edition.public_slug">View competition</a>
+      </div>
+    </article>
+  </template>
+
+  <template id="public_v2_match_card" name="V2 public match card">
+    <article class="sf-match-card" t-att-data-match-id="row['match'].id">
+      <div class="d-flex justify-content-between gap-2 small text-muted mb-1">
+        <span t-if="row['slot']"><t t-esc="row['slot'].court_id.display_name"/></span>
+        <span class="sf-match-status"><t t-esc="row['status'].replace('_', ' ').title()"/></span>
+      </div>
+      <div class="sf-team-line"><strong><t t-esc="row['match'].home_team_id.display_name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].home_score"/></span></div>
+      <div class="sf-team-line"><strong><t t-esc="row['match'].away_team_id.display_name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].away_score"/></span></div>
+      <small class="text-muted" t-if="row['match'].logical_fixture_id"><t t-esc="row['match'].logical_fixture_id.stage_id.name"/> · Round <t t-esc="row['match'].logical_fixture_id.round_number"/></small>
+    </article>
+  </template>
+
+  <template id="public_v2_competition_hub" name="V2 competitions">
+    <t t-call="website.layout"><main class="container py-5">
+      <header class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
+        <div><p class="text-primary text-uppercase fw-semibold mb-1">Competition centre</p><h1><t t-esc="'Competition archive' if archive else 'Current competitions'"/></h1><p class="lead text-muted">Schedules, gamedays, standings and knockout brackets from the V2 competition engine.</p></div>
+        <a class="btn btn-outline-secondary" t-att-href="'/competitions' if archive else '/competitions/archive'"><t t-esc="'Current competitions' if archive else 'Archive'"/></a>
+      </header>
+      <form class="row g-2 mb-4" method="get">
+        <div class="col-md-8"><label class="visually-hidden" for="competition-search">Search</label><input id="competition-search" class="form-control" name="search" t-att-value="search" placeholder="Search competitions"/></div>
+        <div class="col-md-3"><select class="form-select" name="season_id" aria-label="Season"><option value="">All seasons</option><option t-foreach="seasons" t-as="season" t-att-value="season.id"><t t-esc="season.display_name"/></option></select></div>
+        <div class="col-md-1"><button class="btn btn-primary w-100">Go</button></div>
+      </form>
+      <div class="row g-4" t-if="editions"><div class="col-md-6 col-xl-4" t-foreach="editions" t-as="edition"><t t-call="sports_federation_public_site.public_v2_competition_card"/></div></div>
+      <div class="sf-empty-state" t-else=""><h2 class="h4">No competitions found</h2><p class="text-muted">Published V2 competitions will appear here.</p></div>
+    </main></t>
+  </template>
+
+  <template id="public_v2_competition_nav" name="Competition navigation">
+    <nav class="nav nav-pills flex-nowrap overflow-auto mb-4" aria-label="Competition sections">
+      <a class="nav-link" t-att-href="'/competitions/%s' % edition.public_slug">Overview</a>
+      <a class="nav-link" t-att-href="'/competitions/%s/schedule' % edition.public_slug">Schedule</a>
+      <a class="nav-link" t-att-href="'/competitions/%s/format' % edition.public_slug">Format</a>
+    </nav>
+  </template>
+
+  <template id="public_v2_competition_detail" name="V2 competition detail">
+    <t t-call="website.layout"><main>
+      <section class="sf-competition-hero"><div class="container py-5"><span class="badge text-bg-light mb-2"><t t-esc="edition.engine_state"/></span><h1><t t-esc="edition.name"/></h1><p class="lead mb-0"><t t-esc="edition.public_summary or edition.season_id.display_name"/></p></div></section>
+      <div class="container py-4"><t t-call="sports_federation_public_site.public_v2_competition_nav"/>
+        <div class="d-flex flex-wrap gap-2 mb-4"><a t-foreach="divisions" t-as="item" t-att-class="'btn ' + ('btn-primary' if division == item else 'btn-outline-primary')" t-att-href="'/competitions/%s?division_id=%s' % (edition.public_slug, item.id)"><t t-esc="item.name"/></a></div>
+        <div class="row g-4">
+          <div class="col-lg-7"><section class="card border-0 shadow-sm"><div class="card-body"><h2 class="h4">Next gameday</h2><t t-if="next_matchday"><h3 class="h5"><t t-esc="next_matchday.name"/></h3><p><t t-esc="next_matchday.date"/> · <t t-esc="next_matchday.venue_id.display_name"/></p><a class="btn btn-primary" t-att-href="'/competitions/%s/gamedays/%s' % (edition.public_slug, next_matchday.id)">Open gameday board</a></t><p class="text-muted" t-else="">No published gameday is currently available.</p></div></section></div>
+          <div class="col-lg-5"><section class="card border-0 shadow-sm"><div class="card-body"><h2 class="h4">Current format</h2><t t-if="current_stage"><p class="mb-1"><strong><t t-esc="current_stage.name"/></strong></p><span class="badge text-bg-info"><t t-esc="current_stage.format_type.replace('_', ' ').title()"/></span><p class="text-muted mt-2"><t t-esc="current_stage.graph_state.title()"/></p><a t-att-href="'/competitions/%s/format?division_id=%s' % (edition.public_slug, division.id if division else '')">View full competition format</a></t><p class="text-muted" t-else="">The public format will appear after the structure is frozen.</p></div></section></div>
+        </div>
+      </div>
+    </main></t>
+  </template>
+
+  <template id="public_v2_competition_schedule" name="V2 competition schedule">
+    <t t-call="website.layout"><main class="container py-5"><h1><t t-esc="edition.name"/> schedule</h1><t t-call="sports_federation_public_site.public_v2_competition_nav"/>
+      <div class="row g-3" t-if="matchdays"><div class="col-md-6" t-foreach="matchdays" t-as="matchday"><article class="card h-100 shadow-sm"><div class="card-body"><p class="text-primary fw-semibold"><t t-esc="matchday.date"/></p><h2 class="h5"><t t-esc="matchday.name"/></h2><p class="text-muted"><t t-esc="matchday.venue_id.display_name"/> · Publication v<t t-esc="matchday.current_publication_id.version"/></p><a class="btn btn-outline-primary" t-att-href="'/competitions/%s/gamedays/%s' % (edition.public_slug, matchday.id)">View gameday</a></div></article></div></div>
+      <div class="sf-empty-state" t-else=""><h2 class="h4">Schedule not published</h2><p>Only current live schedule publications are shown.</p></div>
+    </main></t>
+  </template>
+
+  <template id="public_v2_stage_cards" name="V2 stage cards">
+    <section class="sf-stage" t-foreach="stage_cards" t-as="card">
+      <header class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><p class="text-uppercase text-primary small fw-semibold mb-1">Stage <t t-esc="card['stage_index'] if 'stage_index' in card else ''"/></p><h2 class="h3 mb-0"><t t-esc="card['stage'].name"/></h2></div><div><span class="badge text-bg-primary"><t t-esc="card['stage'].format_type.replace('_', ' ').title()"/></span> <span class="badge text-bg-light"><t t-esc="card['stage'].graph_state.title()"/></span></div></header>
+      <p class="text-muted" t-if="card['progressions']"><t t-foreach="card['progressions']" t-as="progression"><span>Ranks <t t-esc="progression.rank_from"/>–<t t-esc="progression.rank_to"/> progress to <strong><t t-esc="progression.target_stage_id.name"/></strong>. </span></t></p>
+      <div class="table-responsive mb-4" t-if="card['standings']"><table class="table table-hover align-middle sf-standings-table"><caption>Frozen standings for <t t-esc="card['stage'].name"/></caption><thead><tr><th>Pos</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>For</th><th>Against</th><th>Diff</th><th>Pts</th></tr></thead><tbody><tr t-foreach="card['standings']" t-as="line"><td><strong><t t-esc="line.rank"/></strong></td><td><t t-esc="line.team_id.display_name"/></td><td><t t-esc="line.played"/></td><td><t t-esc="line.won"/></td><td><t t-esc="line.drawn"/></td><td><t t-esc="line.lost"/></td><td><t t-esc="line.score_for"/></td><td><t t-esc="line.score_against"/></td><td><t t-esc="line.score_for - line.score_against"/></td><td><strong><t t-esc="line.points"/></strong></td></tr></tbody></table></div>
+      <div class="sf-bracket" t-if="card['rounds'] and card['stage'].format_type in ('knockout','placement_bracket')" role="region" t-att-aria-label="card['stage'].name + ' bracket'">
+        <section class="sf-bracket-round" t-foreach="card['rounds']" t-as="round_data"><h3 class="h6 text-center">Round <t t-esc="round_data[0]"/></h3><article class="sf-bracket-match" t-foreach="round_data[1]" t-as="fixture"><div class="sf-team-line"><span><t t-esc="fixture.home_team_id.display_name or 'TBD'"/></span><strong t-if="fixture.result_state in ('submitted','verified','approved')"><t t-esc="fixture.home_score"/></strong></div><div class="sf-team-line"><span><t t-esc="fixture.away_team_id.display_name or 'TBD'"/></span><strong t-if="fixture.result_state in ('submitted','verified','approved')"><t t-esc="fixture.away_score"/></strong></div><small class="text-muted" t-if="fixture.home_source_fixture_id or fixture.away_source_fixture_id">Progression fixture</small></article></section>
+      </div>
+      <div class="row g-3" t-elif="card['rounds']"><div class="col-lg-6" t-foreach="card['rounds']" t-as="round_data"><div class="card h-100"><div class="card-body"><h3 class="h5">Round <t t-esc="round_data[0]"/></h3><div class="border-top py-2" t-foreach="round_data[1]" t-as="fixture"><div class="d-flex justify-content-between"><span><t t-esc="fixture.home_team_id.display_name or 'TBD'"/> vs <t t-esc="fixture.away_team_id.display_name or 'TBD'"/></span><strong t-if="fixture.result_state in ('submitted','verified','approved')"><t t-esc="fixture.home_score"/>–<t t-esc="fixture.away_score"/></strong></div></div></div></div></div></div>
+    </section>
+  </template>
+
+  <template id="public_v2_competition_format" name="V2 competition format">
+    <t t-call="website.layout"><main class="container py-5"><h1><t t-esc="edition.name"/> format</h1><t t-call="sports_federation_public_site.public_v2_competition_nav"/><div class="d-flex flex-wrap gap-2 mb-4"><a t-foreach="divisions" t-as="item" t-att-class="'btn ' + ('btn-primary' if division == item else 'btn-outline-primary')" t-att-href="'/competitions/%s/format?division_id=%s' % (edition.public_slug, item.id)"><t t-esc="item.name"/></a></div><t t-call="sports_federation_public_site.public_v2_stage_cards"/><div class="sf-empty-state" t-if="not stage_cards"><h2 class="h4">Format not published</h2><p>The frozen V2 structure will appear here.</p></div></main></t>
+  </template>
+
+  <template id="public_v2_gameday" name="V2 gameday board">
+    <t t-call="website.layout"><main class="container-fluid px-lg-5 py-4 sf-live-board" t-att-data-status-url="'/competitions/%s/gamedays/%s/status.json' % (edition.public_slug, matchday.id)">
+      <header class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4"><div><a t-att-href="'/competitions/%s/schedule' % edition.public_slug">← Schedule</a><h1 class="mt-2"><t t-esc="matchday.name"/></h1><p class="text-muted"><t t-esc="matchday.date"/> · <t t-esc="matchday.venue_id.display_name"/> · Live publication v<t t-esc="publication.version"/></p></div><div class="d-flex gap-2 align-items-start"><button type="button" class="btn btn-outline-primary sf-jump-now">Jump to now</button><a class="btn btn-outline-secondary" t-att-href="'/competitions/%s/gamedays/%s?display=1' % (edition.public_slug, matchday.id)">Display mode</a></div></header>
+      <form class="row g-2 mb-3"><div class="col-md-5"><select name="team_id" class="form-select" aria-label="Filter by team"><option value="">All teams</option><option t-foreach="edition.tournament_ids.mapped('participant_ids').mapped('team_id')" t-as="team" t-att-value="team.id" t-att-selected="team_id == team.id"><t t-esc="team.display_name"/></option></select></div><div class="col-md-5"><select name="court_id" class="form-select" aria-label="Filter by court"><option value="">All courts</option><option t-foreach="courts" t-as="court" t-att-value="court.id" t-att-selected="court_id == court.id"><t t-esc="court.display_name"/></option></select></div><div class="col-md-2"><button class="btn btn-primary w-100">Filter</button></div></form>
+      <div class="d-none d-lg-block table-responsive sf-gameday-grid-wrap" t-if="times and courts"><table class="table sf-gameday-grid"><caption class="visually-hidden">Matches by time and court</caption><thead><tr><th class="sf-time-column">Time</th><th t-foreach="courts" t-as="court"><t t-esc="court.display_name"/></th></tr></thead><tbody><tr t-foreach="times" t-as="time"><th class="sf-time-column" scope="row"><t t-esc="time.strftime('%H:%M')"/></th><td t-foreach="courts" t-as="court"><t t-set="row" t-value="grid.get((time, court.id))"/><t t-if="row" t-call="sports_federation_public_site.public_v2_match_card"/></td></tr></tbody></table></div>
+      <div class="d-lg-none sf-mobile-agenda" t-if="by_time"><section class="mb-4" t-foreach="by_time" t-as="time_rows"><h2 class="h5 sticky-top bg-white py-2"><t t-esc="time_rows[0].strftime('%H:%M') if time_rows[0] else 'Unscheduled'"/></h2><div class="mb-2" t-foreach="time_rows[1]" t-as="row"><t t-call="sports_federation_public_site.public_v2_match_card"/></div></section></div>
+      <div class="sf-empty-state" t-if="not matches"><h2 class="h4">No published matches</h2><p>Change the filters or return after the schedule is published.</p></div>
+    </main></t>
+  </template>
+
+  <template id="public_v2_gameday_display" name="V2 gameday display">
+    <t t-call="website.layout"><main class="container-fluid p-4 sf-display-board sf-live-board" t-att-data-status-url="'/competitions/%s/gamedays/%s/status.json' % (edition.public_slug, matchday.id)"><header class="d-flex justify-content-between align-items-center mb-4"><div><h1><t t-esc="matchday.name"/></h1><p class="lead"><t t-esc="matchday.venue_id.display_name"/></p></div><div class="display-6" id="sf-display-clock"></div></header><div class="row g-3"><div class="col-md-6 col-xl-4" t-foreach="matches" t-as="row"><t t-call="sports_federation_public_site.public_v2_match_card"/></div></div></main></t>
+  </template>
+</odoo>

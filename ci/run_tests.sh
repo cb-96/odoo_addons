@@ -698,3 +698,5 @@ if [[ -x "$SCRIPT_DIR/prune_ci_logs.sh" ]]; then
 fi
 
 exit "$EXIT_CODE"
+
+python ci/check_public_v2_competition_contract.py

@@ -1,0 +1,29 @@
+<odoo>
+  <record id="view_competition_edition_form_public_v2" model="ir.ui.view">
+    <field name="name">federation.competition.edition.form.public.v2</field>
+    <field name="model">federation.competition.edition</field>
+    <field name="inherit_id" ref="sports_federation_tournament.view_federation_competition_edition_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_publish_website" type="object" string="Publish website" class="btn-primary" invisible="website_published"/>
+        <button name="action_unpublish_website" type="object" string="Unpublish website" invisible="not website_published"/>
+        <button name="action_open_public_preview" type="object" string="Preview website" invisible="not public_slug"/>
+      </xpath>
+      <xpath expr="//sheet" position="inside">
+        <group string="Public competition page">
+          <group>
+            <field name="website_published" readonly="1"/>
+            <field name="public_slug"/>
+            <field name="public_featured"/>
+            <field name="public_sort_sequence"/>
+          </group>
+          <group>
+            <field name="public_archive_date"/>
+            <field name="public_hero_image" widget="image"/>
+          </group>
+          <field name="public_summary" colspan="2"/>
+        </group>
+      </xpath>
+    </field>
+  </record>
+</odoo>

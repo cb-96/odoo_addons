@@ -65,7 +65,11 @@ class TournamentHubFilterMixin:
         if not public_access:
             return []
 
-        domain = [("website_published", "=", True)]
+        domain = [
+            ("website_published", "=", True),
+            ("edition_id", "!=", False),
+            ("edition_id.website_published", "=", True),
+        ]
         if public_access == "results":
             domain.append(("show_public_results", "=", True))
         elif public_access == "standings":
