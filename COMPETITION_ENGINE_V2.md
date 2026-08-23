@@ -19,3 +19,14 @@ Registration finalizes a participant set. Format freezes a structure. Calendar p
 ## Migration policy
 
 The legacy monolithic engine has been removed from the addon set. New and existing operational flows use the V2 ownership split. Databases upgraded from a release that installed the legacy addon require the normal reviewed upgrade/migration procedure before production rollout; do not silently reinterpret existing production records.
+
+
+## Phase 5.1 operator handoff
+
+The operator path is fully exposed in the backend: Schedule Planner submits a
+validated revision, Schedule Review Queue provides independent request-changes
+or approval decisions, Publication exposes approved schedules and immutable
+publication history, and Match-Day Operations consumes only the current live
+publication. Submission creates its pending review atomically when the approval
+addon is installed; there is no operator-visible intermediate state that
+requires a separate "start review" action.

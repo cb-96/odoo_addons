@@ -30,7 +30,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         if not schedule or schedule.state != "ready_for_review":
             raise ValidationError(_("Only submitted schedules can enter review."))
         self.env["federation.competition.role.assignment"].assert_role(
-            schedule.edition_id, "schedule_approver", "competition_director"
+            schedule.edition_id, "schedule_planner", "competition_director"
         )
         pending = self.env["federation.schedule.review"].search(
             [
@@ -43,7 +43,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         if pending:
             return pending
         snapshot = self._snapshot(schedule)
-        return self.env["federation.schedule.review"].create(
+        return self.env["federation.schedule.review"].sudo().create(
             {
                 "schedule_id": schedule.id,
                 "submitted_revision": schedule.revision,
@@ -88,7 +88,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
                 "reviewed_at": fields.Datetime.now(),
             }
         )
-        review.schedule_id.state = "changes_requested"
+        review.schedule_id.sudo().state = "changes_requested"
         return True
 
     @api.model
@@ -110,7 +110,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
                 "reviewed_at": fields.Datetime.now(),
             }
         )
-        review.schedule_id.state = "approved"
+        review.schedule_id.sudo().state = "approved"
         self.env["federation.competition.event"].emit(
             review.schedule_id,
             "schedule_approved",
@@ -121,10 +121,12 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
     @api.model
     def publish(self, schedule_id, reason=False):
         schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
+        if not schedule:
+            raise ValidationError(_("The schedule no longer exists."))
         self.env["federation.competition.role.assignment"].assert_role(
             schedule.edition_id, "schedule_approver", "competition_director"
         )
-        if not schedule or schedule.state != "approved":
+        if schedule.state != "approved":
             raise ValidationError(_("Approve the schedule before publication."))
         if schedule.matchday_id.state == "open":
             raise ValidationError(
@@ -165,8 +167,8 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             )
             + 1
         )
-        live.write({"state": "superseded"})
-        publication = self.env["federation.schedule.publication"].create(
+        live.sudo().write({"state": "superseded"})
+        publication = self.env["federation.schedule.publication"].sudo().create(
             {
                 "schedule_id": schedule.id,
                 "version": version,
@@ -183,15 +185,15 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
                 raise ValidationError(
                     _("Every scheduled fixture must have an operational match.")
                 )
-            match.write(
+            match.sudo().write(
                 {
                     "published_slot_id": assignment.slot_id.id,
                     "schedule_publication_id": publication.id,
                     "date_scheduled": assignment.slot_id.start_datetime,
                 }
             )
-        schedule.state = "published"
-        schedule.matchday_id.write(
+        schedule.sudo().state = "published"
+        schedule.matchday_id.sudo().write(
             {"state": "scheduled", "current_publication_id": publication.id}
         )
         self.env["federation.competition.event"].emit(

@@ -95,6 +95,55 @@ class FederationSchedule(models.Model):
             if rec.max_consecutive_games < 1:
                 raise ValidationError("Maximum consecutive games must be at least one.")
 
+    def _submission_validation(self):
+        self.ensure_one()
+        return self.env["federation.schedule.validator"].validate_map(
+            self, {a.fixture_id.id: a.slot_id.id for a in self.assignment_ids}
+        )
+
+    def action_open_submit_for_review(self):
+        self.ensure_one()
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "schedule_planner", "competition_director"
+        )
+        self.assert_mutable()
+        validation = self._submission_validation()
+        if not validation["valid"]:
+            raise ValidationError(
+                "Resolve all errors and unassigned fixtures before submitting."
+            )
+        if not validation["warnings"]:
+            return self.action_submit_for_review()
+        summary = "\n".join(
+            f"- {warning.get('message', warning.get('code', 'Schedule warning'))}"
+            for warning in validation["warnings"]
+        )
+        wizard = self.env["federation.schedule.submit.wizard"].create(
+            {
+                "schedule_id": self.id,
+                "expected_revision": self.revision,
+                "warning_count": len(validation["warnings"]),
+                "warning_summary": summary,
+            }
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Submit Schedule for Review",
+            "res_model": "federation.schedule.submit.wizard",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "target": "new",
+        }
+
+    def action_submit_for_review(self, warning_override_reason=False):
+        self.ensure_one()
+        self.env["federation.schedule.commands"].submit(
+            self.id,
+            self.revision,
+            warning_override_reason=warning_override_reason,
+        )
+        return {"type": "ir.actions.client", "tag": "reload"}
+
     def action_open_auto_schedule(self):
         self.ensure_one()
         return {

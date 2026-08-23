@@ -1,0 +1,30 @@
+<odoo>
+  <record id="schedule_submit_wizard_form" model="ir.ui.view">
+    <field name="name">federation.schedule.submit.wizard.form</field>
+    <field name="model">federation.schedule.submit.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Submit Schedule for Review">
+        <sheet>
+          <div class="alert alert-warning" role="alert">
+            This schedule has non-blocking warnings. Explain why they are acceptable before submitting immutable review evidence.
+          </div>
+          <group>
+            <field name="schedule_id"/>
+            <field name="expected_revision"/>
+            <field name="warning_count"/>
+          </group>
+          <group string="Warnings">
+            <field name="warning_summary" nolabel="1"/>
+          </group>
+          <group string="Required justification">
+            <field name="warning_override_reason" required="warning_count &gt; 0" placeholder="Explain why review may proceed despite these warnings..."/>
+          </group>
+        </sheet>
+        <footer>
+          <button name="action_submit" type="object" string="Submit for Review" class="btn-primary"/>
+          <button string="Cancel" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

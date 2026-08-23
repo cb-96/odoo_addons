@@ -32,6 +32,10 @@ jobs:
           python ci/check_source_collector_contract.py
           python ci/check_addon_integrity.py
           python ci/check_workflow_state_contracts.py
+          python ci/check_phase1_fixture_contract.py
+          python ci/check_phase2_rules_contract.py
+          python ci/check_phases_3_5_contract.py
+          python ci/check_phase51_schedule_handoff.py
           python ci/check_doc_freshness.py
       - run: scripts/ci/run_rc_validation.sh static
 

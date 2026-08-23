@@ -3499,6 +3499,9 @@ jobs:
       - name: Verify Phase 2 rules contract
         run: python ci/check_phase2_rules_contract.py
 
+      - name: Verify Phases 3-5 contract
+        run: python ci/check_phases_3_5_contract.py
+
       - name: Report module dependency drift
         run: python ci/check_module_dependency_drift.py
 
@@ -12758,6 +12761,59 @@ if errors:
         print(f"- {error}")
     sys.exit(1)
 print("Phase 2 rules contract passed.")
+
+====================================================================================================
+FILE: ci/check_phases_3_5_contract.py
+====================================================================================================
+
+#!/usr/bin/env python3
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+checks = {
+    "sports_federation_scheduling/models/schedule_integrity.py": [
+        "assert_mutable",
+        "Submitted, approved and published schedules are immutable",
+    ],
+    "sports_federation_scheduling/services/schedule_validator.py": [
+        "venue_blackout",
+        "rest_shortfall",
+        "participants_unresolved",
+    ],
+    "sports_federation_schedule_approval/models/publication_integrity.py": [
+        "snapshot_digest",
+        "current_publication_id",
+        "published_slot_id",
+    ],
+    "sports_federation_schedule_approval/services/approval_commands.py": [
+        "submitting planner cannot approve",
+        "digest_snapshot",
+        "schedule_publication_id",
+    ],
+    "sports_federation_matchday/models/matchday_session.py": [
+        "publication_digest",
+        "audit evidence",
+    ],
+    "sports_federation_matchday/services/matchday_commands.py": [
+        "current live published match day",
+        "resolve_incident",
+        "unfinished_match_ids",
+    ],
+}
+errors = []
+for rel, tokens in checks.items():
+    p = ROOT / rel
+    if not p.is_file():
+        errors.append(f"missing {rel}")
+        continue
+    text = p.read_text(encoding="utf-8")
+    errors.extend(f"{rel}: missing {t}" for t in tokens if t not in text)
+if errors:
+    print("Phases 3-5 contract failed:")
+    [print(f"- {e}") for e in errors]
+    sys.exit(1)
+print("Phases 3-5 contract passed.")
 
 ====================================================================================================
 FILE: ci/check_portal_sudo_guard.py
@@ -41603,7 +41659,7 @@ FILE: sports_federation_matchday/__manifest__.py
 
 {
     "name": "Match-Day Operations",
-    "version": "19.0.1.1.0",
+    "version": "19.0.2.0.0",
     "category": "Sports",
     "summary": "Live court control, delays and operational incidents",
     "author": "Sports Federation",
@@ -41625,6 +41681,7 @@ FILE: sports_federation_matchday/models/__init__.py
 ====================================================================================================
 
 from . import matchday_operation
+from . import matchday_session
 
 ====================================================================================================
 FILE: sports_federation_matchday/models/matchday_operation.py
@@ -41687,12 +41744,77 @@ class FederationMatchdayCourtStatus(models.Model):
     )
 
 ====================================================================================================
+FILE: sports_federation_matchday/models/matchday_session.py
+====================================================================================================
+
+from odoo import fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationMatchdaySession(models.Model):
+    _name = "federation.matchday.session"
+    _description = "Match-Day Execution Session"
+    _order = "opened_at desc,id desc"
+
+    matchday_id = fields.Many2one(
+        "federation.matchday", required=True, ondelete="restrict", index=True
+    )
+    publication_id = fields.Many2one(
+        "federation.schedule.publication",
+        required=True,
+        ondelete="restrict",
+        index=True,
+    )
+    publication_digest = fields.Char(required=True, readonly=True)
+    state = fields.Selection(
+        [("open", "Open"), ("closed", "Closed")],
+        default="open",
+        required=True,
+        index=True,
+    )
+    opened_at = fields.Datetime(
+        default=fields.Datetime.now, required=True, readonly=True
+    )
+    opened_by_id = fields.Many2one(
+        "res.users",
+        default=lambda self: self.env.user,
+        required=True,
+        readonly=True,
+        ondelete="restrict",
+    )
+    closed_at = fields.Datetime(readonly=True)
+    closed_by_id = fields.Many2one("res.users", readonly=True, ondelete="restrict")
+    close_note = fields.Text(readonly=True)
+
+    def unlink(self):
+        raise ValidationError("Match-day sessions are retained as audit evidence.")
+
+
+class FederationMatchdaySessionLink(models.Model):
+    _inherit = "federation.matchday"
+
+    session_ids = fields.One2many(
+        "federation.matchday.session", "matchday_id", readonly=True
+    )
+    active_session_id = fields.Many2one(
+        "federation.matchday.session", compute="_compute_active_session"
+    )
+
+    def _compute_active_session(self):
+        Session = self.env["federation.matchday.session"]
+        for record in self:
+            record.active_session_id = Session.search(
+                [("matchday_id", "=", record.id), ("state", "=", "open")], limit=1
+            )
+
+====================================================================================================
 FILE: sports_federation_matchday/security/ir.model.access.csv
 ====================================================================================================
 
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_federation_matchday_incident_group_matchday_manager,federation_matchday_incident.group_matchday_manager,model_federation_matchday_incident,sports_federation_matchday.group_matchday_manager,1,1,1,1
 access_federation_matchday_court_status_group_matchday_manager,federation_matchday_court_status.group_matchday_manager,model_federation_matchday_court_status,sports_federation_matchday.group_matchday_manager,1,1,1,1
+access_federation_matchday_session_group_matchday_manager,federation_matchday_session.group_matchday_manager,model_federation_matchday_session,sports_federation_matchday.group_matchday_manager,1,1,1,0
 
 ====================================================================================================
 FILE: sports_federation_matchday/security/security.xml
@@ -41722,7 +41844,7 @@ from . import matchday_commands
 FILE: sports_federation_matchday/services/matchday_commands.py
 ====================================================================================================
 
-from odoo import _, api, models
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 
@@ -41731,43 +41853,157 @@ class FederationMatchdayCommands(models.AbstractModel):
     _description = "Match-Day Operations Commands"
 
     def _resolve(self, matchday_id):
-        m = self.env["federation.matchday"].browse(int(matchday_id)).exists()
-        if not m:
+        matchday = self.env["federation.matchday"].browse(int(matchday_id)).exists()
+        if not matchday:
             raise ValidationError(_("The match day no longer exists."))
         self.env["federation.competition.role.assignment"].assert_role(
-            m.edition_id, "matchday_manager", "competition_director"
+            matchday.edition_id, "matchday_manager", "competition_director"
         )
-        return m
+        return matchday
+
+    def _require_open(self, matchday):
+        if matchday.state != "open" or not matchday.active_session_id:
+            raise ValidationError(
+                _("Open the published match day before performing live operations.")
+            )
 
     @api.model
     def open_matchday(self, matchday_id):
-        m = self._resolve(matchday_id)
-        if m.state != "scheduled":
+        matchday = self._resolve(matchday_id)
+        publication = matchday.current_publication_id
+        if (
+            matchday.state != "scheduled"
+            or not publication
+            or publication.state != "live"
+        ):
             raise ValidationError(
-                _("Only a published scheduled match day can be opened.")
+                _("Only the current live published match day can be opened.")
             )
-        m.state = "open"
-        self.env["federation.competition.event"].emit(m, "matchday_opened", {})
-        return True
+        if publication.snapshot_digest != self.env[
+            "federation.schedule.publication"
+        ].digest_snapshot(publication.assignment_snapshot):
+            raise ValidationError(
+                _("The published schedule snapshot failed its integrity check.")
+            )
+        session = self.env["federation.matchday.session"].create(
+            {
+                "matchday_id": matchday.id,
+                "publication_id": publication.id,
+                "publication_digest": publication.snapshot_digest,
+            }
+        )
+        for court in matchday.slot_ids.mapped("court_id"):
+            self.env["federation.matchday.court.status"].create(
+                {"matchday_id": matchday.id, "court_id": court.id}
+            )
+        matchday.state = "open"
+        self.env["federation.competition.event"].emit(
+            matchday,
+            "matchday_opened",
+            {"session_id": session.id, "publication_id": publication.id},
+        )
+        return session
 
     @api.model
     def report_incident(self, matchday_id, incident_type, description):
-        m = self._resolve(matchday_id)
+        matchday = self._resolve(matchday_id)
+        self._require_open(matchday)
         return self.env["federation.matchday.incident"].create(
             {
-                "matchday_id": m.id,
+                "matchday_id": matchday.id,
                 "incident_type": incident_type,
                 "description": description,
             }
         )
 
     @api.model
-    def close_matchday(self, matchday_id):
-        m = self._resolve(matchday_id)
-        if m.state != "open":
-            raise ValidationError(_("Open the match day before closing it."))
-        m.state = "closed"
-        self.env["federation.competition.event"].emit(m, "matchday_closed", {})
+    def set_court_status(
+        self, matchday_id, court_id, state, delay_minutes=0, note=False
+    ):
+        matchday = self._resolve(matchday_id)
+        self._require_open(matchday)
+        status = self.env["federation.matchday.court.status"].search(
+            [("matchday_id", "=", matchday.id), ("court_id", "=", int(court_id))],
+            limit=1,
+        )
+        if not status:
+            raise ValidationError(_("The court is outside this match day."))
+        if state not in ("available", "delayed", "unavailable"):
+            raise ValidationError(_("Invalid court status."))
+        status.write(
+            {
+                "state": state,
+                "delay_minutes": max(0, int(delay_minutes or 0)),
+                "note": note,
+            }
+        )
+        if state != "available":
+            self.report_incident(
+                matchday.id,
+                "court_unavailable" if state == "unavailable" else "delay",
+                note or _("Court status changed."),
+            )
+        return status
+
+    @api.model
+    def resolve_incident(self, incident_id):
+        incident = (
+            self.env["federation.matchday.incident"].browse(int(incident_id)).exists()
+        )
+        matchday = self._resolve(incident.matchday_id.id)
+        self._require_open(matchday)
+        incident.write(
+            {
+                "resolved": True,
+                "resolved_at": fields.Datetime.now(),
+                "resolved_by_id": self.env.user.id,
+            }
+        )
+        return True
+
+    @api.model
+    def close_matchday(self, matchday_id, close_note=False, force=False):
+        matchday = self._resolve(matchday_id)
+        self._require_open(matchday)
+        unresolved = self.env["federation.matchday.incident"].search(
+            [("matchday_id", "=", matchday.id), ("resolved", "=", False)]
+        )
+        scheduled_matches = self.env["federation.match"].search(
+            [("schedule_publication_id", "=", matchday.current_publication_id.id)]
+        )
+        unfinished = scheduled_matches.filtered(
+            lambda match: match.state not in ("done", "cancelled")
+        )
+        if (unresolved or unfinished) and not force:
+            raise ValidationError(
+                _(
+                    "Resolve incidents and complete or cancel every published match before closing."
+                )
+            )
+        if force and not (close_note or "").strip():
+            raise ValidationError(
+                _("A close reason is required when overriding match-day blockers.")
+            )
+        session = matchday.active_session_id
+        session.write(
+            {
+                "state": "closed",
+                "closed_at": fields.Datetime.now(),
+                "closed_by_id": self.env.user.id,
+                "close_note": close_note,
+            }
+        )
+        matchday.state = "closed"
+        self.env["federation.competition.event"].emit(
+            matchday,
+            "matchday_closed",
+            {
+                "session_id": session.id,
+                "forced": bool(force),
+                "unfinished_match_ids": unfinished.ids,
+                "unresolved_incident_ids": unresolved.ids,
+            },
+        )
         return True
 
 ====================================================================================================
@@ -41775,8 +42011,10 @@ FILE: sports_federation_matchday/views/matchday_views.xml
 ====================================================================================================
 
 <odoo>
- <record id="incident_list" model="ir.ui.view"><field name="name">federation.matchday.incident.list</field><field name="model">federation.matchday.incident</field><field name="arch" type="xml"><list decoration-danger="not resolved"><field name="occurred_at"/><field name="matchday_id"/><field name="incident_type"/><field name="description"/><field name="resolved"/></list></field></record>
- <record id="action_matchday_control" model="ir.actions.act_window"><field name="name">Match-Day Control</field><field name="res_model">federation.matchday</field><field name="view_mode">kanban,list,form</field><field name="domain">[('state','in',('scheduled','open'))]</field></record>
+ <record id="incident_list" model="ir.ui.view"><field name="name">federation.matchday.incident.list</field><field name="model">federation.matchday.incident</field><field name="arch" type="xml"><list decoration-danger="not resolved"><field name="occurred_at"/><field name="matchday_id"/><field name="incident_type"/><field name="description"/><field name="resolved"/><field name="resolved_by_id"/></list></field></record>
+ <record id="matchday_form_operations" model="ir.ui.view"><field name="name">federation.matchday.form.operations</field><field name="model">federation.matchday</field><field name="inherit_id" ref="sports_federation_calendar.matchday_form"/><field name="arch" type="xml"><xpath expr="//group[1]" position="after"><group string="Published execution"><field name="current_publication_id" readonly="1"/><field name="active_session_id" readonly="1"/></group></xpath></field></record>
+ <record id="session_list" model="ir.ui.view"><field name="name">federation.matchday.session.list</field><field name="model">federation.matchday.session</field><field name="arch" type="xml"><list><field name="matchday_id"/><field name="publication_id"/><field name="state" widget="badge"/><field name="opened_at"/><field name="opened_by_id"/><field name="closed_at"/><field name="closed_by_id"/></list></field></record>
+ <record id="action_matchday_control" model="ir.actions.act_window"><field name="name">Match-Day Control</field><field name="res_model">federation.matchday</field><field name="view_mode">kanban,list,form</field><field name="domain">[("state","in",("scheduled","open"))]</field></record>
  <record id="action_matchday_incidents" model="ir.actions.act_window"><field name="name">Match-Day Incidents</field><field name="res_model">federation.matchday.incident</field><field name="view_mode">list,form</field></record>
 </odoo>
 
@@ -94937,7 +95175,7 @@ FILE: sports_federation_schedule_approval/__manifest__.py
 
 {
     "name": "Schedule Approval",
-    "version": "19.0.1.1.0",
+    "version": "19.0.2.0.0",
     "category": "Sports",
     "summary": "Independent review, approval and immutable publication snapshots",
     "author": "Sports Federation",
@@ -94959,6 +95197,7 @@ FILE: sports_federation_schedule_approval/models/__init__.py
 ====================================================================================================
 
 from . import approval
+from . import publication_integrity
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/models/approval.py
@@ -95019,8 +95258,98 @@ class FederationSchedulePublication(models.Model):
     reason = fields.Text()
     assignment_snapshot = fields.Json(required=True)
     _unique_version = models.Constraint(
-        "unique(schedule_id,version)",
-        "Publication versions must be unique per schedule.",
+        "unique(edition_id,version)",
+        "Publication versions must be unique per edition.",
+    )
+
+====================================================================================================
+FILE: sports_federation_schedule_approval/models/publication_integrity.py
+====================================================================================================
+
+import hashlib
+import json
+
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationScheduleReviewIntegrity(models.Model):
+    _inherit = "federation.schedule.review"
+
+    snapshot_digest = fields.Char(required=True, readonly=True, index=True)
+    submitted_by_id = fields.Many2one(
+        "res.users", required=True, readonly=True, ondelete="restrict"
+    )
+    reviewed_at = fields.Datetime(readonly=True)
+
+    def write(self, vals):
+        protected = {
+            "schedule_id",
+            "submitted_revision",
+            "assignment_snapshot",
+            "snapshot_digest",
+            "submitted_by_id",
+        }
+        if protected.intersection(vals) and any(record.id for record in self):
+            raise ValidationError("Submitted review evidence is immutable.")
+        return super().write(vals)
+
+    def unlink(self):
+        raise ValidationError("Schedule reviews are retained as audit evidence.")
+
+
+class FederationSchedulePublicationIntegrity(models.Model):
+    _inherit = "federation.schedule.publication"
+
+    snapshot_digest = fields.Char(required=True, readonly=True, index=True)
+    source_revision = fields.Integer(required=True, readonly=True)
+    review_id = fields.Many2one(
+        "federation.schedule.review", required=True, readonly=True, ondelete="restrict"
+    )
+
+    @api.model
+    def digest_snapshot(self, snapshot):
+        payload = json.dumps(snapshot, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(payload.encode()).hexdigest()
+
+    def write(self, vals):
+        if set(vals) - {"state"}:
+            raise ValidationError("Published schedule snapshots are immutable.")
+        if "state" in vals and vals["state"] not in ("live", "superseded"):
+            raise ValidationError("Invalid publication state.")
+        return super().write(vals)
+
+    def unlink(self):
+        raise ValidationError("Published schedules are retained as audit evidence.")
+
+
+class FederationMatchdayPublication(models.Model):
+    _inherit = "federation.matchday"
+
+    current_publication_id = fields.Many2one(
+        "federation.schedule.publication",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
+    )
+
+
+class FederationMatchPublishedSlot(models.Model):
+    _inherit = "federation.match"
+
+    published_slot_id = fields.Many2one(
+        "federation.schedule.slot",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
+        index=True,
+    )
+    schedule_publication_id = fields.Many2one(
+        "federation.schedule.publication",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
+        index=True,
     )
 
 ====================================================================================================
@@ -95059,7 +95388,7 @@ from . import approval_commands
 FILE: sports_federation_schedule_approval/services/approval_commands.py
 ====================================================================================================
 
-from odoo import _, api, models
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 
@@ -95067,91 +95396,204 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
     _name = "federation.schedule.approval.commands"
     _description = "Schedule Approval Commands"
 
-    def _snapshot(self, s):
+    def _snapshot(self, schedule):
         return [
-            {"fixture_id": a.fixture_id.id, "slot_id": a.slot_id.id}
-            for a in s.assignment_ids.sorted(
-                lambda a: (a.slot_id.start_datetime, a.slot_id.id)
+            {
+                "fixture_id": assignment.fixture_id.id,
+                "match_id": assignment.fixture_id.operational_match_id.id,
+                "slot_id": assignment.slot_id.id,
+                "court_id": assignment.slot_id.court_id.id,
+                "start": fields.Datetime.to_string(assignment.slot_id.start_datetime),
+                "end": fields.Datetime.to_string(assignment.slot_id.end_datetime),
+            }
+            for assignment in schedule.assignment_ids.sorted(
+                lambda item: (item.slot_id.start_datetime, item.slot_id.id)
             )
         ]
 
+    def _digest(self, snapshot):
+        return self.env["federation.schedule.publication"].digest_snapshot(snapshot)
+
     @api.model
     def start_review(self, schedule_id):
-        s = self.env["federation.schedule"].browse(int(schedule_id)).exists()
-        if s.state != "ready_for_review":
+        schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
+        if not schedule or schedule.state != "ready_for_review":
             raise ValidationError(_("Only submitted schedules can enter review."))
+        self.env["federation.competition.role.assignment"].assert_role(
+            schedule.edition_id, "schedule_approver", "competition_director"
+        )
+        pending = self.env["federation.schedule.review"].search(
+            [
+                ("schedule_id", "=", schedule.id),
+                ("submitted_revision", "=", schedule.revision),
+                ("state", "=", "pending"),
+            ],
+            limit=1,
+        )
+        if pending:
+            return pending
+        snapshot = self._snapshot(schedule)
         return self.env["federation.schedule.review"].create(
             {
-                "schedule_id": s.id,
-                "submitted_revision": s.revision,
-                "assignment_snapshot": self._snapshot(s),
+                "schedule_id": schedule.id,
+                "submitted_revision": schedule.revision,
+                "assignment_snapshot": snapshot,
+                "snapshot_digest": self._digest(snapshot),
+                "submitted_by_id": schedule.write_uid.id,
             }
         )
 
+    def _resolve_pending(self, review_id):
+        review = self.env["federation.schedule.review"].browse(int(review_id)).exists()
+        if not review or review.state != "pending":
+            raise ValidationError(_("Only pending reviews can be decided."))
+        self.env["federation.competition.role.assignment"].assert_role(
+            review.edition_id, "schedule_approver", "competition_director"
+        )
+        if review.submitted_by_id == self.env.user:
+            raise ValidationError(
+                _("The submitting planner cannot approve their own schedule.")
+            )
+        if review.schedule_id.revision != review.submitted_revision:
+            raise ValidationError(_("The working schedule changed after submission."))
+        snapshot = self._snapshot(review.schedule_id)
+        if self._digest(snapshot) != review.snapshot_digest:
+            raise ValidationError(
+                _(
+                    "The submitted schedule snapshot no longer matches the working schedule."
+                )
+            )
+        return review
+
     @api.model
     def request_changes(self, review_id, note):
-        r = self.env["federation.schedule.review"].browse(int(review_id)).exists()
-        self.env["federation.competition.role.assignment"].assert_role(
-            r.edition_id, "schedule_approver", "competition_director"
-        )
-        r.write(
+        if not (note or "").strip():
+            raise ValidationError(_("Explain the requested schedule changes."))
+        review = self._resolve_pending(review_id)
+        review.write(
             {
                 "state": "changes_requested",
                 "reviewer_id": self.env.user.id,
                 "review_note": note,
+                "reviewed_at": fields.Datetime.now(),
             }
         )
-        r.schedule_id.state = "changes_requested"
+        review.schedule_id.state = "changes_requested"
         return True
 
     @api.model
     def approve(self, review_id, note=False):
-        r = self.env["federation.schedule.review"].browse(int(review_id)).exists()
-        self.env["federation.competition.role.assignment"].assert_role(
-            r.edition_id, "schedule_approver", "competition_director"
+        review = self._resolve_pending(review_id)
+        validation = self.env["federation.schedule.validator"].validate_map(
+            review.schedule_id,
+            {a.fixture_id.id: a.slot_id.id for a in review.schedule_id.assignment_ids},
         )
-        if r.schedule_id.revision != r.submitted_revision:
-            raise ValidationError(_("The working schedule changed after submission."))
-        r.write(
-            {"state": "approved", "reviewer_id": self.env.user.id, "review_note": note}
+        if not validation["valid"]:
+            raise ValidationError(
+                _("The schedule no longer satisfies publication constraints.")
+            )
+        review.write(
+            {
+                "state": "approved",
+                "reviewer_id": self.env.user.id,
+                "review_note": note,
+                "reviewed_at": fields.Datetime.now(),
+            }
         )
-        r.schedule_id.state = "approved"
+        review.schedule_id.state = "approved"
         self.env["federation.competition.event"].emit(
-            r.schedule_id, "schedule_approved", {"review_id": r.id}
+            review.schedule_id,
+            "schedule_approved",
+            {"review_id": review.id, "snapshot_digest": review.snapshot_digest},
         )
         return True
 
     @api.model
     def publish(self, schedule_id, reason=False):
-        s = self.env["federation.schedule"].browse(int(schedule_id)).exists()
+        schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
         self.env["federation.competition.role.assignment"].assert_role(
-            s.edition_id, "schedule_approver", "competition_director"
+            schedule.edition_id, "schedule_approver", "competition_director"
         )
-        if s.state != "approved":
+        if not schedule or schedule.state != "approved":
             raise ValidationError(_("Approve the schedule before publication."))
-        live = self.env["federation.schedule.publication"].search(
-            [("schedule_id", "=", s.id), ("state", "=", "live")]
+        if schedule.matchday_id.state == "open":
+            raise ValidationError(
+                _("Close live match-day operations before replacing publication.")
+            )
+        review = self.env["federation.schedule.review"].search(
+            [
+                ("schedule_id", "=", schedule.id),
+                ("submitted_revision", "=", schedule.revision),
+                ("state", "=", "approved"),
+            ],
+            order="id desc",
+            limit=1,
         )
-        version = max(live.mapped("version") or [0]) + 1
+        if not review:
+            raise ValidationError(
+                _("No approved review exists for this schedule revision.")
+            )
+        snapshot = self._snapshot(schedule)
+        digest = self._digest(snapshot)
+        if digest != review.snapshot_digest:
+            raise ValidationError(
+                _("The approved snapshot no longer matches the schedule.")
+            )
+        live = self.env["federation.schedule.publication"].search(
+            [("edition_id", "=", schedule.edition_id.id), ("state", "=", "live")]
+        )
         if live and not (reason or "").strip():
             raise ValidationError(
                 _("Enter a reason when replacing a live publication.")
             )
+        version = (
+            max(
+                self.env["federation.schedule.publication"]
+                .search([("edition_id", "=", schedule.edition_id.id)])
+                .mapped("version")
+                or [0]
+            )
+            + 1
+        )
         live.write({"state": "superseded"})
-        p = self.env["federation.schedule.publication"].create(
+        publication = self.env["federation.schedule.publication"].create(
             {
-                "schedule_id": s.id,
+                "schedule_id": schedule.id,
                 "version": version,
                 "reason": reason,
-                "assignment_snapshot": self._snapshot(s),
+                "assignment_snapshot": snapshot,
+                "snapshot_digest": digest,
+                "source_revision": schedule.revision,
+                "review_id": review.id,
             }
         )
-        s.state = "published"
-        s.matchday_id.state = "scheduled"
-        self.env["federation.competition.event"].emit(
-            s, "schedule_published", {"publication_id": p.id, "version": version}
+        for assignment in schedule.assignment_ids:
+            match = assignment.fixture_id.operational_match_id
+            if not match:
+                raise ValidationError(
+                    _("Every scheduled fixture must have an operational match.")
+                )
+            match.write(
+                {
+                    "published_slot_id": assignment.slot_id.id,
+                    "schedule_publication_id": publication.id,
+                    "date_scheduled": assignment.slot_id.start_datetime,
+                }
+            )
+        schedule.state = "published"
+        schedule.matchday_id.write(
+            {"state": "scheduled", "current_publication_id": publication.id}
         )
-        return p
+        self.env["federation.competition.event"].emit(
+            schedule,
+            "schedule_published",
+            {
+                "publication_id": publication.id,
+                "version": version,
+                "snapshot_digest": digest,
+            },
+        )
+        return publication
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/views/approval_views.xml
@@ -95200,7 +95642,7 @@ FILE: sports_federation_scheduling/__manifest__.py
 
 {
     "name": "Competition Scheduling",
-    "version": "19.0.2.1.0",
+    "version": "19.0.3.0.0",
     "category": "Sports",
     "summary": "Working schedules, assignments, validation and deterministic proposals",
     "author": "Sports Federation",
@@ -95219,10 +95661,23 @@ FILE: sports_federation_scheduling/__manifest__.py
 }
 
 ====================================================================================================
+FILE: sports_federation_scheduling/migrations/19.0.3.0.0/pre-migrate.py
+====================================================================================================
+
+def migrate(cr, version):
+    cr.execute(
+        "ALTER TABLE federation_schedule DROP CONSTRAINT IF EXISTS federation_schedule_unique_matchday"
+    )
+    cr.execute(
+        "ALTER TABLE federation_schedule DROP CONSTRAINT IF EXISTS federation_schedule__unique_matchday"
+    )
+
+====================================================================================================
 FILE: sports_federation_scheduling/models/__init__.py
 ====================================================================================================
 
 from . import schedule
+from . import schedule_integrity
 
 ====================================================================================================
 FILE: sports_federation_scheduling/models/schedule.py
@@ -95340,9 +95795,21 @@ class FederationSchedule(models.Model):
     change_ids = fields.One2many(
         "federation.schedule.change", "schedule_id", readonly=True
     )
-    _unique_matchday = models.Constraint(
-        "unique(matchday_id)", "A match day can have only one active working schedule."
+    supersedes_id = fields.Many2one(
+        "federation.schedule",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
+        index=True,
     )
+    superseded_by_id = fields.Many2one(
+        "federation.schedule",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
+        index=True,
+    )
+    revision_reason = fields.Text(copy=False)
 
 
 class FederationScheduleAssignment(models.Model):
@@ -95400,6 +95867,101 @@ class FederationScheduleChange(models.Model):
     )
     reason = fields.Text()
     idempotency_key = fields.Char(index=True)
+
+====================================================================================================
+FILE: sports_federation_scheduling/models/schedule_integrity.py
+====================================================================================================
+
+from odoo import api, models
+from odoo.exceptions import ValidationError
+
+
+class FederationScheduleIntegrity(models.Model):
+    _inherit = "federation.schedule"
+
+    _MUTABLE_STATES = ("draft", "changes_requested")
+    _PROTECTED_FIELDS = {"edition_id", "structure_id", "matchday_id", "assignment_ids"}
+
+    @api.constrains("matchday_id", "state")
+    def _check_one_active_schedule(self):
+        for record in self.filtered(lambda item: item.state != "superseded"):
+            duplicate = self.search_count(
+                [
+                    ("matchday_id", "=", record.matchday_id.id),
+                    ("state", "!=", "superseded"),
+                    ("id", "!=", record.id),
+                ]
+            )
+            if duplicate:
+                raise ValidationError(
+                    "A match day can have only one active working schedule."
+                )
+
+    def action_create_revision(self, reason):
+        self.ensure_one()
+        if self.state != "published":
+            raise ValidationError(
+                "Only a published schedule can start a replacement revision."
+            )
+        if self.matchday_id.state == "open":
+            raise ValidationError(
+                "Close live match-day operations before replacing its schedule."
+            )
+        if not (reason or "").strip():
+            raise ValidationError(
+                "Explain why the published schedule must be replaced."
+            )
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "schedule_planner", "competition_director"
+        )
+        self.state = "superseded"
+        replacement = self.copy(
+            {
+                "name": f"{self.name} revision",
+                "state": "changes_requested",
+                "revision": 0,
+                "supersedes_id": self.id,
+                "revision_reason": reason,
+                "change_ids": False,
+            }
+        )
+        self.superseded_by_id = replacement.id
+        return replacement
+
+    def assert_mutable(self):
+        if self.filtered(lambda record: record.state not in self._MUTABLE_STATES):
+            raise ValidationError(
+                "Submitted, approved and published schedules are immutable."
+            )
+        return True
+
+    def write(self, vals):
+        if self._PROTECTED_FIELDS.intersection(vals):
+            self.assert_mutable()
+        return super().write(vals)
+
+    def unlink(self):
+        self.assert_mutable()
+        return super().unlink()
+
+
+class FederationScheduleAssignmentIntegrity(models.Model):
+    _inherit = "federation.schedule.assignment"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        self.env["federation.schedule"].browse(
+            [vals["schedule_id"] for vals in vals_list if vals.get("schedule_id")]
+        ).assert_mutable()
+        return super().create(vals_list)
+
+    def write(self, vals):
+        self.mapped("schedule_id").assert_mutable()
+        return super().write(vals)
+
+    def unlink(self):
+        self.mapped("schedule_id").assert_mutable()
+        return super().unlink()
 
 ====================================================================================================
 FILE: sports_federation_scheduling/security/ir.model.access.csv
@@ -95657,6 +96219,17 @@ class FederationScheduleCommands(models.AbstractModel):
     _name = "federation.schedule.commands"
     _description = "Schedule Command Service"
 
+    def _find_replay(self, schedule_id, idempotency_key):
+        if not idempotency_key:
+            return False
+        return self.env["federation.schedule.change"].search(
+            [
+                ("schedule_id", "=", int(schedule_id)),
+                ("idempotency_key", "=", idempotency_key),
+            ],
+            limit=1,
+        )
+
     def _resolve(self, schedule_id, expected_revision):
         schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
         if not schedule:
@@ -95664,6 +96237,7 @@ class FederationScheduleCommands(models.AbstractModel):
         self.env["federation.competition.role.assignment"].assert_role(
             schedule.edition_id, "schedule_planner", "competition_director"
         )
+        schedule.assert_mutable()
         self.env.cr.execute(
             "UPDATE federation_schedule SET revision=revision+1 WHERE id=%s AND revision=%s RETURNING revision",
             (schedule.id, int(expected_revision)),
@@ -95689,17 +96263,10 @@ class FederationScheduleCommands(models.AbstractModel):
         reason=False,
         idempotency_key=False,
     ):
+        replay = self._find_replay(schedule_id, idempotency_key)
+        if replay:
+            return self.env["federation.schedule.queries"].delta(replay.schedule_id, [])
         schedule, new_revision = self._resolve(schedule_id, expected_revision)
-        if idempotency_key:
-            replay = self.env["federation.schedule.change"].search(
-                [
-                    ("schedule_id", "=", schedule.id),
-                    ("idempotency_key", "=", idempotency_key),
-                ],
-                limit=1,
-            )
-            if replay:
-                return self.env["federation.schedule.queries"].delta(schedule, [])
         fixture = self.env["federation.fixture"].browse(int(fixture_id)).exists()
         slot = self.env["federation.schedule.slot"].browse(int(slot_id)).exists()
         candidate = self._map(schedule)
@@ -95747,6 +96314,9 @@ class FederationScheduleCommands(models.AbstractModel):
         reason=False,
         idempotency_key=False,
     ):
+        replay = self._find_replay(schedule_id, idempotency_key)
+        if replay:
+            return self.env["federation.schedule.queries"].delta(replay.schedule_id, [])
         schedule, new_revision = self._resolve(schedule_id, expected_revision)
         assignment = schedule.assignment_ids.filtered(
             lambda a: a.fixture_id.id == int(fixture_id)
@@ -95801,7 +96371,7 @@ class FederationScheduleCommands(models.AbstractModel):
         return self.env["federation.schedule.queries"].delta(schedule, created)
 
     @api.model
-    def submit(self, schedule_id, expected_revision):
+    def submit(self, schedule_id, expected_revision, warning_override_reason=False):
         schedule, new_revision = self._resolve(schedule_id, expected_revision)
         validation = self.env["federation.schedule.validator"].validate_map(
             schedule, self._map(schedule)
@@ -95809,6 +96379,19 @@ class FederationScheduleCommands(models.AbstractModel):
         if not validation["valid"]:
             raise ValidationError(
                 _("Resolve all errors and unassigned fixtures before submitting.")
+            )
+        if validation["warnings"] and not (warning_override_reason or "").strip():
+            raise ValidationError(
+                _("Provide a manager reason to accept schedule warnings.")
+            )
+        if validation["warnings"]:
+            self.env["federation.schedule.change"].create(
+                {
+                    "schedule_id": schedule.id,
+                    "revision": new_revision,
+                    "command": "warning_override",
+                    "reason": warning_override_reason,
+                }
             )
         schedule.state = "ready_for_review"
         self.env["federation.competition.event"].emit(
@@ -95900,17 +96483,17 @@ class FederationScheduleValidator(models.AbstractModel):
 
     @api.model
     def validate_map(self, schedule, assignment_map):
-        errors = []
-        warnings = []
-        windows = {}
+        errors, warnings = [], []
         fixture_by_id = {
-            f.id: f for f in schedule.matchday_id.allocation_ids.mapped("fixture_ids")
+            fixture.id: fixture
+            for fixture in schedule.matchday_id.allocation_ids.mapped("fixture_ids")
+            if not fixture.bye_team_id
         }
-        slot_by_id = {s.id: s for s in schedule.matchday_id.slot_ids}
-        used_slots = set()
+        slot_by_id = {slot.id: slot for slot in schedule.matchday_id.slot_ids}
+        used_slots, team_windows = set(), {}
+        blackouts = schedule.matchday_id.venue_id.blackout_window_ids.filtered("active")
         for fixture_id, slot_id in assignment_map.items():
-            fixture = fixture_by_id.get(fixture_id)
-            slot = slot_by_id.get(slot_id)
+            fixture, slot = fixture_by_id.get(fixture_id), slot_by_id.get(slot_id)
             if not fixture or not slot:
                 errors.append(
                     {
@@ -95919,6 +96502,33 @@ class FederationScheduleValidator(models.AbstractModel):
                     }
                 )
                 continue
+            if fixture.state not in ("ready", "completed"):
+                errors.append(
+                    {
+                        "code": "fixture_not_ready",
+                        "message": "Only ready fixtures can be scheduled.",
+                        "fixture_id": fixture.id,
+                    }
+                )
+            if not fixture.home_team_id or not fixture.away_team_id:
+                errors.append(
+                    {
+                        "code": "participants_unresolved",
+                        "message": "Resolve both fixture participants before scheduling.",
+                        "fixture_id": fixture.id,
+                    }
+                )
+            if (
+                slot.matchday_id != schedule.matchday_id
+                or slot.court_id.venue_id != schedule.matchday_id.venue_id
+            ):
+                errors.append(
+                    {
+                        "code": "court_scope",
+                        "message": "The selected court does not belong to the match-day venue.",
+                        "slot_id": slot.id,
+                    }
+                )
             if slot_id in used_slots:
                 errors.append(
                     {
@@ -95936,10 +96546,35 @@ class FederationScheduleValidator(models.AbstractModel):
                         "slot_id": slot_id,
                     }
                 )
+            if slot.end_datetime <= slot.start_datetime:
+                errors.append(
+                    {
+                        "code": "invalid_window",
+                        "message": "A schedule slot must end after it starts.",
+                        "slot_id": slot.id,
+                    }
+                )
+            for blackout in blackouts:
+                same_area = (
+                    not blackout.playing_area_id
+                    or blackout.playing_area_id == slot.court_id
+                )
+                overlap = (
+                    slot.start_datetime < blackout.date_end
+                    and blackout.date_start < slot.end_datetime
+                )
+                if same_area and overlap:
+                    errors.append(
+                        {
+                            "code": "venue_blackout",
+                            "message": "The slot overlaps a venue blackout or maintenance window.",
+                            "slot_id": slot.id,
+                        }
+                    )
             for team in (fixture.home_team_id, fixture.away_team_id):
                 if not team:
                     continue
-                for other_fixture, other_slot in windows.get(team.id, []):
+                for other_fixture, other_slot in team_windows.get(team.id, []):
                     if (
                         slot.start_datetime < other_slot.end_datetime
                         and other_slot.start_datetime < slot.end_datetime
@@ -95952,9 +96587,38 @@ class FederationScheduleValidator(models.AbstractModel):
                                 "related_fixture_id": other_fixture.id,
                             }
                         )
-                windows.setdefault(team.id, []).append((fixture, slot))
-        required = set(fixture_by_id)
-        missing = sorted(required - set(assignment_map))
+                    gap = (
+                        min(
+                            abs(
+                                (
+                                    slot.start_datetime - other_slot.end_datetime
+                                ).total_seconds()
+                            ),
+                            abs(
+                                (
+                                    other_slot.start_datetime - slot.end_datetime
+                                ).total_seconds()
+                            ),
+                        )
+                        / 60
+                    )
+                    if (
+                        not (
+                            slot.start_datetime < other_slot.end_datetime
+                            and other_slot.start_datetime < slot.end_datetime
+                        )
+                        and gap < schedule.preferred_rest_minutes
+                    ):
+                        warnings.append(
+                            {
+                                "code": "rest_shortfall",
+                                "message": f"{team.display_name} has less than the preferred rest interval.",
+                                "fixture_id": fixture.id,
+                                "related_fixture_id": other_fixture.id,
+                            }
+                        )
+                team_windows.setdefault(team.id, []).append((fixture, slot))
+        missing = sorted(set(fixture_by_id) - set(assignment_map))
         return {
             "valid": not errors and not missing,
             "errors": errors,

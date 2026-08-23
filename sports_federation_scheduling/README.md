@@ -10,3 +10,18 @@ for concurrent edits.
 
 All access-control rows, including the auto-schedule wizard permissions, are
 loaded through `security/ir.model.access.csv`.
+
+
+## Operator handoff to independent review
+
+A planner completes fixture-to-slot assignments in **Schedule Planner** and uses
+**Submit for Review**. Blocking validation errors prevent submission. When only
+warnings remain, a confirmation dialog requires an explicit justification. The
+button delegates to `federation.schedule.commands`; when Schedule Approval is
+installed, the approval extension creates the immutable pending review in the
+same transaction and opens it directly.
+
+Submitted schedules are immutable. If a reviewer requests changes, the schedule
+returns to `changes_requested`, where the planner can edit and submit a new
+revision. Planners can use the **Reviews** smart button to inspect the current
+handoff and retained history.

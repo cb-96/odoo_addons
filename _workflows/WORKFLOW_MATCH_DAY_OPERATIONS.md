@@ -296,3 +296,13 @@ All validation and workflow state guards remain server-side. Standings recomputa
 - Referee assignment workflow is not exposed on the board; use the existing officiating views.
 - Bracket visualization and drag-and-drop court scheduling are not in scope for this version.
 - QR-code per court, offline-first result capture, and pool standings preview are follow-up ideas.
+
+
+## Schedule approval handoff
+
+Before match-day preparation can start, the planner submits the complete working
+schedule through **Submit for Review**. A different schedule approver uses the
+**Schedule Review Queue** to request changes or approve the immutable submitted
+revision. Approved schedules move to **Publication > Approved Schedules**, where
+**Publish Schedule** creates the live immutable publication. Match-day sessions
+must continue to resolve their matches from that exact current publication.
