@@ -38,30 +38,128 @@ class TestOfficiatingPortalAccess(TransactionCase):
                 "date_end": "2026-12-31",
             }
         )
+        cls.competition = cls.env["federation.competition"].create(
+            {"name": "Portal Official Competition", "competition_type": "league"}
+        )
+        cls.edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Portal Official Edition",
+                "competition_id": cls.competition.id,
+                "season_id": cls.season.id,
+            }
+        )
         cls.tournament = cls.env["federation.tournament"].create(
             {
                 "name": "Portal Official Tournament",
                 "code": "POT",
                 "season_id": cls.season.id,
+                "competition_id": cls.competition.id,
+                "edition_id": cls.edition.id,
                 "date_start": "2026-06-01",
             }
         )
-        cls.match = cls.env["federation.match"].create(
+        participant_set = cls.env["federation.participant.set"].create(
             {
-                "tournament_id": cls.tournament.id,
-                "home_team_id": cls.home_team.id,
-                "away_team_id": cls.away_team.id,
-                "date_scheduled": "2026-06-15 18:00:00",
+                "name": "Portal Official Participants",
+                "edition_id": cls.edition.id,
+                "division_id": cls.tournament.id,
+                "state": "finalized",
             }
         )
-        cls.other_match = cls.env["federation.match"].create(
+        structure = cls.env["federation.competition.structure"].create(
             {
-                "tournament_id": cls.tournament.id,
-                "home_team_id": cls.away_team.id,
-                "away_team_id": cls.home_team.id,
-                "date_scheduled": "2026-06-21 14:00:00",
+                "name": "Portal Official Structure",
+                "edition_id": cls.edition.id,
+                "division_id": cls.tournament.id,
+                "participant_set_id": participant_set.id,
+                "format_type": "custom",
             }
         )
+        stage = cls.env["federation.structure.stage"].create(
+            {
+                "name": "Portal Official Stage",
+                "structure_id": structure.id,
+                "stage_type": "league",
+                "format_type": "manual",
+                "source_type": "manual",
+            }
+        )
+        fixtures = cls.env["federation.fixture"].create(
+            [
+                {
+                    "structure_id": structure.id,
+                    "stage_id": stage.id,
+                    "round_number": 1,
+                    "sequence": 1,
+                    "home_team_id": cls.home_team.id,
+                    "away_team_id": cls.away_team.id,
+                    "state": "ready",
+                },
+                {
+                    "structure_id": structure.id,
+                    "stage_id": stage.id,
+                    "round_number": 1,
+                    "sequence": 2,
+                    "home_team_id": cls.away_team.id,
+                    "away_team_id": cls.home_team.id,
+                    "state": "ready",
+                },
+            ]
+        )
+        cls.match = fixtures[0].action_materialize_match()
+        cls.other_match = fixtures[1].action_materialize_match()
+        cls.match.write({"date_scheduled": "2026-06-15 18:00:00"})
+        cls.other_match.write({"date_scheduled": "2026-06-21 14:00:00"})
+        venue = cls.env["federation.venue"].create({"name": "Portal Official Venue"})
+        matchday = cls.env["federation.matchday"].create(
+            {
+                "name": "Portal Official Match Day",
+                "edition_id": cls.edition.id,
+                "date": "2026-06-15",
+                "venue_id": venue.id,
+            }
+        )
+        schedule = cls.env["federation.schedule"].create(
+            {
+                "name": "Portal Official Schedule",
+                "edition_id": cls.edition.id,
+                "structure_id": structure.id,
+                "matchday_id": matchday.id,
+                "state": "published",
+            }
+        )
+        snapshot = [{"fixture_id": fixtures[0].id}]
+        digest = cls.env["federation.schedule.publication"].digest_snapshot(snapshot)
+        review = (
+            cls.env["federation.schedule.review"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "submitted_revision": schedule.revision,
+                    "state": "pending",
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": digest,
+                    "submitted_by_id": cls.env.user.id,
+                }
+            )
+        )
+        review.with_context(allow_schedule_review_decision=True).sudo().write(
+            {"state": "approved", "reviewer_id": cls.env.user.id}
+        )
+        publication = cls.env["federation.schedule.publication"].create(
+            {
+                "schedule_id": schedule.id,
+                "version": 1,
+                "state": "live",
+                "assignment_snapshot": snapshot,
+                "snapshot_digest": digest,
+                "source_revision": schedule.revision,
+                "review_id": review.id,
+            }
+        )
+        matchday.sudo().write({"current_publication_id": publication.id})
+        (cls.match | cls.other_match).write({"schedule_publication_id": publication.id})
         cls.official_user = (
             cls.env["res.users"]
             .with_context(no_reset_password=True)

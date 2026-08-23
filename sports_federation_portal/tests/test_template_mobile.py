@@ -186,7 +186,7 @@ class TestPortalTemplateMobile(TransactionCase):
     def test_workspace_portal_wide_tables_wrapped(self):
         self._assert_wide_tables_wrapped_responsive(
             "portal_v2_templates",
-            "portal_my_tournament_workspace_detail",
+            "portal_my_competition_detail",
         )
 
     # ------------------------------------------------------------------

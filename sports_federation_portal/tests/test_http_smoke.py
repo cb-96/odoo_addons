@@ -182,6 +182,61 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     "date_start": "2026-06-01",
                 }
             )
+            competition = env["federation.competition"].create(
+                {
+                    "name": "Portal Officiating Smoke Competition",
+                    "competition_type": "league",
+                }
+            )
+            edition = env["federation.competition.edition"].create(
+                {
+                    "name": "Portal Officiating Smoke Edition",
+                    "competition_id": competition.id,
+                    "season_id": officiating_season.id,
+                }
+            )
+            officiating_tournament.write(
+                {
+                    "competition_id": competition.id,
+                    "edition_id": edition.id,
+                }
+            )
+            participant_set = env["federation.participant.set"].create(
+                {
+                    "name": "Portal Officiating Smoke Participants",
+                    "edition_id": edition.id,
+                    "division_id": officiating_tournament.id,
+                    "state": "finalized",
+                }
+            )
+            structure = env["federation.competition.structure"].create(
+                {
+                    "name": "Portal Officiating Smoke Structure",
+                    "edition_id": edition.id,
+                    "division_id": officiating_tournament.id,
+                    "participant_set_id": participant_set.id,
+                    "format_type": "custom",
+                }
+            )
+            stage = env["federation.structure.stage"].create(
+                {
+                    "name": "Portal Officiating Smoke Stage",
+                    "structure_id": structure.id,
+                    "stage_type": "league",
+                    "format_type": "manual",
+                    "source_type": "manual",
+                }
+            )
+            fixture = env["federation.fixture"].create(
+                {
+                    "structure_id": structure.id,
+                    "stage_id": stage.id,
+                    "round_number": 1,
+                    "home_team_id": home_team.id,
+                    "away_team_id": away_team.id,
+                    "state": "ready",
+                }
+            )
             official_user = (
                 env["res.users"]
                 .with_context(no_reset_password=True)
@@ -202,14 +257,60 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     "user_id": official_user.id,
                 }
             )
-            assignment_match = env["federation.match"].create(
+            assignment_match = fixture.action_materialize_match()
+            assignment_match.write({"date_scheduled": "2026-12-12 18:00:00"})
+            venue = env["federation.venue"].create(
+                {"name": "Portal Officiating Smoke Venue"}
+            )
+            matchday = env["federation.matchday"].create(
                 {
-                    "tournament_id": officiating_tournament.id,
-                    "home_team_id": home_team.id,
-                    "away_team_id": away_team.id,
-                    "date_scheduled": "2026-06-12 18:00:00",
+                    "name": "Portal Officiating Smoke Match Day",
+                    "edition_id": edition.id,
+                    "date": "2026-12-12",
+                    "venue_id": venue.id,
                 }
             )
+            schedule = env["federation.schedule"].create(
+                {
+                    "name": "Portal Officiating Smoke Schedule",
+                    "edition_id": edition.id,
+                    "structure_id": structure.id,
+                    "matchday_id": matchday.id,
+                    "state": "published",
+                }
+            )
+            snapshot = [{"fixture_id": fixture.id}]
+            digest = env["federation.schedule.publication"].digest_snapshot(snapshot)
+            review = (
+                env["federation.schedule.review"]
+                .sudo()
+                .create(
+                    {
+                        "schedule_id": schedule.id,
+                        "submitted_revision": schedule.revision,
+                        "state": "pending",
+                        "assignment_snapshot": snapshot,
+                        "snapshot_digest": digest,
+                        "submitted_by_id": SUPERUSER_ID,
+                    }
+                )
+            )
+            review.with_context(allow_schedule_review_decision=True).sudo().write(
+                {"state": "approved", "reviewer_id": SUPERUSER_ID}
+            )
+            publication = env["federation.schedule.publication"].create(
+                {
+                    "schedule_id": schedule.id,
+                    "version": 1,
+                    "state": "live",
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": digest,
+                    "source_revision": schedule.revision,
+                    "review_id": review.id,
+                }
+            )
+            matchday.sudo().write({"current_publication_id": publication.id})
+            assignment_match.write({"schedule_publication_id": publication.id})
             assignment = env["federation.match.referee"].create(
                 {
                     "match_id": assignment_match.id,

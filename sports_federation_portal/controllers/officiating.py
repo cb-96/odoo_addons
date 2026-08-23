@@ -49,16 +49,25 @@ class FederationOfficiatingPortal(http.Controller):
 
         Assignment = self._portal_assignment_model()
         base_domain = self._portal_assignment_domain()
+        current_publications = (
+            request.env["federation.matchday"]
+            .sudo()
+            .search([("current_publication_id.state", "=", "live")])
+            .mapped("current_publication_id")
+        )
+        current_publication_domain = [
+            ("publication_id", "in", current_publications.ids)
+        ]
         domain = list(base_domain)
         filter_map = {
             "upcoming": [
                 ("match_kickoff", "!=", False),
                 ("state", "in", ("draft", "confirmed")),
-                ("is_current_publication", "=", True),
+                *current_publication_domain,
             ],
             "pending": [
                 ("state", "=", "draft"),
-                ("is_current_publication", "=", True),
+                *current_publication_domain,
             ],
             "history": [("state", "in", ("done", "cancelled"))],
             "all": [],
@@ -87,7 +96,7 @@ class FederationOfficiatingPortal(http.Controller):
         )
         pending_domain = base_domain + [
             ("state", "=", "draft"),
-            ("is_current_publication", "=", True),
+            *current_publication_domain,
         ]
         pending_assignments = PortalPrivilege.portal_search(
             Assignment,

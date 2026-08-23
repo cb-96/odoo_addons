@@ -324,9 +324,6 @@ class TestRosterPortalAccess(TransactionCase):
         self.assertFalse(visible_teams)
         self.assertFalse(visible_rosters)
         self.assertFalse(visible_sheets)
-        self.assertFalse(
-            self.tournament._portal_has_workspace_access(user=self.inactive_user)
-        )
 
         with self.assertRaises(AccessError):
             self.roster_a._portal_assert_scope_access(user=self.inactive_user)

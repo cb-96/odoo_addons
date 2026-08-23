@@ -171,7 +171,7 @@ class TestPortalTemplateAccessibility(TransactionCase):
         )
         self._assert_tables_have_captions_and_scoped_headers(
             "portal_v2_templates",
-            "portal_my_tournament_workspace_detail",
+            "portal_my_competition_detail",
         )
 
     def test_portal_templates_use_human_state_labels(self):

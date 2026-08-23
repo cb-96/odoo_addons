@@ -48,11 +48,35 @@ class TestFederationOperationTasks(TransactionCase):
                 "state": "open",
             }
         )
+        cls.competition = cls.env["federation.competition"].create(
+            {"name": "Action Queue Competition", "competition_type": "league"}
+        )
+        cls.edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Action Queue Edition",
+                "competition_id": cls.competition.id,
+                "season_id": cls.season.id,
+            }
+        )
+        cls.tournament.write(
+            {
+                "edition_id": cls.edition.id,
+                "competition_id": cls.competition.id,
+            }
+        )
+        cls.window = cls.env["federation.registration.window"].create(
+            {
+                "name": "Action Queue Window",
+                "edition_id": cls.edition.id,
+                "division_id": cls.tournament.id,
+                "state": "open",
+            }
+        )
 
     def test_registration_task_is_idempotent_and_reopens_after_resolution(self):
-        registration = self.env["federation.tournament.registration"].create(
+        registration = self.env["federation.competition.entry"].create(
             {
-                "tournament_id": self.tournament.id,
+                "window_id": self.window.id,
                 "team_id": self.team.id,
                 "state": "submitted",
             }
@@ -73,7 +97,7 @@ class TestFederationOperationTasks(TransactionCase):
         Task.with_user(self.manager).sync_for_user(user=self.manager)
         self.assertEqual(Task.search_count([("source_key", "=", task.source_key)]), 1)
 
-        registration.state = "confirmed"
+        registration.state = "approved"
         Task.with_user(self.manager).sync_for_user(user=self.manager)
         self.assertEqual(task.state, "done")
         self.assertTrue(task.completed_on)

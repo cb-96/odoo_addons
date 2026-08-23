@@ -1,8 +1,8 @@
 # Release Runbook
 
-Last updated: 2026-04-30
+Last updated: 2026-08-23
 Owner: Federation Platform Team
-Last reviewed: 2026-04-30
+Last reviewed: 2026-08-23
 Review cadence: Every release
 Release train: 2026.08
 
@@ -52,6 +52,34 @@ this runbook:
 # add the commands, outcomes, rollback triggers, and SQL/drop steps
 ${EDITOR:-vi} addons/RELEASE_RUNBOOK.md
 ```
+
+### Portal V2 controller-load repair evidence
+
+The portal V2 repair removes the stale re-export of the deleted V1 workspace
+controller, restores the tournament-registration view in the manifest data
+order, and keeps officiating assignment visibility limited to live current
+publications. No database migration is required; the portal manifest is bumped
+from `19.0.4.0.0` to `19.0.4.1.0`.
+
+Dry-run evidence captured on 2026-08-23:
+
+```text
+./scripts/upgrade_sports_federation.sh --db odoo --dry-run
+Exit code: 0
+Upgrade: sports_federation_base,...,sports_federation_portal,...,sports_federation_venues
+Install: none
+```
+
+Focused verification:
+
+```text
+bash ci/run_tests.sh --module sports_federation_portal
+Exit code: 0; 116 tests run, 116 passed, 0 failed, 0 errors; 30 post-tests
+```
+
+Rollback is the standard backup restore procedure in this runbook. Do not
+restore the deleted V1 controller or broaden portal publication access as a
+rollback workaround.
 
 If the release changes addon responsibility boundaries or adds a new
 `sports_federation_*` module, update `MODULE_OWNERS.yaml` in the same release

@@ -1,8 +1,8 @@
 # Sports Federation Club Roles and Portal
 
-Version: 19.0.2.2.0
+Version: 19.0.4.1.0
 Owner: Federation Platform Team
-Last reviewed: 2026-08-20
+Last reviewed: 2026-08-23
 Review cadence: Every release
 
 Role-oriented self-service portal for club representatives, officials, and tournament operators.
@@ -73,3 +73,6 @@ Primary routes:
 - `/sports/match-days/<id>/operations`
 
 Legacy tournament workspace routes are redirect-only and render no V1 data.
+The backend tournament-registration action is loaded before the menus that use
+it, so a fresh module install and an upgrade both build the registration menu
+without relying on stale database metadata.
