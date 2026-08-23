@@ -85,6 +85,7 @@ jobs:
 
       - name: Verify portal privilege boundaries
         run: python ci/check_portal_sudo_guard.py
+          python ci/check_portal_v2_ownership.py
 
       - name: Verify source collector completeness
         run: python ci/check_source_collector_contract.py

@@ -60,39 +60,8 @@ class FederationRegistrationPortal(FederationPortalBase):
         website=True,
     )
     def portal_my_tournament_registrations(self, page=1, **kw):
-        """Show tournament registrations for the user's club."""
-        clubs = self._get_portal_clubs()
-        if not clubs:
-            return self._redirect_with_query("/my/club")
-
-        domain = [("club_id", "in", clubs.ids)]
-        Registration = request.env["federation.tournament.registration"].sudo()
-        total = Registration.search_count(domain)
-        step = 20
-        pager = portal_pager(
-            url="/my/tournament-registrations",
-            total=total,
-            page=page,
-            step=step,
-        )
-        registrations = Registration.search(
-            domain,
-            limit=step,
-            offset=pager["offset"],
-            order="create_date desc",
-        )
-        values = {
-            "registrations": registrations,
-            "pager": pager,
-            "page_name": "my_tournament_registrations",
-            "success": kw.get("success"),
-            "error": kw.get("error"),
-            "error_hint": kw.get("error_hint"),
-        }
-        return request.render(
-            "sports_federation_portal.portal_my_tournament_registrations",
-            values,
-        )
+        """Redirect the deprecated V1 registration queue to V2 entries."""
+        return self._redirect_with_query("/my/competition-entries")
 
     @http.route(
         ["/my/season-registration/new"],
@@ -189,43 +158,8 @@ class FederationRegistrationPortal(FederationPortalBase):
         csrf=True,
     )
     def portal_tournament_registration_resubmit(self, reg_id, notes="", **kw):
-        """Resubmit a returned registration through the portal privilege boundary."""
-        Registration = request.env["federation.tournament.registration"]
-        scope_domain = [("club_id", "in", self._get_portal_clubs().ids)]
-        registration = request.env["federation.portal.privilege"].portal_search_by_id(
-            Registration,
-            reg_id,
-            domain=scope_domain,
-            user=request.env.user,
-        )
-        if not registration:
-            return self._render_access_denied()
-        try:
-            if registration.state != "returned":
-                raise ValidationError("Only returned registrations can be resubmitted.")
-            if notes.strip():
-                request.env["federation.portal.privilege"].portal_write(
-                    registration,
-                    {"notes": notes.strip()},
-                    scope_domain=scope_domain,
-                    user=request.env.user,
-                )
-            request.env["federation.portal.privilege"].portal_call(
-                registration,
-                "action_submit",
-                scope_domain=scope_domain,
-                user=request.env.user,
-            )
-        except (AccessError, ValidationError) as error:
-            return self._redirect_with_query(
-                "/my/tournament-registrations",
-                error=str(error),
-                error_hint="Review the federation feedback, correct the registration and resubmit it.",
-            )
-        return self._redirect_with_query(
-            "/my/tournament-registrations",
-            success="Tournament registration resubmitted",
-        )
+        """V1 endpoint retained only as a safe redirect."""
+        return self._redirect_with_query("/my/competition-entries")
 
     @http.route(
         ["/my/tournament-registration/<int:reg_id>/cancel"],
@@ -236,30 +170,8 @@ class FederationRegistrationPortal(FederationPortalBase):
         csrf=True,
     )
     def portal_tournament_registration_cancel(self, reg_id, **kw):
-        """Cancel a tournament registration."""
-        clubs = self._get_portal_clubs()
-        registration = (
-            request.env["federation.tournament.registration"].sudo().browse(reg_id)
-        )
-        if not registration.exists() or registration.club_id not in clubs:
-            return self._redirect_with_query(
-                "/my/tournament-registrations",
-                error="Registration not found",
-            )
-
-        try:
-            registration.action_cancel()
-        except ValidationError as error:
-            return self._redirect_with_query(
-                "/my/tournament-registrations",
-                error=str(error),
-                error_hint="This registration may not be cancellable at its current stage. Contact the federation if needed.",
-            )
-
-        return self._redirect_with_query(
-            "/my/tournament-registrations",
-            success="Registration cancelled",
-        )
+        """V1 endpoint retained only as a safe redirect."""
+        return self._redirect_with_query("/my/competition-entries")
 
     @http.route(
         ["/my/season-registration/<int:reg_id>/cancel"],

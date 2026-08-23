@@ -3,7 +3,6 @@ from . import federation_club_role_type
 from . import federation_club_representative
 from . import federation_club
 from . import federation_team
-from . import federation_tournament
 from . import res_partner
 from . import res_users
 from . import federation_tournament_registration
@@ -13,8 +12,6 @@ from . import federation_match_referee
 from . import federation_team_roster
 from . import federation_match_sheet
 from . import federation_player
-from . import tournament_operations_access
-from . import tournament_operations_board
-from . import federation_tournament_operations
 from . import portal_status_labels
 from . import operation_task
+from . import portal_v2_queries

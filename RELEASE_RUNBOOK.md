@@ -434,3 +434,20 @@ Before upgrading, take a database backup. Rollback requires restoring that
 backup because the new publication uniqueness semantics and operational audit
 fields are persistent. Do not downgrade only the addon code after operators have
 recorded live deviations.
+## Portal V2 cutover 19.0.4.0.0
+
+Upgrade `sports_federation_portal` after the V2 competition, registration,
+schedule-approval and match-day modules. The migration closes open operation
+tasks projected from V1 tournament registrations. It does not delete business
+records.
+
+```bash
+odoo-bin -d RC_DATABASE -u sports_federation_portal --stop-after-init
+python ci/check_portal_v2_ownership.py
+python ci/check_portal_sudo_guard.py
+bash ci/run_tests.sh --module sports_federation_portal
+```
+
+Verify /my/competitions, /my/competition-entries, /my/match-days and one match-day operations page. Confirm that draft schedules and superseded publications do not appear.
+
+Rollback requires a database restore if V2 entries or portal audit events were created after cutover.

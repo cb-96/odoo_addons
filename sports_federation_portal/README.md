@@ -57,3 +57,19 @@ The module includes HTTP smoke, ownership, access-denied, team, player, roster, 
 ## Consolidated documentation
 
 `PORTAL_OWNERSHIP_COVERAGE.md`, `PORTAL_OWNERSHIP_TEST_MATRIX.md`, and `ROADMAP_RC.md` are deleted. Their durable rules are consolidated here and in ADR-0001; the test files are the authoritative live coverage map.
+
+## V2 competition portal
+
+The active competition portal is edition-based. Participation comes from V2
+competition entries and finalized participant sets. Match-day schedule data is
+rendered only from each match day's current live publication. Draft schedules,
+review evidence and superseded publications are intentionally unavailable.
+
+Primary routes:
+
+- `/my/competitions`
+- `/my/competition-entries`
+- `/my/match-days`
+- `/sports/match-days/<id>/operations`
+
+Legacy tournament workspace routes are redirect-only and render no V1 data.

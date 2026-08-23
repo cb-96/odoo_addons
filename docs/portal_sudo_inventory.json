@@ -85,12 +85,6 @@
   },
   {
     "file": "sports_federation_portal/controllers/portal_registrations.py",
-    "function": "portal_my_tournament_registrations",
-    "reason": "adjacent ownership scope check",
-    "statement": "Registration = request.env[\"federation.tournament.registration\"].sudo()"
-  },
-  {
-    "file": "sports_federation_portal/controllers/portal_registrations.py",
     "function": "portal_season_registration_cancel",
     "reason": "adjacent ownership scope check",
     "statement": "registration = ( request.env[\"federation.season.registration\"].sudo().browse(reg_id) )"
@@ -120,10 +114,16 @@
     "statement": "request.env[ \"federation.season.registration\" ]._portal_submit_registration_request( request.env[\"federation.season\"].sudo().browse(season_id), request.env[\"federation.team\"].sudo().browse(team_id), notes=notes, user=request.env.user, )"
   },
   {
-    "file": "sports_federation_portal/controllers/portal_registrations.py",
-    "function": "portal_tournament_registration_cancel",
+    "file": "sports_federation_portal/controllers/portal_v2.py",
+    "function": "portal_create_competition_entry",
     "reason": "adjacent ownership scope check",
-    "statement": "registration = ( request.env[\"federation.tournament.registration\"].sudo().browse(reg_id) )"
+    "statement": "team = request.env[\"federation.team\"].sudo().browse(int(team_id)).exists()"
+  },
+  {
+    "file": "sports_federation_portal/controllers/portal_v2.py",
+    "function": "portal_create_competition_entry",
+    "reason": "adjacent ownership scope check",
+    "statement": "window = ( request.env[\"federation.registration.window\"] .sudo() .browse(int(window_id)) .exists() )"
   },
   {
     "file": "sports_federation_portal/controllers/qol.py",

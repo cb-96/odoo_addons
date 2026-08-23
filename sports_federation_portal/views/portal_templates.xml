@@ -31,12 +31,12 @@
                             <t t-else="">Review active competitions, upcoming matches and team readiness.</t>
                         </div>
                     </div>
-                    <a href="/my/tournament-workspaces" class="btn btn-primary">Open workspace <i class="fa fa-arrow-right ms-2" aria-hidden="true"/></a>
+                    <a href="/my/competitions" class="btn btn-primary">Open workspace <i class="fa fa-arrow-right ms-2" aria-hidden="true"/></a>
                 </div>
             </section>
 
             <nav class="o_fed_portal_quicknav" aria-label="Club portal shortcuts">
-                <a class="o_fed_portal_quicklink" href="/my/tournament-workspaces"><i class="fa fa-tachometer" aria-hidden="true"/><strong>Overview</strong></a>
+                <a class="o_fed_portal_quicklink" href="/my/competitions"><i class="fa fa-tachometer" aria-hidden="true"/><strong>Overview</strong></a>
                 <a class="o_fed_portal_quicklink" href="/my/match-day"><i class="fa fa-calendar-check-o" aria-hidden="true"/><strong>Match day</strong></a>
                 <a class="o_fed_portal_quicklink" href="/my/referee-duties"><i class="fa fa-flag" aria-hidden="true"/><span><strong>Officials</strong><span t-if="federation_pending_duties_count" class="badge bg-warning text-dark ms-2"><t t-esc="federation_pending_duties_count"/></span></span></a>
                 <a class="o_fed_portal_quicklink" href="/my/results"><i class="fa fa-check-circle" aria-hidden="true"/><span><strong>Results</strong><span t-if="federation_pending_results_count" class="badge bg-warning text-dark ms-2"><t t-esc="federation_pending_results_count"/></span></span></a>
@@ -80,7 +80,7 @@
                     <div class="o_fed_portal_group-header"><h3 id="portal-admin-heading">Club administration</h3><p>Registrations, duties and club information.</p></div>
                     <a class="o_fed_portal_link" href="/my/referee-duties"><i class="fa fa-flag" aria-hidden="true"/><span><strong>Referee duties</strong><br/><small class="text-muted">Nominate club officials</small></span><span t-if="federation_pending_duties_count" class="badge bg-warning text-dark"><t t-esc="federation_pending_duties_count"/></span><i class="fa fa-chevron-right" aria-hidden="true"/></a>
                     <a class="o_fed_portal_link" href="/my/season-registrations"><i class="fa fa-pencil-square-o" aria-hidden="true"/><span><strong>Season registrations</strong><br/><small class="text-muted">Register teams for a season</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-                    <a class="o_fed_portal_link" href="/my/tournament-registrations"><i class="fa fa-trophy" aria-hidden="true"/><span><strong>Tournament entries</strong><br/><small class="text-muted">Apply and follow status</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
+                    <a class="o_fed_portal_link" href="/my/competition-entries"><i class="fa fa-trophy" aria-hidden="true"/><span><strong>Tournament entries</strong><br/><small class="text-muted">Apply and follow status</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
                     <a class="o_fed_portal_link" href="/my/club"><i class="fa fa-shield" aria-hidden="true"/><span><strong>Club details</strong><br/><small class="text-muted">Contacts and information</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
                 </section>
               </div>
@@ -173,7 +173,7 @@
                     </div>
 
                     <div class="d-flex gap-2 flex-wrap">
-                        <a href="/my/tournament-workspaces" class="btn btn-primary btn-sm">
+                        <a href="/my/competitions" class="btn btn-primary btn-sm">
                             <i class="fa fa-sitemap me-1"/>Club Operations Workspace
                         </a>
                         <a href="/my/teams" class="btn btn-outline-secondary btn-sm">

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "portal_aggregates": {
+    "competition": "federation.competition.edition",
+    "registration": "federation.competition.entry",
+    "participation": "federation.participant.set",
+    "fixture": "federation.fixture",
+    "calendar": "federation.matchday",
+    "publication": "federation.schedule.publication",
+    "live_operations": "federation.matchday.session",
+    "result": "federation.match",
+    "standings": "federation.standing"
+  },
+  "forbidden_active_portal_references": [
+    "_portal_get_workspace_entries",
+    "_portal_get_workspace_entry_for_user",
+    "/sports/tournament/<int:tournament_id>/operations",
+    "portal_my_tournament_workspaces"
+  ],
+  "schedule_visibility_rule": "current_live_publication_only"
+}

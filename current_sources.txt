@@ -3483,6 +3483,7 @@ jobs:
 
       - name: Verify portal privilege boundaries
         run: python ci/check_portal_sudo_guard.py
+          python ci/check_portal_v2_ownership.py
 
       - name: Verify source collector completeness
         run: python ci/check_source_collector_contract.py
@@ -3757,6 +3758,7 @@ jobs:
         run: |
           python ci/check_legacy_engine_removed.py
           python ci/check_portal_sudo_guard.py
+          python ci/check_portal_v2_ownership.py
           python ci/check_source_collector_contract.py
           python ci/check_addon_integrity.py
           python ci/check_workflow_state_contracts.py
@@ -5796,6 +5798,23 @@ Before upgrading, take a database backup. Rollback requires restoring that
 backup because the new publication uniqueness semantics and operational audit
 fields are persistent. Do not downgrade only the addon code after operators have
 recorded live deviations.
+## Portal V2 cutover 19.0.4.0.0
+
+Upgrade `sports_federation_portal` after the V2 competition, registration,
+schedule-approval and match-day modules. The migration closes open operation
+tasks projected from V1 tournament registrations. It does not delete business
+records.
+
+```bash
+odoo-bin -d RC_DATABASE -u sports_federation_portal --stop-after-init
+python ci/check_portal_v2_ownership.py
+python ci/check_portal_sudo_guard.py
+bash ci/run_tests.sh --module sports_federation_portal
+```
+
+Verify /my/competitions, /my/competition-entries, /my/match-days and one match-day operations page. Confirm that draft schedules and superseded publications do not appear.
+
+Rollback requires a database restore if V2 entries or portal audit events were created after cutover.
 
 ====================================================================================================
 FILE: ROADMAP.md
@@ -6063,6 +6082,20 @@ A route change must include:
 6. compatibility and removal notes when replacing an existing route
 
 The previous `/web/login` entry was removed from this inventory because no matching `FederationWebsiteLogin.web_login` implementation was present in the reviewed source snapshot. Re-add it only with an implementation and smoke coverage.
+
+## Portal V2 competition routes
+
+- `GET /my/competitions`: edition-based competition workspace.
+- `GET /my/competitions/<edition_id>`: represented-team competition detail.
+- `GET /my/match-days`: match days selected through current live publications.
+- `GET /my/match-days/<matchday_id>`: club-scoped match-day detail.
+- `POST /my/competition-entries/new`: V2 competition entry through the portal privilege boundary.
+- `GET /sports/match-days/<matchday_id>/operations`: publication-scoped operations board.
+- `POST /sports/match-days/<matchday_id>/operations/data`: current live operations payload.
+- `POST /sports/match-days/<matchday_id>/matches/<match_id>/action`: match action constrained to that publication.
+
+The former tournament-workspace and tournament-operations URLs are temporary
+redirects and are not data sources.
 
 ====================================================================================================
 FILE: STATE_AND_OWNERSHIP_MATRIX.md
@@ -9223,6 +9256,12 @@ schedule through **Submit for Review**. A different schedule approver uses the
 revision. Approved schedules move to **Publication > Approved Schedules**, where
 **Publish Schedule** creates the live immutable publication. Match-day sessions
 must continue to resolve their matches from that exact current publication.
+The approver needs both the Schedule Approver group and an active
+edition-specific `schedule_approver` responsibility. Approval revalidation reads
+the submitted schedule's calendar and venue data internally; venue or calendar
+management rights are not required. Publishing the approved schedule
+materializes any missing operational matches for its assigned fixtures before
+linking them to the immutable publication.
 
 ## Live operations and controlled deviations
 
@@ -13189,6 +13228,69 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 ====================================================================================================
+FILE: ci/check_portal_v2_ownership.py
+====================================================================================================
+
+#!/usr/bin/env python3
+import json
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+contract = json.loads((ROOT / "ci/contracts/portal_v2_ownership.json").read_text())
+required = {
+    "competition": "federation.competition.edition",
+    "participation": "federation.participant.set",
+    "publication": "federation.schedule.publication",
+    "live_operations": "federation.matchday.session",
+}
+errors = []
+for key, model in required.items():
+    if contract["portal_aggregates"].get(key) != model:
+        errors.append(f"ownership mismatch for {key}")
+checks = {
+    "sports_federation_portal/models/portal_v2_queries.py": [
+        "federation.portal.competition.queries",
+        "federation.portal.matchday.queries",
+        "current_publication_id",
+        '("current_publication_id.state", "=", "live")',
+    ],
+    "sports_federation_portal/controllers/portal_v2.py": [
+        "/my/competitions",
+        "/my/match-days",
+        "/sports/match-days/<int:matchday_id>/operations",
+    ],
+    "sports_federation_portal/views/portal_v2_templates.xml": [
+        "portal_my_competitions",
+        "portal_my_matchdays",
+        "portal_matchday_operations_page",
+    ],
+}
+for relative, needles in checks.items():
+    path = ROOT / relative
+    if not path.exists():
+        errors.append(f"missing {relative}")
+        continue
+    text = path.read_text(encoding="utf-8")
+    for needle in needles:
+        if needle not in text:
+            errors.append(f"{relative}: missing {needle!r}")
+manifest = (ROOT / "sports_federation_portal/__manifest__.py").read_text()
+for removed in (
+    "portal_tournament_workspace_templates.xml",
+    "portal_tournament_operations_templates.xml",
+    "static/src/components/tournament_operations/",
+):
+    if removed in manifest:
+        errors.append(f"legacy portal asset remains active: {removed}")
+if errors:
+    print("Portal V2 ownership contract failed:")
+    for error in errors:
+        print(f"- {error}")
+    sys.exit(1)
+print("Portal V2 ownership contract passed.")
+
+====================================================================================================
 FILE: ci/check_release_train.py
 ====================================================================================================
 
@@ -13626,6 +13728,32 @@ FILE: ci/contracts/documentation_freshness.json
 }
 
 ====================================================================================================
+FILE: ci/contracts/portal_v2_ownership.json
+====================================================================================================
+
+{
+  "version": 1,
+  "portal_aggregates": {
+    "competition": "federation.competition.edition",
+    "registration": "federation.competition.entry",
+    "participation": "federation.participant.set",
+    "fixture": "federation.fixture",
+    "calendar": "federation.matchday",
+    "publication": "federation.schedule.publication",
+    "live_operations": "federation.matchday.session",
+    "result": "federation.match",
+    "standings": "federation.standing"
+  },
+  "forbidden_active_portal_references": [
+    "_portal_get_workspace_entries",
+    "_portal_get_workspace_entry_for_user",
+    "/sports/tournament/<int:tournament_id>/operations",
+    "portal_my_tournament_workspaces"
+  ],
+  "schedule_visibility_rule": "current_live_publication_only"
+}
+
+====================================================================================================
 FILE: ci/contracts/route_inventory.json
 ====================================================================================================
 
@@ -13633,21 +13761,114 @@ FILE: ci/contracts/route_inventory.json
   "schema_version": 1,
   "description": "Machine-readable registry of governed HTTP routes with smoke coverage. ROUTE_INVENTORY.md is explanatory documentation and is not parsed by CI.",
   "routes": [
-    {"method": "GET", "path": "/web/login", "owner_module": "sports_federation_portal", "coverage_key": "portal_login"},
-    {"method": "GET", "path": "/sports/tournament/<id>/operations", "owner_module": "sports_federation_portal", "coverage_key": "portal_tournament_operations"},
-    {"method": "POST", "path": "/my/teams/new", "owner_module": "sports_federation_portal", "coverage_key": "portal_team_create"},
-    {"method": "POST", "path": "/my/players/new", "owner_module": "sports_federation_portal", "coverage_key": "portal_player_create"},
-    {"method": "POST", "path": "/my/season-registration/new", "owner_module": "sports_federation_portal", "coverage_key": "portal_season_registration"},
-    {"method": "POST", "path": "/my/referee-assignments/<id>/respond", "owner_module": "sports_federation_portal", "coverage_key": "portal_referee_response"},
-    {"method": "POST", "path": "/tournaments/<slug>/register", "owner_module": "sports_federation_public_site", "coverage_key": "public_tournament_registration"},
-    {"method": "POST", "path": "/my/compliance/<requirement>/<target_model>/<target_id>/submit", "owner_module": "sports_federation_compliance", "coverage_key": "portal_compliance_submission"},
-    {"method": "GET", "path": "/reporting/export/standings/<tournament_id>", "owner_module": "sports_federation_reporting", "coverage_key": "reporting_standings_export"},
-    {"method": "GET", "path": "/reporting/export/participation/<season_id>", "owner_module": "sports_federation_reporting", "coverage_key": "reporting_participation_export"},
-    {"method": "GET", "path": "/reporting/export/finance", "owner_module": "sports_federation_reporting", "coverage_key": "reporting_finance_export"},
-    {"method": "GET", "path": "/reporting/export/finance/events", "owner_module": "sports_federation_reporting", "coverage_key": "reporting_finance_events_export"},
-    {"method": "GET", "path": "/integration/v1/contracts", "owner_module": "sports_federation_import_tools", "coverage_key": "integration_contract_manifest"},
-    {"method": "GET", "path": "/integration/v1/outbound/finance/events", "owner_module": "sports_federation_import_tools", "coverage_key": "integration_finance_events"},
-    {"method": "POST", "path": "/integration/v1/inbound/<contract_code>/deliveries", "owner_module": "sports_federation_import_tools", "coverage_key": "integration_inbound_delivery"}
+    {
+      "method": "GET",
+      "path": "/web/login",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_login"
+    },
+    {
+      "method": "GET",
+      "path": "/my/competitions",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_v2_competitions"
+    },
+    {
+      "method": "GET",
+      "path": "/my/match-days",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_v2_matchdays"
+    },
+    {
+      "method": "POST",
+      "path": "/my/competition-entries/new",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_v2_entry_create"
+    },
+    {
+      "method": "GET",
+      "path": "/sports/match-days/<id>/operations",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_v2_matchday_operations"
+    },
+    {
+      "method": "POST",
+      "path": "/my/teams/new",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_team_create"
+    },
+    {
+      "method": "POST",
+      "path": "/my/players/new",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_player_create"
+    },
+    {
+      "method": "POST",
+      "path": "/my/season-registration/new",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_season_registration"
+    },
+    {
+      "method": "POST",
+      "path": "/my/referee-assignments/<id>/respond",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_referee_response"
+    },
+    {
+      "method": "POST",
+      "path": "/tournaments/<slug>/register",
+      "owner_module": "sports_federation_public_site",
+      "coverage_key": "public_tournament_registration"
+    },
+    {
+      "method": "POST",
+      "path": "/my/compliance/<requirement>/<target_model>/<target_id>/submit",
+      "owner_module": "sports_federation_compliance",
+      "coverage_key": "portal_compliance_submission"
+    },
+    {
+      "method": "GET",
+      "path": "/reporting/export/standings/<tournament_id>",
+      "owner_module": "sports_federation_reporting",
+      "coverage_key": "reporting_standings_export"
+    },
+    {
+      "method": "GET",
+      "path": "/reporting/export/participation/<season_id>",
+      "owner_module": "sports_federation_reporting",
+      "coverage_key": "reporting_participation_export"
+    },
+    {
+      "method": "GET",
+      "path": "/reporting/export/finance",
+      "owner_module": "sports_federation_reporting",
+      "coverage_key": "reporting_finance_export"
+    },
+    {
+      "method": "GET",
+      "path": "/reporting/export/finance/events",
+      "owner_module": "sports_federation_reporting",
+      "coverage_key": "reporting_finance_events_export"
+    },
+    {
+      "method": "GET",
+      "path": "/integration/v1/contracts",
+      "owner_module": "sports_federation_import_tools",
+      "coverage_key": "integration_contract_manifest"
+    },
+    {
+      "method": "GET",
+      "path": "/integration/v1/outbound/finance/events",
+      "owner_module": "sports_federation_import_tools",
+      "coverage_key": "integration_finance_events"
+    },
+    {
+      "method": "POST",
+      "path": "/integration/v1/inbound/<contract_code>/deliveries",
+      "owner_module": "sports_federation_import_tools",
+      "coverage_key": "integration_inbound_delivery"
+    }
   ]
 }
 
@@ -15900,12 +16121,6 @@ FILE: docs/portal_sudo_inventory.json
   },
   {
     "file": "sports_federation_portal/controllers/portal_registrations.py",
-    "function": "portal_my_tournament_registrations",
-    "reason": "adjacent ownership scope check",
-    "statement": "Registration = request.env[\"federation.tournament.registration\"].sudo()"
-  },
-  {
-    "file": "sports_federation_portal/controllers/portal_registrations.py",
     "function": "portal_season_registration_cancel",
     "reason": "adjacent ownership scope check",
     "statement": "registration = ( request.env[\"federation.season.registration\"].sudo().browse(reg_id) )"
@@ -15935,10 +16150,16 @@ FILE: docs/portal_sudo_inventory.json
     "statement": "request.env[ \"federation.season.registration\" ]._portal_submit_registration_request( request.env[\"federation.season\"].sudo().browse(season_id), request.env[\"federation.team\"].sudo().browse(team_id), notes=notes, user=request.env.user, )"
   },
   {
-    "file": "sports_federation_portal/controllers/portal_registrations.py",
-    "function": "portal_tournament_registration_cancel",
+    "file": "sports_federation_portal/controllers/portal_v2.py",
+    "function": "portal_create_competition_entry",
     "reason": "adjacent ownership scope check",
-    "statement": "registration = ( request.env[\"federation.tournament.registration\"].sudo().browse(reg_id) )"
+    "statement": "team = request.env[\"federation.team\"].sudo().browse(int(team_id)).exists()"
+  },
+  {
+    "file": "sports_federation_portal/controllers/portal_v2.py",
+    "function": "portal_create_competition_entry",
+    "reason": "adjacent ownership scope check",
+    "statement": "window = ( request.env[\"federation.registration.window\"] .sudo() .browse(int(window_id)) .exists() )"
   },
   {
     "file": "sports_federation_portal/controllers/qol.py",
@@ -16055,6 +16276,31 @@ FILE: docs/portal_sudo_inventory.json
     "statement": "if ( # noguard: existence-only lookup after the user-scoped lookup failed not Tournament.sudo() .browse(tournament_id) .exists() ): return False, self._operations_error( \"not_found\", _(\"Tournament not found.\") )"
   }
 ]
+
+====================================================================================================
+FILE: docs/portal_v2_ownership.md
+====================================================================================================
+
+# Portal V2 ownership
+
+The portal is a projection of V2 competition records. It does not own a second
+competition lifecycle and does not fall back to legacy tournament workspaces.
+
+| Portal concern | Authoritative model |
+|---|---|
+| Competition | `federation.competition.edition` |
+| Registration | `federation.competition.entry` |
+| Participation | `federation.participant.set` |
+| Fixture | `federation.fixture` |
+| Physical day | `federation.matchday` |
+| Schedule visibility | current live `federation.schedule.publication` |
+| Live execution | `federation.matchday.session` |
+| Result | fixture-linked `federation.match` |
+| Standings | `federation.standing` |
+
+Draft schedules, review evidence, approval notes and superseded publications are
+not portal schedule sources. Portal access remains scoped through represented
+clubs and teams and through `federation.portal.privilege` for mutations.
 
 ====================================================================================================
 FILE: docs/release/HUMAN_ACCEPTANCE_TEST.md
@@ -20992,7 +21238,10 @@ class FederationCompetitionRoleAssignment(models.Model):
     def assert_role(self, edition, *roles):
         if self.env.user.has_group("sports_federation_base.group_federation_manager"):
             return True
-        if not self.search_count(
+        # Role assignments are administrator-managed records.  The authorization
+        # guard must be able to inspect them without granting every operational
+        # role broad read access to the assignment model.
+        if not self.sudo().search_count(
             [
                 ("edition_id", "=", edition.id),
                 ("user_id", "=", self.env.user.id),
@@ -50671,6 +50920,22 @@ The module includes HTTP smoke, ownership, access-denied, team, player, roster, 
 
 `PORTAL_OWNERSHIP_COVERAGE.md`, `PORTAL_OWNERSHIP_TEST_MATRIX.md`, and `ROADMAP_RC.md` are deleted. Their durable rules are consolidated here and in ADR-0001; the test files are the authoritative live coverage map.
 
+## V2 competition portal
+
+The active competition portal is edition-based. Participation comes from V2
+competition entries and finalized participant sets. Match-day schedule data is
+rendered only from each match day's current live publication. Draft schedules,
+review evidence and superseded publications are intentionally unavailable.
+
+Primary routes:
+
+- `/my/competitions`
+- `/my/competition-entries`
+- `/my/match-days`
+- `/sports/match-days/<id>/operations`
+
+Legacy tournament workspace routes are redirect-only and render no V1 data.
+
 ====================================================================================================
 FILE: sports_federation_portal/__init__.py
 ====================================================================================================
@@ -50684,7 +50949,7 @@ FILE: sports_federation_portal/__manifest__.py
 
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.3.0.0",
+    "version": "19.0.4.0.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -50706,6 +50971,12 @@ on top of the federation base modules.
         "sports_federation_officiating",
         "sports_federation_rosters",
         "sports_federation_result_control",
+        "sports_federation_competition_core",
+        "sports_federation_registration",
+        "sports_federation_format",
+        "sports_federation_schedule_approval",
+        "sports_federation_matchday",
+        "sports_federation_standings",
     ],
     "data": [
         "security/res_groups.xml",
@@ -50721,15 +50992,12 @@ on top of the federation base modules.
         "views/res_partner_views.xml",
         "views/res_users_views.xml",
         "views/federation_season_registration_views.xml",
-        "views/federation_tournament_registration_views.xml",
-        "views/federation_tournament_views.xml",
         "views/federation_match_sheet_views.xml",
         "views/federation_club_representative_portal_views.xml",
         "views/qol_views.xml",
         "views/portal_templates.xml",
+        "views/portal_v2_templates.xml",
         "views/portal_officiating_templates.xml",
-        "views/portal_tournament_workspace_templates.xml",
-        "views/portal_tournament_operations_templates.xml",
         "views/portal_roster_templates.xml",
         "views/portal_result_templates.xml",
         "views/portal_referee_duty_templates.xml",
@@ -50741,9 +51009,6 @@ on top of the federation base modules.
         "web.assets_frontend": [
             "sports_federation_portal/static/src/scss/federation_portal.scss",
             "sports_federation_portal/static/src/js/qol_draft_guard.js",
-            "sports_federation_portal/static/src/components/tournament_operations/tournament_operations.js",
-            "sports_federation_portal/static/src/components/tournament_operations/tournament_operations.xml",
-            "sports_federation_portal/static/src/components/tournament_operations/tournament_operations.scss",
         ],
     },
     "demo": [],
@@ -50763,10 +51028,10 @@ from . import officiating
 from . import rosters
 from . import result_portal
 from . import referee_duty_portal
-from . import tournament_operations
 from . import operation_tasks
 from . import manager_operation_tasks
 from . import qol
+from . import portal_v2
 
 ====================================================================================================
 FILE: sports_federation_portal/controllers/main.py
@@ -51837,39 +52102,8 @@ class FederationRegistrationPortal(FederationPortalBase):
         website=True,
     )
     def portal_my_tournament_registrations(self, page=1, **kw):
-        """Show tournament registrations for the user's club."""
-        clubs = self._get_portal_clubs()
-        if not clubs:
-            return self._redirect_with_query("/my/club")
-
-        domain = [("club_id", "in", clubs.ids)]
-        Registration = request.env["federation.tournament.registration"].sudo()
-        total = Registration.search_count(domain)
-        step = 20
-        pager = portal_pager(
-            url="/my/tournament-registrations",
-            total=total,
-            page=page,
-            step=step,
-        )
-        registrations = Registration.search(
-            domain,
-            limit=step,
-            offset=pager["offset"],
-            order="create_date desc",
-        )
-        values = {
-            "registrations": registrations,
-            "pager": pager,
-            "page_name": "my_tournament_registrations",
-            "success": kw.get("success"),
-            "error": kw.get("error"),
-            "error_hint": kw.get("error_hint"),
-        }
-        return request.render(
-            "sports_federation_portal.portal_my_tournament_registrations",
-            values,
-        )
+        """Redirect the deprecated V1 registration queue to V2 entries."""
+        return self._redirect_with_query("/my/competition-entries")
 
     @http.route(
         ["/my/season-registration/new"],
@@ -51966,43 +52200,8 @@ class FederationRegistrationPortal(FederationPortalBase):
         csrf=True,
     )
     def portal_tournament_registration_resubmit(self, reg_id, notes="", **kw):
-        """Resubmit a returned registration through the portal privilege boundary."""
-        Registration = request.env["federation.tournament.registration"]
-        scope_domain = [("club_id", "in", self._get_portal_clubs().ids)]
-        registration = request.env["federation.portal.privilege"].portal_search_by_id(
-            Registration,
-            reg_id,
-            domain=scope_domain,
-            user=request.env.user,
-        )
-        if not registration:
-            return self._render_access_denied()
-        try:
-            if registration.state != "returned":
-                raise ValidationError("Only returned registrations can be resubmitted.")
-            if notes.strip():
-                request.env["federation.portal.privilege"].portal_write(
-                    registration,
-                    {"notes": notes.strip()},
-                    scope_domain=scope_domain,
-                    user=request.env.user,
-                )
-            request.env["federation.portal.privilege"].portal_call(
-                registration,
-                "action_submit",
-                scope_domain=scope_domain,
-                user=request.env.user,
-            )
-        except (AccessError, ValidationError) as error:
-            return self._redirect_with_query(
-                "/my/tournament-registrations",
-                error=str(error),
-                error_hint="Review the federation feedback, correct the registration and resubmit it.",
-            )
-        return self._redirect_with_query(
-            "/my/tournament-registrations",
-            success="Tournament registration resubmitted",
-        )
+        """V1 endpoint retained only as a safe redirect."""
+        return self._redirect_with_query("/my/competition-entries")
 
     @http.route(
         ["/my/tournament-registration/<int:reg_id>/cancel"],
@@ -52013,30 +52212,8 @@ class FederationRegistrationPortal(FederationPortalBase):
         csrf=True,
     )
     def portal_tournament_registration_cancel(self, reg_id, **kw):
-        """Cancel a tournament registration."""
-        clubs = self._get_portal_clubs()
-        registration = (
-            request.env["federation.tournament.registration"].sudo().browse(reg_id)
-        )
-        if not registration.exists() or registration.club_id not in clubs:
-            return self._redirect_with_query(
-                "/my/tournament-registrations",
-                error="Registration not found",
-            )
-
-        try:
-            registration.action_cancel()
-        except ValidationError as error:
-            return self._redirect_with_query(
-                "/my/tournament-registrations",
-                error=str(error),
-                error_hint="This registration may not be cancellable at its current stage. Contact the federation if needed.",
-            )
-
-        return self._redirect_with_query(
-            "/my/tournament-registrations",
-            success="Registration cancelled",
-        )
+        """V1 endpoint retained only as a safe redirect."""
+        return self._redirect_with_query("/my/competition-entries")
 
     @http.route(
         ["/my/season-registration/<int:reg_id>/cancel"],
@@ -52070,6 +52247,351 @@ class FederationRegistrationPortal(FederationPortalBase):
         return self._redirect_with_query(
             "/my/season-registrations",
             success="Registration cancelled",
+        )
+
+====================================================================================================
+FILE: sports_federation_portal/controllers/portal_v2.py
+====================================================================================================
+
+from odoo import _, http
+from odoo.exceptions import AccessError, ValidationError
+from odoo.http import request
+from werkzeug.utils import redirect
+
+from .portal_helpers import FederationPortalBase
+
+
+class FederationPortalV2(FederationPortalBase):
+    def _not_found_or_denied(self):
+        return self._render_access_denied()
+
+    @http.route(
+        ["/my/competitions", "/my/competitions/page/<int:page>"],
+        type="http",
+        auth="user",
+        website=True,
+    )
+    def portal_my_competitions(self, page=1, **kw):
+        cards = request.env["federation.portal.competition.queries"].list_cards(
+            user=request.env.user
+        )
+        return request.render(
+            "sports_federation_portal.portal_my_competitions",
+            {"competition_cards": cards, "page_name": "my_competitions"},
+        )
+
+    @http.route(
+        ["/my/competitions/<int:edition_id>"],
+        type="http",
+        auth="user",
+        website=True,
+    )
+    def portal_my_competition_detail(self, edition_id, **kw):
+        try:
+            workspace = request.env["federation.portal.competition.queries"].detail(
+                edition_id, user=request.env.user
+            )
+        except AccessError:
+            return self._not_found_or_denied()
+        return request.render(
+            "sports_federation_portal.portal_my_competition_detail",
+            {"workspace": workspace, "page_name": "my_competitions"},
+        )
+
+    @http.route(
+        ["/my/competition-entries"],
+        type="http",
+        auth="user",
+        website=True,
+    )
+    def portal_my_competition_entries(self, **kw):
+        teams = request.env["federation.portal.v2.scope"].teams(user=request.env.user)
+        entries = request.env["federation.competition.entry"].search(
+            [("team_id", "in", teams.ids)], order="create_date desc,id desc"
+        )
+        windows = request.env["federation.registration.window"].search(
+            [("state", "=", "open")], order="date_close asc,id asc"
+        )
+        return request.render(
+            "sports_federation_portal.portal_my_competition_entries",
+            {
+                "entries": entries,
+                "windows": windows,
+                "teams": teams,
+                "page_name": "my_competition_entries",
+                "success": kw.get("success"),
+                "error": kw.get("error"),
+            },
+        )
+
+    @http.route(
+        ["/my/competition-entries/new"],
+        type="http",
+        auth="user",
+        website=True,
+        methods=["POST"],
+        csrf=True,
+    )
+    def portal_create_competition_entry(self, window_id, team_id, **kw):
+        try:
+            window = (
+                request.env["federation.registration.window"]
+                .sudo()
+                .browse(int(window_id))
+                .exists()
+            )
+            team = request.env["federation.team"].sudo().browse(int(team_id)).exists()
+            request.env["federation.portal.v2.scope"].assert_team(
+                team, user=request.env.user
+            )
+            if not window or window.state != "open":
+                raise ValidationError(_("The registration window is not open."))
+            if window.division_id.get_team_eligibility_error(team):
+                raise ValidationError(
+                    window.division_id.get_team_eligibility_error(team)
+                )
+            entry = request.env["federation.portal.privilege"].portal_create(
+                request.env["federation.competition.entry"],
+                {"window_id": window.id, "team_id": team.id},
+                user=request.env.user,
+            )
+            request.env["federation.portal.privilege"].portal_call(
+                entry,
+                "action_submit",
+                scope_domain=[("team_id", "=", team.id)],
+                user=request.env.user,
+            )
+        except (AccessError, ValidationError, ValueError, TypeError) as exc:
+            return redirect(f"/my/competition-entries?error={str(exc)}", code=302)
+        return redirect("/my/competition-entries?success=Entry submitted", code=302)
+
+    @http.route(["/my/match-days"], type="http", auth="user", website=True)
+    def portal_my_matchdays(self, **kw):
+        days = request.env["federation.portal.matchday.queries"].visible_matchdays(
+            user=request.env.user
+        )
+        return request.render(
+            "sports_federation_portal.portal_my_matchdays",
+            {"matchdays": days, "page_name": "my_matchdays"},
+        )
+
+    @http.route(
+        ["/my/match-days/<int:matchday_id>"],
+        type="http",
+        auth="user",
+        website=True,
+    )
+    def portal_my_matchday_detail(self, matchday_id, **kw):
+        try:
+            workspace = request.env["federation.portal.matchday.queries"].detail(
+                matchday_id, user=request.env.user
+            )
+        except AccessError:
+            return self._not_found_or_denied()
+        return request.render(
+            "sports_federation_portal.portal_my_matchday_detail",
+            {"workspace": workspace, "page_name": "my_matchdays"},
+        )
+
+    @http.route(
+        ["/sports/match-days/<int:matchday_id>/operations"],
+        type="http",
+        auth="user",
+        website=True,
+    )
+    def portal_matchday_operations_page(self, matchday_id, **kw):
+        try:
+            workspace = request.env["federation.portal.matchday.queries"].detail(
+                matchday_id, user=request.env.user, manager=True
+            )
+        except AccessError:
+            return self._not_found_or_denied()
+        return request.render(
+            "sports_federation_portal.portal_matchday_operations_page",
+            {
+                "workspace": workspace,
+                "page_name": "matchday_operations",
+                "operations_load_path": (
+                    f"/sports/match-days/{matchday_id}/operations/data"
+                ),
+                "operations_action_path_template": (
+                    f"/sports/match-days/{matchday_id}/matches/__MATCH_ID__/action"
+                ),
+            },
+        )
+
+    @http.route(
+        ["/sports/match-days/<int:matchday_id>/operations/data"],
+        type="jsonrpc",
+        auth="user",
+        methods=["POST"],
+        csrf=True,
+    )
+    def portal_matchday_operations_data(self, matchday_id, **kw):
+        try:
+            workspace = request.env["federation.portal.matchday.queries"].detail(
+                matchday_id, user=request.env.user, manager=True
+            )
+        except AccessError:
+            return {
+                "ok": False,
+                "error": {"type": "forbidden", "message": _("Access denied.")},
+            }
+        return {
+            "ok": True,
+            "payload": self._serialize_matchday_workspace(workspace),
+        }
+
+    def _serialize_matchday_workspace(self, workspace):
+        day = workspace["matchday"]
+        publication = workspace["publication"]
+        return {
+            "matchday": {
+                "id": day.id,
+                "name": day.display_name,
+                "date": str(day.date or ""),
+                "state": day.state,
+                "venue": day.venue_id.display_name,
+            },
+            "publication": {
+                "id": publication.id,
+                "version": publication.version,
+                "state": publication.state,
+            },
+            "session": (
+                {
+                    "id": workspace["session"].id,
+                    "state": workspace["session"].state,
+                }
+                if workspace["session"]
+                else False
+            ),
+            "matches": [
+                {
+                    "id": match.id,
+                    "name": match.display_name,
+                    "home_team": match.home_team_id.display_name,
+                    "away_team": match.away_team_id.display_name,
+                    "state": match.state,
+                    "result_state": match.result_state,
+                    "published_slot": match.published_slot_id.display_name,
+                    "operational_slot": match.operational_slot_id.display_name,
+                    "operational_status": match.operational_status,
+                }
+                for match in workspace["matches"]
+            ],
+            "courts": [
+                {
+                    "id": status.id,
+                    "court": status.court_id.display_name,
+                    "state": status.state,
+                    "delay_minutes": status.delay_minutes,
+                    "note": status.note or "",
+                }
+                for status in workspace["courts"]
+            ],
+            "incidents": [
+                {
+                    "id": incident.id,
+                    "type": incident.incident_type,
+                    "description": incident.description,
+                    "resolved": incident.resolved,
+                }
+                for incident in workspace["incidents"]
+            ],
+            "deviations": [
+                {
+                    "id": deviation.id,
+                    "match_id": deviation.match_id.id,
+                    "type": deviation.deviation_type,
+                    "reason": deviation.reason,
+                }
+                for deviation in workspace["deviations"]
+            ],
+        }
+
+    @http.route(
+        ["/sports/match-days/<int:matchday_id>/matches/<int:match_id>/action"],
+        type="jsonrpc",
+        auth="user",
+        methods=["POST"],
+        csrf=True,
+    )
+    def portal_matchday_action(self, matchday_id, match_id, **kw):
+        try:
+            workspace = request.env["federation.portal.matchday.queries"].detail(
+                matchday_id, user=request.env.user, manager=True
+            )
+            match = workspace["matches"].filtered(lambda item: item.id == match_id)
+            if not match:
+                raise AccessError()
+            privilege = request.env["federation.portal.privilege"]
+            action = kw.get("action")
+            if action == "start":
+                privilege.portal_call(match, "action_start", user=request.env.user)
+            elif action == "finish":
+                privilege.portal_call(match, "action_done", user=request.env.user)
+            elif action == "save_score":
+                privilege.portal_write(
+                    match,
+                    {
+                        "home_score": int(kw.get("home_score", 0)),
+                        "away_score": int(kw.get("away_score", 0)),
+                    },
+                    user=request.env.user,
+                )
+            else:
+                raise ValidationError(_("Unsupported match-day action."))
+        except (AccessError, ValidationError, ValueError) as exc:
+            return {
+                "ok": False,
+                "error": {
+                    "type": "validation",
+                    "message": str(exc) or _("Action failed."),
+                },
+            }
+        return {"ok": True, "payload": self._serialize_matchday_workspace(workspace)}
+
+    @http.route(
+        ["/my/tournament-workspaces", "/my/tournament-workspaces/page/<int:page>"],
+        type="http",
+        auth="user",
+        website=True,
+    )
+    def legacy_workspace_redirect(self, page=1, **kw):
+        return redirect("/my/competitions", code=302)
+
+    @http.route(
+        ["/my/tournament-workspaces/<int:tournament_id>/<int:team_id>"],
+        type="http",
+        auth="user",
+        website=True,
+    )
+    def legacy_workspace_detail_redirect(self, tournament_id, team_id, **kw):
+        tournament = request.env["federation.tournament"].browse(tournament_id).exists()
+        if not tournament or not tournament.edition_id:
+            return redirect("/my/competitions", code=302)
+        return redirect(f"/my/competitions/{tournament.edition_id.id}", code=302)
+
+    @http.route(
+        ["/sports/tournament/<int:tournament_id>/operations"],
+        type="http",
+        auth="user",
+        website=True,
+    )
+    def legacy_tournament_operations_redirect(self, tournament_id, **kw):
+        tournament = request.env["federation.tournament"].browse(tournament_id).exists()
+        day = request.env["federation.matchday"].search(
+            [
+                ("edition_id", "=", tournament.edition_id.id if tournament else 0),
+                ("current_publication_id.state", "=", "live"),
+            ],
+            order="date asc,id asc",
+            limit=1,
+        )
+        return redirect(
+            f"/sports/match-days/{day.id}/operations" if day else "/my/match-days",
+            code=302,
         )
 
 ====================================================================================================
@@ -53730,6 +54252,20 @@ def migrate(cr, version):
         )
 
 ====================================================================================================
+FILE: sports_federation_portal/migrations/19.0.4.0.0/post-migrate.py
+====================================================================================================
+
+def migrate(cr, version):
+    # V1 registration tasks are projections, not business records. Close them
+    # so the next sync can create V2 competition-entry tasks without ambiguity.
+    cr.execute("""
+        UPDATE federation_operation_task
+           SET state = 'done', completed_on = NOW()
+         WHERE source_model = 'federation.tournament.registration'
+           AND state != 'done'
+        """)
+
+====================================================================================================
 FILE: sports_federation_portal/models/__init__.py
 ====================================================================================================
 
@@ -53738,7 +54274,6 @@ from . import federation_club_role_type
 from . import federation_club_representative
 from . import federation_club
 from . import federation_team
-from . import federation_tournament
 from . import res_partner
 from . import res_users
 from . import federation_tournament_registration
@@ -53748,11 +54283,9 @@ from . import federation_match_referee
 from . import federation_team_roster
 from . import federation_match_sheet
 from . import federation_player
-from . import tournament_operations_access
-from . import tournament_operations_board
-from . import federation_tournament_operations
 from . import portal_status_labels
 from . import operation_task
+from . import portal_v2_queries
 
 ====================================================================================================
 FILE: sports_federation_portal/models/federation_club.py
@@ -57068,7 +57601,7 @@ class FederationOperationTask(models.Model):
     name = fields.Char(required=True, tracking=True)
     task_type = fields.Selection(
         [
-            ("registration", "Tournament registration"),
+            ("registration", "Competition entry"),
             ("roster_readiness", "Roster readiness"),
             ("referee_duty", "Club referee duty"),
             ("result_review", "Result follow-up"),
@@ -57135,8 +57668,8 @@ class FederationOperationTask(models.Model):
         "federation.tournament", index=True, ondelete="set null"
     )
     match_id = fields.Many2one("federation.match", index=True, ondelete="set null")
-    registration_id = fields.Many2one(
-        "federation.tournament.registration", ondelete="set null"
+    competition_entry_id = fields.Many2one(
+        "federation.competition.entry", ondelete="set null"
     )
     roster_id = fields.Many2one("federation.team.roster", ondelete="set null")
     duty_id = fields.Many2one("federation.match.club.referee.duty", ondelete="set null")
@@ -57188,13 +57721,13 @@ class FederationOperationTask(models.Model):
             "source_changed_on": source.write_date,
             "source_key": "%s:%s:%s" % (source._name, source.id, task_type),
         }
-        if source._name == "federation.tournament.registration":
+        if source._name == "federation.competition.entry":
             values.update(
-                registration_id=source.id,
-                responsible_club_id=source.club_id.id,
-                season_id=source.season_id.id,
-                tournament_id=source.tournament_id.id,
-                action_url="/my/tournament-registrations",
+                competition_entry_id=source.id,
+                responsible_club_id=source.team_id.club_id.id,
+                season_id=source.edition_id.season_id.id,
+                tournament_id=source.window_id.division_id.id,
+                action_url="/my/competition-entries",
             )
         elif source._name == "federation.team.roster":
             values.update(
@@ -57250,38 +57783,31 @@ class FederationOperationTask(models.Model):
         if not is_manager and not club_ids:
             return self.browse([])
         specs = []
-        registration_domain = [] if is_manager else [("club_id", "in", club_ids)]
-        registrations = (
-            self.env["federation.tournament.registration"]
+        entry_domain = [] if is_manager else [("team_id.club_id", "in", club_ids)]
+        entries = (
+            self.env["federation.competition.entry"]
             .sudo()
             .search(
-                registration_domain
-                + [("state", "in", ("draft", "submitted", "returned", "rejected"))]
+                entry_domain + [("state", "in", ("draft", "submitted", "rejected"))]
             )
         )
-        for registration in registrations:
-            audience = "manager" if registration.state == "submitted" else "club"
+        for entry in entries:
+            audience = "manager" if entry.state == "submitted" else "club"
             specs.append(
                 self._task_spec(
-                    registration,
+                    entry,
                     "registration",
                     audience,
-                    _("Registration for %(team)s")
-                    % {"team": registration.team_id.display_name},
-                    _("Registration is %(state)s and needs follow-up.")
-                    % {
-                        "state": dict(registration._fields["state"].selection).get(
-                            registration.state, registration.state
-                        )
-                    },
+                    _("Competition entry for %(team)s")
+                    % {"team": entry.team_id.display_name},
+                    _("Entry is %(state)s and needs follow-up.")
+                    % {"state": entry.state},
                     (
-                        _("Correct and resubmit registration")
-                        if registration.state == "returned"
-                        else _("Review tournament registration")
+                        _("Review competition entry")
+                        if entry.state == "submitted"
+                        else _("Correct and submit competition entry")
                     ),
-                    priority=(
-                        "1" if registration.state in ("returned", "rejected") else "0"
-                    ),
+                    priority="1" if entry.state == "rejected" else "0",
                 )
             )
 
@@ -57912,6 +58438,334 @@ class FederationPlayerLicense(models.Model):
         return self._PORTAL_LICENSE_STATE_LABELS.get(
             self.state, self._portal_label_from_selection("state")
         )
+
+====================================================================================================
+FILE: sports_federation_portal/models/portal_v2_queries.py
+====================================================================================================
+
+from odoo import _, api, fields, models
+from odoo.exceptions import AccessError
+
+
+class FederationPortalV2Scope(models.AbstractModel):
+    _name = "federation.portal.v2.scope"
+    _description = "Portal V2 Scope Service"
+
+    @api.model
+    def team_domain(self, user=None):
+        user = user or self.env.user
+        if not user.share and user.has_group(
+            "sports_federation_base.group_federation_manager"
+        ):
+            return []
+        team_ids = user.portal_team_scope_ids.ids
+        club_ids = user.portal_club_scope_ids.ids
+        if team_ids and club_ids:
+            return ["|", ("id", "in", team_ids), ("club_id", "in", club_ids)]
+        if team_ids:
+            return [("id", "in", team_ids)]
+        if club_ids:
+            return [("club_id", "in", club_ids)]
+        return [("id", "=", False)]
+
+    @api.model
+    def teams(self, user=None):
+        return self.env["federation.team"].sudo().search(self.team_domain(user=user))
+
+    @api.model
+    def assert_team(self, team, user=None):
+        if not team or not self.env["federation.team"].sudo().search_count(
+            [("id", "=", team.id)] + self.team_domain(user=user)
+        ):
+            raise AccessError(_("You do not have access to this team."))
+        return team
+
+
+class FederationPortalCompetitionQueries(models.AbstractModel):
+    _name = "federation.portal.competition.queries"
+    _description = "Portal V2 Competition Projections"
+
+    def _scope(self):
+        return self.env["federation.portal.v2.scope"]
+
+    @api.model
+    def visible_editions(self, user=None):
+        teams = self._scope().teams(user=user)
+        if not teams:
+            return self.env["federation.competition.edition"]
+        edition_ids = set(
+            self.env["federation.competition.entry"]
+            .sudo()
+            .search([("team_id", "in", teams.ids), ("state", "!=", "withdrawn")])
+            .mapped("edition_id")
+            .ids
+        )
+        edition_ids.update(
+            self.env["federation.participant.set.line"]
+            .sudo()
+            .search(
+                [
+                    ("team_id", "in", teams.ids),
+                    ("participant_set_id.state", "=", "finalized"),
+                ]
+            )
+            .mapped("participant_set_id.edition_id")
+            .ids
+        )
+        return (
+            self.env["federation.competition.edition"]
+            .sudo()
+            .search([("id", "in", list(edition_ids))], order="date_start desc,id desc")
+        )
+
+    @api.model
+    def assert_visible_edition(self, edition_id, user=None):
+        edition = self.visible_editions(user=user).filtered(
+            lambda item: item.id == int(edition_id)
+        )
+        if not edition:
+            raise AccessError(_("You do not have access to this competition."))
+        return edition[:1]
+
+    def _visible_teams_for_edition(self, edition, user=None):
+        scoped = self._scope().teams(user=user)
+        participant_team_ids = (
+            self.env["federation.participant.set.line"]
+            .sudo()
+            .search(
+                [
+                    ("participant_set_id.edition_id", "=", edition.id),
+                    ("participant_set_id.state", "=", "finalized"),
+                    ("team_id", "in", scoped.ids),
+                ]
+            )
+            .mapped("team_id")
+        )
+        entry_team_ids = (
+            self.env["federation.competition.entry"]
+            .sudo()
+            .search(
+                [
+                    ("edition_id", "=", edition.id),
+                    ("team_id", "in", scoped.ids),
+                    ("state", "!=", "withdrawn"),
+                ]
+            )
+            .mapped("team_id")
+        )
+        return participant_team_ids | entry_team_ids
+
+    @api.model
+    def competition_card(self, edition, user=None):
+        teams = self._visible_teams_for_edition(edition, user=user)
+        days = (
+            self.env["federation.matchday"]
+            .sudo()
+            .search(
+                [
+                    ("edition_id", "=", edition.id),
+                    ("current_publication_id.state", "=", "live"),
+                ],
+                order="date asc,id asc",
+            )
+        )
+        visible_match_domain = [
+            (
+                "schedule_publication_id",
+                "in",
+                days.mapped("current_publication_id").ids,
+            ),
+            "|",
+            ("home_team_id", "in", teams.ids),
+            ("away_team_id", "in", teams.ids),
+        ]
+        matches = (
+            self.env["federation.match"]
+            .sudo()
+            .search(visible_match_domain, order="date_scheduled asc,id asc")
+            if days and teams
+            else self.env["federation.match"]
+        )
+        active = days.filtered(lambda day: day.state == "open")
+        unfinished = matches.filtered(
+            lambda match: match.state not in ("done", "cancelled")
+        )
+        if (
+            edition.engine_state in ("finished", "cancelled", "archived")
+            or not unfinished
+            and matches
+        ):
+            label, tone = _("Finished"), "secondary"
+        elif active:
+            label, tone = _("Live"), "danger"
+        elif days:
+            label, tone = _("Ready"), "success"
+        else:
+            label, tone = _("Preparing"), "warning"
+        return {
+            "edition": edition,
+            "teams": teams,
+            "status_label": label,
+            "status_tone": tone,
+            "next_match": unfinished[:1],
+            "published_matchday_count": len(days),
+            "result_follow_up_count": len(
+                matches.filtered(
+                    lambda m: m.state == "done"
+                    and m.result_state
+                    in ("draft", "submitted", "verified", "contested", "corrected")
+                )
+            ),
+        }
+
+    @api.model
+    def list_cards(self, user=None):
+        return [
+            self.competition_card(edition, user=user)
+            for edition in self.visible_editions(user=user)
+        ]
+
+    @api.model
+    def detail(self, edition_id, user=None):
+        edition = self.assert_visible_edition(edition_id, user=user)
+        card = self.competition_card(edition, user=user)
+        teams = card["teams"]
+        participant_sets = (
+            self.env["federation.participant.set"]
+            .sudo()
+            .search([("edition_id", "=", edition.id), ("state", "=", "finalized")])
+        )
+        entries = (
+            self.env["federation.competition.entry"]
+            .sudo()
+            .search([("edition_id", "=", edition.id), ("team_id", "in", teams.ids)])
+        )
+        matchdays = (
+            self.env["federation.matchday"]
+            .sudo()
+            .search(
+                [
+                    ("edition_id", "=", edition.id),
+                    ("current_publication_id.state", "=", "live"),
+                ],
+                order="date asc,id asc",
+            )
+        )
+        publications = matchdays.mapped("current_publication_id")
+        matches = (
+            self.env["federation.match"]
+            .sudo()
+            .search(
+                [
+                    ("schedule_publication_id", "in", publications.ids),
+                    "|",
+                    ("home_team_id", "in", teams.ids),
+                    ("away_team_id", "in", teams.ids),
+                ],
+                order="date_scheduled asc,id asc",
+            )
+            if publications and teams
+            else self.env["federation.match"]
+        )
+        standings = (
+            self.env["federation.standing"]
+            .sudo()
+            .search(
+                [("tournament_id", "in", participant_sets.mapped("division_id").ids)]
+            )
+        )
+        return {
+            **card,
+            "participant_sets": participant_sets,
+            "entries": entries,
+            "matchdays": matchdays,
+            "matches": matches,
+            "standings": standings,
+        }
+
+
+class FederationPortalMatchdayQueries(models.AbstractModel):
+    _name = "federation.portal.matchday.queries"
+    _description = "Portal V2 Match-Day Projections"
+
+    def _scope(self):
+        return self.env["federation.portal.v2.scope"]
+
+    @api.model
+    def visible_matchdays(self, user=None):
+        teams = self._scope().teams(user=user)
+        if not teams:
+            return self.env["federation.matchday"]
+        publication_ids = (
+            self.env["federation.match"]
+            .sudo()
+            .search(
+                [
+                    ("schedule_publication_id.state", "=", "live"),
+                    "|",
+                    ("home_team_id", "in", teams.ids),
+                    ("away_team_id", "in", teams.ids),
+                ]
+            )
+            .mapped("schedule_publication_id")
+            .ids
+        )
+        return (
+            self.env["federation.matchday"]
+            .sudo()
+            .search(
+                [
+                    ("current_publication_id", "in", publication_ids),
+                    ("current_publication_id.state", "=", "live"),
+                ],
+                order="date asc,id asc",
+            )
+        )
+
+    @api.model
+    def detail(self, matchday_id, user=None, manager=False):
+        day = self.env["federation.matchday"].sudo().browse(int(matchday_id)).exists()
+        if (
+            not day
+            or not day.current_publication_id
+            or day.current_publication_id.state != "live"
+        ):
+            raise AccessError(_("This match day has no visible live publication."))
+        teams = self._scope().teams(user=user)
+        if manager and not (user or self.env.user).share:
+            matches = (
+                self.env["federation.match"]
+                .sudo()
+                .search(
+                    [("schedule_publication_id", "=", day.current_publication_id.id)],
+                    order="date_scheduled asc,id asc",
+                )
+            )
+        else:
+            matches = (
+                self.env["federation.match"]
+                .sudo()
+                .search(
+                    [
+                        ("schedule_publication_id", "=", day.current_publication_id.id),
+                        "|",
+                        ("home_team_id", "in", teams.ids),
+                        ("away_team_id", "in", teams.ids),
+                    ],
+                    order="date_scheduled asc,id asc",
+                )
+            )
+        if not matches:
+            raise AccessError(_("You do not have access to this match day."))
+        return {
+            "matchday": day,
+            "publication": day.current_publication_id,
+            "session": day.active_session_id,
+            "matches": matches,
+            "courts": day.court_status_ids,
+            "incidents": day.incident_ids,
+            "deviations": day.deviation_ids,
+        }
 
 ====================================================================================================
 FILE: sports_federation_portal/models/res_partner.py
@@ -61424,14 +62278,12 @@ from . import test_season_registration
 from . import test_team_portal_access
 from . import test_template_accessibility
 from . import test_template_mobile
-from . import test_tournament_registration
-from . import test_tournament_operations
-from . import test_tournament_workspace
-from . import test_tour_portal_workflows
 from . import test_operation_tasks
 from . import test_qol
 
 from . import test_production_security_matrix
+
+from . import test_portal_v2
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_club_representative.py
@@ -63297,6 +64149,52 @@ class TestPortalOwnershipGuard(TransactionCase):
             Roster, scope, user=no_club_user
         )
         self.assertFalse(result)
+
+====================================================================================================
+FILE: sports_federation_portal/tests/test_portal_v2.py
+====================================================================================================
+
+from odoo.tests import tagged
+from odoo.tests.common import TransactionCase
+
+
+@tagged("post_install", "-at_install", "sf_portal_v2")
+class TestPortalV2Contract(TransactionCase):
+    def test_v2_query_services_are_registered(self):
+        self.assertIn("federation.portal.competition.queries", self.env)
+        self.assertIn("federation.portal.matchday.queries", self.env)
+        self.assertIn("federation.portal.v2.scope", self.env)
+
+    def test_v2_templates_are_loaded(self):
+        for xmlid in (
+            "sports_federation_portal.portal_my_competitions",
+            "sports_federation_portal.portal_my_competition_detail",
+            "sports_federation_portal.portal_my_matchdays",
+            "sports_federation_portal.portal_my_matchday_detail",
+            "sports_federation_portal.portal_matchday_operations_page",
+        ):
+            self.assertTrue(self.env.ref(xmlid))
+
+    def test_legacy_workspace_templates_are_not_loaded(self):
+        self.assertFalse(
+            self.env.ref(
+                "sports_federation_portal.portal_my_tournament_workspaces",
+                raise_if_not_found=False,
+            )
+        )
+
+    def test_portal_manifest_uses_v2_owners(self):
+        module = self.env["ir.module.module"].search(
+            [("name", "=", "sports_federation_portal")], limit=1
+        )
+        self.assertTrue(module)
+        for dependency in (
+            "sports_federation_competition_core",
+            "sports_federation_registration",
+            "sports_federation_schedule_approval",
+            "sports_federation_matchday",
+        ):
+            self.assertIn(dependency, module.dependencies_id.mapped("name"))
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_production_security_matrix.py
@@ -69284,12 +70182,12 @@ FILE: sports_federation_portal/views/portal_templates.xml
                             <t t-else="">Review active competitions, upcoming matches and team readiness.</t>
                         </div>
                     </div>
-                    <a href="/my/tournament-workspaces" class="btn btn-primary">Open workspace <i class="fa fa-arrow-right ms-2" aria-hidden="true"/></a>
+                    <a href="/my/competitions" class="btn btn-primary">Open workspace <i class="fa fa-arrow-right ms-2" aria-hidden="true"/></a>
                 </div>
             </section>
 
             <nav class="o_fed_portal_quicknav" aria-label="Club portal shortcuts">
-                <a class="o_fed_portal_quicklink" href="/my/tournament-workspaces"><i class="fa fa-tachometer" aria-hidden="true"/><strong>Overview</strong></a>
+                <a class="o_fed_portal_quicklink" href="/my/competitions"><i class="fa fa-tachometer" aria-hidden="true"/><strong>Overview</strong></a>
                 <a class="o_fed_portal_quicklink" href="/my/match-day"><i class="fa fa-calendar-check-o" aria-hidden="true"/><strong>Match day</strong></a>
                 <a class="o_fed_portal_quicklink" href="/my/referee-duties"><i class="fa fa-flag" aria-hidden="true"/><span><strong>Officials</strong><span t-if="federation_pending_duties_count" class="badge bg-warning text-dark ms-2"><t t-esc="federation_pending_duties_count"/></span></span></a>
                 <a class="o_fed_portal_quicklink" href="/my/results"><i class="fa fa-check-circle" aria-hidden="true"/><span><strong>Results</strong><span t-if="federation_pending_results_count" class="badge bg-warning text-dark ms-2"><t t-esc="federation_pending_results_count"/></span></span></a>
@@ -69333,7 +70231,7 @@ FILE: sports_federation_portal/views/portal_templates.xml
                     <div class="o_fed_portal_group-header"><h3 id="portal-admin-heading">Club administration</h3><p>Registrations, duties and club information.</p></div>
                     <a class="o_fed_portal_link" href="/my/referee-duties"><i class="fa fa-flag" aria-hidden="true"/><span><strong>Referee duties</strong><br/><small class="text-muted">Nominate club officials</small></span><span t-if="federation_pending_duties_count" class="badge bg-warning text-dark"><t t-esc="federation_pending_duties_count"/></span><i class="fa fa-chevron-right" aria-hidden="true"/></a>
                     <a class="o_fed_portal_link" href="/my/season-registrations"><i class="fa fa-pencil-square-o" aria-hidden="true"/><span><strong>Season registrations</strong><br/><small class="text-muted">Register teams for a season</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-                    <a class="o_fed_portal_link" href="/my/tournament-registrations"><i class="fa fa-trophy" aria-hidden="true"/><span><strong>Tournament entries</strong><br/><small class="text-muted">Apply and follow status</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
+                    <a class="o_fed_portal_link" href="/my/competition-entries"><i class="fa fa-trophy" aria-hidden="true"/><span><strong>Tournament entries</strong><br/><small class="text-muted">Apply and follow status</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
                     <a class="o_fed_portal_link" href="/my/club"><i class="fa fa-shield" aria-hidden="true"/><span><strong>Club details</strong><br/><small class="text-muted">Contacts and information</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
                 </section>
               </div>
@@ -69426,7 +70324,7 @@ FILE: sports_federation_portal/views/portal_templates.xml
                     </div>
 
                     <div class="d-flex gap-2 flex-wrap">
-                        <a href="/my/tournament-workspaces" class="btn btn-primary btn-sm">
+                        <a href="/my/competitions" class="btn btn-primary btn-sm">
                             <i class="fa fa-sitemap me-1"/>Club Operations Workspace
                         </a>
                         <a href="/my/teams" class="btn btn-outline-secondary btn-sm">
@@ -70479,6 +71377,44 @@ FILE: sports_federation_portal/views/portal_tournament_workspace_templates.xml
         </t>
     </template>
 
+</odoo>
+
+====================================================================================================
+FILE: sports_federation_portal/views/portal_v2_templates.xml
+====================================================================================================
+
+<odoo>
+  <template id="portal_my_competitions" name="My Competitions">
+    <t t-call="portal.portal_layout">
+      <t t-set="breadcrumbs_searchbar" t-value="True"/>
+      <t t-call="portal.portal_searchbar"><t t-set="title">Competitions</t></t>
+      <div class="container py-3">
+        <div class="d-flex justify-content-between align-items-center mb-3"><div><h2 class="mb-1">Competition workspace</h2><p class="text-muted mb-0">Only V2 competitions containing one of your represented teams are shown.</p></div><a href="/my/match-days" class="btn btn-outline-primary">Match days</a></div>
+        <div class="row g-3" t-if="competition_cards">
+          <div class="col-12 col-lg-6" t-foreach="competition_cards" t-as="card">
+            <article class="card h-100"><div class="card-body"><div class="d-flex justify-content-between gap-3"><div><h3 class="h5 mb-1"><t t-esc="card['edition'].display_name"/></h3><p class="text-muted mb-2"><t t-esc="', '.join(card['teams'].mapped('display_name'))"/></p></div><span t-attf-class="badge text-bg-#{card['status_tone']}"><t t-esc="card['status_label']"/></span></div><p class="mb-1"><strong>Published match days:</strong> <t t-esc="card['published_matchday_count']"/></p><p class="mb-3"><strong>Result follow-up:</strong> <t t-esc="card['result_follow_up_count']"/></p><a t-attf-href="/my/competitions/#{card['edition'].id}" class="btn btn-primary">Open competition</a></div></article>
+          </div>
+        </div>
+        <div class="alert alert-info" t-else="">No V2 competition currently contains one of your represented teams.</div>
+      </div>
+    </t>
+  </template>
+  <template id="portal_my_competition_detail" name="Competition Workspace">
+    <t t-call="portal.portal_layout"><div class="container py-3"><a href="/my/competitions" class="text-decoration-none">← Competitions</a><div class="d-flex justify-content-between align-items-start mt-2 mb-4"><div><h2><t t-esc="workspace['edition'].display_name"/></h2><p class="text-muted"><t t-esc="', '.join(workspace['teams'].mapped('display_name'))"/></p></div><span t-attf-class="badge text-bg-#{workspace['status_tone']}"><t t-esc="workspace['status_label']"/></span></div>
+      <div class="row g-3"><section class="col-12 col-lg-6"><div class="card h-100"><div class="card-header"><strong>Participation</strong></div><div class="card-body"><div t-foreach="workspace['entries']" t-as="entry" class="mb-2"><t t-esc="entry.team_id.display_name"/> · <span class="badge text-bg-light"><t t-esc="entry.state"/></span></div><div t-foreach="workspace['participant_sets']" t-as="pset"><strong><t t-esc="pset.division_id.display_name"/></strong>: <t t-esc="', '.join(pset.line_ids.filtered(lambda l: l.team_id in workspace['teams']).mapped('team_id.display_name'))"/></div></div></div></section>
+      <section class="col-12 col-lg-6"><div class="card h-100"><div class="card-header"><strong>Upcoming published match days</strong></div><div class="list-group list-group-flush"><a t-foreach="workspace['matchdays']" t-as="day" t-attf-href="/my/match-days/#{day.id}" class="list-group-item list-group-item-action"><strong><t t-esc="day.display_name"/></strong><br/><span class="text-muted"><t t-esc="day.date"/> · <t t-esc="day.venue_id.display_name"/> · publication v<t t-esc="day.current_publication_id.version"/></span></a><div class="list-group-item text-muted" t-if="not workspace['matchdays']">No current publication is available.</div></div></div></section></div>
+      <section class="card mt-3"><div class="card-header"><strong>Fixtures and results</strong></div><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Kickoff</th><th>Match</th><th>Published slot</th><th>Status</th></tr></thead><tbody><tr t-foreach="workspace['matches']" t-as="match"><td><t t-esc="match.date_scheduled"/></td><td><t t-esc="match.display_name"/></td><td><t t-esc="match.published_slot_id.display_name"/></td><td><t t-esc="match.state"/></td></tr></tbody></table></div></section>
+    </div></t>
+  </template>
+  <template id="portal_my_competition_entries" name="Competition Entries">
+    <t t-call="portal.portal_layout"><div class="container py-3"><div class="d-flex justify-content-between"><div><h2>Competition entries</h2><p class="text-muted">V2 registration windows and entries for your represented teams.</p></div><a href="/my/competitions" class="btn btn-outline-primary">Competitions</a></div><div class="alert alert-success" t-if="success"><t t-esc="success"/></div><div class="alert alert-danger" t-if="error"><t t-esc="error"/></div>
+      <section class="card mb-3"><div class="card-header"><strong>Submit a new entry</strong></div><div class="card-body"><form action="/my/competition-entries/new" method="post"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><div class="row g-2"><div class="col-md-5"><label class="form-label" for="window_id">Registration window</label><select id="window_id" name="window_id" class="form-select" required="required"><option value="">Select</option><option t-foreach="windows" t-as="window" t-att-value="window.id"><t t-esc="window.display_name"/> · <t t-esc="window.division_id.display_name"/></option></select></div><div class="col-md-5"><label class="form-label" for="team_id">Team</label><select id="team_id" name="team_id" class="form-select" required="required"><option value="">Select</option><option t-foreach="teams" t-as="team" t-att-value="team.id"><t t-esc="team.display_name"/></option></select></div><div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">Submit</button></div></div></form></div></section>
+      <section class="card"><div class="card-header"><strong>Current entries</strong></div><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Competition</th><th>Division</th><th>Team</th><th>Status</th></tr></thead><tbody><tr t-foreach="entries" t-as="entry"><td><t t-esc="entry.edition_id.display_name"/></td><td><t t-esc="entry.window_id.division_id.display_name"/></td><td><t t-esc="entry.team_id.display_name"/></td><td><span class="badge text-bg-light"><t t-esc="entry.state"/></span></td></tr></tbody></table></div></section>
+    </div></t>
+  </template>
+  <template id="portal_my_matchdays" name="My Match Days"><t t-call="portal.portal_layout"><div class="container py-3"><div class="d-flex justify-content-between"><div><h2>Match days</h2><p class="text-muted">Schedules are shown only from current live publications.</p></div><a href="/my/competitions" class="btn btn-outline-primary">Competitions</a></div><div class="list-group"><a t-foreach="matchdays" t-as="day" t-attf-href="/my/match-days/#{day.id}" class="list-group-item list-group-item-action"><strong><t t-esc="day.display_name"/></strong><span class="ms-2 badge text-bg-light">publication v<t t-esc="day.current_publication_id.version"/></span><br/><span class="text-muted"><t t-esc="day.date"/> · <t t-esc="day.venue_id.display_name"/></span></a></div><div class="alert alert-info mt-3" t-if="not matchdays">No published match days are visible.</div></div></t></template>
+  <template id="portal_my_matchday_detail" name="Match-Day Workspace"><t t-call="portal.portal_layout"><div class="container py-3"><a href="/my/match-days">← Match days</a><h2 class="mt-2"><t t-esc="workspace['matchday'].display_name"/></h2><p class="text-muted"><t t-esc="workspace['matchday'].date"/> · <t t-esc="workspace['matchday'].venue_id.display_name"/> · live publication v<t t-esc="workspace['publication'].version"/></p><div class="table-responsive"><table class="table"><thead><tr><th>Time</th><th>Match</th><th>Court</th><th>Operational status</th><th>Result</th></tr></thead><tbody><tr t-foreach="workspace['matches']" t-as="match"><td><t t-esc="match.date_scheduled"/></td><td><t t-esc="match.display_name"/></td><td><t t-esc="(match.operational_slot_id or match.published_slot_id).display_name"/></td><td><span class="badge text-bg-light"><t t-esc="match.operational_status"/></span></td><td><t t-esc="match.result_state"/></td></tr></tbody></table></div></div></t></template>
+  <template id="portal_matchday_operations_page" name="Match-Day Operations"><t t-call="portal.portal_layout"><div class="container-fluid py-3"><a href="/my/match-days">← Match days</a><div class="d-flex justify-content-between align-items-start mt-2"><div><h2><t t-esc="workspace['matchday'].display_name"/></h2><p class="text-muted">Current publication v<t t-esc="workspace['publication'].version"/> · <t t-esc="workspace['publication'].state"/></p></div><span class="badge text-bg-danger" t-if="workspace['session']">Live session</span></div><div class="row g-3"><div class="col-12 col-xl-8"><div class="card"><div class="card-header"><strong>Published matches</strong></div><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Match</th><th>Published</th><th>Operational</th><th>Status</th></tr></thead><tbody><tr t-foreach="workspace['matches']" t-as="match"><td><t t-esc="match.display_name"/></td><td><t t-esc="match.published_slot_id.display_name"/></td><td><t t-esc="match.operational_slot_id.display_name"/></td><td><t t-esc="match.operational_status"/></td></tr></tbody></table></div></div></div><div class="col-12 col-xl-4"><div class="card mb-3"><div class="card-header"><strong>Courts</strong></div><ul class="list-group list-group-flush"><li t-foreach="workspace['courts']" t-as="court" class="list-group-item"><t t-esc="court.court_id.display_name"/> · <t t-esc="court.state"/></li></ul></div><div class="card"><div class="card-header"><strong>Open incidents</strong></div><ul class="list-group list-group-flush"><li t-foreach="workspace['incidents'].filtered(lambda i: not i.resolved)" t-as="incident" class="list-group-item"><t t-esc="incident.description"/></li></ul></div></div></div></div></t></template>
 </odoo>
 
 ====================================================================================================
@@ -96264,14 +97200,24 @@ It does not own working assignments, calendar capacity, or match-day execution.
 4. The approver either enters a note and selects **Request Changes**, or selects
    **Approve Schedule**.
 5. Approved reviews appear under **Publication > Approved Schedules**.
-6. **Publish Schedule** creates an immutable publication, links operational
-   matches to their exact slots, and makes the publication current for the match
-   day.
+6. **Publish Schedule** creates any missing operational matches for the assigned
+   fixtures through the fixture materializer, creates an immutable publication,
+   links matches to their exact slots, and makes the publication current for the
+   match day.
 7. **Publication > Schedule Publications** retains live and superseded evidence.
 
 The command service enforces edition roles, separation of duties, submitted
-revision equality, snapshot-digest equality, and schedule revalidation. Buttons
-are only orchestration entry points and never duplicate the business rules.
+revision equality, snapshot-digest equality for schedule facts, and schedule
+revalidation. Operational match links are derived and may be materialized at
+publication. Buttons are only orchestration entry points and never duplicate
+the business rules.
+Role assignments remain administrator-managed; the Schedule Approver group
+exposes the workflow actions, while a per-edition `schedule_approver` assignment
+authorizes the operation. The role check performs a read-only internal lookup,
+and approval revalidation performs controlled read-only access to the submitted
+calendar and venue data, so approvers do not need CRUD access to those
+administrator-managed records. Reviewers may edit the note while a review is
+pending; state and audit fields remain command-service-only.
 
 ## Tests and contracts
 
@@ -96284,8 +97230,9 @@ bash ci/run_tests.sh --suite competition_core
 
 ## 5.1.1 integrity rules
 
-Review records are read-only through ACLs. Only the approval command service can
-write decision fields through a narrowly scoped context. Publications are live,
+Review evidence is immutable through the model guard. Pending reviewers may edit
+only the note; only the approval command service can write decision fields
+through a narrowly scoped context. Publications are live,
 versioned and replaced per match day, not per edition. Publication confirmation
 locks the match day and verifies the expected current publication before
 allocating the next version. Replacements require a dedicated reason that is
@@ -96417,7 +97364,7 @@ FILE: sports_federation_schedule_approval/models/publication_integrity.py
 import hashlib
 import json
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 
@@ -96444,9 +97391,17 @@ class FederationScheduleReviewIntegrity(models.Model):
         if decision_fields.intersection(vals) and not self.env.context.get(
             "allow_schedule_review_decision"
         ):
-            raise ValidationError(
-                "Review decisions must be made through the approval command service."
-            )
+            if set(vals) == {"review_note"}:
+                if any(record.state != "pending" for record in self):
+                    raise ValidationError(
+                        _(
+                            "A review note can only be edited while the review is pending."
+                        )
+                    )
+            else:
+                raise ValidationError(
+                    "Review decisions must be made through the approval command service."
+                )
         return super().write(vals)
 
     def unlink(self):
@@ -96617,7 +97572,7 @@ class FederationScheduleReviewActions(models.Model):
         self.env["federation.competition.role.assignment"].assert_role(
             self.edition_id, "schedule_approver", "competition_director"
         )
-        current = self.schedule_id.matchday_id.current_publication_id
+        current = self.schedule_id.sudo().matchday_id.current_publication_id
         live = current if current and current.state == "live" else False
         wizard = self.env["federation.schedule.publish.wizard"].create(
             {
@@ -96667,11 +97622,11 @@ FILE: sports_federation_schedule_approval/security/ir.model.access.csv
 ====================================================================================================
 
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_federation_schedule_review_group_schedule_approver,federation_schedule_review.group_schedule_approver,model_federation_schedule_review,sports_federation_schedule_approval.group_schedule_approver,1,0,0,0
+access_federation_schedule_review_group_schedule_approver,federation_schedule_review.group_schedule_approver,model_federation_schedule_review,sports_federation_schedule_approval.group_schedule_approver,1,1,0,0
 access_federation_schedule_publication_group_schedule_approver,federation_schedule_publication.group_schedule_approver,model_federation_schedule_publication,sports_federation_schedule_approval.group_schedule_approver,1,0,0,0
 access_federation_schedule_review_group_schedule_planner,federation_schedule_review.group_schedule_planner,model_federation_schedule_review,sports_federation_scheduling.group_schedule_planner,1,0,0,0
 access_federation_schedule_publication_group_schedule_planner,federation_schedule_publication.group_schedule_planner,model_federation_schedule_publication,sports_federation_scheduling.group_schedule_planner,1,0,0,0
-access_federation_schedule_review_manager,federation_schedule_review.manager,model_federation_schedule_review,sports_federation_base.group_federation_manager,1,0,0,0
+access_federation_schedule_review_manager,federation_schedule_review.manager,model_federation_schedule_review,sports_federation_base.group_federation_manager,1,1,0,0
 access_federation_schedule_publication_manager,federation_schedule_publication.manager,model_federation_schedule_publication,sports_federation_base.group_federation_manager,1,0,0,0
 access_schedule_for_approver,federation_schedule.approver,sports_federation_scheduling.model_federation_schedule,sports_federation_schedule_approval.group_schedule_approver,1,0,0,0
 access_schedule_assignment_for_approver,federation_schedule_assignment.approver,sports_federation_scheduling.model_federation_schedule_assignment,sports_federation_schedule_approval.group_schedule_approver,1,0,0,0
@@ -96733,6 +97688,24 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
     def _digest(self, snapshot):
         return self.env["federation.schedule.publication"].digest_snapshot(snapshot)
 
+    @staticmethod
+    def _snapshot_without_operational_match(snapshot):
+        """Return schedule facts independent of derived match materialization."""
+        return [
+            {key: value for key, value in item.items() if key != "match_id"}
+            for item in snapshot
+        ]
+
+    def _ensure_operational_matches(self, schedule):
+        fixtures = schedule.assignment_ids.mapped("fixture_id")
+        missing = fixtures.filtered(lambda fixture: not fixture.operational_match_id)
+        if missing:
+            # Publication is already protected by the edition-role check.  The
+            # materializer is the single authoritative path for creating the
+            # derived operational matches, and the elevated section is limited
+            # to these fixtures assigned to this schedule.
+            self.env["federation.fixture.materializer"].sudo().materialize(missing)
+
     @api.model
     def start_review(self, schedule_id):
         schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
@@ -96777,9 +97750,15 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             raise ValidationError(
                 _("The submitting planner cannot approve their own schedule.")
             )
-        if review.schedule_id.revision != review.submitted_revision:
+        # Approval revalidation is a read-only operation over the complete
+        # submitted schedule, including calendar and venue records.  The caller
+        # has already passed the edition-role check above, so use controlled
+        # elevation for these internal reads instead of granting approvers broad
+        # access to every scheduling input model.
+        schedule = review.schedule_id.sudo()
+        if schedule.revision != review.submitted_revision:
             raise ValidationError(_("The working schedule changed after submission."))
-        snapshot = self._snapshot(review.schedule_id)
+        snapshot = self._snapshot(schedule)
         if self._digest(snapshot) != review.snapshot_digest:
             raise ValidationError(
                 _(
@@ -96807,9 +97786,10 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
     @api.model
     def approve(self, review_id, note=False):
         review = self._resolve_pending(review_id)
+        schedule = review.schedule_id.sudo()
         validation = self.env["federation.schedule.validator"].validate_map(
-            review.schedule_id,
-            {a.fixture_id.id: a.slot_id.id for a in review.schedule_id.assignment_ids},
+            schedule,
+            {a.fixture_id.id: a.slot_id.id for a in schedule.assignment_ids},
         )
         if not validation["valid"]:
             raise ValidationError(
@@ -96825,7 +97805,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         )
         review.schedule_id.sudo().state = "approved"
         self.env["federation.competition.event"].emit(
-            review.schedule_id,
+            schedule,
             "schedule_approved",
             {"review_id": review.id, "snapshot_digest": review.snapshot_digest},
         )
@@ -96839,6 +97819,10 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         self.env["federation.competition.role.assignment"].assert_role(
             schedule.edition_id, "schedule_approver", "competition_director"
         )
+        # Publication also reads the full schedule, match day and fixture
+        # graph.  Keep those internal reads controlled and read-only after the
+        # caller has passed the edition-role check above.
+        schedule = schedule.sudo()
         if schedule.state != "approved":
             raise ValidationError(_("Approve the schedule before publication."))
         if schedule.matchday_id.state == "open":
@@ -96858,9 +97842,14 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             raise ValidationError(
                 _("No approved review exists for this schedule revision.")
             )
+        self._ensure_operational_matches(schedule)
         snapshot = self._snapshot(schedule)
         digest = self._digest(snapshot)
-        if digest != review.snapshot_digest:
+        snapshot_matches_review = digest == review.snapshot_digest or (
+            self._snapshot_without_operational_match(snapshot)
+            == self._snapshot_without_operational_match(review.assignment_snapshot)
+        )
+        if not snapshot_matches_review:
             raise ValidationError(
                 _("The approved snapshot no longer matches the schedule.")
             )
@@ -97070,6 +98059,84 @@ class TestPhase511Integrity(TransactionCase):
         )
         return schedule, review
 
+    def _valid_schedule_review(self, day, suffix):
+        stage = self.env["federation.structure.stage"].create(
+            {
+                "name": f"5.1.1 Stage {suffix}",
+                "structure_id": self.structure.id,
+                "stage_type": "league",
+            }
+        )
+        club = self.env["federation.club"].create({"name": f"5.1.1 Club {suffix}"})
+        teams = self.env["federation.team"].create(
+            [
+                {"name": f"5.1.1 Home {suffix}", "club_id": club.id},
+                {"name": f"5.1.1 Away {suffix}", "club_id": club.id},
+            ]
+        )
+        fixture = self.env["federation.fixture"].create(
+            {
+                "structure_id": self.structure.id,
+                "stage_id": stage.id,
+                "round_number": 1,
+                "home_team_id": teams[0].id,
+                "away_team_id": teams[1].id,
+                "state": "ready",
+            }
+        )
+        area = self.env["federation.playing.area"].create(
+            {"name": f"5.1.1 Court {suffix}", "venue_id": self.venue.id}
+        )
+        slot = self.env["federation.schedule.slot"].create(
+            {
+                "matchday_id": day.id,
+                "court_id": area.id,
+                "start_datetime": "2026-10-03 09:00:00",
+                "end_datetime": "2026-10-03 09:40:00",
+            }
+        )
+        self.env["federation.matchday.allocation"].create(
+            {
+                "matchday_id": day.id,
+                "structure_id": self.structure.id,
+                "stage_id": stage.id,
+                "round_number": 1,
+            }
+        )
+        schedule = self.env["federation.schedule"].create(
+            {
+                "name": f"Valid Schedule {suffix}",
+                "edition_id": self.edition.id,
+                "structure_id": self.structure.id,
+                "matchday_id": day.id,
+            }
+        )
+        self.env["federation.schedule.assignment"].create(
+            {
+                "schedule_id": schedule.id,
+                "fixture_id": fixture.id,
+                "slot_id": slot.id,
+            }
+        )
+        schedule.state = "approved"
+        commands = self.env["federation.schedule.approval.commands"]
+        snapshot = commands._snapshot(schedule)
+        review = (
+            self.env["federation.schedule.review"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "submitted_revision": schedule.revision,
+                    "state": "pending",
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": commands._digest(snapshot),
+                    "submitted_by_id": self.env.user.id,
+                }
+            )
+        )
+        return schedule, review
+
     def test_review_decision_fields_reject_direct_writes(self):
         schedule, review = self._schedule_review(self.days[0], "guard")
         with self.assertRaises(ValidationError):
@@ -97126,6 +98193,72 @@ class TestPhase511Integrity(TransactionCase):
                 self.env["federation.schedule.publication"].sudo().create(
                     {**vals, "version": 2}
                 )
+
+    def test_schedule_approver_can_review_without_calendar_model_access(self):
+        approver_group = self.env.ref(
+            "sports_federation_schedule_approval.group_schedule_approver"
+        )
+        schedule, review = self._valid_schedule_review(self.days[0], "approver")
+        approver = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Phase 5.1.1 Schedule Approver",
+                    "login": "phase511.schedule.approver@example.com",
+                    "email": "phase511.schedule.approver@example.com",
+                    "group_ids": [(6, 0, [approver_group.id])],
+                }
+            )
+        )
+        self.env["federation.competition.role.assignment"].sudo().create(
+            {
+                "edition_id": self.edition.id,
+                "role": "schedule_approver",
+                "user_id": approver.id,
+            }
+        )
+
+        review.with_user(approver).write({"review_note": "Reviewed and approved."})
+        review.with_user(approver).action_approve_schedule()
+
+        self.assertEqual(review.state, "approved")
+        self.assertEqual(schedule.state, "approved")
+        self.assertEqual(review.reviewer_id, approver)
+        self.assertEqual(review.review_note, "Reviewed and approved.")
+        with self.assertRaises(ValidationError):
+            review.with_user(approver).write({"review_note": "Changed later."})
+
+        publication = (
+            self.env["federation.schedule.approval.commands"]
+            .with_user(approver)
+            .publish(schedule.id)
+        )
+        self.assertEqual(publication.state, "live")
+        self.assertTrue(schedule.assignment_ids.fixture_id.operational_match_id)
+        self.assertEqual(schedule.state, "published")
+
+    def test_unassigned_schedule_approver_is_rejected_without_access_error(self):
+        approver_group = self.env.ref(
+            "sports_federation_schedule_approval.group_schedule_approver"
+        )
+        approver = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Phase 5.1.1 Unassigned Approver",
+                    "login": "phase511.unassigned.approver@example.com",
+                    "email": "phase511.unassigned.approver@example.com",
+                    "group_ids": [(6, 0, [approver_group.id])],
+                }
+            )
+        )
+
+        with self.assertRaises(ValidationError):
+            self.env["federation.competition.role.assignment"].with_user(
+                approver
+            ).assert_role(self.edition, "schedule_approver")
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/tests/test_phase51_handoff.py
@@ -97371,7 +98504,7 @@ class FederationSchedulePublishWizard(models.TransientModel):
 
     def action_publish(self):
         self.ensure_one()
-        current = self.matchday_id.current_publication_id
+        current = self.matchday_id.sudo().current_publication_id
         current_id = current.id if current and current.state == "live" else 0
         if current_id != self.expected_publication_id:
             raise ValidationError(

@@ -2,20 +2,113 @@
   "schema_version": 1,
   "description": "Machine-readable registry of governed HTTP routes with smoke coverage. ROUTE_INVENTORY.md is explanatory documentation and is not parsed by CI.",
   "routes": [
-    {"method": "GET", "path": "/web/login", "owner_module": "sports_federation_portal", "coverage_key": "portal_login"},
-    {"method": "GET", "path": "/sports/tournament/<id>/operations", "owner_module": "sports_federation_portal", "coverage_key": "portal_tournament_operations"},
-    {"method": "POST", "path": "/my/teams/new", "owner_module": "sports_federation_portal", "coverage_key": "portal_team_create"},
-    {"method": "POST", "path": "/my/players/new", "owner_module": "sports_federation_portal", "coverage_key": "portal_player_create"},
-    {"method": "POST", "path": "/my/season-registration/new", "owner_module": "sports_federation_portal", "coverage_key": "portal_season_registration"},
-    {"method": "POST", "path": "/my/referee-assignments/<id>/respond", "owner_module": "sports_federation_portal", "coverage_key": "portal_referee_response"},
-    {"method": "POST", "path": "/tournaments/<slug>/register", "owner_module": "sports_federation_public_site", "coverage_key": "public_tournament_registration"},
-    {"method": "POST", "path": "/my/compliance/<requirement>/<target_model>/<target_id>/submit", "owner_module": "sports_federation_compliance", "coverage_key": "portal_compliance_submission"},
-    {"method": "GET", "path": "/reporting/export/standings/<tournament_id>", "owner_module": "sports_federation_reporting", "coverage_key": "reporting_standings_export"},
-    {"method": "GET", "path": "/reporting/export/participation/<season_id>", "owner_module": "sports_federation_reporting", "coverage_key": "reporting_participation_export"},
-    {"method": "GET", "path": "/reporting/export/finance", "owner_module": "sports_federation_reporting", "coverage_key": "reporting_finance_export"},
-    {"method": "GET", "path": "/reporting/export/finance/events", "owner_module": "sports_federation_reporting", "coverage_key": "reporting_finance_events_export"},
-    {"method": "GET", "path": "/integration/v1/contracts", "owner_module": "sports_federation_import_tools", "coverage_key": "integration_contract_manifest"},
-    {"method": "GET", "path": "/integration/v1/outbound/finance/events", "owner_module": "sports_federation_import_tools", "coverage_key": "integration_finance_events"},
-    {"method": "POST", "path": "/integration/v1/inbound/<contract_code>/deliveries", "owner_module": "sports_federation_import_tools", "coverage_key": "integration_inbound_delivery"}
+    {
+      "method": "GET",
+      "path": "/web/login",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_login"
+    },
+    {
+      "method": "GET",
+      "path": "/my/competitions",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_v2_competitions"
+    },
+    {
+      "method": "GET",
+      "path": "/my/match-days",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_v2_matchdays"
+    },
+    {
+      "method": "POST",
+      "path": "/my/competition-entries/new",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_v2_entry_create"
+    },
+    {
+      "method": "GET",
+      "path": "/sports/match-days/<id>/operations",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_v2_matchday_operations"
+    },
+    {
+      "method": "POST",
+      "path": "/my/teams/new",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_team_create"
+    },
+    {
+      "method": "POST",
+      "path": "/my/players/new",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_player_create"
+    },
+    {
+      "method": "POST",
+      "path": "/my/season-registration/new",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_season_registration"
+    },
+    {
+      "method": "POST",
+      "path": "/my/referee-assignments/<id>/respond",
+      "owner_module": "sports_federation_portal",
+      "coverage_key": "portal_referee_response"
+    },
+    {
+      "method": "POST",
+      "path": "/tournaments/<slug>/register",
+      "owner_module": "sports_federation_public_site",
+      "coverage_key": "public_tournament_registration"
+    },
+    {
+      "method": "POST",
+      "path": "/my/compliance/<requirement>/<target_model>/<target_id>/submit",
+      "owner_module": "sports_federation_compliance",
+      "coverage_key": "portal_compliance_submission"
+    },
+    {
+      "method": "GET",
+      "path": "/reporting/export/standings/<tournament_id>",
+      "owner_module": "sports_federation_reporting",
+      "coverage_key": "reporting_standings_export"
+    },
+    {
+      "method": "GET",
+      "path": "/reporting/export/participation/<season_id>",
+      "owner_module": "sports_federation_reporting",
+      "coverage_key": "reporting_participation_export"
+    },
+    {
+      "method": "GET",
+      "path": "/reporting/export/finance",
+      "owner_module": "sports_federation_reporting",
+      "coverage_key": "reporting_finance_export"
+    },
+    {
+      "method": "GET",
+      "path": "/reporting/export/finance/events",
+      "owner_module": "sports_federation_reporting",
+      "coverage_key": "reporting_finance_events_export"
+    },
+    {
+      "method": "GET",
+      "path": "/integration/v1/contracts",
+      "owner_module": "sports_federation_import_tools",
+      "coverage_key": "integration_contract_manifest"
+    },
+    {
+      "method": "GET",
+      "path": "/integration/v1/outbound/finance/events",
+      "owner_module": "sports_federation_import_tools",
+      "coverage_key": "integration_finance_events"
+    },
+    {
+      "method": "POST",
+      "path": "/integration/v1/inbound/<contract_code>/deliveries",
+      "owner_module": "sports_federation_import_tools",
+      "coverage_key": "integration_inbound_delivery"
+    }
   ]
 }

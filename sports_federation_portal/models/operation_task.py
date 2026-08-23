@@ -19,7 +19,7 @@ class FederationOperationTask(models.Model):
     name = fields.Char(required=True, tracking=True)
     task_type = fields.Selection(
         [
-            ("registration", "Tournament registration"),
+            ("registration", "Competition entry"),
             ("roster_readiness", "Roster readiness"),
             ("referee_duty", "Club referee duty"),
             ("result_review", "Result follow-up"),
@@ -86,8 +86,8 @@ class FederationOperationTask(models.Model):
         "federation.tournament", index=True, ondelete="set null"
     )
     match_id = fields.Many2one("federation.match", index=True, ondelete="set null")
-    registration_id = fields.Many2one(
-        "federation.tournament.registration", ondelete="set null"
+    competition_entry_id = fields.Many2one(
+        "federation.competition.entry", ondelete="set null"
     )
     roster_id = fields.Many2one("federation.team.roster", ondelete="set null")
     duty_id = fields.Many2one("federation.match.club.referee.duty", ondelete="set null")
@@ -139,13 +139,13 @@ class FederationOperationTask(models.Model):
             "source_changed_on": source.write_date,
             "source_key": "%s:%s:%s" % (source._name, source.id, task_type),
         }
-        if source._name == "federation.tournament.registration":
+        if source._name == "federation.competition.entry":
             values.update(
-                registration_id=source.id,
-                responsible_club_id=source.club_id.id,
-                season_id=source.season_id.id,
-                tournament_id=source.tournament_id.id,
-                action_url="/my/tournament-registrations",
+                competition_entry_id=source.id,
+                responsible_club_id=source.team_id.club_id.id,
+                season_id=source.edition_id.season_id.id,
+                tournament_id=source.window_id.division_id.id,
+                action_url="/my/competition-entries",
             )
         elif source._name == "federation.team.roster":
             values.update(
@@ -201,38 +201,31 @@ class FederationOperationTask(models.Model):
         if not is_manager and not club_ids:
             return self.browse([])
         specs = []
-        registration_domain = [] if is_manager else [("club_id", "in", club_ids)]
-        registrations = (
-            self.env["federation.tournament.registration"]
+        entry_domain = [] if is_manager else [("team_id.club_id", "in", club_ids)]
+        entries = (
+            self.env["federation.competition.entry"]
             .sudo()
             .search(
-                registration_domain
-                + [("state", "in", ("draft", "submitted", "returned", "rejected"))]
+                entry_domain + [("state", "in", ("draft", "submitted", "rejected"))]
             )
         )
-        for registration in registrations:
-            audience = "manager" if registration.state == "submitted" else "club"
+        for entry in entries:
+            audience = "manager" if entry.state == "submitted" else "club"
             specs.append(
                 self._task_spec(
-                    registration,
+                    entry,
                     "registration",
                     audience,
-                    _("Registration for %(team)s")
-                    % {"team": registration.team_id.display_name},
-                    _("Registration is %(state)s and needs follow-up.")
-                    % {
-                        "state": dict(registration._fields["state"].selection).get(
-                            registration.state, registration.state
-                        )
-                    },
+                    _("Competition entry for %(team)s")
+                    % {"team": entry.team_id.display_name},
+                    _("Entry is %(state)s and needs follow-up.")
+                    % {"state": entry.state},
                     (
-                        _("Correct and resubmit registration")
-                        if registration.state == "returned"
-                        else _("Review tournament registration")
+                        _("Review competition entry")
+                        if entry.state == "submitted"
+                        else _("Correct and submit competition entry")
                     ),
-                    priority=(
-                        "1" if registration.state in ("returned", "rejected") else "0"
-                    ),
+                    priority="1" if entry.state == "rejected" else "0",
                 )
             )
 
