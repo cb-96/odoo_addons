@@ -23,6 +23,12 @@
               action="federation_referee_certification_action"
               sequence="10"/>
 
+    <menuitem id="menu_federation_matchday_assign_official"
+              name="Plan Match-Day Officials"
+              parent="menu_federation_officiating"
+              action="action_matchday_assign_official_wizard"
+              sequence="5"/>
+
     <menuitem id="menu_federation_match_referee"
               name="Match Assignments"
               parent="menu_federation_officiating"

@@ -34,6 +34,37 @@ class FederationMatchClubRefereeDuty(models.Model):
         ondelete="cascade",
         index=True,
     )
+    fixture_id = fields.Many2one(
+        "federation.fixture",
+        related="match_id.logical_fixture_id",
+        store=True,
+        readonly=True,
+        index=True,
+    )
+    publication_id = fields.Many2one(
+        "federation.schedule.publication",
+        related="match_id.schedule_publication_id",
+        store=True,
+        readonly=True,
+        index=True,
+    )
+    matchday_id = fields.Many2one(
+        "federation.matchday",
+        related="publication_id.matchday_id",
+        store=True,
+        readonly=True,
+        index=True,
+    )
+    published_slot_id = fields.Many2one(
+        "federation.schedule.slot",
+        related="match_id.published_slot_id",
+        readonly=True,
+    )
+    operational_slot_id = fields.Many2one(
+        "federation.schedule.slot",
+        related="match_id.operational_slot_id",
+        readonly=True,
+    )
     club_id = fields.Many2one(
         "federation.club",
         string="Club",
@@ -104,6 +135,33 @@ class FederationMatchClubRefereeDuty(models.Model):
         "unique (match_id, club_id, role)",
         "A club can owe at most one duty per role per match.",
     )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        matches = self.env["federation.match"].browse(
+            [vals.get("match_id") for vals in vals_list if vals.get("match_id")]
+        )
+        self._assert_v2_matches(matches)
+        return super().create(vals_list)
+
+    @api.model
+    def _assert_v2_matches(self, matches):
+        invalid = matches.filtered(lambda match: not match.logical_fixture_id)
+        if invalid:
+            raise ValidationError(
+                _(
+                    "Club official duties require V2 fixture-backed matches: %(matches)s",
+                    matches=", ".join(invalid.mapped("display_name")),
+                )
+            )
+        return True
+
+    def write(self, vals):
+        if "match_id" in vals:
+            self._assert_v2_matches(
+                self.env["federation.match"].browse(vals.get("match_id"))
+            )
+        return super().write(vals)
 
     # ------------------------------------------------------------------
     # Computed

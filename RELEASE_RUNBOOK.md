@@ -451,3 +451,21 @@ bash ci/run_tests.sh --module sports_federation_portal
 Verify /my/competitions, /my/competition-entries, /my/match-days and one match-day operations page. Confirm that draft schedules and superseded publications do not appear.
 
 Rollback requires a database restore if V2 entries or portal audit events were created after cutover.
+
+## V2 officials and standalone-match cleanup
+
+Upgrade `sports_federation_tournament`, `sports_federation_officiating`, and
+`sports_federation_portal` together after taking a verified database backup.
+The tournament migration permanently removes test-only standalone matches and
+their dependent records.
+
+```bash
+odoo-bin -d RC_DATABASE \
+  -u sports_federation_tournament,sports_federation_officiating,sports_federation_portal \
+  --stop-after-init
+python ci/check_v2_officiating_contract.py
+```
+
+Verify that the standalone-match count is zero, create officials through a
+current live match-day publication, and confirm that the official self-service
+portal shows current assignments plus retained V2 history.

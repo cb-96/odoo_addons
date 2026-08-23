@@ -57,6 +57,8 @@
             <list string="Club Referee Duties"
                   decoration-danger="is_deadline_overdue and state not in ('confirmed',)">
                 <field name="match_id"/>
+                <field name="matchday_id" optional="show"/>
+                <field name="publication_id" optional="hide"/>
                 <field name="club_id"/>
                 <field name="role"/>
                 <field name="nomination_deadline" optional="show"/>
@@ -73,6 +75,8 @@
         <field name="arch" type="xml">
             <search string="Club Referee Duties">
                 <field name="match_id"/>
+                <field name="matchday_id" optional="show"/>
+                <field name="publication_id" optional="hide"/>
                 <field name="club_id"/>
                 <filter string="Draft" name="filter_draft" domain="[('state','=','draft')]"/>
                 <filter string="Open" name="filter_open" domain="[('state','=','open')]"/>

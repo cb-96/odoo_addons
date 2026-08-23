@@ -54,8 +54,12 @@ class FederationOfficiatingPortal(http.Controller):
             "upcoming": [
                 ("match_kickoff", "!=", False),
                 ("state", "in", ("draft", "confirmed")),
+                ("is_current_publication", "=", True),
             ],
-            "pending": [("state", "=", "draft")],
+            "pending": [
+                ("state", "=", "draft"),
+                ("is_current_publication", "=", True),
+            ],
             "history": [("state", "in", ("done", "cancelled"))],
             "all": [],
         }
@@ -81,7 +85,10 @@ class FederationOfficiatingPortal(http.Controller):
             order="match_kickoff asc, id asc",
             user=request.env.user,
         )
-        pending_domain = base_domain + [("state", "=", "draft")]
+        pending_domain = base_domain + [
+            ("state", "=", "draft"),
+            ("is_current_publication", "=", True),
+        ]
         pending_assignments = PortalPrivilege.portal_search(
             Assignment,
             pending_domain,

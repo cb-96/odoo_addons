@@ -12,16 +12,45 @@ class FederationMatchReferee(models.Model):
         index=True,
         readonly=True,
     )
+    is_current_publication = fields.Boolean(
+        compute="_compute_is_current_publication",
+        search="_search_is_current_publication",
+    )
     response_note = fields.Text(
         string="Official Response",
         help="Optional acknowledgement or decline note provided by the assigned official.",
     )
 
+    def _compute_is_current_publication(self):
+        for assignment in self:
+            publication = assignment.publication_id
+            assignment.is_current_publication = bool(
+                publication
+                and publication.matchday_id.current_publication_id == publication
+            )
+
+    @api.model
+    def _search_is_current_publication(self, operator, value):
+        current = (
+            self.env["federation.matchday"]
+            .sudo()
+            .search([("current_publication_id.state", "=", "live")])
+            .mapped("current_publication_id")
+        )
+        positive = (operator in ("=", "==") and value) or (
+            operator == "!=" and not value
+        )
+        return [("publication_id", "in" if positive else "not in", current.ids)]
+
     @api.model
     def _portal_get_domain(self, user=None):
         """Handle the portal-specific get domain flow."""
         user = user or self.env.user
-        return [("referee_id.user_id", "=", user.id)]
+        return [
+            ("referee_id.user_id", "=", user.id),
+            ("fixture_id", "!=", False),
+            ("publication_id", "!=", False),
+        ]
 
     def _portal_assert_access(self, user=None):
         """Handle the portal-specific assert access flow."""

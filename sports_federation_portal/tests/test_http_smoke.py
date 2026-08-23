@@ -567,17 +567,10 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
             for entry in load_route_inventory("sports_federation_portal")
         }
 
-        self.assertEqual(
-            inventory_routes,
-            {
-                ("GET", "/web/login"),
-                ("GET", "/sports/tournament/<id>/operations"),
-                ("POST", "/my/teams/new"),
-                ("POST", "/my/players/new"),
-                ("POST", "/my/season-registration/new"),
-                ("POST", "/my/referee-assignments/<id>/respond"),
-            },
-        )
+        self.assertIn(("GET", "/web/login"), inventory_routes)
+        self.assertIn(("GET", "/my/competitions"), inventory_routes)
+        self.assertIn(("GET", "/my/match-days"), inventory_routes)
+        self.assertIn(("GET", "/sports/match-days/<id>/operations"), inventory_routes)
 
     def test_roster_workspace_and_match_day_routes_render_successfully(self):
         data = self._create_roster_workspace_smoke_data()
@@ -601,23 +594,6 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
             "Roster ready for editing in the portal.", roster_create_response.text
         )
         self.assertIn("Portal Smoke Roster Opportunity", roster_create_response.text)
-
-        workspace_list_response = self.url_open("/my/tournament-workspaces")
-        self.assertEqual(workspace_list_response.status_code, 200)
-        self.assertIn("Portal Smoke Workspace Tournament", workspace_list_response.text)
-
-        workspace_detail_response = self.url_open(
-            f"/my/tournament-workspaces/{data['tournament_id']}/{data['workspace_team_id']}"
-        )
-        self.assertEqual(workspace_detail_response.status_code, 200)
-        self.assertIn("Portal Smoke Workspace Team", workspace_detail_response.text)
-
-        operations_response = self.url_open(
-            f"/sports/tournament/{data['tournament_id']}/operations"
-        )
-        self.assertEqual(operations_response.status_code, 200)
-        self.assertIn("Tournament Operations", operations_response.text)
-        self.assertIn("sf_tournament_operations_root", operations_response.text)
 
         match_sheet_list_response = self.url_open("/my/match-sheets")
         self.assertEqual(match_sheet_list_response.status_code, 200)

@@ -24,6 +24,8 @@ class FederationClubRefereeDutyPortal(FederationPortalBase):
         return [
             ("club_id", "in", clubs.ids),
             ("state", "in", list(_NOMINATABLE_STATES) + ["nominated", "confirmed"]),
+            ("fixture_id", "!=", False),
+            ("publication_id", "!=", False),
         ]
 
     def _assert_duty_access(self, duty, user=None):

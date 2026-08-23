@@ -27,3 +27,10 @@ Officials may only access assignments linked to their portal identity. Club repr
 ## Tests
 
 Coverage includes assignment lifecycle, duties, reimbursements, portal access, match-day tours, and workspace integration.
+
+## V2 ownership
+
+Official assignments and club-supplied duties belong to fixture-backed
+operational matches. Use **Officiating → Plan Match-Day Officials** to assign a
+federation referee or generate club duties for every applicable match in the
+current live publication. The removed round wizard must not be reintroduced.

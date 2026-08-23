@@ -1,0 +1,20 @@
+<odoo>
+  <record id="view_matchday_assign_official_wizard_form" model="ir.ui.view">
+    <field name="name">federation.matchday.assign.official.wizard.form</field>
+    <field name="model">federation.matchday.assign.official.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Assign Officials to Match Day">
+        <sheet>
+          <div class="alert alert-info" role="status">Assignments are created only for V2 fixture-backed matches in the current live publication.</div>
+          <group>
+            <group string="Published match day"><field name="matchday_id"/><field name="assignment_type"/><field name="role"/></group>
+            <group string="Responsible official"><field name="referee_id" invisible="assignment_type != 'referee'" required="assignment_type == 'referee'"/><field name="club_id" invisible="assignment_type != 'club'" required="assignment_type == 'club'"/><field name="open_duties" invisible="assignment_type != 'club'"/></group>
+          </group>
+          <group string="Preview" col="6"><field name="matches_total"/><field name="matches_to_assign"/><field name="matches_skipped"/></group>
+        </sheet>
+        <footer><button name="action_apply" type="object" string="Assign" class="btn-primary"/><button string="Cancel" special="cancel"/></footer>
+      </form>
+    </field>
+  </record>
+  <record id="action_matchday_assign_official_wizard" model="ir.actions.act_window"><field name="name">Assign Match-Day Officials</field><field name="res_model">federation.matchday.assign.official.wizard</field><field name="view_mode">form</field><field name="target">new</field></record>
+</odoo>

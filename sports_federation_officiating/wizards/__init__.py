@@ -1,1 +1,1 @@
-from . import federation_round_assign_wizard
+from . import federation_matchday_assign_wizard

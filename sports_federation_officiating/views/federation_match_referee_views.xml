@@ -21,6 +21,8 @@
                     <group>
                         <group string="Assignment">
                             <field name="match_id"/>
+                            <field name="matchday_id"/>
+                            <field name="publication_id"/>
                             <field name="tournament_id"/>
                             <field name="role"/>
                             <field name="confirmation_deadline" readonly="1"/>
@@ -53,6 +55,8 @@
             <list string="Match Referee Assignments"
                   decoration-danger="is_confirmation_overdue and state == 'draft'">
                 <field name="match_id"/>
+                <field name="matchday_id"/>
+                <field name="publication_id" optional="hide"/>
                 <field name="tournament_id"/>
                 <field name="referee_id"/>
                 <field name="role"/>

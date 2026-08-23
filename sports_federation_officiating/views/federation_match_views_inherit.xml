@@ -35,8 +35,6 @@
             <!-- Officials notebook page: inline assignment management -->
             <xpath expr="//notebook" position="inside">
                 <page string="Officiating" name="officials">
-                    <button name="%(sports_federation_officiating.action_federation_round_assign_wizard)d"
-                            string="Assign Role to Round" type="action" class="btn-secondary mb-2"/>
                     <group string="Assigned Officials" col="1">
                         <field name="referee_assignment_ids">
                         <list editable="bottom"

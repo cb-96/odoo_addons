@@ -81,7 +81,7 @@ Recent additions (2026-05-25)
 - `sports_federation_venues` — venue and playing-area master data used by calendar capacity preparation.
 - `sports_federation_officiating` — referee readiness, availability warnings, and double-booking guards applied to operational schedules.
 - `sports_federation_base/views/menu_items.xml` and related addon menu files — backend navigation now uses journey-first buckets (`Setup`, `Planning`, `Match Day`, `Publication`, `Administration`), with the Planning menu as the primary scheduling entry point.
-- `sports_federation_portal/views/portal_templates.xml` and `portal_tournament_workspace_templates.xml` — club representatives now start from a clearly primary Club Operations Workspace, while direct queues remain available as secondary or advanced links.
+- `sports_federation_portal/views/portal_templates.xml` and `portal_v2_templates.xml` — club representatives use the V2 Competition and Match-Day workspaces; direct queues remain secondary operational links.
 - `sports_federation_base`, `sports_federation_tournament`, `sports_federation_rosters`, `sports_federation_result_control`, `sports_federation_standings`, and `sports_federation_public_site` form views now surface inline next-step guidance and direct cross-module handoffs, including season-registration-to-roster, participant-to-roster, result-to-tournament, and tournament-to-standings/publication flows.
 - The V2 competition modules and `sports_federation_portal` expose a clear phase model: scheduling prepares a complete draft, schedule approval publishes an immutable snapshot, match-day operations execute only that snapshot, and portal result pages handle result follow-up.
 

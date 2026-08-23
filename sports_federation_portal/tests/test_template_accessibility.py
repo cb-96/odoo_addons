@@ -18,8 +18,8 @@ class TestPortalTemplateAccessibility(TransactionCase):
             "portal_roster_templates": etree.parse(
                 str(views_dir / "portal_roster_templates.xml")
             ).getroot(),
-            "portal_tournament_workspace_templates": etree.parse(
-                str(views_dir / "portal_tournament_workspace_templates.xml")
+            "portal_v2_templates": etree.parse(
+                str(views_dir / "portal_v2_templates.xml")
             ).getroot(),
             "portal_officiating_templates": etree.parse(
                 str(views_dir / "portal_officiating_templates.xml")
@@ -131,9 +131,7 @@ class TestPortalTemplateAccessibility(TransactionCase):
         self._assert_alert_roles(
             "portal_roster_templates", "portal_my_match_sheet_detail"
         )
-        self._assert_alert_roles(
-            "portal_tournament_workspace_templates", "portal_my_tournament_workspaces"
-        )
+        self._assert_alert_roles("portal_v2_templates", "portal_my_competitions")
         self._assert_alert_roles(
             "portal_officiating_templates", "portal_my_referee_assignments"
         )
@@ -172,7 +170,7 @@ class TestPortalTemplateAccessibility(TransactionCase):
             "portal_officiating_templates", "portal_my_referee_assignments"
         )
         self._assert_tables_have_captions_and_scoped_headers(
-            "portal_tournament_workspace_templates",
+            "portal_v2_templates",
             "portal_my_tournament_workspace_detail",
         )
 

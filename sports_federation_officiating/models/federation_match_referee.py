@@ -18,9 +18,40 @@ class FederationMatchReferee(models.Model):
     )
     tournament_id = fields.Many2one(
         "federation.tournament",
-        string="Tournament",
+        string="Division",
         related="match_id.tournament_id",
         store=True,
+    )
+    fixture_id = fields.Many2one(
+        "federation.fixture",
+        related="match_id.logical_fixture_id",
+        store=True,
+        readonly=True,
+        index=True,
+    )
+    publication_id = fields.Many2one(
+        "federation.schedule.publication",
+        related="match_id.schedule_publication_id",
+        store=True,
+        readonly=True,
+        index=True,
+    )
+    matchday_id = fields.Many2one(
+        "federation.matchday",
+        related="publication_id.matchday_id",
+        store=True,
+        readonly=True,
+        index=True,
+    )
+    published_slot_id = fields.Many2one(
+        "federation.schedule.slot",
+        related="match_id.published_slot_id",
+        readonly=True,
+    )
+    operational_slot_id = fields.Many2one(
+        "federation.schedule.slot",
+        related="match_id.operational_slot_id",
+        readonly=True,
     )
     role = fields.Selection(
         [
@@ -100,12 +131,8 @@ class FederationMatchReferee(models.Model):
         if not match:
             return False, False
 
-        slot = match.slot_id if "slot_id" in match._fields else False
-        start_value = (
-            slot.start_datetime
-            if slot and slot.start_datetime
-            else match.date_scheduled
-        )
+        slot = match.operational_slot_id or match.published_slot_id
+        start_value = slot.start_datetime if slot else match.date_scheduled
         if not start_value:
             return False, False
         end_value = (
@@ -175,13 +202,36 @@ class FederationMatchReferee(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Create records with module-specific defaults and side effects."""
+        """Create assignments only for V2 fixture-backed operational matches."""
+        matches = self.env["federation.match"].browse(
+            [vals.get("match_id") for vals in vals_list if vals.get("match_id")]
+        )
+        self._assert_v2_matches(matches)
         records = super().create(vals_list)
         Dispatcher = self.env.get("federation.notification.dispatcher")
         if Dispatcher is not None:
             for record in records:
                 Dispatcher.send_referee_assigned(record)
         return records
+
+    @api.model
+    def _assert_v2_matches(self, matches):
+        invalid = matches.filtered(lambda match: not match.logical_fixture_id)
+        if invalid:
+            raise ValidationError(
+                _(
+                    "Officials can only be assigned to V2 fixture-backed matches: %(matches)s",
+                    matches=", ".join(invalid.mapped("display_name")),
+                )
+            )
+        return True
+
+    def write(self, vals):
+        if "match_id" in vals:
+            self._assert_v2_matches(
+                self.env["federation.match"].browse(vals.get("match_id"))
+            )
+        return super().write(vals)
 
     @api.depends(
         "match_id.date_scheduled",

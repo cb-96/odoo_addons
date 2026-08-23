@@ -226,17 +226,5 @@
     "function": "portal_my_rosters",
     "reason": "adjacent ownership scope check",
     "statement": "Roster = ( request.env[\"federation.team.roster\"].with_user(request.env.user).sudo() )"
-  },
-  {
-    "file": "sports_federation_portal/controllers/tournament_operations.py",
-    "function": "_operations_resolve_match",
-    "reason": "existence-only after tournament-scoped lookup",
-    "statement": "if not Match.sudo().search( # noguard: existence-only after tournament-scoped lookup [(\"id\", \"=\", match_id), (\"tournament_id\", \"=\", tournament.id)], limit=1, ): return False, self._operations_error(\"not_found\", _(\"Match not found.\"))"
-  },
-  {
-    "file": "sports_federation_portal/controllers/tournament_operations.py",
-    "function": "_operations_resolve_tournament",
-    "reason": "existence-only lookup after the user-scoped lookup failed",
-    "statement": "if ( # noguard: existence-only lookup after the user-scoped lookup failed not Tournament.sudo() .browse(tournament_id) .exists() ): return False, self._operations_error( \"not_found\", _(\"Tournament not found.\") )"
   }
 ]
