@@ -36,8 +36,23 @@ def _resolve_expr(expr: ast.AST, symbols: dict[str, Any]) -> Any:
     return None
 
 
+class ContractSourceError(RuntimeError):
+    """A contract references source that cannot be inspected."""
+
+
 def _module_ast(path: pathlib.Path) -> ast.Module:
-    return ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    if not path.is_file():
+        try:
+            relative = path.relative_to(REPO_ROOT)
+        except ValueError:
+            relative = path
+        raise ContractSourceError(f"referenced source file is missing: {relative}")
+    try:
+        return ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    except (OSError, SyntaxError, UnicodeError) as exc:
+        raise ContractSourceError(
+            f"cannot parse referenced source {path}: {exc}"
+        ) from exc
 
 
 def _module_symbols(tree: ast.Module) -> dict[str, Any]:
@@ -163,7 +178,15 @@ def main() -> int:
         workflow_file = contract.get("workflow_file") or "_workflows/UNKNOWN"
 
         canonical = sorted(set(contract.get("canonical_states") or []))
-        implemented = sorted(set(_extract_states(contract.get("state_source") or {})))
+        try:
+            implemented = sorted(
+                set(_extract_states(contract.get("state_source") or {}))
+            )
+            action_source = contract.get("action_source") or {}
+            implemented_actions = _extract_actions(action_source)
+        except (ContractSourceError, KeyError, TypeError) as exc:
+            errors.append(f"[workflow-contracts] {contract_id}: {exc}")
+            continue
 
         undocumented = sorted(set(implemented) - set(canonical))
         missing_in_code = sorted(set(canonical) - set(implemented))
@@ -186,8 +209,6 @@ def main() -> int:
             )
 
         required_actions = set(contract.get("required_actions") or [])
-        action_source = contract.get("action_source") or {}
-        implemented_actions = _extract_actions(action_source)
         missing_actions = sorted(required_actions - implemented_actions)
         if missing_actions:
             errors.append(

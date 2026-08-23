@@ -89,6 +89,12 @@ jobs:
       - name: Verify source collector completeness
         run: python ci/check_source_collector_contract.py
 
+      - name: Verify addon manifests, dependencies, imports and ACLs
+        run: python ci/check_addon_integrity.py
+
+      - name: Verify workflow state contracts
+        run: python ci/check_workflow_state_contracts.py
+
       - name: Report module dependency drift
         run: python ci/check_module_dependency_drift.py
 

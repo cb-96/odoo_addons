@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Enforce documented ownership boundaries around portal ``sudo()`` calls."""
+
 from __future__ import annotations
 import argparse
 import ast
@@ -7,15 +8,27 @@ import json
 import re
 from pathlib import Path
 import sys
+
 ROOT = Path(__file__).resolve().parents[1]
 CONTROLLERS = ROOT / "sports_federation_portal" / "controllers"
 INVENTORY = ROOT / "docs" / "portal_sudo_inventory.json"
 SAFE_TOKENS = (
-    "_portal_", "portal_privilege", "_assert_portal_owns",
-    "_assert_result_access", "_assert_duty_access", "portal_assert_in_domain",
-    "club_id", "team_id", "user_id", "user.id", "scope_domain",
-    "portal_club_scope", "portal_team_scope", "has_group(",
+    "_portal_",
+    "portal_privilege",
+    "_assert_portal_owns",
+    "_assert_result_access",
+    "_assert_duty_access",
+    "portal_assert_in_domain",
+    "club_id",
+    "team_id",
+    "user_id",
+    "user.id",
+    "scope_domain",
+    "portal_club_scope",
+    "portal_team_scope",
+    "has_group(",
 )
+
 
 def enclosing_function(tree, node):
     best = None
@@ -27,6 +40,7 @@ def enclosing_function(tree, node):
                     best = candidate
     return best
 
+
 def observed_entries():
     entries = []
     violations = []
@@ -35,7 +49,9 @@ def observed_entries():
         lines = source.splitlines()
         tree = ast.parse(source, filename=str(path))
         for node in ast.walk(tree):
-            if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            if not isinstance(node, ast.Call) or not isinstance(
+                node.func, ast.Attribute
+            ):
                 continue
             if node.func.attr != "sudo":
                 continue
@@ -47,7 +63,9 @@ def observed_entries():
             while statement in parents and not isinstance(statement, ast.stmt):
                 statement = parents[statement]
             start = getattr(statement, "lineno", node.lineno)
-            end = getattr(statement, "end_lineno", getattr(node, "end_lineno", node.lineno))
+            end = getattr(
+                statement, "end_lineno", getattr(node, "end_lineno", node.lineno)
+            )
             context_start = max(1, start - 15)
             context_end = min(len(lines), end + 15)
             statement_text = "\n".join(lines[start - 1 : end])
@@ -69,7 +87,14 @@ def observed_entries():
             entries.append(entry)
             if not guarded:
                 violations.append(f"{entry['file']}:{node.lineno} in {function_name}")
-    return sorted(entries, key=lambda item: (item["file"], item["function"], item["statement"])), violations
+    return (
+        sorted(
+            entries,
+            key=lambda item: (item["file"], item["function"], item["statement"]),
+        ),
+        violations,
+    )
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -82,17 +107,29 @@ def main():
             print(f"- {violation}", file=sys.stderr)
         return 1
     if args.write_inventory:
-        INVENTORY.write_text(json.dumps(entries, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        INVENTORY.write_text(
+            json.dumps(entries, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
         print(f"[sudo-guard] Wrote {len(entries)} inventory entries.")
         return 0
     if not INVENTORY.is_file():
-        print("[sudo-guard] Missing sudo inventory. Run with --write-inventory.", file=sys.stderr)
+        print(
+            "[sudo-guard] Missing sudo inventory. Run with --write-inventory.",
+            file=sys.stderr,
+        )
         return 1
     expected = json.loads(INVENTORY.read_text(encoding="utf-8"))
     if expected != entries:
-        print("[sudo-guard] Inventory is stale. Run with --write-inventory and review the diff.", file=sys.stderr)
+        print(
+            "[sudo-guard] Inventory is stale. Run with --write-inventory and review the diff.",
+            file=sys.stderr,
+        )
         return 1
-    print(f"[sudo-guard] OK - {len(entries)} privileged calls are documented and guarded.")
+    print(
+        f"[sudo-guard] OK - {len(entries)} privileged calls are documented and guarded."
+    )
     return 0
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

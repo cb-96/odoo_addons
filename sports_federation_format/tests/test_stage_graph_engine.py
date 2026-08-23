@@ -124,32 +124,51 @@ class TestStageGraphEngine(TransactionCase):
         with self.assertRaises(ValidationError):
             self.env["federation.stage.graph.engine"].validate_graph(self.structure)
 
-
     def test_placement_bracket_matrix_has_valid_sources(self):
         club = self.env["federation.club"].create({"name": "Matrix Club"})
         for count in (2, 3, 4, 5, 6, 7, 8, 9, 12, 16):
-            teams = self.env["federation.team"].create([
-                {"name": f"Matrix {count}-{seed}", "club_id": club.id}
-                for seed in range(1, count + 1)
-            ])
-            participant_set = self.env["federation.participant.set"].create({
-                "name": f"Matrix {count}", "edition_id": self.structure.edition_id.id,
-                "division_id": self.structure.division_id.id, "state": "finalized",
-            })
-            self.env["federation.participant.set.line"].create([
-                {"participant_set_id": participant_set.id, "team_id": team.id, "seed": seed}
-                for seed, team in enumerate(teams, 1)
-            ])
-            structure = self.env["federation.competition.structure"].create({
-                "name": f"Matrix {count}", "edition_id": self.structure.edition_id.id,
-                "division_id": self.structure.division_id.id,
-                "participant_set_id": participant_set.id, "format_type": "custom",
-            })
-            stage = self.env["federation.structure.stage"].create({
-                "name": f"Placement {count}", "structure_id": structure.id,
-                "stage_type": "placement", "format_type": "placement_bracket",
-                "source_type": "registration",
-            })
+            teams = self.env["federation.team"].create(
+                [
+                    {"name": f"Matrix {count}-{seed}", "club_id": club.id}
+                    for seed in range(1, count + 1)
+                ]
+            )
+            participant_set = self.env["federation.participant.set"].create(
+                {
+                    "name": f"Matrix {count}",
+                    "edition_id": self.structure.edition_id.id,
+                    "division_id": self.structure.division_id.id,
+                    "state": "finalized",
+                }
+            )
+            self.env["federation.participant.set.line"].create(
+                [
+                    {
+                        "participant_set_id": participant_set.id,
+                        "team_id": team.id,
+                        "seed": seed,
+                    }
+                    for seed, team in enumerate(teams, 1)
+                ]
+            )
+            structure = self.env["federation.competition.structure"].create(
+                {
+                    "name": f"Matrix {count}",
+                    "edition_id": self.structure.edition_id.id,
+                    "division_id": self.structure.division_id.id,
+                    "participant_set_id": participant_set.id,
+                    "format_type": "custom",
+                }
+            )
+            stage = self.env["federation.structure.stage"].create(
+                {
+                    "name": f"Placement {count}",
+                    "structure_id": structure.id,
+                    "stage_type": "placement",
+                    "format_type": "placement_bracket",
+                    "source_type": "registration",
+                }
+            )
             stage.action_prepare_stage()
             self.assertEqual(len(stage.stage_participant_ids), count)
             self.assertEqual(len(stage.stage_participant_ids.mapped("team_id")), count)
@@ -157,10 +176,16 @@ class TestStageGraphEngine(TransactionCase):
             for fixture in stage.stage_fixture_ids:
                 self.assertNotEqual(fixture.home_source_fixture_id, fixture)
                 self.assertNotEqual(fixture.away_source_fixture_id, fixture)
-                for source in (fixture.home_source_fixture_id, fixture.away_source_fixture_id):
+                for source in (
+                    fixture.home_source_fixture_id,
+                    fixture.away_source_fixture_id,
+                ):
                     if source:
                         self.assertIn(source.id, fixture_ids)
                 if fixture.placement_from:
                     self.assertGreaterEqual(fixture.placement_from, 1)
                     self.assertLessEqual(fixture.placement_to, count)
-            self.assertIn((1, 2), {(f.placement_from, f.placement_to) for f in stage.stage_fixture_ids})
+            self.assertIn(
+                (1, 2),
+                {(f.placement_from, f.placement_to) for f in stage.stage_fixture_ids},
+            )

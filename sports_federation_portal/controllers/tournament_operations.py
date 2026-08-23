@@ -35,7 +35,9 @@ class FederationTournamentOperationsPortal(FederationPortalBase):
             return tournament, False
         if (
             # noguard: existence-only lookup after the user-scoped lookup failed
-            not Tournament.sudo().browse(tournament_id).exists()
+            not Tournament.sudo()
+            .browse(tournament_id)
+            .exists()
         ):
             return False, self._operations_error(
                 "not_found", _("Tournament not found.")

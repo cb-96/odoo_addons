@@ -29,6 +29,10 @@ jobs:
         run: |
           python ci/check_legacy_engine_removed.py
           python ci/check_portal_sudo_guard.py
+          python ci/check_source_collector_contract.py
+          python ci/check_addon_integrity.py
+          python ci/check_workflow_state_contracts.py
+          python ci/check_doc_freshness.py
       - run: scripts/ci/run_rc_validation.sh static
 
   odoo-rc:

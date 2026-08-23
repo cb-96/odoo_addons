@@ -86,9 +86,7 @@ class FederationClubRefereeDutyPortal(FederationPortalBase):
     )
     def portal_my_referee_duty_detail(self, duty_id, **kw):
         """Show a single club referee duty with nomination form."""
-        duty = (
-            request.env["federation.match.club.referee.duty"].sudo().browse(duty_id)
-        )
+        duty = request.env["federation.match.club.referee.duty"].sudo().browse(duty_id)
         if not duty.exists():
             self._raise_not_found()
         self._assert_duty_access(duty)
@@ -122,9 +120,7 @@ class FederationClubRefereeDutyPortal(FederationPortalBase):
     )
     def portal_nominate_duty(self, duty_id, player_id=None, **kw):
         """Submit nomination: club rep selects a player for the duty."""
-        duty = (
-            request.env["federation.match.club.referee.duty"].sudo().browse(duty_id)
-        )
+        duty = request.env["federation.match.club.referee.duty"].sudo().browse(duty_id)
         if not duty.exists():
             self._raise_not_found()
         self._assert_duty_access(duty)
@@ -151,9 +147,7 @@ class FederationClubRefereeDutyPortal(FederationPortalBase):
 
         try:
             # noguard: duty ownership was asserted before validating the nomination
-            duty.with_user(request.env.user).sudo().action_nominate(
-                player_id
-            )
+            duty.with_user(request.env.user).sudo().action_nominate(player_id)
         except (ValidationError, AccessError) as exc:
             return self._redirect_with_query(
                 f"/my/referee-duties/{duty_id}",

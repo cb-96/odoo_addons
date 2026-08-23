@@ -269,12 +269,21 @@ class TestTournamentOperations(TransactionCase):
         cls.verified_match.with_user(cls.submitter_user).action_submit_result()
         cls.verified_match.with_user(cls.validator_user).action_verify_result()
 
-
     def test_operations_payload_contract_survives_mixin_split(self):
         payload = self.tournament._operations_get_payload(user=self.manager_user)
         self.assertEqual(
             set(payload),
-            {"tournament", "capabilities", "summary", "matches", "action_queue", "court_summaries", "filters", "default_match_id", "generated_at"},
+            {
+                "tournament",
+                "capabilities",
+                "summary",
+                "matches",
+                "action_queue",
+                "court_summaries",
+                "filters",
+                "default_match_id",
+                "generated_at",
+            },
         )
         self.assertTrue(hasattr(self.tournament, "_operations_format_datetime_parts"))
         self.assertTrue(hasattr(self.tournament, "_operations_serialize_match"))

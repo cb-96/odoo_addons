@@ -40,3 +40,7 @@ Module-specific implementation notes remain beside each addon in its
 `git` history preserves superseded reviews and planning documents. Current
 roadmap commitments live in [ROADMAP.md](../ROADMAP.md); do not create a second
 roadmap or a standalone review snapshot for routine changes.
+
+## Engineering contracts
+
+- [Phase 0 source-truth contract](phase0_source_truth.md)

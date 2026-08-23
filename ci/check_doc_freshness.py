@@ -2,25 +2,31 @@
 
 from datetime import date, datetime
 import os
+import json
 from pathlib import Path
 import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-TRACKED_DOCS = [
-    "ROADMAP.md",
-    "TECHNICAL_NOTE.md",
-    "CONTEXT.md",
-    "INTEGRATION_CONTRACTS.md",
-    "ROUTE_INVENTORY.md",
-    "STATE_AND_OWNERSHIP_MATRIX.md",
-    "RELEASE_RUNBOOK.md",
-    "DATA_RETENTION_POLICY.md",
-    "adr/README.md",
-    "adr/0001-portal-trust-boundaries.md",
-    "adr/0002-reporting-sql-views.md",
-    "adr/0003-public-route-ownership.md",
-]
+CONTRACT_PATH = ROOT / "ci" / "contracts" / "documentation_freshness.json"
+
+
+def load_tracked_docs() -> list[str]:
+    if not CONTRACT_PATH.is_file():
+        raise FileNotFoundError(
+            f"documentation freshness contract is missing: {CONTRACT_PATH}"
+        )
+    data = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
+    documents = data.get("documents")
+    if not isinstance(documents, list) or not all(
+        isinstance(item, str) for item in documents
+    ):
+        raise ValueError(
+            "documentation freshness contract must contain a string list named 'documents'"
+        )
+    return documents
+
+
 REQUIRED_FIELDS = ("Owner", "Last reviewed", "Review cadence")
 DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MAX_AGE_DAYS_BY_CADENCE = {
@@ -48,8 +54,13 @@ def get_today() -> date:
 def main() -> int:
     failures: list[str] = []
     today = get_today()
+    try:
+        tracked_docs = load_tracked_docs()
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"Documentation freshness check failed: {exc}")
+        return 2
 
-    for rel_path in TRACKED_DOCS:
+    for rel_path in tracked_docs:
         path = ROOT / rel_path
         if not path.exists():
             failures.append(f"{rel_path}: file is missing")
@@ -86,7 +97,7 @@ def main() -> int:
         return 1
 
     print("Documentation freshness metadata is present for tracked docs:")
-    for rel_path in TRACKED_DOCS:
+    for rel_path in tracked_docs:
         print(f" - {rel_path}")
     return 0
 

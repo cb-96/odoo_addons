@@ -33,22 +33,9 @@ META_OUT = ROOT / "current_git_metadata.txt"
 SEPARATOR = "=" * 100
 MAX_TEXT_FILE_SIZE = 10 * 1024 * 1024
 
-MODULES = [
-    "sports_federation_base",
-    "sports_federation_calendar",
-    "sports_federation_format",
-    "sports_federation_scheduling",
-    "sports_federation_registration",
-    "sports_federation_competition_core",
-    "sports_federation_schedule_approval",
-    "sports_federation_matchday",
-    "sports_federation_rules",
-    "sports_federation_tournament",
-    "sports_federation_officiating",
-    "sports_federation_result_control",
-    "sports_federation_portal",
-    "sports_federation_notifications",
-]
+# Addons are discovered dynamically. A manual allowlist caused internal dependency
+# addons to disappear from review bundles and made "full codebase" reviews partial.
+MODULES: list[str] = []
 
 TEXT_EXTENSIONS = {
     ".bash",
@@ -108,6 +95,11 @@ EXCLUDED_FILENAMES = {
     META_OUT.name,
 }
 
+EXCLUDED_PATH_PREFIXES = {
+    Path("ci/logs"),
+    Path("_logs"),
+}
+
 REPOSITORY_FILES = [
     "source_collector.py",
     ".gitignore",
@@ -143,6 +135,7 @@ REPOSITORY_DIRECTORIES = [
     "ci",
     "docs",
     "scripts",
+    "adr",
 ]
 
 
@@ -187,7 +180,13 @@ def validate_repository_root() -> None:
 def is_excluded(path: Path) -> bool:
     if path.name in EXCLUDED_FILENAMES:
         return True
-    return any(part in EXCLUDED_DIRECTORY_NAMES for part in path.parts)
+    try:
+        relative = path.resolve().relative_to(ROOT)
+    except ValueError:
+        return True
+    if any(relative == prefix or prefix in relative.parents for prefix in EXCLUDED_PATH_PREFIXES):
+        return True
+    return any(part in EXCLUDED_DIRECTORY_NAMES for part in relative.parts)
 
 
 def is_supported_text_file(path: Path) -> bool:
@@ -213,10 +212,48 @@ def collect_directory(directory: Path) -> set[Path]:
     return files
 
 
+def discover_addons() -> list[str]:
+    """Return every repository addon containing a parseable Odoo manifest."""
+    addons = []
+    for manifest in ROOT.glob("*/__manifest__.py"):
+        addon = manifest.parent
+        if is_excluded(addon):
+            continue
+        addons.append(addon.name)
+    return sorted(set(addons))
+
+
+def collect_repository_root_files() -> set[Path]:
+    """Collect supported root-level files without maintaining another allowlist."""
+    return {
+        repository_relative(path)
+        for path in ROOT.iterdir()
+        if is_supported_text_file(path)
+    }
+
+
+def validate_internal_dependencies(existing_modules: list[str]) -> None:
+    """Fail when a collected federation addon depends on an uncollected peer."""
+    available = set(existing_modules)
+    missing: list[str] = []
+    for module in existing_modules:
+        manifest = parse_manifest(module)
+        for dependency in manifest.get("depends", []):
+            if isinstance(dependency, str) and dependency.startswith("sports_federation_"):
+                if dependency not in available:
+                    missing.append(f"{module}: unresolved internal dependency {dependency}")
+    if missing:
+        raise SystemExit(
+            "Internal addon dependency validation failed:\n"
+            + "\n".join(f"  - {item}" for item in sorted(set(missing)))
+        )
+
+
 def collect_files(existing_modules: Iterable[str]) -> list[Path]:
     files: set[Path] = set()
     for module in existing_modules:
         files.update(collect_directory(ROOT / module))
+    files.update(collect_repository_root_files())
     for filename in REPOSITORY_FILES:
         path = ROOT / filename
         if is_supported_text_file(path):
@@ -476,8 +513,9 @@ def build_metadata(
 
 def main() -> None:
     validate_repository_root()
-    existing_modules = [module for module in MODULES if (ROOT / module).is_dir()]
-    missing_modules = [module for module in MODULES if not (ROOT / module).is_dir()]
+    existing_modules = discover_addons()
+    missing_modules: list[str] = []
+    validate_internal_dependencies(existing_modules)
     files = collect_files(existing_modules)
     validate_collection_contract(files)
     summaries = validate_manifest_references(existing_modules, set(files))
