@@ -101,6 +101,9 @@ jobs:
       - name: Verify Phase 2 rules contract
         run: python ci/check_phase2_rules_contract.py
 
+      - name: Verify Phases 3-5 contract
+        run: python ci/check_phases_3_5_contract.py
+
       - name: Report module dependency drift
         run: python ci/check_module_dependency_drift.py
 

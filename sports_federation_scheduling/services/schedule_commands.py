@@ -6,6 +6,17 @@ class FederationScheduleCommands(models.AbstractModel):
     _name = "federation.schedule.commands"
     _description = "Schedule Command Service"
 
+    def _find_replay(self, schedule_id, idempotency_key):
+        if not idempotency_key:
+            return False
+        return self.env["federation.schedule.change"].search(
+            [
+                ("schedule_id", "=", int(schedule_id)),
+                ("idempotency_key", "=", idempotency_key),
+            ],
+            limit=1,
+        )
+
     def _resolve(self, schedule_id, expected_revision):
         schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
         if not schedule:
@@ -13,6 +24,7 @@ class FederationScheduleCommands(models.AbstractModel):
         self.env["federation.competition.role.assignment"].assert_role(
             schedule.edition_id, "schedule_planner", "competition_director"
         )
+        schedule.assert_mutable()
         self.env.cr.execute(
             "UPDATE federation_schedule SET revision=revision+1 WHERE id=%s AND revision=%s RETURNING revision",
             (schedule.id, int(expected_revision)),
@@ -38,17 +50,10 @@ class FederationScheduleCommands(models.AbstractModel):
         reason=False,
         idempotency_key=False,
     ):
+        replay = self._find_replay(schedule_id, idempotency_key)
+        if replay:
+            return self.env["federation.schedule.queries"].delta(replay.schedule_id, [])
         schedule, new_revision = self._resolve(schedule_id, expected_revision)
-        if idempotency_key:
-            replay = self.env["federation.schedule.change"].search(
-                [
-                    ("schedule_id", "=", schedule.id),
-                    ("idempotency_key", "=", idempotency_key),
-                ],
-                limit=1,
-            )
-            if replay:
-                return self.env["federation.schedule.queries"].delta(schedule, [])
         fixture = self.env["federation.fixture"].browse(int(fixture_id)).exists()
         slot = self.env["federation.schedule.slot"].browse(int(slot_id)).exists()
         candidate = self._map(schedule)
@@ -96,6 +101,9 @@ class FederationScheduleCommands(models.AbstractModel):
         reason=False,
         idempotency_key=False,
     ):
+        replay = self._find_replay(schedule_id, idempotency_key)
+        if replay:
+            return self.env["federation.schedule.queries"].delta(replay.schedule_id, [])
         schedule, new_revision = self._resolve(schedule_id, expected_revision)
         assignment = schedule.assignment_ids.filtered(
             lambda a: a.fixture_id.id == int(fixture_id)
@@ -150,7 +158,7 @@ class FederationScheduleCommands(models.AbstractModel):
         return self.env["federation.schedule.queries"].delta(schedule, created)
 
     @api.model
-    def submit(self, schedule_id, expected_revision):
+    def submit(self, schedule_id, expected_revision, warning_override_reason=False):
         schedule, new_revision = self._resolve(schedule_id, expected_revision)
         validation = self.env["federation.schedule.validator"].validate_map(
             schedule, self._map(schedule)
@@ -158,6 +166,19 @@ class FederationScheduleCommands(models.AbstractModel):
         if not validation["valid"]:
             raise ValidationError(
                 _("Resolve all errors and unassigned fixtures before submitting.")
+            )
+        if validation["warnings"] and not (warning_override_reason or "").strip():
+            raise ValidationError(
+                _("Provide a manager reason to accept schedule warnings.")
+            )
+        if validation["warnings"]:
+            self.env["federation.schedule.change"].create(
+                {
+                    "schedule_id": schedule.id,
+                    "revision": new_revision,
+                    "command": "warning_override",
+                    "reason": warning_override_reason,
+                }
             )
         schedule.state = "ready_for_review"
         self.env["federation.competition.event"].emit(

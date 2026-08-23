@@ -53,6 +53,6 @@ class FederationSchedulePublication(models.Model):
     reason = fields.Text()
     assignment_snapshot = fields.Json(required=True)
     _unique_version = models.Constraint(
-        "unique(schedule_id,version)",
-        "Publication versions must be unique per schedule.",
+        "unique(edition_id,version)",
+        "Publication versions must be unique per edition.",
     )

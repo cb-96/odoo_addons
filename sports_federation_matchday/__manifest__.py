@@ -1,6 +1,6 @@
 {
     "name": "Match-Day Operations",
-    "version": "19.0.1.1.0",
+    "version": "19.0.2.0.0",
     "category": "Sports",
     "summary": "Live court control, delays and operational incidents",
     "author": "Sports Federation",

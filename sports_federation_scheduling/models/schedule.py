@@ -110,9 +110,21 @@ class FederationSchedule(models.Model):
     change_ids = fields.One2many(
         "federation.schedule.change", "schedule_id", readonly=True
     )
-    _unique_matchday = models.Constraint(
-        "unique(matchday_id)", "A match day can have only one active working schedule."
+    supersedes_id = fields.Many2one(
+        "federation.schedule",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
+        index=True,
     )
+    superseded_by_id = fields.Many2one(
+        "federation.schedule",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
+        index=True,
+    )
+    revision_reason = fields.Text(copy=False)
 
 
 class FederationScheduleAssignment(models.Model):
