@@ -1,0 +1,29 @@
+<odoo>
+  <record id="schedule_publish_wizard_form" model="ir.ui.view">
+    <field name="name">federation.schedule.publish.wizard.form</field>
+    <field name="model">federation.schedule.publish.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Publish Approved Schedule">
+        <sheet>
+          <div class="alert alert-info" role="status" invisible="replacement_required">This creates the first immutable live publication for this match day.</div>
+          <div class="alert alert-warning" role="alert" invisible="not replacement_required">This replaces the current live publication for this match day. The previous publication remains immutable audit evidence.</div>
+          <group>
+            <field name="review_id"/>
+            <field name="schedule_id"/>
+            <field name="matchday_id"/>
+            <field name="current_publication_id" invisible="not replacement_required"/>
+            <field name="replacement_required" invisible="1"/>
+            <field name="expected_publication_id" invisible="1"/>
+          </group>
+          <group string="Publication decision">
+            <field name="reason" required="replacement_required" placeholder="Why is the live schedule being replaced?"/>
+          </group>
+        </sheet>
+        <footer>
+          <button name="action_publish" type="object" string="Publish Schedule" class="btn-primary"/>
+          <button string="Cancel" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

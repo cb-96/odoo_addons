@@ -21,10 +21,14 @@ class FederationScheduleSubmitWizard(models.TransientModel):
         self.ensure_one()
         if self.schedule_id.revision != self.expected_revision:
             raise ValidationError(
-                _("The schedule changed after this confirmation was opened. Refresh and retry.")
+                _(
+                    "The schedule changed after this confirmation was opened. Refresh and retry."
+                )
             )
         if self.warning_count and not (self.warning_override_reason or "").strip():
-            raise ValidationError(_("Explain why the remaining warnings are acceptable."))
+            raise ValidationError(
+                _("Explain why the remaining warnings are acceptable.")
+            )
         return self.schedule_id.action_submit_for_review(
             warning_override_reason=self.warning_override_reason
         )

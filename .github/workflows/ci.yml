@@ -106,6 +106,8 @@ jobs:
 
       - name: Verify Phase 5.1 operator handoff
         run: python ci/check_phase51_schedule_handoff.py
+      - name: Verify Phases 5.1.1 through 5.3 contracts
+        run: python ci/check_phases_511_53_contract.py
       - name: Report module dependency drift
         run: python ci/check_module_dependency_drift.py
 

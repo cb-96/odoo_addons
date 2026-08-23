@@ -306,3 +306,26 @@ schedule through **Submit for Review**. A different schedule approver uses the
 revision. Approved schedules move to **Publication > Approved Schedules**, where
 **Publish Schedule** creates the live immutable publication. Match-day sessions
 must continue to resolve their matches from that exact current publication.
+The approver needs both the Schedule Approver group and an active
+edition-specific `schedule_approver` responsibility. Approval revalidation reads
+the submitted schedule's calendar and venue data internally; venue or calendar
+management rights are not required. Publishing the approved schedule
+materializes any missing operational matches for its assigned fixtures before
+linking them to the immutable publication.
+
+## Live operations and controlled deviations
+
+1. Open **Match-Day Control** and resolve all readiness blockers.
+2. Select **Open Match Day** to create an execution session pinned to the exact
+   live publication and digest.
+3. Use **Update Court** and **Report Incident** for operational conditions.
+4. Use **Operational Schedule Change** for a move, delay, postponement or
+   cancellation. A reason is mandatory. The published slot never changes;
+   `operational_slot_id` and `operational_status` represent the live reality.
+5. Resolve incidents and complete or cancel every published match.
+6. Select **Close Match Day**. Forced closure requires a reason and retains the
+   blocker IDs in the competition event.
+
+Publication replacement is impossible while a match day is open. Different
+match days in the same edition retain independent live publications and version
+sequences.

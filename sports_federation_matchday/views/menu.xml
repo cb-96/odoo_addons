@@ -1,1 +1,5 @@
-<odoo><menuitem id="menu_matchday_control" name="Match-Day Control" parent="sports_federation_competition_core.menu_competition_engine_v2_root" action="action_matchday_control" sequence="70"/><menuitem id="menu_matchday_incidents" name="Incidents" parent="sports_federation_competition_core.menu_competition_engine_v2_technical" action="action_matchday_incidents" sequence="60"/></odoo>
+<odoo>
+  <menuitem id="menu_matchday_control" name="Match-Day Control" parent="sports_federation_competition_core.menu_competition_engine_v2_root" action="action_matchday_control" sequence="70" groups="sports_federation_matchday.group_matchday_manager,sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_matchday_incidents" name="Incidents" parent="sports_federation_competition_core.menu_competition_engine_v2_technical" action="action_matchday_incidents" sequence="60"/>
+  <menuitem id="menu_matchday_deviations" name="Operational Deviations" parent="sports_federation_competition_core.menu_competition_engine_v2_technical" action="action_matchday_deviations" sequence="61"/>
+</odoo>

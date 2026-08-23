@@ -30,3 +30,19 @@ publication history, and Match-Day Operations consumes only the current live
 publication. Submission creates its pending review atomically when the approval
 addon is installed; there is no operator-visible intermediate state that
 requires a separate "start review" action.
+
+## Phases 5.1.1 to 5.3: publication and live operations
+
+Schedule review decisions are command-only: ACLs are read-only and the review
+model rejects direct decision-field writes. Live publications are scoped and
+versioned per match day. Publication replacement uses a dedicated wizard,
+requires a replacement reason, locks the match day during version allocation,
+and rejects stale confirmations.
+
+Match-Day Control exposes readiness, the exact live publication, published
+matches, court state, incidents, immutable sessions and operational deviations.
+Opening a day freezes the publication digest in a session. Live moves, delays,
+postponements and cancellations update only operational match fields; the
+approved publication and `published_slot_id` remain immutable. Every deviation
+records actor, reason, old/new slot, session and publication, and emits an audit
+event.

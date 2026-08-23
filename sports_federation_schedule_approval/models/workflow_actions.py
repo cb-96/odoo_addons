@@ -13,16 +13,26 @@ class FederationScheduleApprovalHandoff(models.Model):
     @api.depends("revision", "state")
     def _compute_review_handoff(self):
         Review = self.env["federation.schedule.review"]
-        for schedule in self:
-            reviews = Review.search(
-                [("schedule_id", "=", schedule.id)], order="id desc"
+        counts = {
+            schedule.id: count
+            for schedule, count in Review._read_group(
+                [("schedule_id", "in", self.ids)],
+                ["schedule_id"],
+                ["__count"],
             )
-            schedule.review_count = len(reviews)
-            schedule.current_review_id = reviews[:1]
+        }
+        latest = {}
+        for review in Review.search(
+            [("schedule_id", "in", self.ids)], order="schedule_id,id desc"
+        ):
+            latest.setdefault(review.schedule_id.id, review)
+        for schedule in self:
+            schedule.review_count = counts.get(schedule.id, 0)
+            schedule.current_review_id = latest.get(schedule.id)
 
     def action_submit_for_review(self, warning_override_reason=False):
         self.ensure_one()
-        result = super().action_submit_for_review(
+        super().action_submit_for_review(
             warning_override_reason=warning_override_reason
         )
         review = self.env["federation.schedule.approval.commands"].start_review(self.id)
@@ -80,11 +90,30 @@ class FederationScheduleReviewActions(models.Model):
     def action_publish_schedule(self):
         self.ensure_one()
         if self.state != "approved":
-            raise ValidationError(_("Approve the review before publishing its schedule."))
-        publication = self.env["federation.schedule.approval.commands"].publish(
-            self.schedule_id.id, reason=self.review_note
+            raise ValidationError(
+                _("Approve the review before publishing its schedule.")
+            )
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "schedule_approver", "competition_director"
         )
-        return publication.action_open_publication()
+        current = self.schedule_id.sudo().matchday_id.current_publication_id
+        live = current if current and current.state == "live" else False
+        wizard = self.env["federation.schedule.publish.wizard"].create(
+            {
+                "review_id": self.id,
+                "current_publication_id": live.id if live else False,
+                "replacement_required": bool(live),
+                "expected_publication_id": live.id if live else 0,
+            }
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Publish Approved Schedule"),
+            "res_model": "federation.schedule.publish.wizard",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "target": "new",
+        }
 
 
 class FederationSchedulePublicationActions(models.Model):

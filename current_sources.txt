@@ -3502,6 +3502,10 @@ jobs:
       - name: Verify Phases 3-5 contract
         run: python ci/check_phases_3_5_contract.py
 
+      - name: Verify Phase 5.1 operator handoff
+        run: python ci/check_phase51_schedule_handoff.py
+      - name: Verify Phases 5.1.1 through 5.3 contracts
+        run: python ci/check_phases_511_53_contract.py
       - name: Report module dependency drift
         run: python ci/check_module_dependency_drift.py
 
@@ -3756,6 +3760,11 @@ jobs:
           python ci/check_source_collector_contract.py
           python ci/check_addon_integrity.py
           python ci/check_workflow_state_contracts.py
+          python ci/check_phase1_fixture_contract.py
+          python ci/check_phase2_rules_contract.py
+          python ci/check_phases_3_5_contract.py
+          python ci/check_phase51_schedule_handoff.py
+          python ci/check_phases_511_53_contract.py
           python ci/check_doc_freshness.py
       - run: scripts/ci/run_rc_validation.sh static
 
@@ -3883,6 +3892,33 @@ Registration finalizes a participant set. Format freezes a structure. Calendar p
 ## Migration policy
 
 The legacy monolithic engine has been removed from the addon set. New and existing operational flows use the V2 ownership split. Databases upgraded from a release that installed the legacy addon require the normal reviewed upgrade/migration procedure before production rollout; do not silently reinterpret existing production records.
+
+
+## Phase 5.1 operator handoff
+
+The operator path is fully exposed in the backend: Schedule Planner submits a
+validated revision, Schedule Review Queue provides independent request-changes
+or approval decisions, Publication exposes approved schedules and immutable
+publication history, and Match-Day Operations consumes only the current live
+publication. Submission creates its pending review atomically when the approval
+addon is installed; there is no operator-visible intermediate state that
+requires a separate "start review" action.
+
+## Phases 5.1.1 to 5.3: publication and live operations
+
+Schedule review decisions are command-only: ACLs are read-only and the review
+model rejects direct decision-field writes. Live publications are scoped and
+versioned per match day. Publication replacement uses a dedicated wizard,
+requires a replacement reason, locks the match day during version allocation,
+and rejects stale confirmations.
+
+Match-Day Control exposes readiness, the exact live publication, published
+matches, court state, incidents, immutable sessions and operational deviations.
+Opening a day freezes the publication digest in a session. Live moves, delays,
+postponements and cancellations update only operational match fields; the
+approved publication and `published_slot_id` remain immutable. Every deviation
+records actor, reason, old/new slot, session and publication, and emits an audit
+event.
 
 ====================================================================================================
 FILE: CONTEXT.md
@@ -5733,6 +5769,33 @@ is unchanged; see `DEPLOYMENT_GUIDE.md`.
 | `Federation: GC Rate Limit Buckets` | Active, interval 1 hour |
 | `Federation: GC Staged Deliveries` | Active, interval 1 day |
 | `Federation: Expire Player Licenses` | Active, interval 1 day |
+
+## Upgrade evidence: schedule publication and match-day operations 19.0.2
+
+Affected upgrades:
+
+- `sports_federation_schedule_approval` `19.0.2.1.0` to `19.0.2.2.0`
+- `sports_federation_matchday` `19.0.2.0.0` to `19.0.2.1.0`
+
+Dry-run procedure:
+
+```bash
+odoo-bin -d RC_DATABASE \
+   -u sports_federation_schedule_approval,sports_federation_matchday \
+   --stop-after-init
+```
+
+Verify that publication `matchday_id` values are populated, each match day has
+at most one `live` publication, existing published matches have
+`operational_slot_id = published_slot_id`, and the Phase 5.1.1 to 5.3 contract
+and module tests pass. The approval migration creates a partial unique index for
+one live publication per match day. Existing data is safe because the preceding
+implementation permitted at most one live publication for the broader edition.
+
+Before upgrading, take a database backup. Rollback requires restoring that
+backup because the new publication uniqueness semantics and operational audit
+fields are persistent. Do not downgrade only the addon code after operators have
+recorded live deviations.
 
 ====================================================================================================
 FILE: ROADMAP.md
@@ -9150,6 +9213,33 @@ All validation and workflow state guards remain server-side. Standings recomputa
 - Referee assignment workflow is not exposed on the board; use the existing officiating views.
 - Bracket visualization and drag-and-drop court scheduling are not in scope for this version.
 - QR-code per court, offline-first result capture, and pool standings preview are follow-up ideas.
+
+
+## Schedule approval handoff
+
+Before match-day preparation can start, the planner submits the complete working
+schedule through **Submit for Review**. A different schedule approver uses the
+**Schedule Review Queue** to request changes or approve the immutable submitted
+revision. Approved schedules move to **Publication > Approved Schedules**, where
+**Publish Schedule** creates the live immutable publication. Match-day sessions
+must continue to resolve their matches from that exact current publication.
+
+## Live operations and controlled deviations
+
+1. Open **Match-Day Control** and resolve all readiness blockers.
+2. Select **Open Match Day** to create an execution session pinned to the exact
+   live publication and digest.
+3. Use **Update Court** and **Report Incident** for operational conditions.
+4. Use **Operational Schedule Change** for a move, delay, postponement or
+   cancellation. A reason is mandatory. The published slot never changes;
+   `operational_slot_id` and `operational_status` represent the live reality.
+5. Resolve incidents and complete or cancel every published match.
+6. Select **Close Match Day**. Forced closure requires a reason and retains the
+   blocker IDs in the competition event.
+
+Publication replacement is impossible while a match day is open. Different
+match days in the same edition retain independent live publications and version
+sequences.
 
 ====================================================================================================
 FILE: _workflows/WORKFLOW_OFFICIATING.md
@@ -12763,6 +12853,75 @@ if errors:
 print("Phase 2 rules contract passed.")
 
 ====================================================================================================
+FILE: ci/check_phase51_schedule_handoff.py
+====================================================================================================
+
+#!/usr/bin/env python3
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+
+CHECKS = {
+    "sports_federation_scheduling/models/schedule.py": [
+        "action_open_submit_for_review",
+        "action_submit_for_review",
+        'self.env["federation.schedule.commands"].submit',
+    ],
+    "sports_federation_scheduling/views/scheduling_views.xml": [
+        "action_open_submit_for_review",
+        "Submit for Review",
+    ],
+    "sports_federation_schedule_approval/models/workflow_actions.py": [
+        "action_open_current_review",
+        "action_request_changes",
+        "action_approve_schedule",
+        "action_publish_schedule",
+        'self.env["federation.schedule.approval.commands"]',
+    ],
+    "sports_federation_schedule_approval/services/approval_commands.py": [
+        "start_review",
+        "request_changes",
+        "approve",
+        "publish",
+        "The submitting planner cannot approve their own schedule",
+    ],
+    "sports_federation_schedule_approval/views/approval_views.xml": [
+        "Schedule Review Queue",
+        "Approved Schedules",
+        "Schedule Publications",
+        "Request Changes",
+        "Approve Schedule",
+        "Publish Schedule",
+    ],
+}
+
+errors = []
+for relative, needles in CHECKS.items():
+    path = ROOT / relative
+    if not path.exists():
+        errors.append(f"missing {relative}")
+        continue
+    text = path.read_text(encoding="utf-8")
+    for needle in needles:
+        if needle not in text:
+            errors.append(f"{relative}: missing {needle!r}")
+
+approval_xml = (
+    ROOT / "sports_federation_schedule_approval/views/approval_views.xml"
+).read_text(encoding="utf-8")
+for direct_service in ("approval.commands.approve", "approval.commands.publish"):
+    if direct_service in approval_xml:
+        errors.append(f"approval view bypasses model command wrapper: {direct_service}")
+
+if errors:
+    print("Phase 5.1 schedule handoff contract failed:")
+    for error in errors:
+        print(f"- {error}")
+    sys.exit(1)
+print("Phase 5.1 schedule handoff contract passed.")
+
+====================================================================================================
 FILE: ci/check_phases_3_5_contract.py
 ====================================================================================================
 
@@ -12814,6 +12973,80 @@ if errors:
     [print(f"- {e}") for e in errors]
     sys.exit(1)
 print("Phases 3-5 contract passed.")
+
+====================================================================================================
+FILE: ci/check_phases_511_53_contract.py
+====================================================================================================
+
+#!/usr/bin/env python3
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+CHECKS = {
+    "sports_federation_schedule_approval/models/publication_integrity.py": [
+        "allow_schedule_review_decision",
+        "one_live_matchday",
+    ],
+    "sports_federation_schedule_approval/services/approval_commands.py": [
+        '("matchday_id", "=", schedule.matchday_id.id)',
+        "expected_publication_id",
+        "FOR UPDATE",
+    ],
+    "sports_federation_schedule_approval/wizards/publish_schedule_wizard.py": [
+        "replacement_required",
+        "expected_publication_id",
+        "action_publish",
+    ],
+    "sports_federation_matchday/services/matchday_commands.py": [
+        "record_schedule_deviation",
+        "open_matchday",
+        "close_matchday",
+        "published_slot_id",
+        "operational_slot_id",
+    ],
+    "sports_federation_matchday/models/operational_control.py": [
+        "readiness_state",
+        "federation.matchday.deviation",
+        "Operational deviation evidence is immutable",
+    ],
+    "sports_federation_matchday/views/matchday_views.xml": [
+        "Open Match Day",
+        "Operational Schedule Change",
+        "Operational Deviations",
+        "Close Match Day",
+    ],
+}
+errors = []
+for relative, needles in CHECKS.items():
+    path = ROOT / relative
+    if not path.exists():
+        errors.append(f"missing {relative}")
+        continue
+    text = path.read_text(encoding="utf-8")
+    for needle in needles:
+        if needle not in text:
+            errors.append(f"{relative}: missing {needle!r}")
+
+approval_acl = (
+    ROOT / "sports_federation_schedule_approval/security/ir.model.access.csv"
+).read_text()
+for line in approval_acl.splitlines():
+    if line.startswith(
+        (
+            "access_federation_schedule_review_group_schedule_approver,",
+            "access_federation_schedule_review_manager,",
+        )
+    ):
+        if not line.endswith(",1,0,0,0"):
+            errors.append(f"review decision ACL must be read-only: {line}")
+
+if errors:
+    print("Phases 5.1.1-5.3 contract failed:")
+    for error in errors:
+        print(f"- {error}")
+    sys.exit(1)
+print("Phases 5.1.1-5.3 contract passed.")
 
 ====================================================================================================
 FILE: ci/check_portal_sudo_guard.py
@@ -41647,11 +41880,45 @@ def delivery_uses_validation_feedback(state):
     )
 
 ====================================================================================================
+FILE: sports_federation_matchday/README.md
+====================================================================================================
+
+# Match-Day Operations
+
+This addon executes the current immutable schedule publication. It never edits
+approved publication evidence.
+
+## Operator workflow
+
+- **Match-Day Control** shows readiness and the exact live publication.
+- **Open Match Day** validates the publication digest and creates an immutable
+  execution session.
+- Court status and incidents are changed through command-backed wizards.
+- Operational schedule changes support move, delay, postpone and cancel.
+- Every deviation requires a reason and records the session, publication, actor,
+  old slot and new slot.
+- The immutable `published_slot_id` is preserved. Live reality is represented by
+  `operational_slot_id` and `operational_status`.
+- Normal close requires all matches finished or cancelled and all incidents
+  resolved. Forced close requires a reason.
+
+## Validation
+
+```bash
+python ci/check_phase51_schedule_handoff.py
+python ci/check_phases_511_53_contract.py
+bash ci/run_tests.sh --module sports_federation_schedule_approval
+bash ci/run_tests.sh --module sports_federation_matchday
+```
+
+====================================================================================================
 FILE: sports_federation_matchday/__init__.py
 ====================================================================================================
 
 from . import models
 from . import services
+
+from . import wizards
 
 ====================================================================================================
 FILE: sports_federation_matchday/__manifest__.py
@@ -41659,7 +41926,7 @@ FILE: sports_federation_matchday/__manifest__.py
 
 {
     "name": "Match-Day Operations",
-    "version": "19.0.2.0.0",
+    "version": "19.0.2.1.0",
     "category": "Sports",
     "summary": "Live court control, delays and operational incidents",
     "author": "Sports Federation",
@@ -41669,6 +41936,7 @@ FILE: sports_federation_matchday/__manifest__.py
         "security/security.xml",
         "security/ir.model.access.csv",
         "views/matchday_views.xml",
+        "wizards/matchday_operation_wizard_views.xml",
         "views/menu.xml",
     ],
     "installable": True,
@@ -41677,11 +41945,27 @@ FILE: sports_federation_matchday/__manifest__.py
 }
 
 ====================================================================================================
+FILE: sports_federation_matchday/migrations/19.0.2.1.0/post-migrate.py
+====================================================================================================
+
+def migrate(cr, version):
+    cr.execute("""
+        UPDATE federation_match
+           SET operational_slot_id = published_slot_id,
+               operational_status = 'as_published'
+         WHERE schedule_publication_id IS NOT NULL
+           AND published_slot_id IS NOT NULL
+           AND operational_slot_id IS NULL
+        """)
+
+====================================================================================================
 FILE: sports_federation_matchday/models/__init__.py
 ====================================================================================================
 
 from . import matchday_operation
 from . import matchday_session
+
+from . import operational_control
 
 ====================================================================================================
 FILE: sports_federation_matchday/models/matchday_operation.py
@@ -41808,13 +42092,281 @@ class FederationMatchdaySessionLink(models.Model):
             )
 
 ====================================================================================================
+FILE: sports_federation_matchday/models/operational_control.py
+====================================================================================================
+
+from odoo import _, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationMatchOperationalState(models.Model):
+    _inherit = "federation.match"
+
+    operational_slot_id = fields.Many2one(
+        "federation.schedule.slot",
+        readonly=True,
+        copy=False,
+        ondelete="restrict",
+        index=True,
+        help="Current operational slot. The immutable published slot remains unchanged.",
+    )
+    operational_status = fields.Selection(
+        [
+            ("as_published", "As Published"),
+            ("moved", "Moved"),
+            ("delayed", "Delayed"),
+            ("postponed", "Postponed"),
+            ("cancelled", "Cancelled"),
+        ],
+        default="as_published",
+        readonly=True,
+        copy=False,
+        index=True,
+    )
+    operational_deviation_ids = fields.One2many(
+        "federation.matchday.deviation", "match_id", readonly=True
+    )
+
+
+class FederationMatchdayDeviation(models.Model):
+    _name = "federation.matchday.deviation"
+    _description = "Immutable Match-Day Schedule Deviation"
+    _order = "occurred_at desc,id desc"
+
+    matchday_id = fields.Many2one(
+        "federation.matchday",
+        required=True,
+        readonly=True,
+        ondelete="restrict",
+        index=True,
+    )
+    session_id = fields.Many2one(
+        "federation.matchday.session",
+        required=True,
+        readonly=True,
+        ondelete="restrict",
+        index=True,
+    )
+    publication_id = fields.Many2one(
+        "federation.schedule.publication",
+        required=True,
+        readonly=True,
+        ondelete="restrict",
+        index=True,
+    )
+    match_id = fields.Many2one(
+        "federation.match",
+        required=True,
+        readonly=True,
+        ondelete="restrict",
+        index=True,
+    )
+    deviation_type = fields.Selection(
+        [
+            ("move", "Move"),
+            ("delay", "Delay"),
+            ("postpone", "Postpone"),
+            ("cancel", "Cancel"),
+        ],
+        required=True,
+        readonly=True,
+        index=True,
+    )
+    old_slot_id = fields.Many2one(
+        "federation.schedule.slot", readonly=True, ondelete="restrict"
+    )
+    new_slot_id = fields.Many2one(
+        "federation.schedule.slot", readonly=True, ondelete="restrict"
+    )
+    delay_minutes = fields.Integer(readonly=True)
+    reason = fields.Text(required=True, readonly=True)
+    occurred_at = fields.Datetime(
+        default=fields.Datetime.now, required=True, readonly=True, index=True
+    )
+    actor_id = fields.Many2one(
+        "res.users",
+        default=lambda self: self.env.user,
+        required=True,
+        readonly=True,
+        ondelete="restrict",
+    )
+
+    def write(self, vals):
+        raise ValidationError(_("Operational deviation evidence is immutable."))
+
+    def unlink(self):
+        raise ValidationError(
+            _("Operational deviation evidence is retained for audit.")
+        )
+
+
+class FederationMatchdayOperatorActions(models.Model):
+    _inherit = "federation.matchday"
+
+    readiness_state = fields.Selection(
+        [
+            ("blocked", "Blocked"),
+            ("ready", "Ready"),
+            ("open", "Open"),
+            ("closed", "Closed"),
+        ],
+        compute="_compute_operational_readiness",
+    )
+    readiness_message = fields.Text(compute="_compute_operational_readiness")
+    published_match_count = fields.Integer(compute="_compute_operational_readiness")
+    unfinished_match_count = fields.Integer(compute="_compute_operational_readiness")
+    unresolved_incident_count = fields.Integer(compute="_compute_operational_readiness")
+    unavailable_court_count = fields.Integer(compute="_compute_operational_readiness")
+    deviation_count = fields.Integer(compute="_compute_operational_readiness")
+    incident_ids = fields.One2many(
+        "federation.matchday.incident", "matchday_id", readonly=True
+    )
+    court_status_ids = fields.One2many(
+        "federation.matchday.court.status", "matchday_id", readonly=True
+    )
+    deviation_ids = fields.One2many(
+        "federation.matchday.deviation", "matchday_id", readonly=True
+    )
+    published_match_ids = fields.Many2many(
+        "federation.match", compute="_compute_published_matches"
+    )
+
+    def _compute_published_matches(self):
+        Match = self.env["federation.match"]
+        for day in self:
+            publication = day.current_publication_id
+            day.published_match_ids = (
+                Match.search([("schedule_publication_id", "=", publication.id)])
+                if publication
+                else Match
+            )
+
+    def _compute_operational_readiness(self):
+        Match = self.env["federation.match"]
+        Incident = self.env["federation.matchday.incident"]
+        Status = self.env["federation.matchday.court.status"]
+        Deviation = self.env["federation.matchday.deviation"]
+        for day in self:
+            publication = day.current_publication_id
+            matches = (
+                Match.search([("schedule_publication_id", "=", publication.id)])
+                if publication
+                else Match
+            )
+            day.published_match_count = len(matches)
+            day.unfinished_match_count = len(
+                matches.filtered(lambda m: m.state not in ("done", "cancelled"))
+            )
+            day.unresolved_incident_count = Incident.search_count(
+                [("matchday_id", "=", day.id), ("resolved", "=", False)]
+            )
+            day.unavailable_court_count = Status.search_count(
+                [("matchday_id", "=", day.id), ("state", "=", "unavailable")]
+            )
+            day.deviation_count = Deviation.search_count([("matchday_id", "=", day.id)])
+            if day.state == "open":
+                day.readiness_state = "open"
+                day.readiness_message = _(
+                    "Live operations are active against publication %(version)s.",
+                    version=publication.version if publication else "?",
+                )
+            elif day.state == "closed":
+                day.readiness_state = "closed"
+                day.readiness_message = _(
+                    "Match-day operations are closed and retained as audit evidence."
+                )
+            elif not publication or publication.state != "live":
+                day.readiness_state = "blocked"
+                day.readiness_message = _(
+                    "Publish an approved schedule before opening match-day operations."
+                )
+            elif not matches:
+                day.readiness_state = "blocked"
+                day.readiness_message = _(
+                    "The live publication contains no operational matches."
+                )
+            else:
+                day.readiness_state = "ready"
+                day.readiness_message = _(
+                    "The live publication passed readiness checks and can be opened."
+                )
+
+    def action_open_matchday_operations(self):
+        self.ensure_one()
+        self.env["federation.matchday.commands"].open_matchday(self.id)
+        return {"type": "ir.actions.client", "tag": "reload"}
+
+    def action_close_matchday_operations(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Close Match Day"),
+            "res_model": "federation.matchday.close.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_matchday_id": self.id},
+        }
+
+    def action_open_deviation_wizard(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Record Operational Schedule Change"),
+            "res_model": "federation.matchday.deviation.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_matchday_id": self.id},
+        }
+
+    def action_open_court_status_wizard(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Update Court Status"),
+            "res_model": "federation.matchday.court.status.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_matchday_id": self.id},
+        }
+
+    def action_open_incident_wizard(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Report Match-Day Incident"),
+            "res_model": "federation.matchday.incident.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_matchday_id": self.id},
+        }
+
+
+class FederationMatchdayIncidentActions(models.Model):
+    _inherit = "federation.matchday.incident"
+
+    def action_resolve(self):
+        self.ensure_one()
+        self.env["federation.matchday.commands"].resolve_incident(self.id)
+        return {"type": "ir.actions.client", "tag": "reload"}
+
+====================================================================================================
 FILE: sports_federation_matchday/security/ir.model.access.csv
 ====================================================================================================
 
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_federation_matchday_incident_group_matchday_manager,federation_matchday_incident.group_matchday_manager,model_federation_matchday_incident,sports_federation_matchday.group_matchday_manager,1,1,1,1
-access_federation_matchday_court_status_group_matchday_manager,federation_matchday_court_status.group_matchday_manager,model_federation_matchday_court_status,sports_federation_matchday.group_matchday_manager,1,1,1,1
-access_federation_matchday_session_group_matchday_manager,federation_matchday_session.group_matchday_manager,model_federation_matchday_session,sports_federation_matchday.group_matchday_manager,1,1,1,0
+access_federation_matchday_incident_group_matchday_manager,federation_matchday_incident.group_matchday_manager,model_federation_matchday_incident,sports_federation_matchday.group_matchday_manager,1,0,0,0
+access_federation_matchday_court_status_group_matchday_manager,federation_matchday_court_status.group_matchday_manager,model_federation_matchday_court_status,sports_federation_matchday.group_matchday_manager,1,0,0,0
+access_federation_matchday_session_group_matchday_manager,federation_matchday_session.group_matchday_manager,model_federation_matchday_session,sports_federation_matchday.group_matchday_manager,1,0,0,0
+access_federation_matchday_deviation_manager,federation.matchday.deviation.manager,model_federation_matchday_deviation,sports_federation_matchday.group_matchday_manager,1,0,0,0
+access_matchday_close_wizard_manager,matchday.close.wizard.manager,model_federation_matchday_close_wizard,sports_federation_matchday.group_matchday_manager,1,1,1,1
+access_matchday_incident_wizard_manager,matchday.incident.wizard.manager,model_federation_matchday_incident_wizard,sports_federation_matchday.group_matchday_manager,1,1,1,1
+access_matchday_deviation_wizard_manager,matchday.deviation.wizard.manager,model_federation_matchday_deviation_wizard,sports_federation_matchday.group_matchday_manager,1,1,1,1
+access_matchday_court_status_wizard_manager,matchday.court.status.wizard.manager,model_federation_matchday_court_status_wizard,sports_federation_matchday.group_matchday_manager,1,1,1,1
+access_federation_matchday_deviation_federation_manager,federation.matchday.deviation.federation.manager,model_federation_matchday_deviation,sports_federation_base.group_federation_manager,1,0,0,0
+access_matchday_close_wizard_federation_manager,matchday.close.wizard.federation.manager,model_federation_matchday_close_wizard,sports_federation_base.group_federation_manager,1,1,1,1
+access_matchday_incident_wizard_federation_manager,matchday.incident.wizard.federation.manager,model_federation_matchday_incident_wizard,sports_federation_base.group_federation_manager,1,1,1,1
+access_matchday_deviation_wizard_federation_manager,matchday.deviation.wizard.federation.manager,model_federation_matchday_deviation_wizard,sports_federation_base.group_federation_manager,1,1,1,1
+access_matchday_court_status_wizard_federation_manager,matchday.court.status.wizard.federation.manager,model_federation_matchday_court_status_wizard,sports_federation_base.group_federation_manager,1,1,1,1
 
 ====================================================================================================
 FILE: sports_federation_matchday/security/security.xml
@@ -41843,6 +42395,8 @@ from . import matchday_commands
 ====================================================================================================
 FILE: sports_federation_matchday/services/matchday_commands.py
 ====================================================================================================
+
+from datetime import timedelta
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
@@ -41885,18 +42439,22 @@ class FederationMatchdayCommands(models.AbstractModel):
             raise ValidationError(
                 _("The published schedule snapshot failed its integrity check.")
             )
-        session = self.env["federation.matchday.session"].create(
-            {
-                "matchday_id": matchday.id,
-                "publication_id": publication.id,
-                "publication_digest": publication.snapshot_digest,
-            }
+        session = (
+            self.env["federation.matchday.session"]
+            .sudo()
+            .create(
+                {
+                    "matchday_id": matchday.id,
+                    "publication_id": publication.id,
+                    "publication_digest": publication.snapshot_digest,
+                }
+            )
         )
         for court in matchday.slot_ids.mapped("court_id"):
-            self.env["federation.matchday.court.status"].create(
+            self.env["federation.matchday.court.status"].sudo().create(
                 {"matchday_id": matchday.id, "court_id": court.id}
             )
-        matchday.state = "open"
+        matchday.sudo().state = "open"
         self.env["federation.competition.event"].emit(
             matchday,
             "matchday_opened",
@@ -41908,12 +42466,16 @@ class FederationMatchdayCommands(models.AbstractModel):
     def report_incident(self, matchday_id, incident_type, description):
         matchday = self._resolve(matchday_id)
         self._require_open(matchday)
-        return self.env["federation.matchday.incident"].create(
-            {
-                "matchday_id": matchday.id,
-                "incident_type": incident_type,
-                "description": description,
-            }
+        return (
+            self.env["federation.matchday.incident"]
+            .sudo()
+            .create(
+                {
+                    "matchday_id": matchday.id,
+                    "incident_type": incident_type,
+                    "description": description,
+                }
+            )
         )
 
     @api.model
@@ -41930,7 +42492,7 @@ class FederationMatchdayCommands(models.AbstractModel):
             raise ValidationError(_("The court is outside this match day."))
         if state not in ("available", "delayed", "unavailable"):
             raise ValidationError(_("Invalid court status."))
-        status.write(
+        status.sudo().write(
             {
                 "state": state,
                 "delay_minutes": max(0, int(delay_minutes or 0)),
@@ -41952,7 +42514,7 @@ class FederationMatchdayCommands(models.AbstractModel):
         )
         matchday = self._resolve(incident.matchday_id.id)
         self._require_open(matchday)
-        incident.write(
+        incident.sudo().write(
             {
                 "resolved": True,
                 "resolved_at": fields.Datetime.now(),
@@ -41960,6 +42522,131 @@ class FederationMatchdayCommands(models.AbstractModel):
             }
         )
         return True
+
+    @api.model
+    def record_schedule_deviation(
+        self,
+        matchday_id,
+        match_id,
+        deviation_type,
+        reason,
+        new_slot_id=False,
+        delay_minutes=0,
+    ):
+        matchday = self._resolve(matchday_id)
+        self._require_open(matchday)
+        if not (reason or "").strip():
+            raise ValidationError(_("Explain the operational schedule change."))
+        if deviation_type not in ("move", "delay", "postpone", "cancel"):
+            raise ValidationError(_("Invalid operational deviation type."))
+        match = self.env["federation.match"].browse(int(match_id)).exists()
+        if (
+            not match
+            or match.schedule_publication_id != matchday.current_publication_id
+        ):
+            raise ValidationError(
+                _("The match is not part of the publication opened for this match day.")
+            )
+        old_slot = match.operational_slot_id or match.published_slot_id
+        new_slot = self.env["federation.schedule.slot"]
+        values = {}
+        if deviation_type == "move":
+            new_slot = (
+                self.env["federation.schedule.slot"]
+                .browse(int(new_slot_id or 0))
+                .exists()
+            )
+            if (
+                not new_slot
+                or new_slot.matchday_id != matchday
+                or new_slot.state != "available"
+            ):
+                raise ValidationError(_("Select an available slot on this match day."))
+            occupied = self.env["federation.match"].search(
+                [
+                    ("operational_slot_id", "=", new_slot.id),
+                    ("id", "!=", match.id),
+                    ("operational_status", "not in", ("postponed", "cancelled")),
+                ],
+                limit=1,
+            )
+            if occupied:
+                raise ValidationError(
+                    _("The selected operational slot is already occupied.")
+                )
+            values = {
+                "operational_slot_id": new_slot.id,
+                "operational_status": "moved",
+                "date_scheduled": new_slot.start_datetime,
+            }
+        elif deviation_type == "delay":
+            minutes = int(delay_minutes or 0)
+            if minutes <= 0:
+                raise ValidationError(
+                    _("The delay must be a positive number of minutes.")
+                )
+            base = match.date_scheduled or old_slot.start_datetime
+            values = {
+                "operational_slot_id": old_slot.id,
+                "operational_status": "delayed",
+                "date_scheduled": base + timedelta(minutes=minutes),
+            }
+        elif deviation_type == "postpone":
+            values = {
+                "operational_slot_id": False,
+                "operational_status": "postponed",
+                "date_scheduled": False,
+            }
+        else:
+            values = {
+                "operational_slot_id": False,
+                "operational_status": "cancelled",
+                "date_scheduled": False,
+                "state": "cancelled",
+            }
+        match.sudo().write(values)
+        deviation = (
+            self.env["federation.matchday.deviation"]
+            .sudo()
+            .create(
+                {
+                    "matchday_id": matchday.id,
+                    "session_id": matchday.active_session_id.id,
+                    "publication_id": matchday.current_publication_id.id,
+                    "match_id": match.id,
+                    "deviation_type": deviation_type,
+                    "old_slot_id": old_slot.id if old_slot else False,
+                    "new_slot_id": new_slot.id if new_slot else False,
+                    "delay_minutes": int(delay_minutes or 0),
+                    "reason": reason,
+                    "actor_id": self.env.user.id,
+                }
+            )
+        )
+        self.env["federation.matchday.incident"].sudo().create(
+            {
+                "matchday_id": matchday.id,
+                "incident_type": "schedule_change",
+                "description": _(
+                    "%(kind)s for %(match)s: %(reason)s",
+                    kind=deviation_type.title(),
+                    match=match.display_name,
+                    reason=reason,
+                ),
+            }
+        )
+        self.env["federation.competition.event"].emit(
+            matchday,
+            "matchday_schedule_deviation_recorded",
+            {
+                "deviation_id": deviation.id,
+                "match_id": match.id,
+                "type": deviation_type,
+                "old_slot_id": old_slot.id if old_slot else False,
+                "new_slot_id": new_slot.id if new_slot else False,
+            },
+        )
+        return deviation
 
     @api.model
     def close_matchday(self, matchday_id, close_note=False, force=False):
@@ -41985,7 +42672,7 @@ class FederationMatchdayCommands(models.AbstractModel):
                 _("A close reason is required when overriding match-day blockers.")
             )
         session = matchday.active_session_id
-        session.write(
+        session.sudo().write(
             {
                 "state": "closed",
                 "closed_at": fields.Datetime.now(),
@@ -41993,7 +42680,7 @@ class FederationMatchdayCommands(models.AbstractModel):
                 "close_note": close_note,
             }
         )
-        matchday.state = "closed"
+        matchday.sudo().state = "closed"
         self.env["federation.competition.event"].emit(
             matchday,
             "matchday_closed",
@@ -42007,22 +42694,420 @@ class FederationMatchdayCommands(models.AbstractModel):
         return True
 
 ====================================================================================================
+FILE: sports_federation_matchday/tests/__init__.py
+====================================================================================================
+
+from . import test_matchday_operator_handoff
+
+====================================================================================================
+FILE: sports_federation_matchday/tests/test_matchday_operator_handoff.py
+====================================================================================================
+
+import hashlib
+import json
+
+from odoo.exceptions import ValidationError
+from odoo.tests import tagged
+from odoo.tests.common import TransactionCase
+
+
+@tagged("post_install", "-at_install", "sf_matchday_handoff")
+class TestMatchdayOperatorHandoff(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        season = cls.env["federation.season"].create(
+            {
+                "name": "Operations Season",
+                "date_start": "2026-09-01",
+                "date_end": "2027-06-30",
+            }
+        )
+        competition = cls.env["federation.competition"].create(
+            {"name": "Operations Competition", "competition_type": "league"}
+        )
+        cls.edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Operations Edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+            }
+        )
+        cls.division = cls.env["federation.tournament"].create(
+            {
+                "name": "Operations Division",
+                "edition_id": cls.edition.id,
+                "competition_id": competition.id,
+                "season_id": season.id,
+                "date_start": "2026-10-01",
+            }
+        )
+        participants = cls.env["federation.participant.set"].create(
+            {
+                "name": "Operations Participants",
+                "edition_id": cls.edition.id,
+                "division_id": cls.division.id,
+                "state": "finalized",
+            }
+        )
+        structure = cls.env["federation.competition.structure"].create(
+            {
+                "name": "Operations Structure",
+                "edition_id": cls.edition.id,
+                "division_id": cls.division.id,
+                "participant_set_id": participants.id,
+                "format_type": "custom",
+            }
+        )
+        venue = cls.env["federation.venue"].create({"name": "Operations Venue"})
+        cls.court = cls.env["federation.playing.area"].create(
+            {"name": "Court 1", "venue_id": venue.id}
+        )
+        cls.matchday = cls.env["federation.matchday"].create(
+            {
+                "name": "Operations Day",
+                "edition_id": cls.edition.id,
+                "date": "2026-10-03",
+                "venue_id": venue.id,
+                "state": "scheduled",
+            }
+        )
+        cls.slots = cls.env["federation.schedule.slot"].create(
+            [
+                {
+                    "matchday_id": cls.matchday.id,
+                    "court_id": cls.court.id,
+                    "start_datetime": "2026-10-03 08:00:00",
+                    "end_datetime": "2026-10-03 08:40:00",
+                },
+                {
+                    "matchday_id": cls.matchday.id,
+                    "court_id": cls.court.id,
+                    "start_datetime": "2026-10-03 09:00:00",
+                    "end_datetime": "2026-10-03 09:40:00",
+                },
+            ]
+        )
+        schedule = cls.env["federation.schedule"].create(
+            {
+                "name": "Operations Schedule",
+                "edition_id": cls.edition.id,
+                "structure_id": structure.id,
+                "matchday_id": cls.matchday.id,
+                "state": "published",
+            }
+        )
+        snapshot = [{"fixture_id": 1}]
+        digest = hashlib.sha256(
+            json.dumps(snapshot, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        review = (
+            cls.env["federation.schedule.review"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "submitted_revision": 0,
+                    "state": "pending",
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": digest,
+                    "submitted_by_id": cls.env.user.id,
+                }
+            )
+        )
+        review.with_context(allow_schedule_review_decision=True).sudo().write(
+            {"state": "approved", "reviewer_id": cls.env.user.id}
+        )
+        cls.publication = (
+            cls.env["federation.schedule.publication"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "version": 1,
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": digest,
+                    "source_revision": 0,
+                    "review_id": review.id,
+                }
+            )
+        )
+        cls.matchday.sudo().write({"current_publication_id": cls.publication.id})
+        cls.match = cls.env["federation.match"].create(
+            {
+                "tournament_id": cls.division.id,
+                "date_scheduled": cls.slots[0].start_datetime,
+                "state": "scheduled",
+            }
+        )
+        cls.match.sudo().write(
+            {
+                "published_slot_id": cls.slots[0].id,
+                "operational_slot_id": cls.slots[0].id,
+                "operational_status": "as_published",
+                "schedule_publication_id": cls.publication.id,
+            }
+        )
+        cls.env["federation.competition.role.assignment"].create(
+            {
+                "edition_id": cls.edition.id,
+                "role": "matchday_manager",
+                "user_id": cls.env.user.id,
+            }
+        )
+
+    def test_open_uses_exact_live_publication(self):
+        session = self.env["federation.matchday.commands"].open_matchday(
+            self.matchday.id
+        )
+        self.assertEqual(session.publication_id, self.publication)
+        self.assertEqual(session.publication_digest, self.publication.snapshot_digest)
+        self.assertEqual(self.matchday.state, "open")
+
+    def test_operational_move_preserves_published_slot(self):
+        self.env["federation.matchday.commands"].open_matchday(self.matchday.id)
+        deviation = self.env["federation.matchday.commands"].record_schedule_deviation(
+            self.matchday.id,
+            self.match.id,
+            "move",
+            "Court turnaround",
+            new_slot_id=self.slots[1].id,
+        )
+        self.assertEqual(self.match.published_slot_id, self.slots[0])
+        self.assertEqual(self.match.operational_slot_id, self.slots[1])
+        self.assertEqual(self.match.operational_status, "moved")
+        self.assertEqual(deviation.publication_id, self.publication)
+        with self.assertRaises(ValidationError):
+            deviation.sudo().write({"reason": "Changed"})
+
+    def test_change_rejected_before_matchday_is_open(self):
+        with self.assertRaises(ValidationError):
+            self.env["federation.matchday.commands"].record_schedule_deviation(
+                self.matchday.id, self.match.id, "postpone", "Weather"
+            )
+
+====================================================================================================
 FILE: sports_federation_matchday/views/matchday_views.xml
 ====================================================================================================
 
 <odoo>
- <record id="incident_list" model="ir.ui.view"><field name="name">federation.matchday.incident.list</field><field name="model">federation.matchday.incident</field><field name="arch" type="xml"><list decoration-danger="not resolved"><field name="occurred_at"/><field name="matchday_id"/><field name="incident_type"/><field name="description"/><field name="resolved"/><field name="resolved_by_id"/></list></field></record>
- <record id="matchday_form_operations" model="ir.ui.view"><field name="name">federation.matchday.form.operations</field><field name="model">federation.matchday</field><field name="inherit_id" ref="sports_federation_calendar.matchday_form"/><field name="arch" type="xml"><xpath expr="//group[1]" position="after"><group string="Published execution"><field name="current_publication_id" readonly="1"/><field name="active_session_id" readonly="1"/></group></xpath></field></record>
- <record id="session_list" model="ir.ui.view"><field name="name">federation.matchday.session.list</field><field name="model">federation.matchday.session</field><field name="arch" type="xml"><list><field name="matchday_id"/><field name="publication_id"/><field name="state" widget="badge"/><field name="opened_at"/><field name="opened_by_id"/><field name="closed_at"/><field name="closed_by_id"/></list></field></record>
- <record id="action_matchday_control" model="ir.actions.act_window"><field name="name">Match-Day Control</field><field name="res_model">federation.matchday</field><field name="view_mode">kanban,list,form</field><field name="domain">[("state","in",("scheduled","open"))]</field></record>
- <record id="action_matchday_incidents" model="ir.actions.act_window"><field name="name">Match-Day Incidents</field><field name="res_model">federation.matchday.incident</field><field name="view_mode">list,form</field></record>
+  <record id="incident_list" model="ir.ui.view">
+    <field name="name">federation.matchday.incident.list</field><field name="model">federation.matchday.incident</field>
+    <field name="arch" type="xml"><list create="0" edit="0" delete="0" decoration-danger="not resolved"><field name="occurred_at"/><field name="matchday_id"/><field name="incident_type"/><field name="description"/><field name="resolved"/><field name="resolved_by_id"/><button name="action_resolve" type="object" string="Resolve" invisible="resolved"/></list></field>
+  </record>
+  <record id="deviation_list" model="ir.ui.view">
+    <field name="name">federation.matchday.deviation.list</field><field name="model">federation.matchday.deviation</field>
+    <field name="arch" type="xml"><list create="0" edit="0" delete="0"><field name="occurred_at"/><field name="matchday_id"/><field name="match_id"/><field name="deviation_type" widget="badge"/><field name="old_slot_id"/><field name="new_slot_id"/><field name="delay_minutes"/><field name="reason"/><field name="actor_id"/></list></field>
+  </record>
+  <record id="matchday_form_operations" model="ir.ui.view">
+    <field name="name">federation.matchday.form.operations</field><field name="model">federation.matchday</field><field name="inherit_id" ref="sports_federation_calendar.matchday_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_open_matchday_operations" type="object" string="Open Match Day" class="btn-primary" invisible="readiness_state != 'ready'" confirm="Open live operations against the current immutable publication?"/>
+        <button name="action_open_court_status_wizard" type="object" string="Update Court" invisible="state != 'open'"/>
+        <button name="action_open_incident_wizard" type="object" string="Report Incident" invisible="state != 'open'"/>
+        <button name="action_open_deviation_wizard" type="object" string="Operational Schedule Change" invisible="state != 'open'"/>
+        <button name="action_close_matchday_operations" type="object" string="Close Match Day" class="btn-primary" invisible="state != 'open'"/>
+      </xpath>
+      <xpath expr="//group[1]" position="after">
+        <group string="Operational readiness">
+          <field name="readiness_state" widget="badge" readonly="1"/>
+          <field name="readiness_message" readonly="1"/>
+          <field name="current_publication_id" readonly="1"/>
+          <field name="active_session_id" readonly="1"/>
+        </group>
+        <group string="Live controls" col="6">
+          <field name="published_match_count"/><field name="unfinished_match_count"/><field name="unresolved_incident_count"/><field name="unavailable_court_count"/><field name="deviation_count"/>
+        </group>
+      </xpath>
+      <xpath expr="//notebook" position="inside">
+        <page string="Published Matches" name="published_matches">
+          <field name="published_match_ids" readonly="1"><list><field name="date_scheduled"/><field name="name"/><field name="published_slot_id"/><field name="operational_slot_id"/><field name="operational_status" widget="badge"/><field name="state" widget="badge"/></list></field>
+        </page>
+        <page string="Court Status" name="court_status">
+          <field name="court_status_ids" readonly="1"><list><field name="court_id"/><field name="state" widget="badge"/><field name="delay_minutes"/><field name="note"/></list></field>
+        </page>
+        <page string="Incidents" name="matchday_incidents">
+          <field name="incident_ids" readonly="1"><list decoration-danger="not resolved"><field name="occurred_at"/><field name="incident_type"/><field name="description"/><field name="resolved"/><field name="resolved_by_id"/><button name="action_resolve" type="object" string="Resolve" invisible="resolved"/></list></field>
+        </page>
+        <page string="Operational Deviations" name="operational_deviations">
+          <field name="deviation_ids" readonly="1"><list><field name="occurred_at"/><field name="match_id"/><field name="deviation_type" widget="badge"/><field name="old_slot_id"/><field name="new_slot_id"/><field name="delay_minutes"/><field name="reason"/><field name="actor_id"/></list></field>
+        </page>
+        <page string="Execution Sessions" name="execution_sessions">
+          <field name="session_ids" readonly="1"><list><field name="publication_id"/><field name="state" widget="badge"/><field name="opened_at"/><field name="opened_by_id"/><field name="closed_at"/><field name="closed_by_id"/><field name="close_note"/></list></field>
+        </page>
+      </xpath>
+    </field>
+  </record>
+  <record id="session_list" model="ir.ui.view"><field name="name">federation.matchday.session.list</field><field name="model">federation.matchday.session</field><field name="arch" type="xml"><list create="0" edit="0" delete="0"><field name="matchday_id"/><field name="publication_id"/><field name="state" widget="badge"/><field name="opened_at"/><field name="opened_by_id"/><field name="closed_at"/><field name="closed_by_id"/></list></field></record>
+  <record id="action_matchday_control" model="ir.actions.act_window"><field name="name">Match-Day Control</field><field name="res_model">federation.matchday</field><field name="view_mode">list,form</field><field name="domain">[("state","in",("scheduled","open","closed"))]</field><field name="help" type="html"><p class="o_view_nocontent_smiling_face">Publish an approved schedule to make a match day operationally ready.</p></field></record>
+  <record id="action_matchday_incidents" model="ir.actions.act_window"><field name="name">Match-Day Incidents</field><field name="res_model">federation.matchday.incident</field><field name="view_mode">list</field></record>
+  <record id="action_matchday_deviations" model="ir.actions.act_window"><field name="name">Operational Schedule Deviations</field><field name="res_model">federation.matchday.deviation</field><field name="view_mode">list</field></record>
 </odoo>
 
 ====================================================================================================
 FILE: sports_federation_matchday/views/menu.xml
 ====================================================================================================
 
-<odoo><menuitem id="menu_matchday_control" name="Match-Day Control" parent="sports_federation_competition_core.menu_competition_engine_v2_root" action="action_matchday_control" sequence="70"/><menuitem id="menu_matchday_incidents" name="Incidents" parent="sports_federation_competition_core.menu_competition_engine_v2_technical" action="action_matchday_incidents" sequence="60"/></odoo>
+<odoo>
+  <menuitem id="menu_matchday_control" name="Match-Day Control" parent="sports_federation_competition_core.menu_competition_engine_v2_root" action="action_matchday_control" sequence="70" groups="sports_federation_matchday.group_matchday_manager,sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_matchday_incidents" name="Incidents" parent="sports_federation_competition_core.menu_competition_engine_v2_technical" action="action_matchday_incidents" sequence="60"/>
+  <menuitem id="menu_matchday_deviations" name="Operational Deviations" parent="sports_federation_competition_core.menu_competition_engine_v2_technical" action="action_matchday_deviations" sequence="61"/>
+</odoo>
+
+====================================================================================================
+FILE: sports_federation_matchday/wizards/__init__.py
+====================================================================================================
+
+from . import matchday_operation_wizards
+
+====================================================================================================
+FILE: sports_federation_matchday/wizards/matchday_operation_wizard_views.xml
+====================================================================================================
+
+<odoo>
+  <record id="matchday_close_wizard_form" model="ir.ui.view">
+    <field name="name">federation.matchday.close.wizard.form</field><field name="model">federation.matchday.close.wizard</field>
+    <field name="arch" type="xml"><form string="Close Match Day"><sheet><div class="alert alert-warning" role="alert">Normal closure requires all published matches to be completed or cancelled and every incident to be resolved.</div><group><field name="matchday_id"/><field name="force"/><field name="close_note" required="force"/></group></sheet><footer><button name="action_close" type="object" string="Close Match Day" class="btn-primary"/><button string="Cancel" special="cancel"/></footer></form></field>
+  </record>
+  <record id="matchday_incident_wizard_form" model="ir.ui.view">
+    <field name="name">federation.matchday.incident.wizard.form</field><field name="model">federation.matchday.incident.wizard</field>
+    <field name="arch" type="xml"><form string="Report Incident"><sheet><group><field name="matchday_id"/><field name="incident_type"/><field name="description"/></group></sheet><footer><button name="action_report" type="object" string="Report Incident" class="btn-primary"/><button string="Cancel" special="cancel"/></footer></form></field>
+  </record>
+  <record id="matchday_court_status_wizard_form" model="ir.ui.view">
+    <field name="name">federation.matchday.court.status.wizard.form</field><field name="model">federation.matchday.court.status.wizard</field>
+    <field name="arch" type="xml"><form string="Update Court Status"><sheet><group><field name="matchday_id"/><field name="court_id"/><field name="state"/><field name="delay_minutes" invisible="state != 'delayed'"/><field name="note"/></group></sheet><footer><button name="action_apply" type="object" string="Update Court" class="btn-primary"/><button string="Cancel" special="cancel"/></footer></form></field>
+  </record>
+  <record id="matchday_deviation_wizard_form" model="ir.ui.view">
+    <field name="name">federation.matchday.deviation.wizard.form</field><field name="model">federation.matchday.deviation.wizard</field>
+    <field name="arch" type="xml"><form string="Operational Schedule Change"><sheet><div class="alert alert-warning" role="alert">This records an operational deviation. It never changes the approved publication snapshot.</div><group><field name="matchday_id"/><field name="match_id"/><field name="deviation_type"/><field name="new_slot_id" invisible="deviation_type != 'move'" required="deviation_type == 'move'"/><field name="delay_minutes" invisible="deviation_type != 'delay'" required="deviation_type == 'delay'"/><field name="reason"/></group></sheet><footer><button name="action_apply" type="object" string="Record Change" class="btn-primary"/><button string="Cancel" special="cancel"/></footer></form></field>
+  </record>
+</odoo>
+
+====================================================================================================
+FILE: sports_federation_matchday/wizards/matchday_operation_wizards.py
+====================================================================================================
+
+from odoo import _, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationMatchdayCloseWizard(models.TransientModel):
+    _name = "federation.matchday.close.wizard"
+    _description = "Close Match Day"
+
+    matchday_id = fields.Many2one("federation.matchday", required=True, readonly=True)
+    force = fields.Boolean(string="Force close with blockers")
+    close_note = fields.Text(string="Close reason")
+
+    def action_close(self):
+        self.ensure_one()
+        self.env["federation.matchday.commands"].close_matchday(
+            self.matchday_id.id, close_note=self.close_note, force=self.force
+        )
+        return {"type": "ir.actions.act_window_close"}
+
+
+class FederationMatchdayIncidentWizard(models.TransientModel):
+    _name = "federation.matchday.incident.wizard"
+    _description = "Report Match-Day Incident"
+
+    matchday_id = fields.Many2one("federation.matchday", required=True, readonly=True)
+    incident_type = fields.Selection(
+        [
+            ("delay", "Delay"),
+            ("court_unavailable", "Court Unavailable"),
+            ("official_missing", "Official Missing"),
+            ("schedule_change", "Schedule Change"),
+            ("other", "Other"),
+        ],
+        required=True,
+    )
+    description = fields.Text(required=True)
+
+    def action_report(self):
+        self.ensure_one()
+        self.env["federation.matchday.commands"].report_incident(
+            self.matchday_id.id, self.incident_type, self.description
+        )
+        return {"type": "ir.actions.act_window_close"}
+
+
+class FederationMatchdayDeviationWizard(models.TransientModel):
+    _name = "federation.matchday.deviation.wizard"
+    _description = "Record Operational Schedule Deviation"
+
+    matchday_id = fields.Many2one("federation.matchday", required=True, readonly=True)
+    match_id = fields.Many2one(
+        "federation.match",
+        required=True,
+        domain="[('schedule_publication_id','=',matchday_id.current_publication_id)]",
+    )
+    deviation_type = fields.Selection(
+        [
+            ("move", "Move"),
+            ("delay", "Delay"),
+            ("postpone", "Postpone"),
+            ("cancel", "Cancel"),
+        ],
+        required=True,
+    )
+    new_slot_id = fields.Many2one(
+        "federation.schedule.slot",
+        domain="[('matchday_id','=',matchday_id),('state','=','available')]",
+    )
+    delay_minutes = fields.Integer(default=0)
+    reason = fields.Text(required=True)
+
+    def action_apply(self):
+        self.ensure_one()
+        if self.deviation_type == "move" and not self.new_slot_id:
+            raise ValidationError(_("Select the new slot for a moved match."))
+        if self.deviation_type == "delay" and self.delay_minutes <= 0:
+            raise ValidationError(_("Enter a positive delay in minutes."))
+        self.env["federation.matchday.commands"].record_schedule_deviation(
+            self.matchday_id.id,
+            self.match_id.id,
+            self.deviation_type,
+            reason=self.reason,
+            new_slot_id=self.new_slot_id.id if self.new_slot_id else False,
+            delay_minutes=self.delay_minutes,
+        )
+        return {"type": "ir.actions.act_window_close"}
+
+
+class FederationMatchdayCourtStatusWizard(models.TransientModel):
+    _name = "federation.matchday.court.status.wizard"
+    _description = "Update Match-Day Court Status"
+
+    matchday_id = fields.Many2one("federation.matchday", required=True, readonly=True)
+    court_id = fields.Many2one(
+        "federation.playing.area",
+        required=True,
+        domain="[('id','in',matchday_id.slot_ids.court_id)]",
+    )
+    state = fields.Selection(
+        [
+            ("available", "Available"),
+            ("delayed", "Delayed"),
+            ("unavailable", "Unavailable"),
+        ],
+        required=True,
+        default="available",
+    )
+    delay_minutes = fields.Integer(default=0)
+    note = fields.Char()
+
+    def action_apply(self):
+        self.ensure_one()
+        self.env["federation.matchday.commands"].set_court_status(
+            self.matchday_id.id,
+            self.court_id.id,
+            self.state,
+            delay_minutes=self.delay_minutes,
+            note=self.note,
+        )
+        return {"type": "ir.actions.act_window_close"}
 
 ====================================================================================================
 FILE: sports_federation_notifications/README.md
@@ -95163,11 +96248,57 @@ FILE: sports_federation_rules/views/menu_items.xml
 </odoo>
 
 ====================================================================================================
+FILE: sports_federation_schedule_approval/README.md
+====================================================================================================
+
+# Schedule Approval
+
+This addon owns independent schedule review and immutable schedule publication.
+It does not own working assignments, calendar capacity, or match-day execution.
+
+## Operator flow
+
+1. A schedule planner submits a complete schedule from **Schedule Planner**.
+2. The addon creates immutable review evidence and opens the pending review.
+3. A different assigned schedule approver opens **Schedule Review Queue**.
+4. The approver either enters a note and selects **Request Changes**, or selects
+   **Approve Schedule**.
+5. Approved reviews appear under **Publication > Approved Schedules**.
+6. **Publish Schedule** creates an immutable publication, links operational
+   matches to their exact slots, and makes the publication current for the match
+   day.
+7. **Publication > Schedule Publications** retains live and superseded evidence.
+
+The command service enforces edition roles, separation of duties, submitted
+revision equality, snapshot-digest equality, and schedule revalidation. Buttons
+are only orchestration entry points and never duplicate the business rules.
+
+## Tests and contracts
+
+```bash
+python ci/check_phases_3_5_contract.py
+python ci/check_phase51_schedule_handoff.py
+bash ci/run_tests.sh --module sports_federation_schedule_approval
+bash ci/run_tests.sh --suite competition_core
+```
+
+## 5.1.1 integrity rules
+
+Review records are read-only through ACLs. Only the approval command service can
+write decision fields through a narrowly scoped context. Publications are live,
+versioned and replaced per match day, not per edition. Publication confirmation
+locks the match day and verifies the expected current publication before
+allocating the next version. Replacements require a dedicated reason that is
+separate from the review note.
+
+====================================================================================================
 FILE: sports_federation_schedule_approval/__init__.py
 ====================================================================================================
 
 from . import models
 from . import services
+
+from . import wizards
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/__manifest__.py
@@ -95175,7 +96306,7 @@ FILE: sports_federation_schedule_approval/__manifest__.py
 
 {
     "name": "Schedule Approval",
-    "version": "19.0.2.0.0",
+    "version": "19.0.2.2.0",
     "category": "Sports",
     "summary": "Independent review, approval and immutable publication snapshots",
     "author": "Sports Federation",
@@ -95185,6 +96316,7 @@ FILE: sports_federation_schedule_approval/__manifest__.py
         "security/security.xml",
         "security/ir.model.access.csv",
         "views/approval_views.xml",
+        "wizards/publish_schedule_wizard_views.xml",
         "views/menu.xml",
     ],
     "installable": True,
@@ -95193,11 +96325,24 @@ FILE: sports_federation_schedule_approval/__manifest__.py
 }
 
 ====================================================================================================
+FILE: sports_federation_schedule_approval/migrations/19.0.2.2.0/post-migrate.py
+====================================================================================================
+
+def migrate(cr, version):
+    cr.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS
+            federation_schedule_publication_one_live_matchday
+        ON federation_schedule_publication (matchday_id)
+        WHERE state = 'live' AND matchday_id IS NOT NULL
+        """)
+
+====================================================================================================
 FILE: sports_federation_schedule_approval/models/__init__.py
 ====================================================================================================
 
 from . import approval
 from . import publication_integrity
+from . import workflow_actions
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/models/approval.py
@@ -95244,6 +96389,9 @@ class FederationSchedulePublication(models.Model):
     edition_id = fields.Many2one(
         related="schedule_id.edition_id", store=True, index=True
     )
+    matchday_id = fields.Many2one(
+        related="schedule_id.matchday_id", store=True, index=True
+    )
     version = fields.Integer(required=True)
     state = fields.Selection(
         [("live", "Live"), ("superseded", "Superseded")],
@@ -95258,8 +96406,8 @@ class FederationSchedulePublication(models.Model):
     reason = fields.Text()
     assignment_snapshot = fields.Json(required=True)
     _unique_version = models.Constraint(
-        "unique(edition_id,version)",
-        "Publication versions must be unique per edition.",
+        "unique(matchday_id,version)",
+        "Publication versions must be unique per match day.",
     )
 
 ====================================================================================================
@@ -95283,15 +96431,22 @@ class FederationScheduleReviewIntegrity(models.Model):
     reviewed_at = fields.Datetime(readonly=True)
 
     def write(self, vals):
-        protected = {
+        evidence_fields = {
             "schedule_id",
             "submitted_revision",
             "assignment_snapshot",
             "snapshot_digest",
             "submitted_by_id",
         }
-        if protected.intersection(vals) and any(record.id for record in self):
+        decision_fields = {"state", "reviewer_id", "review_note", "reviewed_at"}
+        if evidence_fields.intersection(vals) and any(record.id for record in self):
             raise ValidationError("Submitted review evidence is immutable.")
+        if decision_fields.intersection(vals) and not self.env.context.get(
+            "allow_schedule_review_decision"
+        ):
+            raise ValidationError(
+                "Review decisions must be made through the approval command service."
+            )
         return super().write(vals)
 
     def unlink(self):
@@ -95306,6 +96461,14 @@ class FederationSchedulePublicationIntegrity(models.Model):
     review_id = fields.Many2one(
         "federation.schedule.review", required=True, readonly=True, ondelete="restrict"
     )
+
+    def init(self):
+        self.env.cr.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS
+                federation_schedule_publication_one_live_matchday
+            ON federation_schedule_publication (matchday_id)
+            WHERE state = 'live' AND matchday_id IS NOT NULL
+            """)
 
     @api.model
     def digest_snapshot(self, snapshot):
@@ -95353,12 +96516,168 @@ class FederationMatchPublishedSlot(models.Model):
     )
 
 ====================================================================================================
+FILE: sports_federation_schedule_approval/models/workflow_actions.py
+====================================================================================================
+
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationScheduleApprovalHandoff(models.Model):
+    _inherit = "federation.schedule"
+
+    review_count = fields.Integer(compute="_compute_review_handoff")
+    current_review_id = fields.Many2one(
+        "federation.schedule.review", compute="_compute_review_handoff"
+    )
+
+    @api.depends("revision", "state")
+    def _compute_review_handoff(self):
+        Review = self.env["federation.schedule.review"]
+        counts = {
+            schedule.id: count
+            for schedule, count in Review._read_group(
+                [("schedule_id", "in", self.ids)],
+                ["schedule_id"],
+                ["__count"],
+            )
+        }
+        latest = {}
+        for review in Review.search(
+            [("schedule_id", "in", self.ids)], order="schedule_id,id desc"
+        ):
+            latest.setdefault(review.schedule_id.id, review)
+        for schedule in self:
+            schedule.review_count = counts.get(schedule.id, 0)
+            schedule.current_review_id = latest.get(schedule.id)
+
+    def action_submit_for_review(self, warning_override_reason=False):
+        self.ensure_one()
+        super().action_submit_for_review(
+            warning_override_reason=warning_override_reason
+        )
+        review = self.env["federation.schedule.approval.commands"].start_review(self.id)
+        return review.action_open_review()
+
+    def action_open_current_review(self):
+        self.ensure_one()
+        review = self.env["federation.schedule.review"].search(
+            [("schedule_id", "=", self.id)], order="id desc", limit=1
+        )
+        if not review:
+            raise ValidationError(_("No review exists for this schedule yet."))
+        return review.action_open_review()
+
+
+class FederationScheduleReviewActions(models.Model):
+    _inherit = "federation.schedule.review"
+
+    def action_open_review(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Schedule Review"),
+            "res_model": "federation.schedule.review",
+            "res_id": self.id,
+            "view_mode": "form",
+            "target": "current",
+        }
+
+    def action_open_schedule(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Working Schedule"),
+            "res_model": "federation.schedule",
+            "res_id": self.schedule_id.id,
+            "view_mode": "form",
+            "target": "current",
+        }
+
+    def action_request_changes(self):
+        self.ensure_one()
+        self.env["federation.schedule.approval.commands"].request_changes(
+            self.id, self.review_note
+        )
+        return self.action_open_review()
+
+    def action_approve_schedule(self):
+        self.ensure_one()
+        self.env["federation.schedule.approval.commands"].approve(
+            self.id, self.review_note
+        )
+        return self.action_open_review()
+
+    def action_publish_schedule(self):
+        self.ensure_one()
+        if self.state != "approved":
+            raise ValidationError(
+                _("Approve the review before publishing its schedule.")
+            )
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "schedule_approver", "competition_director"
+        )
+        current = self.schedule_id.matchday_id.current_publication_id
+        live = current if current and current.state == "live" else False
+        wizard = self.env["federation.schedule.publish.wizard"].create(
+            {
+                "review_id": self.id,
+                "current_publication_id": live.id if live else False,
+                "replacement_required": bool(live),
+                "expected_publication_id": live.id if live else 0,
+            }
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Publish Approved Schedule"),
+            "res_model": "federation.schedule.publish.wizard",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "target": "new",
+        }
+
+
+class FederationSchedulePublicationActions(models.Model):
+    _inherit = "federation.schedule.publication"
+
+    def action_open_publication(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Published Schedule"),
+            "res_model": "federation.schedule.publication",
+            "res_id": self.id,
+            "view_mode": "form",
+            "target": "current",
+        }
+
+    def action_open_schedule(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Source Schedule"),
+            "res_model": "federation.schedule",
+            "res_id": self.schedule_id.id,
+            "view_mode": "form",
+            "target": "current",
+        }
+
+====================================================================================================
 FILE: sports_federation_schedule_approval/security/ir.model.access.csv
 ====================================================================================================
 
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_federation_schedule_review_group_schedule_approver,federation_schedule_review.group_schedule_approver,model_federation_schedule_review,sports_federation_schedule_approval.group_schedule_approver,1,1,1,1
-access_federation_schedule_publication_group_schedule_approver,federation_schedule_publication.group_schedule_approver,model_federation_schedule_publication,sports_federation_schedule_approval.group_schedule_approver,1,1,1,1
+access_federation_schedule_review_group_schedule_approver,federation_schedule_review.group_schedule_approver,model_federation_schedule_review,sports_federation_schedule_approval.group_schedule_approver,1,0,0,0
+access_federation_schedule_publication_group_schedule_approver,federation_schedule_publication.group_schedule_approver,model_federation_schedule_publication,sports_federation_schedule_approval.group_schedule_approver,1,0,0,0
+access_federation_schedule_review_group_schedule_planner,federation_schedule_review.group_schedule_planner,model_federation_schedule_review,sports_federation_scheduling.group_schedule_planner,1,0,0,0
+access_federation_schedule_publication_group_schedule_planner,federation_schedule_publication.group_schedule_planner,model_federation_schedule_publication,sports_federation_scheduling.group_schedule_planner,1,0,0,0
+access_federation_schedule_review_manager,federation_schedule_review.manager,model_federation_schedule_review,sports_federation_base.group_federation_manager,1,0,0,0
+access_federation_schedule_publication_manager,federation_schedule_publication.manager,model_federation_schedule_publication,sports_federation_base.group_federation_manager,1,0,0,0
+access_schedule_for_approver,federation_schedule.approver,sports_federation_scheduling.model_federation_schedule,sports_federation_schedule_approval.group_schedule_approver,1,0,0,0
+access_schedule_assignment_for_approver,federation_schedule_assignment.approver,sports_federation_scheduling.model_federation_schedule_assignment,sports_federation_schedule_approval.group_schedule_approver,1,0,0,0
+access_schedule_change_for_approver,federation_schedule_change.approver,sports_federation_scheduling.model_federation_schedule_change,sports_federation_schedule_approval.group_schedule_approver,1,0,0,0
+access_schedule_publish_wizard_approver,schedule.publish.wizard.approver,model_federation_schedule_publish_wizard,sports_federation_schedule_approval.group_schedule_approver,1,1,1,1
+access_schedule_publish_wizard_manager,schedule.publish.wizard.manager,model_federation_schedule_publish_wizard,sports_federation_base.group_federation_manager,1,1,1,1
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/security/security.xml
@@ -95420,7 +96739,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         if not schedule or schedule.state != "ready_for_review":
             raise ValidationError(_("Only submitted schedules can enter review."))
         self.env["federation.competition.role.assignment"].assert_role(
-            schedule.edition_id, "schedule_approver", "competition_director"
+            schedule.edition_id, "schedule_planner", "competition_director"
         )
         pending = self.env["federation.schedule.review"].search(
             [
@@ -95433,14 +96752,18 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         if pending:
             return pending
         snapshot = self._snapshot(schedule)
-        return self.env["federation.schedule.review"].create(
-            {
-                "schedule_id": schedule.id,
-                "submitted_revision": schedule.revision,
-                "assignment_snapshot": snapshot,
-                "snapshot_digest": self._digest(snapshot),
-                "submitted_by_id": schedule.write_uid.id,
-            }
+        return (
+            self.env["federation.schedule.review"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "submitted_revision": schedule.revision,
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": self._digest(snapshot),
+                    "submitted_by_id": schedule.write_uid.id,
+                }
+            )
         )
 
     def _resolve_pending(self, review_id):
@@ -95470,7 +96793,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         if not (note or "").strip():
             raise ValidationError(_("Explain the requested schedule changes."))
         review = self._resolve_pending(review_id)
-        review.write(
+        review.with_context(allow_schedule_review_decision=True).sudo().write(
             {
                 "state": "changes_requested",
                 "reviewer_id": self.env.user.id,
@@ -95478,7 +96801,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
                 "reviewed_at": fields.Datetime.now(),
             }
         )
-        review.schedule_id.state = "changes_requested"
+        review.schedule_id.sudo().state = "changes_requested"
         return True
 
     @api.model
@@ -95492,7 +96815,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             raise ValidationError(
                 _("The schedule no longer satisfies publication constraints.")
             )
-        review.write(
+        review.with_context(allow_schedule_review_decision=True).sudo().write(
             {
                 "state": "approved",
                 "reviewer_id": self.env.user.id,
@@ -95500,7 +96823,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
                 "reviewed_at": fields.Datetime.now(),
             }
         )
-        review.schedule_id.state = "approved"
+        review.schedule_id.sudo().state = "approved"
         self.env["federation.competition.event"].emit(
             review.schedule_id,
             "schedule_approved",
@@ -95509,12 +96832,14 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         return True
 
     @api.model
-    def publish(self, schedule_id, reason=False):
+    def publish(self, schedule_id, reason=False, expected_publication_id=None):
         schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
+        if not schedule:
+            raise ValidationError(_("The schedule no longer exists."))
         self.env["federation.competition.role.assignment"].assert_role(
             schedule.edition_id, "schedule_approver", "competition_director"
         )
-        if not schedule or schedule.state != "approved":
+        if schedule.state != "approved":
             raise ValidationError(_("Approve the schedule before publication."))
         if schedule.matchday_id.state == "open":
             raise ValidationError(
@@ -95539,9 +96864,25 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             raise ValidationError(
                 _("The approved snapshot no longer matches the schedule.")
             )
-        live = self.env["federation.schedule.publication"].search(
-            [("edition_id", "=", schedule.edition_id.id), ("state", "=", "live")]
+        # Serialize publication replacement and version allocation per match day.
+        self.env.cr.execute(
+            "SELECT id FROM federation_matchday WHERE id=%s FOR UPDATE",
+            (schedule.matchday_id.id,),
         )
+        live = self.env["federation.schedule.publication"].search(
+            [
+                ("matchday_id", "=", schedule.matchday_id.id),
+                ("state", "=", "live"),
+            ],
+            limit=1,
+        )
+        live_id = live.id if live else 0
+        if expected_publication_id is not None and live_id != int(
+            expected_publication_id or 0
+        ):
+            raise ValidationError(
+                _("The live publication changed in another session. Refresh and retry.")
+            )
         if live and not (reason or "").strip():
             raise ValidationError(
                 _("Enter a reason when replacing a live publication.")
@@ -95549,23 +96890,27 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         version = (
             max(
                 self.env["federation.schedule.publication"]
-                .search([("edition_id", "=", schedule.edition_id.id)])
+                .search([("matchday_id", "=", schedule.matchday_id.id)])
                 .mapped("version")
                 or [0]
             )
             + 1
         )
-        live.write({"state": "superseded"})
-        publication = self.env["federation.schedule.publication"].create(
-            {
-                "schedule_id": schedule.id,
-                "version": version,
-                "reason": reason,
-                "assignment_snapshot": snapshot,
-                "snapshot_digest": digest,
-                "source_revision": schedule.revision,
-                "review_id": review.id,
-            }
+        live.sudo().write({"state": "superseded"})
+        publication = (
+            self.env["federation.schedule.publication"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "version": version,
+                    "reason": reason,
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": digest,
+                    "source_revision": schedule.revision,
+                    "review_id": review.id,
+                }
+            )
         )
         for assignment in schedule.assignment_ids:
             match = assignment.fixture_id.operational_match_id
@@ -95573,15 +96918,21 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
                 raise ValidationError(
                     _("Every scheduled fixture must have an operational match.")
                 )
-            match.write(
-                {
-                    "published_slot_id": assignment.slot_id.id,
-                    "schedule_publication_id": publication.id,
-                    "date_scheduled": assignment.slot_id.start_datetime,
-                }
-            )
-        schedule.state = "published"
-        schedule.matchday_id.write(
+            match_values = {
+                "published_slot_id": assignment.slot_id.id,
+                "schedule_publication_id": publication.id,
+                "date_scheduled": assignment.slot_id.start_datetime,
+            }
+            if "operational_slot_id" in match._fields:
+                match_values.update(
+                    {
+                        "operational_slot_id": assignment.slot_id.id,
+                        "operational_status": "as_published",
+                    }
+                )
+            match.sudo().write(match_values)
+        schedule.sudo().state = "published"
+        schedule.matchday_id.sudo().write(
             {"state": "scheduled", "current_publication_id": publication.id}
         )
         self.env["federation.competition.event"].emit(
@@ -95596,20 +96947,482 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         return publication
 
 ====================================================================================================
+FILE: sports_federation_schedule_approval/tests/__init__.py
+====================================================================================================
+
+from . import test_phase51_handoff
+from . import test_phase511_integrity
+
+====================================================================================================
+FILE: sports_federation_schedule_approval/tests/test_phase511_integrity.py
+====================================================================================================
+
+import hashlib
+import json
+
+from odoo.exceptions import ValidationError
+from odoo.tests import tagged
+from odoo.tests.common import TransactionCase
+
+
+@tagged("post_install", "-at_install", "sf_phase511")
+class TestPhase511Integrity(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        season = cls.env["federation.season"].create(
+            {
+                "name": "5.1.1 Season",
+                "date_start": "2026-09-01",
+                "date_end": "2027-06-30",
+            }
+        )
+        competition = cls.env["federation.competition"].create(
+            {"name": "5.1.1 Competition", "competition_type": "league"}
+        )
+        cls.edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "5.1.1 Edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+            }
+        )
+        division = cls.env["federation.tournament"].create(
+            {
+                "name": "5.1.1 Division",
+                "edition_id": cls.edition.id,
+                "competition_id": competition.id,
+                "season_id": season.id,
+                "date_start": "2026-10-01",
+            }
+        )
+        participants = cls.env["federation.participant.set"].create(
+            {
+                "name": "5.1.1 Participants",
+                "edition_id": cls.edition.id,
+                "division_id": division.id,
+                "state": "finalized",
+            }
+        )
+        cls.structure = cls.env["federation.competition.structure"].create(
+            {
+                "name": "5.1.1 Structure",
+                "edition_id": cls.edition.id,
+                "division_id": division.id,
+                "participant_set_id": participants.id,
+                "format_type": "custom",
+            }
+        )
+        cls.venue = cls.env["federation.venue"].create({"name": "5.1.1 Venue"})
+        cls.days = cls.env["federation.matchday"].create(
+            [
+                {
+                    "name": "Day A",
+                    "edition_id": cls.edition.id,
+                    "date": "2026-10-03",
+                    "venue_id": cls.venue.id,
+                    "state": "capacity_ready",
+                },
+                {
+                    "name": "Day B",
+                    "edition_id": cls.edition.id,
+                    "date": "2026-10-10",
+                    "venue_id": cls.venue.id,
+                    "state": "capacity_ready",
+                },
+            ]
+        )
+
+    @staticmethod
+    def _digest(snapshot):
+        payload = json.dumps(snapshot, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(payload.encode()).hexdigest()
+
+    @staticmethod
+    def _snapshot():
+        # Odoo stores an explicitly empty required Json value as NULL.
+        return [{"fixture_id": 1}]
+
+    def _schedule_review(self, day, suffix):
+        snapshot = self._snapshot()
+        schedule = self.env["federation.schedule"].create(
+            {
+                "name": f"Schedule {suffix}",
+                "edition_id": self.edition.id,
+                "structure_id": self.structure.id,
+                "matchday_id": day.id,
+                "state": "approved",
+            }
+        )
+        review = (
+            self.env["federation.schedule.review"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "submitted_revision": schedule.revision,
+                    "state": "pending",
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": self._digest(snapshot),
+                    "submitted_by_id": self.env.user.id,
+                }
+            )
+        )
+        return schedule, review
+
+    def test_review_decision_fields_reject_direct_writes(self):
+        schedule, review = self._schedule_review(self.days[0], "guard")
+        with self.assertRaises(ValidationError):
+            review.sudo().write({"state": "approved"})
+        review.with_context(allow_schedule_review_decision=True).sudo().write(
+            {"state": "approved", "reviewer_id": self.env.user.id}
+        )
+        self.assertEqual(review.state, "approved")
+        self.assertEqual(schedule.state, "approved")
+
+    def test_live_publications_are_independent_per_matchday(self):
+        schedule_a, review_a = self._schedule_review(self.days[0], "A")
+        schedule_b, review_b = self._schedule_review(self.days[1], "B")
+        snapshot = self._snapshot()
+        Publication = self.env["federation.schedule.publication"].sudo()
+        publication_a = Publication.create(
+            {
+                "schedule_id": schedule_a.id,
+                "version": 1,
+                "assignment_snapshot": snapshot,
+                "snapshot_digest": self._digest(snapshot),
+                "source_revision": 0,
+                "review_id": review_a.id,
+            }
+        )
+        publication_b = Publication.create(
+            {
+                "schedule_id": schedule_b.id,
+                "version": 1,
+                "assignment_snapshot": snapshot,
+                "snapshot_digest": self._digest(snapshot),
+                "source_revision": 0,
+                "review_id": review_b.id,
+            }
+        )
+        self.assertEqual(publication_a.state, "live")
+        self.assertEqual(publication_b.state, "live")
+        self.assertNotEqual(publication_a.matchday_id, publication_b.matchday_id)
+
+    def test_only_one_live_publication_is_allowed_per_matchday(self):
+        schedule, review = self._schedule_review(self.days[0], "unique")
+        snapshot = self._snapshot()
+        vals = {
+            "schedule_id": schedule.id,
+            "version": 1,
+            "assignment_snapshot": snapshot,
+            "snapshot_digest": self._digest(snapshot),
+            "source_revision": 0,
+            "review_id": review.id,
+        }
+        self.env["federation.schedule.publication"].sudo().create(vals)
+        with self.assertRaises(Exception):
+            with self.env.cr.savepoint():
+                self.env["federation.schedule.publication"].sudo().create(
+                    {**vals, "version": 2}
+                )
+
+====================================================================================================
+FILE: sports_federation_schedule_approval/tests/test_phase51_handoff.py
+====================================================================================================
+
+from odoo.exceptions import ValidationError
+from odoo.tests.common import TransactionCase
+
+
+class TestPhase51ScheduleHandoff(TransactionCase):
+    """Regression checks for the operator-facing Phase 5.1 command boundary."""
+
+    def test_operator_actions_are_exposed_on_owning_models(self):
+        schedule = self.env["federation.schedule"]
+        review = self.env["federation.schedule.review"]
+        publication = self.env["federation.schedule.publication"]
+        self.assertTrue(hasattr(schedule, "action_open_submit_for_review"))
+        self.assertTrue(hasattr(schedule, "action_submit_for_review"))
+        self.assertTrue(hasattr(schedule, "action_open_current_review"))
+        self.assertTrue(hasattr(review, "action_request_changes"))
+        self.assertTrue(hasattr(review, "action_approve_schedule"))
+        self.assertTrue(hasattr(review, "action_publish_schedule"))
+        self.assertTrue(hasattr(publication, "action_open_publication"))
+
+    def test_review_and_publication_cannot_be_deleted(self):
+        with self.assertRaises(ValidationError):
+            self.env["federation.schedule.review"].unlink()
+        with self.assertRaises(ValidationError):
+            self.env["federation.schedule.publication"].unlink()
+
+    def test_phase51_views_bind_buttons_to_model_actions(self):
+        review_view = self.env.ref(
+            "sports_federation_schedule_approval.review_form"
+        ).arch_db
+        schedule_view = self.env.ref(
+            "sports_federation_scheduling.schedule_form"
+        ).arch_db
+        self.assertIn("action_open_submit_for_review", schedule_view)
+        self.assertIn("action_request_changes", review_view)
+        self.assertIn("action_approve_schedule", review_view)
+        self.assertIn("action_publish_schedule", review_view)
+
+====================================================================================================
 FILE: sports_federation_schedule_approval/views/approval_views.xml
 ====================================================================================================
 
 <odoo>
- <record id="review_list" model="ir.ui.view"><field name="name">federation.schedule.review.list</field><field name="model">federation.schedule.review</field><field name="arch" type="xml"><list decoration-success="state == 'approved'" decoration-warning="state == 'changes_requested'"><field name="schedule_id"/><field name="edition_id"/><field name="submitted_revision"/><field name="reviewer_id"/><field name="state" widget="badge"/></list></field></record>
- <record id="review_form" model="ir.ui.view"><field name="name">federation.schedule.review.form</field><field name="model">federation.schedule.review</field><field name="arch" type="xml"><form><header><field name="state" widget="statusbar" statusbar_visible="pending,changes_requested,approved"/></header><sheet><group><field name="schedule_id"/><field name="edition_id"/><field name="submitted_revision"/><field name="reviewer_id"/><field name="review_note"/></group><field name="assignment_snapshot" readonly="1"/></sheet><chatter/></form></field></record>
- <record id="action_schedule_review_queue" model="ir.actions.act_window"><field name="name">Schedule Review Queue</field><field name="res_model">federation.schedule.review</field><field name="view_mode">list,form</field><field name="domain">[('state','=','pending')]</field></record>
+  <record id="schedule_form_approval_handoff" model="ir.ui.view">
+    <field name="name">federation.schedule.form.approval.handoff</field>
+    <field name="model">federation.schedule</field>
+    <field name="inherit_id" ref="sports_federation_scheduling.schedule_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet/group[1]" position="before">
+        <div class="oe_button_box" name="button_box">
+          <button name="action_open_current_review" type="object" class="oe_stat_button" icon="fa-check-square-o" invisible="review_count == 0">
+            <field name="review_count" widget="statinfo" string="Reviews"/>
+          </button>
+        </div>
+        <field name="current_review_id" invisible="1"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="review_list" model="ir.ui.view">
+    <field name="name">federation.schedule.review.list</field>
+    <field name="model">federation.schedule.review</field>
+    <field name="arch" type="xml">
+      <list create="0" delete="0" decoration-success="state == 'approved'" decoration-warning="state == 'changes_requested'">
+        <field name="schedule_id"/>
+        <field name="edition_id"/>
+        <field name="submitted_revision"/>
+        <field name="submitted_by_id"/>
+        <field name="reviewer_id"/>
+        <field name="reviewed_at"/>
+        <field name="state" widget="badge"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="review_form" model="ir.ui.view">
+    <field name="name">federation.schedule.review.form</field>
+    <field name="model">federation.schedule.review</field>
+    <field name="arch" type="xml">
+      <form create="0" delete="0">
+        <header>
+          <button name="action_request_changes" type="object" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager" string="Request Changes" invisible="state != 'pending'" confirm="Return this schedule to the planner for changes?"/>
+          <button name="action_approve_schedule" type="object" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager" string="Approve Schedule" class="btn-primary" invisible="state != 'pending'" confirm="Approve this immutable submitted revision?"/>
+          <button name="action_publish_schedule" type="object" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager" string="Publish Schedule" class="btn-primary" invisible="state != 'approved'" confirm="Publish this approved schedule for match-day execution?"/>
+          <button name="action_open_schedule" type="object" string="Open Working Schedule"/>
+          <field name="state" widget="statusbar" statusbar_visible="pending,changes_requested,approved"/>
+        </header>
+        <sheet>
+          <div class="alert alert-info" role="status" invisible="state != 'pending'">Review the immutable submitted snapshot. Add a note, then request changes or approve it. The submitting planner cannot decide their own review.</div>
+          <div class="alert alert-warning" role="status" invisible="state != 'changes_requested'">This review is retained as historical evidence. The planner must update the working schedule and submit a new revision.</div>
+          <div class="alert alert-success" role="status" invisible="state != 'approved'">The schedule is independently approved and ready for publication.</div>
+          <group>
+            <group>
+              <field name="schedule_id" readonly="1"/>
+              <field name="edition_id" readonly="1"/>
+              <field name="submitted_revision" readonly="1"/>
+              <field name="snapshot_digest" readonly="1" groups="sports_federation_base.group_federation_manager"/>
+            </group>
+            <group>
+              <field name="submitted_by_id" readonly="1"/>
+              <field name="reviewer_id" readonly="1"/>
+              <field name="reviewed_at" readonly="1"/>
+              <field name="review_note" readonly="state != 'pending'" placeholder="Required when requesting changes. Optional approval note. Used as the replacement reason when publishing over a live schedule."/>
+            </group>
+          </group>
+          <group string="Immutable submitted assignments">
+            <field name="assignment_snapshot" readonly="1" nolabel="1"/>
+          </group>
+        </sheet>
+        <chatter/>
+      </form>
+    </field>
+  </record>
+
+
+  <record id="review_search" model="ir.ui.view">
+    <field name="name">federation.schedule.review.search</field>
+    <field name="model">federation.schedule.review</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="schedule_id"/>
+        <field name="edition_id"/>
+        <field name="submitted_by_id"/>
+        <field name="reviewer_id"/>
+        <filter name="pending" string="Pending" domain="[('state','=','pending')]"/>
+        <filter name="changes_requested" string="Changes Requested" domain="[('state','=','changes_requested')]"/>
+        <filter name="approved" string="Approved" domain="[('state','=','approved')]"/>
+        <group>
+          <filter name="group_edition" string="Edition" context="{'group_by':'edition_id'}"/>
+          <filter name="group_state" string="State" context="{'group_by':'state'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="publication_list" model="ir.ui.view">
+    <field name="name">federation.schedule.publication.list</field>
+    <field name="model">federation.schedule.publication</field>
+    <field name="arch" type="xml">
+      <list decoration-success="state == 'live'" decoration-muted="state == 'superseded'">
+        <field name="edition_id"/>
+        <field name="matchday_id"/>
+        <field name="schedule_id"/>
+        <field name="version"/>
+        <field name="source_revision"/>
+        <field name="published_by_id"/>
+        <field name="published_at"/>
+        <field name="state" widget="badge"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="publication_form" model="ir.ui.view">
+    <field name="name">federation.schedule.publication.form</field>
+    <field name="model">federation.schedule.publication</field>
+    <field name="arch" type="xml">
+      <form create="0" edit="0" delete="0">
+        <header>
+          <button name="action_open_schedule" type="object" string="Open Source Schedule"/>
+          <field name="state" widget="statusbar" statusbar_visible="live,superseded"/>
+        </header>
+        <sheet>
+          <div class="alert alert-success" role="status" invisible="state != 'live'">This is the current immutable schedule used by Match-Day Operations.</div>
+          <div class="alert alert-secondary" role="status" invisible="state != 'superseded'">This historical publication has been replaced and remains available as audit evidence.</div>
+          <group>
+            <group><field name="edition_id"/><field name="matchday_id"/><field name="schedule_id"/><field name="review_id"/><field name="version"/><field name="source_revision"/></group>
+            <group><field name="published_by_id"/><field name="published_at"/><field name="reason"/><field name="snapshot_digest" groups="sports_federation_base.group_federation_manager"/></group>
+          </group>
+          <group string="Immutable published assignments"><field name="assignment_snapshot" nolabel="1"/></group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_schedule_review_queue" model="ir.actions.act_window">
+    <field name="name">Schedule Review Queue</field>
+    <field name="res_model">federation.schedule.review</field>
+    <field name="view_mode">list,form</field>
+    <field name="domain">[('state','=','pending')]</field>
+    <field name="context">{'search_default_pending': 1}</field>
+    <field name="help" type="html"><p class="o_view_nocontent_smiling_face">No schedules are waiting for independent review.</p></field>
+  </record>
+  <record id="action_approved_schedule_queue" model="ir.actions.act_window">
+    <field name="name">Approved Schedules</field>
+    <field name="res_model">federation.schedule.review</field>
+    <field name="view_mode">list,form</field>
+    <field name="domain">[('state','=','approved'),('schedule_id.state','=','approved')]</field>
+    <field name="help" type="html"><p class="o_view_nocontent_smiling_face">No approved schedules are waiting for publication.</p></field>
+  </record>
+  <record id="action_schedule_publication_history" model="ir.actions.act_window">
+    <field name="name">Schedule Publications</field>
+    <field name="res_model">federation.schedule.publication</field>
+    <field name="view_mode">list,form</field>
+  </record>
 </odoo>
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/views/menu.xml
 ====================================================================================================
 
-<odoo><menuitem id="menu_schedule_review_queue" name="Review Queue" parent="sports_federation_competition_core.menu_competition_engine_v2_root" action="action_schedule_review_queue" sequence="60"/></odoo>
+<odoo>
+  <menuitem id="menu_schedule_review_queue" name="Schedule Review Queue" parent="sports_federation_competition_core.menu_competition_engine_v2_root" action="action_schedule_review_queue" sequence="60" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_approved_schedule_queue" name="Approved Schedules" parent="sports_federation_base.menu_federation_publication" action="action_approved_schedule_queue" sequence="20" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_schedule_publication_history" name="Schedule Publications" parent="sports_federation_base.menu_federation_publication" action="action_schedule_publication_history" sequence="30" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager"/>
+</odoo>
+
+====================================================================================================
+FILE: sports_federation_schedule_approval/wizards/__init__.py
+====================================================================================================
+
+from . import publish_schedule_wizard
+
+====================================================================================================
+FILE: sports_federation_schedule_approval/wizards/publish_schedule_wizard.py
+====================================================================================================
+
+from odoo import _, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationSchedulePublishWizard(models.TransientModel):
+    _name = "federation.schedule.publish.wizard"
+    _description = "Publish Approved Schedule"
+
+    review_id = fields.Many2one(
+        "federation.schedule.review", required=True, readonly=True, ondelete="cascade"
+    )
+    schedule_id = fields.Many2one(related="review_id.schedule_id", readonly=True)
+    matchday_id = fields.Many2one(related="schedule_id.matchday_id", readonly=True)
+    current_publication_id = fields.Many2one(
+        "federation.schedule.publication", readonly=True
+    )
+    replacement_required = fields.Boolean(readonly=True)
+    expected_publication_id = fields.Integer(required=True, readonly=True)
+    reason = fields.Text(
+        string="Publication reason",
+        help="Required when replacing the current live publication.",
+    )
+
+    def action_publish(self):
+        self.ensure_one()
+        current = self.matchday_id.current_publication_id
+        current_id = current.id if current and current.state == "live" else 0
+        if current_id != self.expected_publication_id:
+            raise ValidationError(
+                _(
+                    "The live publication changed after this dialog opened. Refresh and retry."
+                )
+            )
+        if self.replacement_required and not (self.reason or "").strip():
+            raise ValidationError(
+                _("Explain why the live publication is being replaced.")
+            )
+        publication = self.env["federation.schedule.approval.commands"].publish(
+            self.schedule_id.id,
+            reason=self.reason,
+            expected_publication_id=self.expected_publication_id,
+        )
+        return publication.action_open_publication()
+
+====================================================================================================
+FILE: sports_federation_schedule_approval/wizards/publish_schedule_wizard_views.xml
+====================================================================================================
+
+<odoo>
+  <record id="schedule_publish_wizard_form" model="ir.ui.view">
+    <field name="name">federation.schedule.publish.wizard.form</field>
+    <field name="model">federation.schedule.publish.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Publish Approved Schedule">
+        <sheet>
+          <div class="alert alert-info" role="status" invisible="replacement_required">This creates the first immutable live publication for this match day.</div>
+          <div class="alert alert-warning" role="alert" invisible="not replacement_required">This replaces the current live publication for this match day. The previous publication remains immutable audit evidence.</div>
+          <group>
+            <field name="review_id"/>
+            <field name="schedule_id"/>
+            <field name="matchday_id"/>
+            <field name="current_publication_id" invisible="not replacement_required"/>
+            <field name="replacement_required" invisible="1"/>
+            <field name="expected_publication_id" invisible="1"/>
+          </group>
+          <group string="Publication decision">
+            <field name="reason" required="replacement_required" placeholder="Why is the live schedule being replaced?"/>
+          </group>
+        </sheet>
+        <footer>
+          <button name="action_publish" type="object" string="Publish Schedule" class="btn-primary"/>
+          <button string="Cancel" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>
 
 ====================================================================================================
 FILE: sports_federation_scheduling/README.md
@@ -95628,6 +97441,21 @@ for concurrent edits.
 All access-control rows, including the auto-schedule wizard permissions, are
 loaded through `security/ir.model.access.csv`.
 
+
+## Operator handoff to independent review
+
+A planner completes fixture-to-slot assignments in **Schedule Planner** and uses
+**Submit for Review**. Blocking validation errors prevent submission. When only
+warnings remain, a confirmation dialog requires an explicit justification. The
+button delegates to `federation.schedule.commands`; when Schedule Approval is
+installed, the approval extension creates the immutable pending review in the
+same transaction and opens it directly.
+
+Submitted schedules are immutable. If a reviewer requests changes, the schedule
+returns to `changes_requested`, where the planner can edit and submit a new
+revision. Planners can use the **Reviews** smart button to inspect the current
+handoff and retained history.
+
 ====================================================================================================
 FILE: sports_federation_scheduling/__init__.py
 ====================================================================================================
@@ -95642,7 +97470,7 @@ FILE: sports_federation_scheduling/__manifest__.py
 
 {
     "name": "Competition Scheduling",
-    "version": "19.0.3.0.0",
+    "version": "19.0.3.1.0",
     "category": "Sports",
     "summary": "Working schedules, assignments, validation and deterministic proposals",
     "author": "Sports Federation",
@@ -95652,6 +97480,7 @@ FILE: sports_federation_scheduling/__manifest__.py
         "security/security.xml",
         "security/ir.model.access.csv",
         "views/scheduling_views.xml",
+        "views/submit_schedule_wizard_views.xml",
         "views/fairness_views.xml",
         "views/menu.xml",
     ],
@@ -95779,6 +97608,55 @@ class FederationSchedule(models.Model):
                 raise ValidationError("Preferred rest cannot be negative.")
             if rec.max_consecutive_games < 1:
                 raise ValidationError("Maximum consecutive games must be at least one.")
+
+    def _submission_validation(self):
+        self.ensure_one()
+        return self.env["federation.schedule.validator"].validate_map(
+            self, {a.fixture_id.id: a.slot_id.id for a in self.assignment_ids}
+        )
+
+    def action_open_submit_for_review(self):
+        self.ensure_one()
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "schedule_planner", "competition_director"
+        )
+        self.assert_mutable()
+        validation = self._submission_validation()
+        if not validation["valid"]:
+            raise ValidationError(
+                "Resolve all errors and unassigned fixtures before submitting."
+            )
+        if not validation["warnings"]:
+            return self.action_submit_for_review()
+        summary = "\n".join(
+            f"- {warning.get('message', warning.get('code', 'Schedule warning'))}"
+            for warning in validation["warnings"]
+        )
+        wizard = self.env["federation.schedule.submit.wizard"].create(
+            {
+                "schedule_id": self.id,
+                "expected_revision": self.revision,
+                "warning_count": len(validation["warnings"]),
+                "warning_summary": summary,
+            }
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Submit Schedule for Review",
+            "res_model": "federation.schedule.submit.wizard",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "target": "new",
+        }
+
+    def action_submit_for_review(self, warning_override_reason=False):
+        self.ensure_one()
+        self.env["federation.schedule.commands"].submit(
+            self.id,
+            self.revision,
+            warning_override_reason=warning_override_reason,
+        )
+        return {"type": "ir.actions.client", "tag": "reload"}
 
     def action_open_auto_schedule(self):
         self.ensure_one()
@@ -95973,6 +97851,9 @@ access_federation_schedule_assignment_group_schedule_planner,federation_schedule
 access_federation_schedule_change_group_schedule_planner,federation_schedule_change.group_schedule_planner,model_federation_schedule_change,sports_federation_scheduling.group_schedule_planner,1,1,1,1
 access_schedule_auto_wizard_planner,schedule.auto.wizard.planner,model_federation_schedule_auto_wizard,sports_federation_scheduling.group_schedule_planner,1,1,1,1
 access_schedule_auto_wizard_manager,schedule.auto.wizard.manager,model_federation_schedule_auto_wizard,sports_federation_base.group_federation_manager,1,1,1,1
+
+access_schedule_submit_wizard_planner,schedule.submit.wizard.planner,model_federation_schedule_submit_wizard,sports_federation_scheduling.group_schedule_planner,1,1,1,1
+access_schedule_submit_wizard_manager,schedule.submit.wizard.manager,model_federation_schedule_submit_wizard,sports_federation_base.group_federation_manager,1,1,1,1
 
 ====================================================================================================
 FILE: sports_federation_scheduling/security/security.xml
@@ -96749,8 +98630,43 @@ FILE: sports_federation_scheduling/views/scheduling_views.xml
 
 <odoo>
  <record id="schedule_list" model="ir.ui.view"><field name="name">federation.schedule.list</field><field name="model">federation.schedule</field><field name="arch" type="xml"><list decoration-success="state == 'published'" decoration-info="state == 'ready_for_review'"><field name="name"/><field name="edition_id"/><field name="matchday_id"/><field name="structure_id"/><field name="revision"/><field name="state" widget="badge"/></list></field></record>
- <record id="schedule_form" model="ir.ui.view"><field name="name">federation.schedule.form</field><field name="model">federation.schedule</field><field name="arch" type="xml"><form><header><field name="state" widget="statusbar" statusbar_visible="draft,ready_for_review,changes_requested,approved,published"/></header><sheet><group><field name="name"/><field name="edition_id"/><field name="matchday_id" domain="[('edition_id','=',edition_id),('state','=','capacity_ready')]"/><field name="structure_id" domain="[('edition_id','=',edition_id),('state','=','frozen')]"/><field name="revision" readonly="1"/></group><notebook><page string="Assignments"><field name="assignment_ids"><list editable="bottom"><field name="fixture_id" domain="[('structure_id','=',parent.structure_id)]"/><field name="slot_id" domain="[('matchday_id','=',parent.matchday_id),('state','=','available')]"/><field name="method"/><field name="assigned_by_id" readonly="1"/></list></field></page><page string="Change History"><field name="change_ids"><list><field name="revision"/><field name="command"/><field name="fixture_id"/><field name="old_slot_id"/><field name="new_slot_id"/><field name="actor_id"/><field name="reason"/></list></field></page></notebook></sheet><chatter/></form></field></record>
+ <record id="schedule_form" model="ir.ui.view"><field name="name">federation.schedule.form</field><field name="model">federation.schedule</field><field name="arch" type="xml"><form><header><button name="action_open_submit_for_review" type="object" string="Submit for Review" class="btn-primary" invisible="state not in ('draft','changes_requested')"/><field name="state" widget="statusbar" statusbar_visible="draft,ready_for_review,changes_requested,approved,published"/></header><sheet><div class="alert alert-info" role="status" invisible="state != 'draft'">Assign every fixture, resolve blocking conflicts, then submit this schedule for independent review.</div><div class="alert alert-info" role="status" invisible="state != 'ready_for_review'">Submitted evidence is immutable and is waiting for an independent schedule approver.</div><div class="alert alert-warning" role="alert" invisible="state != 'changes_requested'">Changes were requested. Update the assignments, then submit a new review revision.</div><div class="alert alert-success" role="status" invisible="state != 'approved'">The schedule is approved and ready for publication by the approval team.</div><div class="alert alert-success" role="status" invisible="state != 'published'">This immutable publication is available to Match-Day Operations.</div><group><field name="name"/><field name="edition_id"/><field name="matchday_id" domain="[('edition_id','=',edition_id),('state','=','capacity_ready')]"/><field name="structure_id" domain="[('edition_id','=',edition_id),('state','=','frozen')]"/><field name="revision" readonly="1"/></group><notebook><page string="Assignments"><field name="assignment_ids"><list editable="bottom"><field name="fixture_id" domain="[('structure_id','=',parent.structure_id)]"/><field name="slot_id" domain="[('matchday_id','=',parent.matchday_id),('state','=','available')]"/><field name="method"/><field name="assigned_by_id" readonly="1"/></list></field></page><page string="Change History"><field name="change_ids"><list><field name="revision"/><field name="command"/><field name="fixture_id"/><field name="old_slot_id"/><field name="new_slot_id"/><field name="actor_id"/><field name="reason"/></list></field></page></notebook></sheet><chatter/></form></field></record>
  <record id="action_schedule_planner_v2" model="ir.actions.act_window"><field name="name">Schedule Planner</field><field name="res_model">federation.schedule</field><field name="view_mode">list,form</field></record>
+</odoo>
+
+====================================================================================================
+FILE: sports_federation_scheduling/views/submit_schedule_wizard_views.xml
+====================================================================================================
+
+<odoo>
+  <record id="schedule_submit_wizard_form" model="ir.ui.view">
+    <field name="name">federation.schedule.submit.wizard.form</field>
+    <field name="model">federation.schedule.submit.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Submit Schedule for Review">
+        <sheet>
+          <div class="alert alert-warning" role="alert">
+            This schedule has non-blocking warnings. Explain why they are acceptable before submitting immutable review evidence.
+          </div>
+          <group>
+            <field name="schedule_id"/>
+            <field name="expected_revision"/>
+            <field name="warning_count"/>
+          </group>
+          <group string="Warnings">
+            <field name="warning_summary" nolabel="1"/>
+          </group>
+          <group string="Required justification">
+            <field name="warning_override_reason" required="warning_count &gt; 0" placeholder="Explain why review may proceed despite these warnings..."/>
+          </group>
+        </sheet>
+        <footer>
+          <button name="action_submit" type="object" string="Submit for Review" class="btn-primary"/>
+          <button string="Cancel" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
 </odoo>
 
 ====================================================================================================
@@ -96758,6 +98674,7 @@ FILE: sports_federation_scheduling/wizards/__init__.py
 ====================================================================================================
 
 from . import auto_schedule_wizard
+from . import submit_schedule_wizard
 
 ====================================================================================================
 FILE: sports_federation_scheduling/wizards/auto_schedule_wizard.py
@@ -96922,6 +98839,45 @@ class FederationScheduleAutoWizard(models.TransientModel):
             }
         )
         return {"type": "ir.actions.act_window_close"}
+
+====================================================================================================
+FILE: sports_federation_scheduling/wizards/submit_schedule_wizard.py
+====================================================================================================
+
+from odoo import _, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationScheduleSubmitWizard(models.TransientModel):
+    _name = "federation.schedule.submit.wizard"
+    _description = "Submit Schedule for Independent Review"
+
+    schedule_id = fields.Many2one(
+        "federation.schedule", required=True, readonly=True, ondelete="cascade"
+    )
+    expected_revision = fields.Integer(required=True, readonly=True)
+    warning_count = fields.Integer(readonly=True)
+    warning_summary = fields.Text(readonly=True)
+    warning_override_reason = fields.Text(
+        string="Warning override reason",
+        help="Required when the submitted schedule still contains non-blocking warnings.",
+    )
+
+    def action_submit(self):
+        self.ensure_one()
+        if self.schedule_id.revision != self.expected_revision:
+            raise ValidationError(
+                _(
+                    "The schedule changed after this confirmation was opened. Refresh and retry."
+                )
+            )
+        if self.warning_count and not (self.warning_override_reason or "").strip():
+            raise ValidationError(
+                _("Explain why the remaining warnings are acceptable.")
+            )
+        return self.schedule_id.action_submit_for_review(
+            warning_override_reason=self.warning_override_reason
+        )
 
 ====================================================================================================
 FILE: sports_federation_standings/README.md

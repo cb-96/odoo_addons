@@ -39,6 +39,9 @@ class FederationSchedulePublication(models.Model):
     edition_id = fields.Many2one(
         related="schedule_id.edition_id", store=True, index=True
     )
+    matchday_id = fields.Many2one(
+        related="schedule_id.matchday_id", store=True, index=True
+    )
     version = fields.Integer(required=True)
     state = fields.Selection(
         [("live", "Live"), ("superseded", "Superseded")],
@@ -53,6 +56,6 @@ class FederationSchedulePublication(models.Model):
     reason = fields.Text()
     assignment_snapshot = fields.Json(required=True)
     _unique_version = models.Constraint(
-        "unique(edition_id,version)",
-        "Publication versions must be unique per edition.",
+        "unique(matchday_id,version)",
+        "Publication versions must be unique per match day.",
     )

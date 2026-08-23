@@ -86,7 +86,10 @@ class FederationCompetitionRoleAssignment(models.Model):
     def assert_role(self, edition, *roles):
         if self.env.user.has_group("sports_federation_base.group_federation_manager"):
             return True
-        if not self.search_count(
+        # Role assignments are administrator-managed records.  The authorization
+        # guard must be able to inspect them without granting every operational
+        # role broad read access to the assignment model.
+        if not self.sudo().search_count(
             [
                 ("edition_id", "=", edition.id),
                 ("user_id", "=", self.env.user.id),

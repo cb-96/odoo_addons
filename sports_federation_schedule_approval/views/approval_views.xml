@@ -97,6 +97,7 @@
     <field name="arch" type="xml">
       <list decoration-success="state == 'live'" decoration-muted="state == 'superseded'">
         <field name="edition_id"/>
+        <field name="matchday_id"/>
         <field name="schedule_id"/>
         <field name="version"/>
         <field name="source_revision"/>
@@ -120,7 +121,7 @@
           <div class="alert alert-success" role="status" invisible="state != 'live'">This is the current immutable schedule used by Match-Day Operations.</div>
           <div class="alert alert-secondary" role="status" invisible="state != 'superseded'">This historical publication has been replaced and remains available as audit evidence.</div>
           <group>
-            <group><field name="edition_id"/><field name="schedule_id"/><field name="review_id"/><field name="version"/><field name="source_revision"/></group>
+            <group><field name="edition_id"/><field name="matchday_id"/><field name="schedule_id"/><field name="review_id"/><field name="version"/><field name="source_revision"/></group>
             <group><field name="published_by_id"/><field name="published_at"/><field name="reason"/><field name="snapshot_digest" groups="sports_federation_base.group_federation_manager"/></group>
           </group>
           <group string="Immutable published assignments"><field name="assignment_snapshot" nolabel="1"/></group>

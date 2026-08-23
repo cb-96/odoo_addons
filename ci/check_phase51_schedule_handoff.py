@@ -49,7 +49,9 @@ for relative, needles in CHECKS.items():
         if needle not in text:
             errors.append(f"{relative}: missing {needle!r}")
 
-approval_xml = (ROOT / "sports_federation_schedule_approval/views/approval_views.xml").read_text(encoding="utf-8")
+approval_xml = (
+    ROOT / "sports_federation_schedule_approval/views/approval_views.xml"
+).read_text(encoding="utf-8")
 for direct_service in ("approval.commands.approve", "approval.commands.publish"):
     if direct_service in approval_xml:
         errors.append(f"approval view bypasses model command wrapper: {direct_service}")

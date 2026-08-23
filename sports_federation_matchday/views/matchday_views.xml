@@ -1,7 +1,54 @@
 <odoo>
- <record id="incident_list" model="ir.ui.view"><field name="name">federation.matchday.incident.list</field><field name="model">federation.matchday.incident</field><field name="arch" type="xml"><list decoration-danger="not resolved"><field name="occurred_at"/><field name="matchday_id"/><field name="incident_type"/><field name="description"/><field name="resolved"/><field name="resolved_by_id"/></list></field></record>
- <record id="matchday_form_operations" model="ir.ui.view"><field name="name">federation.matchday.form.operations</field><field name="model">federation.matchday</field><field name="inherit_id" ref="sports_federation_calendar.matchday_form"/><field name="arch" type="xml"><xpath expr="//group[1]" position="after"><group string="Published execution"><field name="current_publication_id" readonly="1"/><field name="active_session_id" readonly="1"/></group></xpath></field></record>
- <record id="session_list" model="ir.ui.view"><field name="name">federation.matchday.session.list</field><field name="model">federation.matchday.session</field><field name="arch" type="xml"><list><field name="matchday_id"/><field name="publication_id"/><field name="state" widget="badge"/><field name="opened_at"/><field name="opened_by_id"/><field name="closed_at"/><field name="closed_by_id"/></list></field></record>
- <record id="action_matchday_control" model="ir.actions.act_window"><field name="name">Match-Day Control</field><field name="res_model">federation.matchday</field><field name="view_mode">kanban,list,form</field><field name="domain">[("state","in",("scheduled","open"))]</field></record>
- <record id="action_matchday_incidents" model="ir.actions.act_window"><field name="name">Match-Day Incidents</field><field name="res_model">federation.matchday.incident</field><field name="view_mode">list,form</field></record>
+  <record id="incident_list" model="ir.ui.view">
+    <field name="name">federation.matchday.incident.list</field><field name="model">federation.matchday.incident</field>
+    <field name="arch" type="xml"><list create="0" edit="0" delete="0" decoration-danger="not resolved"><field name="occurred_at"/><field name="matchday_id"/><field name="incident_type"/><field name="description"/><field name="resolved"/><field name="resolved_by_id"/><button name="action_resolve" type="object" string="Resolve" invisible="resolved"/></list></field>
+  </record>
+  <record id="deviation_list" model="ir.ui.view">
+    <field name="name">federation.matchday.deviation.list</field><field name="model">federation.matchday.deviation</field>
+    <field name="arch" type="xml"><list create="0" edit="0" delete="0"><field name="occurred_at"/><field name="matchday_id"/><field name="match_id"/><field name="deviation_type" widget="badge"/><field name="old_slot_id"/><field name="new_slot_id"/><field name="delay_minutes"/><field name="reason"/><field name="actor_id"/></list></field>
+  </record>
+  <record id="matchday_form_operations" model="ir.ui.view">
+    <field name="name">federation.matchday.form.operations</field><field name="model">federation.matchday</field><field name="inherit_id" ref="sports_federation_calendar.matchday_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_open_matchday_operations" type="object" string="Open Match Day" class="btn-primary" invisible="readiness_state != 'ready'" confirm="Open live operations against the current immutable publication?"/>
+        <button name="action_open_court_status_wizard" type="object" string="Update Court" invisible="state != 'open'"/>
+        <button name="action_open_incident_wizard" type="object" string="Report Incident" invisible="state != 'open'"/>
+        <button name="action_open_deviation_wizard" type="object" string="Operational Schedule Change" invisible="state != 'open'"/>
+        <button name="action_close_matchday_operations" type="object" string="Close Match Day" class="btn-primary" invisible="state != 'open'"/>
+      </xpath>
+      <xpath expr="//group[1]" position="after">
+        <group string="Operational readiness">
+          <field name="readiness_state" widget="badge" readonly="1"/>
+          <field name="readiness_message" readonly="1"/>
+          <field name="current_publication_id" readonly="1"/>
+          <field name="active_session_id" readonly="1"/>
+        </group>
+        <group string="Live controls" col="6">
+          <field name="published_match_count"/><field name="unfinished_match_count"/><field name="unresolved_incident_count"/><field name="unavailable_court_count"/><field name="deviation_count"/>
+        </group>
+      </xpath>
+      <xpath expr="//notebook" position="inside">
+        <page string="Published Matches" name="published_matches">
+          <field name="published_match_ids" readonly="1"><list><field name="date_scheduled"/><field name="name"/><field name="published_slot_id"/><field name="operational_slot_id"/><field name="operational_status" widget="badge"/><field name="state" widget="badge"/></list></field>
+        </page>
+        <page string="Court Status" name="court_status">
+          <field name="court_status_ids" readonly="1"><list><field name="court_id"/><field name="state" widget="badge"/><field name="delay_minutes"/><field name="note"/></list></field>
+        </page>
+        <page string="Incidents" name="matchday_incidents">
+          <field name="incident_ids" readonly="1"><list decoration-danger="not resolved"><field name="occurred_at"/><field name="incident_type"/><field name="description"/><field name="resolved"/><field name="resolved_by_id"/><button name="action_resolve" type="object" string="Resolve" invisible="resolved"/></list></field>
+        </page>
+        <page string="Operational Deviations" name="operational_deviations">
+          <field name="deviation_ids" readonly="1"><list><field name="occurred_at"/><field name="match_id"/><field name="deviation_type" widget="badge"/><field name="old_slot_id"/><field name="new_slot_id"/><field name="delay_minutes"/><field name="reason"/><field name="actor_id"/></list></field>
+        </page>
+        <page string="Execution Sessions" name="execution_sessions">
+          <field name="session_ids" readonly="1"><list><field name="publication_id"/><field name="state" widget="badge"/><field name="opened_at"/><field name="opened_by_id"/><field name="closed_at"/><field name="closed_by_id"/><field name="close_note"/></list></field>
+        </page>
+      </xpath>
+    </field>
+  </record>
+  <record id="session_list" model="ir.ui.view"><field name="name">federation.matchday.session.list</field><field name="model">federation.matchday.session</field><field name="arch" type="xml"><list create="0" edit="0" delete="0"><field name="matchday_id"/><field name="publication_id"/><field name="state" widget="badge"/><field name="opened_at"/><field name="opened_by_id"/><field name="closed_at"/><field name="closed_by_id"/></list></field></record>
+  <record id="action_matchday_control" model="ir.actions.act_window"><field name="name">Match-Day Control</field><field name="res_model">federation.matchday</field><field name="view_mode">list,form</field><field name="domain">[("state","in",("scheduled","open","closed"))]</field><field name="help" type="html"><p class="o_view_nocontent_smiling_face">Publish an approved schedule to make a match day operationally ready.</p></field></record>
+  <record id="action_matchday_incidents" model="ir.actions.act_window"><field name="name">Match-Day Incidents</field><field name="res_model">federation.matchday.incident</field><field name="view_mode">list</field></record>
+  <record id="action_matchday_deviations" model="ir.actions.act_window"><field name="name">Operational Schedule Deviations</field><field name="res_model">federation.matchday.deviation</field><field name="view_mode">list</field></record>
 </odoo>

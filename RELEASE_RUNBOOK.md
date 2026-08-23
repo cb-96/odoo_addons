@@ -407,3 +407,30 @@ is unchanged; see `DEPLOYMENT_GUIDE.md`.
 | `Federation: GC Rate Limit Buckets` | Active, interval 1 hour |
 | `Federation: GC Staged Deliveries` | Active, interval 1 day |
 | `Federation: Expire Player Licenses` | Active, interval 1 day |
+
+## Upgrade evidence: schedule publication and match-day operations 19.0.2
+
+Affected upgrades:
+
+- `sports_federation_schedule_approval` `19.0.2.1.0` to `19.0.2.2.0`
+- `sports_federation_matchday` `19.0.2.0.0` to `19.0.2.1.0`
+
+Dry-run procedure:
+
+```bash
+odoo-bin -d RC_DATABASE \
+   -u sports_federation_schedule_approval,sports_federation_matchday \
+   --stop-after-init
+```
+
+Verify that publication `matchday_id` values are populated, each match day has
+at most one `live` publication, existing published matches have
+`operational_slot_id = published_slot_id`, and the Phase 5.1.1 to 5.3 contract
+and module tests pass. The approval migration creates a partial unique index for
+one live publication per match day. Existing data is safe because the preceding
+implementation permitted at most one live publication for the broader edition.
+
+Before upgrading, take a database backup. Rollback requires restoring that
+backup because the new publication uniqueness semantics and operational audit
+fields are persistent. Do not downgrade only the addon code after operators have
+recorded live deviations.
