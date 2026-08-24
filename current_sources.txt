@@ -13412,6 +13412,53 @@ if errors:
 print("Portal V2 ownership contract passed.")
 
 ====================================================================================================
+FILE: ci/check_public_v2_competition_contract.py
+====================================================================================================
+
+#!/usr/bin/env python3
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+controller = (
+    ROOT / "sports_federation_public_site/controllers/public_v2_competitions.py"
+).read_text()
+queries = (
+    ROOT / "sports_federation_public_site/services/public_competition_queries.py"
+).read_text()
+schedule = (
+    ROOT / "sports_federation_public_site/services/public_schedule_queries.py"
+).read_text()
+manifest = (ROOT / "sports_federation_public_site/__manifest__.py").read_text()
+checks = {
+    "edition publication boundary": '("website_published", "=", True)' in queries,
+    "V2 division ownership": "division.edition_id == edition" in queries,
+    "live publication boundary": '("current_publication_id.state", "=", "live")'
+    in queries + controller,
+    "immutable publication match boundary": '("schedule_publication_id", "=", publication.id)'
+    in schedule,
+    "edition routes": "/competitions/<string:edition_slug>" in controller,
+    "gameday route": "/gamedays/<int:matchday_id>" in controller,
+    "V2 dependencies": all(
+        module in manifest
+        for module in (
+            "sports_federation_competition_core",
+            "sports_federation_format",
+            "sports_federation_calendar",
+            "sports_federation_schedule_approval",
+            "sports_federation_matchday",
+        )
+    ),
+}
+failed = [name for name, passed in checks.items() if not passed]
+if failed:
+    print(
+        "Public V2 competition contract failed: " + ", ".join(failed), file=sys.stderr
+    )
+    raise SystemExit(1)
+print("Public V2 competition contract passed.")
+
+====================================================================================================
 FILE: ci/check_release_train.py
 ====================================================================================================
 
@@ -15882,6 +15929,8 @@ if [[ -x "$SCRIPT_DIR/prune_ci_logs.sh" ]]; then
 fi
 
 exit "$EXIT_CODE"
+
+python ci/check_public_v2_competition_contract.py
 
 ====================================================================================================
 FILE: ci/static_checks.py
@@ -65526,6 +65575,7 @@ FILE: sports_federation_public_site/__init__.py
 from . import controllers
 from . import models
 from .hooks import post_init_hook
+from . import services
 
 ====================================================================================================
 FILE: sports_federation_public_site/__manifest__.py
@@ -65533,9 +65583,9 @@ FILE: sports_federation_public_site/__manifest__.py
 
 {
     "name": "Sports Federation Public Site",
-    "version": "19.0.1.3.0",
+    "version": "19.0.2.0.0",
     "category": "Sports",
-    "summary": "Public tournament coverage integrated into the website tournament hub",
+    "summary": "Public V2 competition, gameday, standings and bracket experience",
     "description": "Public website pages for tournament coverage, standings, results, schedules, and federation events.",
     "author": "Sports Federation",
     "website": "",
@@ -65549,10 +65599,17 @@ FILE: sports_federation_public_site/__manifest__.py
         "sports_federation_venues",
         "sports_federation_result_control",
         "sports_federation_people",
+        "sports_federation_competition_core",
+        "sports_federation_format",
+        "sports_federation_calendar",
+        "sports_federation_schedule_approval",
+        "sports_federation_matchday",
     ],
     "data": [
         "security/ir.model.access.csv",
         "views/website_templates.xml",
+        "views/website_v2_competition_templates.xml",
+        "views/competition_edition_views_inherit.xml",
         "views/website_hub_templates.xml",
         "views/website_editorial_templates.xml",
         "views/website_clubs_players_templates.xml",
@@ -65563,6 +65620,12 @@ FILE: sports_federation_public_site/__manifest__.py
         "views/standing_views_inherit.xml",
         "views/editorial_views.xml",
     ],
+    "assets": {
+        "web.assets_frontend": [
+            "sports_federation_public_site/static/src/scss/public_v2_competitions.scss",
+            "sports_federation_public_site/static/src/js/public_live_board.js",
+        ],
+    },
     "demo": [],
     "post_init_hook": "post_init_hook",
     "installable": True,
@@ -65577,6 +65640,7 @@ FILE: sports_federation_public_site/controllers/__init__.py
 from . import public_competitions
 from . import public_follow
 from . import public_clubs_players
+from . import public_v2_competitions
 
 ====================================================================================================
 FILE: sports_federation_public_site/controllers/_filters.py
@@ -65649,7 +65713,11 @@ class TournamentHubFilterMixin:
         if not public_access:
             return []
 
-        domain = [("website_published", "=", True)]
+        domain = [
+            ("website_published", "=", True),
+            ("edition_id", "!=", False),
+            ("edition_id.website_published", "=", True),
+        ]
         if public_access == "results":
             domain.append(("show_public_results", "=", True))
         elif public_access == "standings":
@@ -65994,16 +66062,6 @@ class PublicTournamentHubController(
             headers=[("Retry-After", str(decision["retry_after"]))],
         )
 
-    @http.route(["/competitions"], type="http", auth="public", website=True)
-    def competitions_list(self, **kw):
-        """Handle competitions list."""
-        return request.redirect("/tournaments#published")
-
-    @http.route(["/competitions/archive"], type="http", auth="public", website=True)
-    def competitions_archive(self, **kw):
-        """Handle competitions archive."""
-        return request.redirect("/tournaments?state=closed#published-archive")
-
     @http.route(
         ["/competitions/api/json", "/tournaments/api/json"],
         type="jsonrpc",
@@ -66040,13 +66098,7 @@ class PublicTournamentHubController(
             ]
         }
 
-    @http.route(
-        ["/tournaments", "/tournaments/page/<int:page>"],
-        type="http",
-        auth="public",
-        website=True,
-    )
-    def tournaments_list(self, page=1, search="", **kw):
+    def _legacy_tournaments_list(self, page=1, search="", **kw):
         """Handle tournaments list."""
         filters = self._build_filters(search=search, **kw)
         Tournament = request.env["federation.tournament"].sudo()
@@ -66133,10 +66185,7 @@ class PublicTournamentHubController(
         )
 
     @http.route(
-        [
-            "/tournament/<int:tournament_id>/coverage",
-            "/competitions/<model('federation.tournament'):tournament>",
-        ],
+        ["/tournament/<int:tournament_id>/coverage"],
         type="http",
         auth="public",
         website=True,
@@ -66152,13 +66201,7 @@ class PublicTournamentHubController(
             self._raise_not_found()
         return request.redirect(tournament.get_public_path())
 
-    @http.route(
-        ["/tournaments/<string:tournament_slug>", "/tournament/<int:tournament_id>"],
-        type="http",
-        auth="public",
-        website=True,
-    )
-    def tournament_detail(self, tournament_slug=None, tournament_id=None, **kw):
+    def _legacy_tournament_detail(self, tournament_slug=None, tournament_id=None, **kw):
         """Handle tournament detail."""
         tournament = self._resolve_tournament(
             tournament_slug=tournament_slug,
@@ -66196,7 +66239,7 @@ class PublicTournamentHubController(
             public_access="detail",
         )
         if not tournament.exists() or tournament.state != "open":
-            return request.redirect("/tournaments")
+            return request.redirect("/competitions")
 
         clubs = self._get_request_user_clubs()
         if not clubs:
@@ -66211,7 +66254,7 @@ class PublicTournamentHubController(
         Entry = request.env["federation.competition.entry"]
         window = Entry._portal_open_window_for_division(tournament)
         if not window:
-            return request.redirect("/tournaments")
+            return request.redirect("/competitions")
         existing = Entry.sudo().search(
             [
                 ("window_id", "=", window.id),
@@ -66260,7 +66303,7 @@ class PublicTournamentHubController(
             public_access="detail",
         )
         if not tournament.exists():
-            return request.redirect("/tournaments")
+            return request.redirect("/competitions")
         return request.redirect(tournament.get_public_register_path())
 
     @http.route(
@@ -66278,7 +66321,7 @@ class PublicTournamentHubController(
             public_access="detail",
         )
         if not tournament.exists() or tournament.state != "open":
-            return request.redirect("/tournaments")
+            return request.redirect("/competitions")
 
         try:
             self._validate_manual_csrf(kw.get("csrf_token"))
@@ -66329,7 +66372,7 @@ class PublicTournamentHubController(
             public_access="detail",
         )
         if not tournament.exists():
-            return request.redirect("/tournaments")
+            return request.redirect("/competitions")
         return self.tournament_register_submit(
             tournament.get_public_slug_value(), team_id, notes=notes, **kw
         )
@@ -66805,6 +66848,266 @@ class PublicSeasonAndTeamController(PublicTournamentHubController):
         )
 
 ====================================================================================================
+FILE: sports_federation_public_site/controllers/public_v2_competitions.py
+====================================================================================================
+
+import json
+
+from odoo import http
+from odoo.http import Response, request
+
+
+class PublicV2CompetitionController(http.Controller):
+    def _queries(self):
+        return request.env["federation.public.competition.queries"]
+
+    def _edition_or_404(self, slug):
+        edition = self._queries().resolve_edition(slug)
+        if not edition:
+            raise request.not_found()
+        return edition
+
+    @http.route(
+        ["/tournaments", "/tournaments/page/<int:page>"],
+        type="http",
+        auth="public",
+        website=True,
+        sitemap=False,
+    )
+    def legacy_tournament_hub(self, page=1, **kw):
+        return request.redirect("/competitions", code=301)
+
+    @http.route(
+        ["/tournaments/<string:tournament_slug>", "/tournament/<int:tournament_id>"],
+        type="http",
+        auth="public",
+        website=True,
+        sitemap=False,
+    )
+    def legacy_tournament_detail(self, tournament_slug=None, tournament_id=None, **kw):
+        domain = [
+            ("website_published", "=", True),
+            ("edition_id.website_published", "=", True),
+        ]
+        if tournament_id:
+            domain.append(("id", "=", tournament_id))
+        else:
+            domain.append(("public_slug", "=", tournament_slug))
+        division = request.env["federation.tournament"].sudo().search(domain, limit=1)
+        if not division or not division.edition_id.public_slug:
+            raise request.not_found()
+        return request.redirect(
+            f"/competitions/{division.edition_id.public_slug}?division_id={division.id}",
+            code=301,
+        )
+
+    @http.route(
+        ["/competitions", "/competitions/page/<int:page>"],
+        type="http",
+        auth="public",
+        website=True,
+        sitemap=True,
+    )
+    def competition_hub(self, page=1, search="", season_id=None, archive=False, **kw):
+        editions = self._queries().list_editions(
+            archived=bool(archive), search=search, season_id=season_id
+        )
+        return request.render(
+            "sports_federation_public_site.public_v2_competition_hub",
+            {
+                "editions": editions,
+                "search": search,
+                "archive": bool(archive),
+                "seasons": request.env["federation.season"]
+                .sudo()
+                .search([("active", "=", True)], order="date_start desc,id desc"),
+            },
+        )
+
+    @http.route(
+        ["/competitions/archive"],
+        type="http",
+        auth="public",
+        website=True,
+        sitemap=True,
+    )
+    def competition_archive(self, **kw):
+        return self.competition_hub(archive=True, **kw)
+
+    @http.route(
+        ["/competitions/<string:edition_slug>"],
+        type="http",
+        auth="public",
+        website=True,
+        sitemap=True,
+    )
+    def competition_detail(self, edition_slug, division_id=None, **kw):
+        edition = self._edition_or_404(edition_slug)
+        summary = self._queries().edition_summary(edition)
+        division = (
+            summary["divisions"].filtered(lambda d: d.id == int(division_id))[:1]
+            if division_id
+            else summary["divisions"][:1]
+        )
+        summary.update(
+            {
+                "division": division,
+                "stage_cards": request.env[
+                    "federation.public.format.queries"
+                ].stage_cards(edition, division),
+            }
+        )
+        return request.render(
+            "sports_federation_public_site.public_v2_competition_detail", summary
+        )
+
+    @http.route(
+        ["/competitions/<string:edition_slug>/format"],
+        type="http",
+        auth="public",
+        website=True,
+        sitemap=True,
+    )
+    def competition_format(self, edition_slug, division_id=None, **kw):
+        edition = self._edition_or_404(edition_slug)
+        divisions = self._queries().public_divisions(edition)
+        division = (
+            divisions.filtered(lambda d: d.id == int(division_id))[:1]
+            if division_id
+            else divisions[:1]
+        )
+        return request.render(
+            "sports_federation_public_site.public_v2_competition_format",
+            {
+                "edition": edition,
+                "divisions": divisions,
+                "division": division,
+                "stage_cards": request.env[
+                    "federation.public.format.queries"
+                ].stage_cards(edition, division),
+            },
+        )
+
+    @http.route(
+        ["/competitions/<string:edition_slug>/schedule"],
+        type="http",
+        auth="public",
+        website=True,
+        sitemap=True,
+    )
+    def competition_schedule(self, edition_slug, **kw):
+        edition = self._edition_or_404(edition_slug)
+        matchdays = request.env["federation.public.schedule.queries"].edition_matchdays(
+            edition
+        )
+        return request.render(
+            "sports_federation_public_site.public_v2_competition_schedule",
+            {"edition": edition, "matchdays": matchdays},
+        )
+
+    @http.route(
+        ["/competitions/<string:edition_slug>/gamedays/<int:matchday_id>"],
+        type="http",
+        auth="public",
+        website=True,
+        sitemap=False,
+    )
+    def competition_gameday(
+        self,
+        edition_slug,
+        matchday_id,
+        team_id=None,
+        court_id=None,
+        display=False,
+        **kw,
+    ):
+        edition = self._edition_or_404(edition_slug)
+        matchday = (
+            request.env["federation.matchday"]
+            .sudo()
+            .search(
+                [
+                    ("id", "=", matchday_id),
+                    ("edition_id", "=", edition.id),
+                    ("current_publication_id.state", "=", "live"),
+                ],
+                limit=1,
+            )
+        )
+        if not matchday:
+            raise request.not_found()
+        board = request.env["federation.public.schedule.queries"].matchday_board(
+            matchday, team_id=team_id, court_id=court_id
+        )
+        board.update(
+            {
+                "edition": edition,
+                "matchday": matchday,
+                "team_id": int(team_id) if team_id else False,
+                "court_id": int(court_id) if court_id else False,
+                "display": bool(display),
+            }
+        )
+        return request.render(
+            (
+                "sports_federation_public_site.public_v2_gameday_display"
+                if display
+                else "sports_federation_public_site.public_v2_gameday"
+            ),
+            board,
+        )
+
+    @http.route(
+        ["/competitions/<string:edition_slug>/gamedays/<int:matchday_id>/status.json"],
+        type="http",
+        auth="public",
+        website=False,
+        sitemap=False,
+    )
+    def competition_gameday_status(self, edition_slug, matchday_id, **kw):
+        edition = self._edition_or_404(edition_slug)
+        matchday = (
+            request.env["federation.matchday"]
+            .sudo()
+            .search(
+                [
+                    ("id", "=", matchday_id),
+                    ("edition_id", "=", edition.id),
+                    ("current_publication_id.state", "=", "live"),
+                ],
+                limit=1,
+            )
+        )
+        if not matchday:
+            raise request.not_found()
+        board = request.env["federation.public.schedule.queries"].matchday_board(
+            matchday
+        )
+        payload = {
+            "publication": board["publication"].version,
+            "matches": [
+                {
+                    "id": row["match"].id,
+                    "status": row["status"],
+                    "home_score": row["match"].home_score,
+                    "away_score": row["match"].away_score,
+                    "result_state": row["match"].result_state,
+                    "court": row["slot"].court_id.display_name if row["slot"] else None,
+                    "start": (
+                        row["slot"].start_datetime.isoformat() if row["slot"] else None
+                    ),
+                }
+                for row in board["matches"]
+            ],
+        }
+        body = json.dumps(payload, sort_keys=True)
+        return Response(
+            body,
+            content_type="application/json; charset=utf-8",
+            headers=[("Cache-Control", "public, max-age=20")],
+        )
+
+====================================================================================================
 FILE: sports_federation_public_site/hooks.py
 ====================================================================================================
 
@@ -66825,6 +67128,40 @@ def migrate(cr, version):
     env["website"]._cleanup_default_public_site_content()
 
 ====================================================================================================
+FILE: sports_federation_public_site/migrations/19.0.2.0.0/post-migrate.py
+====================================================================================================
+
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
+def migrate(cr, version):
+    cr.execute("""
+        UPDATE federation_tournament
+           SET website_published = FALSE,
+               public_featured = FALSE
+         WHERE edition_id IS NULL
+           AND (website_published IS TRUE OR public_featured IS TRUE)
+    """)
+    _logger.info(
+        "V2 public cutover unpublished %s legacy tournament records", cr.rowcount
+    )
+    cr.execute("""
+        UPDATE federation_tournament tournament
+           SET website_published = FALSE,
+               public_featured = FALSE
+          FROM federation_competition_edition edition
+         WHERE tournament.edition_id = edition.id
+           AND COALESCE(edition.website_published, FALSE) IS FALSE
+           AND (tournament.website_published IS TRUE OR tournament.public_featured IS TRUE)
+    """)
+    _logger.info(
+        "V2 public cutover unpublished %s child divisions of private editions",
+        cr.rowcount,
+    )
+
+====================================================================================================
 FILE: sports_federation_public_site/models/__init__.py
 ====================================================================================================
 
@@ -66837,6 +67174,7 @@ from . import public_player_flags
 from . import public_editorial
 from . import website
 from . import website_menu
+from . import public_competition_edition
 
 ====================================================================================================
 FILE: sports_federation_public_site/models/public_club_flags.py
@@ -66971,6 +67309,58 @@ class FederationClub(models.Model):
                 order="tournament_id desc, id asc",
             )
         )
+
+====================================================================================================
+FILE: sports_federation_public_site/models/public_competition_edition.py
+====================================================================================================
+
+import re
+
+from odoo import _, api, fields, models
+
+
+class FederationCompetitionEditionPublic(models.Model):
+    _inherit = "federation.competition.edition"
+
+    website_published = fields.Boolean(index=True, tracking=True)
+    public_slug = fields.Char(index=True, copy=False)
+    public_featured = fields.Boolean(index=True)
+    public_summary = fields.Text()
+    public_hero_image = fields.Binary(attachment=True)
+    public_sort_sequence = fields.Integer(default=10)
+    public_archive_date = fields.Date()
+
+    _public_slug_unique = models.Constraint(
+        "unique(public_slug)", "The public competition slug must be unique."
+    )
+
+    @api.onchange("name")
+    def _onchange_public_slug(self):
+        for record in self:
+            if record.name and not record.public_slug:
+                record.public_slug = re.sub(
+                    r"[^a-z0-9]+", "-", record.name.lower()
+                ).strip("-")
+
+    def action_publish_website(self):
+        for edition in self:
+            self.env["federation.public.competition.queries"].assert_publishable(
+                edition
+            )
+            edition.write({"website_published": True})
+        return True
+
+    def action_unpublish_website(self):
+        self.write({"website_published": False})
+        return True
+
+    def action_open_public_preview(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_url",
+            "url": f"/competitions/{self.public_slug or 'preview'}?preview=1",
+            "target": "new",
+        }
 
 ====================================================================================================
 FILE: sports_federation_public_site/models/public_editorial.py
@@ -69033,6 +69423,344 @@ access_public_editorial_item_user,federation.public.editorial.item.user,model_fe
 access_public_editorial_item_manager,federation.public.editorial.item.manager,model_federation_public_editorial_item,sports_federation_base.group_federation_manager,1,1,1,1
 
 ====================================================================================================
+FILE: sports_federation_public_site/services/__init__.py
+====================================================================================================
+
+from . import public_competition_queries
+from . import public_schedule_queries
+from . import public_format_queries
+
+====================================================================================================
+FILE: sports_federation_public_site/services/public_competition_queries.py
+====================================================================================================
+
+from odoo import _, fields, models
+from odoo.exceptions import ValidationError
+
+
+class PublicCompetitionQueries(models.AbstractModel):
+    _name = "federation.public.competition.queries"
+    _description = "Public V2 Competition Queries"
+
+    def public_domain(self, archived=False):
+        states = ("finished", "archived") if archived else ("active", "finished")
+        return [
+            ("website_published", "=", True),
+            ("engine_state", "in", states),
+            ("active", "=", True),
+        ]
+
+    def list_editions(self, archived=False, search=None, season_id=None):
+        domain = self.public_domain(archived=archived)
+        if search:
+            domain.append(("name", "ilike", search.strip()))
+        if season_id:
+            domain.append(("season_id", "=", int(season_id)))
+        return (
+            self.env["federation.competition.edition"]
+            .sudo()
+            .search(domain, order="public_sort_sequence, date_start desc, id desc")
+            .filtered(lambda edition: bool(self.public_divisions(edition)))
+        )
+
+    def resolve_edition(self, slug):
+        edition = (
+            self.env["federation.competition.edition"]
+            .sudo()
+            .search(
+                self.public_domain(archived=False) + [("public_slug", "=", slug)],
+                limit=1,
+            )
+        )
+        if not edition:
+            edition = (
+                self.env["federation.competition.edition"]
+                .sudo()
+                .search(
+                    [
+                        ("website_published", "=", True),
+                        ("engine_state", "=", "archived"),
+                        ("public_slug", "=", slug),
+                    ],
+                    limit=1,
+                )
+            )
+        return edition
+
+    def public_divisions(self, edition):
+        return edition.tournament_ids.filtered(
+            lambda division: division.active
+            and division.website_published
+            and division.edition_id == edition
+        ).sorted(lambda division: (division.name or "", division.id))
+
+    def edition_summary(self, edition):
+        divisions = self.public_divisions(edition)
+        matchdays = (
+            self.env["federation.matchday"]
+            .sudo()
+            .search(
+                [
+                    ("edition_id", "=", edition.id),
+                    ("current_publication_id.state", "=", "live"),
+                ],
+                order="date,id",
+            )
+        )
+        today = fields.Date.context_today(self)
+        next_matchday = matchdays.filtered(lambda m: m.date >= today)[:1]
+        return {
+            "edition": edition,
+            "divisions": divisions,
+            "next_matchday": next_matchday,
+            "matchdays": matchdays,
+            "current_stage": self.env["federation.public.format.queries"].current_stage(
+                edition
+            ),
+        }
+
+    def assert_publishable(self, edition):
+        errors = []
+        if not edition.public_slug:
+            errors.append(_("configure a public slug"))
+        if not edition.tournament_ids.filtered(
+            lambda d: d.website_published and d.edition_id == edition
+        ):
+            errors.append(_("publish at least one V2 division"))
+        if edition.engine_state not in ("active", "finished", "archived"):
+            errors.append(
+                _("move the competition engine to Active, Finished or Archived")
+            )
+        if errors:
+            raise ValidationError(
+                _("The edition cannot be published yet: %s") % "; ".join(errors)
+            )
+        return True
+
+====================================================================================================
+FILE: sports_federation_public_site/services/public_format_queries.py
+====================================================================================================
+
+from collections import defaultdict
+
+from odoo import models
+
+
+class PublicFormatQueries(models.AbstractModel):
+    _name = "federation.public.format.queries"
+    _description = "Public Competition Format Queries"
+
+    def structures(self, edition, division=False):
+        domain = [("edition_id", "=", edition.id), ("state", "=", "frozen")]
+        if division:
+            domain.append(("division_id", "=", division.id))
+        structures = (
+            self.env["federation.competition.structure"]
+            .sudo()
+            .search(domain, order="division_id,version desc,id desc")
+        )
+        latest = {}
+        for structure in structures:
+            latest.setdefault(structure.division_id.id, structure)
+        return self.env["federation.competition.structure"].browse(
+            [s.id for s in latest.values()]
+        )
+
+    def current_stage(self, edition, division=False):
+        stages = (
+            self.structures(edition, division)
+            .mapped("stage_ids")
+            .sorted(lambda s: (s.sequence, s.id))
+        )
+        return (
+            stages.filtered(lambda s: s.graph_state == "active")[:1]
+            or stages.filtered(lambda s: s.graph_state in ("ready", "waiting"))[:1]
+            or stages[-1:]
+        )
+
+    def stage_cards(self, edition, division=False):
+        stages = (
+            self.structures(edition, division)
+            .mapped("stage_ids")
+            .sorted(lambda s: (s.sequence, s.id))
+        )
+        cards = []
+        for stage in stages:
+            rounds = defaultdict(list)
+            for fixture in stage.stage_fixture_ids.sorted(
+                lambda f: (f.round_number, f.sequence, f.id)
+            ):
+                rounds[fixture.round_number].append(fixture)
+            cards.append(
+                {
+                    "stage": stage,
+                    "standings": (
+                        stage.standing_snapshot_id.line_ids
+                        if stage.standing_snapshot_id
+                        else self.env["federation.stage.standing.line"].browse([])
+                    ),
+                    "rounds": list(rounds.items()),
+                    "progressions": stage.outgoing_progression_ids.sorted(
+                        lambda p: (p.rank_from, p.id)
+                    ),
+                }
+            )
+        return cards
+
+====================================================================================================
+FILE: sports_federation_public_site/services/public_schedule_queries.py
+====================================================================================================
+
+from collections import defaultdict
+
+from odoo import fields, models
+
+
+class PublicScheduleQueries(models.AbstractModel):
+    _name = "federation.public.schedule.queries"
+    _description = "Public Published Schedule Queries"
+
+    def matchday_board(self, matchday, team_id=None, court_id=None):
+        publication = matchday.current_publication_id
+        if not publication or publication.state != "live":
+            return {
+                "publication": False,
+                "matches": [],
+                "courts": [],
+                "times": [],
+                "grid": {},
+                "by_time": [],
+            }
+        domain = [
+            ("schedule_publication_id", "=", publication.id),
+            ("logical_fixture_id", "!=", False),
+        ]
+        matches = self.env["federation.match"].sudo().search(domain)
+        if team_id:
+            team_id = int(team_id)
+            matches = matches.filtered(
+                lambda m: team_id in (m.home_team_id.id, m.away_team_id.id)
+            )
+        if court_id:
+            court_id = int(court_id)
+            matches = matches.filtered(
+                lambda m: (m.operational_slot_id or m.published_slot_id).court_id.id
+                == court_id
+            )
+        rows = []
+        for match in matches:
+            slot = match.operational_slot_id or match.published_slot_id
+            if not slot and match.operational_status not in ("postponed", "cancelled"):
+                continue
+            rows.append(
+                {
+                    "match": match,
+                    "slot": slot,
+                    "status": match.operational_status or "as_published",
+                }
+            )
+        rows.sort(
+            key=lambda row: (
+                (row["slot"].start_datetime if row["slot"] else fields.Datetime.now()),
+                row["slot"].court_id.id if row["slot"] else 0,
+                row["match"].id,
+            )
+        )
+        courts = sorted(
+            {row["slot"].court_id for row in rows if row["slot"]},
+            key=lambda c: (c.name or "", c.id),
+        )
+        times = sorted({row["slot"].start_datetime for row in rows if row["slot"]})
+        grid = {
+            (row["slot"].start_datetime, row["slot"].court_id.id): row
+            for row in rows
+            if row["slot"]
+        }
+        by_time = defaultdict(list)
+        for row in rows:
+            by_time[row["slot"].start_datetime if row["slot"] else False].append(row)
+        return {
+            "publication": publication,
+            "matches": rows,
+            "courts": courts,
+            "times": times,
+            "grid": grid,
+            "by_time": list(by_time.items()),
+        }
+
+    def edition_matchdays(self, edition):
+        return (
+            self.env["federation.matchday"]
+            .sudo()
+            .search(
+                [
+                    ("edition_id", "=", edition.id),
+                    ("current_publication_id.state", "=", "live"),
+                ],
+                order="date,id",
+            )
+        )
+
+====================================================================================================
+FILE: sports_federation_public_site/static/src/js/public_live_board.js
+====================================================================================================
+
+/** @odoo-module **/
+
+const boards = document.querySelectorAll(".sf-live-board[data-status-url]");
+for (const board of boards) {
+    const refresh = async () => {
+        try {
+            const response = await fetch(board.dataset.statusUrl, {headers: {Accept: "application/json"}});
+            if (!response.ok) return;
+            const payload = await response.json();
+            for (const match of payload.matches) {
+                const card = board.querySelector(`[data-match-id="${match.id}"]`);
+                if (!card) continue;
+                card.dataset.status = match.status;
+                const status = card.querySelector(".sf-match-status");
+                if (status) status.textContent = match.status.replaceAll("_", " ");
+            }
+        } catch (_) {
+            // The board remains fully usable with its server-rendered snapshot.
+        }
+    };
+    window.setInterval(refresh, 45000);
+}
+for (const button of document.querySelectorAll(".sf-jump-now")) {
+    button.addEventListener("click", () => document.querySelector(".sf-gameday-grid tbody")?.scrollIntoView({behavior: "smooth", block: "center"}));
+}
+const clock = document.querySelector("#sf-display-clock");
+if (clock) {
+    const tick = () => { clock.textContent = new Intl.DateTimeFormat(undefined, {hour: "2-digit", minute: "2-digit", second: "2-digit"}).format(new Date()); };
+    tick(); window.setInterval(tick, 1000);
+}
+
+====================================================================================================
+FILE: sports_federation_public_site/static/src/scss/public_v2_competitions.scss
+====================================================================================================
+
+.sf-competition-hero { background: linear-gradient(135deg, #172554, #1d4ed8); color: #fff; }
+.sf-competition-card { transition: transform .15s ease, box-shadow .15s ease; }
+.sf-competition-card:hover { transform: translateY(-2px); }
+.sf-empty-state { padding: 3rem; text-align: center; border: 1px dashed #adb5bd; border-radius: 1rem; background: #f8f9fa; }
+.sf-stage { padding: 1.5rem 0 2.5rem; border-bottom: 1px solid #dee2e6; }
+.sf-team-line { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.sf-match-card { padding: .75rem; border: 1px solid #dbe3ee; border-left: .3rem solid #2563eb; border-radius: .65rem; background: #fff; min-width: 12rem; }
+.sf-match-card[data-status="cancelled"] { opacity: .7; border-left-color: #dc3545; }
+.sf-gameday-grid { min-width: 900px; border-collapse: separate; border-spacing: .35rem; }
+.sf-gameday-grid th { background: #f8f9fa; position: sticky; top: 0; z-index: 2; }
+.sf-gameday-grid td { min-width: 15rem; vertical-align: top; background: #f8f9fa; }
+.sf-gameday-grid .sf-time-column { position: sticky; left: 0; z-index: 3; min-width: 5rem; }
+.sf-bracket { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(15rem, 1fr); gap: 2rem; overflow-x: auto; padding: 1rem 0 1.5rem; }
+.sf-bracket-round { display: flex; flex-direction: column; justify-content: space-around; gap: 1.25rem; }
+.sf-bracket-match { border: 1px solid #ced4da; border-radius: .6rem; background: #fff; padding: .75rem; box-shadow: 0 .15rem .35rem rgba(0,0,0,.06); }
+.sf-display-board { min-height: 100vh; background: #eef3f9; }
+.sf-display-board .sf-match-card { font-size: 1.2rem; min-height: 8rem; }
+@media (max-width: 767.98px) { .sf-standings-table { font-size: .85rem; } .sf-stage { padding-top: 1rem; } }
+@media print { header, nav, form, footer, .btn { display: none !important; } .sf-gameday-grid { min-width: 0; } }
+
+====================================================================================================
 FILE: sports_federation_public_site/tests/__init__.py
 ====================================================================================================
 
@@ -69043,6 +69771,7 @@ from . import test_template_accessibility
 from . import test_tour_publication
 from . import test_club_team_pages
 from . import test_player_pages
+from . import test_public_v2_contract
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_club_team_pages.py
@@ -70910,6 +71639,52 @@ class TestPublicSite(TransactionCase):
         self.assertEqual(self.standing.public_title, "Public Title")
 
 ====================================================================================================
+FILE: sports_federation_public_site/tests/test_public_v2_contract.py
+====================================================================================================
+
+from odoo.tests.common import TransactionCase
+
+
+class TestPublicV2Contract(TransactionCase):
+    def test_legacy_division_is_not_public(self):
+        legacy = self.env["federation.tournament"].create(
+            {
+                "name": "Legacy test",
+                "date_start": "2026-08-23",
+                "website_published": True,
+            }
+        )
+        editions = self.env["federation.public.competition.queries"].list_editions()
+        self.assertNotIn(legacy, editions.mapped("tournament_ids"))
+
+    def test_unpublished_edition_hides_published_child(self):
+        season = self.env["federation.season"].create(
+            {
+                "name": "Portal contract season",
+                "date_start": "2026-01-01",
+                "date_end": "2026-12-31",
+            }
+        )
+        competition = self.env["federation.competition"].create(
+            {"name": "Portal contract", "competition_type": "league"}
+        )
+        edition = self.env["federation.competition.edition"].create(
+            {
+                "name": "Portal contract edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+                "engine_state": "active",
+                "public_slug": "portal-contract",
+                "website_published": False,
+            }
+        )
+        self.assertFalse(
+            self.env["federation.public.competition.queries"].resolve_edition(
+                edition.public_slug
+            )
+        )
+
+====================================================================================================
 FILE: sports_federation_public_site/tests/test_template_accessibility.py
 ====================================================================================================
 
@@ -71163,6 +71938,40 @@ class TestTourPublication(TransactionCase):
         )
         item2.action_publish()
         self.assertEqual(item2.publication_state, "published")
+
+====================================================================================================
+FILE: sports_federation_public_site/views/competition_edition_views_inherit.xml
+====================================================================================================
+
+<odoo>
+  <record id="view_competition_edition_form_public_v2" model="ir.ui.view">
+    <field name="name">federation.competition.edition.form.public.v2</field>
+    <field name="model">federation.competition.edition</field>
+    <field name="inherit_id" ref="sports_federation_tournament.view_federation_competition_edition_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_publish_website" type="object" string="Publish website" class="btn-primary" invisible="website_published"/>
+        <button name="action_unpublish_website" type="object" string="Unpublish website" invisible="not website_published"/>
+        <button name="action_open_public_preview" type="object" string="Preview website" invisible="not public_slug"/>
+      </xpath>
+      <xpath expr="//sheet" position="inside">
+        <group string="Public competition page">
+          <group>
+            <field name="website_published" readonly="1"/>
+            <field name="public_slug"/>
+            <field name="public_featured"/>
+            <field name="public_sort_sequence"/>
+          </group>
+          <group>
+            <field name="public_archive_date"/>
+            <field name="public_hero_image" widget="image"/>
+          </group>
+          <field name="public_summary" colspan="2"/>
+        </group>
+      </xpath>
+    </field>
+  </record>
+</odoo>
 
 ====================================================================================================
 FILE: sports_federation_public_site/views/editorial_views.xml
@@ -72857,19 +73666,19 @@ FILE: sports_federation_public_site/views/website_menu.xml
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Top-level Tournaments website menu.  Owned by public_site so the
+    <!-- Top-level Competitions website menu.  Owned by public_site so the
          public hub works without sports_federation_portal installed.
          sports_federation_portal adds its own portal sub-items separately. -->
     <record id="menu_website_tournaments" model="website.menu">
-        <field name="name">Tournaments</field>
-        <field name="url">/tournaments</field>
+        <field name="name">Competitions</field>
+        <field name="url">/competitions</field>
         <field name="sequence" eval="50"/>
     </record>
 
     <!-- Website submenu for tournament updates and archive browsing -->
     <record id="menu_website_competitions" model="website.menu">
-        <field name="name">Tournament Updates</field>
-        <field name="url">/tournaments#published</field>
+        <field name="name">Competition Archive</field>
+        <field name="url">/competitions/archive</field>
         <field name="parent_id" ref="sports_federation_public_site.menu_website_tournaments"/>
         <field name="sequence" type="int">10</field>
     </record>
@@ -73355,6 +74164,115 @@ FILE: sports_federation_public_site/views/website_templates.xml
         </t>
     </template>
 
+</odoo>
+
+====================================================================================================
+FILE: sports_federation_public_site/views/website_v2_competition_templates.xml
+====================================================================================================
+
+<odoo>
+  <template id="public_v2_competition_card" name="V2 competition card">
+    <article class="sf-competition-card card h-100 shadow-sm border-0">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex justify-content-between gap-2 mb-2">
+          <span class="badge text-bg-primary"><t t-esc="edition.engine_state"/></span>
+          <small class="text-muted"><t t-esc="edition.season_id.display_name"/></small>
+        </div>
+        <h2 class="h5"><t t-esc="edition.name"/></h2>
+        <p class="text-muted flex-grow-1"><t t-esc="edition.public_summary or 'Competition details, schedules and results.'"/></p>
+        <div class="d-flex flex-wrap gap-1 mb-3">
+          <span class="badge rounded-pill text-bg-light" t-foreach="edition.tournament_ids.filtered(lambda d: d.website_published and d.edition_id == edition)" t-as="division"><t t-esc="division.name"/></span>
+        </div>
+        <a class="btn btn-outline-primary stretched-link" t-att-href="'/competitions/%s' % edition.public_slug">View competition</a>
+      </div>
+    </article>
+  </template>
+
+  <template id="public_v2_match_card" name="V2 public match card">
+    <article class="sf-match-card" t-att-data-match-id="row['match'].id">
+      <div class="d-flex justify-content-between gap-2 small text-muted mb-1">
+        <span t-if="row['slot']"><t t-esc="row['slot'].court_id.display_name"/></span>
+        <span class="sf-match-status"><t t-esc="row['status'].replace('_', ' ').title()"/></span>
+      </div>
+      <div class="sf-team-line"><strong><t t-esc="row['match'].home_team_id.display_name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].home_score"/></span></div>
+      <div class="sf-team-line"><strong><t t-esc="row['match'].away_team_id.display_name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].away_score"/></span></div>
+      <small class="text-muted" t-if="row['match'].logical_fixture_id"><t t-esc="row['match'].logical_fixture_id.stage_id.name"/> · Round <t t-esc="row['match'].logical_fixture_id.round_number"/></small>
+    </article>
+  </template>
+
+  <template id="public_v2_competition_hub" name="V2 competitions">
+    <t t-call="website.layout"><main class="container py-5">
+      <header class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
+        <div><p class="text-primary text-uppercase fw-semibold mb-1">Competition centre</p><h1><t t-esc="'Competition archive' if archive else 'Current competitions'"/></h1><p class="lead text-muted">Schedules, gamedays, standings and knockout brackets from the V2 competition engine.</p></div>
+        <a class="btn btn-outline-secondary" t-att-href="'/competitions' if archive else '/competitions/archive'"><t t-esc="'Current competitions' if archive else 'Archive'"/></a>
+      </header>
+      <form class="row g-2 mb-4" method="get">
+        <div class="col-md-8"><label class="visually-hidden" for="competition-search">Search</label><input id="competition-search" class="form-control" name="search" t-att-value="search" placeholder="Search competitions"/></div>
+        <div class="col-md-3"><select class="form-select" name="season_id" aria-label="Season"><option value="">All seasons</option><option t-foreach="seasons" t-as="season" t-att-value="season.id"><t t-esc="season.display_name"/></option></select></div>
+        <div class="col-md-1"><button class="btn btn-primary w-100">Go</button></div>
+      </form>
+      <div class="row g-4" t-if="editions"><div class="col-md-6 col-xl-4" t-foreach="editions" t-as="edition"><t t-call="sports_federation_public_site.public_v2_competition_card"/></div></div>
+      <div class="sf-empty-state" t-else=""><h2 class="h4">No competitions found</h2><p class="text-muted">Published V2 competitions will appear here.</p></div>
+    </main></t>
+  </template>
+
+  <template id="public_v2_competition_nav" name="Competition navigation">
+    <nav class="nav nav-pills flex-nowrap overflow-auto mb-4" aria-label="Competition sections">
+      <a class="nav-link" t-att-href="'/competitions/%s' % edition.public_slug">Overview</a>
+      <a class="nav-link" t-att-href="'/competitions/%s/schedule' % edition.public_slug">Schedule</a>
+      <a class="nav-link" t-att-href="'/competitions/%s/format' % edition.public_slug">Format</a>
+    </nav>
+  </template>
+
+  <template id="public_v2_competition_detail" name="V2 competition detail">
+    <t t-call="website.layout"><main>
+      <section class="sf-competition-hero"><div class="container py-5"><span class="badge text-bg-light mb-2"><t t-esc="edition.engine_state"/></span><h1><t t-esc="edition.name"/></h1><p class="lead mb-0"><t t-esc="edition.public_summary or edition.season_id.display_name"/></p></div></section>
+      <div class="container py-4"><t t-call="sports_federation_public_site.public_v2_competition_nav"/>
+        <div class="d-flex flex-wrap gap-2 mb-4"><a t-foreach="divisions" t-as="item" t-att-class="'btn ' + ('btn-primary' if division == item else 'btn-outline-primary')" t-att-href="'/competitions/%s?division_id=%s' % (edition.public_slug, item.id)"><t t-esc="item.name"/></a></div>
+        <div class="row g-4">
+          <div class="col-lg-7"><section class="card border-0 shadow-sm"><div class="card-body"><h2 class="h4">Next gameday</h2><t t-if="next_matchday"><h3 class="h5"><t t-esc="next_matchday.name"/></h3><p><t t-esc="next_matchday.date"/> · <t t-esc="next_matchday.venue_id.display_name"/></p><a class="btn btn-primary" t-att-href="'/competitions/%s/gamedays/%s' % (edition.public_slug, next_matchday.id)">Open gameday board</a></t><p class="text-muted" t-else="">No published gameday is currently available.</p></div></section></div>
+          <div class="col-lg-5"><section class="card border-0 shadow-sm"><div class="card-body"><h2 class="h4">Current format</h2><t t-if="current_stage"><p class="mb-1"><strong><t t-esc="current_stage.name"/></strong></p><span class="badge text-bg-info"><t t-esc="current_stage.format_type.replace('_', ' ').title()"/></span><p class="text-muted mt-2"><t t-esc="current_stage.graph_state.title()"/></p><a t-att-href="'/competitions/%s/format?division_id=%s' % (edition.public_slug, division.id if division else '')">View full competition format</a></t><p class="text-muted" t-else="">The public format will appear after the structure is frozen.</p></div></section></div>
+        </div>
+      </div>
+    </main></t>
+  </template>
+
+  <template id="public_v2_competition_schedule" name="V2 competition schedule">
+    <t t-call="website.layout"><main class="container py-5"><h1><t t-esc="edition.name"/> schedule</h1><t t-call="sports_federation_public_site.public_v2_competition_nav"/>
+      <div class="row g-3" t-if="matchdays"><div class="col-md-6" t-foreach="matchdays" t-as="matchday"><article class="card h-100 shadow-sm"><div class="card-body"><p class="text-primary fw-semibold"><t t-esc="matchday.date"/></p><h2 class="h5"><t t-esc="matchday.name"/></h2><p class="text-muted"><t t-esc="matchday.venue_id.display_name"/> · Publication v<t t-esc="matchday.current_publication_id.version"/></p><a class="btn btn-outline-primary" t-att-href="'/competitions/%s/gamedays/%s' % (edition.public_slug, matchday.id)">View gameday</a></div></article></div></div>
+      <div class="sf-empty-state" t-else=""><h2 class="h4">Schedule not published</h2><p>Only current live schedule publications are shown.</p></div>
+    </main></t>
+  </template>
+
+  <template id="public_v2_stage_cards" name="V2 stage cards">
+    <section class="sf-stage" t-foreach="stage_cards" t-as="card">
+      <header class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><p class="text-uppercase text-primary small fw-semibold mb-1">Stage <t t-esc="card['stage_index'] if 'stage_index' in card else ''"/></p><h2 class="h3 mb-0"><t t-esc="card['stage'].name"/></h2></div><div><span class="badge text-bg-primary"><t t-esc="card['stage'].format_type.replace('_', ' ').title()"/></span> <span class="badge text-bg-light"><t t-esc="card['stage'].graph_state.title()"/></span></div></header>
+      <p class="text-muted" t-if="card['progressions']"><t t-foreach="card['progressions']" t-as="progression"><span>Ranks <t t-esc="progression.rank_from"/>–<t t-esc="progression.rank_to"/> progress to <strong><t t-esc="progression.target_stage_id.name"/></strong>. </span></t></p>
+      <div class="table-responsive mb-4" t-if="card['standings']"><table class="table table-hover align-middle sf-standings-table"><caption>Frozen standings for <t t-esc="card['stage'].name"/></caption><thead><tr><th>Pos</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>For</th><th>Against</th><th>Diff</th><th>Pts</th></tr></thead><tbody><tr t-foreach="card['standings']" t-as="line"><td><strong><t t-esc="line.rank"/></strong></td><td><t t-esc="line.team_id.display_name"/></td><td><t t-esc="line.played"/></td><td><t t-esc="line.won"/></td><td><t t-esc="line.drawn"/></td><td><t t-esc="line.lost"/></td><td><t t-esc="line.score_for"/></td><td><t t-esc="line.score_against"/></td><td><t t-esc="line.score_for - line.score_against"/></td><td><strong><t t-esc="line.points"/></strong></td></tr></tbody></table></div>
+      <div class="sf-bracket" t-if="card['rounds'] and card['stage'].format_type in ('knockout','placement_bracket')" role="region" t-att-aria-label="card['stage'].name + ' bracket'">
+        <section class="sf-bracket-round" t-foreach="card['rounds']" t-as="round_data"><h3 class="h6 text-center">Round <t t-esc="round_data[0]"/></h3><article class="sf-bracket-match" t-foreach="round_data[1]" t-as="fixture"><div class="sf-team-line"><span><t t-esc="fixture.home_team_id.display_name or 'TBD'"/></span><strong t-if="fixture.result_state in ('submitted','verified','approved')"><t t-esc="fixture.home_score"/></strong></div><div class="sf-team-line"><span><t t-esc="fixture.away_team_id.display_name or 'TBD'"/></span><strong t-if="fixture.result_state in ('submitted','verified','approved')"><t t-esc="fixture.away_score"/></strong></div><small class="text-muted" t-if="fixture.home_source_fixture_id or fixture.away_source_fixture_id">Progression fixture</small></article></section>
+      </div>
+      <div class="row g-3" t-elif="card['rounds']"><div class="col-lg-6" t-foreach="card['rounds']" t-as="round_data"><div class="card h-100"><div class="card-body"><h3 class="h5">Round <t t-esc="round_data[0]"/></h3><div class="border-top py-2" t-foreach="round_data[1]" t-as="fixture"><div class="d-flex justify-content-between"><span><t t-esc="fixture.home_team_id.display_name or 'TBD'"/> vs <t t-esc="fixture.away_team_id.display_name or 'TBD'"/></span><strong t-if="fixture.result_state in ('submitted','verified','approved')"><t t-esc="fixture.home_score"/>–<t t-esc="fixture.away_score"/></strong></div></div></div></div></div></div>
+    </section>
+  </template>
+
+  <template id="public_v2_competition_format" name="V2 competition format">
+    <t t-call="website.layout"><main class="container py-5"><h1><t t-esc="edition.name"/> format</h1><t t-call="sports_federation_public_site.public_v2_competition_nav"/><div class="d-flex flex-wrap gap-2 mb-4"><a t-foreach="divisions" t-as="item" t-att-class="'btn ' + ('btn-primary' if division == item else 'btn-outline-primary')" t-att-href="'/competitions/%s/format?division_id=%s' % (edition.public_slug, item.id)"><t t-esc="item.name"/></a></div><t t-call="sports_federation_public_site.public_v2_stage_cards"/><div class="sf-empty-state" t-if="not stage_cards"><h2 class="h4">Format not published</h2><p>The frozen V2 structure will appear here.</p></div></main></t>
+  </template>
+
+  <template id="public_v2_gameday" name="V2 gameday board">
+    <t t-call="website.layout"><main class="container-fluid px-lg-5 py-4 sf-live-board" t-att-data-status-url="'/competitions/%s/gamedays/%s/status.json' % (edition.public_slug, matchday.id)">
+      <header class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4"><div><a t-att-href="'/competitions/%s/schedule' % edition.public_slug">← Schedule</a><h1 class="mt-2"><t t-esc="matchday.name"/></h1><p class="text-muted"><t t-esc="matchday.date"/> · <t t-esc="matchday.venue_id.display_name"/> · Live publication v<t t-esc="publication.version"/></p></div><div class="d-flex gap-2 align-items-start"><button type="button" class="btn btn-outline-primary sf-jump-now">Jump to now</button><a class="btn btn-outline-secondary" t-att-href="'/competitions/%s/gamedays/%s?display=1' % (edition.public_slug, matchday.id)">Display mode</a></div></header>
+      <form class="row g-2 mb-3"><div class="col-md-5"><select name="team_id" class="form-select" aria-label="Filter by team"><option value="">All teams</option><option t-foreach="edition.tournament_ids.mapped('participant_ids').mapped('team_id')" t-as="team" t-att-value="team.id" t-att-selected="team_id == team.id"><t t-esc="team.display_name"/></option></select></div><div class="col-md-5"><select name="court_id" class="form-select" aria-label="Filter by court"><option value="">All courts</option><option t-foreach="courts" t-as="court" t-att-value="court.id" t-att-selected="court_id == court.id"><t t-esc="court.display_name"/></option></select></div><div class="col-md-2"><button class="btn btn-primary w-100">Filter</button></div></form>
+      <div class="d-none d-lg-block table-responsive sf-gameday-grid-wrap" t-if="times and courts"><table class="table sf-gameday-grid"><caption class="visually-hidden">Matches by time and court</caption><thead><tr><th class="sf-time-column">Time</th><th t-foreach="courts" t-as="court"><t t-esc="court.display_name"/></th></tr></thead><tbody><tr t-foreach="times" t-as="time"><th class="sf-time-column" scope="row"><t t-esc="time.strftime('%H:%M')"/></th><td t-foreach="courts" t-as="court"><t t-set="row" t-value="grid.get((time, court.id))"/><t t-if="row" t-call="sports_federation_public_site.public_v2_match_card"/></td></tr></tbody></table></div>
+      <div class="d-lg-none sf-mobile-agenda" t-if="by_time"><section class="mb-4" t-foreach="by_time" t-as="time_rows"><h2 class="h5 sticky-top bg-white py-2"><t t-esc="time_rows[0].strftime('%H:%M') if time_rows[0] else 'Unscheduled'"/></h2><div class="mb-2" t-foreach="time_rows[1]" t-as="row"><t t-call="sports_federation_public_site.public_v2_match_card"/></div></section></div>
+      <div class="sf-empty-state" t-if="not matches"><h2 class="h4">No published matches</h2><p>Change the filters or return after the schedule is published.</p></div>
+    </main></t>
+  </template>
+
+  <template id="public_v2_gameday_display" name="V2 gameday display">
+    <t t-call="website.layout"><main class="container-fluid p-4 sf-display-board sf-live-board" t-att-data-status-url="'/competitions/%s/gamedays/%s/status.json' % (edition.public_slug, matchday.id)"><header class="d-flex justify-content-between align-items-center mb-4"><div><h1><t t-esc="matchday.name"/></h1><p class="lead"><t t-esc="matchday.venue_id.display_name"/></p></div><div class="display-6" id="sf-display-clock"></div></header><div class="row g-3"><div class="col-md-6 col-xl-4" t-foreach="matches" t-as="row"><t t-call="sports_federation_public_site.public_v2_match_card"/></div></div></main></t>
+  </template>
 </odoo>
 
 ====================================================================================================

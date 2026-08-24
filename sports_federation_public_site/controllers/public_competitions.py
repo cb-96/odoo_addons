@@ -123,16 +123,6 @@ class PublicTournamentHubController(
             headers=[("Retry-After", str(decision["retry_after"]))],
         )
 
-    @http.route(["/competitions"], type="http", auth="public", website=True)
-    def competitions_list(self, **kw):
-        """Handle competitions list."""
-        return request.redirect("/tournaments#published")
-
-    @http.route(["/competitions/archive"], type="http", auth="public", website=True)
-    def competitions_archive(self, **kw):
-        """Handle competitions archive."""
-        return request.redirect("/tournaments?state=closed#published-archive")
-
     @http.route(
         ["/competitions/api/json", "/tournaments/api/json"],
         type="jsonrpc",
@@ -169,13 +159,7 @@ class PublicTournamentHubController(
             ]
         }
 
-    @http.route(
-        ["/tournaments", "/tournaments/page/<int:page>"],
-        type="http",
-        auth="public",
-        website=True,
-    )
-    def tournaments_list(self, page=1, search="", **kw):
+    def _legacy_tournaments_list(self, page=1, search="", **kw):
         """Handle tournaments list."""
         filters = self._build_filters(search=search, **kw)
         Tournament = request.env["federation.tournament"].sudo()
@@ -262,10 +246,7 @@ class PublicTournamentHubController(
         )
 
     @http.route(
-        [
-            "/tournament/<int:tournament_id>/coverage",
-            "/competitions/<model('federation.tournament'):tournament>",
-        ],
+        ["/tournament/<int:tournament_id>/coverage"],
         type="http",
         auth="public",
         website=True,
@@ -281,13 +262,7 @@ class PublicTournamentHubController(
             self._raise_not_found()
         return request.redirect(tournament.get_public_path())
 
-    @http.route(
-        ["/tournaments/<string:tournament_slug>", "/tournament/<int:tournament_id>"],
-        type="http",
-        auth="public",
-        website=True,
-    )
-    def tournament_detail(self, tournament_slug=None, tournament_id=None, **kw):
+    def _legacy_tournament_detail(self, tournament_slug=None, tournament_id=None, **kw):
         """Handle tournament detail."""
         tournament = self._resolve_tournament(
             tournament_slug=tournament_slug,
@@ -325,7 +300,7 @@ class PublicTournamentHubController(
             public_access="detail",
         )
         if not tournament.exists() or tournament.state != "open":
-            return request.redirect("/tournaments")
+            return request.redirect("/competitions")
 
         clubs = self._get_request_user_clubs()
         if not clubs:
@@ -340,7 +315,7 @@ class PublicTournamentHubController(
         Entry = request.env["federation.competition.entry"]
         window = Entry._portal_open_window_for_division(tournament)
         if not window:
-            return request.redirect("/tournaments")
+            return request.redirect("/competitions")
         existing = Entry.sudo().search(
             [
                 ("window_id", "=", window.id),
@@ -389,7 +364,7 @@ class PublicTournamentHubController(
             public_access="detail",
         )
         if not tournament.exists():
-            return request.redirect("/tournaments")
+            return request.redirect("/competitions")
         return request.redirect(tournament.get_public_register_path())
 
     @http.route(
@@ -407,7 +382,7 @@ class PublicTournamentHubController(
             public_access="detail",
         )
         if not tournament.exists() or tournament.state != "open":
-            return request.redirect("/tournaments")
+            return request.redirect("/competitions")
 
         try:
             self._validate_manual_csrf(kw.get("csrf_token"))
@@ -458,7 +433,7 @@ class PublicTournamentHubController(
             public_access="detail",
         )
         if not tournament.exists():
-            return request.redirect("/tournaments")
+            return request.redirect("/competitions")
         return self.tournament_register_submit(
             tournament.get_public_slug_value(), team_id, notes=notes, **kw
         )
