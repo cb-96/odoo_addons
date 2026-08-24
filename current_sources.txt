@@ -5016,8 +5016,8 @@ any contract-facing deprecation decision.
 
 | Surface | Canonical replacement | Target exit |
 |---|---|---|
-| `/competitions`, `/competitions/archive`, `/competitions/api/json` | `/tournaments`, `/tournaments/api/json` | 2026-10-01 |
-| Numeric public tournament and season routes | Slug-first routes under `/tournaments/<slug>` and `/seasons/<slug>` | 2026-10-01 |
+| `/tournaments`, `/tournaments/<slug>`, numeric tournament page routes | `/competitions`, `/competitions/<edition-slug>` | 2026-10-01 |
+| Numeric public tournament page routes | Edition routes under `/competitions/<edition-slug>` | 2026-10-01 |
 | Numeric or competition-named v1 tournament feeds | `/api/v1/tournaments/<slug>/feed` | 2026-10-01 |
 | Player import `name` column fallback | Explicit `first_name`, `last_name` columns | 2026-10-15 |
 | Team import name fallbacks | `club_code` and explicit team naming columns | 2026-10-15 |
@@ -6095,7 +6095,7 @@ All portal writes must resolve the request-user scope before calling a model-own
 
 ## Public Routes
 
-Canonical public tournament pages, feeds, calendars, and publication helpers are owned by `sports_federation_public_site`. Slug-first routes are canonical. Numeric and competition-named routes are compatibility aliases only.
+Canonical public competition pages and match-day publication views are owned by `sports_federation_public_site` under `/competitions`. Tournament-named and numeric page routes are compatibility redirects. Versioned tournament feeds and calendars remain supported integration contracts until separately versioned.
 
 Critical public contracts include:
 
@@ -6294,7 +6294,7 @@ Review cadence: Every release
     operator copy; older `revoked` wording is compatibility-only. Source:
     `sports_federation_people/models/federation_player_license.py` and
     `WORKFLOW_PLAYER_LICENSE.md`.
-- Public tournament routes: `/tournaments/...` is the canonical public route
+- Public competition routes: `/competitions/...` is the canonical public route
     family. `/competitions...` and numeric routes are compatibility paths only
     and should not be used in normal operator guidance. Source:
     `sports_federation_public_site/controllers/public_competitions.py` and
@@ -9908,7 +9908,7 @@ Canonical public surfaces include:
 | URL | Content |
 |-----|---------|
 | `/tournaments` | Main tournament hub with featured, live, recent, and archived sections |
-| `/tournaments/<slug>` | Canonical tournament overview page |
+| `/competitions/<edition-slug>` | Canonical competition edition overview page |
 | `/tournaments/<slug>/teams` | Published participant list excluding withdrawn entries |
 | `/tournaments/<slug>/standings` | Public standings page when enabled |
 | `/tournaments/<slug>/results` | Approved public results when enabled |
@@ -10970,7 +10970,7 @@ including byes and future-round wiring for non-power-of-two participant counts.
    step.
 4. Participant club and team contacts receive a tournament-publication email the first time the tournament is published.
 5. Public pages become available at `/tournaments/<slug>` and the related
-   canonical `/tournaments/...` route family.
+   canonical `/competitions/...` route family.
 
 ## State Diagram
 
@@ -11174,9 +11174,12 @@ Public tournament pages, feeds, calendars, registration entry points, and compat
 
 ## Decision
 
+- `/competitions` and `/competitions/<edition-slug>` are the canonical public page routes.
+- Tournament-named page routes are compatibility redirects only.
+
 Public route ownership is tournament-first and module-explicit:
 
-- `sports_federation_public_site` owns canonical public tournament pages, feeds, calendars, and publication helpers.
+- `sports_federation_public_site` owns canonical public competition pages and match-day publication views; legacy tournament feeds and calendars remain compatibility contracts.
 - Slug-first routes are canonical for new consumers.
 - Numeric and competition-named routes may remain only as documented compatibility aliases with an owner and review date.
 - Public reads enforce applicable publication controls such as `website_published`, `show_public_results`, and `show_public_standings`.
@@ -12073,6 +12076,74 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+====================================================================================================
+FILE: ci/check_http_route_ownership.py
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Reject duplicate literal HTTP route ownership across Odoo controllers."""
+
+import ast
+from collections import defaultdict
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+CONTROLLER_ROOTS = sorted(ROOT.glob("sports_federation_*/controllers"))
+owners = defaultdict(list)
+
+
+def literal_routes(decorator):
+    if not isinstance(decorator, ast.Call):
+        return []
+    func = decorator.func
+    if not (
+        isinstance(func, ast.Attribute)
+        and func.attr == "route"
+        and decorator.args
+    ):
+        return []
+    value = decorator.args[0]
+    nodes = value.elts if isinstance(value, (ast.List, ast.Tuple)) else [value]
+    routes = [
+        node.value
+        for node in nodes
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    ]
+    methods = ("ANY",)
+    for keyword in decorator.keywords:
+        if keyword.arg == "methods" and isinstance(keyword.value, (ast.List, ast.Tuple)):
+            parsed = tuple(
+                item.value.upper()
+                for item in keyword.value.elts
+                if isinstance(item, ast.Constant) and isinstance(item.value, str)
+            )
+            methods = parsed or methods
+    return [(route, method) for route in routes for method in methods]
+
+
+for root in CONTROLLER_ROOTS:
+    for path in sorted(root.glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for decorator in node.decorator_list:
+                for route, method in literal_routes(decorator):
+                    owners[(route, method)].append(
+                        f"{path.relative_to(ROOT)}:{node.lineno}:{node.name}"
+                    )
+
+conflicts = {key: refs for key, refs in owners.items() if len(refs) > 1}
+if conflicts:
+    for (route, method), refs in sorted(conflicts.items()):
+        print(
+            f"Duplicate HTTP route owner for {method} {route}: {', '.join(refs)}",
+            file=sys.stderr,
+        )
+    raise SystemExit(1)
+print(f"HTTP route ownership passed for {len(owners)} literal routes.")
 
 ====================================================================================================
 FILE: ci/check_legacy_engine_removed.py
@@ -13412,6 +13483,27 @@ if errors:
 print("Portal V2 ownership contract passed.")
 
 ====================================================================================================
+FILE: ci/check_public_route_cutover_docs.py
+====================================================================================================
+
+#!/usr/bin/env python3
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+checks = {
+    "ADR canonical namespace": "/competitions" in (ROOT / "adr/0003-public-route-ownership.md").read_text(),
+    "route inventory canonical namespace": "under `/competitions`" in (ROOT / "ROUTE_INVENTORY.md").read_text(),
+    "public workflow canonical edition route": "/competitions/<edition-slug>" in (ROOT / "_workflows/WORKFLOW_PUBLIC_PUBLICATION.md").read_text(),
+    "integration deprecates tournament pages": "`/tournaments`, `/tournaments/<slug>`" in (ROOT / "INTEGRATION_CONTRACTS.md").read_text(),
+}
+failed = [name for name, passed in checks.items() if not passed]
+if failed:
+    print("Public route cutover documentation failed: " + ", ".join(failed), file=sys.stderr)
+    raise SystemExit(1)
+print("Public route cutover documentation passed.")
+
+====================================================================================================
 FILE: ci/check_public_v2_competition_contract.py
 ====================================================================================================
 
@@ -13430,6 +13522,12 @@ schedule = (
     ROOT / "sports_federation_public_site/services/public_schedule_queries.py"
 ).read_text()
 manifest = (ROOT / "sports_federation_public_site/__manifest__.py").read_text()
+public_templates = (
+    ROOT / "sports_federation_public_site/views/website_v2_competition_templates.xml"
+).read_text()
+portal_templates = (
+    ROOT / "sports_federation_portal/views/portal_v2_templates.xml"
+).read_text()
 legacy_controller = (
     ROOT / "sports_federation_public_site/controllers/public_competitions.py"
 ).read_text()
@@ -13453,6 +13551,8 @@ checks = {
         not in legacy_controller
     ),
     "gameday route": "/gamedays/<int:matchday_id>" in controller,
+    "no implementation generation in public copy": " V2 " not in public_templates,
+    "no implementation generation in portal copy": " V2 " not in portal_templates,
     "V2 dependencies": all(
         module in manifest
         for module in (
@@ -15186,6 +15286,7 @@ workflow_contracts_exit=0
 migration_review_exit=0
 constraint_index_contracts_exit=0
 openapi_contracts_exit=0
+http_route_ownership_exit=0
 
 echo "[lint] Running Black across the repository"
 black --check --exclude '/(\.git|__pycache__|\.venv|ci/logs)/' . || black_exit=$?
@@ -15204,6 +15305,9 @@ python3 ci/check_constraint_index_contracts.py || constraint_index_contracts_exi
 
 echo "[lint] Validating OpenAPI integration/public contracts"
 python3 ci/check_openapi_contracts.py || openapi_contracts_exit=$?
+
+echo "[lint] Validating HTTP route ownership"
+python3 ci/check_http_route_ownership.py || http_route_ownership_exit=$?
 
 echo "[lint] Reporting module dependency drift"
 python3 ci/check_module_dependency_drift.py || dependency_drift_exit=$?
@@ -15224,14 +15328,15 @@ echo "  CI hygiene exit code: $ci_hygiene_exit"
 echo "  Workflow contract exit code: $workflow_contracts_exit"
 echo "  Constraint/index contract exit code: $constraint_index_contracts_exit"
 echo "  OpenAPI contract exit code: $openapi_contracts_exit"
+echo "  HTTP route ownership exit code: $http_route_ownership_exit"
 echo "  Migration review exit code: $migration_review_exit"
 echo "  Dependency drift report exit code: $dependency_drift_exit"
 
-if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $migration_review_exit -ne 0 ) ]]; then
+if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $migration_review_exit -ne 0 ) ]]; then
     exit 1
 fi
 
-if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $migration_review_exit -ne 0 ]]; then
+if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $migration_review_exit -ne 0 ]]; then
     echo "[lint] Repository-wide report found issues."
 else
     echo "[lint] Repository-wide report is clean."
@@ -29092,6 +29197,7 @@ FILE: sports_federation_finance_bridge/__manifest__.py
         "views/fee_type_views.xml",
         "views/fee_schedule_views.xml",
         "views/finance_event_views.xml",
+        "views/federation_match_finance_views.xml",
         "views/season_budget_views.xml",
         "views/menu_views.xml",
     ],
@@ -32129,6 +32235,25 @@ class TestTourFinanceLifecycle(TransactionCase):
         self.assertEqual(event.handoff_state, "reconciled")
 
 ====================================================================================================
+FILE: sports_federation_finance_bridge/views/federation_match_finance_views.xml
+====================================================================================================
+
+<odoo>
+    <record id="view_federation_match_form_finance_bridge" model="ir.ui.view">
+        <field name="name">federation.match.form.finance.bridge</field>
+        <field name="model">federation.match</field>
+        <field name="inherit_id" ref="sports_federation_tournament.view_federation_match_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_create_venue_finance_event" string="Create Venue Charge"
+                        type="object" class="btn-secondary"
+                        invisible="state != 'scheduled'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
+
+====================================================================================================
 FILE: sports_federation_finance_bridge/views/fee_schedule_views.xml
 ====================================================================================================
 
@@ -33761,87 +33886,6 @@ class FederationStageGraphEngine(models.AbstractModel):
         )
         if len(target.stage_participant_ids) >= expected:
             self.prepare_stage(target)
-
-====================================================================================================
-FILE: sports_federation_format/services/structure_generator.py
-====================================================================================================
-
-from odoo import _, api, models
-from odoo.exceptions import ValidationError
-
-
-class FederationStructureGenerator(models.AbstractModel):
-    _name = "federation.structure.generator"
-    _description = "Pure Competition Structure Generator"
-
-    @api.model
-    def preview(self, participant_set, format_type):
-        teams = list(
-            participant_set.line_ids.sorted(
-                lambda x: (x.seed or 9999, x.team_id.name or "", x.id)
-            ).mapped("team_id")
-        )
-        if len(teams) < 2:
-            raise ValidationError(
-                _("At least two finalized participants are required.")
-            )
-        if format_type not in ("single_round_robin", "double_round_robin"):
-            raise ValidationError(
-                _(
-                    "The first V2 release supports league fixture generation; knockout formats remain explicit structures."
-                )
-            )
-        work = teams[:]
-        bye = False
-        if len(work) % 2:
-            work.append(bye)
-        rounds = []
-        for rnd in range(len(work) - 1):
-            pairs = []
-            for i in range(len(work) // 2):
-                a, b = work[i], work[-i - 1]
-                if a and b:
-                    pairs.append((a, b) if rnd % 2 == 0 else (b, a))
-            rounds.append(pairs)
-            work = [work[0], work[-1], *work[1:-1]]
-        if format_type == "double_round_robin":
-            rounds += [[(b, a) for a, b in pairs] for pairs in rounds]
-        return rounds
-
-    @api.model
-    def generate(self, structure):
-        structure.ensure_one()
-        if structure.state == "frozen":
-            raise ValidationError(_("A frozen structure cannot be regenerated."))
-        if structure.fixture_ids:
-            structure.fixture_ids.unlink()
-        stage = structure.stage_ids[:1] or self.env[
-            "federation.structure.stage"
-        ].create(
-            {
-                "name": _("League Phase"),
-                "structure_id": structure.id,
-                "sequence": 10,
-                "stage_type": "league",
-            }
-        )
-        rounds = self.preview(structure.participant_set_id, structure.format_type)
-        vals = []
-        for number, pairs in enumerate(rounds, 1):
-            for seq, (home, away) in enumerate(pairs, 1):
-                vals.append(
-                    {
-                        "structure_id": structure.id,
-                        "stage_id": stage.id,
-                        "round_number": number,
-                        "sequence": seq * 10,
-                        "home_team_id": home.id,
-                        "away_team_id": away.id,
-                    }
-                )
-        self.env["federation.fixture"].create(vals)
-        structure.state = "generated"
-        return True
 
 ====================================================================================================
 FILE: sports_federation_format/tests/__init__.py
@@ -54943,7 +54987,7 @@ class FederationCompetitionEntry(models.Model):
         division = privilege.elevate(division, user=user)
         team = privilege.elevate(team, user=user)
         if not division.exists() or not division.edition_id:
-            raise ValidationError(_("Select a valid V2 competition division."))
+            raise ValidationError(_("Select a valid competition division."))
         window = self._portal_open_window_for_division(division)
         if not window:
             raise ValidationError(_("Registration is not open for this division."))
@@ -57308,7 +57352,7 @@ class FederationPortalV2Scope(models.AbstractModel):
 
 class FederationPortalCompetitionQueries(models.AbstractModel):
     _name = "federation.portal.competition.queries"
-    _description = "Portal V2 Competition Projections"
+    _description = "Portal Competition Projections"
 
     def _scope(self):
         return self.env["federation.portal.v2.scope"]
@@ -65303,13 +65347,13 @@ FILE: sports_federation_portal/views/portal_v2_templates.xml
       <t t-set="breadcrumbs_searchbar" t-value="True"/>
       <t t-call="portal.portal_searchbar"><t t-set="title">Competitions</t></t>
       <div class="container py-3">
-        <div class="d-flex justify-content-between align-items-center mb-3"><div><h2 class="mb-1">Competition workspace</h2><p class="text-muted mb-0">Only V2 competitions containing one of your represented teams are shown.</p></div><a href="/my/match-days" class="btn btn-outline-primary">Match days</a></div>
+        <div class="d-flex justify-content-between align-items-center mb-3"><div><h2 class="mb-1">Competition workspace</h2><p class="text-muted mb-0">Competitions containing one of your represented teams are shown.</p></div><a href="/my/match-days" class="btn btn-outline-primary">Match days</a></div>
         <div class="row g-3" t-if="competition_cards">
           <div class="col-12 col-lg-6" t-foreach="competition_cards" t-as="card">
             <article class="card h-100"><div class="card-body"><div class="d-flex justify-content-between gap-3"><div><h3 class="h5 mb-1"><t t-esc="card['edition'].display_name"/></h3><p class="text-muted mb-2"><t t-esc="', '.join(card['teams'].mapped('display_name'))"/></p></div><span t-attf-class="badge text-bg-#{card['status_tone']}"><t t-esc="card['status_label']"/></span></div><p class="mb-1"><strong>Published match days:</strong> <t t-esc="card['published_matchday_count']"/></p><p class="mb-3"><strong>Result follow-up:</strong> <t t-esc="card['result_follow_up_count']"/></p><a t-attf-href="/my/competitions/#{card['edition'].id}" class="btn btn-primary">Open competition</a></div></article>
           </div>
         </div>
-        <div class="alert alert-info" role="alert" t-else="">No V2 competition currently contains one of your represented teams.</div>
+        <div class="alert alert-info" role="alert" t-else="">No competition currently contains one of your represented teams.</div>
       </div>
     </t>
   </template>
@@ -65321,7 +65365,7 @@ FILE: sports_federation_portal/views/portal_v2_templates.xml
     </div></t>
   </template>
   <template id="portal_my_competition_entries" name="Competition Entries">
-    <t t-call="portal.portal_layout"><div class="container py-3"><div class="d-flex justify-content-between"><div><h2>Competition entries</h2><p class="text-muted">V2 registration windows and entries for your represented teams.</p></div><a href="/my/competitions" class="btn btn-outline-primary">Competitions</a></div><div class="alert alert-success" t-if="success"><t t-esc="success"/></div><div class="alert alert-danger" t-if="error"><t t-esc="error"/></div>
+    <t t-call="portal.portal_layout"><div class="container py-3"><div class="d-flex justify-content-between"><div><h2>Competition entries</h2><p class="text-muted">Registration windows and entries for your represented teams.</p></div><a href="/my/competitions" class="btn btn-outline-primary">Competitions</a></div><div class="alert alert-success" t-if="success"><t t-esc="success"/></div><div class="alert alert-danger" t-if="error"><t t-esc="error"/></div>
       <section class="card mb-3"><div class="card-header"><strong>Submit a new entry</strong></div><div class="card-body"><form action="/my/competition-entries/new" method="post"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><div class="row g-2"><div class="col-md-5"><label class="form-label" for="window_id">Registration window</label><select id="window_id" name="window_id" class="form-select" required="required"><option value="">Select</option><option t-foreach="windows" t-as="window" t-att-value="window.id"><t t-esc="window.display_name"/> · <t t-esc="window.division_id.display_name"/></option></select></div><div class="col-md-5"><label class="form-label" for="team_id">Team</label><select id="team_id" name="team_id" class="form-select" required="required"><option value="">Select</option><option t-foreach="teams" t-as="team" t-att-value="team.id"><t t-esc="team.display_name"/></option></select></div><div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">Submit</button></div></div></form></div></section>
       <section class="card"><div class="card-header"><strong>Current entries</strong></div><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Competition</th><th>Division</th><th>Team</th><th>Status</th></tr></thead><tbody><tr t-foreach="entries" t-as="entry"><td><t t-esc="entry.edition_id.display_name"/></td><td><t t-esc="entry.window_id.division_id.display_name"/></td><td><t t-esc="entry.team_id.display_name"/></td><td><span class="badge text-bg-light"><t t-esc="entry.state"/></span></td></tr></tbody></table></div></section>
     </div></t>
@@ -65452,7 +65496,7 @@ calendar export while keeping older competition URLs working.
 | Field | Type | Description |
 |-------|------|-------------|
 | `website_published` | Boolean | Enables public visibility |
-| `public_slug` | Char | Canonical public slug used in `/tournaments/<slug>` |
+| `public_slug` | Char | Legacy public slug retained for tournament feed and redirect compatibility |
 | `public_description` | Html | Long-form website description |
 | `public_featured` | Boolean | Marks the tournament for featured hub sections |
 | `public_editorial_summary` | Text | Short editorial summary for cards and overview layouts |
@@ -65523,7 +65567,7 @@ Canonical public routes:
 |-------|------|-------------|
 | `GET /tournaments` | public | Main public tournament hub with featured, live, recent, and archive sections |
 | `POST /tournaments/api/json` | public | JSON list of published tournaments |
-| `GET /tournaments/<slug>` | public | Canonical tournament overview page |
+| `GET /competitions/<edition-slug>` | public | Canonical competition edition overview page |
 | `GET /tournaments/<slug>/teams` | public | Published participant list excluding withdrawn entries |
 | `GET /tournaments/<slug>/standings` | public | Published standings page |
 | `GET /tournaments/<slug>/results` | public | Approved public results |
@@ -65599,7 +65643,7 @@ FILE: sports_federation_public_site/__manifest__.py
     "name": "Sports Federation Public Site",
     "version": "19.0.2.0.0",
     "category": "Sports",
-    "summary": "Public V2 competition, gameday, standings and bracket experience",
+    "summary": "Public competition, match-day, standings and bracket experience",
     "description": "Public website pages for tournament coverage, standings, results, schedules, and federation events.",
     "author": "Sports Federation",
     "website": "",
@@ -69454,7 +69498,7 @@ from odoo.exceptions import ValidationError
 
 class PublicCompetitionQueries(models.AbstractModel):
     _name = "federation.public.competition.queries"
-    _description = "Public V2 Competition Queries"
+    _description = "Public Competition Queries"
 
     def public_domain(self, archived=False):
         states = ("finished", "archived") if archived else ("active", "finished")
@@ -69540,7 +69584,7 @@ class PublicCompetitionQueries(models.AbstractModel):
         if not edition.tournament_ids.filtered(
             lambda d: d.website_published and d.edition_id == edition
         ):
-            errors.append(_("publish at least one V2 division"))
+            errors.append(_("publish at least one division"))
         if edition.engine_state not in ("active", "finished", "archived"):
             errors.append(
                 _("move the competition engine to Active, Finished or Archived")
@@ -74185,7 +74229,7 @@ FILE: sports_federation_public_site/views/website_v2_competition_templates.xml
 ====================================================================================================
 
 <odoo>
-  <template id="public_v2_competition_card" name="V2 competition card">
+  <template id="public_v2_competition_card" name="Competition card">
     <article class="sf-competition-card card h-100 shadow-sm border-0">
       <div class="card-body d-flex flex-column">
         <div class="d-flex justify-content-between gap-2 mb-2">
@@ -74202,7 +74246,7 @@ FILE: sports_federation_public_site/views/website_v2_competition_templates.xml
     </article>
   </template>
 
-  <template id="public_v2_match_card" name="V2 public match card">
+  <template id="public_v2_match_card" name="Public match card">
     <article class="sf-match-card" t-att-data-match-id="row['match'].id">
       <div class="d-flex justify-content-between gap-2 small text-muted mb-1">
         <span t-if="row['slot']"><t t-esc="row['slot'].court_id.display_name"/></span>
@@ -74214,10 +74258,10 @@ FILE: sports_federation_public_site/views/website_v2_competition_templates.xml
     </article>
   </template>
 
-  <template id="public_v2_competition_hub" name="V2 competitions">
+  <template id="public_v2_competition_hub" name="Competitions">
     <t t-call="website.layout"><main class="container py-5">
       <header class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
-        <div><p class="text-primary text-uppercase fw-semibold mb-1">Competition centre</p><h1><t t-esc="'Competition archive' if archive else 'Current competitions'"/></h1><p class="lead text-muted">Schedules, gamedays, standings and knockout brackets from the V2 competition engine.</p></div>
+        <div><p class="text-primary text-uppercase fw-semibold mb-1">Competition centre</p><h1><t t-esc="'Competition archive' if archive else 'Current competitions'"/></h1><p class="lead text-muted">Schedules, gamedays, standings and knockout brackets from the published competition schedule.</p></div>
         <a class="btn btn-outline-secondary" t-att-href="'/competitions' if archive else '/competitions/archive'"><t t-esc="'Current competitions' if archive else 'Archive'"/></a>
       </header>
       <form class="row g-2 mb-4" method="get">
@@ -74226,7 +74270,7 @@ FILE: sports_federation_public_site/views/website_v2_competition_templates.xml
         <div class="col-md-1"><button class="btn btn-primary w-100">Go</button></div>
       </form>
       <div class="row g-4" t-if="editions"><div class="col-md-6 col-xl-4" t-foreach="editions" t-as="edition"><t t-call="sports_federation_public_site.public_v2_competition_card"/></div></div>
-      <div class="sf-empty-state" t-else=""><h2 class="h4">No competitions found</h2><p class="text-muted">Published V2 competitions will appear here.</p></div>
+      <div class="sf-empty-state" t-else=""><h2 class="h4">No competitions found</h2><p class="text-muted">Published competitions will appear here.</p></div>
     </main></t>
   </template>
 
@@ -74238,7 +74282,7 @@ FILE: sports_federation_public_site/views/website_v2_competition_templates.xml
     </nav>
   </template>
 
-  <template id="public_v2_competition_detail" name="V2 competition detail">
+  <template id="public_v2_competition_detail" name="Competition detail">
     <t t-call="website.layout"><main>
       <section class="sf-competition-hero"><div class="container py-5"><span class="badge text-bg-light mb-2"><t t-esc="edition.engine_state"/></span><h1><t t-esc="edition.name"/></h1><p class="lead mb-0"><t t-esc="edition.public_summary or edition.season_id.display_name"/></p></div></section>
       <div class="container py-4"><t t-call="sports_federation_public_site.public_v2_competition_nav"/>
@@ -74251,7 +74295,7 @@ FILE: sports_federation_public_site/views/website_v2_competition_templates.xml
     </main></t>
   </template>
 
-  <template id="public_v2_competition_schedule" name="V2 competition schedule">
+  <template id="public_v2_competition_schedule" name="Competition schedule">
     <t t-call="website.layout"><main class="container py-5"><h1><t t-esc="edition.name"/> schedule</h1><t t-call="sports_federation_public_site.public_v2_competition_nav"/>
       <div class="row g-3" t-if="matchdays"><div class="col-md-6" t-foreach="matchdays" t-as="matchday"><article class="card h-100 shadow-sm"><div class="card-body"><p class="text-primary fw-semibold"><t t-esc="matchday.date"/></p><h2 class="h5"><t t-esc="matchday.name"/></h2><p class="text-muted"><t t-esc="matchday.venue_id.display_name"/> · Publication v<t t-esc="matchday.current_publication_id.version"/></p><a class="btn btn-outline-primary" t-att-href="'/competitions/%s/gamedays/%s' % (edition.public_slug, matchday.id)">View gameday</a></div></article></div></div>
       <div class="sf-empty-state" t-else=""><h2 class="h4">Schedule not published</h2><p>Only current live schedule publications are shown.</p></div>
@@ -74270,8 +74314,8 @@ FILE: sports_federation_public_site/views/website_v2_competition_templates.xml
     </section>
   </template>
 
-  <template id="public_v2_competition_format" name="V2 competition format">
-    <t t-call="website.layout"><main class="container py-5"><h1><t t-esc="edition.name"/> format</h1><t t-call="sports_federation_public_site.public_v2_competition_nav"/><div class="d-flex flex-wrap gap-2 mb-4"><a t-foreach="divisions" t-as="item" t-att-class="'btn ' + ('btn-primary' if division == item else 'btn-outline-primary')" t-att-href="'/competitions/%s/format?division_id=%s' % (edition.public_slug, item.id)"><t t-esc="item.name"/></a></div><t t-call="sports_federation_public_site.public_v2_stage_cards"/><div class="sf-empty-state" t-if="not stage_cards"><h2 class="h4">Format not published</h2><p>The frozen V2 structure will appear here.</p></div></main></t>
+  <template id="public_v2_competition_format" name="Competition format">
+    <t t-call="website.layout"><main class="container py-5"><h1><t t-esc="edition.name"/> format</h1><t t-call="sports_federation_public_site.public_v2_competition_nav"/><div class="d-flex flex-wrap gap-2 mb-4"><a t-foreach="divisions" t-as="item" t-att-class="'btn ' + ('btn-primary' if division == item else 'btn-outline-primary')" t-att-href="'/competitions/%s/format?division_id=%s' % (edition.public_slug, item.id)"><t t-esc="item.name"/></a></div><t t-call="sports_federation_public_site.public_v2_stage_cards"/><div class="sf-empty-state" t-if="not stage_cards"><h2 class="h4">Format not published</h2><p>The published competition structure will appear here.</p></div></main></t>
   </template>
 
   <template id="public_v2_gameday" name="V2 gameday board">
@@ -89473,12 +89517,6 @@ from . import federation_eligibility_rule
 from . import federation_qualification_rule
 
 ====================================================================================================
-FILE: sports_federation_rules/models/federation_competition.py
-====================================================================================================
-
-# This file has been moved to sports_federation_tournament module
-
-====================================================================================================
 FILE: sports_federation_rules/models/federation_eligibility_rule.py
 ====================================================================================================
 
@@ -89805,12 +89843,6 @@ class FederationRuleSet(models.Model):
                 raise ValidationError(
                     "Minimum squad size cannot exceed maximum squad size."
                 )
-
-====================================================================================================
-FILE: sports_federation_rules/models/federation_season_registration_inherit.py
-====================================================================================================
-
-# This file has been moved to sports_federation_tournament module
 
 ====================================================================================================
 FILE: sports_federation_rules/models/federation_tie_break_rule.py
@@ -97915,14 +97947,6 @@ Winner and loser bracket progression uses this explicit decision, preventing a
 completed knockout match from leaving downstream participants unresolved.
 
 ====================================================================================================
-FILE: sports_federation_tournament/ROADMAP_RC.md
-====================================================================================================
-
-# Tournament RC roadmap
-
-- Freeze effective rules and identity after opening.
-
-====================================================================================================
 FILE: sports_federation_tournament/__init__.py
 ====================================================================================================
 
@@ -98066,53 +98090,64 @@ FILE: sports_federation_tournament/migrations/19.0.1.4.0/post-migrate.py
 
 import logging
 
+from psycopg2 import sql
+
 _logger = logging.getLogger(__name__)
 
 
-def migrate(cr, version):
-    """Remove test-only standalone matches left by the pre-V2 implementation.
+def _column_exists(cr, table, column):
+    cr.execute(
+        """SELECT 1 FROM information_schema.columns
+            WHERE table_schema = current_schema()
+              AND table_name = %s AND column_name = %s""",
+        (table, column),
+    )
+    return bool(cr.fetchone())
 
-    V2 operational matches are identified by logical_fixture_id. All records
-    referencing standalone matches are deleted first by discovering real
-    foreign keys, which keeps this migration aligned with installed optional
-    modules. Shared master data is never removed.
-    """
-    cr.execute("SELECT id FROM federation_match WHERE logical_fixture_id IS NULL")
+
+def migrate(cr, version):
+    """Remove test-only standalone matches after verifying historical schema."""
+    if not _column_exists(cr, "federation_match", "logical_fixture_id"):
+        _logger.warning(
+            "Legacy match cleanup skipped: logical_fixture_id is absent"
+        )
+        return
+    cr.execute(
+        "SELECT id FROM federation_match WHERE logical_fixture_id IS NULL ORDER BY id"
+    )
     legacy_ids = [row[0] for row in cr.fetchall()]
     if not legacy_ids:
-        _logger.info("V2 cleanup: no standalone legacy matches found")
+        _logger.info("Legacy match cleanup: no standalone matches found")
         return
-
+    _logger.warning("Legacy match cleanup found %s matches", len(legacy_ids))
     cr.execute("""
         SELECT ns.nspname, rel.relname, att.attname
           FROM pg_constraint con
           JOIN pg_class rel ON rel.oid = con.conrelid
           JOIN pg_namespace ns ON ns.oid = rel.relnamespace
-          JOIN pg_attribute att
-            ON att.attrelid = con.conrelid
-           AND att.attnum = ANY(con.conkey)
+          JOIN pg_attribute att ON att.attrelid = con.conrelid
+                               AND att.attnum = ANY(con.conkey)
          WHERE con.contype = 'f'
            AND con.confrelid = 'federation_match'::regclass
            AND rel.relname != 'federation_match'
-        """)
-    references = cr.fetchall()
+    """)
     removed = {}
-    for schema, table, column in references:
-        cr.execute(
-            'DELETE FROM "%s"."%s" WHERE "%s" = ANY(%%s)' % (schema, table, column),
-            (legacy_ids,),
+    for schema, table, column in cr.fetchall():
+        statement = sql.SQL("DELETE FROM {}.{} WHERE {} = ANY(%s)").format(
+            sql.Identifier(schema), sql.Identifier(table), sql.Identifier(column)
         )
+        cr.execute(statement, (legacy_ids,))
         if cr.rowcount:
             removed[table] = removed.get(table, 0) + cr.rowcount
-
-    cr.execute(
-        "DELETE FROM federation_match WHERE id = ANY(%s)",
-        (legacy_ids,),
-    )
+    cr.execute("DELETE FROM federation_match WHERE id = ANY(%s)", (legacy_ids,))
+    if cr.rowcount != len(legacy_ids):
+        raise RuntimeError(
+            "Legacy match cleanup count mismatch: "
+            f"expected {len(legacy_ids)}, removed {cr.rowcount}"
+        )
     _logger.warning(
-        "V2 cleanup removed %s standalone legacy matches and dependants %s",
-        cr.rowcount,
-        removed,
+        "Legacy match cleanup removed %s matches and dependants %s",
+        len(legacy_ids), removed,
     )
 
 ====================================================================================================
@@ -98798,53 +98833,6 @@ class FederationMatch(models.Model):
         """Execute the draft action."""
         for rec in self:
             rec.state = MATCH_STATE_DRAFT
-
-    def action_create_venue_finance_event(
-        self, fee_type_code="venue_booking", amount=None, partner=None, note=None
-    ):
-        """Create a federation.finance.event for venue passthrough costs.
-
-        This helper looks for a fee type with code `fee_type_code`, creates one
-        if missing, and calls `federation.finance.event`.create_from_source.
-        Returns the created finance event(s).
-        """
-        events = self.env["federation.finance.event"]
-        FeeType = self.env["federation.fee.type"]
-
-        for match in self:
-            venue_name = ""
-            if hasattr(match, "venue_id") and match.venue_id:
-                venue_name = match.venue_id.name
-            if not venue_name:
-                raise ValidationError(
-                    "Match has no venue set; cannot create finance event."
-                )
-
-            fee_type = FeeType.search([("code", "=", fee_type_code)], limit=1)
-            if not fee_type:
-                # create a sensible default fee type for venue charges
-                fee_type = FeeType.create(
-                    {
-                        "name": "Venue Booking",
-                        "code": fee_type_code,
-                        "category": "other",
-                        "default_amount": amount or 0,
-                        "currency_id": self.env.company.currency_id.id,
-                    }
-                )
-
-            note_text = note or f"Venue booking for {match.name} at {venue_name}"
-            event = self.env["federation.finance.event"].create_from_source(
-                match,
-                fee_type,
-                amount=amount,
-                event_type="charge",
-                partner=partner,
-                note=note_text,
-            )
-            events |= event
-
-        return events
 
 ====================================================================================================
 FILE: sports_federation_tournament/models/federation_match_bracket.py
@@ -101801,8 +101789,6 @@ FILE: sports_federation_tournament/views/federation_match_views.xml
                             invisible="state != 'draft'"/>
                     <button name="action_start" string="Start" type="object" class="btn-primary"
                             invisible="state != 'scheduled'"/>
-                    <button name="action_create_venue_finance_event" string="Create Venue Charge" type="object" class="btn-secondary"
-                        invisible="state != 'scheduled'"/>
                     <button name="action_done" string="Done" type="object" class="btn-secondary"
                             invisible="state != 'in_progress'"/>
                     <button name="action_cancel" string="Cancel" type="object"

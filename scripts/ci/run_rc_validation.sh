@@ -9,6 +9,7 @@ modules="sports_federation_base,sports_federation_rules,sports_federation_tourna
 odoo_bin="${ODOO_BIN:-$repo_root/_odoo/odoo-bin}"
 addons_path="${ADDONS_PATH:-$repo_root,$repo_root/_odoo/addons}"
 db_name="${DB_NAME:-sf_rc_validation}"
+upgrade_db_name="${UPGRADE_DB_NAME:-sf_rc_upgrade}"
 common=(
   "$odoo_bin" -d "$db_name"
   --db_host="${PGHOST:-127.0.0.1}"
@@ -52,20 +53,50 @@ run_tags() {
   "${common[@]}" -u "$modules" --test-enable --test-tags "$tags"
 }
 
+assert_modules_installed() {
+  local database="$1"
+  if ! command -v psql >/dev/null 2>&1; then
+    echo "ERROR: psql is required for upgrade qualification" >&2
+    exit 2
+  fi
+  local installed
+  installed="$(
+    PGPASSWORD="${PGPASSWORD:-odoo}" psql       --host="${PGHOST:-127.0.0.1}"       --port="${PGPORT:-5432}"       --username="${PGUSER:-odoo}"       --dbname="$database"       --tuples-only --no-align       --command="SELECT count(*) FROM ir_module_module WHERE name = ANY(string_to_array('$modules', ',')) AND state = 'installed'"
+  )"
+  local expected
+  expected="$(awk -F',' '{print NF}' <<<"$modules")"
+  if [[ "$installed" != "$expected" ]]; then
+    echo "ERROR: upgrade database $database has $installed of $expected required modules installed" >&2
+    exit 2
+  fi
+}
+
+run_upgrade() {
+  require_odoo
+  assert_modules_installed "$upgrade_db_name"
+  local upgrade_common=("${common[@]}")
+  upgrade_common[2]="$upgrade_db_name"
+  "${upgrade_common[@]}" -u "$modules"
+}
+
 case "$lane" in
   static) static_checks ;;
   install)
     require_odoo
     "${common[@]}" -i "$modules" --test-enable --test-tags '/sports_federation_base,/sports_federation_rules,/sports_federation_tournament'
     ;;
+  upgrade) run_upgrade ;;
   core) run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications' ;;
   portal) run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile' ;;
+  public) run_tags '/sports_federation_public_site' ;;
   all)
     static_checks
     require_odoo
     "${common[@]}" -i "$modules" --test-enable --test-tags '/sports_federation_base,/sports_federation_rules,/sports_federation_tournament'
     run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications'
+    run_upgrade
     run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile'
+    run_tags '/sports_federation_public_site'
     ;;
-  *) echo "Usage: $0 {static|install|core|portal|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {static|install|upgrade|core|portal|public|all}" >&2; exit 2 ;;
 esac

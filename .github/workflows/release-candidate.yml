@@ -42,6 +42,7 @@ jobs:
           python ci/check_phase51_schedule_handoff.py
           python ci/check_phases_511_53_contract.py
           python ci/check_doc_freshness.py
+          python ci/check_package7_release_qualification.py
       - run: scripts/ci/run_rc_validation.sh static
 
   odoo-rc:
@@ -92,10 +93,13 @@ jobs:
           pip install -r _odoo/requirements.txt
       - name: Fresh install and module suites
         run: scripts/ci/run_rc_validation.sh install
-      - name: Core and portal suites
+      - name: Upgrade qualification
+        run: scripts/ci/run_rc_validation.sh upgrade
+      - name: Core, portal and public suites
         run: |
           scripts/ci/run_rc_validation.sh core
           scripts/ci/run_rc_validation.sh portal
+          scripts/ci/run_rc_validation.sh public
       - name: Upload Odoo logs
         if: always()
         uses: actions/upload-artifact@v4
