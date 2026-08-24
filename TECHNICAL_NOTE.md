@@ -52,7 +52,7 @@ Review cadence: Every release
     operator copy; older `revoked` wording is compatibility-only. Source:
     `sports_federation_people/models/federation_player_license.py` and
     `WORKFLOW_PLAYER_LICENSE.md`.
-- Public tournament routes: `/tournaments/...` is the canonical public route
+- Public competition routes: `/competitions/...` is the canonical public route
     family. `/competitions...` and numeric routes are compatibility paths only
     and should not be used in normal operator guidance. Source:
     `sports_federation_public_site/controllers/public_competitions.py` and

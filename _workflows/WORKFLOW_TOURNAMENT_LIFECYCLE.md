@@ -242,7 +242,7 @@ including byes and future-round wiring for non-power-of-two participant counts.
    step.
 4. Participant club and team contacts receive a tournament-publication email the first time the tournament is published.
 5. Public pages become available at `/tournaments/<slug>` and the related
-   canonical `/tournaments/...` route family.
+   canonical `/competitions/...` route family.
 
 ## State Diagram
 

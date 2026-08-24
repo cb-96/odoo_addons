@@ -11,8 +11,6 @@
                             invisible="state != 'draft'"/>
                     <button name="action_start" string="Start" type="object" class="btn-primary"
                             invisible="state != 'scheduled'"/>
-                    <button name="action_create_venue_finance_event" string="Create Venue Charge" type="object" class="btn-secondary"
-                        invisible="state != 'scheduled'"/>
                     <button name="action_done" string="Done" type="object" class="btn-secondary"
                             invisible="state != 'in_progress'"/>
                     <button name="action_cancel" string="Cancel" type="object"

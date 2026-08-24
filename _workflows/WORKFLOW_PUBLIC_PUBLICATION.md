@@ -116,7 +116,7 @@ Canonical public surfaces include:
 | URL | Content |
 |-----|---------|
 | `/tournaments` | Main tournament hub with featured, live, recent, and archived sections |
-| `/tournaments/<slug>` | Canonical tournament overview page |
+| `/competitions/<edition-slug>` | Canonical competition edition overview page |
 | `/tournaments/<slug>/teams` | Published participant list excluding withdrawn entries |
 | `/tournaments/<slug>/standings` | Public standings page when enabled |
 | `/tournaments/<slug>/results` | Approved public results when enabled |

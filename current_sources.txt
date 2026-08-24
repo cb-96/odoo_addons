@@ -13430,6 +13430,9 @@ schedule = (
     ROOT / "sports_federation_public_site/services/public_schedule_queries.py"
 ).read_text()
 manifest = (ROOT / "sports_federation_public_site/__manifest__.py").read_text()
+legacy_controller = (
+    ROOT / "sports_federation_public_site/controllers/public_competitions.py"
+).read_text()
 checks = {
     "edition publication boundary": '("website_published", "=", True)' in queries,
     "V2 division ownership": "division.edition_id == edition" in queries,
@@ -13438,6 +13441,17 @@ checks = {
     "immutable publication match boundary": '("schedule_publication_id", "=", publication.id)'
     in schedule,
     "edition routes": "/competitions/<string:edition_slug>" in controller,
+    "single competition hub owner": (
+        '@http.route(["/competitions"]' not in legacy_controller
+    ),
+    "single tournament redirect owner": (
+        '["/tournaments", "/tournaments/page/<int:page>"]'
+        not in legacy_controller
+    ),
+    "no legacy competition overview alias": (
+        '"/competitions/<model(\'federation.tournament\'):tournament>",'
+        not in legacy_controller
+    ),
     "gameday route": "/gamedays/<int:matchday_id>" in controller,
     "V2 dependencies": all(
         module in manifest

@@ -61,7 +61,7 @@ All portal writes must resolve the request-user scope before calling a model-own
 
 ## Public Routes
 
-Canonical public tournament pages, feeds, calendars, and publication helpers are owned by `sports_federation_public_site`. Slug-first routes are canonical. Numeric and competition-named routes are compatibility aliases only.
+Canonical public competition pages and match-day publication views are owned by `sports_federation_public_site` under `/competitions`. Tournament-named and numeric page routes are compatibility redirects. Versioned tournament feeds and calendars remain supported integration contracts until separately versioned.
 
 Critical public contracts include:
 

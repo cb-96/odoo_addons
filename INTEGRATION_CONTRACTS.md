@@ -281,8 +281,8 @@ any contract-facing deprecation decision.
 
 | Surface | Canonical replacement | Target exit |
 |---|---|---|
-| `/competitions`, `/competitions/archive`, `/competitions/api/json` | `/tournaments`, `/tournaments/api/json` | 2026-10-01 |
-| Numeric public tournament and season routes | Slug-first routes under `/tournaments/<slug>` and `/seasons/<slug>` | 2026-10-01 |
+| `/tournaments`, `/tournaments/<slug>`, numeric tournament page routes | `/competitions`, `/competitions/<edition-slug>` | 2026-10-01 |
+| Numeric public tournament page routes | Edition routes under `/competitions/<edition-slug>` | 2026-10-01 |
 | Numeric or competition-named v1 tournament feeds | `/api/v1/tournaments/<slug>/feed` | 2026-10-01 |
 | Player import `name` column fallback | Explicit `first_name`, `last_name` columns | 2026-10-15 |
 | Team import name fallbacks | `club_code` and explicit team naming columns | 2026-10-15 |

@@ -38,7 +38,7 @@ class FederationPortalV2Scope(models.AbstractModel):
 
 class FederationPortalCompetitionQueries(models.AbstractModel):
     _name = "federation.portal.competition.queries"
-    _description = "Portal V2 Competition Projections"
+    _description = "Portal Competition Projections"
 
     def _scope(self):
         return self.env["federation.portal.v2.scope"]

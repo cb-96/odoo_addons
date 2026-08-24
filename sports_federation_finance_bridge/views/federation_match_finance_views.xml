@@ -1,0 +1,14 @@
+<odoo>
+    <record id="view_federation_match_form_finance_bridge" model="ir.ui.view">
+        <field name="name">federation.match.form.finance.bridge</field>
+        <field name="model">federation.match</field>
+        <field name="inherit_id" ref="sports_federation_tournament.view_federation_match_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_create_venue_finance_event" string="Create Venue Charge"
+                        type="object" class="btn-secondary"
+                        invisible="state != 'scheduled'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

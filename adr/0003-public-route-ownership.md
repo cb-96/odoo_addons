@@ -12,9 +12,12 @@ Public tournament pages, feeds, calendars, registration entry points, and compat
 
 ## Decision
 
+- `/competitions` and `/competitions/<edition-slug>` are the canonical public page routes.
+- Tournament-named page routes are compatibility redirects only.
+
 Public route ownership is tournament-first and module-explicit:
 
-- `sports_federation_public_site` owns canonical public tournament pages, feeds, calendars, and publication helpers.
+- `sports_federation_public_site` owns canonical public competition pages and match-day publication views; legacy tournament feeds and calendars remain compatibility contracts.
 - Slug-first routes are canonical for new consumers.
 - Numeric and competition-named routes may remain only as documented compatibility aliases with an owner and review date.
 - Public reads enforce applicable publication controls such as `website_published`, `show_public_results`, and `show_public_standings`.

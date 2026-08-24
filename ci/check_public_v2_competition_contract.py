@@ -13,6 +13,12 @@ schedule = (
     ROOT / "sports_federation_public_site/services/public_schedule_queries.py"
 ).read_text()
 manifest = (ROOT / "sports_federation_public_site/__manifest__.py").read_text()
+public_templates = (
+    ROOT / "sports_federation_public_site/views/website_v2_competition_templates.xml"
+).read_text()
+portal_templates = (
+    ROOT / "sports_federation_portal/views/portal_v2_templates.xml"
+).read_text()
 legacy_controller = (
     ROOT / "sports_federation_public_site/controllers/public_competitions.py"
 ).read_text()
@@ -36,6 +42,8 @@ checks = {
         not in legacy_controller
     ),
     "gameday route": "/gamedays/<int:matchday_id>" in controller,
+    "no implementation generation in public copy": " V2 " not in public_templates,
+    "no implementation generation in portal copy": " V2 " not in portal_templates,
     "V2 dependencies": all(
         module in manifest
         for module in (

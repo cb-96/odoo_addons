@@ -2,7 +2,7 @@
     "name": "Sports Federation Public Site",
     "version": "19.0.2.0.0",
     "category": "Sports",
-    "summary": "Public V2 competition, gameday, standings and bracket experience",
+    "summary": "Public competition, match-day, standings and bracket experience",
     "description": "Public website pages for tournament coverage, standings, results, schedules, and federation events.",
     "author": "Sports Federation",
     "website": "",

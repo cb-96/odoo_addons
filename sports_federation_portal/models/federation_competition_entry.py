@@ -35,7 +35,7 @@ class FederationCompetitionEntry(models.Model):
         division = privilege.elevate(division, user=user)
         team = privilege.elevate(team, user=user)
         if not division.exists() or not division.edition_id:
-            raise ValidationError(_("Select a valid V2 competition division."))
+            raise ValidationError(_("Select a valid competition division."))
         window = self._portal_open_window_for_division(division)
         if not window:
             raise ValidationError(_("Registration is not open for this division."))

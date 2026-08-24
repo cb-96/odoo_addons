@@ -1,5 +1,5 @@
 <odoo>
-  <template id="public_v2_competition_card" name="V2 competition card">
+  <template id="public_v2_competition_card" name="Competition card">
     <article class="sf-competition-card card h-100 shadow-sm border-0">
       <div class="card-body d-flex flex-column">
         <div class="d-flex justify-content-between gap-2 mb-2">
@@ -16,7 +16,7 @@
     </article>
   </template>
 
-  <template id="public_v2_match_card" name="V2 public match card">
+  <template id="public_v2_match_card" name="Public match card">
     <article class="sf-match-card" t-att-data-match-id="row['match'].id">
       <div class="d-flex justify-content-between gap-2 small text-muted mb-1">
         <span t-if="row['slot']"><t t-esc="row['slot'].court_id.display_name"/></span>
@@ -28,10 +28,10 @@
     </article>
   </template>
 
-  <template id="public_v2_competition_hub" name="V2 competitions">
+  <template id="public_v2_competition_hub" name="Competitions">
     <t t-call="website.layout"><main class="container py-5">
       <header class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
-        <div><p class="text-primary text-uppercase fw-semibold mb-1">Competition centre</p><h1><t t-esc="'Competition archive' if archive else 'Current competitions'"/></h1><p class="lead text-muted">Schedules, gamedays, standings and knockout brackets from the V2 competition engine.</p></div>
+        <div><p class="text-primary text-uppercase fw-semibold mb-1">Competition centre</p><h1><t t-esc="'Competition archive' if archive else 'Current competitions'"/></h1><p class="lead text-muted">Schedules, gamedays, standings and knockout brackets from the published competition schedule.</p></div>
         <a class="btn btn-outline-secondary" t-att-href="'/competitions' if archive else '/competitions/archive'"><t t-esc="'Current competitions' if archive else 'Archive'"/></a>
       </header>
       <form class="row g-2 mb-4" method="get">
@@ -40,7 +40,7 @@
         <div class="col-md-1"><button class="btn btn-primary w-100">Go</button></div>
       </form>
       <div class="row g-4" t-if="editions"><div class="col-md-6 col-xl-4" t-foreach="editions" t-as="edition"><t t-call="sports_federation_public_site.public_v2_competition_card"/></div></div>
-      <div class="sf-empty-state" t-else=""><h2 class="h4">No competitions found</h2><p class="text-muted">Published V2 competitions will appear here.</p></div>
+      <div class="sf-empty-state" t-else=""><h2 class="h4">No competitions found</h2><p class="text-muted">Published competitions will appear here.</p></div>
     </main></t>
   </template>
 
@@ -52,7 +52,7 @@
     </nav>
   </template>
 
-  <template id="public_v2_competition_detail" name="V2 competition detail">
+  <template id="public_v2_competition_detail" name="Competition detail">
     <t t-call="website.layout"><main>
       <section class="sf-competition-hero"><div class="container py-5"><span class="badge text-bg-light mb-2"><t t-esc="edition.engine_state"/></span><h1><t t-esc="edition.name"/></h1><p class="lead mb-0"><t t-esc="edition.public_summary or edition.season_id.display_name"/></p></div></section>
       <div class="container py-4"><t t-call="sports_federation_public_site.public_v2_competition_nav"/>
@@ -65,7 +65,7 @@
     </main></t>
   </template>
 
-  <template id="public_v2_competition_schedule" name="V2 competition schedule">
+  <template id="public_v2_competition_schedule" name="Competition schedule">
     <t t-call="website.layout"><main class="container py-5"><h1><t t-esc="edition.name"/> schedule</h1><t t-call="sports_federation_public_site.public_v2_competition_nav"/>
       <div class="row g-3" t-if="matchdays"><div class="col-md-6" t-foreach="matchdays" t-as="matchday"><article class="card h-100 shadow-sm"><div class="card-body"><p class="text-primary fw-semibold"><t t-esc="matchday.date"/></p><h2 class="h5"><t t-esc="matchday.name"/></h2><p class="text-muted"><t t-esc="matchday.venue_id.display_name"/> · Publication v<t t-esc="matchday.current_publication_id.version"/></p><a class="btn btn-outline-primary" t-att-href="'/competitions/%s/gamedays/%s' % (edition.public_slug, matchday.id)">View gameday</a></div></article></div></div>
       <div class="sf-empty-state" t-else=""><h2 class="h4">Schedule not published</h2><p>Only current live schedule publications are shown.</p></div>
@@ -84,8 +84,8 @@
     </section>
   </template>
 
-  <template id="public_v2_competition_format" name="V2 competition format">
-    <t t-call="website.layout"><main class="container py-5"><h1><t t-esc="edition.name"/> format</h1><t t-call="sports_federation_public_site.public_v2_competition_nav"/><div class="d-flex flex-wrap gap-2 mb-4"><a t-foreach="divisions" t-as="item" t-att-class="'btn ' + ('btn-primary' if division == item else 'btn-outline-primary')" t-att-href="'/competitions/%s/format?division_id=%s' % (edition.public_slug, item.id)"><t t-esc="item.name"/></a></div><t t-call="sports_federation_public_site.public_v2_stage_cards"/><div class="sf-empty-state" t-if="not stage_cards"><h2 class="h4">Format not published</h2><p>The frozen V2 structure will appear here.</p></div></main></t>
+  <template id="public_v2_competition_format" name="Competition format">
+    <t t-call="website.layout"><main class="container py-5"><h1><t t-esc="edition.name"/> format</h1><t t-call="sports_federation_public_site.public_v2_competition_nav"/><div class="d-flex flex-wrap gap-2 mb-4"><a t-foreach="divisions" t-as="item" t-att-class="'btn ' + ('btn-primary' if division == item else 'btn-outline-primary')" t-att-href="'/competitions/%s/format?division_id=%s' % (edition.public_slug, item.id)"><t t-esc="item.name"/></a></div><t t-call="sports_federation_public_site.public_v2_stage_cards"/><div class="sf-empty-state" t-if="not stage_cards"><h2 class="h4">Format not published</h2><p>The published competition structure will appear here.</p></div></main></t>
   </template>
 
   <template id="public_v2_gameday" name="V2 gameday board">

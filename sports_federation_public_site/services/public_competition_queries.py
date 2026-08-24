@@ -4,7 +4,7 @@ from odoo.exceptions import ValidationError
 
 class PublicCompetitionQueries(models.AbstractModel):
     _name = "federation.public.competition.queries"
-    _description = "Public V2 Competition Queries"
+    _description = "Public Competition Queries"
 
     def public_domain(self, archived=False):
         states = ("finished", "archived") if archived else ("active", "finished")
@@ -90,7 +90,7 @@ class PublicCompetitionQueries(models.AbstractModel):
         if not edition.tournament_ids.filtered(
             lambda d: d.website_published and d.edition_id == edition
         ):
-            errors.append(_("publish at least one V2 division"))
+            errors.append(_("publish at least one division"))
         if edition.engine_state not in ("active", "finished", "archived"):
             errors.append(
                 _("move the competition engine to Active, Finished or Archived")

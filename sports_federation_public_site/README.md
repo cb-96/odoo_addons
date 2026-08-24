@@ -28,7 +28,7 @@ calendar export while keeping older competition URLs working.
 | Field | Type | Description |
 |-------|------|-------------|
 | `website_published` | Boolean | Enables public visibility |
-| `public_slug` | Char | Canonical public slug used in `/tournaments/<slug>` |
+| `public_slug` | Char | Legacy public slug retained for tournament feed and redirect compatibility |
 | `public_description` | Html | Long-form website description |
 | `public_featured` | Boolean | Marks the tournament for featured hub sections |
 | `public_editorial_summary` | Text | Short editorial summary for cards and overview layouts |
@@ -99,7 +99,7 @@ Canonical public routes:
 |-------|------|-------------|
 | `GET /tournaments` | public | Main public tournament hub with featured, live, recent, and archive sections |
 | `POST /tournaments/api/json` | public | JSON list of published tournaments |
-| `GET /tournaments/<slug>` | public | Canonical tournament overview page |
+| `GET /competitions/<edition-slug>` | public | Canonical competition edition overview page |
 | `GET /tournaments/<slug>/teams` | public | Published participant list excluding withdrawn entries |
 | `GET /tournaments/<slug>/standings` | public | Published standings page |
 | `GET /tournaments/<slug>/results` | public | Approved public results |
