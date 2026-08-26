@@ -136,9 +136,9 @@ Exception and publication recovery standard:
     portal surfaces now explain when operators should move from one phase to the
     next instead of presenting the routes as equal-weight peers.
 
-## V2 competition planning flow (2026-05-25)
+## competition planning flow (2026-05-25)
 
-The competition workflow is implemented by small, role-owned V2 addons rather
+The competition workflow is implemented by small, role-owned addons rather
 than a monolithic workspace service. Each handover is explicit and the server
 remains authoritative for validation and publication.
 
@@ -393,7 +393,7 @@ helper module instead of repeating raw string tuples in each model.
 
 ## Executive summary
 
-The project is a modular suite of Odoo 19 addons implementing a sports federation management system. Modules are intentionally small and focused: `sports_federation_base` owns master data (clubs, teams, seasons), `sports_federation_tournament` implements tournament structure and match records, and the V2 competition addons own registration, format, calendar, scheduling, approval, and match-day operations. Domain features (`people`, `rosters`, `officiating`, `result_control`, `standings`, `public_site`, `notifications`, `reporting`) extend core behaviour without mixing responsibilities.
+The project is a modular suite of Odoo 19 addons implementing a sports federation management system. Modules are intentionally small and focused: `sports_federation_base` owns master data (clubs, teams, seasons), `sports_federation_tournament` implements tournament structure and match records, and the competition addons own registration, format, calendar, scheduling, approval, and match-day operations. Domain features (`people`, `rosters`, `officiating`, `result_control`, `standings`, `public_site`, `notifications`, `reporting`) extend core behaviour without mixing responsibilities.
 
 Design goals
 
@@ -700,6 +700,6 @@ Related docs and entry points
 
 - High-level context: [odoo/CONTEXT.md](odoo/CONTEXT.md#L1)
 - Workflows (authoritative): [odoo/_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md](odoo/_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md#L1), [odoo/_workflows/WORKFLOW_MATCH_DAY_OPERATIONS.md](odoo/_workflows/WORKFLOW_MATCH_DAY_OPERATIONS.md#L1), [odoo/_workflows/WORKFLOW_RESULT_PIPELINE.md](odoo/_workflows/WORKFLOW_RESULT_PIPELINE.md#L1)
-- V2 competition architecture: [odoo/COMPETITION_ENGINE_V2.md](odoo/COMPETITION_ENGINE_V2.md#L1)
+- competition architecture: [odoo/COMPETITION_ENGINE.md](odoo/COMPETITION_ENGINE.md#L1)
 
 If you'd like, I can now: (1) open a PR draft for this change, (2) run a repo scan of `README` and `INSTALL_LOG` files and fold additional implementation notes into this document, or (3) run the tests for a selected module to validate there are no immediate regressions.

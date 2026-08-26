@@ -1,12 +1,12 @@
 # P0-P2 Verification Checklist
 
 ## Installation and removal
-- Confirm a fresh database installs the complete V2 chain without the legacy addon.
+- Confirm a fresh database installs the complete chain without the legacy addon.
 - Confirm an existing test database can uninstall/delete the legacy addon without dangling external IDs.
 - Confirm no menu, action, asset, test scope, or documentation points to the removed planner implementation.
 
 ## Ownership and data flow
-- Verify V2 fixtures materialize operational matches exactly once.
+- Verify fixtures materialize operational matches exactly once.
 - Verify Result Control is the only score lifecycle and Format Studio consumes only approved results.
 - Verify configured points and tie-break rules produce expected frozen standings.
 - Verify participant-set replacement invalidates only draft downstream artifacts.
@@ -36,12 +36,12 @@
 - Verify no silent exception path reports success.
 
 ## CI and release
-- Run addon integrity, V2 readiness, workflow contracts, static checks, and full Odoo tests.
+- Run addon integrity, readiness, workflow contracts, static checks, and full Odoo tests.
 - Verify all module manifests, assets, ACLs, routes and migrations.
 - Run a production-like Belgian Championship simulation end to end.
 - Re-run documentation-to-code and release-candidate reviews after all checks pass.
 ## Removed planner-extension replacement
-- [ ] Integrate referee availability, double-booking, certification and club-duty overlap into V2 schedule validation.
-- [ ] Integrate venue opening, court suitability and playing-area constraints into V2 schedule validation.
+- [ ] Integrate referee availability, double-booking, certification and club-duty overlap into schedule validation.
+- [ ] Integrate venue opening, court suitability and playing-area constraints into schedule validation.
 - [ ] Block schedule approval/publication when required officiating or venue checks fail.
 - [ ] Add transaction tests before considering functional parity complete.

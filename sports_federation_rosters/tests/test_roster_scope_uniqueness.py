@@ -1,4 +1,4 @@
-"""Regression tests for roster scope uniqueness (Phase 2, Items 3 & 4).
+"""Regression tests for roster scope uniqueness (Rules, Items 3 & 4).
 
 Verifies the correct semantics after removing the name-based unique constraint:
 

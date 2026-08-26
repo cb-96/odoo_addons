@@ -46,7 +46,7 @@ on top of the federation base modules.
         "views/federation_club_representative_portal_views.xml",
         "views/qol_views.xml",
         "views/portal_templates.xml",
-        "views/portal_v2_templates.xml",
+        "views/competition_templates.xml",
         "views/portal_officiating_templates.xml",
         "views/portal_roster_templates.xml",
         "views/portal_result_templates.xml",

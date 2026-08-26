@@ -1,7 +1,7 @@
 <odoo>
-  <menuitem id="menu_competition_engine_v2_root" name="Competition Workflow" parent="sports_federation_base.menu_federation_root" sequence="25"/>
-  <menuitem id="menu_competition_overview_v2" name="Competition Overview" parent="menu_competition_engine_v2_root" action="action_competition_overview_v2" sequence="10"/>
-  <menuitem id="menu_competition_engine_v2_technical" name="Technical Records" parent="menu_competition_engine_v2_root" sequence="90" groups="sports_federation_base.group_federation_manager"/>
-  <record id="action_competition_roles_v2" model="ir.actions.act_window"><field name="name">Role Assignments</field><field name="res_model">federation.competition.role.assignment</field><field name="view_mode">list,form</field></record>
-  <menuitem id="menu_competition_roles_v2" name="Role Assignments" parent="menu_competition_engine_v2_technical" action="action_competition_roles_v2" sequence="10"/>
+  <menuitem id="menu_competition_engine_competition_root" name="Competition Workflow" parent="sports_federation_base.menu_federation_root" sequence="25"/>
+  <menuitem id="menu_competition_overview_competition" name="Competition Overview" parent="menu_competition_engine_competition_root" action="action_competition_overview" sequence="10"/>
+  <menuitem id="menu_competition_engine_competition_technical" name="Technical Records" parent="menu_competition_engine_competition_root" sequence="90" groups="sports_federation_base.group_federation_manager"/>
+  <record id="action_competition_roles_competition" model="ir.actions.act_window"><field name="name">Role Assignments</field><field name="res_model">federation.competition.role.assignment</field><field name="view_mode">list,form</field></record>
+  <menuitem id="menu_competition_roles_competition" name="Role Assignments" parent="menu_competition_engine_competition_technical" action="action_competition_roles_competition" sequence="10"/>
 </odoo>

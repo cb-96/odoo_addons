@@ -113,13 +113,13 @@ A route change must include:
 
 The previous `/web/login` entry was removed from this inventory because no matching `FederationWebsiteLogin.web_login` implementation was present in the reviewed source snapshot. Re-add it only with an implementation and smoke coverage.
 
-## Portal V2 competition routes
+## Portal competition routes
 
 - `GET /my/competitions`: edition-based competition workspace.
 - `GET /my/competitions/<edition_id>`: represented-team competition detail.
 - `GET /my/match-days`: match days selected through current live publications.
 - `GET /my/match-days/<matchday_id>`: club-scoped match-day detail.
-- `POST /my/competition-entries/new`: V2 competition entry through the portal privilege boundary.
+- `POST /my/competition-entries/new`: competition entry through the portal privilege boundary.
 - `GET /sports/match-days/<matchday_id>/operations`: publication-scoped operations board.
 - `POST /sports/match-days/<matchday_id>/operations/data`: current live operations payload.
 - `POST /sports/match-days/<matchday_id>/matches/<match_id>/action`: match action constrained to that publication.

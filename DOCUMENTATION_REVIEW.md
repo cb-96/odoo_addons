@@ -37,7 +37,7 @@ The two portal ownership snapshots duplicate each other, the portal README, ADR-
 
 - Added missing roadmap freshness metadata.
 - Replaced the 100-item roadmap backlog with current priorities and explicit statuses.
-- Marked the V2 competition ownership decomposition as complete for the current release.
+- Marked the competition ownership decomposition as complete for the current release.
 - Added workflow simplification as the primary product priority.
 - Removed the unverified `/web/login` ownership row.
 - Added the tournament-operations JSON-RPC load and action routes.

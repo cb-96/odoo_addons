@@ -141,16 +141,16 @@ class FederationMatchClubRefereeDuty(models.Model):
         matches = self.env["federation.match"].browse(
             [vals.get("match_id") for vals in vals_list if vals.get("match_id")]
         )
-        self._assert_v2_matches(matches)
+        self._assert_competition_matches(matches)
         return super().create(vals_list)
 
     @api.model
-    def _assert_v2_matches(self, matches):
+    def _assert_competition_matches(self, matches):
         invalid = matches.filtered(lambda match: not match.logical_fixture_id)
         if invalid:
             raise ValidationError(
                 _(
-                    "Club official duties require V2 fixture-backed matches: %(matches)s",
+                    "Club official duties require fixture-backed matches: %(matches)s",
                     matches=", ".join(invalid.mapped("display_name")),
                 )
             )
@@ -158,7 +158,7 @@ class FederationMatchClubRefereeDuty(models.Model):
 
     def write(self, vals):
         if "match_id" in vals:
-            self._assert_v2_matches(
+            self._assert_competition_matches(
                 self.env["federation.match"].browse(vals.get("match_id"))
             )
         return super().write(vals)

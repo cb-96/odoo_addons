@@ -1,4 +1,4 @@
 <odoo>
- <menuitem id="menu_create_competition" name="Create Competition" parent="sports_federation_competition_core.menu_competition_engine_v2_root" action="action_create_competition_wizard" sequence="5"/>
- <menuitem id="menu_registration_desk" name="Registration Desk" parent="sports_federation_competition_core.menu_competition_engine_v2_root" action="action_registration_desk" sequence="20"/>
+ <menuitem id="menu_create_competition" name="Create Competition" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_create_competition_wizard" sequence="5"/>
+ <menuitem id="menu_registration_desk" name="Registration Desk" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_registration_desk" sequence="20"/>
 </odoo>

@@ -35,16 +35,16 @@ Status: In progress
 
 Success criterion: a normal competition can be configured, scheduled, and published without users understanding the underlying Odoo data model.
 
-### P0: Maintain V2 competition ownership boundaries
+### P0: Maintain competition ownership boundaries
 
 Status: Complete for the current release
 
 - Keep registration, format, calendar, scheduling, schedule approval, and
 	match-day operations as explicit handovers.
 - Keep fairness, validation, publication, and operational commands in their
-	owning V2 modules rather than recreating a shared orchestration facade.
+	owning modules rather than recreating a shared orchestration facade.
 - Preserve immutable published snapshots, audit events, and optimistic
-	concurrency guards while extending the V2 flow.
+	concurrency guards while extending the flow.
 
 ### P0: Release and migration confidence
 

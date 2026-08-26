@@ -40,7 +40,7 @@ Developer quick-start (most common tasks)
 1. Add models: `odoo/<module>/models/<file>.py` and export in `models/__init__.py`.
 2. Security: add `security/ir.model.access.csv` and `security/*.xml` record rules.
 3. Views: add `views/*.xml` and register in `__manifest__.py` `data`.
-4. Wizards/services: put transient models in `wizards/` and algorithmic code in the owning V2 module's `services/` package.
+4. Wizards/services: put transient models in `wizards/` and algorithmic code in the owning module's `services/` package.
 5. Tests: put unit/integration tests under `odoo/<module>/tests/` and include at least one focused test for new business logic.
 6. Run module tests: `odoo-bin -d <db> -i <module> --test-enable --stop-after-init`.
 
@@ -81,13 +81,13 @@ Recent additions (2026-05-25)
 - `sports_federation_venues` — venue and playing-area master data used by calendar capacity preparation.
 - `sports_federation_officiating` — referee readiness, availability warnings, and double-booking guards applied to operational schedules.
 - `sports_federation_base/views/menu_items.xml` and related addon menu files — backend navigation now uses journey-first buckets (`Setup`, `Planning`, `Match Day`, `Publication`, `Administration`), with the Planning menu as the primary scheduling entry point.
-- `sports_federation_portal/views/portal_templates.xml` and `portal_v2_templates.xml` — club representatives use the V2 Competition and Match-Day workspaces; direct queues remain secondary operational links.
+- `sports_federation_portal/views/portal_templates.xml` and `competition_templates.xml` — club representatives use the Competition and Match-Day workspaces; direct queues remain secondary operational links.
 - `sports_federation_base`, `sports_federation_tournament`, `sports_federation_rosters`, `sports_federation_result_control`, `sports_federation_standings`, and `sports_federation_public_site` form views now surface inline next-step guidance and direct cross-module handoffs, including season-registration-to-roster, participant-to-roster, result-to-tournament, and tournament-to-standings/publication flows.
-- The V2 competition modules and `sports_federation_portal` expose a clear phase model: scheduling prepares a complete draft, schedule approval publishes an immutable snapshot, match-day operations execute only that snapshot, and portal result pages handle result follow-up.
+- The competition modules and `sports_federation_portal` expose a clear phase model: scheduling prepares a complete draft, schedule approval publishes an immutable snapshot, match-day operations execute only that snapshot, and portal result pages handle result follow-up.
 
-See `odoo/TECHNICAL_NOTE.md` → "V2 competition planning flow" for details.
-See `odoo/TECHNICAL_NOTE.md` → "Guided setup and cross-module handoffs (2026-05-25)" for the Phase 2 intuitiveness baseline.
-See `odoo/TECHNICAL_NOTE.md` → "Canonical planning and match-day flows (2026-05-25)" for the Phase 3 intuitiveness baseline.
+See `odoo/TECHNICAL_NOTE.md` → "competition planning flow" for details.
+See `odoo/TECHNICAL_NOTE.md` → "Guided setup and cross-module handoffs (2026-05-25)" for the guided-setup baseline.
+See `odoo/TECHNICAL_NOTE.md` → "Canonical planning and match-day flows (2026-05-25)" for the planning and match-day baseline.
 
 Recent additions (2026-05-26)
 

@@ -1,4 +1,4 @@
-"""Tests for federation.match.club.referee.duty (Phase 5)."""
+"""Tests for federation.match.club.referee.duty (Operations)."""
 
 from datetime import timedelta
 

@@ -10,28 +10,7 @@ class FederationStageGraphEngine(models.AbstractModel):
 
     @api.model
     def validate_graph(self, structure):
-        adj = {s.id: [] for s in structure.stage_ids}
-        visiting = set()
-        done = set()
-        for e in self.env["federation.structure.stage.progression"].search(
-            [("structure_id", "=", structure.id), ("active", "=", True)]
-        ):
-            adj[e.source_stage_id.id].append(e.target_stage_id.id)
-
-        def visit(n):
-            if n in visiting:
-                raise ValidationError(_("Stage graph contains a cycle."))
-            if n in done:
-                return
-            visiting.add(n)
-            for x in adj[n]:
-                visit(x)
-            visiting.remove(n)
-            done.add(n)
-
-        for stage in structure.stage_ids:
-            visit(stage.id)
-        return True
+        return self.env["federation.stage.graph.validator"].validate(structure)
 
     def _participants(self, stage):
         return stage.stage_participant_ids.sorted(lambda p: (p.seed, p.id))
@@ -82,33 +61,7 @@ class FederationStageGraphEngine(models.AbstractModel):
         return True
 
     def _round_robin(self, stage, double):
-        teams = list(self._participants(stage).mapped("team_id"))
-        work = teams + [False] if len(teams) % 2 else teams[:]
-        rounds = []
-        for rnd in range(len(work) - 1):
-            pairs = []
-            for i in range(len(work) // 2):
-                a, b = work[i], work[-i - 1]
-                if a and b:
-                    pairs.append((a, b) if rnd % 2 == 0 else (b, a))
-            rounds.append(pairs)
-            work = [work[0], work[-1], *work[1:-1]]
-        if double:
-            rounds += [[(b, a) for a, b in pairs] for pairs in rounds]
-        self.env["federation.fixture"].create(
-            [
-                {
-                    "structure_id": stage.structure_id.id,
-                    "stage_id": stage.id,
-                    "round_number": rn,
-                    "sequence": seq * 10,
-                    "home_team_id": a.id,
-                    "away_team_id": b.id,
-                }
-                for rn, pairs in enumerate(rounds, 1)
-                for seq, (a, b) in enumerate(pairs, 1)
-            ]
-        )
+        return self.env["federation.fixture.generator.round.robin"].generate(stage, self._participants(stage), double=double)
 
     def _seed_order(self, size):
         order = [1, 2]

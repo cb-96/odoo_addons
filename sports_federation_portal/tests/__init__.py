@@ -15,4 +15,4 @@ from . import test_qol
 
 from . import test_production_security_matrix
 
-from . import test_portal_v2
+from . import test_competition_portal

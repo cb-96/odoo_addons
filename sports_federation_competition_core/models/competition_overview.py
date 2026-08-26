@@ -4,13 +4,13 @@ from odoo import _, api, fields, models
 class FederationCompetitionEdition(models.Model):
     _inherit = "federation.competition.edition"
 
-    role_assignment_count = fields.Integer(compute="_compute_v2_core_counts")
-    event_count = fields.Integer(compute="_compute_v2_core_counts")
+    role_assignment_count = fields.Integer(compute="_compute_core_counts")
+    event_count = fields.Integer(compute="_compute_core_counts")
     workflow_progress = fields.Integer(compute="_compute_workflow_progress")
     workflow_next_action = fields.Char(compute="_compute_workflow_progress")
 
     @api.depends("role_assignment_ids", "event_ids", "engine_state")
-    def _compute_v2_core_counts(self):
+    def _compute_core_counts(self):
         for rec in self:
             rec.role_assignment_count = len(rec.role_assignment_ids)
             rec.event_count = len(rec.event_ids)
@@ -56,7 +56,7 @@ class FederationCompetitionEdition(models.Model):
             else:
                 rec.workflow_next_action = _("Monitor competition operations")
 
-    def action_v2_role_assignments(self):
+    def action_role_assignments(self):
         self.ensure_one()
         return {
             "type": "ir.actions.act_window",
@@ -67,7 +67,7 @@ class FederationCompetitionEdition(models.Model):
             "context": {"default_edition_id": self.id},
         }
 
-    def action_v2_events(self):
+    def action_competition_events(self):
         self.ensure_one()
         return {
             "type": "ir.actions.act_window",

@@ -5,7 +5,7 @@
     <field name="arch" type="xml">
       <form string="Assign Officials to Match Day">
         <sheet>
-          <div class="alert alert-info" role="status">Assignments are created only for V2 fixture-backed matches in the current live publication.</div>
+          <div class="alert alert-info" role="status">Assignments are created only for fixture-backed matches in the current live publication.</div>
           <group>
             <group string="Published match day"><field name="matchday_id"/><field name="assignment_type"/><field name="role"/></group>
             <group string="Responsible official"><field name="referee_id" invisible="assignment_type != 'referee'" required="assignment_type == 'referee'"/><field name="club_id" invisible="assignment_type != 'club'" required="assignment_type == 'club'"/><field name="open_duties" invisible="assignment_type != 'club'"/></group>

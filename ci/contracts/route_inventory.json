@@ -12,25 +12,25 @@
       "method": "GET",
       "path": "/my/competitions",
       "owner_module": "sports_federation_portal",
-      "coverage_key": "portal_v2_competitions"
+      "coverage_key": "portal_competition_competitions"
     },
     {
       "method": "GET",
       "path": "/my/match-days",
       "owner_module": "sports_federation_portal",
-      "coverage_key": "portal_v2_matchdays"
+      "coverage_key": "portal_competition_matchdays"
     },
     {
       "method": "POST",
       "path": "/my/competition-entries/new",
       "owner_module": "sports_federation_portal",
-      "coverage_key": "portal_v2_entry_create"
+      "coverage_key": "portal_competition_entry_create"
     },
     {
       "method": "GET",
       "path": "/sports/match-days/<id>/operations",
       "owner_module": "sports_federation_portal",
-      "coverage_key": "portal_v2_matchday_operations"
+      "coverage_key": "portal_competition_matchday_operations"
     },
     {
       "method": "POST",

@@ -1,5 +1,5 @@
 """
-Tests for federation.eligibility.service (Phase 3).
+Tests for federation.eligibility.service (Integration).
 
 Coverage:
 - age_min rule: under-age player rejected, old-enough player passes

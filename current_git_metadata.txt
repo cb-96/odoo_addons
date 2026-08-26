@@ -2,13 +2,12 @@
 refactor/simplification-competition-engine
 
 === CURRENT COMMIT ===
-26ff34ec845295e072e7b660df02117f1352e125
+f6b728b558c30b7444714c44829d274f7706db05
 
 === REPOSITORY ROOT ===
 /home/cedric/odoo/addons
 
 === WORKTREE STATUS ===
- M current_git_metadata.txt
  M current_sources.txt
 
 === MODULE MANIFESTS ===
@@ -40,7 +39,7 @@ refactor/simplification-competition-engine
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "views/venue_views.xml", "views/round_views_inherit.xml", "views/tournament_views_inherit.xml", "views/match_views_inherit.xml", "views/menu_views.xml"], "depends": ["sports_federation_base", "sports_federation_tournament"], "explicit_assets": [], "installable": true, "module": "sports_federation_venues", "name": "Sports Federation Venues", "version": "19.0.1.1.0"}
 
 === RELEVANT RECENT HISTORY ===
-26ff34e (HEAD -> refactor/simplification-competition-engine) refactor(ci): enforce public route ownership and clean legacy code
+26ff34e refactor(ci): enforce public route ownership and clean legacy code
 743d8c9 fix(public-site): make V2 competitions the canonical route owner
 de5e107 (origin/refactor/simplification-competition-engine) feat!: deliver V2 public competition portal
 5764553 fix(reporting): correct V2 registration season aggregation
@@ -72,7 +71,8 @@ c84c10e (origin/main, origin/HEAD, main) Refactored scheduler.
 01bd19e Removed outdated docs in sports_federation_portal.
 
 === RECENT REPOSITORY HISTORY ===
-26ff34e (HEAD -> refactor/simplification-competition-engine) refactor(ci): enforce public route ownership and clean legacy code
+f6b728b (HEAD -> refactor/simplification-competition-engine) test(release): add Package 7 cutover qualification gate
+26ff34e refactor(ci): enforce public route ownership and clean legacy code
 743d8c9 fix(public-site): make V2 competitions the canonical route owner
 de5e107 (origin/refactor/simplification-competition-engine) feat!: deliver V2 public competition portal
 5764553 fix(reporting): correct V2 registration season aggregation
@@ -86,22 +86,20 @@ b95bbbf Patch 5.1: schedule approval.
 dd0acc1 feat!: complete source-truth hardening and add rules-driven standings
 b9a2daa feat!: establish authoritative fixture-to-result ownership
 d57ad4b Source truth for external use.
-f118ec6 Moving toward full removal of legacy competition workspace.
 
 === UNSTAGED DIFF STAT ===
- current_git_metadata.txt |  65 ++++----
- current_sources.txt      | 396 +++++++++++++++++++++++------------------------
- 2 files changed, 223 insertions(+), 238 deletions(-)
+ current_sources.txt | 307 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 303 insertions(+), 4 deletions(-)
 
 === STAGED DIFF STAT ===
 
 
 === FILE SUMMARY ===
-Discovered bundle files: 846
+Discovered bundle files: 849
 Configured modules found: 26
 Configured modules missing: 0
-Git tracked files: 861
-Git modified or staged files: 2
+Git tracked files: 864
+Git modified or staged files: 1
 Git untracked files: 0
 
 === BUNDLED FILE INVENTORY ===
@@ -131,7 +129,7 @@ Git untracked files: 0
 .github/skills/service-regression-test-builder/SKILL.md	3753	03dce34c9cef45fac6ca4fc921f9292089957f480c6fded1d4e4741737ae7513	tracked
 .github/skills/workflow-doc-sync/SKILL.md	4027	02940d62bf79325da7fe8cc7dbd3ad52a2f9c59c822c428895b4e18407727e18	tracked
 .github/workflows/ci.yml	12903	991d1631edc4d57dd9168260a8814423301347d01716efcb31d2447eb849bcac	tracked
-.github/workflows/release-candidate.yml	3475	cce048e0c694d5cb097ff5d50656d40526252bba59f2876f03c0767021afcfdf	tracked
+.github/workflows/release-candidate.yml	3681	81095b400c375e7927b8cec95b830445299f33559652285ff827d3525fe59702	tracked
 .gitignore	371	07c621c7ff06dbcacfc748a10b38e39021614b18cd5131219aa0e087cf35183a	tracked
 COMPETITION_ENGINE_V2.md	2808	5c3ae74a023ce75b4a9b2efdee5bcc3f4b06bf33f1cee2c1d833ca602afe583c	tracked
 CONTEXT.md	10121	dafa12e4a7873d9e60cee6777ed21d6da1b696a3f218e3e0c934d8a65790ad8e	tracked
@@ -185,6 +183,7 @@ ci/check_migration_review.py	5384	a46259551ee94b1fd449de098bb55858c8ddbce64a7851
 ci/check_module_dependency_drift.py	2730	994db4e2a8c8b835129308b8e0d59e7375633917b1ca960e17847c65808b8fd3	tracked
 ci/check_module_owners.py	3885	548f92facbc6a9bcc2e38bd6b3c72f6422ea297ca982a6ebf103a5b68378e7fc	tracked
 ci/check_openapi_contracts.py	10659	885ad49c6f9805dfab5441a1e255264c027c039c74223302bd51a062abbe4e7c	tracked
+ci/check_package7_release_qualification.py	1808	3b479f9d275f02d621189ad565016a1ac0ab0ff2942ad7b6dfdb77509927dfab	tracked
 ci/check_phase1_fixture_contract.py	1492	752690b8812b74dd51fec9f10345e885d300482f401ccd359c29ebc08d5e202a	tracked
 ci/check_phase2_rules_contract.py	1267	a29f1b4227b52ad008c887526e69e0cccf734b025493276c2a6ada132fe7a7c5	tracked
 ci/check_phase51_schedule_handoff.py	2091	4f2d79f84a47924744ecff061662f423ef5b90c2fbeec2a7acafb2b4554986d5	tracked
@@ -216,7 +215,7 @@ ci/prune_ci_logs.sh	588	666c32dbe5413917460b8b8cdc2d1c99c1de447befe5c903f39f1dc7
 ci/resolve_ci_scope.py	2401	686b7a025502b5dbbeb4e819beac0eec6e442c7a10410961f01e5cb9f23f5ea6	tracked
 ci/restore_backup_drill.sh	10258	415c24cf36ac7819d820ef5ecf8de0906eb27aad61713d5c8995918d4c9e5c44	tracked
 ci/run_odoo_tests.sh	842	511e56364075d8f64b61857b3bc4645cede6b2a294eb32dbc673da44b59927cd	tracked
-ci/run_repo_lint.sh	3492	0087f886b4cb0bc4cafccacb3773d6f0257b6a1710a061e9ab95338657290fb2	tracked
+ci/run_repo_lint.sh	3814	b6de89caa90601855b955216221d98061666897b350823b4978b68fabf09cd64	tracked
 ci/run_tests.sh	23848	574e70ed0520032c3539f855f8ec0735505d891c3bb92c2c3f948d5d2f4a05c4	tracked
 ci/static_checks.py	1804	f2886eb57443738cec3199252e53ec95c75fe9e46e918281c85daf788fc88182	tracked
 ci/test_config.conf	125	a7d32c2d065ecd064c2117236ee57f7c2a718b0aa8de60e8bb02857b10207487	tracked
@@ -229,13 +228,15 @@ docs/p0_p2_verification_checklist.md	2825	37a38e852e9f3b02eb7eb7442c26dac379e354
 docs/phase0_source_truth.md	1184	f960a5fc4c96591ac1a0649083e8be56bc7b4a5f4767d0dfa81d58f1637d8512	tracked
 docs/portal_sudo_inventory.json	12408	de6dbf8de2ac9a6797f0c5c7400682dacd367bef5324d09fe520f2fc69209c30	tracked
 docs/portal_v2_ownership.md	900	682e783f229c845de6a3c494ae907549155fe484d345b1723a17112fe678f531	tracked
+docs/release/COMPETITION_CUTOVER_ACCEPTANCE.md	5404	48c429058115e86402e5f45a829ed79ae0acd0b19cda0d532ca5331aaa7e7a23	tracked
 docs/release/HUMAN_ACCEPTANCE_TEST.md	6743	78a37e92ec260a1e20dec57f1ea1bfc9704ea3e2c8c49510447a85e6da49ffa8	tracked
+docs/release/POST_CUTOVER_PHASES.md	3399	0c3c6a529dfc292ff20211e252f4806c82ab47dcf56a09106262bdb4402be335	tracked
 docs/release/RC_APPROVAL_POLICY.md	1631	bd1b884a76560d30d559a7586237472a5894f3a87d7efdd2399bba3142e198bd	tracked
 docs/v2_officiating_and_match_cleanup.md	1227	3717e1a125a5dc9a964992afcb9f85c2c7abf0cfb584e44afc985df252bb45fd	tracked
 docs/v2_registration_cutover.md	525	574ce868878a6e031aa62a33e760d976a94aa0406b4d5c734c6d467ff7fe6e3e	tracked
 removal.sh	1550	933309f5fddd485b0cb9884afebb51925acff8afa0d752ac4cf406831a2e98ee	tracked
 requirements.txt	65	ae976dc68dd5b3a6096ac59a762a9aaa9c63a5af01b651e8cd77c9a2095cdacd	tracked
-scripts/ci/run_rc_validation.sh	2849	a397fb2807f3fe7b5259a35d7a1746c6d8140d6dbc7304ce3aeab9131b7ada0d	tracked
+scripts/ci/run_rc_validation.sh	4044	4ea1332da8765679094f14e7e85afac1bd826556a01376e435b5c9835f79f7e9	tracked
 source_collector.py	16885	97dcc372ef049ec146e735ca2687568c024e8e15e1a7b559f6be8d1933ce282a	tracked
 sports_federation_base/README.md	1724	95a3fce7604f5167c98181d792b3051d7b52e5b9bc0c7992abe143229aa68dde	tracked
 sports_federation_base/__init__.py	21	5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e	tracked

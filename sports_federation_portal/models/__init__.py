@@ -13,5 +13,5 @@ from . import federation_match_sheet
 from . import federation_player
 from . import portal_status_labels
 from . import operation_task
-from . import portal_v2_queries
+from . import competition_queries
 from . import federation_competition_entry

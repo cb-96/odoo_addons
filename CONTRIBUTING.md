@@ -5,7 +5,7 @@ This repository expects small, test-backed changes with matching documentation u
 ## Prerequisites
 
 - Python 3.10 or newer for local linting
-- Docker with Compose v2 for the containerized Odoo test runner
+- Docker with Compose current for the containerized Odoo test runner
 - Git Bash, WSL, or another POSIX shell for the `ci/*.sh` scripts on Windows
 
 ## Local setup
@@ -168,7 +168,7 @@ containers/database/filestore/configuration on failure. For fast UI work use
 combined with:
 
 ```bash
-bash ./ci/run_tests.sh --suite v2_competition_contracts
+bash ./ci/run_tests.sh --suite competition_competition_contracts
 ```
 
 ### Pre-push checks

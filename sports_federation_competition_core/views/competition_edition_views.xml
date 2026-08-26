@@ -1,14 +1,14 @@
 <odoo>
-  <record id="competition_edition_form_v2_workflow" model="ir.ui.view">
-    <field name="name">federation.competition.edition.form.v2.workflow</field>
+  <record id="competition_edition_form_workflow" model="ir.ui.view">
+    <field name="name">federation.competition.edition.form.workflow</field>
     <field name="model">federation.competition.edition</field>
     <field name="inherit_id" ref="sports_federation_tournament.view_federation_competition_edition_form"/>
     <field name="arch" type="xml">
       <xpath expr="//div[@name='button_box']" position="inside">
-        <button name="action_v2_role_assignments" type="object" class="oe_stat_button" icon="fa-users">
+        <button name="action_role_assignments" type="object" class="oe_stat_button" icon="fa-users">
           <field name="role_assignment_count" widget="statinfo" string="Responsibilities"/>
         </button>
-        <button name="action_v2_events" type="object" class="oe_stat_button" icon="fa-history">
+        <button name="action_competition_events" type="object" class="oe_stat_button" icon="fa-history">
           <field name="event_count" widget="statinfo" string="History"/>
         </button>
       </xpath>
@@ -19,7 +19,7 @@
         </group>
       </xpath>
       <xpath expr="//notebook" position="inside">
-        <page string="Responsibilities" name="v2_responsibilities">
+        <page string="Responsibilities" name="responsibilities">
           <field name="role_assignment_ids" context="{'default_edition_id': id}">
             <list editable="bottom"><field name="role"/><field name="user_id"/><field name="active"/></list>
           </field>
@@ -27,7 +27,7 @@
       </xpath>
     </field>
   </record>
-  <record id="action_competition_overview_v2" model="ir.actions.act_window">
+  <record id="action_competition_overview" model="ir.actions.act_window">
     <field name="name">Competition Overview</field><field name="res_model">federation.competition.edition</field><field name="view_mode">kanban,list,form</field>
   </record>
 </odoo>

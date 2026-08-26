@@ -53,9 +53,9 @@ this runbook:
 ${EDITOR:-vi} addons/RELEASE_RUNBOOK.md
 ```
 
-### Portal V2 controller-load repair evidence
+### Portal controller-load repair evidence
 
-The portal V2 repair removes the stale re-export of the deleted V1 workspace
+The portal repair removes the stale re-export of the deleted V1 workspace
 controller, restores the tournament-registration view in the manifest data
 order, and keeps officiating assignment visibility limited to live current
 publications. No database migration is required; the portal manifest is bumped
@@ -140,7 +140,7 @@ If you need to restrict the release to a subset of modules:
 ./scripts/upgrade_sports_federation.sh --db odoo --modules sports_federation_reporting,sports_federation_portal --dry-run
 ```
 
-### Competition V2 ownership change evidence
+### Competition ownership change evidence
 
 The legacy monolithic competition engine is removed from the addon tree. The
 replacement ownership chain is `sports_federation_competition_core`,
@@ -152,7 +152,7 @@ Before upgrading a database that previously installed the legacy engine:
 
 1. Take the database and filestore backups described above.
 2. Run the upgrade script with `--dry-run` and confirm that the resolved module
-   list contains the V2 chain and does not contain the removed addon.
+   list contains the chain and does not contain the removed addon.
 3. Run the upgrade in a disposable restore of the backup first, then verify
    registration, format freeze, calendar capacity, scheduling, approval
    publication, and match-day operations.
@@ -453,7 +453,7 @@ odoo-bin -d RC_DATABASE \
 
 Verify that publication `matchday_id` values are populated, each match day has
 at most one `live` publication, existing published matches have
-`operational_slot_id = published_slot_id`, and the Phase 5.1.1 to 5.3 contract
+`operational_slot_id = published_slot_id`, and the publication integrity contract
 and module tests pass. The approval migration creates a partial unique index for
 one live publication per match day. Existing data is safe because the preceding
 implementation permitted at most one live publication for the broader edition.
@@ -462,25 +462,25 @@ Before upgrading, take a database backup. Rollback requires restoring that
 backup because the new publication uniqueness semantics and operational audit
 fields are persistent. Do not downgrade only the addon code after operators have
 recorded live deviations.
-## Portal V2 cutover 19.0.4.0.0
+## Portal cutover 19.0.4.0.0
 
-Upgrade `sports_federation_portal` after the V2 competition, registration,
+Upgrade `sports_federation_portal` after the competition, registration,
 schedule-approval and match-day modules. The migration closes open operation
 tasks projected from V1 tournament registrations. It does not delete business
 records.
 
 ```bash
 odoo-bin -d RC_DATABASE -u sports_federation_portal --stop-after-init
-python ci/check_portal_v2_ownership.py
+python ci/check_portal_competition_ownership.py
 python ci/check_portal_sudo_guard.py
 bash ci/run_tests.sh --module sports_federation_portal
 ```
 
 Verify /my/competitions, /my/competition-entries, /my/match-days and one match-day operations page. Confirm that draft schedules and superseded publications do not appear.
 
-Rollback requires a database restore if V2 entries or portal audit events were created after cutover.
+Rollback requires a database restore if entries or portal audit events were created after cutover.
 
-## V2 officials and standalone-match cleanup
+## officials and standalone-match cleanup
 
 Upgrade `sports_federation_tournament`, `sports_federation_officiating`, and
 `sports_federation_portal` together after taking a verified database backup.
@@ -491,14 +491,14 @@ their dependent records.
 odoo-bin -d RC_DATABASE \
   -u sports_federation_tournament,sports_federation_officiating,sports_federation_portal \
   --stop-after-init
-python ci/check_v2_officiating_contract.py
+python ci/check_officiating_contract.py
 ```
 
 Verify that the standalone-match count is zero, create officials through a
 current live match-day publication, and confirm that the official self-service
-portal shows current assignments plus retained V2 history.
+portal shows current assignments plus retained history.
 
-## V2 competition-entry cutover 19.0.5.0.0
+## competition-entry cutover 19.0.5.0.0
 
 Upgrade registration, portal, public site and reporting together after a verified
 backup. The portal migration permanently drops the test-only V1 tournament
@@ -506,6 +506,6 @@ registration table.
 
 ```bash
 odoo-bin -d RC_DATABASE -u sports_federation_registration,sports_federation_portal,sports_federation_public_site,sports_federation_reporting --stop-after-init
-python ci/check_v2_registration_contract.py
+python ci/check_registration_contract.py
 python ci/check_access_csv_integrity.py
 ```

@@ -29,8 +29,8 @@ class TestPortalTemplateMobile(TransactionCase):
             "portal_roster_templates": etree.parse(
                 str(views_dir / "portal_roster_templates.xml")
             ).getroot(),
-            "portal_v2_templates": etree.parse(
-                str(views_dir / "portal_v2_templates.xml")
+            "competition_templates": etree.parse(
+                str(views_dir / "competition_templates.xml")
             ).getroot(),
             "portal_officiating_templates": etree.parse(
                 str(views_dir / "portal_officiating_templates.xml")
@@ -185,7 +185,7 @@ class TestPortalTemplateMobile(TransactionCase):
 
     def test_workspace_portal_wide_tables_wrapped(self):
         self._assert_wide_tables_wrapped_responsive(
-            "portal_v2_templates",
+            "competition_templates",
             "portal_my_competition_detail",
         )
 

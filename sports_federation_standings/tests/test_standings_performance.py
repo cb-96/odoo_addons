@@ -1,4 +1,4 @@
-"""Performance regression tests for standings computation (Phase 3, Item 5).
+"""Performance regression tests for standings computation (Integration, Item 5).
 
 Verifies that _build_standing_table() is O(n + m) — the number of ORM queries
 must not grow with the number of matches (they are fetched in one batch query).

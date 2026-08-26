@@ -1,4 +1,4 @@
 from . import public_competitions
 from . import public_follow
 from . import public_clubs_players
-from . import public_v2_competitions
+from . import public_competitions_current

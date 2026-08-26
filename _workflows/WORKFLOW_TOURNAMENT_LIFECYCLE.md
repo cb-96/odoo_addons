@@ -131,7 +131,7 @@ Bulk enrolment is available via the **Import Tournament Participants** wizard.
 `sports_federation_scheduling`, `sports_federation_schedule_approval`, and
 `sports_federation_matchday`
 
-The V2 path is an explicit sequence of handovers:
+The path is an explicit sequence of handovers:
 
 - Freeze the logical structure and stage graph in `sports_federation_format`.
 - Prepare physical match days and playable capacity in

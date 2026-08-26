@@ -4,9 +4,9 @@ An RC may be tagged only after all automated gates pass and the approvals below 
 
 ## Mandatory automated evidence
 
-- Fresh installation of the V2 competition stack and affected integration addons
+- Fresh installation of the competition stack and affected integration addons
 - Upgrade of all modules on the same database
-- Complete V2 backend and portal suites
+- Complete backend and portal suites
 - Deterministic stage-graph, calendar-timeline, fairness, officiating,
   result-control, and notification contracts
 - Static Python, XML, JavaScript, and whitespace checks

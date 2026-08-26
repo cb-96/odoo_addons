@@ -125,7 +125,7 @@ The finance bridge now auto-creates a finance event when a
 - Reconciliation support: auto-created events also receive a deterministic
   `external_ref` using the fee-type code and source record identity
 
-## Result Approval Finance Hooks (Phase 2)
+## Result Approval Finance Hooks (Rules)
 
 match_result_hooks.py extends `federation.match` with:
 

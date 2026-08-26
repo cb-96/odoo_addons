@@ -202,11 +202,11 @@ class FederationMatchReferee(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Create assignments only for V2 fixture-backed operational matches."""
+        """Create assignments only for fixture-backed operational matches."""
         matches = self.env["federation.match"].browse(
             [vals.get("match_id") for vals in vals_list if vals.get("match_id")]
         )
-        self._assert_v2_matches(matches)
+        self._assert_competition_matches(matches)
         records = super().create(vals_list)
         Dispatcher = self.env.get("federation.notification.dispatcher")
         if Dispatcher is not None:
@@ -215,12 +215,12 @@ class FederationMatchReferee(models.Model):
         return records
 
     @api.model
-    def _assert_v2_matches(self, matches):
+    def _assert_competition_matches(self, matches):
         invalid = matches.filtered(lambda match: not match.logical_fixture_id)
         if invalid:
             raise ValidationError(
                 _(
-                    "Officials can only be assigned to V2 fixture-backed matches: %(matches)s",
+                    "Officials can only be assigned to fixture-backed matches: %(matches)s",
                     matches=", ".join(invalid.mapped("display_name")),
                 )
             )
@@ -228,7 +228,7 @@ class FederationMatchReferee(models.Model):
 
     def write(self, vals):
         if "match_id" in vals:
-            self._assert_v2_matches(
+            self._assert_competition_matches(
                 self.env["federation.match"].browse(vals.get("match_id"))
             )
         return super().write(vals)

@@ -1,5 +1,5 @@
 """
-Tests for new public site endpoints (Phase 4):
+Tests for new public site endpoints (API):
 - /competitions/archive — closed/cancelled tournaments
 - /competitions/<id>/teams — participant listing
 - /competitions/api/json — JSON API tournament list

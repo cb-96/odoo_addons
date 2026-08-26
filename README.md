@@ -82,7 +82,7 @@ Quickstart / Installation (example)
 
 Prerequisites
 - Python 3.10+ (for local linting and editor tooling)
-- Docker with Compose v2 (for the containerized Odoo test runner)
+- Docker with Compose current (for the containerized Odoo test runner)
 - PostgreSQL 12+ only if you are running against a separate local Odoo checkout
 - Node.js/npm (optional: for asset tooling)
 - wkhtmltopdf (optional: PDF export)

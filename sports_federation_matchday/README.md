@@ -20,8 +20,8 @@ approved publication evidence.
 ## Validation
 
 ```bash
-python ci/check_phase51_schedule_handoff.py
-python ci/check_phases_511_53_contract.py
+python ci/check_schedule_handoff_contract.py
+python ci/check_publication_integrity_contract.py
 bash ci/run_tests.sh --module sports_federation_schedule_approval
 bash ci/run_tests.sh --module sports_federation_matchday
 ```

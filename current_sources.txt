@@ -3774,6 +3774,7 @@ jobs:
           python ci/check_phase51_schedule_handoff.py
           python ci/check_phases_511_53_contract.py
           python ci/check_doc_freshness.py
+          python ci/check_package7_release_qualification.py
       - run: scripts/ci/run_rc_validation.sh static
 
   odoo-rc:
@@ -3824,10 +3825,13 @@ jobs:
           pip install -r _odoo/requirements.txt
       - name: Fresh install and module suites
         run: scripts/ci/run_rc_validation.sh install
-      - name: Core and portal suites
+      - name: Upgrade qualification
+        run: scripts/ci/run_rc_validation.sh upgrade
+      - name: Core, portal and public suites
         run: |
           scripts/ci/run_rc_validation.sh core
           scripts/ci/run_rc_validation.sh portal
+          scripts/ci/run_rc_validation.sh public
       - name: Upload Odoo logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -12985,6 +12989,60 @@ if __name__ == "__main__":
     sys.exit(main())
 
 ====================================================================================================
+FILE: ci/check_package7_release_qualification.py
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Verify that Package 7 release-qualification controls remain wired."""
+
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+rc_script = (ROOT / "scripts/ci/run_rc_validation.sh").read_text(encoding="utf-8")
+workflow = (ROOT / ".github/workflows/release-candidate.yml").read_text(
+    encoding="utf-8"
+)
+acceptance = (ROOT / "docs/release/COMPETITION_CUTOVER_ACCEPTANCE.md").read_text(
+    encoding="utf-8"
+)
+next_phases = (ROOT / "docs/release/POST_CUTOVER_PHASES.md").read_text(
+    encoding="utf-8"
+)
+
+checks = {
+    "RC upgrade lane": "upgrade)" in rc_script,
+    "RC public lane": "public)" in rc_script,
+    "upgrade database isolation": "UPGRADE_DB_NAME" in rc_script,
+    "upgrade precondition": "assert_modules_installed" in rc_script,
+    "workflow upgrade execution": "run_rc_validation.sh upgrade" in workflow,
+    "workflow public execution": "run_rc_validation.sh public" in workflow,
+    "acceptance exact commit evidence": "Candidate commit SHA" in acceptance,
+    "acceptance route cutover evidence": "/competitions" in acceptance
+    and "/tournaments" in acceptance,
+    "acceptance full lifecycle": all(
+        token in acceptance
+        for token in (
+            "Registration",
+            "Format and fixtures",
+            "Calendar and scheduling",
+            "Approval and publication",
+            "Match-day operations",
+            "Results and standings",
+        )
+    ),
+    "post-cutover decision gate": "Decision gate" in next_phases,
+}
+failed = [name for name, passed in checks.items() if not passed]
+if failed:
+    print(
+        "Package 7 release qualification contract failed: " + ", ".join(failed),
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+print("Package 7 release qualification contract passed.")
+
+====================================================================================================
 FILE: ci/check_phase1_fixture_contract.py
 ====================================================================================================
 
@@ -15287,6 +15345,7 @@ migration_review_exit=0
 constraint_index_contracts_exit=0
 openapi_contracts_exit=0
 http_route_ownership_exit=0
+package7_qualification_exit=0
 
 echo "[lint] Running Black across the repository"
 black --check --exclude '/(\.git|__pycache__|\.venv|ci/logs)/' . || black_exit=$?
@@ -15309,6 +15368,9 @@ python3 ci/check_openapi_contracts.py || openapi_contracts_exit=$?
 echo "[lint] Validating HTTP route ownership"
 python3 ci/check_http_route_ownership.py || http_route_ownership_exit=$?
 
+echo "[lint] Validating Package 7 release qualification"
+python3 ci/check_package7_release_qualification.py || package7_qualification_exit=$?
+
 echo "[lint] Reporting module dependency drift"
 python3 ci/check_module_dependency_drift.py || dependency_drift_exit=$?
 
@@ -15329,14 +15391,15 @@ echo "  Workflow contract exit code: $workflow_contracts_exit"
 echo "  Constraint/index contract exit code: $constraint_index_contracts_exit"
 echo "  OpenAPI contract exit code: $openapi_contracts_exit"
 echo "  HTTP route ownership exit code: $http_route_ownership_exit"
+echo "  Package 7 qualification exit code: $package7_qualification_exit"
 echo "  Migration review exit code: $migration_review_exit"
 echo "  Dependency drift report exit code: $dependency_drift_exit"
 
-if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $migration_review_exit -ne 0 ) ]]; then
+if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $package7_qualification_exit -ne 0 || $migration_review_exit -ne 0 ) ]]; then
     exit 1
 fi
 
-if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $migration_review_exit -ne 0 ]]; then
+if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $package7_qualification_exit -ne 0 || $migration_review_exit -ne 0 ]]; then
     echo "[lint] Repository-wide report found issues."
 else
     echo "[lint] Repository-wide report is clean."
@@ -16704,6 +16767,159 @@ not portal schedule sources. Portal access remains scoped through represented
 clubs and teams and through `federation.portal.privilege` for mutations.
 
 ====================================================================================================
+FILE: docs/release/COMPETITION_CUTOVER_ACCEPTANCE.md
+====================================================================================================
+
+# Competition Cutover Acceptance Record
+
+Use this record for the `/tournaments` to `/competitions` release candidate. Complete every mandatory field and attach evidence to the release ticket. Do not commit personal data, credentials, database dumps, or unredacted email samples.
+
+## Candidate identity
+
+- Candidate commit SHA:
+- Branch or release tag:
+- Validation date:
+- Release coordinator:
+- Fresh-install database identifier:
+- Upgrade-source snapshot identifier:
+- Upgrade database identifier:
+- Odoo version or commit:
+- PostgreSQL version:
+- Browser and mobile viewport:
+
+## Automated gate evidence
+
+Record the run URL or artifact identifier and result for each gate.
+
+- Repository lint and contracts:
+- Fresh installation:
+- Restored-database upgrade:
+- Competition core suite:
+- Portal suite:
+- Public-site suite:
+- Backup restore drill:
+- Runtime route inventory:
+- Open critical defects:
+- Open high defects:
+
+## Canonical route cutover
+
+1. `GET /competitions` returns the current competition hub.
+2. `GET /competitions/archive` returns archived competition editions only.
+3. `GET /competitions/<edition-slug>` exposes only a published edition with at least one published division.
+4. Format, schedule, match-day, standings, results, and bracket links remain inside the canonical `/competitions` namespace.
+5. `GET /tournaments` redirects once to `/competitions`.
+6. A legacy tournament detail URL redirects once to the matching edition and preserves the intended division.
+7. Legacy schedule, standings, results, teams, and bracket URLs redirect once without a loop.
+8. Unpublished editions, divisions, match days, and schedule publications return 404 or remain absent.
+9. Versioned feed and calendar contracts retained by policy still return their declared contract version.
+
+Evidence:
+
+- Canonical route screenshots or HTTP transcript:
+- Legacy redirect transcript:
+- Publication-boundary evidence:
+- Feed and calendar contract evidence:
+
+## Full competition lifecycle
+
+### Registration
+
+- Create a competition and season edition.
+- Create at least two divisions and registration windows.
+- Register teams through the intended backend and portal paths.
+- Confirm that cross-club access and duplicate submission are blocked.
+- Confirm ownership is edition and division based, not legacy workspace based.
+
+Result and evidence:
+
+### Format and fixtures
+
+- Create a group stage followed by knockout or placement stages.
+- Validate graph cycle rejection and source mappings.
+- Materialize fixtures twice and confirm no duplicates.
+- Confirm every operational match is fixture backed.
+
+Result and evidence:
+
+### Calendar and scheduling
+
+- Create at least two match days, multiple courts, breaks, and slots.
+- Run deterministic and weighted-fairness scheduling.
+- Review conflicts, rest time, unscheduled fixtures, and repeated execution.
+- Confirm stale concurrent planner changes are rejected without overwriting the winning revision.
+
+Result and evidence:
+
+### Approval and publication
+
+- Submit the schedule for approval.
+- Confirm the submitter cannot perform an unauthorized approval.
+- Publish an approved immutable schedule revision.
+- Modify planning data and confirm the live publication does not change silently.
+
+Result and evidence:
+
+### Match-day operations
+
+- Open the published match day.
+- Assign officials and confirm availability and overlap checks.
+- Start and complete matches through operational commands.
+- Confirm operational slot changes do not rewrite the approved publication.
+
+Result and evidence:
+
+### Results and standings
+
+- Submit, verify, and approve results with separate users.
+- Confirm an approved result enters official standings once.
+- Contest, correct, and reapprove one result.
+- Recompute and freeze standings, then progress the next stage.
+- Confirm the public competition page reflects the approved outcome and bracket progression.
+
+Result and evidence:
+
+## Portal and public isolation
+
+- Club A cannot read or mutate Club B registrations, rosters, match sheets, duties, or results.
+- Anonymous users cannot see unpublished competition data.
+- Portal users see only live schedule publications relevant to represented teams.
+- Public and portal pages use competition terminology without migration-generation language.
+
+Result and evidence:
+
+## Recovery and upgrade
+
+- Restore the selected pre-cutover snapshot into the isolated upgrade database.
+- Run the `upgrade` RC lane and retain the complete log.
+- Verify migration warnings, row counts, legacy cleanup, menus, routes, and module states.
+- Restart workers during a non-destructive action and confirm no duplicate records.
+- Restore the post-publication backup to another database and verify schedules, results, audits, and attachments.
+- Rehearse rollback to the documented restore point.
+
+Result and evidence:
+
+## Defect disposition
+
+For every defect record severity, reproducible steps, evidence, owner, target package, and disposition. Critical and high defects are automatic no-go conditions.
+
+- Defect register location:
+- Accepted medium defects and rationale:
+- Deferred low defects:
+
+## Decision
+
+- Automated gates: PASS / FAIL
+- Human acceptance: PASS / FAIL
+- Restore and rollback: PASS / FAIL
+- Technical owner approval:
+- Tournament operations approval:
+- Club representative approval:
+- Security or governance approval:
+- Data or process owner approval:
+- Final decision: GO / NO-GO
+
+====================================================================================================
 FILE: docs/release/HUMAN_ACCEPTANCE_TEST.md
 ====================================================================================================
 
@@ -16853,6 +17069,58 @@ Assign separate people where practical:
 - **Low**: cosmetic or minor usability issue. May be deferred.
 
 Pass only when all mandatory scenarios are completed, no critical or high defects remain, restore and rollback succeed, and every required approver signs the release ticket.
+
+====================================================================================================
+FILE: docs/release/POST_CUTOVER_PHASES.md
+====================================================================================================
+
+# Post-Cutover Implementation Phases
+
+Package 7 is a release-qualification gate. Do not begin the next structural phase until its automated gates pass and the acceptance record has no unresolved critical or high defect.
+
+## Decision gate
+
+Use the Package 7 result to select the next work:
+
+1. Route, publication, access, migration, or end-to-end handoff failure: create a focused stabilization package first.
+2. Correctness passes but performance budgets fail: profile and address measured hotspots before refactoring.
+3. Correctness and performance pass: continue with Phase 8.
+
+## Phase 8: Public projection consolidation
+
+Make `federation.public.competition.queries` the single publication-aware query boundary. Legacy tournament page controllers become redirect-only adapters. Consolidate edition, division, match-day, schedule, format, result, standings, and bracket projections. Add runtime tests for foreign division IDs, unpublished children, archived editions, stale publications, and canonical redirects.
+
+Success means no compatibility controller renders current domain data and every anonymous query applies the same publication boundary.
+
+## Phase 9: Format-engine modularization
+
+Split graph validation, round-robin generation, knockout and placement generation, bye resolution, progression, and fixture materialization into focused services behind the current orchestration facade. Preserve deterministic outputs and existing model and XML identities.
+
+Success means each generator has focused tests, preview performs no hidden writes, repeated materialization is idempotent, and all existing stage-graph tests remain green.
+
+## Phase 10: Match and schedule ownership cleanup
+
+Create one authoritative schedule-normalization path across round, match day, slot, venue, playing area, publication slot, and operational slot. Keep tournament, calendar, scheduling, approval, match-day, venues, format, and finance responsibilities separated.
+
+Success means create, write, onchange, compute, and inverse paths no longer implement competing normalization rules.
+
+## Phase 11: Concurrency and idempotency hardening
+
+Add independent-cursor tests and database authority for result approval versus contest, standings freeze versus recompute, schedule publication versus amendment, referee overlap, portal resubmission, integration replay, finance-event creation, and match-day command replay.
+
+Success means each consequential command defines locking, idempotency, audit ordering, and retry semantics.
+
+## Phase 12: Performance qualification
+
+Benchmark small, medium, and large competition datasets. Measure graph generation, materialization, fairness scheduling, validation, standings recompute, portal queries, public match-day latency, memory, and deterministic repeatability. Set CI budgets only after collecting stable baselines.
+
+Success means budgets represent real federation scale and regressions fail with actionable diagnostics.
+
+## Phase 13: UX consolidation
+
+Guide administrators through Overview, Registration, Format, Calendar, Scheduling, Approval, Match Days, Results, and Standings. Present prerequisites, blockers, ownership, and the next valid action without exposing addon boundaries or migration terminology.
+
+Success means federation administrators, club representatives, officials, and visitors can complete their workflows without knowing the internal V2 architecture.
 
 ====================================================================================================
 FILE: docs/release/RC_APPROVAL_POLICY.md
@@ -17012,6 +17280,7 @@ modules="sports_federation_base,sports_federation_rules,sports_federation_tourna
 odoo_bin="${ODOO_BIN:-$repo_root/_odoo/odoo-bin}"
 addons_path="${ADDONS_PATH:-$repo_root,$repo_root/_odoo/addons}"
 db_name="${DB_NAME:-sf_rc_validation}"
+upgrade_db_name="${UPGRADE_DB_NAME:-sf_rc_upgrade}"
 common=(
   "$odoo_bin" -d "$db_name"
   --db_host="${PGHOST:-127.0.0.1}"
@@ -17055,22 +17324,52 @@ run_tags() {
   "${common[@]}" -u "$modules" --test-enable --test-tags "$tags"
 }
 
+assert_modules_installed() {
+  local database="$1"
+  if ! command -v psql >/dev/null 2>&1; then
+    echo "ERROR: psql is required for upgrade qualification" >&2
+    exit 2
+  fi
+  local installed
+  installed="$(
+    PGPASSWORD="${PGPASSWORD:-odoo}" psql       --host="${PGHOST:-127.0.0.1}"       --port="${PGPORT:-5432}"       --username="${PGUSER:-odoo}"       --dbname="$database"       --tuples-only --no-align       --command="SELECT count(*) FROM ir_module_module WHERE name = ANY(string_to_array('$modules', ',')) AND state = 'installed'"
+  )"
+  local expected
+  expected="$(awk -F',' '{print NF}' <<<"$modules")"
+  if [[ "$installed" != "$expected" ]]; then
+    echo "ERROR: upgrade database $database has $installed of $expected required modules installed" >&2
+    exit 2
+  fi
+}
+
+run_upgrade() {
+  require_odoo
+  assert_modules_installed "$upgrade_db_name"
+  local upgrade_common=("${common[@]}")
+  upgrade_common[2]="$upgrade_db_name"
+  "${upgrade_common[@]}" -u "$modules"
+}
+
 case "$lane" in
   static) static_checks ;;
   install)
     require_odoo
     "${common[@]}" -i "$modules" --test-enable --test-tags '/sports_federation_base,/sports_federation_rules,/sports_federation_tournament'
     ;;
+  upgrade) run_upgrade ;;
   core) run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications' ;;
   portal) run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile' ;;
+  public) run_tags '/sports_federation_public_site' ;;
   all)
     static_checks
     require_odoo
     "${common[@]}" -i "$modules" --test-enable --test-tags '/sports_federation_base,/sports_federation_rules,/sports_federation_tournament'
     run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications'
+    run_upgrade
     run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile'
+    run_tags '/sports_federation_public_site'
     ;;
-  *) echo "Usage: $0 {static|install|core|portal|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {static|install|upgrade|core|portal|public|all}" >&2; exit 2 ;;
 esac
 
 ====================================================================================================

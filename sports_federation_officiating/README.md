@@ -28,7 +28,7 @@ Officials may only access assignments linked to their portal identity. Club repr
 
 Coverage includes assignment lifecycle, duties, reimbursements, portal access, match-day tours, and workspace integration.
 
-## V2 ownership
+## ownership
 
 Official assignments and club-supplied duties belong to fixture-backed
 operational matches. Use **Officiating → Plan Match-Day Officials** to assign a

@@ -171,12 +171,18 @@ class FederationMatchResultControl(models.Model):
             if Dispatcher is not None:
                 Dispatcher.send_result_submitted(rec)
 
+    def _lock_result_transition(self):
+        if self.ids:
+            self.env.cr.execute("SELECT id FROM federation_match WHERE id = ANY(%s) FOR UPDATE", (self.ids,))
+            self.invalidate_recordset(["result_state", "result_submitted_by_id", "result_verified_by_id", "result_contest_reason"])
+
     def action_verify_result(self):
         """Verify the submitted result."""
         self._check_result_group(
             "sports_federation_result_control.group_result_validator",
             "Only result validators can verify submitted results.",
         )
+        self._lock_result_transition()
         for rec in self:
             if rec.result_state != "submitted":
                 raise ValidationError("Only submitted results can be verified.")
@@ -205,6 +211,7 @@ class FederationMatchResultControl(models.Model):
             "sports_federation_result_control.group_result_approver",
             "Only result approvers can approve verified results.",
         )
+        self._lock_result_transition()
         for rec in self:
             if rec.result_state != "verified":
                 raise ValidationError("Only verified results can be approved.")
@@ -238,6 +245,7 @@ class FederationMatchResultControl(models.Model):
 
     def action_contest_result(self):
         """Contest a result (from submitted, verified, or approved)."""
+        self._lock_result_transition()
         for rec in self:
             if rec.result_state not in ("submitted", "verified", "approved"):
                 raise ValidationError(

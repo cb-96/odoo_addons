@@ -113,27 +113,27 @@ Current controller layout:
 Phased Maintainability Plan
 ---------------------------
 
-- Phase 1 completed: the former multi-model gateway hotspot was split into
+- Initial completed: the former multi-model gateway hotspot was split into
   per-model files without changing model names, fields, or table ownership.
   Test impact: existing import-tools tests should stay green. Migration risk:
   none, because this is a file-layout change only.
-- Phase 2 completed: delivery staging, idempotency, workflow handoff, and
+- Rules completed: delivery staging, idempotency, workflow handoff, and
   retention cleanup now live in dedicated helper mixins while
   ``federation.integration.delivery`` keeps the ORM contract stable. Test
   impact: inbound delivery staging, idempotency, and retention coverage stays
   green. Migration risk: replay semantics and attachment linkage.
-- Phase 3 completed: token generation, hashing, verification, migration, and
+- Integration completed: token generation, hashing, verification, migration, and
   rotation or audit helpers now live in dedicated partner mixins while
   ``federation.integration.partner`` keeps the stable ORM entry points for
   authentication and subscription lookup. Test impact: token rotation and
   legacy-token migration coverage stay green. Migration risk: stored hash
   compatibility and audit logging.
-- Phase 4 completed: ``wizards/import_wizard_mixin.py`` now composes dedicated
+- API completed: ``wizards/import_wizard_mixin.py`` now composes dedicated
   CSV and governance or result helper mixins while preserving the shared wizard
   API. Test impact: shared mixin coverage plus wizard-specific dry-run and
   live-import flows stay green. Migration risk: approval checksum binding and
   result-summary compatibility.
-- Phase 5 completed: ``controllers/integration_api.py`` now composes dedicated
+- Operations completed: ``controllers/integration_api.py`` now composes dedicated
   auth and response helper mixins while preserving the public route surface and
   existing headers and status codes. Test impact: integration API credential,
   rate-limit, finance export, and inbound delivery coverage stays green.

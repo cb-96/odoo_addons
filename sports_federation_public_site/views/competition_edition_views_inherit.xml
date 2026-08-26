@@ -1,6 +1,6 @@
 <odoo>
-  <record id="view_competition_edition_form_public_v2" model="ir.ui.view">
-    <field name="name">federation.competition.edition.form.public.v2</field>
+  <record id="view_competition_edition_form_public_competition" model="ir.ui.view">
+    <field name="name">federation.competition.edition.form.public.current</field>
     <field name="model">federation.competition.edition</field>
     <field name="inherit_id" ref="sports_federation_tournament.view_federation_competition_edition_form"/>
     <field name="arch" type="xml">

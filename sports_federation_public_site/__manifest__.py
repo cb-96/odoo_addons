@@ -25,7 +25,7 @@
     "data": [
         "security/ir.model.access.csv",
         "views/website_templates.xml",
-        "views/website_v2_competition_templates.xml",
+        "views/website_competition_templates.xml",
         "views/competition_edition_views_inherit.xml",
         "views/website_hub_templates.xml",
         "views/website_editorial_templates.xml",
@@ -39,7 +39,7 @@
     ],
     "assets": {
         "web.assets_frontend": [
-            "sports_federation_public_site/static/src/scss/public_v2_competitions.scss",
+            "sports_federation_public_site/static/src/scss/public_competitions_current.scss",
             "sports_federation_public_site/static/src/js/public_live_board.js",
         ],
     },

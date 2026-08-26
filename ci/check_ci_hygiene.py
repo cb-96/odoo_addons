@@ -13,10 +13,10 @@ LEGACY_COMPOSE_DIR = CI_DIR / "legacy" / "compose"
 ACTIVE_COMPOSE = {"docker-compose.ci.yaml"}
 KNOWN_LEGACY_COMPOSE = {
     "docker-compose.override.yaml",
-    "docker-compose.phase3_officiating.yaml",
-    "docker-compose.public_site.phase2.yaml",
-    "docker-compose.result_control.phase2.yaml",
-    "docker-compose.rosters.phase2.yaml",
+    "docker-compose.integration_officiating.yaml",
+    "docker-compose.public_site.legacy.yaml",
+    "docker-compose.result_control.legacy.yaml",
+    "docker-compose.rosters.legacy.yaml",
     "docker-compose.sf_engine.yaml",
     "docker-compose.temp.yaml",
     "docker-compose.temp_task.yaml",

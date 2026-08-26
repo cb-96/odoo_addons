@@ -1,6 +1,6 @@
-# V2 Competition Workflow Ownership
+# Competition Workflow Ownership
 
-The V2 ownership chain is the supported competition-planning architecture. No
+The ownership chain is the supported competition-planning architecture. No
 production data migration is required solely for this ownership clarification.
 
 ## Capability ownership

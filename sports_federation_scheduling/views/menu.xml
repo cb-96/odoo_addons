@@ -1,1 +1,1 @@
-<odoo><menuitem id="menu_schedule_planner_v2" name="Schedule Planner" parent="sports_federation_competition_core.menu_competition_engine_v2_root" action="action_schedule_planner_v2" sequence="50"/></odoo>
+<odoo><menuitem id="menu_schedule_planner_competition" name="Schedule Planner" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_schedule_planner_competition" sequence="50"/></odoo>

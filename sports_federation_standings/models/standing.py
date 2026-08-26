@@ -330,11 +330,11 @@ class FederationStanding(models.Model):
             names=names,
             lot_seed=self.id,
         )
-        self._phase2_tiebreak_notes = notes
+        self._legacy_tiebreak_notes = notes
         return ranked
 
     def _compute_tiebreak_notes(self, sorted_items, participant_map):
-        notes = getattr(self, "_phase2_tiebreak_notes", None)
+        notes = getattr(self, "_legacy_tiebreak_notes", None)
         if notes is not None:
             return notes
         _participant_map, matches, names = self._ranking_context(dict(sorted_items))

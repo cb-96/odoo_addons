@@ -1,5 +1,5 @@
 """
-Tests for Phase 2 finance hooks:
+Tests for Rules finance hooks:
 - action_create_venue_finance_event works correctly on a match with a venue
 - On result approval, if result_fee_type_id is set, a finance event is created
 - Multiple matches can each have their own auto finance event on approval

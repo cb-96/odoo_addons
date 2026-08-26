@@ -38,10 +38,10 @@ git diff --check
 
 echo "[5/5] Running focused source contracts"
 python ci/check_access_csv_integrity.py
-python ci/check_v2_registration_contract.py
+python ci/check_registration_contract.py
 python ci/check_addon_integrity.py
-python ci/check_portal_v2_ownership.py
-python ci/check_v2_officiating_contract.py
+python ci/check_portal_competition_ownership.py
+python ci/check_officiating_contract.py
 
-echo "OK: V2 registration cutover package applied."
+echo "OK: Registration cutover package applied."
 git status --short

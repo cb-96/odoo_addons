@@ -33,8 +33,8 @@ pending; state and audit fields remain command-service-only.
 ## Tests and contracts
 
 ```bash
-python ci/check_phases_3_5_contract.py
-python ci/check_phase51_schedule_handoff.py
+python ci/check_competition_pipeline_contract.py
+python ci/check_schedule_handoff_contract.py
 bash ci/run_tests.sh --module sports_federation_schedule_approval
 bash ci/run_tests.sh --suite competition_core
 ```

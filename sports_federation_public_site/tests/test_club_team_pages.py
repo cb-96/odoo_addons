@@ -1,5 +1,5 @@
 """
-Smoke tests for Phase 2: public club and team profile pages.
+Smoke tests for Rules: public club and team profile pages.
 
 Asserts:
   - /clubs returns HTTP 200

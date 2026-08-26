@@ -43,4 +43,4 @@ roadmap or a standalone review snapshot for routine changes.
 
 ## Engineering contracts
 
-- [Phase 0 source-truth contract](phase0_source_truth.md)
+- [Foundation source-truth contract](repository_source_truth.md)

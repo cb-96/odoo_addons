@@ -1,5 +1,5 @@
 """
-Tests for KPI CSV export controller (Phase 4).
+Tests for KPI CSV export controller (API).
 
 These are ORM-level tests that verify the data layer (queries + serialization)
 used by the CSV export endpoints without making real HTTP requests.

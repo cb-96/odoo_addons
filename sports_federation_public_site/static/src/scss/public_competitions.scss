@@ -1,0 +1,26 @@
+.sf-competition-hero { background: linear-gradient(135deg, #172554, #1d4ed8); color: #fff; }
+.sf-competition-card { transition: transform .15s ease, box-shadow .15s ease; }
+.sf-competition-card:hover { transform: translateY(-2px); }
+.sf-empty-state { padding: 3rem; text-align: center; border: 1px dashed #adb5bd; border-radius: 1rem; background: #f8f9fa; }
+.sf-stage { padding: 1.5rem 0 2.5rem; border-bottom: 1px solid #dee2e6; }
+.sf-team-line { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.sf-match-card { padding: .75rem; border: 1px solid #dbe3ee; border-left: .3rem solid #2563eb; border-radius: .65rem; background: #fff; min-width: 12rem; }
+.sf-match-card[data-status="cancelled"] { opacity: .7; border-left-color: #dc3545; }
+.sf-gameday-grid { min-width: 900px; border-collapse: separate; border-spacing: .35rem; }
+.sf-gameday-grid th { background: #f8f9fa; position: sticky; top: 0; z-index: 2; }
+.sf-gameday-grid td { min-width: 15rem; vertical-align: top; background: #f8f9fa; }
+.sf-gameday-grid .sf-time-column { position: sticky; left: 0; z-index: 3; min-width: 5rem; }
+.sf-bracket { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(15rem, 1fr); gap: 2rem; overflow-x: auto; padding: 1rem 0 1.5rem; }
+.sf-bracket-round { display: flex; flex-direction: column; justify-content: space-around; gap: 1.25rem; }
+.sf-bracket-match { border: 1px solid #ced4da; border-radius: .6rem; background: #fff; padding: .75rem; box-shadow: 0 .15rem .35rem rgba(0,0,0,.06); }
+.sf-display-board { min-height: 100vh; background: #eef3f9; }
+.sf-display-board .sf-match-card { font-size: 1.2rem; min-height: 8rem; }
+@media (max-width: 767.98px) { .sf-standings-table { font-size: .85rem; } .sf-stage { padding-top: 1rem; } }
+@media print { header, nav, form, footer, .btn { display: none !important; } .sf-gameday-grid { min-width: 0; } }
+
+.sf-competition-card { transition: transform 160ms ease, box-shadow 160ms ease; }
+.sf-competition-card:hover, .sf-competition-card:focus-within { transform: translateY(-3px); box-shadow: 0 1rem 2rem rgba(21,38,65,.12) !important; }
+.sf-competition-nav { gap: .35rem; padding-bottom: .25rem; scrollbar-width: thin; }
+.sf-competition-nav .nav-link, .sf-live-board .form-select, .sf-live-board .btn, .sf-competition-card .btn { min-height: 44px; display: inline-flex; align-items: center; }
+.sf-empty-state { max-width: 48rem; margin-inline: auto; padding: clamp(2rem,6vw,4rem); text-align:center; border:1px dashed var(--bs-border-color); border-radius:1rem; background:var(--bs-tertiary-bg); }
+@media (prefers-reduced-motion: reduce) { .sf-competition-card { transition:none; } }

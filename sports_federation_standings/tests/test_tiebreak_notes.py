@@ -1,5 +1,5 @@
 """
-Tests for tiebreak notes on federation.standing.line (Phase 3).
+Tests for tiebreak notes on federation.standing.line (Integration).
 
 Coverage:
 - Teams with different points: no tiebreak note for lower team

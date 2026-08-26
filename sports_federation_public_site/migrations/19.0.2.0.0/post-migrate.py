@@ -12,7 +12,7 @@ def migrate(cr, version):
            AND (website_published IS TRUE OR public_featured IS TRUE)
     """)
     _logger.info(
-        "V2 public cutover unpublished %s legacy tournament records", cr.rowcount
+        "current public cutover unpublished %s legacy tournament records", cr.rowcount
     )
     cr.execute("""
         UPDATE federation_tournament tournament
@@ -24,6 +24,6 @@ def migrate(cr, version):
            AND (tournament.website_published IS TRUE OR tournament.public_featured IS TRUE)
     """)
     _logger.info(
-        "V2 public cutover unpublished %s child divisions of private editions",
+        "current public cutover unpublished %s child divisions of private editions",
         cr.rowcount,
     )

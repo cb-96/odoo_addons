@@ -120,13 +120,13 @@
     "statement": "request.env[ \"federation.season.registration\" ]._portal_submit_registration_request( request.env[\"federation.season\"].sudo().browse(season_id), request.env[\"federation.team\"].sudo().browse(team_id), notes=notes, user=request.env.user, )"
   },
   {
-    "file": "sports_federation_portal/controllers/portal_v2.py",
+    "file": "sports_federation_portal/controllers/competition_portal.py",
     "function": "portal_create_competition_entry",
     "reason": "adjacent ownership scope check",
     "statement": "team = request.env[\"federation.team\"].sudo().browse(int(team_id)).exists()"
   },
   {
-    "file": "sports_federation_portal/controllers/portal_v2.py",
+    "file": "sports_federation_portal/controllers/competition_portal.py",
     "function": "portal_create_competition_entry",
     "reason": "adjacent ownership scope check",
     "statement": "window = ( request.env[\"federation.registration.window\"] .sudo() .browse(int(window_id)) .exists() )"

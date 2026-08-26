@@ -1,5 +1,5 @@
 <odoo>
-  <menuitem id="menu_schedule_review_queue" name="Schedule Review Queue" parent="sports_federation_competition_core.menu_competition_engine_v2_root" action="action_schedule_review_queue" sequence="60" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_schedule_review_queue" name="Schedule Review Queue" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_schedule_review_queue" sequence="60" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager"/>
   <menuitem id="menu_approved_schedule_queue" name="Approved Schedules" parent="sports_federation_base.menu_federation_publication" action="action_approved_schedule_queue" sequence="20" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager"/>
   <menuitem id="menu_schedule_publication_history" name="Schedule Publications" parent="sports_federation_base.menu_federation_publication" action="action_schedule_publication_history" sequence="30" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager"/>
 </odoo>

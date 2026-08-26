@@ -12,7 +12,7 @@
 #   bash ci/run_tests.sh --list-suites
 #   bash ci/run_tests.sh --keep                  # keep containers for debugging
 #
-# Requirements: docker compose v2
+# Requirements: docker compose current
 # ──────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -699,4 +699,4 @@ fi
 
 exit "$EXIT_CODE"
 
-python ci/check_public_v2_competition_contract.py
+python ci/check_public_competition_contract.py

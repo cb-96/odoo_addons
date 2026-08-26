@@ -2,14 +2,14 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 
-@tagged("post_install", "-at_install", "sf_phase2_rules")
+@tagged("post_install", "-at_install", "sf_legacy_rules")
 class TestStandingsRules(TransactionCase):
     def setUp(self):
         super().setUp()
         self.engine = self.env["federation.standings.rules"]
         self.rule_set = self.env["federation.rule.set"].create(
             {
-                "name": "Phase 2",
+                "name": "Rules",
                 "points_win": 5,
                 "points_draw": 2,
                 "points_loss": -1,

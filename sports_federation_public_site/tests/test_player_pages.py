@@ -1,5 +1,5 @@
 """
-Smoke tests for Phase 2: public player profile pages.
+Smoke tests for Rules: public player profile pages.
 
 Asserts:
   - /players returns HTTP 200

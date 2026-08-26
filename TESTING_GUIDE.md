@@ -190,9 +190,9 @@ These are the current CI budgets for the most sensitive read paths:
 | `federation.report.schedule._build_season_portfolio_rows()` | 3 queries |
 | `federation.report.schedule._build_club_performance_rows()` | 4 queries |
 | `federation.report.snapshot._compliance_pending_total()` | 1 aggregate query |
-| V2 scheduling validation smoke | ≤ 25 seconds |
+| scheduling validation smoke | ≤ 25 seconds |
 
-The authoritative tests are in the V2 competition, public-site, portal,
+The authoritative tests are in the competition, public-site, portal,
 reporting, and domain test suites. Scheduling regressions belong in
 `sports_federation_scheduling/tests/` and calendar regressions belong in
 `sports_federation_calendar/tests/`.
