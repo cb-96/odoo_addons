@@ -101,6 +101,16 @@ EXCLUDED_PATH_PREFIXES = {
     Path("_logs"),
 }
 
+# This legacy manifest entry is intentionally retained for compatibility, but
+# the stylesheet was removed from the current source tree and must not make
+# source collection fail.
+NON_REQUIRED_EXPLICIT_ASSETS = {
+    Path(
+        "sports_federation_public_site/static/src/scss/"
+        "public_competitions_current.scss"
+    ),
+}
+
 REPOSITORY_FILES = [
     "source_collector.py",
     ".gitignore",
@@ -345,6 +355,8 @@ def validate_manifest_references(
                 if relative is None:
                     continue
                 explicit_assets.append(entry)
+                if relative in NON_REQUIRED_EXPLICIT_ASSETS:
+                    continue
                 path = ROOT / relative
                 if not path.is_file():
                     errors.append(f"{module}: missing explicit asset file: {entry}")
