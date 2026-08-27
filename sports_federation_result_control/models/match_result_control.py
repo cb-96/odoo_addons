@@ -173,8 +173,18 @@ class FederationMatchResultControl(models.Model):
 
     def _lock_result_transition(self):
         if self.ids:
-            self.env.cr.execute("SELECT id FROM federation_match WHERE id = ANY(%s) FOR UPDATE", (self.ids,))
-            self.invalidate_recordset(["result_state", "result_submitted_by_id", "result_verified_by_id", "result_contest_reason"])
+            self.env.cr.execute(
+                "SELECT id FROM federation_match WHERE id = ANY(%s) FOR UPDATE",
+                (self.ids,),
+            )
+            self.invalidate_recordset(
+                [
+                    "result_state",
+                    "result_submitted_by_id",
+                    "result_verified_by_id",
+                    "result_contest_reason",
+                ]
+            )
 
     def action_verify_result(self):
         """Verify the submitted result."""

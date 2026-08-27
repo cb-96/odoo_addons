@@ -35,6 +35,7 @@ jobs:
           python ci/check_access_csv_integrity.py
           python ci/check_source_collector_contract.py
           python ci/check_addon_integrity.py
+          python ci/check_test_discovery.py
           python ci/check_workflow_state_contracts.py
           python ci/check_fixture_ownership_contract.py
           python ci/check_rules_contract.py
@@ -92,17 +93,18 @@ jobs:
           sudo apt-get install -y libldap2-dev libsasl2-dev libpq-dev
           python -m pip install --upgrade pip wheel
           pip install -r _odoo/requirements.txt
-      - name: Fresh install and module suites
+      - name: Fresh install and complete standard test suite
         run: scripts/ci/run_rc_validation.sh install
-      - name: Upgrade-path smoke
+      - name: Idempotent same-version upgrade smoke
         run: |
           DB_NAME=sf_rc_upgrade scripts/ci/run_rc_validation.sh install
           scripts/ci/run_rc_validation.sh upgrade
-      - name: Core, portal and public suites
+      - name: Targeted post-install release surfaces
         run: |
           scripts/ci/run_rc_validation.sh core
           scripts/ci/run_rc_validation.sh portal
           scripts/ci/run_rc_validation.sh public
+          scripts/ci/run_rc_validation.sh full
       - name: Upload Odoo logs
         if: always()
         uses: actions/upload-artifact@v4

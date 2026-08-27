@@ -34,11 +34,10 @@ checks = {
         '@http.route(["/competitions"]' not in legacy_controller
     ),
     "single tournament redirect owner": (
-        '["/tournaments", "/tournaments/page/<int:page>"]'
-        not in legacy_controller
+        '["/tournaments", "/tournaments/page/<int:page>"]' not in legacy_controller
     ),
     "no legacy competition overview alias": (
-        '"/competitions/<model(\'federation.tournament\'):tournament>",'
+        "\"/competitions/<model('federation.tournament'):tournament>\","
         not in legacy_controller
     ),
     "gameday route": "/gamedays/<int:matchday_id>" in controller,
@@ -57,8 +56,6 @@ checks = {
 }
 failed = [name for name, passed in checks.items() if not passed]
 if failed:
-    print(
-        "Public competition contract failed: " + ", ".join(failed), file=sys.stderr
-    )
+    print("Public competition contract failed: " + ", ".join(failed), file=sys.stderr)
     raise SystemExit(1)
 print("Public competition contract passed.")

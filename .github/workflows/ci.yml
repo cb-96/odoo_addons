@@ -53,6 +53,9 @@ jobs:
       - name: Run repository-wide lint (strict)
         run: bash ci/run_repo_lint.sh --strict
 
+      - name: Check Odoo test discovery
+        run: python ci/check_test_discovery.py
+
       - name: Check documentation freshness metadata
         run: python ci/check_doc_freshness.py
 

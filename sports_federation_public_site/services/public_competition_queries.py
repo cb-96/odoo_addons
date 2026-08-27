@@ -69,18 +69,37 @@ class PublicCompetitionQueries(models.AbstractModel):
         return divisions.filtered(lambda division: division.id == division_id)[:1]
 
     def resolve_legacy_division(self, slug=None, division_id=None):
-        domain = [("active", "=", True), ("website_published", "=", True), ("edition_id.website_published", "=", True), ("edition_id.active", "=", True)]
-        domain.append(("id", "=", division_id) if division_id else ("public_slug", "=", slug))
+        domain = [
+            ("active", "=", True),
+            ("website_published", "=", True),
+            ("edition_id.website_published", "=", True),
+            ("edition_id.active", "=", True),
+        ]
+        domain.append(
+            ("id", "=", division_id) if division_id else ("public_slug", "=", slug)
+        )
         division = self.env["federation.tournament"].sudo().search(domain, limit=1)
         if not division or not self.resolve_edition(division.edition_id.public_slug):
             return self.env["federation.tournament"]
         return division
 
     def canonical_location(self, division, section=None):
-        suffixes = {None: "", "teams": "", "standings": "", "results": "", "schedule": "/schedule", "bracket": "/format", "format": "/format"}
+        suffixes = {
+            None: "",
+            "teams": "",
+            "standings": "",
+            "results": "",
+            "schedule": "/schedule",
+            "bracket": "/format",
+            "format": "/format",
+        }
         if not division or section not in suffixes:
             return False
-        return "/competitions/%s%s?division_id=%s" % (division.edition_id.public_slug, suffixes[section], division.id)
+        return "/competitions/%s%s?division_id=%s" % (
+            division.edition_id.public_slug,
+            suffixes[section],
+            division.id,
+        )
 
     def edition_summary(self, edition):
         divisions = self.public_divisions(edition)

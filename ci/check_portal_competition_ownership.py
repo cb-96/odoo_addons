@@ -4,7 +4,9 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-contract = json.loads((ROOT / "ci/contracts/portal_competition_ownership.json").read_text())
+contract = json.loads(
+    (ROOT / "ci/contracts/portal_competition_ownership.json").read_text()
+)
 required = {
     "competition": "federation.competition.edition",
     "participation": "federation.participant.set",

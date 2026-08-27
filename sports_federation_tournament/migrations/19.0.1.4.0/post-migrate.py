@@ -18,9 +18,7 @@ def _column_exists(cr, table, column):
 def migrate(cr, version):
     """Remove test-only standalone matches after verifying historical schema."""
     if not _column_exists(cr, "federation_match", "logical_fixture_id"):
-        _logger.warning(
-            "Legacy match cleanup skipped: logical_fixture_id is absent"
-        )
+        _logger.warning("Legacy match cleanup skipped: logical_fixture_id is absent")
         return
     cr.execute(
         "SELECT id FROM federation_match WHERE logical_fixture_id IS NULL ORDER BY id"
@@ -57,5 +55,6 @@ def migrate(cr, version):
         )
     _logger.warning(
         "Legacy match cleanup removed %s matches and dependants %s",
-        len(legacy_ids), removed,
+        len(legacy_ids),
+        removed,
     )

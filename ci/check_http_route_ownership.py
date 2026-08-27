@@ -16,9 +16,7 @@ def literal_routes(decorator):
         return []
     func = decorator.func
     if not (
-        isinstance(func, ast.Attribute)
-        and func.attr == "route"
-        and decorator.args
+        isinstance(func, ast.Attribute) and func.attr == "route" and decorator.args
     ):
         return []
     value = decorator.args[0]
@@ -30,7 +28,9 @@ def literal_routes(decorator):
     ]
     methods = ("ANY",)
     for keyword in decorator.keywords:
-        if keyword.arg == "methods" and isinstance(keyword.value, (ast.List, ast.Tuple)):
+        if keyword.arg == "methods" and isinstance(
+            keyword.value, (ast.List, ast.Tuple)
+        ):
             parsed = tuple(
                 item.value.upper()
                 for item in keyword.value.elts

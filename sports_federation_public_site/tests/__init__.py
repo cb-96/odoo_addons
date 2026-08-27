@@ -6,3 +6,4 @@ from . import test_tour_publication
 from . import test_club_team_pages
 from . import test_player_pages
 from . import test_public_competition_contract
+from . import test_browser_public_site

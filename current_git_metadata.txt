@@ -2,14 +2,13 @@
 refactor/simplification-competition-engine
 
 === CURRENT COMMIT ===
-615cad4ca5a6ac20b120e70ccc529b51dcb76b29
+5436f4ddce785561e8ea15d3a2f1b82f80d8ffcb
 
 === REPOSITORY ROOT ===
 /home/cedric/odoo/addons
 
 === WORKTREE STATUS ===
- M current_sources.txt
- M source_collector.py
+
 
 === MODULE MANIFESTS ===
 {"application": true, "auto_install": false, "data": ["security/res_groups.xml", "security/ir.model.access.csv", "data/ir_sequence.xml", "views/res_config_settings_views.xml", "views/federation_season_registration_views.xml", "views/federation_season_views.xml", "views/federation_team_views.xml", "views/federation_club_views.xml", "views/menu_items.xml"], "depends": ["base", "mail", "base_setup"], "explicit_assets": [], "installable": true, "module": "sports_federation_base", "name": "Sports Federation Base", "version": "19.0.1.2.0"}
@@ -40,7 +39,7 @@ refactor/simplification-competition-engine
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "views/venue_views.xml", "views/round_views_inherit.xml", "views/tournament_views_inherit.xml", "views/match_views_inherit.xml", "views/menu_views.xml"], "depends": ["sports_federation_base", "sports_federation_tournament"], "explicit_assets": [], "installable": true, "module": "sports_federation_venues", "name": "Sports Federation Venues", "version": "19.0.1.1.0"}
 
 === RELEVANT RECENT HISTORY ===
-615cad4 (HEAD -> refactor/simplification-competition-engine, origin/refactor/simplification-competition-engine) refactor!: align competition architecture and release validation
+615cad4 (origin/refactor/simplification-competition-engine) refactor!: align competition architecture and release validation
 26ff34e refactor(ci): enforce public route ownership and clean legacy code
 743d8c9 fix(public-site): make V2 competitions the canonical route owner
 de5e107 feat!: deliver V2 public competition portal
@@ -72,7 +71,8 @@ c84c10e (origin/main, origin/HEAD, main) Refactored scheduler.
 07314fd Introduced update route-inventory strategy. No longer should be using .md to keep track of routes.
 
 === RECENT REPOSITORY HISTORY ===
-615cad4 (HEAD -> refactor/simplification-competition-engine, origin/refactor/simplification-competition-engine) refactor!: align competition architecture and release validation
+5436f4d (HEAD -> refactor/simplification-competition-engine) Updated source_collector.py to the new structure.
+615cad4 (origin/refactor/simplification-competition-engine) refactor!: align competition architecture and release validation
 f6b728b test(release): add Package 7 cutover qualification gate
 26ff34e refactor(ci): enforce public route ownership and clean legacy code
 743d8c9 fix(public-site): make V2 competitions the canonical route owner
@@ -86,12 +86,9 @@ d60214a Fixed full approval workflow.
 b95bbbf Patch 5.1: schedule approval.
 42beb67 feat!: complete scheduling, approval and match-day pipeline
 dd0acc1 feat!: complete source-truth hardening and add rules-driven standings
-b9a2daa feat!: establish authoritative fixture-to-result ownership
 
 === UNSTAGED DIFF STAT ===
- current_sources.txt | 10821 ++++++++++++++++++++++++--------------------------
- source_collector.py |    12 +
- 2 files changed, 5118 insertions(+), 5715 deletions(-)
+
 
 === STAGED DIFF STAT ===
 
@@ -101,7 +98,7 @@ Discovered bundle files: 832
 Configured modules found: 26
 Configured modules missing: 0
 Git tracked files: 847
-Git modified or staged files: 2
+Git modified or staged files: 0
 Git untracked files: 0
 
 === BUNDLED FILE INVENTORY ===
@@ -220,7 +217,7 @@ docs/workflow_source_truth.md	1190	2bfc0506b711cb910c9e1fa16804c3a1e106a835c930a
 removal.sh	1550	cf80c1ce1ca8883d7679e4b9e46a9dcf861df56b1602940810df4441f9c34ae2	tracked
 requirements.txt	65	ae976dc68dd5b3a6096ac59a762a9aaa9c63a5af01b651e8cd77c9a2095cdacd	tracked
 scripts/ci/run_rc_validation.sh	4044	4ea1332da8765679094f14e7e85afac1bd826556a01376e435b5c9835f79f7e9	tracked
-source_collector.py	17308	eb22bc8a97495793cdc2903ef5ce6980c7716b1dcb18309ad524c46a623d2c8f	modified
+source_collector.py	17308	eb22bc8a97495793cdc2903ef5ce6980c7716b1dcb18309ad524c46a623d2c8f	tracked
 sports_federation_base/README.md	1724	95a3fce7604f5167c98181d792b3051d7b52e5b9bc0c7992abe143229aa68dde	tracked
 sports_federation_base/__init__.py	21	5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e	tracked
 sports_federation_base/__manifest__.py	818	013268a0e0e61a528317a96c8d908bab866cf046864a673be6b23bb9826f52a5	tracked

@@ -61,7 +61,9 @@ class FederationStageGraphEngine(models.AbstractModel):
         return True
 
     def _round_robin(self, stage, double):
-        return self.env["federation.fixture.generator.round.robin"].generate(stage, self._participants(stage), double=double)
+        return self.env["federation.fixture.generator.round.robin"].generate(
+            stage, self._participants(stage), double=double
+        )
 
     def _seed_order(self, size):
         order = [1, 2]

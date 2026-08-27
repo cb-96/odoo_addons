@@ -14,7 +14,9 @@ class TestcurrentOfficiatingContract(TransactionCase):
                 .id,
             }
         )
-        referee = self.env["federation.referee"].create({"name": "current Guard Referee"})
+        referee = self.env["federation.referee"].create(
+            {"name": "current Guard Referee"}
+        )
         with self.assertRaises(ValidationError):
             self.env["federation.match.referee"].create(
                 {"match_id": legacy_match.id, "referee_id": referee.id, "role": "head"}

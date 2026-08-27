@@ -21,6 +21,7 @@
         "sports_federation_calendar",
         "sports_federation_schedule_approval",
         "sports_federation_matchday",
+        "web_tour",
     ],
     "data": [
         "security/ir.model.access.csv",

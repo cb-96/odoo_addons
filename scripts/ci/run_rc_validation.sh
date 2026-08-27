@@ -5,7 +5,7 @@ lane="${1:-all}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
-modules="sports_federation_base,sports_federation_rules,sports_federation_tournament,sports_federation_competition_core,sports_federation_registration,sports_federation_format,sports_federation_calendar,sports_federation_scheduling,sports_federation_schedule_approval,sports_federation_matchday,sports_federation_officiating,sports_federation_result_control,sports_federation_notifications,sports_federation_portal"
+modules="sports_federation_base,sports_federation_people,sports_federation_rules,sports_federation_tournament,sports_federation_competition_core,sports_federation_registration,sports_federation_result_control,sports_federation_format,sports_federation_venues,sports_federation_calendar,sports_federation_scheduling,sports_federation_schedule_approval,sports_federation_matchday,sports_federation_officiating,sports_federation_rosters,sports_federation_standings,sports_federation_portal,sports_federation_public_site,sports_federation_notifications,sports_federation_compliance,sports_federation_discipline,sports_federation_governance,sports_federation_import_tools,sports_federation_finance_bridge,sports_federation_reporting,sports_federation_demo"
 odoo_bin="${ODOO_BIN:-$repo_root/_odoo/odoo-bin}"
 addons_path="${ADDONS_PATH:-$repo_root,$repo_root/_odoo/addons}"
 db_name="${DB_NAME:-sf_rc_validation}"
@@ -20,6 +20,7 @@ common=(
   --without-demo=all
   --stop-after-init
   --log-level=test
+  --logfile="${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
 )
 
 require_odoo() {
@@ -40,6 +41,7 @@ for path in Path('.').glob('sports_federation_*'):
 print('XML parse check passed')
 PY
   git -c core.whitespace=cr-at-eol diff --check
+  python3 ci/check_test_discovery.py
   if command -v node >/dev/null 2>&1; then
     while IFS= read -r -d '' file; do node --check "$file"; done < <(
       find sports_federation_* -path '*/static/src/*.js' -type f -print0
@@ -83,20 +85,22 @@ case "$lane" in
   static) static_checks ;;
   install)
     require_odoo
-    "${common[@]}" -i "$modules" --test-enable --test-tags '/sports_federation_base,/sports_federation_rules,/sports_federation_tournament'
+    "${common[@]}" -i "$modules" --test-enable --test-tags 'standard'
     ;;
   upgrade) run_upgrade ;;
   core) run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications' ;;
   portal) run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile' ;;
   public) run_tags '/sports_federation_public_site' ;;
+  full) run_tags 'standard' ;;
   all)
     static_checks
     require_odoo
-    "${common[@]}" -i "$modules" --test-enable --test-tags '/sports_federation_base,/sports_federation_rules,/sports_federation_tournament'
+    "${common[@]}" -i "$modules" --test-enable --test-tags 'standard'
     run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications'
     run_upgrade
     run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile'
     run_tags '/sports_federation_public_site'
+    run_tags 'standard'
     ;;
-  *) echo "Usage: $0 {static|install|upgrade|core|portal|public|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {static|install|upgrade|core|portal|public|full|all}" >&2; exit 2 ;;
 esac

@@ -15,6 +15,7 @@
         "sports_federation_officiating",
         "sports_federation_discipline",
         "sports_federation_venues",
+        "web_tour",
     ],
     "data": [
         "security/ir.model.access.csv",
@@ -27,6 +28,11 @@
         "views/menu_views.xml",
     ],
     "demo": [],
+    "assets": {
+        "web.assets_tests": [
+            "sports_federation_finance_bridge/static/tests/tours/finance_bridge_browser_tour.js",
+        ],
+    },
     "installable": True,
     "auto_install": False,
     "sequence": 55,

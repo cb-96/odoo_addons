@@ -32,7 +32,9 @@ class PublicCompetitionController(http.Controller):
         sitemap=False,
     )
     def legacy_tournament_detail(self, tournament_slug=None, tournament_id=None, **kw):
-        division = self._queries().resolve_legacy_division(slug=tournament_slug, division_id=tournament_id)
+        division = self._queries().resolve_legacy_division(
+            slug=tournament_slug, division_id=tournament_id
+        )
         location = self._queries().canonical_location(division)
         if not location:
             raise request.not_found()
@@ -93,7 +95,8 @@ class PublicCompetitionController(http.Controller):
             }
         )
         return request.render(
-            "sports_federation_public_site.public_competition_competition_detail", summary
+            "sports_federation_public_site.public_competition_competition_detail",
+            summary,
         )
 
     @http.route(
