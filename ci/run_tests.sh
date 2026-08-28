@@ -446,9 +446,19 @@ echo "────────────────────────�
 
 # ── Bring up isolated environment ────────────────────────────────────
 echo "[CI] Starting containers …"
-docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" up -d ci-db
+# Recreate the database container so credentials from a previous interrupted
+# run cannot survive under a reused Compose project name.
+docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" up -d --force-recreate ci-db
 echo "[CI] Waiting for Postgres to be healthy …"
 docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" up -d --wait ci-db
+
+# The regular socket-based psql checks below do not verify the configured
+# password. Prove TCP password authentication before starting Odoo so a
+# credential mismatch is reported as infrastructure failure immediately.
+docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" exec -T \
+  -e PGPASSWORD="$CI_POSTGRES_PASSWORD" ci-db \
+  psql -h 127.0.0.1 -U "$CI_POSTGRES_USER" -d "$CI_POSTGRES_DB" \
+  -v ON_ERROR_STOP=1 -c "SELECT 1" >/dev/null
 
 # Create the test database
 docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" exec -T ci-db \

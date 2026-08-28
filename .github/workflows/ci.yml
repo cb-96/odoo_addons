@@ -251,7 +251,7 @@ jobs:
         run: |
           cp ci/.env.example ci/.env
           password="$(openssl rand -hex 16)"
-          sed -i "s/^CI_PROJECT_NAME=.*/CI_PROJECT_NAME=sf_ci_${GITHUB_RUN_ID}_matrix/" ci/.env
+          sed -i "s/^CI_PROJECT_NAME=.*/CI_PROJECT_NAME=sf_ci_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}_${{ matrix.suite }}/" ci/.env
           sed -i "s/^CI_POSTGRES_PASSWORD=.*/CI_POSTGRES_PASSWORD=${password}/" ci/.env
 
       - name: Run integration matrix suite
