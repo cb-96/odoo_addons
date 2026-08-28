@@ -116,7 +116,6 @@ REPOSITORY_FILES = [
     ".gitignore",
     ".pre-commit-config.yaml",
     "CHANGELOG.md",
-    "COMPETITION_ENGINE_V2.md",
     "CONTEXT.md",
     "CONTRIBUTING.md",
     "DEPLOYMENT_GUIDE.md",
@@ -190,6 +189,11 @@ def validate_repository_root() -> None:
 
 def is_excluded(path: Path) -> bool:
     if path.name in EXCLUDED_FILENAMES:
+        return True
+    # Patch exports are archival review artifacts, not current repository source.
+    # Keeping them out prevents removed implementation names from being copied
+    # back into the generated source bundle.
+    if path.name.endswith(".patch.txt"):
         return True
     try:
         relative = path.resolve().relative_to(ROOT)

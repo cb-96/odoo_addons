@@ -44,4 +44,4 @@ Success means budgets represent real federation scale and regressions fail with 
 
 Guide administrators through Overview, Registration, Format, Calendar, Scheduling, Approval, Match Days, Results, and Standings. Present prerequisites, blockers, ownership, and the next valid action without exposing addon boundaries or migration terminology.
 
-Success means federation administrators, club representatives, officials, and visitors can complete their workflows without knowing the internal V2 architecture.
+Success means federation administrators, club representatives, officials, and visitors can complete their workflows without knowing the internal module architecture.

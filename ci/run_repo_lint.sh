@@ -77,7 +77,20 @@ echo "[lint] Reporting module dependency drift"
 python3 ci/check_module_dependency_drift.py || dependency_drift_exit=$?
 
 echo "[lint] Checking migration review evidence"
-mapfile -t lint_changed_files < <(git diff --name-only HEAD && git ls-files --others --exclude-standard)
+lint_base_ref="${MIGRATION_REVIEW_BASE_REF:-origin/main}"
+branch_changed_files=()
+if git rev-parse --verify "$lint_base_ref" >/dev/null 2>&1; then
+    mapfile -t branch_changed_files < <(
+        git diff --name-only "${lint_base_ref}...HEAD"
+    )
+fi
+mapfile -t lint_changed_files < <(
+    {
+        printf '%s\n' "${branch_changed_files[@]}"
+        git diff --name-only HEAD
+        git ls-files --others --exclude-standard
+    } | sort -u
+)
 if [[ ${#lint_changed_files[@]} -gt 0 ]]; then
     python3 ci/check_migration_review.py --files "${lint_changed_files[@]}" || migration_review_exit=$?
 else
