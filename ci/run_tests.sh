@@ -168,6 +168,19 @@ set -a
 source "$LOADED_ENV_FILE"
 set +a
 
+# A CRLF-formatted env file leaves a trailing carriage return in values when
+# sourced by Bash. PostgreSQL accepts that byte as part of the password, while
+# Odoo's config parser trims it, producing an otherwise invisible mismatch.
+# Normalize all CI connection settings before Compose or the Odoo config sees
+# them.
+CI_PROJECT_NAME="${CI_PROJECT_NAME//$'\r'/}"
+CI_POSTGRES_USER="${CI_POSTGRES_USER//$'\r'/}"
+CI_POSTGRES_PASSWORD="${CI_POSTGRES_PASSWORD//$'\r'/}"
+CI_POSTGRES_DB="${CI_POSTGRES_DB//$'\r'/}"
+CI_ODOO_DB_NAME="${CI_ODOO_DB_NAME//$'\r'/}"
+CI_ODOO_DB_HOST="${CI_ODOO_DB_HOST//$'\r'/}"
+CI_ODOO_DB_PORT="${CI_ODOO_DB_PORT//$'\r'/}"
+
 : "${CI_PROJECT_NAME:=sf_ci}"
 : "${CI_POSTGRES_USER:=odoo}"
 : "${CI_POSTGRES_PASSWORD:=change_me}"

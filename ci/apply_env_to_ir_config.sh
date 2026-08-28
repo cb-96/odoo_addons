@@ -22,6 +22,16 @@ if [[ -f "$LOADED_ENV_FILE" ]]; then
   set +a
 fi
 
+# Keep credentials consistent with run_tests.sh when the checked-out env file
+# uses CRLF line endings.
+CI_POSTGRES_USER="${CI_POSTGRES_USER//$'\r'/}"
+CI_POSTGRES_PASSWORD="${CI_POSTGRES_PASSWORD//$'\r'/}"
+CI_POSTGRES_DB="${CI_POSTGRES_DB//$'\r'/}"
+CI_ODOO_DB_HOST="${CI_ODOO_DB_HOST//$'\r'/}"
+CI_ODOO_DB_PORT="${CI_ODOO_DB_PORT//$'\r'/}"
+export CI_POSTGRES_USER CI_POSTGRES_PASSWORD CI_POSTGRES_DB \
+  CI_ODOO_DB_HOST CI_ODOO_DB_PORT
+
 echo "[CI] Applying integration envs to Odoo ir.config_parameter (if any)" >&2
 
 docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run --rm ci-odoo odoo shell -c "$CONTAINER_CONF" <<'PY'

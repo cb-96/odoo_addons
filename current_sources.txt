@@ -322,7 +322,7 @@ jobs:
         run: |
           cp ci/.env.example ci/.env
           password="$(openssl rand -hex 16)"
-          sed -i "s/^CI_PROJECT_NAME=.*/CI_PROJECT_NAME=sf_ci_${GITHUB_RUN_ID}_matrix/" ci/.env
+          sed -i "s/^CI_PROJECT_NAME=.*/CI_PROJECT_NAME=sf_ci_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}_${{ matrix.suite }}/" ci/.env
           sed -i "s/^CI_POSTGRES_PASSWORD=.*/CI_POSTGRES_PASSWORD=${password}/" ci/.env
 
       - name: Run integration matrix suite
@@ -12740,9 +12740,19 @@ echo "────────────────────────�
 
 # ── Bring up isolated environment ────────────────────────────────────
 echo "[CI] Starting containers …"
-docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" up -d ci-db
+# Recreate the database container so credentials from a previous interrupted
+# run cannot survive under a reused Compose project name.
+docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" up -d --force-recreate ci-db
 echo "[CI] Waiting for Postgres to be healthy …"
 docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" up -d --wait ci-db
+
+# The regular socket-based psql checks below do not verify the configured
+# password. Prove TCP password authentication before starting Odoo so a
+# credential mismatch is reported as infrastructure failure immediately.
+docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" exec -T \
+  -e PGPASSWORD="$CI_POSTGRES_PASSWORD" ci-db \
+  psql -h 127.0.0.1 -U "$CI_POSTGRES_USER" -d "$CI_POSTGRES_DB" \
+  -v ON_ERROR_STOP=1 -c "SELECT 1" >/dev/null
 
 # Create the test database
 docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" exec -T ci-db \
@@ -13408,6 +13418,18 @@ FILE: docs/portal_sudo_inventory.json
 
 [
   {
+    "file": "sports_federation_portal/controllers/competition_portal.py",
+    "function": "portal_create_competition_entry",
+    "reason": "adjacent ownership scope check",
+    "statement": "team = request.env[\"federation.team\"].sudo().browse(int(team_id)).exists()"
+  },
+  {
+    "file": "sports_federation_portal/controllers/competition_portal.py",
+    "function": "portal_create_competition_entry",
+    "reason": "adjacent ownership scope check",
+    "statement": "window = ( request.env[\"federation.registration.window\"] .sudo() .browse(int(window_id)) .exists() )"
+  },
+  {
     "file": "sports_federation_portal/controllers/manager_operation_tasks.py",
     "function": "manager_action_items",
     "reason": "adjacent ownership scope check",
@@ -13526,18 +13548,6 @@ FILE: docs/portal_sudo_inventory.json
     "function": "portal_season_registration_submit",
     "reason": "adjacent ownership scope check",
     "statement": "request.env[ \"federation.season.registration\" ]._portal_submit_registration_request( request.env[\"federation.season\"].sudo().browse(season_id), request.env[\"federation.team\"].sudo().browse(team_id), notes=notes, user=request.env.user, )"
-  },
-  {
-    "file": "sports_federation_portal/controllers/competition_portal.py",
-    "function": "portal_create_competition_entry",
-    "reason": "adjacent ownership scope check",
-    "statement": "team = request.env[\"federation.team\"].sudo().browse(int(team_id)).exists()"
-  },
-  {
-    "file": "sports_federation_portal/controllers/competition_portal.py",
-    "function": "portal_create_competition_entry",
-    "reason": "adjacent ownership scope check",
-    "statement": "window = ( request.env[\"federation.registration.window\"] .sudo() .browse(int(window_id)) .exists() )"
   },
   {
     "file": "sports_federation_portal/controllers/qol.py",
@@ -18208,6 +18218,10 @@ class FederationScheduleSlot(models.Model):
             return previous.end_datetime, previous.end_datetime + timedelta(
                 minutes=duration
             )
+        if not matchday.date and self.start_datetime and self.end_datetime:
+            # A completely unsaved match-day has no physical date from which
+            # to calculate a default. Keep the inline row's existing window.
+            return self.start_datetime, self.end_datetime
         return self._suggest_slot_window(matchday, court)
 
     @api.model
