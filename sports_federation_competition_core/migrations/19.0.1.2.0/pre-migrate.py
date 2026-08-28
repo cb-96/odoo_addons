@@ -2,7 +2,6 @@
 
 from odoo import SUPERUSER_ID, api
 
-
 LEGACY_XMLIDS = (
     "menu_competition_overview_v2",
     "menu_competition_roles_v2",
