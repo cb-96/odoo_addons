@@ -158,10 +158,10 @@ remains authoritative for validation and publication.
 
 ### Retired competition-core view cleanup (2026-08-27)
 
-Competition Core version `19.0.1.2.0` removes the database records left behind
-by the retired workflow view, actions, and menus before the current edition
-view is validated. This is required because Odoo does not automatically delete
-records whose XML IDs disappear from a module's data files. The migration is
+Competition Core version `19.0.1.3.0` removes the database UI records left
+behind by the retired competition engine before current division views are
+validated. This is required because Odoo does not automatically delete records
+whose XML IDs disappear from a module's data files. The migration is
 idempotent and preserves the current role-assignment and competition-history
 actions.
 

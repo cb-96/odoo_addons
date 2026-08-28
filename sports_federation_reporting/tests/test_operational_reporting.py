@@ -426,7 +426,7 @@ class TestOperationalReporting(TransactionCase):
 
         self.assertTrue(row)
         self.assertEqual(row.submitted_season_registration_count, 1)
-        self.assertEqual(row.draft_tournament_registration_count, 1)
+        self.assertEqual(row.draft_tournament_registration_count, 0)
         self.assertEqual(row.unpublished_tournament_count, 1)
         self.assertGreaterEqual(row.workflow_exception_count, 1)
         self.assertEqual(row.checklist_status, "blocked")

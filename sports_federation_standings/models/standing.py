@@ -321,30 +321,24 @@ class FederationStanding(models.Model):
         }
         return participant_map, matches, names
 
-    def _sort_standings(self, stats):
-        participant_map, matches, names = self._ranking_context(stats)
-        ranked, notes = self.env["federation.standings.rules"].rank(
+    def _rank_standings(self, stats):
+        """Return ranked rows and explanations without mutating the record."""
+        _participant_map, matches, names = self._ranking_context(stats)
+        return self.env["federation.standings.rules"].rank(
             stats,
             rule_set=self._get_rule_set(),
             matches=matches,
             names=names,
             lot_seed=self.id,
         )
-        self._legacy_tiebreak_notes = notes
+
+    def _sort_standings(self, stats):
+        ranked, _notes = self._rank_standings(stats)
         return ranked
 
     def _compute_tiebreak_notes(self, sorted_items, participant_map):
-        notes = getattr(self, "_legacy_tiebreak_notes", None)
-        if notes is not None:
-            return notes
-        _participant_map, matches, names = self._ranking_context(dict(sorted_items))
-        _ranked, notes = self.env["federation.standings.rules"].rank(
-            dict(sorted_items),
-            rule_set=self._get_rule_set(),
-            matches=matches,
-            names=names,
-            lot_seed=self.id,
-        )
+        del participant_map  # Kept for compatibility with existing callers.
+        _ranked, notes = self._rank_standings(dict(sorted_items))
         return notes
 
     def action_recompute(self):

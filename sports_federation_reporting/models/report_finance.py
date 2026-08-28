@@ -30,7 +30,7 @@ class FederationReportFinance(models.Model):
             """
             CREATE VIEW federation_report_finance AS (
                 SELECT
-                    row_number() OVER () AS id,
+                    MIN(fe.id) AS id,
                     fe.fee_type_id,
                     fe.state,
                     COUNT(DISTINCT fe.id) AS event_count,

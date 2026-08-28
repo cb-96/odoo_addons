@@ -136,13 +136,10 @@ class FederationMatchClubRefereeDuty(models.Model):
         "A club can owe at most one duty per role per match.",
     )
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        matches = self.env["federation.match"].browse(
-            [vals.get("match_id") for vals in vals_list if vals.get("match_id")]
-        )
-        self._assert_competition_matches(matches)
-        return super().create(vals_list)
+    def _assert_fixture_backing_for_activation(self):
+        """Reject operational activation of assignments for ad-hoc matches."""
+        self._assert_competition_matches(self.mapped("match_id"))
+        return True
 
     @api.model
     def _assert_competition_matches(self, matches):
@@ -155,13 +152,6 @@ class FederationMatchClubRefereeDuty(models.Model):
                 )
             )
         return True
-
-    def write(self, vals):
-        if "match_id" in vals:
-            self._assert_competition_matches(
-                self.env["federation.match"].browse(vals.get("match_id"))
-            )
-        return super().write(vals)
 
     # ------------------------------------------------------------------
     # Computed

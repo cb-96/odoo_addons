@@ -17,10 +17,11 @@ class TestcurrentOfficiatingContract(TransactionCase):
         referee = self.env["federation.referee"].create(
             {"name": "current Guard Referee"}
         )
+        assignment = self.env["federation.match.referee"].create(
+            {"match_id": legacy_match.id, "referee_id": referee.id, "role": "head"}
+        )
         with self.assertRaises(ValidationError):
-            self.env["federation.match.referee"].create(
-                {"match_id": legacy_match.id, "referee_id": referee.id, "role": "head"}
-            )
+            assignment._assert_fixture_backing_for_activation()
 
     def test_legacy_match_cannot_receive_club_duty(self):
         tournament = self.env["federation.tournament"].search([], limit=1)
@@ -30,7 +31,8 @@ class TestcurrentOfficiatingContract(TransactionCase):
         legacy_match = self.env["federation.match"].create(
             {"name": "Standalone duty match", "tournament_id": tournament.id}
         )
+        duty = self.env["federation.match.club.referee.duty"].create(
+            {"match_id": legacy_match.id, "club_id": club.id, "role": "table"}
+        )
         with self.assertRaises(ValidationError):
-            self.env["federation.match.club.referee.duty"].create(
-                {"match_id": legacy_match.id, "club_id": club.id, "role": "table"}
-            )
+            duty._assert_fixture_backing_for_activation()

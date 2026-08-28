@@ -157,6 +157,7 @@ class TestStageGraphEngine(TransactionCase):
                     "edition_id": self.structure.edition_id.id,
                     "division_id": self.structure.division_id.id,
                     "participant_set_id": participant_set.id,
+                    "version": count,
                     "format_type": "custom",
                 }
             )

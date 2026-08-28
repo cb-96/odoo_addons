@@ -182,13 +182,6 @@ class TestPublicSiteHttpSmoke(HttpCase):
                     "gender": "male",
                 }
             )
-            env["federation.tournament.participant"].create(
-                {
-                    "tournament_id": full_tournament.id,
-                    "team_id": occupied_team.id,
-                    "state": "registered",
-                }
-            )
             competition = env["federation.competition"].create(
                 {"name": "Public Registration Competition", "code": "PRCOMP"}
             )
@@ -197,6 +190,9 @@ class TestPublicSiteHttpSmoke(HttpCase):
                     "name": "Public Registration 2026",
                     "competition_id": competition.id,
                     "season_id": season.id,
+                    "website_published": True,
+                    "public_slug": "public-registration-2026",
+                    "engine_state": "active",
                 }
             )
             for division, window_name in (
@@ -205,7 +201,7 @@ class TestPublicSiteHttpSmoke(HttpCase):
                 (full_tournament, "Full Capacity Window"),
             ):
                 division.write({"edition_id": edition.id})
-                env["federation.registration.window"].create(
+                window = env["federation.registration.window"].create(
                     {
                         "name": window_name,
                         "edition_id": edition.id,
@@ -213,6 +209,14 @@ class TestPublicSiteHttpSmoke(HttpCase):
                         "state": "open",
                     }
                 )
+                if division == full_tournament:
+                    env["federation.competition.entry"].create(
+                        {
+                            "window_id": window.id,
+                            "team_id": occupied_team.id,
+                            "state": "approved",
+                        }
+                    )
             cr.commit()
 
         cls.portal_club_group = cls.env.ref(
@@ -338,10 +342,10 @@ class TestPublicSiteHttpSmoke(HttpCase):
             )
 
             self.assertIn(form_response.status_code, (301, 302, 303, 307, 308))
-            self.assertTrue(form_response.headers["Location"].endswith("/tournaments"))
+            self.assertTrue(form_response.headers["Location"].endswith("/competitions"))
             self.assertIn(submit_response.status_code, (301, 302, 303, 307, 308))
             self.assertTrue(
-                submit_response.headers["Location"].endswith("/tournaments")
+                submit_response.headers["Location"].endswith("/competitions")
             )
 
         after_count = Entry.search_count(
@@ -363,7 +367,9 @@ class TestPublicSiteHttpSmoke(HttpCase):
         )
 
         self.assertEqual(submit_response.status_code, 200)
-        self.assertIn("Tournament is full", submit_response.text)
+        self.assertIn(
+            "This division has reached its entry capacity.", submit_response.text
+        )
         self.assertNotIn("Internal Server Error", submit_response.text)
 
     def test_route_inventory_lists_smoke_covered_public_routes(self):

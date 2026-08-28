@@ -707,11 +707,25 @@ class TestPublicApiRateLimits(TransactionCase):
                 "date_end": "2026-12-31",
             }
         )
+        competition = cls.env["federation.competition"].create(
+            {"name": "Rate Limit Competition", "code": "RLC"}
+        )
+        edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Rate Limit 2026",
+                "competition_id": competition.id,
+                "season_id": cls.season.id,
+                "website_published": True,
+                "public_slug": "rate-limit-2026",
+            }
+        )
         cls.tournament = cls.env["federation.tournament"].create(
             {
                 "name": "Rate Limit Tournament",
                 "code": "RLT",
                 "season_id": cls.season.id,
+                "edition_id": edition.id,
+                "competition_id": competition.id,
                 "date_start": "2026-06-01",
                 "state": "in_progress",
                 "website_published": True,

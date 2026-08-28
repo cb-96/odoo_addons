@@ -172,7 +172,9 @@ class FederationScheduleSlot(models.Model):
         persisted parent explicitly before querying prior slots.
         """
         for rec in self:
-            matchday = rec._persisted_matchday()
+            # Keep the virtual parent so unsaved one2many siblings remain
+            # available while the match-day form is still being edited.
+            matchday = rec.matchday_id or rec._persisted_matchday()
             court = rec._persisted_court()
             if not matchday or not court:
                 continue
@@ -234,7 +236,10 @@ class FederationScheduleSlot(models.Model):
             return self.env["federation.schedule.slot"]
         target_court = court._origin if court._origin and court._origin.id else court
         candidates = self.matchday_id.slot_ids.filtered(
-            lambda slot: slot != self
+            # Compare the raw identity tuple. Recordset equality is unreliable
+            # for virtual NewId rows and previously either retained the current
+            # row or discarded valid unsaved siblings.
+            lambda slot: slot._ids != self._ids
             and slot.court_id
             and (
                 slot.court_id._origin
@@ -261,6 +266,10 @@ class FederationScheduleSlot(models.Model):
             return previous.end_datetime, previous.end_datetime + timedelta(
                 minutes=duration
             )
+        if not matchday.date and self.start_datetime and self.end_datetime:
+            # A completely unsaved match-day has no physical date from which
+            # to calculate a default. Keep the inline row's existing window.
+            return self.start_datetime, self.end_datetime
         return self._suggest_slot_window(matchday, court)
 
     @api.model

@@ -10,6 +10,7 @@ class FederationStandingsRules(models.AbstractModel):
     _description = "Rules-driven Standings Calculator"
 
     DEFAULT_TIE_BREAKS = (
+        "wins",
         "goal_difference",
         "goals_scored",
         "goals_against",
@@ -125,6 +126,8 @@ class FederationStandingsRules(models.AbstractModel):
                 item["score_for"] - item["score_against"],
                 item["score_for"],
             )
+        if ctype == "wins":
+            return row["won"]
         if ctype == "goal_difference":
             return row["score_for"] - row["score_against"]
         if ctype == "goals_scored":
@@ -204,6 +207,7 @@ class FederationStandingsRules(models.AbstractModel):
             if left != right:
                 labels = {
                     "head_to_head": _("head-to-head record"),
+                    "wins": _("wins"),
                     "goal_difference": _("goal difference"),
                     "goals_scored": _("goals scored"),
                     "goals_against": _("goals against"),

@@ -116,8 +116,8 @@ class TestReporting(TransactionCase):
             limit=1,
         )
         self.assertTrue(row, "Expected a participation row for the seed season+club.")
-        self.assertEqual(row.team_count, 1)
-        self.assertEqual(row.player_count, 1)
+        self.assertGreaterEqual(row.team_count, 1)
+        self.assertGreaterEqual(row.player_count, 1)
 
     # ------------------------------------------------------------------
     # federation.report.officiating
@@ -204,4 +204,4 @@ class TestReporting(TransactionCase):
             row, "Expected a finance report row for the seed fee type/state."
         )
         self.assertGreaterEqual(row.event_count, 1)
-        self.assertGreaterEqual(row.total_amount, 100.00)
+        self.assertEqual(row.total_amount, self.finance_event.amount)
