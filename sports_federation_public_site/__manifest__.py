@@ -40,7 +40,7 @@
     ],
     "assets": {
         "web.assets_frontend": [
-            "sports_federation_public_site/static/src/scss/public_competitions_current.scss",
+            "sports_federation_public_site/static/src/scss/public_competitions.scss",
             "sports_federation_public_site/static/src/js/public_live_board.js",
         ],
     },
