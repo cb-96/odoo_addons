@@ -7947,6 +7947,16 @@ if [[ -f "$LOADED_ENV_FILE" ]]; then
   set +a
 fi
 
+# Keep credentials consistent with run_tests.sh when the checked-out env file
+# uses CRLF line endings.
+CI_POSTGRES_USER="${CI_POSTGRES_USER//$'\r'/}"
+CI_POSTGRES_PASSWORD="${CI_POSTGRES_PASSWORD//$'\r'/}"
+CI_POSTGRES_DB="${CI_POSTGRES_DB//$'\r'/}"
+CI_ODOO_DB_HOST="${CI_ODOO_DB_HOST//$'\r'/}"
+CI_ODOO_DB_PORT="${CI_ODOO_DB_PORT//$'\r'/}"
+export CI_POSTGRES_USER CI_POSTGRES_PASSWORD CI_POSTGRES_DB \
+  CI_ODOO_DB_HOST CI_ODOO_DB_PORT
+
 echo "[CI] Applying integration envs to Odoo ir.config_parameter (if any)" >&2
 
 docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run --rm ci-odoo odoo shell -c "$CONTAINER_CONF" <<'PY'
@@ -12461,6 +12471,19 @@ set -a
 # shellcheck disable=SC1090
 source "$LOADED_ENV_FILE"
 set +a
+
+# A CRLF-formatted env file leaves a trailing carriage return in values when
+# sourced by Bash. PostgreSQL accepts that byte as part of the password, while
+# Odoo's config parser trims it, producing an otherwise invisible mismatch.
+# Normalize all CI connection settings before Compose or the Odoo config sees
+# them.
+CI_PROJECT_NAME="${CI_PROJECT_NAME//$'\r'/}"
+CI_POSTGRES_USER="${CI_POSTGRES_USER//$'\r'/}"
+CI_POSTGRES_PASSWORD="${CI_POSTGRES_PASSWORD//$'\r'/}"
+CI_POSTGRES_DB="${CI_POSTGRES_DB//$'\r'/}"
+CI_ODOO_DB_NAME="${CI_ODOO_DB_NAME//$'\r'/}"
+CI_ODOO_DB_HOST="${CI_ODOO_DB_HOST//$'\r'/}"
+CI_ODOO_DB_PORT="${CI_ODOO_DB_PORT//$'\r'/}"
 
 : "${CI_PROJECT_NAME:=sf_ci}"
 : "${CI_POSTGRES_USER:=odoo}"
@@ -63294,7 +63317,7 @@ FILE: sports_federation_public_site/__manifest__.py
     ],
     "assets": {
         "web.assets_frontend": [
-            "sports_federation_public_site/static/src/scss/public_competitions_current.scss",
+            "sports_federation_public_site/static/src/scss/public_competitions.scss",
             "sports_federation_public_site/static/src/js/public_live_board.js",
         ],
     },

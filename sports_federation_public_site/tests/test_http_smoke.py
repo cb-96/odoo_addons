@@ -192,7 +192,7 @@ class TestPublicSiteHttpSmoke(HttpCase):
                     "season_id": season.id,
                     "website_published": True,
                     "public_slug": "public-registration-2026",
-                    "engine_state": "active",
+                    "state": "open",
                 }
             )
             for division, window_name in (

@@ -11,6 +11,7 @@
         "security/ir.model.access.csv",
         "views/scheduling_views.xml",
         "views/submit_schedule_wizard_views.xml",
+        "views/amend_schedule_wizard_views.xml",
         "views/fairness_views.xml",
         "views/menu.xml",
     ],

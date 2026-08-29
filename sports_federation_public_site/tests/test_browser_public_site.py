@@ -27,7 +27,7 @@ class TestBrowserPublicSite(HttpCase):
                 "name": "Browser Public Competition",
                 "competition_id": cls.competition.id,
                 "season_id": cls.season.id,
-                "engine_state": "active",
+                "state": "open",
                 "public_slug": "browser-public-competition",
                 "public_summary": "Browser validation of the public competition experience.",
                 "website_published": True,

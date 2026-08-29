@@ -144,6 +144,28 @@ class FederationSchedule(models.Model):
         )
         return {"type": "ir.actions.client", "tag": "reload"}
 
+    def action_open_amend_schedule(self):
+        self.ensure_one()
+        if self.state != "published":
+            raise ValidationError(
+                "Only a published schedule can be amended."
+            )
+        if self.matchday_id.state == "open":
+            raise ValidationError(
+                "Close live match-day operations before amending the schedule."
+            )
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "schedule_planner", "competition_director"
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Amend Published Schedule",
+            "res_model": "federation.schedule.amend.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_schedule_id": self.id},
+        }
+
     def action_open_auto_schedule(self):
         self.ensure_one()
         return {

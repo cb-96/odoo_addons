@@ -29,7 +29,7 @@ class TestPublicCompetitionContract(TransactionCase):
                 "name": "Portal contract edition",
                 "competition_id": competition.id,
                 "season_id": season.id,
-                "engine_state": "active",
+                "state": "open",
                 "public_slug": "portal-contract",
                 "website_published": False,
             }

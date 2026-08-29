@@ -7,10 +7,10 @@ class PublicCompetitionQueries(models.AbstractModel):
     _description = "Public Competition Queries"
 
     def public_domain(self, archived=False):
-        states = ("finished", "archived") if archived else ("active", "finished")
+        states = ("closed", "cancelled") if archived else ("open", "in_progress")
         return [
             ("website_published", "=", True),
-            ("engine_state", "in", states),
+            ("state", "in", states),
             ("active", "=", True),
         ]
 
@@ -43,7 +43,7 @@ class PublicCompetitionQueries(models.AbstractModel):
                 .search(
                     [
                         ("website_published", "=", True),
-                        ("engine_state", "=", "archived"),
+                        ("state", "in", ("closed", "cancelled")),
                         ("public_slug", "=", slug),
                     ],
                     limit=1,
@@ -134,9 +134,9 @@ class PublicCompetitionQueries(models.AbstractModel):
             lambda d: d.website_published and d.edition_id == edition
         ):
             errors.append(_("publish at least one division"))
-        if edition.engine_state not in ("active", "finished", "archived"):
+        if edition.state not in ("open", "in_progress", "closed"):
             errors.append(
-                _("move the competition engine to Active, Finished or Archived")
+                _("move the edition to Open, In Progress or Closed")
             )
         if errors:
             raise ValidationError(
