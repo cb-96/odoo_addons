@@ -77,7 +77,9 @@ def acl_models(addon: Path) -> set[str]:
         return set()
     result = set()
     with path.open(encoding="utf-8", newline="") as stream:
-        for row in csv.DictReader(stream):
+        # Ignore harmless leading blank lines so DictReader sees the real header.
+        rows = (line for line in stream if line.strip())
+        for row in csv.DictReader(rows):
             external_id = row.get("model_id:id", "")
             if external_id.startswith("model_"):
                 result.add(external_id)

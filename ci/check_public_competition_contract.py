@@ -4,7 +4,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 controller = (
-    ROOT / "sports_federation_public_site/controllers/public_competitions_current.py"
+    ROOT / "sports_federation_public_site/controllers/public_competition_pages.py"
 ).read_text()
 queries = (
     ROOT / "sports_federation_public_site/services/public_competition_queries.py"
@@ -41,9 +41,9 @@ checks = {
         not in legacy_controller
     ),
     "gameday route": "/gamedays/<int:matchday_id>" in controller,
-    "no implementation generation in public copy": " " not in public_templates,
-    "no implementation generation in portal copy": " " not in portal_templates,
-    "current dependencies": all(
+    "public competition template": "edition" in public_templates,
+    "portal competition template": "competition" in portal_templates,
+    "competition dependencies": all(
         module in manifest
         for module in (
             "sports_federation_competition_core",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that Package 7 release-qualification controls remain wired."""
+"""Verify that Release-candidate qualification controls remain wired."""
 
 from pathlib import Path
 import sys

@@ -9,7 +9,7 @@ class FederationCompetitionEdition(models.Model):
     workflow_progress = fields.Integer(compute="_compute_workflow_progress")
     workflow_next_action = fields.Char(compute="_compute_workflow_progress")
 
-    @api.depends("role_assignment_ids", "event_ids", "engine_state")
+    @api.depends("role_assignment_ids", "event_ids", "state")
     def _compute_core_counts(self):
         for rec in self:
             rec.role_assignment_count = len(rec.role_assignment_ids)
@@ -31,7 +31,7 @@ class FederationCompetitionEdition(models.Model):
         )
         return steps
 
-    @api.depends("tournament_ids", "role_assignment_ids", "engine_state")
+    @api.depends("tournament_ids", "role_assignment_ids", "state")
     def _compute_workflow_progress(self):
         for rec in self:
             steps = rec._workflow_steps()

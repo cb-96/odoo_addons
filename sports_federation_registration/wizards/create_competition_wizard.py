@@ -57,7 +57,6 @@ class FederationCreateCompetitionWizard(models.TransientModel):
                 "date_start": self.date_start,
                 "date_end": self.date_end,
                 "rule_set_id": self.rule_set_id.id,
-                "engine_state": "draft",
             }
         )
         for line in self.division_line_ids:

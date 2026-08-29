@@ -16,19 +16,6 @@ ROLE_SELECTION = [
 
 class FederationCompetitionEdition(models.Model):
     _inherit = "federation.competition.edition"
-    engine_state = fields.Selection(
-        [
-            ("draft", "Draft"),
-            ("active", "Active"),
-            ("finished", "Finished"),
-            ("cancelled", "Cancelled"),
-            ("archived", "Archived"),
-        ],
-        default="draft",
-        required=True,
-        tracking=True,
-        index=True,
-    )
     role_assignment_ids = fields.One2many(
         "federation.competition.role.assignment", "edition_id"
     )
@@ -36,33 +23,35 @@ class FederationCompetitionEdition(models.Model):
         "federation.competition.event", "edition_id", readonly=True
     )
 
-    def transition_engine_state(self, target, reason=False):
+    def transition_competition_state(self, target, reason=False):
+        """Move the edition through its canonical lifecycle and emit an event."""
         allowed = {
-            "draft": {"active", "cancelled"},
-            "active": {"finished", "cancelled"},
-            "finished": {"archived"},
-            "cancelled": {"archived"},
-            "archived": set(),
+            "draft": {"open", "cancelled"},
+            "open": {"in_progress", "cancelled"},
+            "in_progress": {"closed", "cancelled"},
+            "closed": set(),
+            "cancelled": set(),
         }
         for rec in self:
-            if target == rec.engine_state:
+            if target == rec.state:
                 continue
-            if target not in allowed.get(rec.engine_state, set()):
+            if target not in allowed.get(rec.state, set()):
                 raise ValidationError(
                     _(
                         "Invalid competition transition from %(source)s to %(target)s.",
-                        source=rec.engine_state,
+                        source=rec.state,
                         target=target,
                     )
                 )
-            old = rec.engine_state
-            rec.engine_state = target
+            old = rec.state
+            rec.state = target
             self.env["federation.competition.event"].emit(
                 rec,
                 "competition_state_changed",
-                {"from": old, "to": target, "reason": reason or False},
+                {"from": old, "to": target, "reason": reason or ""},
             )
         return True
+
 
 
 class FederationCompetitionRoleAssignment(models.Model):

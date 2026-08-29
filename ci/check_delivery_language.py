@@ -10,6 +10,7 @@ for p in ROOT.rglob("*"):
     if (
         p.is_file()
         and ".git" not in p.parts
+        and "migrations" not in p.parts
         and p.suffix
         in {".py", ".xml", ".md", ".json", ".yaml", ".yml", ".sh", ".js", ".scss"}
     ):

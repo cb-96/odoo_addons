@@ -23,15 +23,15 @@ class TestCompetitionCore(TransactionCase):
         )
 
     def test_valid_lifecycle_records_events(self):
-        self.edition.transition_engine_state("active")
-        self.assertEqual(self.edition.engine_state, "active")
+        self.edition.transition_competition_state("open")
+        self.assertEqual(self.edition.state, "open")
         self.assertEqual(
             self.edition.event_ids[:1].event_type, "competition_state_changed"
         )
 
     def test_invalid_lifecycle_is_rejected(self):
         with self.assertRaises(ValidationError):
-            self.edition.transition_engine_state("archived")
+            self.edition.transition_competition_state("closed")
 
     def test_role_assignment_is_unique(self):
         vals = {

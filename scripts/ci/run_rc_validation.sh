@@ -41,7 +41,26 @@ for path in Path('.').glob('sports_federation_*'):
 print('XML parse check passed')
 PY
   git -c core.whitespace=cr-at-eol diff --check
+  python3 ci/check_legacy_engine_removed.py
+  python3 ci/check_portal_sudo_guard.py
+  python3 ci/check_portal_competition_ownership.py
+  python3 ci/check_officiating_contract.py
+  python3 ci/check_registration_contract.py
+  python3 ci/check_access_csv_integrity.py
+  python3 ci/check_source_collector_contract.py
+  python3 ci/check_addon_integrity.py
   python3 ci/check_test_discovery.py
+  python3 ci/check_workflow_state_contracts.py
+  python3 ci/check_fixture_ownership_contract.py
+  python3 ci/check_rules_contract.py
+  python3 ci/check_competition_pipeline_contract.py
+  python3 ci/check_schedule_handoff_contract.py
+  python3 ci/check_schedule_amendment_contract.py
+  python3 ci/check_publication_integrity_contract.py
+  python3 ci/check_public_competition_contract.py
+  python3 ci/check_doc_freshness.py
+  python3 ci/check_delivery_language.py
+  python3 ci/check_release_qualification.py
   if command -v node >/dev/null 2>&1; then
     while IFS= read -r -d '' file; do node --check "$file"; done < <(
       find sports_federation_* -path '*/static/src/*.js' -type f -print0

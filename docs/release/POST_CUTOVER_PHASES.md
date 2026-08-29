@@ -1,47 +1,27 @@
-# Post-Cutover Implementation Phases
+# Post-cutover release stabilization
 
-Package 7 is a release-qualification gate. Do not begin the next structural phase until its automated gates pass and the acceptance record has no unresolved critical or high defect.
+The competition implementation has completed cutover. Remaining work is organized by release risk rather than historical delivery labels.
 
-## Decision gate
+## Release gate convergence
 
-Use the Package 7 result to select the next work:
+Keep local and GitHub validation on `scripts/ci/run_rc_validation.sh`. All static contracts, fresh-install checks, upgrade checks, focused lanes and the full suite must pass before approval.
 
-1. Route, publication, access, migration, or end-to-end handoff failure: create a focused stabilization package first.
-2. Correctness passes but performance budgets fail: profile and address measured hotspots before refactoring.
-3. Correctness and performance pass: continue with Phase 8.
+## Public projection consolidation
 
-## Phase 8: Public projection consolidation
+Keep one public route owner, neutral implementation names, explicit publication boundaries and behavior-oriented public contracts.
 
-Make `federation.public.competition.queries` the single publication-aware query boundary. Legacy tournament page controllers become redirect-only adapters. Consolidate edition, division, match-day, schedule, format, result, standings, and bracket projections. Add runtime tests for foreign division IDs, unpublished children, archived editions, stale publications, and canonical redirects.
+## Format and scheduling maintainability
 
-Success means no compatibility controller renders current domain data and every anonymous query applies the same publication boundary.
+Keep format generation, calendar capacity, schedule assignment, approval and match-day execution behind explicit ownership boundaries. Published schedules are immutable; amendments use reviewed replacement revisions.
 
-## Phase 9: Format-engine modularization
+## Concurrency and idempotency
 
-Split graph validation, round-robin generation, knockout and placement generation, bye resolution, progression, and fixture materialization into focused services behind the current orchestration facade. Preserve deterministic outputs and existing model and XML identities.
+Qualify publication replacement, schedule amendment, imports, result approval and background jobs under retries and concurrent requests.
 
-Success means each generator has focused tests, preview performs no hidden writes, repeated materialization is idempotent, and all existing stage-graph tests remain green.
+## Performance qualification
 
-## Phase 10: Match and schedule ownership cleanup
+Review query budgets, explain snapshots, scheduling validation runtime and public-page response budgets.
 
-Create one authoritative schedule-normalization path across round, match day, slot, venue, playing area, publication slot, and operational slot. Keep tournament, calendar, scheduling, approval, match-day, venues, format, and finance responsibilities separated.
+## UX consolidation
 
-Success means create, write, onchange, compute, and inverse paths no longer implement competing normalization rules.
-
-## Phase 11: Concurrency and idempotency hardening
-
-Add independent-cursor tests and database authority for result approval versus contest, standings freeze versus recompute, schedule publication versus amendment, referee overlap, portal resubmission, integration replay, finance-event creation, and match-day command replay.
-
-Success means each consequential command defines locking, idempotency, audit ordering, and retry semantics.
-
-## Phase 12: Performance qualification
-
-Benchmark small, medium, and large competition datasets. Measure graph generation, materialization, fairness scheduling, validation, standings recompute, portal queries, public match-day latency, memory, and deterministic repeatability. Set CI budgets only after collecting stable baselines.
-
-Success means budgets represent real federation scale and regressions fail with actionable diagnostics.
-
-## Phase 13: UX consolidation
-
-Guide administrators through Overview, Registration, Format, Calendar, Scheduling, Approval, Match Days, Results, and Standings. Present prerequisites, blockers, ownership, and the next valid action without exposing addon boundaries or migration terminology.
-
-Success means federation administrators, club representatives, officials, and visitors can complete their workflows without knowing the internal module architecture.
+Complete two-pass reviews of administrator, club portal and public workflows. Every blocked action must explain the next corrective step.

@@ -47,7 +47,7 @@ migration_review_exit=0
 constraint_index_contracts_exit=0
 openapi_contracts_exit=0
 http_route_ownership_exit=0
-package7_qualification_exit=0
+release_qualification_exit=0
 
 echo "[lint] Running Black across the repository"
 black --check --exclude '/(\.git|__pycache__|\.venv|ci/logs)/' . || black_exit=$?
@@ -70,8 +70,8 @@ python3 ci/check_openapi_contracts.py || openapi_contracts_exit=$?
 echo "[lint] Validating HTTP route ownership"
 python3 ci/check_http_route_ownership.py || http_route_ownership_exit=$?
 
-echo "[lint] Validating Package 7 release qualification"
-python3 ci/check_package7_release_qualification.py || package7_qualification_exit=$?
+echo "[lint] Validating Release qualification"
+python3 ci/check_release_qualification.py || release_qualification_exit=$?
 
 echo "[lint] Reporting module dependency drift"
 python3 ci/check_module_dependency_drift.py || dependency_drift_exit=$?

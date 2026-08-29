@@ -25,27 +25,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify removed legacy engine and portal privilege inventory
-        run: |
-          python ci/check_legacy_engine_removed.py
-          python ci/check_portal_sudo_guard.py
-          python ci/check_portal_competition_ownership.py
-          python ci/check_officiating_contract.py
-          python ci/check_registration_contract.py
-          python ci/check_access_csv_integrity.py
-          python ci/check_source_collector_contract.py
-          python ci/check_addon_integrity.py
-          python ci/check_test_discovery.py
-          python ci/check_workflow_state_contracts.py
-          python ci/check_fixture_ownership_contract.py
-          python ci/check_rules_contract.py
-          python ci/check_competition_pipeline_contract.py
-          python ci/check_schedule_handoff_contract.py
-          python ci/check_publication_integrity_contract.py
-          python ci/check_doc_freshness.py
-          python ci/check_delivery_language.py
-          python ci/check_package7_release_qualification.py
-      - run: scripts/ci/run_rc_validation.sh static
+      - name: Run authoritative static release validation
+        run: scripts/ci/run_rc_validation.sh static
 
   odoo-rc:
     name: Odoo RC gates

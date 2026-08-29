@@ -146,7 +146,7 @@ class FederationPortalCompetitionQueries(models.AbstractModel):
             lambda match: match.state not in ("done", "cancelled")
         )
         if (
-            edition.engine_state in ("finished", "cancelled", "archived")
+            edition.state in ("closed", "cancelled")
             or not unfinished
             and matches
         ):

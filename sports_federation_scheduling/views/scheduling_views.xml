@@ -1,5 +1,182 @@
 <odoo>
- <record id="schedule_list" model="ir.ui.view"><field name="name">federation.schedule.list</field><field name="model">federation.schedule</field><field name="arch" type="xml"><list decoration-success="state == 'published'" decoration-info="state == 'ready_for_review'"><field name="name"/><field name="edition_id"/><field name="matchday_id"/><field name="structure_id"/><field name="revision"/><field name="state" widget="badge"/></list></field></record>
- <record id="schedule_form" model="ir.ui.view"><field name="name">federation.schedule.form</field><field name="model">federation.schedule</field><field name="arch" type="xml"><form><header><button name="action_open_submit_for_review" type="object" string="Submit for Review" class="btn-primary" invisible="state not in ('draft','changes_requested')"/><field name="state" widget="statusbar" statusbar_visible="draft,ready_for_review,changes_requested,approved,published"/></header><sheet><div class="alert alert-info" role="status" invisible="state != 'draft'">Assign every fixture, resolve blocking conflicts, then submit this schedule for independent review.</div><div class="alert alert-info" role="status" invisible="state != 'ready_for_review'">Submitted evidence is immutable and is waiting for an independent schedule approver.</div><div class="alert alert-warning" role="alert" invisible="state != 'changes_requested'">Changes were requested. Update the assignments, then submit a new review revision.</div><div class="alert alert-success" role="status" invisible="state != 'approved'">The schedule is approved and ready for publication by the approval team.</div><div class="alert alert-success" role="status" invisible="state != 'published'">This immutable publication is available to Match-Day Operations.</div><group><field name="name"/><field name="edition_id"/><field name="matchday_id" domain="[('edition_id','=',edition_id),('state','=','capacity_ready')]"/><field name="structure_id" domain="[('edition_id','=',edition_id),('state','=','frozen')]"/><field name="revision" readonly="1"/></group><notebook><page string="Assignments"><field name="assignment_ids"><list editable="bottom"><field name="fixture_id" domain="[('structure_id','=',parent.structure_id)]"/><field name="slot_id" domain="[('matchday_id','=',parent.matchday_id),('state','=','available')]"/><field name="method"/><field name="assigned_by_id" readonly="1"/></list></field></page><page string="Change History"><field name="change_ids"><list><field name="revision"/><field name="command"/><field name="fixture_id"/><field name="old_slot_id"/><field name="new_slot_id"/><field name="actor_id"/><field name="reason"/></list></field></page></notebook></sheet><chatter/></form></field></record>
- <record id="action_schedule_planner_competition" model="ir.actions.act_window"><field name="name">Schedule Planner</field><field name="res_model">federation.schedule</field><field name="view_mode">list,form</field></record>
+  <record id="schedule_list" model="ir.ui.view">
+    <field name="name">federation.schedule.list</field>
+    <field name="model">federation.schedule</field>
+    <field name="arch" type="xml">
+      <list
+        decoration-success="state == 'published'"
+        decoration-info="state == 'ready_for_review'"
+      >
+        <field name="name"/>
+        <field name="edition_id"/>
+        <field name="matchday_id"/>
+        <field name="structure_id"/>
+        <field name="revision"/>
+        <field name="state" widget="badge"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="schedule_form" model="ir.ui.view">
+    <field name="name">federation.schedule.form</field>
+    <field name="model">federation.schedule</field>
+    <field name="arch" type="xml">
+      <form>
+        <header>
+          <button
+            name="action_open_amend_schedule"
+            type="object"
+            string="Amend Schedule"
+            class="btn-primary"
+            invisible="state != 'published'"
+          />
+
+          <button
+            name="action_open_submit_for_review"
+            type="object"
+            string="Submit for Review"
+            class="btn-primary"
+            invisible="state not in ('draft', 'changes_requested')"
+          />
+
+          <field
+            name="state"
+            widget="statusbar"
+            statusbar_visible="draft,ready_for_review,changes_requested,approved,published"
+          />
+        </header>
+
+        <sheet>
+          <div
+            class="alert alert-info"
+            role="status"
+            invisible="state != 'draft'"
+          >
+            Assign every fixture, resolve blocking conflicts, then submit this
+            schedule for independent review.
+          </div>
+
+          <div
+            class="alert alert-info"
+            role="status"
+            invisible="state != 'ready_for_review'"
+          >
+            Submitted evidence is immutable and is waiting for an independent
+            schedule approver.
+          </div>
+
+          <div
+            class="alert alert-warning"
+            role="alert"
+            invisible="state != 'changes_requested'"
+          >
+            Changes were requested. Update the assignments, then submit a new
+            review revision.
+          </div>
+
+          <div
+            class="alert alert-success"
+            role="status"
+            invisible="state != 'approved'"
+          >
+            The schedule is approved and ready for publication by the approval
+            team.
+          </div>
+
+          <div
+            class="alert alert-success"
+            role="status"
+            invisible="state != 'published'"
+          >
+            This immutable publication is available to Match-Day Operations.
+            Use Amend Schedule to create a governed replacement revision.
+          </div>
+
+          <div
+            class="alert alert-warning"
+            role="status"
+            invisible="not supersedes_id"
+          >
+            This is a replacement revision. The current live publication
+            remains active until this revision is reviewed, approved and
+            published.
+          </div>
+
+          <group>
+            <field name="name"/>
+            <field name="edition_id"/>
+
+            <field
+              name="matchday_id"
+              domain="[('edition_id', '=', edition_id), ('state', 'in', ('capacity_ready', 'scheduled'))]"
+            />
+
+            <field
+              name="structure_id"
+              domain="[('edition_id', '=', edition_id), ('state', '=', 'frozen')]"
+            />
+
+            <field name="revision" readonly="1"/>
+
+            <field
+              name="supersedes_id"
+              readonly="1"
+              invisible="not supersedes_id"
+            />
+
+            <field
+              name="revision_reason"
+              readonly="1"
+              invisible="not supersedes_id"
+            />
+          </group>
+          <notebook>
+            <page string="Assignments" name="assignments">
+              <field name="assignment_ids">
+                <list editable="bottom">
+                  <field
+                    name="fixture_id"
+                    domain="[('structure_id', '=', parent.structure_id)]"
+                  />
+
+                  <field
+                    name="slot_id"
+                    domain="[('matchday_id', '=', parent.matchday_id), ('state', '=', 'available')]"
+                  />
+
+                  <field name="method"/>
+                  <field name="assigned_by_id" readonly="1"/>
+                </list>
+              </field>
+            </page>
+
+            <page string="Change History" name="change_history">
+              <field name="change_ids">
+                <list>
+                  <field name="revision"/>
+                  <field name="command"/>
+                  <field name="fixture_id"/>
+                  <field name="old_slot_id"/>
+                  <field name="new_slot_id"/>
+                  <field name="actor_id"/>
+                  <field name="reason"/>
+                </list>
+              </field>
+            </page>
+          </notebook>
+        </sheet>
+
+        <chatter/>
+      </form>
+    </field>
+  </record>
+
+  <record
+    id="action_schedule_planner_competition"
+    model="ir.actions.act_window"
+  >
+    <field name="name">Schedule Planner</field>
+    <field name="res_model">federation.schedule</field>
+    <field name="view_mode">list,form</field>
+  </record>
 </odoo>

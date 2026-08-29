@@ -9882,58 +9882,6 @@ if __name__ == "__main__":
     sys.exit(main())
 
 ====================================================================================================
-FILE: ci/check_package7_release_qualification.py
-====================================================================================================
-
-#!/usr/bin/env python3
-"""Verify that Package 7 release-qualification controls remain wired."""
-
-from pathlib import Path
-import sys
-
-ROOT = Path(__file__).resolve().parents[1]
-rc_script = (ROOT / "scripts/ci/run_rc_validation.sh").read_text(encoding="utf-8")
-workflow = (ROOT / ".github/workflows/release-candidate.yml").read_text(
-    encoding="utf-8"
-)
-acceptance = (ROOT / "docs/release/COMPETITION_CUTOVER_ACCEPTANCE.md").read_text(
-    encoding="utf-8"
-)
-next_phases = (ROOT / "docs/release/POST_CUTOVER_PHASES.md").read_text(encoding="utf-8")
-
-checks = {
-    "RC upgrade lane": "upgrade)" in rc_script,
-    "RC public lane": "public)" in rc_script,
-    "upgrade database isolation": "UPGRADE_DB_NAME" in rc_script,
-    "upgrade precondition": "assert_modules_installed" in rc_script,
-    "workflow upgrade execution": "run_rc_validation.sh upgrade" in workflow,
-    "workflow public execution": "run_rc_validation.sh public" in workflow,
-    "acceptance exact commit evidence": "Candidate commit SHA" in acceptance,
-    "acceptance route cutover evidence": "/competitions" in acceptance
-    and "/tournaments" in acceptance,
-    "acceptance full lifecycle": all(
-        token in acceptance
-        for token in (
-            "Registration",
-            "Format and fixtures",
-            "Calendar and scheduling",
-            "Approval and publication",
-            "Match-day operations",
-            "Results and standings",
-        )
-    ),
-    "post-cutover decision gate": "Decision gate" in next_phases,
-}
-failed = [name for name, passed in checks.items() if not passed]
-if failed:
-    print(
-        "Package 7 release qualification contract failed: " + ", ".join(failed),
-        file=sys.stderr,
-    )
-    raise SystemExit(1)
-print("Package 7 release qualification contract passed.")
-
-====================================================================================================
 FILE: ci/check_phases_511_53_contract.py
 ====================================================================================================
 
@@ -10437,6 +10385,58 @@ if errors:
     print("Registration contract failed:\n- " + "\n- ".join(errors))
     sys.exit(1)
 print("Registration ownership contract passed.")
+
+====================================================================================================
+FILE: ci/check_release_qualification.py
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Verify that Release-candidate qualification controls remain wired."""
+
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+rc_script = (ROOT / "scripts/ci/run_rc_validation.sh").read_text(encoding="utf-8")
+workflow = (ROOT / ".github/workflows/release-candidate.yml").read_text(
+    encoding="utf-8"
+)
+acceptance = (ROOT / "docs/release/COMPETITION_CUTOVER_ACCEPTANCE.md").read_text(
+    encoding="utf-8"
+)
+next_phases = (ROOT / "docs/release/POST_CUTOVER_PHASES.md").read_text(encoding="utf-8")
+
+checks = {
+    "RC upgrade lane": "upgrade)" in rc_script,
+    "RC public lane": "public)" in rc_script,
+    "upgrade database isolation": "UPGRADE_DB_NAME" in rc_script,
+    "upgrade precondition": "assert_modules_installed" in rc_script,
+    "workflow upgrade execution": "run_rc_validation.sh upgrade" in workflow,
+    "workflow public execution": "run_rc_validation.sh public" in workflow,
+    "acceptance exact commit evidence": "Candidate commit SHA" in acceptance,
+    "acceptance route cutover evidence": "/competitions" in acceptance
+    and "/tournaments" in acceptance,
+    "acceptance full lifecycle": all(
+        token in acceptance
+        for token in (
+            "Registration",
+            "Format and fixtures",
+            "Calendar and scheduling",
+            "Approval and publication",
+            "Match-day operations",
+            "Results and standings",
+        )
+    ),
+    "post-cutover decision gate": "Decision gate" in next_phases,
+}
+failed = [name for name, passed in checks.items() if not passed]
+if failed:
+    print(
+        "Package 7 release qualification contract failed: " + ", ".join(failed),
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+print("Package 7 release qualification contract passed.")
 
 ====================================================================================================
 FILE: ci/check_release_train.py
@@ -12223,7 +12223,7 @@ migration_review_exit=0
 constraint_index_contracts_exit=0
 openapi_contracts_exit=0
 http_route_ownership_exit=0
-package7_qualification_exit=0
+release_qualification_exit=0
 
 echo "[lint] Running Black across the repository"
 black --check --exclude '/(\.git|__pycache__|\.venv|ci/logs)/' . || black_exit=$?
@@ -12246,8 +12246,8 @@ python3 ci/check_openapi_contracts.py || openapi_contracts_exit=$?
 echo "[lint] Validating HTTP route ownership"
 python3 ci/check_http_route_ownership.py || http_route_ownership_exit=$?
 
-echo "[lint] Validating Package 7 release qualification"
-python3 ci/check_package7_release_qualification.py || package7_qualification_exit=$?
+echo "[lint] Validating Release qualification"
+python3 ci/check_release_qualification.py || release_qualification_exit=$?
 
 echo "[lint] Reporting module dependency drift"
 python3 ci/check_module_dependency_drift.py || dependency_drift_exit=$?
@@ -67129,10 +67129,10 @@ class PublicCompetitionQueries(models.AbstractModel):
     _description = "Public Competition Queries"
 
     def public_domain(self, archived=False):
-        states = ("finished", "archived") if archived else ("active", "finished")
+        states = ("closed", "cancelled") if archived else ("open", "in_progress")
         return [
             ("website_published", "=", True),
-            ("engine_state", "in", states),
+            ("state", "in", states),
             ("active", "=", True),
         ]
 
@@ -67165,7 +67165,7 @@ class PublicCompetitionQueries(models.AbstractModel):
                 .search(
                     [
                         ("website_published", "=", True),
-                        ("engine_state", "=", "archived"),
+                        ("state", "in", ("closed", "cancelled")),
                         ("public_slug", "=", slug),
                     ],
                     limit=1,
@@ -67256,9 +67256,9 @@ class PublicCompetitionQueries(models.AbstractModel):
             lambda d: d.website_published and d.edition_id == edition
         ):
             errors.append(_("publish at least one division"))
-        if edition.engine_state not in ("active", "finished", "archived"):
+        if edition.state not in ("open", "in_progress", "closed"):
             errors.append(
-                _("move the competition engine to Active, Finished or Archived")
+                _("move the edition to Open, In Progress or Closed")
             )
         if errors:
             raise ValidationError(
@@ -67659,7 +67659,7 @@ class TestBrowserPublicSite(HttpCase):
                 "name": "Browser Public Competition",
                 "competition_id": cls.competition.id,
                 "season_id": cls.season.id,
-                "engine_state": "active",
+                "state": "open",
                 "public_slug": "browser-public-competition",
                 "public_summary": "Browser validation of the public competition experience.",
                 "website_published": True,
@@ -67958,7 +67958,7 @@ class TestPublicSiteHttpSmoke(HttpCase):
                     "season_id": season.id,
                     "website_published": True,
                     "public_slug": "public-registration-2026",
-                    "engine_state": "active",
+                    "state": "open",
                 }
             )
             for division, window_name in (
@@ -69176,7 +69176,7 @@ class TestPublicCompetitionContract(TransactionCase):
                 "name": "Portal contract edition",
                 "competition_id": competition.id,
                 "season_id": season.id,
-                "engine_state": "active",
+                "state": "open",
                 "public_slug": "portal-contract",
                 "website_published": False,
             }
@@ -70570,7 +70570,7 @@ FILE: sports_federation_public_site/views/website_competition_templates.xml
     <article class="sf-competition-card card h-100 shadow-sm border-0">
       <div class="card-body d-flex flex-column">
         <div class="d-flex justify-content-between gap-2 mb-2">
-          <span class="badge text-bg-primary"><t t-esc="edition.engine_state"/></span>
+          <span class="badge text-bg-primary"><t t-esc="edition.state"/></span>
           <small class="text-muted"><t t-esc="edition.season_id.display_name"/></small>
         </div>
         <h2 class="h5"><t t-esc="edition.name"/></h2>
@@ -70621,7 +70621,7 @@ FILE: sports_federation_public_site/views/website_competition_templates.xml
 
   <template id="public_competition_competition_detail" name="Competition detail">
     <t t-call="website.layout"><main>
-      <section class="sf-competition-hero"><div class="container py-5"><span class="badge text-bg-light mb-2"><t t-esc="edition.engine_state"/></span><h1><t t-esc="edition.name"/></h1><p class="lead mb-0"><t t-esc="edition.public_summary or edition.season_id.display_name"/></p></div></section>
+      <section class="sf-competition-hero"><div class="container py-5"><span class="badge text-bg-light mb-2"><t t-esc="edition.state"/></span><h1><t t-esc="edition.name"/></h1><p class="lead mb-0"><t t-esc="edition.public_summary or edition.season_id.display_name"/></p></div></section>
       <div class="container py-4"><t t-call="sports_federation_public_site.public_competition_competition_nav"/>
         <div class="d-flex flex-wrap gap-2 mb-4"><a t-foreach="divisions" t-as="item" t-att-class="'btn ' + ('btn-primary' if division == item else 'btn-outline-primary')" t-att-href="'/competitions/%s?division_id=%s' % (edition.public_slug, item.id)"><t t-esc="item.name"/></a></div>
         <div class="row g-4">
@@ -91376,6 +91376,7 @@ FILE: sports_federation_scheduling/__manifest__.py
         "security/ir.model.access.csv",
         "views/scheduling_views.xml",
         "views/submit_schedule_wizard_views.xml",
+        "views/amend_schedule_wizard_views.xml",
         "views/fairness_views.xml",
         "views/menu.xml",
     ],
@@ -91552,6 +91553,28 @@ class FederationSchedule(models.Model):
             warning_override_reason=warning_override_reason,
         )
         return {"type": "ir.actions.client", "tag": "reload"}
+
+    def action_open_amend_schedule(self):
+        self.ensure_one()
+        if self.state != "published":
+            raise ValidationError(
+                "Only a published schedule can be amended."
+            )
+        if self.matchday_id.state == "open":
+            raise ValidationError(
+                "Close live match-day operations before amending the schedule."
+            )
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "schedule_planner", "competition_director"
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Amend Published Schedule",
+            "res_model": "federation.schedule.amend.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_schedule_id": self.id},
+        }
 
     def action_open_auto_schedule(self):
         self.ensure_one()
@@ -91749,6 +91772,8 @@ access_schedule_auto_wizard_manager,schedule.auto.wizard.manager,model_federatio
 
 access_schedule_submit_wizard_planner,schedule.submit.wizard.planner,model_federation_schedule_submit_wizard,sports_federation_scheduling.group_schedule_planner,1,1,1,1
 access_schedule_submit_wizard_manager,schedule.submit.wizard.manager,model_federation_schedule_submit_wizard,sports_federation_base.group_federation_manager,1,1,1,1
+access_schedule_amend_wizard_planner,schedule.amend.wizard.planner,model_federation_schedule_amend_wizard,sports_federation_scheduling.group_schedule_planner,1,1,1,1
+access_schedule_amend_wizard_manager,schedule.amend.wizard.manager,model_federation_schedule_amend_wizard,sports_federation_base.group_federation_manager,1,1,1,1
 
 ====================================================================================================
 FILE: sports_federation_scheduling/security/security.xml
@@ -92480,6 +92505,33 @@ class TestFairnessSolver(TransactionCase):
         self.assertEqual(cfg, self.cfg)
 
 ====================================================================================================
+FILE: sports_federation_scheduling/views/amend_schedule_wizard_views.xml
+====================================================================================================
+
+<odoo>
+  <record id="view_federation_schedule_amend_wizard_form" model="ir.ui.view">
+    <field name="name">federation.schedule.amend.wizard.form</field>
+    <field name="model">federation.schedule.amend.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Amend Published Schedule">
+        <div class="alert alert-warning" role="alert">
+          The live publication remains active while this replacement revision is edited and reviewed.
+          Publishing the approved amendment will supersede the current live publication.
+        </div>
+        <group>
+          <field name="schedule_id"/>
+          <field name="reason" placeholder="Describe the fixture or planning change..."/>
+        </group>
+        <footer>
+          <button name="action_amend" type="object" string="Create Amendment" class="btn-primary"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>
+
+====================================================================================================
 FILE: sports_federation_scheduling/views/fairness_views.xml
 ====================================================================================================
 
@@ -92570,6 +92622,41 @@ FILE: sports_federation_scheduling/wizards/__init__.py
 
 from . import auto_schedule_wizard
 from . import submit_schedule_wizard
+from . import amend_schedule_wizard
+
+====================================================================================================
+FILE: sports_federation_scheduling/wizards/amend_schedule_wizard.py
+====================================================================================================
+
+from odoo import _, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationScheduleAmendWizard(models.TransientModel):
+    _name = "federation.schedule.amend.wizard"
+    _description = "Amend Published Schedule"
+
+    schedule_id = fields.Many2one(
+        "federation.schedule", required=True, readonly=True, ondelete="cascade"
+    )
+    reason = fields.Text(
+        required=True,
+        help="Explain why a replacement schedule revision is required.",
+    )
+
+    def action_amend(self):
+        self.ensure_one()
+        if not (self.reason or "").strip():
+            raise ValidationError(_("Enter a reason for amending the schedule."))
+        replacement = self.schedule_id.action_create_revision(self.reason.strip())
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Schedule Amendment"),
+            "res_model": "federation.schedule",
+            "res_id": replacement.id,
+            "view_mode": "form",
+            "target": "current",
+        }
 
 ====================================================================================================
 FILE: sports_federation_scheduling/wizards/auto_schedule_wizard.py

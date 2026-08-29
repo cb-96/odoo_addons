@@ -2,13 +2,17 @@
 refactor/simplification-competition-engine
 
 === CURRENT COMMIT ===
-7f3ff2a4e5c0c6d176084ec8b61e16d5414b7427
+c5726d641f95c33d73719273092e3e3eea892aee
 
 === REPOSITORY ROOT ===
 /home/cedric/odoo/addons
 
 === WORKTREE STATUS ===
+ D ci/check_package7_release_qualification.py
+ M ci/run_repo_lint.sh
+ M current_git_metadata.txt
  M current_sources.txt
+?? ci/check_release_qualification.py
 
 === MODULE MANIFESTS ===
 {"application": true, "auto_install": false, "data": ["security/res_groups.xml", "security/ir.model.access.csv", "data/ir_sequence.xml", "views/res_config_settings_views.xml", "views/federation_season_registration_views.xml", "views/federation_season_views.xml", "views/federation_team_views.xml", "views/federation_club_views.xml", "views/menu_items.xml"], "depends": ["base", "mail", "base_setup"], "explicit_assets": [], "installable": true, "module": "sports_federation_base", "name": "Sports Federation Base", "version": "19.0.1.2.0"}
@@ -33,13 +37,14 @@ refactor/simplification-competition-engine
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "views/team_roster_views.xml", "views/match_sheet_views.xml", "views/season_registration_views_inherit.xml", "views/tournament_participant_views_inherit.xml", "views/team_views_inherit.xml", "views/player_views_inherit.xml", "views/match_views_inherit.xml", "views/menu_views.xml"], "depends": ["sports_federation_base", "sports_federation_people", "sports_federation_tournament", "sports_federation_rules", "mail"], "explicit_assets": [], "installable": true, "module": "sports_federation_rosters", "name": "Sports Federation Rosters", "version": "19.0.1.5.0"}
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "views/federation_rule_set_views.xml", "views/federation_points_rule_views.xml", "views/federation_tie_break_rule_views.xml", "views/federation_eligibility_rule_views.xml", "views/federation_qualification_rule_views.xml", "views/menu_items.xml"], "depends": ["sports_federation_base"], "explicit_assets": [], "installable": true, "module": "sports_federation_rules", "name": "Sports Federation Rules", "version": "19.0.2.0.0"}
 {"application": false, "auto_install": false, "data": ["security/security.xml", "security/ir.model.access.csv", "views/approval_views.xml", "wizards/publish_schedule_wizard_views.xml", "views/menu.xml"], "depends": ["sports_federation_scheduling"], "explicit_assets": [], "installable": true, "module": "sports_federation_schedule_approval", "name": "Schedule Approval", "version": "19.0.2.2.0"}
-{"application": false, "auto_install": false, "data": ["security/security.xml", "security/ir.model.access.csv", "views/scheduling_views.xml", "views/submit_schedule_wizard_views.xml", "views/fairness_views.xml", "views/menu.xml"], "depends": ["sports_federation_calendar"], "explicit_assets": [], "installable": true, "module": "sports_federation_scheduling", "name": "Competition Scheduling", "version": "19.0.3.1.0"}
+{"application": false, "auto_install": false, "data": ["security/security.xml", "security/ir.model.access.csv", "views/scheduling_views.xml", "views/submit_schedule_wizard_views.xml", "views/amend_schedule_wizard_views.xml", "views/fairness_views.xml", "views/menu.xml"], "depends": ["sports_federation_calendar"], "explicit_assets": [], "installable": true, "module": "sports_federation_scheduling", "name": "Competition Scheduling", "version": "19.0.3.1.0"}
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "data/standing_recompute_cron.xml", "views/standing_views.xml", "views/tournament_views_inherit.xml", "views/menu_views.xml"], "depends": ["sports_federation_tournament", "sports_federation_rules", "mail"], "explicit_assets": [], "installable": true, "module": "sports_federation_standings", "name": "Sports Federation Standings", "version": "19.0.2.0.0"}
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "views/federation_tournament_participant_views.xml", "views/federation_match_views.xml", "views/federation_tournament_round_views.xml", "views/federation_tournament_group_views.xml", "views/federation_tournament_stage_views.xml", "views/federation_tournament_views.xml", "views/federation_competition_edition_views.xml", "views/federation_competition_views.xml", "views/federation_season_registration_views_inherit.xml", "views/federation_season_views_inherit.xml", "views/menu_items.xml"], "depends": ["sports_federation_base", "sports_federation_rules"], "explicit_assets": [], "installable": true, "module": "sports_federation_tournament", "name": "Sports Federation Tournament", "version": "19.0.1.4.0"}
 {"application": false, "auto_install": false, "data": ["security/ir.model.access.csv", "views/venue_views.xml", "views/round_views_inherit.xml", "views/tournament_views_inherit.xml", "views/match_views_inherit.xml", "views/menu_views.xml"], "depends": ["sports_federation_base", "sports_federation_tournament"], "explicit_assets": [], "installable": true, "module": "sports_federation_venues", "name": "Sports Federation Venues", "version": "19.0.1.1.0"}
 
 === RELEVANT RECENT HISTORY ===
-7f3ff2a (HEAD -> refactor/simplification-competition-engine) fix: public site asset manifest.
+c5726d6 (HEAD -> refactor/simplification-competition-engine) amend: schedule fixture update.
+7f3ff2a fix: public site asset manifest.
 1928dcd Fixed CI errors and failures.
 2db6742 Reformatted pre-migrate.py based on Black.
 79e538d Ran pass to remove V2 references.
@@ -68,10 +73,10 @@ f118ec6 Moving toward full removal of legacy competition workspace.
 cdc8728 feat: add weighted fairness auto-scheduling to V2 planner
 2a3e378 feat!: add generic full-placement bracket generation
 09f5622 Implemented Stage Graph tool.
-71dac69 Added registration desk team filtering based on gender and category.
 
 === RECENT REPOSITORY HISTORY ===
-7f3ff2a (HEAD -> refactor/simplification-competition-engine) fix: public site asset manifest.
+c5726d6 (HEAD -> refactor/simplification-competition-engine) amend: schedule fixture update.
+7f3ff2a fix: public site asset manifest.
 b3a2c46 (origin/refactor/simplification-competition-engine) fix: CI CRLF db credentials.
 83e007f fix: integration matrix db auth.
 1928dcd Fixed CI errors and failures.
@@ -85,22 +90,24 @@ f6b728b test(release): add Package 7 cutover qualification gate
 743d8c9 fix(public-site): make V2 competitions the canonical route owner
 de5e107 feat!: deliver V2 public competition portal
 5764553 fix(reporting): correct V2 registration season aggregation
-59fd98a feat!: complete V2 registration cutover
 
 === UNSTAGED DIFF STAT ===
- current_sources.txt | 25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+ ci/check_package7_release_qualification.py |  47 -------
+ ci/run_repo_lint.sh                        |   6 +-
+ current_git_metadata.txt                   |  44 +++---
+ current_sources.txt                        | 217 ++++++++++++++++++++---------
+ 4 files changed, 179 insertions(+), 135 deletions(-)
 
 === STAGED DIFF STAT ===
 
 
 === FILE SUMMARY ===
-Discovered bundle files: 840
+Discovered bundle files: 842
 Configured modules found: 26
 Configured modules missing: 0
-Git tracked files: 855
-Git modified or staged files: 1
-Git untracked files: 0
+Git tracked files: 857
+Git modified or staged files: 4
+Git untracked files: 1
 
 === BUNDLED FILE INVENTORY ===
 .github/copilot-instructions.md	7331	7e616893749fb5ae32de33c88010309516272742120b3b28cec305c140409842	tracked
@@ -163,7 +170,6 @@ ci/check_module_dependency_drift.py	2730	994db4e2a8c8b835129308b8e0d59e737563391
 ci/check_module_owners.py	3885	548f92facbc6a9bcc2e38bd6b3c72f6422ea297ca982a6ebf103a5b68378e7fc	tracked
 ci/check_officiating_contract.py	2064	8c86daa00c5685d96bd83cc01ed4ce1a8723542db771520c81bcfebcc8a54ffa	tracked
 ci/check_openapi_contracts.py	10659	885ad49c6f9805dfab5441a1e255264c027c039c74223302bd51a062abbe4e7c	tracked
-ci/check_package7_release_qualification.py	1802	1f39dcecbcd99c022bfb84f227e08e35d04c692a98f645605b10eede2555b742	tracked
 ci/check_phases_511_53_contract.py	2210	5a2b1857e1a3d522e840d085cdd7435d21600348a79e981bb614e85ae303dc97	tracked
 ci/check_portal_competition_ownership.py	2074	e5d35cafd87746ebbdc5777a040289980412ed1dd17a29a40ce0210b88f9ba12	tracked
 ci/check_portal_sudo_guard.py	4664	b295847e4da6e891ffda55bff5cbda1a11a2ead07443c98c5065d01a87b472be	tracked
@@ -171,6 +177,7 @@ ci/check_public_competition_contract.py	2499	7930109865cf42e15e7ccae81e019c36420
 ci/check_public_route_cutover_docs.py	909	bb678586d242d17bc4a84e635b540b803589c5441dd153f8d44c6d29196cae9b	tracked
 ci/check_publication_integrity_contract.py	2210	5a2b1857e1a3d522e840d085cdd7435d21600348a79e981bb614e85ae303dc97	tracked
 ci/check_registration_contract.py	1900	652753cd1a2641997fc9d80ef8c19b7786caa6cf44de4116597353d55c8a657c	tracked
+ci/check_release_qualification.py	1802	bf3e851a82b922cbe0a19f9920b41cab8fb9e8df6d6521d9a8978155387765c5	untracked
 ci/check_release_train.py	2137	d1e1c6157a97b94490e95220c97e7e086632816a21510e1109b01d25ba8cf666	tracked
 ci/check_rules_contract.py	1251	154abe9ca291d7a9b2d601719865a60d050a2e44eeb929bcc0b8dd3df293a5ae	tracked
 ci/check_schedule_handoff_contract.py	2071	45c794d3585730a7df13f5661a95a4f19324d02650712a7f1037c72e9b05fa72	tracked
@@ -194,7 +201,7 @@ ci/prune_ci_logs.sh	588	666c32dbe5413917460b8b8cdc2d1c99c1de447befe5c903f39f1dc7
 ci/resolve_ci_scope.py	2401	686b7a025502b5dbbeb4e819beac0eec6e442c7a10410961f01e5cb9f23f5ea6	tracked
 ci/restore_backup_drill.sh	10258	415c24cf36ac7819d820ef5ecf8de0906eb27aad61713d5c8995918d4c9e5c44	tracked
 ci/run_odoo_tests.sh	842	511e56364075d8f64b61857b3bc4645cede6b2a294eb32dbc673da44b59927cd	tracked
-ci/run_repo_lint.sh	4154	316f527ecc10445c77a0f8bd1f2eab4678a4d616bf3a9eed9667b07288bcb948	tracked
+ci/run_repo_lint.sh	4133	76e3e405e39848b77e4e7289373bf2a6162688189f74573675f7f4b670998e23	modified
 ci/run_tests.sh	25089	65272eea8ba2e0708d98495fc9d415eb4442f3d8b327bfa773bc934f74ad5275	tracked
 ci/static_checks.py	1804	f2886eb57443738cec3199252e53ec95c75fe9e46e918281c85daf788fc88182	tracked
 ci/test_config.conf	125	a7d32c2d065ecd064c2117236ee57f7c2a718b0aa8de60e8bb02857b10207487	tracked
@@ -654,19 +661,19 @@ sports_federation_public_site/models/website.py	9467	97b62e532976f5108080444ae3e
 sports_federation_public_site/models/website_menu.py	2890	6ee679fbfa81c88e8e80c2d7146b7f8f4844802c939c90f66a2015e21ea85bcb	tracked
 sports_federation_public_site/security/ir.model.access.csv	413	48e38c1ca84da188cc9c8172207060c6b4c95761f3afd0a32827093b5ef27ade	tracked
 sports_federation_public_site/services/__init__.py	115	d96d287ddfe64b22f35869b502de3c9e5b294aab45503052b149a4506088402a	tracked
-sports_federation_public_site/services/public_competition_queries.py	5247	b2f569ea5aec6ef6ed618338ca311b68e47f71560213b2953595e0712c62bba3	tracked
+sports_federation_public_site/services/public_competition_queries.py	5227	e711127e2816602863f34bf4b8dc02824c7d39d368e324492a149a3f7f6c4c29	tracked
 sports_federation_public_site/services/public_format_queries.py	2359	d22550aa2be5406501606077f2749c45c62292b0efc2541092655f9849e46b70	tracked
 sports_federation_public_site/services/public_schedule_queries.py	3078	8ae486a998b5c16259b3a5f279202f09cf3a8cf191d5ca1fba8b07f9c6b217a9	tracked
 sports_federation_public_site/static/src/js/public_live_board.js	1423	e8fec2354019f292b3cb7b61756541f7a8407213e65246722bf341fd452dda06	tracked
 sports_federation_public_site/static/src/scss/public_competitions.scss	2663	50eaea2673394353f96d376526d9654086009cdf7699d2718d285a39309f27f6	tracked
 sports_federation_public_site/static/tests/tours/public_site_browser_tour.js	3851	87990120dacc30c4c9a6b8a87e75b84bd757b8f6e030f19d54bad4ca56bdc767	tracked
 sports_federation_public_site/tests/__init__.py	322	8ecc74a77b871fe6a4e957aa3edad07b32169fa248d90784260d6c833c0e11e6	tracked
-sports_federation_public_site/tests/test_browser_public_site.py	1799	fc7b01da67a185056776afd54504c2bd2856d7bddf42a66f26f425caee8f0b4e	tracked
+sports_federation_public_site/tests/test_browser_public_site.py	1790	0c0b27a0d41d0e6e3830c57e8b5ed3c50e27f2cafc212ffc1dfda890e210ff7b	tracked
 sports_federation_public_site/tests/test_club_team_pages.py	2374	0660ef3f4030b1de153d0a4212973e43b4a3c9a0adbcb5c836e5c4f89512f56a	tracked
-sports_federation_public_site/tests/test_http_smoke.py	15540	f920c86b0ad3a184f8d66b081cb539f7d83bb3bf8b28d587293d33d1fe16c6ae	tracked
+sports_federation_public_site/tests/test_http_smoke.py	15531	4c36d4db1b307e166cb26e14f63acfe453cde4e2bf7e5ead6dc50a9f5438a019	tracked
 sports_federation_public_site/tests/test_player_pages.py	2283	a91aa8cf468981455c3634674efa328010dd87219682f511f5fd17945ad8b622	tracked
 sports_federation_public_site/tests/test_public_api.py	35817	b1b774122bd33c23871c442a5891422e10ae490818c1112284106f34fecb78fb	tracked
-sports_federation_public_site/tests/test_public_competition_contract.py	1514	95f7c0514a021a909141b5fd60aab0a250a7e4239a7b221084647ee6539598ee	tracked
+sports_federation_public_site/tests/test_public_competition_contract.py	1505	f48dc82f6bb105e34946fb4ceb9ba83fd0c92968b77125a9e12011b7f650e924	tracked
 sports_federation_public_site/tests/test_public_site.py	16087	6dacaccde36af26d71e0700b039074a59669c0ba5355b08a981ff12b5e89f2dc	tracked
 sports_federation_public_site/tests/test_template_accessibility.py	5945	f65aa7b89ea15acc9201b31cdf687930ab1cb32f89f29f47aeb7492048b96e3d	tracked
 sports_federation_public_site/tests/test_tour_publication.py	3799	b7b1bd55a919ea2280a3fc6072bdd76d3947178833e5d679eed8e65465b10a37	tracked
@@ -677,7 +684,7 @@ sports_federation_public_site/views/standing_views_inherit.xml	1950	c0be29bf1670
 sports_federation_public_site/views/team_views_inherit.xml	1354	9cfdba23daee02b59fa2dc8662376ebba6e46cb762ed458d2a7ab53cb5acf7c6	tracked
 sports_federation_public_site/views/tournament_views_inherit.xml	4878	f72a21527cd8b7363ae4dfd9073cd314328cf728d06f613e34bc0bbc9843ac39	tracked
 sports_federation_public_site/views/website_clubs_players_templates.xml	19749	b06500ad574299120f304f30bb937779acd52479898b47dfe8f0aebb3a597a87	tracked
-sports_federation_public_site/views/website_competition_templates.xml	16059	a5b1340d55fd84486ae5ee6440018ec94e37b9eb6b32e8a152ee2d46c48a975f	tracked
+sports_federation_public_site/views/website_competition_templates.xml	16045	0c8313b9c70fbc1e015b05d1828773ff2243268c43e8f79c5b8cf11a8de344bb	tracked
 sports_federation_public_site/views/website_editorial_templates.xml	16094	17f450197335319d6bdf7b15c543f5af2a333025f3dd264db426704f8586fd2f	tracked
 sports_federation_public_site/views/website_hub_templates.xml	50686	08088bf7f7eab1dd7f0e7c27ad274e7a3c9feb4fa2f73c0445cbb448c4d35b9f	tracked
 sports_federation_public_site/views/website_menu.xml	909	0b7faeed7e8c4e094cd226ba4561d7225e217b1fb33041836b30e170b2ea843f	tracked
@@ -845,12 +852,12 @@ sports_federation_schedule_approval/wizards/publish_schedule_wizard.py	1820	5ad7
 sports_federation_schedule_approval/wizards/publish_schedule_wizard_views.xml	1507	42bd5424811effe9ab447c5df367697d334b031782137ffd0c566b0c33bce5ab	tracked
 sports_federation_scheduling/README.md	1297	5739035035f9d4bd235fa1da1e9642c79bb0ee7d94ffcf3a5f662c6e2bc211b7	tracked
 sports_federation_scheduling/__init__.py	66	c9538f10edcfa5f4a220e41941f9500aa61404e930c6bbb391a480acc9f98eef	tracked
-sports_federation_scheduling/__manifest__.py	615	2de29444ecbec5511925cf770a37e7197ae871fc5bfc104583f339091a435abe	tracked
+sports_federation_scheduling/__manifest__.py	664	7945fba51e4dc9f944d681ef68c0ea6e64affac405e9c0f8ee93aed2ab7443f9	tracked
 sports_federation_scheduling/migrations/19.0.3.0.0/pre-migrate.py	279	1ea53448fa8f5d6bc70fc2daeed1ae1374153623cbd9dc632aa521e4c98449b8	tracked
 sports_federation_scheduling/models/__init__.py	56	a17c92ed5cddafb26c4dec21dc0a6a8fefe6bb3f6cea5b08cedac144050edcdf	tracked
-sports_federation_scheduling/models/schedule.py	8438	dac0334df6d5cd6a1a0998c52fdb4b4969481a103e03ee9e029da2e920a72b91	tracked
+sports_federation_scheduling/models/schedule.py	9282	1590520a9860d81246c86a1e8898bc6f147bfd73d760ab40b3535cdf15587665	tracked
 sports_federation_scheduling/models/schedule_integrity.py	3123	e77e68c0ad40a4dd7f9a341ef0073947bedd14f31791430a9ebd041b45c5a190	tracked
-sports_federation_scheduling/security/ir.model.access.csv	1325	8aff051c4065b2228f2dcc38b0b7dce11ce5782106394a5b6e81085d578d7504	tracked
+sports_federation_scheduling/security/ir.model.access.csv	1653	f1ed92b7ed7d0630f27638a18814ef371c267347549b1b60dea4223ee9c2bec4	tracked
 sports_federation_scheduling/security/security.xml	439	c48d7be862236133ec00e9d1ec971bc623556b0d60519ab96c70563a39a90de8	tracked
 sports_federation_scheduling/services/__init__.py	161	458c2fdcba6a91b81c52bbd5a613370e85c25dfe3eb380ad415aece6c05c5a6f	tracked
 sports_federation_scheduling/services/deterministic_solver.py	1582	6b889fe565599f9858f18449c6ea3daaa64e16eb356e53bec51832c3c06995cd	tracked
@@ -860,11 +867,13 @@ sports_federation_scheduling/services/schedule_queries.py	2222	6c4fdfa76fc78ee32
 sports_federation_scheduling/services/schedule_validator.py	6411	1161e9a32271102be329caf493a9340f5f4aa208d8d0b332630d8e9670b969bf	tracked
 sports_federation_scheduling/tests/__init__.py	35	4e0aa5c2ae096cc9d2db1f8735d1097e83c1378a40484aded4ffa469460920d3	tracked
 sports_federation_scheduling/tests/test_fairness_solver.py	2459	e4a594d0c26002725494434bc668454ef2f3020564bba24d7d7e068a8e78e597	tracked
+sports_federation_scheduling/views/amend_schedule_wizard_views.xml	980	5448e1a7f00586d3a5554b0caf414f0f9a8229e71aa7914891f6da59ba08d7f3	tracked
 sports_federation_scheduling/views/fairness_views.xml	2665	3e1b809304b7347e92a6dbc607453d05b1d439a03449d940e513a24b984c4c8e	tracked
 sports_federation_scheduling/views/menu.xml	232	4ef0f01129f00acfd122bd4049e7e94b5637c985b93ee565448d3d8bbd010411	tracked
 sports_federation_scheduling/views/scheduling_views.xml	2969	60c60faf82754ecbe2f7dca3c1f92070f9db4229f676ee196c117c0f7303b8eb	tracked
 sports_federation_scheduling/views/submit_schedule_wizard_views.xml	1264	b9e85fe3b90191fcbb06d82f8c97d8ee8968a462b820fa860f9b190cfaa073fc	tracked
-sports_federation_scheduling/wizards/__init__.py	72	a2ae16318fb454ba750d52ac8c374a73053e7089706826a82f88a69fca0163c6	tracked
+sports_federation_scheduling/wizards/__init__.py	107	04ce848e3a168b1e7990ad2b6499d52f618076266ed6fe994e202fffb05e5851	tracked
+sports_federation_scheduling/wizards/amend_schedule_wizard.py	1017	6b97f6d8999d9df6dde9056b2c303e0f8f13930da9880faa525909dda6e85892	tracked
 sports_federation_scheduling/wizards/auto_schedule_wizard.py	7054	8f0bfa9877c900749d50caa42a02b698618ec1d836c168bdc23eb95972a473fd	tracked
 sports_federation_scheduling/wizards/submit_schedule_wizard.py	1364	f4ca3b03b5cc6d6f99995d475f2477bfb1a16bd24194a94ea803876aa5b67271	tracked
 sports_federation_standings/README.md	4709	caf18788af8457a26063eedc016366f5a6da728cf9a6d9ccedce75fd721a5613	tracked
