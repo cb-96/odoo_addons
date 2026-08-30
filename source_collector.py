@@ -40,7 +40,7 @@ JSONL_OUT = ROOT / "current_sources.jsonl"
 META_OUT = ROOT / "current_git_metadata.txt"
 
 BUNDLE_FORMAT = "sports-federation-source-bundle"
-BUNDLE_FORMAT_VERSION = 2
+BUNDLE_FORMAT_VERSION = 3
 SEPARATOR = "=" * 100
 MAX_TEXT_FILE_SIZE = 10 * 1024 * 1024
 
@@ -587,15 +587,17 @@ def build_file_record(
     path = ROOT / relative
     raw = path.read_bytes()
     content = raw.decode("utf-8", errors="replace")
+    
     return {
         "path": relative.as_posix(),
         "content": content,
+        "content_length": len(content),
         "size_bytes": len(raw),
         "sha256": sha256_bytes(raw),
         "git_mode": expected_git_mode(relative, modes),
         "filesystem_mode": filesystem_mode(path),
         "git_state": classify_git_state(
-            relative, tracked, modified, untracked
+            relative, tracked, modified, untracked,
         ),
     }
 
@@ -617,6 +619,7 @@ def write_source_bundle(records: list[dict]) -> None:
             bundle.write(SEPARATOR + "\n")
             bundle.write(f"FILE: {record['path']}\n")
             bundle.write(f"SIZE: {record['size_bytes']}\n")
+            bundle.write(f"CONTENT-LENGTH: {record['content_length']}\n")
             bundle.write(f"SHA256: {record['sha256']}\n")
             bundle.write(f"GIT-MODE: {record['git_mode']}\n")
             bundle.write(
@@ -661,12 +664,26 @@ def write_jsonl_bundle(records: list[dict]) -> None:
 
 
 def parse_text_bundle(path: Path) -> list[dict]:
-    """Parse the generated text format for round-trip validation."""
-    text = path.read_text(encoding="utf-8")
+    """Parse the generated text format for round-trip validation.
+
+    CONTENT-LENGTH defines the exact logical-content boundary. Bundle framing
+    newlines therefore never become part of source content, regardless of
+    whether the original file ended with LF, CRLF, multiple blank lines, or no
+    newline at all.
+    """
+    with path.open(
+        "r",
+        encoding="utf-8",
+        errors="replace",
+        newline="",
+    ) as source:
+        text = source.read()
+
     header_pattern = re.compile(
         rf"^{re.escape(SEPARATOR)}\n"
         r"FILE: (?P<path>.+)\n"
         r"SIZE: (?P<size>\d+)\n"
+        r"CONTENT-LENGTH: (?P<content_length>\d+)\n"
         r"SHA256: (?P<sha256>[0-9a-f]{64})\n"
         r"GIT-MODE: (?P<git_mode>\d{6})\n"
         r"FILESYSTEM-MODE: (?P<filesystem_mode>\d{4})\n"
@@ -674,25 +691,33 @@ def parse_text_bundle(path: Path) -> list[dict]:
         rf"{re.escape(SEPARATOR)}\n\n",
         flags=re.MULTILINE,
     )
-    matches = list(header_pattern.finditer(text))
-    parsed: list[dict] = []
 
-    for index, match in enumerate(matches):
+    parsed: list[dict] = []
+    position = 0
+
+    while True:
+        match = header_pattern.search(text, position)
+        if match is None:
+            break
+
         content_start = match.end()
-        if index + 1 < len(matches):
-            content_end = matches[index + 1].start()
-            content = text[content_start:content_end]
-            if content.endswith("\n\n"):
-                content = content[:-1]
-        else:
-            content = text[content_start:]
-            if content.endswith("\n\n"):
-                content = content[:-1]
+        content_length = int(match.group("content_length"))
+        content_end = content_start + content_length
+
+        if content_end > len(text):
+            raise SystemExit(
+                "Generated text bundle contains truncated content for "
+                f"{match.group('path')}: expected {content_length} "
+                f"characters, only {len(text) - content_start} available."
+            )
+
+        content = text[content_start:content_end]
 
         parsed.append(
             {
                 "path": match.group("path"),
                 "content": content,
+                "content_length": content_length,
                 "size_bytes": int(match.group("size")),
                 "sha256": match.group("sha256"),
                 "git_mode": match.group("git_mode"),
@@ -700,6 +725,10 @@ def parse_text_bundle(path: Path) -> list[dict]:
                 "git_state": match.group("git_state"),
             }
         )
+
+        # Start after the exact source content. The next search skips only the
+        # bundle framing newline or newlines inserted by write_source_bundle().
+        position = content_end
 
     return parsed
 

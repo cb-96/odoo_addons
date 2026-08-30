@@ -64,6 +64,19 @@ class FederationScheduleIntegrity(models.Model):
                 "change_ids": False,
             }
         )
+        if self.assignment_ids:
+            self.env["federation.schedule.assignment"].create(
+                [
+                    {
+                        "schedule_id": replacement.id,
+                        "fixture_id": assignment.fixture_id.id,
+                        "slot_id": assignment.slot_id.id,
+                        "method": assignment.method,
+                        "assigned_by_id": assignment.assigned_by_id.id,
+                    }
+                    for assignment in self.assignment_ids
+                ]
+            )
         self.superseded_by_id = replacement.id
         return replacement
 

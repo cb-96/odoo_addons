@@ -43,6 +43,7 @@ tour.add("full_competition_lifecycle", {
             run() {
                 window.location.assign("/competitions");
             },
+            expectUnloadPage: true,
         },
         {
             content: "The public competition index renders successfully",

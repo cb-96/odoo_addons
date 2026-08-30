@@ -1,6 +1,6 @@
 {
     "name": "Competition Scheduling",
-    "version": "19.0.3.3.0",
+    "version": "19.0.3.3.2",
     "category": "Sports",
     "summary": "Working schedules, assignments, validation and deterministic proposals",
     "author": "Sports Federation",

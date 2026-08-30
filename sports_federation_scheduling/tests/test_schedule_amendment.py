@@ -16,12 +16,13 @@ class TestScheduleAmendment(TransactionCase):
         structure = cls.env["federation.competition.structure"].create({"name": "Amendment Structure", "edition_id": cls.edition.id, "division_id": division.id, "participant_set_id": participants.id, "format_type": "custom", "state": "frozen"})
         venue = cls.env["federation.venue"].create({"name": "Amendment Venue"})
         cls.matchday = cls.env["federation.matchday"].create({"name": "Amendment Match Day", "edition_id": cls.edition.id, "date": "2026-10-10", "venue_id": venue.id, "state": "scheduled"})
-        cls.schedule = cls.env["federation.schedule"].create({"name": "Published Schedule", "edition_id": cls.edition.id, "structure_id": structure.id, "matchday_id": cls.matchday.id, "state": "published", "revision": 3})
+        cls.schedule = cls.env["federation.schedule"].create({"name": "Published Schedule", "edition_id": cls.edition.id, "structure_id": structure.id, "matchday_id": cls.matchday.id, "state": "draft", "revision": 3})
         stage = cls.env["federation.structure.stage"].create({"name": "League", "structure_id": structure.id, "stage_type": "league"})
         fixture = cls.env["federation.fixture"].create({"structure_id": structure.id, "stage_id": stage.id, "round_number": 1})
         court = cls.env["federation.playing.area"].create({"name": "Main Court", "venue_id": venue.id})
         slot = cls.env["federation.schedule.slot"].create({"matchday_id": cls.matchday.id, "court_id": court.id, "start_datetime": "2026-10-10 10:00:00", "end_datetime": "2026-10-10 11:00:00"})
         cls.env["federation.schedule.assignment"].create({"schedule_id": cls.schedule.id, "fixture_id": fixture.id, "slot_id": slot.id})
+        cls.schedule.state = "published"
         cls.env["federation.competition.role.assignment"].create({"edition_id": cls.edition.id, "user_id": cls.env.user.id, "role": "schedule_planner"})
 
     def test_published_schedule_creates_linked_replacement(self):

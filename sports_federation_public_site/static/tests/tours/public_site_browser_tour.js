@@ -11,6 +11,7 @@ function navigate(path, description) {
         run() {
             window.location.assign(path);
         },
+        expectUnloadPage: true,
     };
 }
 
@@ -44,11 +45,13 @@ tour.add("public_site_browser_lifecycle", {
             content: "Submit the competition search",
             trigger: 'form button[type="submit"], form button.btn-primary',
             run: "click",
+            expectUnloadPage: true,
         },
         {
             content: "The filtered competition remains visible",
             trigger: '.sf-competition-card a[href="/competitions/browser-public-competition"]',
             run: "click",
+            expectUnloadPage: true,
         },
         assertPath(
             "/competitions/browser-public-competition",
@@ -62,6 +65,7 @@ tour.add("public_site_browser_lifecycle", {
             content: "Open the public schedule",
             trigger: '.sf-competition-nav a[href="/competitions/browser-public-competition/schedule"]',
             run: "click",
+            expectUnloadPage: true,
         },
         assertPath(
             "/competitions/browser-public-competition/schedule",
@@ -75,6 +79,7 @@ tour.add("public_site_browser_lifecycle", {
             content: "Open format and standings",
             trigger: '.sf-competition-nav a[href="/competitions/browser-public-competition/format"]',
             run: "click",
+            expectUnloadPage: true,
         },
         assertPath(
             "/competitions/browser-public-competition/format",

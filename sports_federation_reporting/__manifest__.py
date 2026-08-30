@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Reporting",
-    "version": "19.0.1.3.1",
+    "version": "19.0.1.3.2",
     "category": "Sports",
     "summary": "Reporting models for federation data",
     "description": "Reporting models and dashboards for participation, officiating, compliance, and finance.",

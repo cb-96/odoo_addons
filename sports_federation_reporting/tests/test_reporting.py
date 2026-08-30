@@ -106,9 +106,10 @@ class TestReporting(TransactionCase):
         )
 
     def test_participation_report_counts_team_and_player_for_active_season(self):
-        self.env.flush_all()
         """One active season × one active club should yield a row with
         team_count=1 and player_count=1."""
+        self.env.flush_all()
+        self.env.invalidate_all()
         row = self.env["federation.report.participation"].search(
             [
                 ("season_id", "=", self.season.id),

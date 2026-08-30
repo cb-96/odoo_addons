@@ -19,18 +19,26 @@ class FederationReportParticipation(models.Model):
         self.env.cr.execute("""
             CREATE VIEW federation_report_participation AS (
                 SELECT
-                    row_number() OVER () AS id,
+                    row_number() OVER (ORDER BY s.id, c.id) AS id,
                     s.id AS season_id,
                     c.id AS club_id,
-                    COUNT(DISTINCT t.id) AS team_count,
-                    COUNT(DISTINCT p.id) AS player_count,
-                    COUNT(DISTINCT tn.id) AS tournament_count
+                    (
+                        SELECT COUNT(*)
+                        FROM federation_team t
+                        WHERE t.club_id = c.id
+                    ) AS team_count,
+                    (
+                        SELECT COUNT(*)
+                        FROM federation_player p
+                        WHERE p.club_id = c.id
+                    ) AS player_count,
+                    (
+                        SELECT COUNT(*)
+                        FROM federation_tournament tn
+                        WHERE tn.season_id = s.id
+                    ) AS tournament_count
                 FROM federation_season s
                 CROSS JOIN federation_club c
-                LEFT JOIN federation_team t ON t.club_id = c.id
-                LEFT JOIN federation_player p ON p.club_id = c.id
-                LEFT JOIN federation_tournament tn ON tn.season_id = s.id
                 WHERE s.active = TRUE AND c.active = TRUE
-                GROUP BY s.id, c.id
             )
         """)
