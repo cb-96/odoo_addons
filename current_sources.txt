@@ -76,8 +76,8 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: .github/workflows/ci.yml
-SIZE: 13028
-SHA256: e155357341418a8db6c4e42021e417e9250b6b5b1dd3cac93f893e01e546e17d
+SIZE: 13034
+SHA256: c1f28afdd70f5f4ebc84a82d66b86ae51b795d640b7c81f2d9a39f4810da69af
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -193,12 +193,12 @@ jobs:
       - name: Verify Rules contract
         run: python ci/check_rules_contract.py
 
-      - name: Verify Phases 3-5 contract
+      - name: Verify competition pipeline contract
         run: python ci/check_competition_pipeline_contract.py
 
       - name: Verify operator handoff
         run: python ci/check_schedule_handoff_contract.py
-      - name: Verify Phases 5.1.1 through 5.3 contracts
+      - name: Verify publication integrity contract
         run: python ci/check_publication_integrity_contract.py
       - name: Report module dependency drift
         run: python ci/check_module_dependency_drift.py
@@ -8884,8 +8884,8 @@ if __name__ == "__main__":
 
 ====================================================================================================
 FILE: ci/check_delivery_language.py
-SIZE: 880
-SHA256: 7ab448534ec823d8340cd5cc89db907e682f791e86868abd079a1c638d609256
+SIZE: 1176
+SHA256: b4e256e821a057a7dfc886436c67dec3e94186cb1ccedf36d27ba867fd7d11ee
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -8900,6 +8900,14 @@ version = re.compile(r"(?<![A-Za-z0-9])" + "V" + r"2(?![A-Za-z0-9])", re.I)
 delivery = re.compile(r"\b(?:phase|package)[\s_.-]*\d", re.I)
 errors = []
 for p in ROOT.rglob("*"):
+    relative = p.relative_to(ROOT)
+    if (
+        p.is_file()
+        and ".git" not in p.parts
+        and "migrations" not in p.parts
+        and (version.search(str(relative)) or delivery.search(str(relative)))
+    ):
+        errors.append(f"{relative}: obsolete delivery language in path")
     if (
         p.is_file()
         and ".git" not in p.parts
@@ -10170,85 +10178,6 @@ if __name__ == "__main__":
     sys.exit(main())
 
 ====================================================================================================
-FILE: ci/check_phases_511_53_contract.py
-SIZE: 2210
-SHA256: 5a2b1857e1a3d522e840d085cdd7435d21600348a79e981bb614e85ae303dc97
-GIT-MODE: 100755
-FILESYSTEM-MODE: 0755
-GIT-STATE: tracked
-====================================================================================================
-
-#!/usr/bin/env python3
-from pathlib import Path
-import sys
-
-ROOT = Path(__file__).resolve().parents[1]
-CHECKS = {
-    "sports_federation_schedule_approval/models/publication_integrity.py": [
-        "allow_schedule_review_decision",
-        "one_live_matchday",
-    ],
-    "sports_federation_schedule_approval/services/approval_commands.py": [
-        '("matchday_id", "=", schedule.matchday_id.id)',
-        "expected_publication_id",
-        "FOR UPDATE",
-    ],
-    "sports_federation_schedule_approval/wizards/publish_schedule_wizard.py": [
-        "replacement_required",
-        "expected_publication_id",
-        "action_publish",
-    ],
-    "sports_federation_matchday/services/matchday_commands.py": [
-        "record_schedule_deviation",
-        "open_matchday",
-        "close_matchday",
-        "published_slot_id",
-        "operational_slot_id",
-    ],
-    "sports_federation_matchday/models/operational_control.py": [
-        "readiness_state",
-        "federation.matchday.deviation",
-        "Operational deviation evidence is immutable",
-    ],
-    "sports_federation_matchday/views/matchday_views.xml": [
-        "Open Match Day",
-        "Operational Schedule Change",
-        "Operational Deviations",
-        "Close Match Day",
-    ],
-}
-errors = []
-for relative, needles in CHECKS.items():
-    path = ROOT / relative
-    if not path.exists():
-        errors.append(f"missing {relative}")
-        continue
-    text = path.read_text(encoding="utf-8")
-    for needle in needles:
-        if needle not in text:
-            errors.append(f"{relative}: missing {needle!r}")
-
-approval_acl = (
-    ROOT / "sports_federation_schedule_approval/security/ir.model.access.csv"
-).read_text()
-for line in approval_acl.splitlines():
-    if line.startswith(
-        (
-            "access_federation_schedule_review_group_schedule_approver,",
-            "access_federation_schedule_review_manager,",
-        )
-    ):
-        if not line.endswith(",1,0,0,0"):
-            errors.append(f"review decision ACL must be read-only: {line}")
-
-if errors:
-    print("Phases 5.1.1-5.3 contract failed:")
-    for error in errors:
-        print(f"- {error}")
-    sys.exit(1)
-print("Phases 5.1.1-5.3 contract passed.")
-
-====================================================================================================
 FILE: ci/check_portal_competition_ownership.py
 SIZE: 2074
 SHA256: e5d35cafd87746ebbdc5777a040289980412ed1dd17a29a40ce0210b88f9ba12
@@ -10569,8 +10498,8 @@ print("Public route cutover documentation passed.")
 
 ====================================================================================================
 FILE: ci/check_publication_integrity_contract.py
-SIZE: 2210
-SHA256: 5a2b1857e1a3d522e840d085cdd7435d21600348a79e981bb614e85ae303dc97
+SIZE: 2231
+SHA256: 512fd007f7088f495881b43e1d22d763f343a7d8c4d805fefc3e7d69992d8b14
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -10583,7 +10512,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 CHECKS = {
     "sports_federation_schedule_approval/models/publication_integrity.py": [
-        "allow_schedule_review_decision",
+        "schedule_review_decision_token",
         "one_live_matchday",
     ],
     "sports_federation_schedule_approval/services/approval_commands.py": [
@@ -10636,15 +10565,15 @@ for line in approval_acl.splitlines():
             "access_federation_schedule_review_manager,",
         )
     ):
-        if not line.endswith(",1,0,0,0"):
-            errors.append(f"review decision ACL must be read-only: {line}")
+        if not line.endswith(",1,1,0,0"):
+            errors.append(f"review decision ACL must allow controlled writes: {line}")
 
 if errors:
-    print("Phases 5.1.1-5.3 contract failed:")
+    print("Publication integrity contract failed:")
     for error in errors:
         print(f"- {error}")
     sys.exit(1)
-print("Phases 5.1.1-5.3 contract passed.")
+print("Publication integrity contract passed.")
 
 ====================================================================================================
 FILE: ci/check_registration_contract.py
@@ -10715,7 +10644,7 @@ SIZE: 1951
 SHA256: bb74f0edd4964414dfdf1161200c60330a185f0d725857c2dfbdf0a5260d3eb7
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -12655,11 +12584,11 @@ exec "$ODOO_BIN" --database "$ODOO_DATABASE" --addons-path "$ODOO_ADDONS_PATH"  
 
 ====================================================================================================
 FILE: ci/run_repo_lint.sh
-SIZE: 4153
-SHA256: 43430ee6d04bc65f9bd44bef5b2f4902ad7941df85379559e9bb09838bd1a07e
+SIZE: 4128
+SHA256: a2a18c030ae0760c7cadb37f4ab279502a65ea40a2dcf326fe77695a39805477
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env bash
@@ -12734,8 +12663,8 @@ python3 ci/check_openapi_contracts.py || openapi_contracts_exit=$?
 echo "[lint] Validating HTTP route ownership"
 python3 ci/check_http_route_ownership.py || http_route_ownership_exit=$?
 
-echo "[lint] Validating Package 7 release qualification"
-python3 ci/check_package7_release_qualification.py || package7_qualification_exit=$?
+echo "[lint] Validating release qualification"
+python3 ci/check_release_qualification.py || release_qualification_exit=$?
 
 echo "[lint] Reporting module dependency drift"
 python3 ci/check_module_dependency_drift.py || dependency_drift_exit=$?
@@ -12770,15 +12699,15 @@ echo "  Workflow contract exit code: $workflow_contracts_exit"
 echo "  Constraint/index contract exit code: $constraint_index_contracts_exit"
 echo "  OpenAPI contract exit code: $openapi_contracts_exit"
 echo "  HTTP route ownership exit code: $http_route_ownership_exit"
-echo "  Package 7 qualification exit code: $package7_qualification_exit"
+echo "  Release qualification exit code: $release_qualification_exit"
 echo "  Migration review exit code: $migration_review_exit"
 echo "  Dependency drift report exit code: $dependency_drift_exit"
 
-if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $package7_qualification_exit -ne 0 || $migration_review_exit -ne 0 ) ]]; then
+if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $release_qualification_exit -ne 0 || $migration_review_exit -ne 0 ) ]]; then
     exit 1
 fi
 
-if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $package7_qualification_exit -ne 0 || $migration_review_exit -ne 0 ]]; then
+if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $release_qualification_exit -ne 0 || $migration_review_exit -ne 0 ]]; then
     echo "[lint] Repository-wide report found issues."
 else
     echo "[lint] Repository-wide report is clean."
@@ -12789,10 +12718,10 @@ exit 0
 ====================================================================================================
 FILE: ci/run_tests.sh
 SIZE: 25089
-SHA256: 65272eea8ba2e0708d98495fc9d415eb4442f3d8b327bfa773bc934f74ad5275
+SHA256: 112f44733a7459c24803ade0e8dd41a84070f1a4fb26730fa1216963b2584ffb
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 #!/usr/bin/env bash
@@ -12970,14 +12899,6 @@ set +a
 # Odoo's config parser trims it, producing an otherwise invisible mismatch.
 # Normalize all CI connection settings before Compose or the Odoo config sees
 # them.
-CI_PROJECT_NAME="${CI_PROJECT_NAME//$'\r'/}"
-CI_POSTGRES_USER="${CI_POSTGRES_USER//$'\r'/}"
-CI_POSTGRES_PASSWORD="${CI_POSTGRES_PASSWORD//$'\r'/}"
-CI_POSTGRES_DB="${CI_POSTGRES_DB//$'\r'/}"
-CI_ODOO_DB_NAME="${CI_ODOO_DB_NAME//$'\r'/}"
-CI_ODOO_DB_HOST="${CI_ODOO_DB_HOST//$'\r'/}"
-CI_ODOO_DB_PORT="${CI_ODOO_DB_PORT//$'\r'/}"
-
 : "${CI_PROJECT_NAME:=sf_ci}"
 : "${CI_POSTGRES_USER:=odoo}"
 : "${CI_POSTGRES_PASSWORD:=change_me}"
@@ -12987,6 +12908,14 @@ CI_ODOO_DB_PORT="${CI_ODOO_DB_PORT//$'\r'/}"
 : "${CI_ODOO_DB_PORT:=5432}"
 : "${CI_LOG_RETENTION_RUNS:=30}"
 : "${CI_SKIP_BROWSER_BOOTSTRAP:=0}"
+CI_PROJECT_NAME="${CI_PROJECT_NAME//$'\r'/}"
+CI_POSTGRES_USER="${CI_POSTGRES_USER//$'\r'/}"
+CI_POSTGRES_PASSWORD="${CI_POSTGRES_PASSWORD//$'\r'/}"
+CI_POSTGRES_DB="${CI_POSTGRES_DB//$'\r'/}"
+CI_ODOO_DB_NAME="${CI_ODOO_DB_NAME//$'\r'/}"
+CI_ODOO_DB_HOST="${CI_ODOO_DB_HOST//$'\r'/}"
+CI_ODOO_DB_PORT="${CI_ODOO_DB_PORT//$'\r'/}"
+
 export CI_PROJECT_NAME CI_POSTGRES_USER CI_POSTGRES_PASSWORD CI_POSTGRES_DB \
   CI_ODOO_DB_NAME CI_ODOO_DB_HOST CI_ODOO_DB_PORT CI_LOG_RETENTION_RUNS \
   CI_SKIP_BROWSER_BOOTSTRAP
@@ -14914,7 +14843,7 @@ SIZE: 27974
 SHA256: a512cd416c28979b59a9ccbbec681bf3ee97c812a00fe231428f1f6dbfcc0823
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -20129,32 +20058,49 @@ def migrate(cr, version):
 
 ====================================================================================================
 FILE: sports_federation_competition_core/migrations/19.0.1.4.0/pre-migrate.py
-SIZE: 746
-SHA256: 8a421c1325b13b71fcbc76e146840a89597b8cd4283f164396d2313615a932d2
+SIZE: 1146
+SHA256: 1f5a296a454342fa43e350c51c6dadf5f2a2aa825e4e7b1f00fb55d37659af45
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
 def migrate(cr, version):
-    cr.execute("""
-        SELECT 1 FROM information_schema.columns
+    cr.execute(
+        """
+        SELECT 1
+          FROM information_schema.columns
          WHERE table_name = 'federation_competition_edition'
            AND column_name = 'engine_state'
-    """)
+        """
+    )
     if not cr.fetchone():
         return
-    cr.execute("""
-        UPDATE federation_competition_edition
-           SET state = CASE engine_state
-               WHEN 'active' THEN CASE WHEN state = 'draft' THEN 'open' ELSE state END
+
+    cr.execute(
+        """
+        UPDATE federation_competition_edition edition
+           SET state = CASE edition.engine_state
+               WHEN 'active' THEN CASE
+                   WHEN EXISTS (
+                       SELECT 1
+                         FROM federation_matchday matchday
+                        WHERE matchday.edition_id = edition.id
+                          AND matchday.state IN ('open', 'closed')
+                   ) THEN 'in_progress'
+                   ELSE 'open'
+               END
                WHEN 'finished' THEN 'closed'
                WHEN 'archived' THEN 'closed'
                WHEN 'cancelled' THEN 'cancelled'
-               ELSE state END
-         WHERE engine_state IS NOT NULL
-    """)
-    cr.execute("ALTER TABLE federation_competition_edition DROP COLUMN engine_state")
+               ELSE edition.state
+           END
+         WHERE edition.engine_state IS NOT NULL
+        """
+    )
+    cr.execute(
+        "ALTER TABLE federation_competition_edition DROP COLUMN engine_state"
+    )
 
 ====================================================================================================
 FILE: sports_federation_competition_core/models/__init__.py
@@ -24298,15 +24244,15 @@ GIT-STATE: tracked
 ====================================================================================================
 FILE: sports_federation_demo/__manifest__.py
 SIZE: 1857
-SHA256: 3172030dac7342440db3c051daa45ed24133eb09500607256997f55766f990df
+SHA256: cfbe67e18e04dd5a4999f6e8e8f051293d77baf21528ef28ba98ed6cf3fe4b7a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 {
     "name": "Sports Federation Demo Data",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "category": "Sports",
     "summary": "Deterministic demo-data pack for end-to-end federation walkthroughs",
     "description": """
@@ -25750,11 +25696,11 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_demo/static/tests/tours/full_competition_lifecycle_tour.js
-SIZE: 2882
-SHA256: 0e4fa01589c853b06d791d0e1d60dd36d07cfbd2c0b697745b66e9b92fe11903
+SIZE: 2557
+SHA256: 35d8516bc166158b9bf7effdd2309c50fbc2bc6c0bfbd9823d697a5a375da31f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 /** @odoo-module **/
@@ -25781,12 +25727,6 @@ function assertView(model, description) {
 tour.add("full_competition_lifecycle", {
     url: "/odoo",
     steps: () => [
-        {
-            content: "Open the Sports Federation application",
-            trigger: '[data-menu-xmlid="sports_federation_base.menu_federation_root"]',
-            run: "click",
-        },
-        openMenu("sports_federation_competition_core.menu_competition_overview_competition", "Open the competition overview"),
         assertView("federation.competition.edition", "The competition overview is available"),
         openMenu("sports_federation_registration.menu_registration_desk", "Open the registration desk"),
         assertView("federation.registration.window", "Registration windows are available"),
@@ -25834,11 +25774,11 @@ from . import test_browser_competition_lifecycle
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/test_browser_competition_lifecycle.py
-SIZE: 679
-SHA256: d0563f139d6b7103315c4a0fabf342b55890211399822102c1fdb8182640bdfe
+SIZE: 749
+SHA256: d13238be33c02fe4c96a77efc3e7e4fae0382862b68a23d4e9194773285cad7f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from odoo.tests.common import HttpCase, tagged
@@ -25855,7 +25795,7 @@ class TestBrowserCompetitionLifecycle(HttpCase):
 
     def test_full_competition_lifecycle_browser_tour(self):
         self.start_tour(
-            "/odoo",
+            "/odoo/action-sports_federation_competition_core.action_competition_overview",
             "full_competition_lifecycle",
             login="admin",
             timeout=180,
@@ -28243,15 +28183,15 @@ from . import models
 ====================================================================================================
 FILE: sports_federation_finance_bridge/__manifest__.py
 SIZE: 1286
-SHA256: a0465155fe031b28a0f8d172cfdb3d25ff9c8d07463fd2e435de8fb5b3dbad22
+SHA256: 2f319bf20425c3fe055fa1ee1f0553c02064015221cc08d407caf16a1c5fd362
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 {
     "name": "Sports Federation Finance Bridge",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.2.1",
     "category": "Sports",
     "summary": "Record billable and reimbursable federation events without accounting integration",
     "description": "Finance event tracking for billable and reimbursable federation operations.",
@@ -29770,11 +29710,11 @@ access_season_budget_manager,federation.season.budget.manager,model_federation_s
 
 ====================================================================================================
 FILE: sports_federation_finance_bridge/static/tests/tours/finance_bridge_browser_tour.js
-SIZE: 2775
-SHA256: c7ba40ba7e73ec1a3fb682ccc1604116ce8329786ed334f48069295aa7115f37
+SIZE: 2807
+SHA256: faf15be008bd17f96fb07f7241c502c5c35cbb132cb8c2412af1b236d8bdfdef
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 /** @odoo-module **/
@@ -29790,6 +29730,7 @@ function openAction(xmlid, description) {
         run() {
             window.location.assign(`/odoo/action-${xmlid}`);
         },
+        expectUnloadPage: true,
     };
 }
 
@@ -43219,11 +43160,11 @@ from . import test_matchday_operator_handoff
 
 ====================================================================================================
 FILE: sports_federation_matchday/tests/test_matchday_operator_handoff.py
-SIZE: 6894
-SHA256: 244ff64feef40720f30b5fb1044ad09db219036cf507f5645925e84e1072a525
+SIZE: 6847
+SHA256: 21353e62673ca0fd64008487298a6b1a27586ee21354e3ca952c876557c73d42
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import hashlib
@@ -43338,7 +43279,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
                 }
             )
         )
-        review.with_context(allow_schedule_review_decision=True).sudo().write(
+        review._write_decision(
             {"state": "approved", "reviewer_id": cls.env.user.id}
         )
         cls.publication = (
@@ -59127,11 +59068,11 @@ class TestPortalcurrentContract(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_http_smoke.py
-SIZE: 30177
-SHA256: 828d88e17383c67b15cd5625f87d89808d2b3d65680bf4df655977db118fb8bf
+SIZE: 30130
+SHA256: a33f4498fbcd817699b48133a2bfb2bcb1113984c1108043d513e3a42c5b14cd
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import re
@@ -59431,7 +59372,7 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     }
                 )
             )
-            review.with_context(allow_schedule_review_decision=True).sudo().write(
+            review._write_decision(
                 {"state": "approved", "reviewer_id": SUPERUSER_ID}
             )
             publication = env["federation.schedule.publication"].create(
@@ -59884,11 +59825,11 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_officiating_portal_access.py
-SIZE: 10342
-SHA256: cb45d8bc60e396873bb30cbc14677a02e672ee4a39e9267fde8e51066b720a3f
+SIZE: 10295
+SHA256: 6fb26d24da3cc88a056638bdf2093148879093467e98c6053631b43bf5e1c0c1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from odoo.exceptions import AccessError, ValidationError
@@ -60037,7 +59978,7 @@ class TestOfficiatingPortalAccess(TransactionCase):
                 }
             )
         )
-        review.with_context(allow_schedule_review_decision=True).sudo().write(
+        review._write_decision(
             {"state": "approved", "reviewer_id": cls.env.user.id}
         )
         publication = cls.env["federation.schedule.publication"].create(
@@ -66359,16 +66300,16 @@ from . import services
 
 ====================================================================================================
 FILE: sports_federation_public_site/__manifest__.py
-SIZE: 1857
-SHA256: c3a8acaaf216294911cbcf7d8f124642d2606350c7a4552245f109b35c7c0ce1
+SIZE: 1990
+SHA256: 1fd00a3bb2c0bb4868a43db92d138566a1e93e21dc436486e18d9afbe68ea79a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 {
     "name": "Sports Federation Public Site",
-    "version": "19.0.2.0.0",
+    "version": "19.0.2.0.1",
     "category": "Sports",
     "summary": "Public competition, match-day, standings and bracket experience",
     "description": "Public website pages for tournament coverage, standings, results, schedules, and federation events.",
@@ -66407,6 +66348,9 @@ GIT-STATE: tracked
         "views/editorial_views.xml",
     ],
     "assets": {
+        "web.assets_tests": [
+            "sports_federation_public_site/static/tests/tours/public_site_browser_tour.js",
+        ],
         "web.assets_frontend": [
             "sports_federation_public_site/static/src/scss/public_competitions.scss",
             "sports_federation_public_site/static/src/js/public_live_board.js",
@@ -82030,11 +81974,11 @@ class TestReportSnapshot(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_reporting/tests/test_reporting.py
-SIZE: 7949
-SHA256: c2faa38496c353f55c50b0b7b64078cddcee56d19e198732b657b2989a5bff7e
+SIZE: 7978
+SHA256: 7e26ca67b6b6c43c6412bf7b64096cf7896c5da823c63732ecae210721b8cc29
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from odoo.tests import TransactionCase
@@ -82145,6 +82089,7 @@ class TestReporting(TransactionCase):
         )
 
     def test_participation_report_counts_team_and_player_for_active_season(self):
+        self.env.flush_all()
         """One active season × one active club should yield a row with
         team_count=1 and player_count=1."""
         row = self.env["federation.report.participation"].search(
@@ -94067,7 +94012,7 @@ from . import wizards
 ====================================================================================================
 FILE: sports_federation_schedule_approval/__manifest__.py
 SIZE: 571
-SHA256: 18491e25715cfb6c039676e1b9fc4e040a821dfd7da24b9dc4da18726d576a5a
+SHA256: 6940274f60aa2770a3202eb3a95968072a951fea42807a4ee37476571926987b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -94075,7 +94020,7 @@ GIT-STATE: tracked
 
 {
     "name": "Schedule Approval",
-    "version": "19.0.2.2.0",
+    "version": "19.0.2.3.0",
     "category": "Sports",
     "summary": "Independent review, approval and immutable publication snapshots",
     "author": "Sports Federation",
@@ -94196,8 +94141,8 @@ class FederationSchedulePublication(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/models/publication_integrity.py
-SIZE: 3699
-SHA256: 8d2fbbd1551d5c0af9ede3793d905509bcfe971eac93300324870f1f0b8e6743
+SIZE: 4780
+SHA256: b314944d1eb4858cb16bca90a5cb10ccfb80d3317c25c035eca6d98264fd20d6
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -94210,6 +94155,9 @@ from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 
+_REVIEW_DECISION_TOKEN = object()
+
+
 class FederationScheduleReviewIntegrity(models.Model):
     _inherit = "federation.schedule.review"
 
@@ -94220,6 +94168,8 @@ class FederationScheduleReviewIntegrity(models.Model):
     reviewed_at = fields.Datetime(readonly=True)
 
     def write(self, vals):
+        """Protect submitted evidence and command-owned decision fields."""
+        self.check_access("write")
         evidence_fields = {
             "schedule_id",
             "submitted_revision",
@@ -94228,23 +94178,41 @@ class FederationScheduleReviewIntegrity(models.Model):
             "submitted_by_id",
         }
         decision_fields = {"state", "reviewer_id", "review_note", "reviewed_at"}
-        if evidence_fields.intersection(vals) and any(record.id for record in self):
-            raise ValidationError("Submitted review evidence is immutable.")
-        if decision_fields.intersection(vals) and not self.env.context.get(
-            "allow_schedule_review_decision"
+        if evidence_fields.intersection(vals) and self:
+            raise ValidationError(_("Submitted review evidence is immutable."))
+        decision_token = self.env.context.get("schedule_review_decision_token")
+        if (
+            decision_fields.intersection(vals)
+            and decision_token is not _REVIEW_DECISION_TOKEN
         ):
-            if set(vals) == {"review_note"}:
-                if any(record.state != "pending" for record in self):
-                    raise ValidationError(
-                        _(
-                            "A review note can only be edited while the review is pending."
-                        )
-                    )
-            else:
-                raise ValidationError(
-                    "Review decisions must be made through the approval command service."
-                )
+            if set(vals) == {"review_note"} and all(
+                review.state == "pending" for review in self
+            ):
+                return super().write(vals)
+            raise ValidationError(
+                _("Review decisions must be made through the approval command service.")
+            )
         return super().write(vals)
+
+    def _write_decision(self, vals):
+        """Apply one authorized decision without bypassing record ACLs."""
+        self.ensure_one()
+        self.check_access("write")
+        if self.state != "pending":
+            raise ValidationError(_("Only pending reviews can be decided."))
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "schedule_approver", "competition_director"
+        )
+        allowed_fields = {"state", "reviewer_id", "review_note", "reviewed_at"}
+        if not vals or set(vals) - allowed_fields:
+            raise ValidationError(_("The review decision contains protected fields."))
+        if vals.get("state") not in {"approved", "changes_requested"}:
+            raise ValidationError(_("Select a valid review decision."))
+        if vals.get("reviewer_id") != self.env.user.id:
+            raise ValidationError(_("The reviewer must be the current user."))
+        return self.with_context(
+            schedule_review_decision_token=_REVIEW_DECISION_TOKEN
+        ).write(vals)
 
     def unlink(self):
         raise ValidationError("Schedule reviews are retained as audit evidence.")
@@ -94522,11 +94490,11 @@ from . import approval_commands
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/services/approval_commands.py
-SIZE: 11397
-SHA256: cc9eb728162b3fa9feeb42b7315c8fc191dbba46fbd175d97893eba544d8e04a
+SIZE: 11426
+SHA256: 57ef1682360fabe33b87bf71245a1c8d096ffdd15089ca45278765c337cfcf3d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from odoo import _, api, fields, models
@@ -94538,7 +94506,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
     _description = "Schedule Approval Commands"
 
     def _snapshot(self, schedule):
-        return [
+        snapshot = [
             {
                 "fixture_id": assignment.fixture_id.id,
                 "match_id": assignment.fixture_id.operational_match_id.id,
@@ -94551,6 +94519,8 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
                 lambda item: (item.slot_id.start_datetime, item.slot_id.id)
             )
         ]
+        # Preserve explicit JSON evidence for an assignment-free review.
+        return snapshot or [{"_empty": True}]
 
     def _digest(self, snapshot):
         return self.env["federation.schedule.publication"].digest_snapshot(snapshot)
@@ -94639,7 +94609,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         if not (note or "").strip():
             raise ValidationError(_("Explain the requested schedule changes."))
         review = self._resolve_pending(review_id)
-        review.with_context(allow_schedule_review_decision=True).sudo().write(
+        review._write_decision(
             {
                 "state": "changes_requested",
                 "reviewer_id": self.env.user.id,
@@ -94662,7 +94632,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             raise ValidationError(
                 _("The schedule no longer satisfies publication constraints.")
             )
-        review.with_context(allow_schedule_review_decision=True).sudo().write(
+        review._write_decision(
             {
                 "state": "approved",
                 "reviewer_id": self.env.user.id,
@@ -94804,8 +94774,8 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/tests/__init__.py
-SIZE: 77
-SHA256: db7f1841f64c2d7a69c425f7bdedc9e4b2d6a919fdca42c80c0bae2d07fe4acb
+SIZE: 115
+SHA256: b19fd4bf1fc219c04746cf7bf8f0367c6756095287e7097102b557edbd86130b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -94813,14 +94783,15 @@ GIT-STATE: tracked
 
 from . import test_schedule_handoff
 from . import test_publication_integrity
+from . import test_review_permissions
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/tests/test_publication_integrity.py
-SIZE: 11831
-SHA256: da44312809970b3869da3eff394074b03df254bfe9f60795fdb3ad38aadf6784
+SIZE: 11784
+SHA256: 64005e616515e5e60ef64c681f4e0b633b4055dc969716a0621eb83d6a434452
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import hashlib
@@ -95018,7 +94989,7 @@ class TestPhase511Integrity(TransactionCase):
         schedule, review = self._schedule_review(self.days[0], "guard")
         with self.assertRaises(ValidationError):
             review.sudo().write({"state": "approved"})
-        review.with_context(allow_schedule_review_decision=True).sudo().write(
+        review._write_decision(
             {"state": "approved", "reviewer_id": self.env.user.id}
         )
         self.assertEqual(review.state, "approved")
@@ -95136,6 +95107,200 @@ class TestPhase511Integrity(TransactionCase):
             self.env["federation.competition.role.assignment"].with_user(
                 approver
             ).assert_role(self.edition, "schedule_approver")
+
+====================================================================================================
+FILE: sports_federation_schedule_approval/tests/test_review_permissions.py
+SIZE: 7039
+SHA256: 14153ad4f6f26bf09fe461f47aa0eabaeac5f8be1c50d0af96281dd505fa1f8a
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo import Command
+from odoo.exceptions import AccessError, ValidationError
+from odoo.tests import tagged
+from odoo.tests.common import TransactionCase
+
+
+@tagged("post_install", "-at_install", "sf_schedule_review_permissions")
+class TestScheduleReviewPermissions(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        users = cls.env["res.users"].with_context(no_reset_password=True)
+        internal = cls.env.ref("base.group_user")
+        planner_group = cls.env.ref(
+            "sports_federation_scheduling.group_schedule_planner"
+        )
+        approver_group = cls.env.ref(
+            "sports_federation_schedule_approval.group_schedule_approver"
+        )
+        manager_group = cls.env.ref(
+            "sports_federation_base.group_federation_manager"
+        )
+
+        def make_user(name, login, groups):
+            return users.create(
+                {
+                    "name": name,
+                    "login": login,
+                    "group_ids": [Command.set([internal.id, *groups])],
+                }
+            )
+
+        cls.planner = make_user(
+            "Review Planner", "review.planner", [planner_group.id]
+        )
+        cls.approver = make_user(
+            "Independent Approver", "review.approver", [approver_group.id]
+        )
+        cls.manager = make_user(
+            "Review Manager", "review.manager", [manager_group.id]
+        )
+        cls.unrelated = make_user("Unrelated User", "review.unrelated", [])
+
+        season = cls.env["federation.season"].create(
+            {
+                "name": "Review Permission Season",
+                "date_start": "2026-09-01",
+                "date_end": "2027-06-30",
+            }
+        )
+        competition = cls.env["federation.competition"].create(
+            {"name": "Review Permission League", "competition_type": "league"}
+        )
+        cls.edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Review Permission Edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+            }
+        )
+        division = cls.env["federation.tournament"].create(
+            {
+                "name": "Review Permission Division",
+                "edition_id": cls.edition.id,
+                "competition_id": competition.id,
+                "season_id": season.id,
+                "date_start": "2026-10-01",
+            }
+        )
+        participants = cls.env["federation.participant.set"].create(
+            {
+                "name": "Review Permission Participants",
+                "edition_id": cls.edition.id,
+                "division_id": division.id,
+                "state": "finalized",
+            }
+        )
+        structure = cls.env["federation.competition.structure"].create(
+            {
+                "name": "Review Permission Structure",
+                "edition_id": cls.edition.id,
+                "division_id": division.id,
+                "participant_set_id": participants.id,
+                "format_type": "custom",
+                "state": "frozen",
+            }
+        )
+        venue = cls.env["federation.venue"].create(
+            {"name": "Review Permission Venue"}
+        )
+        matchday = cls.env["federation.matchday"].create(
+            {
+                "name": "Review Permission Match Day",
+                "edition_id": cls.edition.id,
+                "date": "2026-10-10",
+                "venue_id": venue.id,
+                "state": "scheduled",
+            }
+        )
+        cls.schedule = cls.env["federation.schedule"].create(
+            {
+                "name": "Review Permission Schedule",
+                "edition_id": cls.edition.id,
+                "structure_id": structure.id,
+                "matchday_id": matchday.id,
+                "state": "ready_for_review",
+                "revision": 1,
+            }
+        )
+        roles = cls.env["federation.competition.role.assignment"]
+        roles.create(
+            {
+                "edition_id": cls.edition.id,
+                "user_id": cls.planner.id,
+                "role": "schedule_planner",
+            }
+        )
+        roles.create(
+            {
+                "edition_id": cls.edition.id,
+                "user_id": cls.approver.id,
+                "role": "schedule_approver",
+            }
+        )
+
+    def setUp(self):
+        super().setUp()
+        self.schedule.state = "ready_for_review"
+        self.review = self.env[
+            "federation.schedule.approval.commands"
+        ].with_user(self.planner).start_review(self.schedule.id)
+
+    def _request_changes(self):
+        self.env["federation.schedule.approval.commands"].with_user(
+            self.approver
+        ).request_changes(self.review.id, "Move the final to the main court.")
+
+    def test_approver_can_submit_allowed_review_decision(self):
+        self._request_changes()
+        self.assertEqual(self.review.state, "changes_requested")
+        self.assertEqual(self.review.reviewer_id, self.approver)
+        self.assertTrue(self.review.reviewed_at)
+        self.assertEqual(self.schedule.state, "changes_requested")
+
+    def test_approver_cannot_alter_immutable_evidence_afterward(self):
+        self._request_changes()
+        with self.assertRaises(ValidationError):
+            self.review.with_user(self.approver).write(
+                {"assignment_snapshot": [{"fixture_id": 999}]}
+            )
+        with self.assertRaises(ValidationError):
+            self.review.with_user(self.approver).write(
+                {"review_note": "Rewritten after finalization"}
+            )
+
+    def test_manager_cannot_overwrite_finalized_decision(self):
+        self._request_changes()
+        with self.assertRaises(ValidationError):
+            self.env["federation.schedule.approval.commands"].with_user(
+                self.manager
+            ).approve(self.review.id, "Manager override")
+        with self.assertRaises(ValidationError):
+            self.review.with_user(self.manager).write({"state": "approved"})
+
+    def test_unrelated_user_cannot_read_or_modify_review(self):
+        review = self.review.with_user(self.unrelated)
+        with self.assertRaises(AccessError):
+            review.read(["state"])
+        with self.assertRaises(AccessError):
+            review.write({"review_note": "Unauthorized change"})
+
+    def test_direct_writes_to_protected_fields_are_rejected(self):
+        review = self.review.with_user(self.approver)
+        review.write({"review_note": "Prepared decision note"})
+        self.assertEqual(self.review.review_note, "Prepared decision note")
+        for values in (
+            {"state": "approved"},
+            {"reviewer_id": self.approver.id},
+            {"reviewed_at": "2026-10-01 12:00:00"},
+            {"submitted_revision": 99},
+            {"snapshot_digest": "forged"},
+        ):
+            with self.subTest(values=values), self.assertRaises(ValidationError):
+                review.write(values)
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/tests/test_schedule_handoff.py
@@ -95517,7 +95682,7 @@ from . import wizards
 ====================================================================================================
 FILE: sports_federation_scheduling/__manifest__.py
 SIZE: 663
-SHA256: 95d9fe44e1247535b6bb38672f4760b467b6982ec750f15f053c49f584f2416b
+SHA256: e015392b953437b53f9a009a3a390c331bc5d3995871f48c8d83b86498722f19
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -95525,7 +95690,7 @@ GIT-STATE: tracked
 
 {
     "name": "Competition Scheduling",
-    "version": "19.0.3.2.0",
+    "version": "19.0.3.3.0",
     "category": "Sports",
     "summary": "Working schedules, assignments, validation and deterministic proposals",
     "author": "Sports Federation",
@@ -95841,8 +96006,8 @@ class FederationScheduleChange(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_scheduling/models/schedule_integrity.py
-SIZE: 3123
-SHA256: e77e68c0ad40a4dd7f9a341ef0073947bedd14f31791430a9ebd041b45c5a190
+SIZE: 3646
+SHA256: fcbc8951233e1d2fd7654d644ab483ac1e41cb9ccea9ed640e85fe8663e1e1d0
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -95890,6 +96055,19 @@ class FederationScheduleIntegrity(models.Model):
         self.env["federation.competition.role.assignment"].assert_role(
             self.edition_id, "schedule_planner", "competition_director"
         )
+        self.env.cr.execute(
+            "SELECT id FROM federation_schedule WHERE id = %s FOR UPDATE",
+            [self.id],
+        )
+        self.invalidate_recordset(["state", "superseded_by_id"])
+        if self.state != "published":
+            raise ValidationError(
+                _("Only the current published schedule can be amended.")
+            )
+        if self.superseded_by_id:
+            raise ValidationError(
+                _("A replacement revision already exists for this schedule.")
+            )
         self.state = "superseded"
         replacement = self.copy(
             {
@@ -96737,11 +96915,11 @@ class TestFairnessSolver(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_scheduling/tests/test_schedule_amendment.py
-SIZE: 2849
-SHA256: a9416a6966e9a2c06c1acbb04ae3b73fff64d27dc397f28d37d53b452e338240
+SIZE: 4622
+SHA256: 0c506dc022f7b25a4eaef442aaa84f138882e1d5213d346a0ddf1572e33f9b52
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from odoo.exceptions import ValidationError
@@ -96763,6 +96941,11 @@ class TestScheduleAmendment(TransactionCase):
         venue = cls.env["federation.venue"].create({"name": "Amendment Venue"})
         cls.matchday = cls.env["federation.matchday"].create({"name": "Amendment Match Day", "edition_id": cls.edition.id, "date": "2026-10-10", "venue_id": venue.id, "state": "scheduled"})
         cls.schedule = cls.env["federation.schedule"].create({"name": "Published Schedule", "edition_id": cls.edition.id, "structure_id": structure.id, "matchday_id": cls.matchday.id, "state": "published", "revision": 3})
+        stage = cls.env["federation.structure.stage"].create({"name": "League", "structure_id": structure.id, "stage_type": "league"})
+        fixture = cls.env["federation.fixture"].create({"structure_id": structure.id, "stage_id": stage.id, "round_number": 1})
+        court = cls.env["federation.playing.area"].create({"name": "Main Court", "venue_id": venue.id})
+        slot = cls.env["federation.schedule.slot"].create({"matchday_id": cls.matchday.id, "court_id": court.id, "start_datetime": "2026-10-10 10:00:00", "end_datetime": "2026-10-10 11:00:00"})
+        cls.env["federation.schedule.assignment"].create({"schedule_id": cls.schedule.id, "fixture_id": fixture.id, "slot_id": slot.id})
         cls.env["federation.competition.role.assignment"].create({"edition_id": cls.edition.id, "user_id": cls.env.user.id, "role": "schedule_planner"})
 
     def test_published_schedule_creates_linked_replacement(self):
@@ -96772,6 +96955,28 @@ class TestScheduleAmendment(TransactionCase):
         self.assertEqual(replacement.supersedes_id, self.schedule)
         self.assertEqual(self.schedule.superseded_by_id, replacement)
         self.assertEqual(replacement.revision_reason, "Late fixture added")
+
+
+    def test_replacement_copies_assignments_without_mutating_source(self):
+        original = self.schedule.assignment_ids
+        replacement = self.schedule.action_create_revision("Copy assignments")
+        self.assertEqual(len(replacement.assignment_ids), len(original))
+        self.assertEqual(
+            set(replacement.assignment_ids.mapped("fixture_id").ids),
+            set(original.mapped("fixture_id").ids),
+        )
+        self.assertEqual(
+            set(replacement.assignment_ids.mapped("slot_id").ids),
+            set(original.mapped("slot_id").ids),
+        )
+        self.assertTrue(original.filtered(lambda item: item.schedule_id == self.schedule))
+
+    def test_only_one_replacement_can_be_created(self):
+        replacement = self.schedule.action_create_revision("First replacement")
+        self.assertEqual(self.schedule.superseded_by_id, replacement)
+        with self.assertRaises(ValidationError):
+            self.schedule.action_create_revision("Second replacement")
+        self.assertEqual(self.schedule.superseded_by_id, replacement)
 
     def test_reason_is_required(self):
         with self.assertRaises(ValidationError):
@@ -96866,8 +97071,8 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_scheduling/views/scheduling_views.xml
-SIZE: 5480
-SHA256: e83edc719d03e24a92bcf416ebecb0f0d3c5faf624b1d4526aecfe3658962a6a
+SIZE: 5938
+SHA256: 7d4decf35f9d367deb820e62ceb30eae64f5e4f923016a75dcae7eea8ee42bd6
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -96917,7 +97122,7 @@ GIT-STATE: tracked
           <field
             name="state"
             widget="statusbar"
-            statusbar_visible="draft,ready_for_review,changes_requested,approved,published"
+            statusbar_visible="draft,ready_for_review,changes_requested,approved,published,superseded"
           />
         </header>
 
@@ -96968,6 +97173,15 @@ GIT-STATE: tracked
           </div>
 
           <div
+            class="alert alert-secondary"
+            role="status"
+            invisible="state != 'superseded'"
+          >
+            This schedule has been replaced by a governed amendment and is retained
+            as immutable history.
+          </div>
+
+          <div
             class="alert alert-warning"
             role="status"
             invisible="not supersedes_id"
@@ -96983,7 +97197,8 @@ GIT-STATE: tracked
 
             <field
               name="matchday_id"
-              domain="[('edition_id', '=', edition_id), ('state', 'in', ('capacity_ready', 'scheduled'))]"
+              readonly="supersedes_id"
+              domain="[('edition_id', '=', edition_id), ('state', '=', 'capacity_ready')]"
             />
 
             <field
@@ -97003,6 +97218,12 @@ GIT-STATE: tracked
               name="revision_reason"
               readonly="1"
               invisible="not supersedes_id"
+            />
+
+            <field
+              name="superseded_by_id"
+              readonly="1"
+              invisible="not superseded_by_id"
             />
           </group>
           <notebook>

@@ -144,7 +144,7 @@ class TestOfficiatingPortalAccess(TransactionCase):
                 }
             )
         )
-        review.with_context(allow_schedule_review_decision=True).sudo().write(
+        review._write_decision(
             {"state": "approved", "reviewer_id": cls.env.user.id}
         )
         publication = cls.env["federation.schedule.publication"].create(

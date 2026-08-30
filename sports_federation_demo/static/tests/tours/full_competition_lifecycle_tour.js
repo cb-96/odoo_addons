@@ -22,12 +22,6 @@ function assertView(model, description) {
 tour.add("full_competition_lifecycle", {
     url: "/odoo",
     steps: () => [
-        {
-            content: "Open the Sports Federation application",
-            trigger: '[data-menu-xmlid="sports_federation_base.menu_federation_root"]',
-            run: "click",
-        },
-        openMenu("sports_federation_competition_core.menu_competition_overview_competition", "Open the competition overview"),
         assertView("federation.competition.edition", "The competition overview is available"),
         openMenu("sports_federation_registration.menu_registration_desk", "Open the registration desk"),
         assertView("federation.registration.window", "Registration windows are available"),

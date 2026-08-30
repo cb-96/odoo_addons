@@ -295,7 +295,7 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     }
                 )
             )
-            review.with_context(allow_schedule_review_decision=True).sudo().write(
+            review._write_decision(
                 {"state": "approved", "reviewer_id": SUPERUSER_ID}
             )
             publication = env["federation.schedule.publication"].create(

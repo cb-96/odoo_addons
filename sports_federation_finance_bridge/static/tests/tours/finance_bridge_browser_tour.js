@@ -11,6 +11,7 @@ function openAction(xmlid, description) {
         run() {
             window.location.assign(`/odoo/action-${xmlid}`);
         },
+        expectUnloadPage: true,
     };
 }
 

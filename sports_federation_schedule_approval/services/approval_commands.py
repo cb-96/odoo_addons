@@ -7,7 +7,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
     _description = "Schedule Approval Commands"
 
     def _snapshot(self, schedule):
-        return [
+        snapshot = [
             {
                 "fixture_id": assignment.fixture_id.id,
                 "match_id": assignment.fixture_id.operational_match_id.id,
@@ -20,6 +20,8 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
                 lambda item: (item.slot_id.start_datetime, item.slot_id.id)
             )
         ]
+        # Preserve explicit JSON evidence for an assignment-free review.
+        return snapshot or [{"_empty": True}]
 
     def _digest(self, snapshot):
         return self.env["federation.schedule.publication"].digest_snapshot(snapshot)

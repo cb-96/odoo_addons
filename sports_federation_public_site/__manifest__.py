@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Public Site",
-    "version": "19.0.2.0.0",
+    "version": "19.0.2.0.1",
     "category": "Sports",
     "summary": "Public competition, match-day, standings and bracket experience",
     "description": "Public website pages for tournament coverage, standings, results, schedules, and federation events.",
@@ -39,6 +39,9 @@
         "views/editorial_views.xml",
     ],
     "assets": {
+        "web.assets_tests": [
+            "sports_federation_public_site/static/tests/tours/public_site_browser_tour.js",
+        ],
         "web.assets_frontend": [
             "sports_federation_public_site/static/src/scss/public_competitions.scss",
             "sports_federation_public_site/static/src/js/public_live_board.js",
