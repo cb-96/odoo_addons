@@ -108,12 +108,12 @@ jobs:
       - name: Verify Rules contract
         run: python ci/check_rules_contract.py
 
-      - name: Verify Phases 3-5 contract
+      - name: Verify competition pipeline contract
         run: python ci/check_competition_pipeline_contract.py
 
       - name: Verify operator handoff
         run: python ci/check_schedule_handoff_contract.py
-      - name: Verify Phases 5.1.1 through 5.3 contracts
+      - name: Verify publication integrity contract
         run: python ci/check_publication_integrity_contract.py
       - name: Report module dependency drift
         run: python ci/check_module_dependency_drift.py

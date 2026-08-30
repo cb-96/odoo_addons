@@ -70,7 +70,7 @@ python3 ci/check_openapi_contracts.py || openapi_contracts_exit=$?
 echo "[lint] Validating HTTP route ownership"
 python3 ci/check_http_route_ownership.py || http_route_ownership_exit=$?
 
-echo "[lint] Validating Release qualification"
+echo "[lint] Validating release qualification"
 python3 ci/check_release_qualification.py || release_qualification_exit=$?
 
 echo "[lint] Reporting module dependency drift"
@@ -106,15 +106,15 @@ echo "  Workflow contract exit code: $workflow_contracts_exit"
 echo "  Constraint/index contract exit code: $constraint_index_contracts_exit"
 echo "  OpenAPI contract exit code: $openapi_contracts_exit"
 echo "  HTTP route ownership exit code: $http_route_ownership_exit"
-echo "  Package 7 qualification exit code: $package7_qualification_exit"
+echo "  Release qualification exit code: $release_qualification_exit"
 echo "  Migration review exit code: $migration_review_exit"
 echo "  Dependency drift report exit code: $dependency_drift_exit"
 
-if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $package7_qualification_exit -ne 0 || $migration_review_exit -ne 0 ) ]]; then
+if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $release_qualification_exit -ne 0 || $migration_review_exit -ne 0 ) ]]; then
     exit 1
 fi
 
-if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $package7_qualification_exit -ne 0 || $migration_review_exit -ne 0 ]]; then
+if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $release_qualification_exit -ne 0 || $migration_review_exit -ne 0 ]]; then
     echo "[lint] Repository-wide report found issues."
 else
     echo "[lint] Repository-wide report is clean."

@@ -108,7 +108,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         if not (note or "").strip():
             raise ValidationError(_("Explain the requested schedule changes."))
         review = self._resolve_pending(review_id)
-        review.with_context(allow_schedule_review_decision=True).sudo().write(
+        review._write_decision(
             {
                 "state": "changes_requested",
                 "reviewer_id": self.env.user.id,
@@ -131,7 +131,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             raise ValidationError(
                 _("The schedule no longer satisfies publication constraints.")
             )
-        review.with_context(allow_schedule_review_decision=True).sudo().write(
+        review._write_decision(
             {
                 "state": "approved",
                 "reviewer_id": self.env.user.id,

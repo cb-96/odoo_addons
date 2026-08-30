@@ -40,6 +40,19 @@ class FederationScheduleIntegrity(models.Model):
         self.env["federation.competition.role.assignment"].assert_role(
             self.edition_id, "schedule_planner", "competition_director"
         )
+        self.env.cr.execute(
+            "SELECT id FROM federation_schedule WHERE id = %s FOR UPDATE",
+            [self.id],
+        )
+        self.invalidate_recordset(["state", "superseded_by_id"])
+        if self.state != "published":
+            raise ValidationError(
+                _("Only the current published schedule can be amended.")
+            )
+        if self.superseded_by_id:
+            raise ValidationError(
+                _("A replacement revision already exists for this schedule.")
+            )
         self.state = "superseded"
         replacement = self.copy(
             {

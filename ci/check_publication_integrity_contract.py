@@ -5,7 +5,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 CHECKS = {
     "sports_federation_schedule_approval/models/publication_integrity.py": [
-        "allow_schedule_review_decision",
+        "schedule_review_decision_token",
         "one_live_matchday",
     ],
     "sports_federation_schedule_approval/services/approval_commands.py": [
@@ -58,12 +58,12 @@ for line in approval_acl.splitlines():
             "access_federation_schedule_review_manager,",
         )
     ):
-        if not line.endswith(",1,0,0,0"):
-            errors.append(f"review decision ACL must be read-only: {line}")
+        if not line.endswith(",1,1,0,0"):
+            errors.append(f"review decision ACL must allow controlled writes: {line}")
 
 if errors:
-    print("Phases 5.1.1-5.3 contract failed:")
+    print("Publication integrity contract failed:")
     for error in errors:
         print(f"- {error}")
     sys.exit(1)
-print("Phases 5.1.1-5.3 contract passed.")
+print("Publication integrity contract passed.")

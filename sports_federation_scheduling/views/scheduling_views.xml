@@ -42,7 +42,7 @@
           <field
             name="state"
             widget="statusbar"
-            statusbar_visible="draft,ready_for_review,changes_requested,approved,published"
+            statusbar_visible="draft,ready_for_review,changes_requested,approved,published,superseded"
           />
         </header>
 
@@ -93,6 +93,15 @@
           </div>
 
           <div
+            class="alert alert-secondary"
+            role="status"
+            invisible="state != 'superseded'"
+          >
+            This schedule has been replaced by a governed amendment and is retained
+            as immutable history.
+          </div>
+
+          <div
             class="alert alert-warning"
             role="status"
             invisible="not supersedes_id"
@@ -108,7 +117,8 @@
 
             <field
               name="matchday_id"
-              domain="[('edition_id', '=', edition_id), ('state', 'in', ('capacity_ready', 'scheduled'))]"
+              readonly="supersedes_id"
+              domain="[('edition_id', '=', edition_id), ('state', '=', 'capacity_ready')]"
             />
 
             <field
@@ -128,6 +138,12 @@
               name="revision_reason"
               readonly="1"
               invisible="not supersedes_id"
+            />
+
+            <field
+              name="superseded_by_id"
+              readonly="1"
+              invisible="not superseded_by_id"
             />
           </group>
           <notebook>

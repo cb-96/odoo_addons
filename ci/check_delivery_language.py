@@ -7,6 +7,14 @@ version = re.compile(r"(?<![A-Za-z0-9])" + "V" + r"2(?![A-Za-z0-9])", re.I)
 delivery = re.compile(r"\b(?:phase|package)[\s_.-]*\d", re.I)
 errors = []
 for p in ROOT.rglob("*"):
+    relative = p.relative_to(ROOT)
+    if (
+        p.is_file()
+        and ".git" not in p.parts
+        and "migrations" not in p.parts
+        and (version.search(str(relative)) or delivery.search(str(relative)))
+    ):
+        errors.append(f"{relative}: obsolete delivery language in path")
     if (
         p.is_file()
         and ".git" not in p.parts

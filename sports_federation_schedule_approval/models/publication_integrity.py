@@ -5,6 +5,9 @@ from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 
+_REVIEW_DECISION_TOKEN = object()
+
+
 class FederationScheduleReviewIntegrity(models.Model):
     _inherit = "federation.schedule.review"
 
@@ -15,6 +18,8 @@ class FederationScheduleReviewIntegrity(models.Model):
     reviewed_at = fields.Datetime(readonly=True)
 
     def write(self, vals):
+        """Protect submitted evidence and command-owned decision fields."""
+        self.check_access("write")
         evidence_fields = {
             "schedule_id",
             "submitted_revision",
@@ -23,23 +28,41 @@ class FederationScheduleReviewIntegrity(models.Model):
             "submitted_by_id",
         }
         decision_fields = {"state", "reviewer_id", "review_note", "reviewed_at"}
-        if evidence_fields.intersection(vals) and any(record.id for record in self):
-            raise ValidationError("Submitted review evidence is immutable.")
-        if decision_fields.intersection(vals) and not self.env.context.get(
-            "allow_schedule_review_decision"
+        if evidence_fields.intersection(vals) and self:
+            raise ValidationError(_("Submitted review evidence is immutable."))
+        decision_token = self.env.context.get("schedule_review_decision_token")
+        if (
+            decision_fields.intersection(vals)
+            and decision_token is not _REVIEW_DECISION_TOKEN
         ):
-            if set(vals) == {"review_note"}:
-                if any(record.state != "pending" for record in self):
-                    raise ValidationError(
-                        _(
-                            "A review note can only be edited while the review is pending."
-                        )
-                    )
-            else:
-                raise ValidationError(
-                    "Review decisions must be made through the approval command service."
-                )
+            if set(vals) == {"review_note"} and all(
+                review.state == "pending" for review in self
+            ):
+                return super().write(vals)
+            raise ValidationError(
+                _("Review decisions must be made through the approval command service.")
+            )
         return super().write(vals)
+
+    def _write_decision(self, vals):
+        """Apply one authorized decision without bypassing record ACLs."""
+        self.ensure_one()
+        self.check_access("write")
+        if self.state != "pending":
+            raise ValidationError(_("Only pending reviews can be decided."))
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "schedule_approver", "competition_director"
+        )
+        allowed_fields = {"state", "reviewer_id", "review_note", "reviewed_at"}
+        if not vals or set(vals) - allowed_fields:
+            raise ValidationError(_("The review decision contains protected fields."))
+        if vals.get("state") not in {"approved", "changes_requested"}:
+            raise ValidationError(_("Select a valid review decision."))
+        if vals.get("reviewer_id") != self.env.user.id:
+            raise ValidationError(_("The reviewer must be the current user."))
+        return self.with_context(
+            schedule_review_decision_token=_REVIEW_DECISION_TOKEN
+        ).write(vals)
 
     def unlink(self):
         raise ValidationError("Schedule reviews are retained as audit evidence.")

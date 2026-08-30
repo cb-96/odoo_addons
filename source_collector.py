@@ -8,12 +8,18 @@ Run from the Git repository root containing the Odoo addons:
 Creates:
 
     current_sources.txt
+    current_sources.jsonl
     current_git_metadata.txt
 
+The text bundle is intended for human review. The JSONL bundle is the
+machine-readable source of truth for exact reconstruction and patch generation.
+The metadata file records Git state, file modes, hashes, history, and complete
+staged and unstaged diffs.
+
 The collector deliberately avoids keyword-based filtering. Every relevant text
-source file from the configured addons and repository engineering directories is
-included. Manifest data and explicit asset references are validated before the
-output files are replaced.
+source file from the discovered addons and configured repository engineering
+directories is included. Manifest data and explicit asset references are
+validated before any output file is replaced.
 """
 
 from __future__ import annotations
@@ -23,18 +29,24 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 from typing import Iterable
 
 
 ROOT = Path.cwd().resolve()
 SOURCE_OUT = ROOT / "current_sources.txt"
+JSONL_OUT = ROOT / "current_sources.jsonl"
 META_OUT = ROOT / "current_git_metadata.txt"
+
+BUNDLE_FORMAT = "sports-federation-source-bundle"
+BUNDLE_FORMAT_VERSION = 2
 SEPARATOR = "=" * 100
 MAX_TEXT_FILE_SIZE = 10 * 1024 * 1024
 
-# Addons are discovered dynamically. A manual allowlist caused internal dependency
-# addons to disappear from review bundles and made "full codebase" reviews partial.
+# Addons are discovered dynamically. A manual allowlist caused internal
+# dependency addons to disappear from review bundles and made full-codebase
+# reviews partial.
 MODULES: list[str] = []
 
 TEXT_EXTENSIONS = {
@@ -92,6 +104,7 @@ EXCLUDED_DIRECTORY_NAMES = {
 
 EXCLUDED_FILENAMES = {
     SOURCE_OUT.name,
+    JSONL_OUT.name,
     META_OUT.name,
     "odoo_addons_code_review.txt",
 }
@@ -99,16 +112,6 @@ EXCLUDED_FILENAMES = {
 EXCLUDED_PATH_PREFIXES = {
     Path("ci/logs"),
     Path("_logs"),
-}
-
-# This legacy manifest entry is intentionally retained for compatibility, but
-# the stylesheet was removed from the current source tree and must not make
-# source collection fail.
-NON_REQUIRED_EXPLICIT_ASSETS = {
-    Path(
-        "sports_federation_public_site/static/src/scss/"
-        "public_competitions_current.scss"
-    ),
 }
 
 REPOSITORY_FILES = [
@@ -150,6 +153,7 @@ REPOSITORY_DIRECTORIES = [
 
 
 def run(*args: str, check: bool = False) -> subprocess.CompletedProcess[str]:
+    """Run a repository command and return combined text output."""
     process = subprocess.run(
         args,
         cwd=ROOT,
@@ -160,13 +164,14 @@ def run(*args: str, check: bool = False) -> subprocess.CompletedProcess[str]:
     )
     if check and process.returncode:
         raise SystemExit(
-            f"Command failed with exit code {process.returncode}: {' '.join(args)}\n"
-            f"{process.stdout}"
+            f"Command failed with exit code {process.returncode}: "
+            f"{' '.join(args)}\n{process.stdout}"
         )
     return process
 
 
 def command_output(*args: str, check: bool = False) -> str:
+    """Return command output without trailing whitespace."""
     return run(*args, check=check).stdout.rstrip()
 
 
@@ -190,37 +195,58 @@ def validate_repository_root() -> None:
 def is_excluded(path: Path) -> bool:
     if path.name in EXCLUDED_FILENAMES:
         return True
+
     # Patch exports are archival review artifacts, not current repository source.
     # Keeping them out prevents removed implementation names from being copied
-    # back into the generated source bundle.
+    # back into a newly generated source bundle.
     if path.name.endswith(".patch.txt"):
         return True
+
+    # Never collect interrupted output writes.
+    if path.name in {
+        SOURCE_OUT.name + ".tmp",
+        JSONL_OUT.name + ".tmp",
+        META_OUT.name + ".tmp",
+    }:
+        return True
+
     try:
         relative = path.resolve().relative_to(ROOT)
     except ValueError:
         return True
-    if any(relative == prefix or prefix in relative.parents for prefix in EXCLUDED_PATH_PREFIXES):
+
+    if any(
+        relative == prefix or prefix in relative.parents
+        for prefix in EXCLUDED_PATH_PREFIXES
+    ):
         return True
+
     return any(part in EXCLUDED_DIRECTORY_NAMES for part in relative.parts)
 
 
 def is_supported_text_file(path: Path) -> bool:
     if not path.is_file() or is_excluded(path):
         return False
-    return path.name in TEXT_FILENAMES or path.suffix.lower() in TEXT_EXTENSIONS
+    return (
+        path.name in TEXT_FILENAMES
+        or path.suffix.lower() in TEXT_EXTENSIONS
+    )
 
 
 def repository_relative(path: Path) -> Path:
     try:
         return path.resolve().relative_to(ROOT)
     except ValueError as exc:
-        raise SystemExit(f"Refusing to collect path outside repository: {path}") from exc
+        raise SystemExit(
+            f"Refusing to collect path outside repository: {path}"
+        ) from exc
 
 
 def collect_directory(directory: Path) -> set[Path]:
     files: set[Path] = set()
     if not directory.is_dir():
         return files
+
     for path in directory.rglob("*"):
         if is_supported_text_file(path):
             files.add(repository_relative(path))
@@ -239,7 +265,7 @@ def discover_addons() -> list[str]:
 
 
 def collect_repository_root_files() -> set[Path]:
-    """Collect supported root-level files without maintaining another allowlist."""
+    """Collect supported root-level files without another hard allowlist."""
     return {
         repository_relative(path)
         for path in ROOT.iterdir()
@@ -247,34 +273,72 @@ def collect_repository_root_files() -> set[Path]:
     }
 
 
+def parse_manifest(module: str) -> dict:
+    manifest_path = ROOT / module / "__manifest__.py"
+    if not manifest_path.is_file():
+        raise SystemExit(
+            f"Missing manifest: {manifest_path.relative_to(ROOT)}"
+        )
+
+    try:
+        manifest = ast.literal_eval(
+            manifest_path.read_text(encoding="utf-8")
+        )
+    except (SyntaxError, ValueError, UnicodeError) as exc:
+        raise SystemExit(
+            f"Cannot parse {manifest_path.relative_to(ROOT)}: {exc}"
+        ) from exc
+
+    if not isinstance(manifest, dict):
+        raise SystemExit(
+            "Manifest is not a dictionary: "
+            f"{manifest_path.relative_to(ROOT)}"
+        )
+    return manifest
+
+
 def validate_internal_dependencies(existing_modules: list[str]) -> None:
     """Fail when a collected federation addon depends on an uncollected peer."""
     available = set(existing_modules)
     missing: list[str] = []
+
     for module in existing_modules:
         manifest = parse_manifest(module)
         for dependency in manifest.get("depends", []):
-            if isinstance(dependency, str) and dependency.startswith("sports_federation_"):
-                if dependency not in available:
-                    missing.append(f"{module}: unresolved internal dependency {dependency}")
+            if (
+                isinstance(dependency, str)
+                and dependency.startswith("sports_federation_")
+                and dependency not in available
+            ):
+                missing.append(
+                    f"{module}: unresolved internal dependency {dependency}"
+                )
+
     if missing:
         raise SystemExit(
             "Internal addon dependency validation failed:\n"
-            + "\n".join(f"  - {item}" for item in sorted(set(missing)))
+            + "\n".join(
+                f"  - {item}" for item in sorted(set(missing))
+            )
         )
 
 
 def collect_files(existing_modules: Iterable[str]) -> list[Path]:
     files: set[Path] = set()
+
     for module in existing_modules:
         files.update(collect_directory(ROOT / module))
+
     files.update(collect_repository_root_files())
+
     for filename in REPOSITORY_FILES:
         path = ROOT / filename
         if is_supported_text_file(path):
             files.add(repository_relative(path))
+
     for directory in REPOSITORY_DIRECTORIES:
         files.update(collect_directory(ROOT / directory))
+
     return sorted(files, key=lambda path: path.as_posix())
 
 
@@ -282,10 +346,14 @@ def read_text(path: Path) -> str:
     size = path.stat().st_size
     if size > MAX_TEXT_FILE_SIZE:
         raise SystemExit(
-            f"Refusing to bundle text file larger than {MAX_TEXT_FILE_SIZE} bytes: "
-            f"{path.relative_to(ROOT)}"
+            "Refusing to bundle text file larger than "
+            f"{MAX_TEXT_FILE_SIZE} bytes: {path.relative_to(ROOT)}"
         )
     return path.read_text(encoding="utf-8", errors="replace")
+
+
+def sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
 
 
 def sha256_file(path: Path) -> str:
@@ -296,35 +364,21 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def parse_manifest(module: str) -> dict:
-    manifest_path = ROOT / module / "__manifest__.py"
-    if not manifest_path.is_file():
-        raise SystemExit(f"Missing manifest: {manifest_path.relative_to(ROOT)}")
-    try:
-        manifest = ast.literal_eval(manifest_path.read_text(encoding="utf-8"))
-    except (SyntaxError, ValueError, UnicodeError) as exc:
-        raise SystemExit(
-            f"Cannot parse {manifest_path.relative_to(ROOT)}: {exc}"
-        ) from exc
-    if not isinstance(manifest, dict):
-        raise SystemExit(
-            f"Manifest is not a dictionary: {manifest_path.relative_to(ROOT)}"
-        )
-    return manifest
-
-
 def explicit_asset_path(module: str, value: str) -> Path | None:
     if not value or any(character in value for character in "*?["):
         return None
+
     prefix = module + "/"
     if not value.startswith(prefix):
         return None
+
     return Path(module) / value[len(prefix) :]
 
 
 def validate_manifest_references(
     existing_modules: list[str], bundled_files: set[Path]
 ) -> list[dict]:
+    """Validate manifest data and explicit non-glob asset references."""
     errors: list[str] = []
     summaries: list[dict] = []
 
@@ -336,36 +390,65 @@ def validate_manifest_references(
 
         for value in manifest.get("data", []):
             if not isinstance(value, str):
-                errors.append(f"{module}: non-string manifest data entry: {value!r}")
+                errors.append(
+                    f"{module}: non-string manifest data entry: {value!r}"
+                )
                 continue
+
             data_entries.append(value)
             path = module_root / value
             relative = Path(module) / value
-            if not path.is_file():
-                errors.append(f"{module}: missing manifest data file: {value}")
-            elif is_supported_text_file(path) and relative not in bundled_files:
-                errors.append(f"{module}: manifest data file omitted from bundle: {value}")
 
-        for bundle_name, entries in manifest.get("assets", {}).items():
+            if not path.is_file():
+                errors.append(
+                    f"{module}: missing manifest data file: {value}"
+                )
+            elif (
+                is_supported_text_file(path)
+                and relative not in bundled_files
+            ):
+                errors.append(
+                    f"{module}: manifest data file omitted from bundle: {value}"
+                )
+
+        assets = manifest.get("assets", {})
+        if not isinstance(assets, dict):
+            errors.append(f"{module}: manifest assets value is not a dictionary")
+            assets = {}
+
+        for bundle_name, entries in assets.items():
             if not isinstance(entries, (list, tuple)):
                 errors.append(
-                    f"{module}: asset bundle {bundle_name!r} is not a list or tuple"
+                    f"{module}: asset bundle {bundle_name!r} "
+                    "is not a list or tuple"
                 )
                 continue
+
             for entry in entries:
                 if not isinstance(entry, str):
                     continue
+
                 relative = explicit_asset_path(module, entry)
                 if relative is None:
                     continue
+
                 explicit_assets.append(entry)
-                if relative in NON_REQUIRED_EXPLICIT_ASSETS:
-                    continue
                 path = ROOT / relative
+
+                # Explicit, non-glob assets must exist. Do not maintain a stale
+                # asset exception list, because Odoo will still try to load the
+                # missing manifest reference.
                 if not path.is_file():
-                    errors.append(f"{module}: missing explicit asset file: {entry}")
-                elif is_supported_text_file(path) and relative not in bundled_files:
-                    errors.append(f"{module}: explicit asset omitted from bundle: {entry}")
+                    errors.append(
+                        f"{module}: missing explicit asset file: {entry}"
+                    )
+                elif (
+                    is_supported_text_file(path)
+                    and relative not in bundled_files
+                ):
+                    errors.append(
+                        f"{module}: explicit asset omitted from bundle: {entry}"
+                    )
 
         summaries.append(
             {
@@ -386,6 +469,7 @@ def validate_manifest_references(
             "Manifest/source validation failed. Output files were not replaced:\n"
             + "\n".join(f"  - {error}" for error in errors)
         )
+
     return summaries
 
 
@@ -397,12 +481,17 @@ def validate_collection_contract(files: list[Path]) -> None:
         Path("ci/run_odoo_tests.sh"),
         Path("scripts/ci/run_rc_validation.sh"),
     }
-    existing_required = {path for path in required if (ROOT / path).is_file()}
+    existing_required = {
+        path for path in required if (ROOT / path).is_file()
+    }
     missing = existing_required - bundled
+
     if missing:
         raise SystemExit(
             "Collector omitted required repository files:\n"
-            + "\n".join(f"  - {path.as_posix()}" for path in sorted(missing))
+            + "\n".join(
+                f"  - {path.as_posix()}" for path in sorted(missing)
+            )
         )
 
 
@@ -416,6 +505,7 @@ def nul_git_paths(*args: str) -> set[str]:
     )
     if process.returncode:
         return set()
+
     return {
         item.decode("utf-8", errors="replace")
         for item in process.stdout.split(b"\0")
@@ -426,9 +516,40 @@ def nul_git_paths(*args: str) -> set[str]:
 def git_state_sets() -> tuple[set[str], set[str], set[str]]:
     tracked = nul_git_paths("ls-files", "-z")
     modified = nul_git_paths("diff", "--name-only", "-z")
-    modified.update(nul_git_paths("diff", "--cached", "--name-only", "-z"))
-    untracked = nul_git_paths("ls-files", "--others", "--exclude-standard", "-z")
+    modified.update(
+        nul_git_paths("diff", "--cached", "--name-only", "-z")
+    )
+    untracked = nul_git_paths(
+        "ls-files", "--others", "--exclude-standard", "-z"
+    )
     return tracked, modified, untracked
+
+
+def git_file_modes() -> dict[str, str]:
+    """Return index modes keyed by repository-relative path."""
+    process = subprocess.run(
+        ("git", "ls-files", "-s", "-z"),
+        cwd=ROOT,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if process.returncode:
+        return {}
+
+    modes: dict[str, str] = {}
+    for entry in process.stdout.split(b"\0"):
+        if not entry or b"\t" not in entry:
+            continue
+
+        metadata, raw_path = entry.split(b"\t", 1)
+        mode = metadata.split(b" ", 1)[0].decode(
+            "ascii", errors="replace"
+        )
+        path = raw_path.decode("utf-8", errors="replace")
+        modes[path] = mode
+
+    return modes
 
 
 def classify_git_state(
@@ -447,49 +568,278 @@ def classify_git_state(
     return "not-reported-by-git"
 
 
-def write_source_bundle(files: list[Path]) -> None:
+def expected_git_mode(relative: Path, modes: dict[str, str]) -> str:
+    """Return the tracked mode or the safe default for a new text file."""
+    return modes.get(relative.as_posix(), "100644")
+
+
+def filesystem_mode(path: Path) -> str:
+    return f"{path.stat().st_mode & 0o777:04o}"
+
+
+def build_file_record(
+    relative: Path,
+    tracked: set[str],
+    modified: set[str],
+    untracked: set[str],
+    modes: dict[str, str],
+) -> dict:
+    path = ROOT / relative
+    raw = path.read_bytes()
+    content = raw.decode("utf-8", errors="replace")
+    return {
+        "path": relative.as_posix(),
+        "content": content,
+        "size_bytes": len(raw),
+        "sha256": sha256_bytes(raw),
+        "git_mode": expected_git_mode(relative, modes),
+        "filesystem_mode": filesystem_mode(path),
+        "git_state": classify_git_state(
+            relative, tracked, modified, untracked
+        ),
+    }
+
+
+def write_source_bundle(records: list[dict]) -> None:
     temporary = SOURCE_OUT.with_suffix(SOURCE_OUT.suffix + ".tmp")
-    with temporary.open("w", encoding="utf-8", newline="\n") as bundle:
+
+    with temporary.open(
+        "w", encoding="utf-8", newline="\n"
+    ) as bundle:
         bundle.write("# Sports Federation complete current source bundle\n")
-        bundle.write("# Generated for review and patch construction\n\n")
-        for relative in files:
-            content = read_text(ROOT / relative)
+        bundle.write("# Generated for review and patch construction\n")
+        bundle.write(f"# FORMAT: {BUNDLE_FORMAT}\n")
+        bundle.write(f"# FORMAT-VERSION: {BUNDLE_FORMAT_VERSION}\n")
+        bundle.write(f"# SEPARATOR-LENGTH: {len(SEPARATOR)}\n")
+        bundle.write(f"# FILE-COUNT: {len(records)}\n\n")
+
+        for record in records:
             bundle.write(SEPARATOR + "\n")
-            bundle.write(f"FILE: {relative.as_posix()}\n")
+            bundle.write(f"FILE: {record['path']}\n")
+            bundle.write(f"SIZE: {record['size_bytes']}\n")
+            bundle.write(f"SHA256: {record['sha256']}\n")
+            bundle.write(f"GIT-MODE: {record['git_mode']}\n")
+            bundle.write(
+                f"FILESYSTEM-MODE: {record['filesystem_mode']}\n"
+            )
+            bundle.write(f"GIT-STATE: {record['git_state']}\n")
             bundle.write(SEPARATOR + "\n\n")
-            bundle.write(content)
-            if not content.endswith("\n"):
+            bundle.write(record["content"])
+            if not record["content"].endswith("\n"):
                 bundle.write("\n")
             bundle.write("\n")
+
     os.replace(temporary, SOURCE_OUT)
+
+
+def write_jsonl_bundle(records: list[dict]) -> None:
+    temporary = JSONL_OUT.with_suffix(JSONL_OUT.suffix + ".tmp")
+
+    with temporary.open(
+        "w", encoding="utf-8", newline="\n"
+    ) as bundle:
+        metadata_record = {
+            "record_type": "bundle_metadata",
+            "format": BUNDLE_FORMAT,
+            "format_version": BUNDLE_FORMAT_VERSION,
+            "repository_root": str(ROOT),
+            "file_count": len(records),
+        }
+        bundle.write(
+            json.dumps(metadata_record, ensure_ascii=False, sort_keys=True)
+            + "\n"
+        )
+
+        for record in records:
+            output = {"record_type": "file", **record}
+            bundle.write(
+                json.dumps(output, ensure_ascii=False, sort_keys=True)
+                + "\n"
+            )
+
+    os.replace(temporary, JSONL_OUT)
+
+
+def parse_text_bundle(path: Path) -> list[dict]:
+    """Parse the generated text format for round-trip validation."""
+    text = path.read_text(encoding="utf-8")
+    header_pattern = re.compile(
+        rf"^{re.escape(SEPARATOR)}\n"
+        r"FILE: (?P<path>.+)\n"
+        r"SIZE: (?P<size>\d+)\n"
+        r"SHA256: (?P<sha256>[0-9a-f]{64})\n"
+        r"GIT-MODE: (?P<git_mode>\d{6})\n"
+        r"FILESYSTEM-MODE: (?P<filesystem_mode>\d{4})\n"
+        r"GIT-STATE: (?P<git_state>[^\n]+)\n"
+        rf"{re.escape(SEPARATOR)}\n\n",
+        flags=re.MULTILINE,
+    )
+    matches = list(header_pattern.finditer(text))
+    parsed: list[dict] = []
+
+    for index, match in enumerate(matches):
+        content_start = match.end()
+        if index + 1 < len(matches):
+            content_end = matches[index + 1].start()
+            content = text[content_start:content_end]
+            if content.endswith("\n\n"):
+                content = content[:-1]
+        else:
+            content = text[content_start:]
+            if content.endswith("\n\n"):
+                content = content[:-1]
+
+        parsed.append(
+            {
+                "path": match.group("path"),
+                "content": content,
+                "size_bytes": int(match.group("size")),
+                "sha256": match.group("sha256"),
+                "git_mode": match.group("git_mode"),
+                "filesystem_mode": match.group("filesystem_mode"),
+                "git_state": match.group("git_state"),
+            }
+        )
+
+    return parsed
+
+
+def validate_written_bundles(records: list[dict]) -> None:
+    """Read generated bundles back and verify identity and content."""
+    text_records = parse_text_bundle(SOURCE_OUT)
+
+    with JSONL_OUT.open("r", encoding="utf-8") as source:
+        jsonl_records = [json.loads(line) for line in source if line.strip()]
+
+    if not jsonl_records:
+        raise SystemExit("Generated JSONL bundle is empty.")
+
+    metadata = jsonl_records[0]
+    if metadata.get("record_type") != "bundle_metadata":
+        raise SystemExit("Generated JSONL bundle is missing metadata.")
+
+    jsonl_files = [
+        {key: value for key, value in item.items() if key != "record_type"}
+        for item in jsonl_records[1:]
+        if item.get("record_type") == "file"
+    ]
+
+    expected_paths = [record["path"] for record in records]
+    text_paths = [record["path"] for record in text_records]
+    jsonl_paths = [record["path"] for record in jsonl_files]
+
+    if text_paths != expected_paths:
+        raise SystemExit(
+            "Generated text bundle failed path/order round-trip validation."
+        )
+    if jsonl_paths != expected_paths:
+        raise SystemExit(
+            "Generated JSONL bundle failed path/order round-trip validation."
+        )
+
+    expected_by_path = {record["path"]: record for record in records}
+    text_by_path = {record["path"]: record for record in text_records}
+    jsonl_by_path = {record["path"]: record for record in jsonl_files}
+
+    for path, expected in expected_by_path.items():
+        text_record = text_by_path[path]
+        jsonl_record = jsonl_by_path[path]
+
+        # Text-mode newline handling can normalize the final separator newline,
+        # so compare the exact logical content and all declared metadata.
+        if text_record["content"] != expected["content"]:
+            raise SystemExit(
+                f"Text bundle content mismatch after round trip: {path}"
+            )
+
+        for field in (
+            "size_bytes",
+            "sha256",
+            "git_mode",
+            "filesystem_mode",
+            "git_state",
+        ):
+            if text_record[field] != expected[field]:
+                raise SystemExit(
+                    f"Text bundle {field} mismatch after round trip: {path}"
+                )
+
+        if jsonl_record != expected:
+            raise SystemExit(
+                f"JSONL bundle mismatch after round trip: {path}"
+            )
 
 
 def build_metadata(
     files: list[Path],
+    records: list[dict],
     module_summaries: list[dict],
     existing_modules: list[str],
     missing_modules: list[str],
+    tracked: set[str],
+    modified: set[str],
+    untracked: set[str],
 ) -> str:
-    tracked, modified, untracked = git_state_sets()
     sections: list[str] = [
+        "=== BUNDLE FORMAT ===\n"
+        + "\n".join(
+            [
+                f"Format: {BUNDLE_FORMAT}",
+                f"Format version: {BUNDLE_FORMAT_VERSION}",
+                f"Text separator length: {len(SEPARATOR)}",
+                f"Source bundle: {SOURCE_OUT.name}",
+                f"Machine bundle: {JSONL_OUT.name}",
+            ]
+        ),
         "=== CURRENT BRANCH ===\n"
         + command_output("git", "branch", "--show-current", check=True),
         "=== CURRENT COMMIT ===\n"
         + command_output("git", "rev-parse", "HEAD", check=True),
         "=== REPOSITORY ROOT ===\n" + str(ROOT),
         "=== WORKTREE STATUS ===\n"
-        + command_output("git", "status", "--short", "--untracked-files=all"),
+        + command_output(
+            "git", "status", "--short", "--untracked-files=all"
+        ),
         "=== MODULE MANIFESTS ===\n"
-        + "\n".join(json.dumps(item, sort_keys=True) for item in module_summaries),
+        + "\n".join(
+            json.dumps(item, sort_keys=True)
+            for item in module_summaries
+        ),
         "=== RELEVANT RECENT HISTORY ===\n"
         + command_output(
-            "git", "log", "--oneline", "--decorate", "-30", "--", *existing_modules
+            "git",
+            "log",
+            "--oneline",
+            "--decorate",
+            "-30",
+            "--",
+            *existing_modules,
         ),
         "=== RECENT REPOSITORY HISTORY ===\n"
-        + command_output("git", "log", "--oneline", "--decorate", "-15"),
-        "=== UNSTAGED DIFF STAT ===\n" + command_output("git", "diff", "--stat"),
+        + command_output(
+            "git", "log", "--oneline", "--decorate", "-15"
+        ),
+        "=== UNSTAGED DIFF STAT ===\n"
+        + command_output("git", "diff", "--stat"),
         "=== STAGED DIFF STAT ===\n"
         + command_output("git", "diff", "--cached", "--stat"),
+        "=== UNSTAGED DIFF ===\n"
+        + command_output(
+            "git",
+            "diff",
+            "--binary",
+            "--full-index",
+            "--no-ext-diff",
+        ),
+        "=== STAGED DIFF ===\n"
+        + command_output(
+            "git",
+            "diff",
+            "--cached",
+            "--binary",
+            "--full-index",
+            "--no-ext-diff",
+        ),
     ]
 
     sections.append(
@@ -507,53 +857,104 @@ def build_metadata(
     )
 
     inventory = []
-    for relative in files:
-        path = ROOT / relative
+    for record in records:
         inventory.append(
             "\t".join(
                 [
-                    relative.as_posix(),
-                    str(path.stat().st_size),
-                    sha256_file(path),
-                    classify_git_state(relative, tracked, modified, untracked),
+                    record["path"],
+                    str(record["size_bytes"]),
+                    record["sha256"],
+                    record["git_mode"],
+                    record["filesystem_mode"],
+                    record["git_state"],
                 ]
             )
         )
-    sections.append("=== BUNDLED FILE INVENTORY ===\n" + "\n".join(inventory))
+
+    sections.append(
+        "=== BUNDLED FILE INVENTORY ===\n"
+        "# path<TAB>size<TAB>sha256<TAB>git-mode"
+        "<TAB>filesystem-mode<TAB>git-state\n"
+        + "\n".join(inventory)
+    )
 
     if missing_modules:
         sections.append(
-            "=== CONFIGURED MODULES NOT FOUND ===\n" + "\n".join(missing_modules)
+            "=== CONFIGURED MODULES NOT FOUND ===\n"
+            + "\n".join(missing_modules)
         )
+
     return "\n\n".join(sections).rstrip() + "\n"
+
+
+def write_metadata(content: str) -> None:
+    temporary = META_OUT.with_suffix(META_OUT.suffix + ".tmp")
+    temporary.write_text(content, encoding="utf-8", newline="\n")
+    os.replace(temporary, META_OUT)
 
 
 def main() -> None:
     validate_repository_root()
+
     existing_modules = discover_addons()
     missing_modules: list[str] = []
+
     validate_internal_dependencies(existing_modules)
+
     files = collect_files(existing_modules)
     validate_collection_contract(files)
     summaries = validate_manifest_references(existing_modules, set(files))
 
-    write_source_bundle(files)
-    metadata = build_metadata(files, summaries, existing_modules, missing_modules)
-    temporary = META_OUT.with_suffix(META_OUT.suffix + ".tmp")
-    temporary.write_text(metadata, encoding="utf-8", newline="\n")
-    os.replace(temporary, META_OUT)
+    tracked, modified, untracked = git_state_sets()
+    modes = git_file_modes()
+    records = [
+        build_file_record(
+            relative,
+            tracked,
+            modified,
+            untracked,
+            modes,
+        )
+        for relative in files
+    ]
+
+    write_source_bundle(records)
+    write_jsonl_bundle(records)
+    validate_written_bundles(records)
+
+    metadata = build_metadata(
+        files,
+        records,
+        summaries,
+        existing_modules,
+        missing_modules,
+        tracked,
+        modified,
+        untracked,
+    )
+    write_metadata(metadata)
 
     print(
         f"Created {SOURCE_OUT.name}: {len(files)} files, "
         f"{SOURCE_OUT.stat().st_size / 1024:.1f} KiB"
     )
     print(
-        f"Created {META_OUT.name}: {META_OUT.stat().st_size / 1024:.1f} KiB"
+        f"Created {JSONL_OUT.name}: {len(files)} files, "
+        f"{JSONL_OUT.stat().st_size / 1024:.1f} KiB"
+    )
+    print(
+        f"Created {META_OUT.name}: "
+        f"{META_OUT.stat().st_size / 1024:.1f} KiB"
     )
     print("Manifest references validated: OK")
     print("Collector completeness contract: OK")
+    print("Bundle round-trip validation: OK")
+
     if missing_modules:
-        print("Warning: configured modules not found: " + ", ".join(missing_modules))
+        print(
+            "Warning: configured modules not found: "
+            + ", ".join(missing_modules)
+        )
 
 
 if __name__ == "__main__":

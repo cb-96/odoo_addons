@@ -27,6 +27,28 @@ class TestScheduleAmendment(TransactionCase):
         self.assertEqual(self.schedule.superseded_by_id, replacement)
         self.assertEqual(replacement.revision_reason, "Late fixture added")
 
+
+    def test_replacement_copies_assignments_without_mutating_source(self):
+        original = self.schedule.assignment_ids
+        replacement = self.schedule.action_create_revision("Copy assignments")
+        self.assertEqual(len(replacement.assignment_ids), len(original))
+        self.assertEqual(
+            set(replacement.assignment_ids.mapped("fixture_id").ids),
+            set(original.mapped("fixture_id").ids),
+        )
+        self.assertEqual(
+            set(replacement.assignment_ids.mapped("slot_id").ids),
+            set(original.mapped("slot_id").ids),
+        )
+        self.assertTrue(original.filtered(lambda item: item.schedule_id == self.schedule))
+
+    def test_only_one_replacement_can_be_created(self):
+        replacement = self.schedule.action_create_revision("First replacement")
+        self.assertEqual(self.schedule.superseded_by_id, replacement)
+        with self.assertRaises(ValidationError):
+            self.schedule.action_create_revision("Second replacement")
+        self.assertEqual(self.schedule.superseded_by_id, replacement)
+
     def test_reason_is_required(self):
         with self.assertRaises(ValidationError):
             self.schedule.action_create_revision("  ")

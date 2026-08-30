@@ -12,7 +12,7 @@ workflow = (ROOT / ".github/workflows/release-candidate.yml").read_text(
 acceptance = (ROOT / "docs/release/COMPETITION_CUTOVER_ACCEPTANCE.md").read_text(
     encoding="utf-8"
 )
-next_phases = (ROOT / "docs/release/POST_CUTOVER_PHASES.md").read_text(encoding="utf-8")
+stabilization_plan = (ROOT / "docs/release/POST_CUTOVER_PHASES.md").read_text(encoding="utf-8")
 
 checks = {
     "RC upgrade lane": "upgrade)" in rc_script,
@@ -35,13 +35,20 @@ checks = {
             "Results and standings",
         )
     ),
-    "post-cutover decision gate": "Decision gate" in next_phases,
+    "post-cutover decision gate": all(
+        token in stabilization_plan
+        for token in (
+            "Release gate convergence",
+            "Performance qualification",
+            "UX consolidation",
+        )
+    ),
 }
 failed = [name for name, passed in checks.items() if not passed]
 if failed:
     print(
-        "Package 7 release qualification contract failed: " + ", ".join(failed),
+        "Release qualification contract failed: " + ", ".join(failed),
         file=sys.stderr,
     )
     raise SystemExit(1)
-print("Package 7 release qualification contract passed.")
+print("Release qualification contract passed.")
