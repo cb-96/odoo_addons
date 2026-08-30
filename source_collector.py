@@ -8,7 +8,7 @@ Run from the Git repository root containing the Odoo addons:
 Creates:
 
     current_sources.txt
-    current_sources.jsonl
+    current_sources.jsonl.txt
     current_git_metadata.txt
 
 The text bundle is intended for human review. The JSONL bundle is the
@@ -36,7 +36,7 @@ from typing import Iterable
 
 ROOT = Path.cwd().resolve()
 SOURCE_OUT = ROOT / "current_sources.txt"
-JSONL_OUT = ROOT / "current_sources.jsonl"
+JSONL_OUT = ROOT / "current_sources.jsonl.txt"
 META_OUT = ROOT / "current_git_metadata.txt"
 
 BUNDLE_FORMAT = "sports-federation-source-bundle"

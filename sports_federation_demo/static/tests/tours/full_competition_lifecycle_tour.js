@@ -15,7 +15,7 @@ function openMenu(xmlid, description) {
 function assertView(model, description) {
     return {
         content: description,
-        trigger: `.o_action_manager [data-res-model="${model}"], .o_action_manager .o_list_view, .o_action_manager .o_kanban_view`,
+        trigger: `.o_action_manager [data-res-model="${model}"], .o_action_manager .o_form_view, .o_action_manager .o_list_view, .o_action_manager .o_kanban_view`,
     };
 }
 

@@ -14959,7 +14959,7 @@ CONTENT-LENGTH: 28892
 SHA256: a7da846ffda8817d400e0fc2d0ac9d1e6c79e12b40333e497076b6c3772f2042
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -24479,7 +24479,7 @@ GIT-STATE: tracked
 FILE: sports_federation_demo/__manifest__.py
 SIZE: 1857
 CONTENT-LENGTH: 1857
-SHA256: 5c489fbd7d840fbc0bc354dc5c14e9197f3fb63fc374936416ecca3c3bc3b8dc
+SHA256: c955b3f99bb3b37d237a8895f2920cb2e6cfe7a49ebbe96959a96eda7ea9d683
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: modified
@@ -24487,7 +24487,7 @@ GIT-STATE: modified
 
 {
     "name": "Sports Federation Demo Data",
-    "version": "19.0.1.0.2",
+    "version": "19.0.1.0.5",
     "category": "Sports",
     "summary": "Deterministic demo-data pack for end-to-end federation walkthroughs",
     "description": """
@@ -25932,9 +25932,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_demo/static/tests/tours/full_competition_lifecycle_tour.js
-SIZE: 2593
-CONTENT-LENGTH: 2593
-SHA256: 0b49e1323fe7bb80e6530150bd4cb92993042bfb94e6a053d8b6f30dcd21f81e
+SIZE: 2625
+CONTENT-LENGTH: 2625
+SHA256: 61d5963f375e710d8c4dd5770db700a783159450c1b4dc3a8656bc379b2b522f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: modified
@@ -25957,7 +25957,7 @@ function openMenu(xmlid, description) {
 function assertView(model, description) {
     return {
         content: description,
-        trigger: `.o_action_manager [data-res-model="${model}"], .o_action_manager .o_list_view, .o_action_manager .o_kanban_view`,
+        trigger: `.o_action_manager [data-res-model="${model}"], .o_action_manager .o_form_view, .o_action_manager .o_list_view, .o_action_manager .o_kanban_view`,
     };
 }
 
@@ -26013,9 +26013,9 @@ from . import test_browser_competition_lifecycle
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/test_browser_competition_lifecycle.py
-SIZE: 817
-CONTENT-LENGTH: 817
-SHA256: 6b8bc2e346342b0a7989e91605a5d0f7ee64d3e04a1575085af1d224ba9dc6b8
+SIZE: 1593
+CONTENT-LENGTH: 1593
+SHA256: 393a2e8ae527682a1e08a73745db08aa42d2f6173a3737d1c4cb1ea8e9f9f15a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: modified
@@ -26033,12 +26033,35 @@ class TestBrowserCompetitionLifecycle(HttpCase):
     groups, the test asset bundle, and the public competition handoff.
     """
 
-    def test_full_competition_lifecycle_browser_tour(self):
-        action = self.env.ref(
-            "sports_federation_competition_core.action_competition_overview"
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        season = cls.env["federation.season"].create(
+            {
+                "name": "Browser Competition Lifecycle Season",
+                "code": "BCLS26",
+                "date_start": "2026-01-01",
+                "date_end": "2026-12-31",
+            }
         )
+        competition = cls.env["federation.competition"].create(
+            {
+                "name": "Browser Competition Lifecycle",
+                "competition_type": "league",
+            }
+        )
+        cls.edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Browser Competition Lifecycle",
+                "competition_id": competition.id,
+                "season_id": season.id,
+            }
+        )
+
+    def test_full_competition_lifecycle_browser_tour(self):
         self.start_tour(
-            f"/odoo/action-{action.id}",
+            "/odoo/action-sports_federation_competition_core.action_competition_overview/"
+            f"{self.edition.id}",
             "full_competition_lifecycle",
             login="admin",
             timeout=180,
@@ -66864,15 +66887,15 @@ from . import services
 FILE: sports_federation_public_site/__manifest__.py
 SIZE: 1990
 CONTENT-LENGTH: 1990
-SHA256: 4d4133d9070192680afeae85ae999e20dd230d1a19c9b4532ec6fa5175c2740b
+SHA256: 7794af13fde37216c1ee3ee642d7d8b629d138c12fab15e0e8f516ae45ef2b4f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 {
     "name": "Sports Federation Public Site",
-    "version": "19.0.2.0.2",
+    "version": "19.0.2.0.3",
     "category": "Sports",
     "summary": "Public competition, match-day, standings and bracket experience",
     "description": "Public website pages for tournament coverage, standings, results, schedules, and federation events.",
@@ -71258,12 +71281,12 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_public_site/static/tests/tours/public_site_browser_tour.js
-SIZE: 3887
-CONTENT-LENGTH: 3887
-SHA256: 0f8dc694916ccb4a57b549609ef8d0828cd8188fa18288d2a03902c74f7fe82c
+SIZE: 4027
+CONTENT-LENGTH: 4027
+SHA256: 90040a143acaac51e9e2d12327c755f33a6f4321f33441e7dd87180318dca630
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 /** @odoo-module **/
@@ -71279,6 +71302,7 @@ function navigate(path, description) {
         run() {
             window.location.assign(path);
         },
+        expectUnloadPage: true,
     };
 }
 
@@ -71312,6 +71336,7 @@ tour.add("public_site_browser_lifecycle", {
             content: "Submit the competition search",
             trigger: 'form button[type="submit"], form button.btn-primary',
             run: "click",
+            expectUnloadPage: true,
         },
         {
             content: "The filtered competition remains visible",
@@ -71331,6 +71356,7 @@ tour.add("public_site_browser_lifecycle", {
             content: "Open the public schedule",
             trigger: '.sf-competition-nav a[href="/competitions/browser-public-competition/schedule"]',
             run: "click",
+            expectUnloadPage: true,
         },
         assertPath(
             "/competitions/browser-public-competition/schedule",
@@ -71344,6 +71370,7 @@ tour.add("public_site_browser_lifecycle", {
             content: "Open format and standings",
             trigger: '.sf-competition-nav a[href="/competitions/browser-public-competition/format"]',
             run: "click",
+            expectUnloadPage: true,
         },
         assertPath(
             "/competitions/browser-public-competition/format",
@@ -77254,7 +77281,7 @@ CONTENT-LENGTH: 1700
 SHA256: 17c562126a3aba28092cda7e43d9743cdeeacd0cd8440ef808f058d7cfc7ceb9
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -78959,7 +78986,7 @@ CONTENT-LENGTH: 1778
 SHA256: 58a0030b9ac917b631d2ef1f7de95d0991c3b37f49c068626d985f5abc8d8abf
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from odoo import fields, models, tools
@@ -82655,7 +82682,7 @@ CONTENT-LENGTH: 8009
 SHA256: 93355001dcd0184be374b2df10ebe01cf1e550bed4bb9c09b4371125dddb5453
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from odoo.tests import TransactionCase
@@ -96470,15 +96497,15 @@ from . import wizards
 FILE: sports_federation_scheduling/__manifest__.py
 SIZE: 663
 CONTENT-LENGTH: 663
-SHA256: 3bab528a8cad3969b0bcbe858b60bc1b30e402381d8715e96dc587183728f241
+SHA256: 87428d22d4608411d43a513e09b9dca49afe23aa2876cc7d30799791aabb0e06
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 {
     "name": "Competition Scheduling",
-    "version": "19.0.3.3.1",
+    "version": "19.0.3.3.2",
     "category": "Sports",
     "summary": "Working schedules, assignments, validation and deterministic proposals",
     "author": "Sports Federation",
@@ -96797,9 +96824,9 @@ class FederationScheduleChange(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_scheduling/models/schedule_integrity.py
-SIZE: 3646
-CONTENT-LENGTH: 3646
-SHA256: fcbc8951233e1d2fd7654d644ab483ac1e41cb9ccea9ed640e85fe8663e1e1d0
+SIZE: 4195
+CONTENT-LENGTH: 4195
+SHA256: 4fc9f7cb8e57f6b4ca4a9f965d2afed369d05d564ae2e56e2f0c05642a65925b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -96871,6 +96898,19 @@ class FederationScheduleIntegrity(models.Model):
                 "change_ids": False,
             }
         )
+        if self.assignment_ids:
+            self.env["federation.schedule.assignment"].create(
+                [
+                    {
+                        "schedule_id": replacement.id,
+                        "fixture_id": assignment.fixture_id.id,
+                        "slot_id": assignment.slot_id.id,
+                        "method": assignment.method,
+                        "assigned_by_id": assignment.assigned_by_id.id,
+                    }
+                    for assignment in self.assignment_ids
+                ]
+            )
         self.superseded_by_id = replacement.id
         return replacement
 
@@ -97722,7 +97762,7 @@ CONTENT-LENGTH: 4659
 SHA256: a4c536a885546f00884bc9abae97e1f21872c0b3348b688561daa02a105bad3f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from odoo.exceptions import ValidationError
