@@ -20,11 +20,10 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.ci.yaml"
 ENV_FILE="$SCRIPT_DIR/.env"
 EXAMPLE_ENV_FILE="$SCRIPT_DIR/.env.example"
-GENERATED_CONF="$SCRIPT_DIR/odoo-ci.generated.runtime.conf"
-
-if [[ -e "$GENERATED_CONF" ]]; then
-  GENERATED_CONF="$(mktemp "$SCRIPT_DIR/odoo-ci.generated.conf.XXXXXX")"
-fi
+GENERATED_CONF="$(mktemp "$SCRIPT_DIR/odoo-ci.generated.conf.XXXXXX")"
+# Compose must mount this exact per-run file. Previously it always mounted the
+# fixed runtime filename, so a second run could use stale database credentials.
+export CI_ODOO_CONFIG_PATH="$GENERATED_CONF"
 
 usage() {
   cat <<'EOF'
@@ -207,9 +206,16 @@ addons_path = /usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
 data_dir = /var/lib/odoo
 
 list_db = False
+http_interface = 127.0.0.1
 without_demo = True
 log_level = info
 EOF
+
+# mktemp creates the host-side file with mode 0600. The Odoo process runs as
+# the unprivileged odoo user inside the container, so it must be able to read
+# the bind-mounted configuration. The file is per-run and removed during
+# cleanup, making read-only 0644 the appropriate bind-mount permission.
+chmod 0644 "$GENERATED_CONF"
 
 # ── Topological install order (dependency-safe) ──────────────────────
 ALL_MODULES=(
@@ -565,7 +571,14 @@ if [ "$CI_SKIP_BROWSER_BOOTSTRAP" != "1" ]; then
     ln -sf "\$(command -v google-chrome)" /usr/local/bin/chromium-browser
   fi
 fi
-exec odoo --stop-after-init --test-enable --test-tags="$TEST_TAGS" $DEMO_OPTION -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+if command -v gosu >/dev/null 2>&1; then
+  exec gosu odoo odoo --stop-after-init --test-enable --test-tags="$TEST_TAGS" $DEMO_OPTION -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+elif command -v runuser >/dev/null 2>&1; then
+  exec runuser -u odoo -- odoo --stop-after-init --test-enable --test-tags="$TEST_TAGS" $DEMO_OPTION -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+else
+  echo "ERROR: cannot drop root privileges before starting Odoo" >&2
+  exit 2
+fi
 EOF
 )
 

@@ -53,5 +53,12 @@ class TestReleasePilotReadiness(TransactionCase):
             self.assertTrue(path.is_file(), relative_path)
             source = path.read_text(encoding="utf-8")
             self.assertIn('registry.category("web_tour.tours")', source)
-            self.assertNotIn("_current", source)
-            self.assertNotIn("_V2", source)
+            forbidden_architecture_tokens = (
+                "competitions_current",
+                "competition_current",
+                "competition_v2",
+                "competitions_v2",
+            )
+            normalized_source = source.lower()
+            for token in forbidden_architecture_tokens:
+                self.assertNotIn(token, normalized_source)

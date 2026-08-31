@@ -34,7 +34,9 @@ export CI_POSTGRES_USER CI_POSTGRES_PASSWORD CI_POSTGRES_DB \
 
 echo "[CI] Applying integration envs to Odoo ir.config_parameter (if any)" >&2
 
-docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run --rm ci-odoo odoo shell -c "$CONTAINER_CONF" <<'PY'
+docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run --rm ci-odoo \
+  sh -lc 'if command -v gosu >/dev/null 2>&1; then exec gosu odoo odoo shell -c "$1"; elif command -v runuser >/dev/null 2>&1; then exec runuser -u odoo -- odoo shell -c "$1"; else echo "ERROR: cannot drop root privileges before starting Odoo" >&2; exit 2; fi' \
+  sh "$CONTAINER_CONF" <<'PY'
 import os
 
 keys = [

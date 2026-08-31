@@ -18,13 +18,13 @@ function openAction(xmlid, description) {
 function assertBackendView(description) {
     return {
         content: description,
-        trigger: ".o_action_manager .o_form_view, .o_action_manager .o_list_view, .o_action_manager .o_kanban_view, .o_action_manager .o_calendar_view",
+        trigger: ".o_action_manager .o_form_view, .o_action_manager .o_list_renderer, .o_action_manager .o_kanban_renderer, .o_action_manager .o_calendar_renderer",
     };
 }
 
 // Navigate through actions rather than menu nodes. Menu nodes can be absent from
-// the DOM when an app section is collapsed, which made this release gate fail
-// before the business surface itself had been exercised.
+// the DOM when an app section is collapsed. Odoo 19 list, kanban, and calendar
+// actions expose renderer classes rather than the historical *_view wrappers.
 tour.add("full_competition_lifecycle", {
     steps: () => [
         {

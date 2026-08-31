@@ -8,7 +8,6 @@
 services:
   ci-db:
     image: postgres:18
-    user: root
     environment:
       POSTGRES_USER: ${CI_POSTGRES_USER}
       POSTGRES_PASSWORD: ${CI_POSTGRES_PASSWORD}
@@ -35,6 +34,6 @@ services:
       PASSWORD: ${CI_POSTGRES_PASSWORD}
     volumes:
       - ../:/mnt/extra-addons:ro
-      - ./odoo-ci.generated.runtime.conf:/etc/odoo/odoo.conf:ro
+      - ${CI_ODOO_CONFIG_PATH:?CI_ODOO_CONFIG_PATH must point to the generated Odoo config}:/etc/odoo/odoo.conf:ro
     # No HTTP – headless test runner; stop after init + test
     command: ["--no-http", "--stop-after-init", "--test-enable"]

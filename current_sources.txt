@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 845
+# FILE-COUNT: 848
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -77,12 +77,12 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: .github/workflows/ci.yml
-SIZE: 13034
-CONTENT-LENGTH: 13034
-SHA256: c1f28afdd70f5f4ebc84a82d66b86ae51b795d640b7c81f2d9a39f4810da69af
+SIZE: 13186
+CONTENT-LENGTH: 13186
+SHA256: ea97b6fc74f917497af643ec74bfe9558c419eab89cbccf778dbcdc94af8768e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 name: CI
@@ -183,6 +183,9 @@ jobs:
       - name: Verify source collector completeness
         run: python ci/check_source_collector_contract.py
 
+      - name: Check P0-P3 release-focus qualification
+        run: python ci/check_release_focus_contract.py
+
       - name: Verify addon manifests, dependencies, imports and ACLs
         run: python ci/check_addon_integrity.py
 
@@ -259,7 +262,7 @@ jobs:
         run: |
           cp ci/.env.example ci/.env
           password="$(openssl rand -hex 16)"
-          sed -i "s/^CI_PROJECT_NAME=.*/CI_PROJECT_NAME=sf_ci_${GITHUB_RUN_ID}/" ci/.env
+          sed -i "s/^CI_PROJECT_NAME=.*/CI_PROJECT_NAME=sf_ci_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}_${{ matrix.suite }}/" ci/.env
           sed -i "s/^CI_POSTGRES_PASSWORD=.*/CI_POSTGRES_PASSWORD=${password}/" ci/.env
           # Append optional integration envs populated from GitHub Secrets.
           # Only append non-empty secrets to avoid empty values in ci/.env.
@@ -8152,12 +8155,12 @@ Do not use ADRs for implementation checklists, temporary release tasks, or modul
 
 ====================================================================================================
 FILE: ci/apply_env_to_ir_config.sh
-SIZE: 2003
-CONTENT-LENGTH: 2003
-SHA256: d85fdc4e0733f54a2c0537c85bde84f26b370bd5f5695e08a405c1f5811b7578
+SIZE: 2259
+CONTENT-LENGTH: 2259
+SHA256: 06ec5bd78280e6ec36832553b6a78b0316cdbef688001c7a7fdfbf13b36dd48d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 #!/usr/bin/env bash
@@ -8196,7 +8199,9 @@ export CI_POSTGRES_USER CI_POSTGRES_PASSWORD CI_POSTGRES_DB \
 
 echo "[CI] Applying integration envs to Odoo ir.config_parameter (if any)" >&2
 
-docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run --rm ci-odoo odoo shell -c "$CONTAINER_CONF" <<'PY'
+docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run --rm ci-odoo \
+  sh -lc 'if command -v gosu >/dev/null 2>&1; then exec gosu odoo odoo shell -c "$1"; elif command -v runuser >/dev/null 2>&1; then exec runuser -u odoo -- odoo shell -c "$1"; else echo "ERROR: cannot drop root privileges before starting Odoo" >&2; exit 2; fi' \
+  sh "$CONTAINER_CONF" <<'PY'
 import os
 
 keys = [
@@ -10705,6 +10710,87 @@ if errors:
 print("Registration ownership contract passed.")
 
 ====================================================================================================
+FILE: ci/check_release_focus_contract.py
+SIZE: 2651
+CONTENT-LENGTH: 2651
+SHA256: 00f0482df448fa6ef0a3459c2aa87fc05fbca1766475af9dc7229dffeea62787
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Fail fast when the P0-P3 release-focus qualification becomes disconnected."""
+
+from __future__ import annotations
+
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+
+REQUIRED_FILES = (
+    "sports_federation_demo/static/tests/tours/full_competition_lifecycle_tour.js",
+    "sports_federation_demo/tests/test_browser_competition_lifecycle.py",
+    "sports_federation_finance_bridge/static/tests/tours/finance_bridge_browser_tour.js",
+    "sports_federation_finance_bridge/tests/test_browser_finance_bridge.py",
+    "sports_federation_public_site/static/tests/tours/public_site_browser_tour.js",
+    "sports_federation_public_site/tests/test_browser_public_site.py",
+    "sports_federation_scheduling/tests/test_schedule_amendment.py",
+    "sports_federation_schedule_approval/tests/test_review_permissions.py",
+    "sports_federation_officiating/tests/test_club_referee_duty.py",
+    "sports_federation_officiating/tests/test_competition_officiating_contract.py",
+    "sports_federation_governance/tests/test_governance.py",
+    "sports_federation_portal/tests/test_production_security_matrix.py",
+    "sports_federation_compliance/tests/test_compliance.py",
+    "sports_federation_demo/tests/test_release_pilot_readiness.py",
+    "docs/RELEASE_PILOT_SCENARIO.md",
+)
+
+REQUIRED_SNIPPETS = {
+    "sports_federation_demo/tests/__init__.py": ("test_release_pilot_readiness",),
+    "sports_federation_demo/__manifest__.py": (
+        "full_competition_lifecycle_tour.js",
+        '"web_tour"',
+    ),
+    "sports_federation_finance_bridge/__manifest__.py": (
+        "finance_bridge_browser_tour.js",
+        '"web_tour"',
+    ),
+    "sports_federation_public_site/__manifest__.py": (
+        "public_site_browser_tour.js",
+        '"web_tour"',
+    ),
+    "scripts/ci/run_rc_validation.sh": (
+        "check_release_focus_contract.py",
+        "sf_release_focus",
+    ),
+}
+
+errors: list[str] = []
+for relative in REQUIRED_FILES:
+    if not (ROOT / relative).is_file():
+        errors.append(f"missing release-focus file: {relative}")
+
+for relative, snippets in REQUIRED_SNIPPETS.items():
+    path = ROOT / relative
+    if not path.is_file():
+        errors.append(f"missing contract source: {relative}")
+        continue
+    source = path.read_text(encoding="utf-8")
+    for snippet in snippets:
+        if snippet not in source:
+            errors.append(f"{relative}: missing {snippet!r}")
+
+if errors:
+    print("Release-focus contract failed:", file=sys.stderr)
+    for error in errors:
+        print(f"- {error}", file=sys.stderr)
+    raise SystemExit(1)
+
+print("Release-focus contract passed.")
+
+====================================================================================================
 FILE: ci/check_release_qualification.py
 SIZE: 1951
 CONTENT-LENGTH: 1951
@@ -11635,12 +11721,12 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: ci/docker-compose.ci.yaml
-SIZE: 1275
-CONTENT-LENGTH: 1269
-SHA256: 00bc3ea17974c06c50eb5b5fe1d3add6cb5ca698d36ae0908bcc400ef705243a
+SIZE: 1311
+CONTENT-LENGTH: 1305
+SHA256: 758eb47414a11d1eaa66caeaf382c98a233632a347c684a852bbced1132f2d7a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 # CI/CD compose – isolated ephemeral environment for automated tests.
@@ -11653,7 +11739,6 @@ GIT-STATE: tracked
 services:
   ci-db:
     image: postgres:18
-    user: root
     environment:
       POSTGRES_USER: ${CI_POSTGRES_USER}
       POSTGRES_PASSWORD: ${CI_POSTGRES_PASSWORD}
@@ -11680,7 +11765,7 @@ services:
       PASSWORD: ${CI_POSTGRES_PASSWORD}
     volumes:
       - ../:/mnt/extra-addons:ro
-      - ./odoo-ci.generated.runtime.conf:/etc/odoo/odoo.conf:ro
+      - ${CI_ODOO_CONFIG_PATH:?CI_ODOO_CONFIG_PATH must point to the generated Odoo config}:/etc/odoo/odoo.conf:ro
     # No HTTP – headless test runner; stop after init + test
     command: ["--no-http", "--stop-after-init", "--test-enable"]
 
@@ -12809,12 +12894,12 @@ exit 0
 
 ====================================================================================================
 FILE: ci/run_tests.sh
-SIZE: 25089
-CONTENT-LENGTH: 23755
-SHA256: 112f44733a7459c24803ade0e8dd41a84070f1a4fb26730fa1216963b2584ffb
+SIZE: 25543
+CONTENT-LENGTH: 24209
+SHA256: 97dcd7f714dce67db563075a41e38a0def63115c9373ac83f8e5dedc7fb1b7ad
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 #!/usr/bin/env bash
@@ -12839,11 +12924,10 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.ci.yaml"
 ENV_FILE="$SCRIPT_DIR/.env"
 EXAMPLE_ENV_FILE="$SCRIPT_DIR/.env.example"
-GENERATED_CONF="$SCRIPT_DIR/odoo-ci.generated.runtime.conf"
-
-if [[ -e "$GENERATED_CONF" ]]; then
-  GENERATED_CONF="$(mktemp "$SCRIPT_DIR/odoo-ci.generated.conf.XXXXXX")"
-fi
+GENERATED_CONF="$(mktemp "$SCRIPT_DIR/odoo-ci.generated.conf.XXXXXX")"
+# Compose must mount this exact per-run file. Previously it always mounted the
+# fixed runtime filename, so a second run could use stale database credentials.
+export CI_ODOO_CONFIG_PATH="$GENERATED_CONF"
 
 usage() {
   cat <<'EOF'
@@ -13026,6 +13110,7 @@ addons_path = /usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
 data_dir = /var/lib/odoo
 
 list_db = False
+http_interface = 127.0.0.1
 without_demo = True
 log_level = info
 EOF
@@ -13384,7 +13469,14 @@ if [ "$CI_SKIP_BROWSER_BOOTSTRAP" != "1" ]; then
     ln -sf "\$(command -v google-chrome)" /usr/local/bin/chromium-browser
   fi
 fi
-exec odoo --stop-after-init --test-enable --test-tags="$TEST_TAGS" $DEMO_OPTION -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+if command -v gosu >/dev/null 2>&1; then
+  exec gosu odoo odoo --stop-after-init --test-enable --test-tags="$TEST_TAGS" $DEMO_OPTION -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+elif command -v runuser >/dev/null 2>&1; then
+  exec runuser -u odoo -- odoo --stop-after-init --test-enable --test-tags="$TEST_TAGS" $DEMO_OPTION -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+else
+  echo "ERROR: cannot drop root privileges before starting Odoo" >&2
+  exit 2
+fi
 EOF
 )
 
@@ -13837,6 +13929,62 @@ roadmap or a standalone review snapshot for routine changes.
 ## Engineering contracts
 
 - [Foundation source-truth contract](repository_source_truth.md)
+
+====================================================================================================
+FILE: docs/RELEASE_PILOT_SCENARIO.md
+SIZE: 1955
+CONTENT-LENGTH: 1955
+SHA256: 4fc2b17cebe2ca324b6d602b19683cc5bb2d47d5983d6abe7d4184dbacf7c087
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+# Deterministic Release Pilot Scenario
+
+Owner: Federation Platform Team
+Review cadence: Every release candidate
+
+This scenario is the P3 operational acceptance path. It complements module tests
+by proving that one federation storyline can be followed across ownership
+boundaries without hidden setup or direct database edits.
+
+## Automated gate
+
+Run the complete release-focus verification:
+
+```bash
+python3 ci/check_release_focus_contract.py
+scripts/ci/run_rc_validation.sh focus
+```
+
+The focus lane runs the lifecycle, finance, and public browser tours together
+with the schedule-amendment, approval immutability, officiating, governance,
+portal-security, compliance, and pilot-readiness tests.
+
+## Pilot storyline
+
+1. Create a season and competition edition.
+2. Open registration and finalize the participant set.
+3. Freeze the competition structure and generate fixtures.
+4. Prepare match-day capacity and assign every fixture to a slot.
+5. Submit the schedule for independent review and publish the approved revision.
+6. Assign named officials or a club officiating duty and resolve shortages.
+7. Open match-day control, record results, and approve official results.
+8. Recompute and publish standings.
+9. Confirm the public competition, schedule, format, and standings pages.
+10. Confirm finance-event creation, settlement, export readiness, and traceability.
+11. Amend one published schedule through a replacement revision and verify that
+    the original publication and audit evidence remain immutable.
+12. Verify that an unrelated portal user cannot read or mutate another club's
+    registration, roster, officiating, result, or compliance records.
+
+## Acceptance evidence
+
+Record the release-candidate commit, database name, commands, start/end time,
+all automated results, and any manual observations in the release runbook. A
+release candidate is not accepted while any focus-lane test is skipped, flaky,
+or dependent on manual data repair.
 
 ====================================================================================================
 FILE: docs/competition_engine_ownership.md
@@ -14818,9 +14966,9 @@ websocket-client==1.8.0
 
 ====================================================================================================
 FILE: scripts/ci/run_rc_validation.sh
-SIZE: 5248
-CONTENT-LENGTH: 5248
-SHA256: 0d212b98d4ead30ffabb297510c0d403758fa22a0504def116b7b61f05e61054
+SIZE: 5535
+CONTENT-LENGTH: 5535
+SHA256: 1198332488f198dd4df492002aead010428ad69968efc2d624dfeb016a126740
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
 GIT-STATE: tracked
@@ -14889,6 +15037,7 @@ PY
   python3 ci/check_doc_freshness.py
   python3 ci/check_delivery_language.py
   python3 ci/check_release_qualification.py
+  python3 ci/check_release_focus_contract.py
   if command -v node >/dev/null 2>&1; then
     while IFS= read -r -d '' file; do node --check "$file"; done < <(
       find sports_federation_* -path '*/static/src/*.js' -type f -print0
@@ -14938,6 +15087,7 @@ case "$lane" in
   core) run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications' ;;
   portal) run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile' ;;
   public) run_tags '/sports_federation_public_site' ;;
+  focus) run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus' ;;
   full) run_tags 'standard' ;;
   all)
     static_checks
@@ -14947,9 +15097,10 @@ case "$lane" in
     run_upgrade
     run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile'
     run_tags '/sports_federation_public_site'
+    run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus'
     run_tags 'standard'
     ;;
-  *) echo "Usage: $0 {static|install|upgrade|core|portal|public|full|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {static|install|upgrade|core|portal|public|focus|full|all}" >&2; exit 2 ;;
 esac
 
 ====================================================================================================
@@ -22629,9 +22780,9 @@ from . import test_tour_compliance
 
 ====================================================================================================
 FILE: sports_federation_compliance/tests/test_compliance.py
-SIZE: 27949
-CONTENT-LENGTH: 27949
-SHA256: 2be0d75d5fc6944e95e9ec9d9e3c74212e118df9f2b6c5918d701c780108f160
+SIZE: 27985
+CONTENT-LENGTH: 27985
+SHA256: 74e1893f381674e823af868c635a430fa7ae0ca79c654b3e8e75a0281e577749
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -22640,12 +22791,13 @@ GIT-STATE: tracked
 from io import BytesIO
 from unittest.mock import patch
 
-from odoo.tests import TransactionCase
+from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tools import mute_logger
 from datetime import date, timedelta
 
 
+@tagged("sf_release_focus")
 class TestCompliance(TransactionCase):
     """Test cases for the sports_federation_compliance module."""
 
@@ -24425,9 +24577,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_demo/README.md
-SIZE: 1334
-CONTENT-LENGTH: 1334
-SHA256: 594975346f47ebf5292b643f878af9c59744050d2d522955fb288c25ba80ba26
+SIZE: 1534
+CONTENT-LENGTH: 1534
+SHA256: 735fc82ce22162675c18825f3446b149c22ed0a1bfc50ab0c8dc688b8542977d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -24463,6 +24615,12 @@ Validation checklist
 - Tournament, roster, and standings flows are navigable from seeded records.
 - Portal/public pages can render at least one realistic competition storyline.
 
+## Release-pilot qualification
+
+The integrated P0-P3 release path is documented in
+`docs/RELEASE_PILOT_SCENARIO.md`. Run
+`scripts/ci/run_rc_validation.sh focus` before promoting a release candidate.
+
 ====================================================================================================
 FILE: sports_federation_demo/__init__.py
 SIZE: 0
@@ -24479,7 +24637,7 @@ GIT-STATE: tracked
 FILE: sports_federation_demo/__manifest__.py
 SIZE: 1857
 CONTENT-LENGTH: 1857
-SHA256: 10cbad6af21b2acb0821dd2ce0d570d968c340b8ddba8277fc85679dfd63ca31
+SHA256: 9d16496ce2c6565a562dfa6176ca35e05a8a8524c6607a9b14b1ae1843166cad
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -24487,7 +24645,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Demo Data",
-    "version": "19.0.1.0.6",
+    "version": "19.0.1.0.7",
     "category": "Sports",
     "summary": "Deterministic demo-data pack for end-to-end federation walkthroughs",
     "description": """
@@ -25932,12 +26090,12 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_demo/static/tests/tours/full_competition_lifecycle_tour.js
-SIZE: 2625
-CONTENT-LENGTH: 2625
-SHA256: 61d5963f375e710d8c4dd5770db700a783159450c1b4dc3a8656bc379b2b522f
+SIZE: 3101
+CONTENT-LENGTH: 3101
+SHA256: 69c62dbdbf4f6a1db464177604bd2e065e24d2c8ab784105989604e576028f54
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 /** @odoo-module **/
@@ -25946,39 +26104,68 @@ import { registry } from "@web/core/registry";
 
 const tour = registry.category("web_tour.tours");
 
-function openMenu(xmlid, description) {
+function openAction(xmlid, description) {
     return {
         content: description,
-        trigger: `[data-menu-xmlid="${xmlid}"]`,
-        run: "click",
+        trigger: "body",
+        run() {
+            window.location.assign(`/odoo/action-${xmlid}`);
+        },
+        expectUnloadPage: true,
     };
 }
 
-function assertView(model, description) {
+function assertBackendView(description) {
     return {
         content: description,
-        trigger: `.o_action_manager [data-res-model="${model}"], .o_action_manager .o_form_view, .o_action_manager .o_list_view, .o_action_manager .o_kanban_view`,
+        trigger: ".o_action_manager .o_form_view, .o_action_manager .o_list_renderer, .o_action_manager .o_kanban_renderer, .o_action_manager .o_calendar_renderer",
     };
 }
 
+// Navigate through actions rather than menu nodes. Menu nodes can be absent from
+// the DOM when an app section is collapsed. Odoo 19 list, kanban, and calendar
+// actions expose renderer classes rather than the historical *_view wrappers.
 tour.add("full_competition_lifecycle", {
-    url: "/odoo",
     steps: () => [
-        assertView("federation.competition.edition", "The competition overview is available"),
-        openMenu("sports_federation_registration.menu_registration_desk", "Open the registration desk"),
-        assertView("federation.registration.window", "Registration windows are available"),
-        openMenu("sports_federation_format.menu_format_studio", "Open the format studio"),
-        assertView("federation.competition.structure", "Competition structures are available"),
-        openMenu("sports_federation_calendar.menu_calendar_planner", "Open the calendar planner"),
-        assertView("federation.competition.matchday", "Competition matchdays are available"),
-        openMenu("sports_federation_scheduling.menu_schedule_planner_competition", "Open the schedule planner"),
-        assertView("federation.schedule", "Working schedules are available"),
-        openMenu("sports_federation_schedule_approval.menu_schedule_review_queue", "Open the schedule review queue"),
-        assertView("federation.schedule.review", "Schedule reviews are available"),
-        openMenu("sports_federation_matchday.menu_matchday_control", "Open match-day control"),
-        assertView("federation.matchday.session", "Match-day sessions are available"),
-        openMenu("sports_federation_standings.menu_federation_standings", "Open official standings"),
-        assertView("federation.standing", "Official standings are available"),
+        {
+            content: "The competition overview form is ready",
+            trigger: '.o_form_view .o_field_widget[name="workflow_next_action"]',
+        },
+        openAction(
+            "sports_federation_registration.action_registration_desk",
+            "Open the registration desk"
+        ),
+        assertBackendView("Registration windows are available"),
+        openAction(
+            "sports_federation_format.action_format_studio",
+            "Open the format studio"
+        ),
+        assertBackendView("Competition structures are available"),
+        openAction(
+            "sports_federation_calendar.action_calendar_planner",
+            "Open the calendar planner"
+        ),
+        assertBackendView("Competition match days are available"),
+        openAction(
+            "sports_federation_scheduling.action_schedule_planner_competition",
+            "Open the schedule planner"
+        ),
+        assertBackendView("Working schedules are available"),
+        openAction(
+            "sports_federation_schedule_approval.action_schedule_review_queue",
+            "Open the schedule review queue"
+        ),
+        assertBackendView("Schedule reviews are available"),
+        openAction(
+            "sports_federation_matchday.action_matchday_control",
+            "Open match-day control"
+        ),
+        assertBackendView("Published match days are available"),
+        openAction(
+            "sports_federation_standings.action_federation_standing",
+            "Open official standings"
+        ),
+        assertBackendView("Official standings are available"),
         {
             content: "Open the public competition index",
             trigger: "body",
@@ -26000,9 +26187,9 @@ tour.add("full_competition_lifecycle", {
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/__init__.py
-SIZE: 83
-CONTENT-LENGTH: 83
-SHA256: d70999a23b61b71c210006ecf6e3b7e9038a062c67c630c50c566b4790224d2f
+SIZE: 126
+CONTENT-LENGTH: 126
+SHA256: 14cad2d2e50ffde0756bcd3950c388eea243303f9c0dde0ea6e493e72757e03a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -26010,6 +26197,7 @@ GIT-STATE: tracked
 
 from . import test_demo_data_pack
 from . import test_browser_competition_lifecycle
+from . import test_release_pilot_readiness
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/test_browser_competition_lifecycle.py
@@ -26283,6 +26471,81 @@ class TestDemoDataPack(TransactionCase):
             2,
             "Demo pack must have at least 2 standings.",
         )
+
+====================================================================================================
+FILE: sports_federation_demo/tests/test_release_pilot_readiness.py
+SIZE: 3156
+CONTENT-LENGTH: 3156
+SHA256: efda72ccf4a3c9b5ecea26a6976873e1dfae8b73929f81dbe0928b758b857a23
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: modified
+====================================================================================================
+
+from pathlib import Path
+
+from odoo.tests.common import TransactionCase, tagged
+
+
+@tagged("-at_install", "post_install", "sf_release_focus")
+class TestReleasePilotReadiness(TransactionCase):
+    """Keep the deterministic release-pilot path wired end to end.
+
+    Domain-level state transitions remain in their owning addons. This contract
+    verifies that the integrated operator actions, public handoff, browser tours,
+    and security groups needed by the release pilot are installed together.
+    """
+
+    ACTION_MODELS = {
+        "sports_federation_competition_core.action_competition_overview": "federation.competition.edition",
+        "sports_federation_registration.action_registration_desk": "federation.registration.window",
+        "sports_federation_format.action_format_studio": "federation.competition.structure",
+        "sports_federation_calendar.action_calendar_planner": "federation.matchday",
+        "sports_federation_scheduling.action_schedule_planner_competition": "federation.schedule",
+        "sports_federation_schedule_approval.action_schedule_review_queue": "federation.schedule.review",
+        "sports_federation_matchday.action_matchday_control": "federation.matchday",
+        "sports_federation_standings.action_federation_standing": "federation.standing",
+    }
+
+    REQUIRED_GROUPS = (
+        "sports_federation_base.group_federation_manager",
+        "sports_federation_competition_core.group_competition_administrator",
+        "sports_federation_schedule_approval.group_schedule_approver",
+        "sports_federation_matchday.group_matchday_manager",
+        "sports_federation_portal.group_federation_portal_club",
+    )
+
+    REQUIRED_TOURS = (
+        "sports_federation_demo/static/tests/tours/full_competition_lifecycle_tour.js",
+        "sports_federation_finance_bridge/static/tests/tours/finance_bridge_browser_tour.js",
+        "sports_federation_public_site/static/tests/tours/public_site_browser_tour.js",
+    )
+
+    def test_release_pilot_actions_target_the_canonical_models(self):
+        for xmlid, expected_model in self.ACTION_MODELS.items():
+            action = self.env.ref(xmlid)
+            self.assertEqual(action.res_model, expected_model, xmlid)
+
+    def test_release_pilot_security_roles_are_installed(self):
+        for xmlid in self.REQUIRED_GROUPS:
+            self.assertTrue(self.env.ref(xmlid), xmlid)
+
+    def test_release_pilot_browser_assets_are_present(self):
+        repository_root = Path(__file__).resolve().parents[2]
+        for relative_path in self.REQUIRED_TOURS:
+            path = repository_root / relative_path
+            self.assertTrue(path.is_file(), relative_path)
+            source = path.read_text(encoding="utf-8")
+            self.assertIn('registry.category("web_tour.tours")', source)
+            forbidden_architecture_tokens = (
+                "competitions_current",
+                "competition_current",
+                "competition_v2",
+                "competitions_v2",
+            )
+            normalized_source = source.lower()
+            for token in forbidden_architecture_tokens:
+                self.assertNotIn(token, normalized_source)
 
 ====================================================================================================
 FILE: sports_federation_discipline/README.md
@@ -34736,15 +34999,15 @@ from . import test_tour_governance_override
 
 ====================================================================================================
 FILE: sports_federation_governance/tests/test_governance.py
-SIZE: 11901
-CONTENT-LENGTH: 11893
-SHA256: b50fb90e22694f0ad9a0f2ea7b3cbebe5b9b2525505469291c9748de9bae2f48
+SIZE: 11937
+CONTENT-LENGTH: 11929
+SHA256: fc4cc9ba93876fea61bc7a25e666b276aeb669864ae37666f5da372d20de8611
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
-from odoo.tests import TransactionCase
+from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import ValidationError
 from odoo.addons.sports_federation_governance.workflow_states import (
     OVERRIDE_DECISION_SELECTION,
@@ -34758,6 +35021,7 @@ from odoo.addons.sports_federation_governance.workflow_states import (
 )
 
 
+@tagged("sf_release_focus")
 class TestGovernance(TransactionCase):
     """Test cases for governance module."""
 
@@ -47852,9 +48116,9 @@ from . import test_competition_officiating_contract
 
 ====================================================================================================
 FILE: sports_federation_officiating/tests/test_club_referee_duty.py
-SIZE: 12673
-CONTENT-LENGTH: 12643
-SHA256: ecd416baac9c3d39f0323432c08210e8b0d97b4edd4764d0c60d8d6bd70b7053
+SIZE: 12709
+CONTENT-LENGTH: 12679
+SHA256: a9539b6e06b1465310bf1de4bb604ba4966107f0927938e1e0542a3dae1955ca
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -47866,9 +48130,10 @@ from datetime import timedelta
 
 from odoo import fields
 from odoo.exceptions import ValidationError
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 
+@tagged("sf_release_focus")
 class TestClubRefereeDutyBase(TransactionCase):
     """Shared fixtures for club referee duty tests."""
 
@@ -61361,9 +61626,9 @@ class TestPortalOwnershipGuard(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_production_security_matrix.py
-SIZE: 1890
-CONTENT-LENGTH: 1890
-SHA256: 1d59f6c8a15f718e74d8f7a4741a0c5e673c4b8d9c53547447b003d3cfc37482
+SIZE: 1926
+CONTENT-LENGTH: 1926
+SHA256: 58d792c02ea15c04ff22241905b038ca28e441220e21f70fe053cbc5b53e7071
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -61371,9 +61636,10 @@ GIT-STATE: tracked
 
 from pathlib import Path
 
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 
+@tagged("sf_release_focus")
 class TestProductionSecurityMatrix(TransactionCase):
     """Static release contracts complement the existing HTTP ownership matrix."""
 
@@ -95938,9 +96204,9 @@ class TestPhase511Integrity(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/tests/test_review_permissions.py
-SIZE: 7039
-CONTENT-LENGTH: 7039
-SHA256: 14153ad4f6f26bf09fe461f47aa0eabaeac5f8be1c50d0af96281dd505fa1f8a
+SIZE: 7067
+CONTENT-LENGTH: 7067
+SHA256: d5fc7b8e20ef22f64899efcbbe4685837c1bce8d8f93d8772f42272e61de4535
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -95953,6 +96219,7 @@ from odoo.tests.common import TransactionCase
 
 
 @tagged("post_install", "-at_install", "sf_schedule_review_permissions")
+@tagged("sf_release_focus")
 class TestScheduleReviewPermissions(TransactionCase):
     @classmethod
     def setUpClass(cls):
@@ -97780,9 +98047,9 @@ class TestFairnessSolver(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_scheduling/tests/test_schedule_amendment.py
-SIZE: 4659
-CONTENT-LENGTH: 4659
-SHA256: a4c536a885546f00884bc9abae97e1f21872c0b3348b688561daa02a105bad3f
+SIZE: 4687
+CONTENT-LENGTH: 4687
+SHA256: f60911174de2238ace54cf5a7fbfbacd4c9b65ba7cf5359d281087a141812971
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -97794,6 +98061,7 @@ from odoo.tests.common import TransactionCase
 
 
 @tagged("post_install", "-at_install", "sf_schedule_amendment")
+@tagged("sf_release_focus")
 class TestScheduleAmendment(TransactionCase):
     @classmethod
     def setUpClass(cls):
