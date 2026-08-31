@@ -1,12 +1,13 @@
 from io import BytesIO
 from unittest.mock import patch
 
-from odoo.tests import TransactionCase
+from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tools import mute_logger
 from datetime import date, timedelta
 
 
+@tagged("sf_release_focus")
 class TestCompliance(TransactionCase):
     """Test cases for the sports_federation_compliance module."""
 

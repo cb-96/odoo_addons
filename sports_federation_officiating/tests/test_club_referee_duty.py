@@ -4,9 +4,10 @@ from datetime import timedelta
 
 from odoo import fields
 from odoo.exceptions import ValidationError
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 
+@tagged("sf_release_focus")
 class TestClubRefereeDutyBase(TransactionCase):
     """Shared fixtures for club referee duty tests."""
 

@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Demo Data",
-    "version": "19.0.1.0.6",
+    "version": "19.0.1.0.7",
     "category": "Sports",
     "summary": "Deterministic demo-data pack for end-to-end federation walkthroughs",
     "description": """

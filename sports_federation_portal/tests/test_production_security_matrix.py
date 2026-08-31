@@ -1,8 +1,9 @@
 from pathlib import Path
 
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 
+@tagged("sf_release_focus")
 class TestProductionSecurityMatrix(TransactionCase):
     """Static release contracts complement the existing HTTP ownership matrix."""
 

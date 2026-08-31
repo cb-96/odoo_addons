@@ -1,4 +1,4 @@
-from odoo.tests import TransactionCase
+from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import ValidationError
 from odoo.addons.sports_federation_governance.workflow_states import (
     OVERRIDE_DECISION_SELECTION,
@@ -12,6 +12,7 @@ from odoo.addons.sports_federation_governance.workflow_states import (
 )
 
 
+@tagged("sf_release_focus")
 class TestGovernance(TransactionCase):
     """Test cases for governance module."""
 

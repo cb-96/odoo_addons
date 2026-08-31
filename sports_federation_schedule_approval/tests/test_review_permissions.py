@@ -5,6 +5,7 @@ from odoo.tests.common import TransactionCase
 
 
 @tagged("post_install", "-at_install", "sf_schedule_review_permissions")
+@tagged("sf_release_focus")
 class TestScheduleReviewPermissions(TransactionCase):
     @classmethod
     def setUpClass(cls):

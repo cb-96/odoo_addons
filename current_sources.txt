@@ -14954,9 +14954,9 @@ esac
 
 ====================================================================================================
 FILE: source_collector.py
-SIZE: 28892
-CONTENT-LENGTH: 28892
-SHA256: a7da846ffda8817d400e0fc2d0ac9d1e6c79e12b40333e497076b6c3772f2042
+SIZE: 28900
+CONTENT-LENGTH: 28900
+SHA256: 697bfa0c73678337601b0605db2b385fde54b0520e4d3a49f26b0a65527d53d4
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -14972,7 +14972,7 @@ Run from the Git repository root containing the Odoo addons:
 Creates:
 
     current_sources.txt
-    current_sources.jsonl
+    current_sources.jsonl.txt
     current_git_metadata.txt
 
 The text bundle is intended for human review. The JSONL bundle is the
@@ -15000,7 +15000,7 @@ from typing import Iterable
 
 ROOT = Path.cwd().resolve()
 SOURCE_OUT = ROOT / "current_sources.txt"
-JSONL_OUT = ROOT / "current_sources.jsonl"
+JSONL_OUT = ROOT / "current_sources.jsonl.txt"
 META_OUT = ROOT / "current_git_metadata.txt"
 
 BUNDLE_FORMAT = "sports-federation-source-bundle"
@@ -24479,15 +24479,15 @@ GIT-STATE: tracked
 FILE: sports_federation_demo/__manifest__.py
 SIZE: 1857
 CONTENT-LENGTH: 1857
-SHA256: c955b3f99bb3b37d237a8895f2920cb2e6cfe7a49ebbe96959a96eda7ea9d683
+SHA256: 10cbad6af21b2acb0821dd2ce0d570d968c340b8ddba8277fc85679dfd63ca31
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 {
     "name": "Sports Federation Demo Data",
-    "version": "19.0.1.0.5",
+    "version": "19.0.1.0.6",
     "category": "Sports",
     "summary": "Deterministic demo-data pack for end-to-end federation walkthroughs",
     "description": """
@@ -25937,7 +25937,7 @@ CONTENT-LENGTH: 2625
 SHA256: 61d5963f375e710d8c4dd5770db700a783159450c1b4dc3a8656bc379b2b522f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 /** @odoo-module **/
@@ -26013,14 +26013,15 @@ from . import test_browser_competition_lifecycle
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/test_browser_competition_lifecycle.py
-SIZE: 1593
-CONTENT-LENGTH: 1593
-SHA256: 393a2e8ae527682a1e08a73745db08aa42d2f6173a3737d1c4cb1ea8e9f9f15a
+SIZE: 2569
+CONTENT-LENGTH: 2569
+SHA256: bb778d15ffd9f9db4d09a7e2df862ab57e57bafc4805ecdc7730f93ee255f5aa
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
+from odoo import Command
 from odoo.tests.common import HttpCase, tagged
 
 
@@ -26036,6 +26037,28 @@ class TestBrowserCompetitionLifecycle(HttpCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # The overview form reads competition responsibilities and events, and
+        # later tour steps open manager-only review and match-day menus. The
+        # database's ``admin`` login is not automatically enrolled in custom
+        # federation groups, so grant the explicit operator privileges that
+        # this integrated lifecycle tour is intended to exercise.
+        admin = cls.env.ref("base.user_admin")
+        admin.write(
+            {
+                "group_ids": [
+                    Command.link(
+                        cls.env.ref(
+                            "sports_federation_base.group_federation_manager"
+                        ).id
+                    ),
+                    Command.link(
+                        cls.env.ref(
+                            "sports_federation_competition_core.group_competition_administrator"
+                        ).id
+                    ),
+                ]
+            }
+        )
         season = cls.env["federation.season"].create(
             {
                 "name": "Browser Competition Lifecycle Season",

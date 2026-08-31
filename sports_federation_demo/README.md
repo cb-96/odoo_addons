@@ -27,3 +27,9 @@ Validation checklist
 - Module installs without additional manual data steps.
 - Tournament, roster, and standings flows are navigable from seeded records.
 - Portal/public pages can render at least one realistic competition storyline.
+
+## Release-pilot qualification
+
+The integrated P0-P3 release path is documented in
+`docs/RELEASE_PILOT_SCENARIO.md`. Run
+`scripts/ci/run_rc_validation.sh focus` before promoting a release candidate.

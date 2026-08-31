@@ -4,6 +4,7 @@ from odoo.tests.common import TransactionCase
 
 
 @tagged("post_install", "-at_install", "sf_schedule_amendment")
+@tagged("sf_release_focus")
 class TestScheduleAmendment(TransactionCase):
     @classmethod
     def setUpClass(cls):
