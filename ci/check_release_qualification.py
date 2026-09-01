@@ -12,7 +12,9 @@ workflow = (ROOT / ".github/workflows/release-candidate.yml").read_text(
 acceptance = (ROOT / "docs/release/COMPETITION_CUTOVER_ACCEPTANCE.md").read_text(
     encoding="utf-8"
 )
-stabilization_plan = (ROOT / "docs/release/POST_CUTOVER_PHASES.md").read_text(encoding="utf-8")
+stabilization_plan = (ROOT / "docs/release/POST_CUTOVER_PHASES.md").read_text(
+    encoding="utf-8"
+)
 
 checks = {
     "RC upgrade lane": "upgrade)" in rc_script,

@@ -110,9 +110,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
                 }
             )
         )
-        review._write_decision(
-            {"state": "approved", "reviewer_id": cls.env.user.id}
-        )
+        review._write_decision({"state": "approved", "reviewer_id": cls.env.user.id})
         cls.publication = (
             cls.env["federation.schedule.publication"]
             .sudo()

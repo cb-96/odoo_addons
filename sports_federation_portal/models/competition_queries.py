@@ -145,11 +145,7 @@ class FederationPortalCompetitionQueries(models.AbstractModel):
         unfinished = matches.filtered(
             lambda match: match.state not in ("done", "cancelled")
         )
-        if (
-            edition.state in ("closed", "cancelled")
-            or not unfinished
-            and matches
-        ):
+        if edition.state in ("closed", "cancelled") or not unfinished and matches:
             label, tone = _("Finished"), "secondary"
         elif active:
             label, tone = _("Live"), "danger"

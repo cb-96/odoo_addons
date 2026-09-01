@@ -18,9 +18,7 @@ class TestScheduleReviewPermissions(TransactionCase):
         approver_group = cls.env.ref(
             "sports_federation_schedule_approval.group_schedule_approver"
         )
-        manager_group = cls.env.ref(
-            "sports_federation_base.group_federation_manager"
-        )
+        manager_group = cls.env.ref("sports_federation_base.group_federation_manager")
 
         def make_user(name, login, groups):
             return users.create(
@@ -31,15 +29,11 @@ class TestScheduleReviewPermissions(TransactionCase):
                 }
             )
 
-        cls.planner = make_user(
-            "Review Planner", "review.planner", [planner_group.id]
-        )
+        cls.planner = make_user("Review Planner", "review.planner", [planner_group.id])
         cls.approver = make_user(
             "Independent Approver", "review.approver", [approver_group.id]
         )
-        cls.manager = make_user(
-            "Review Manager", "review.manager", [manager_group.id]
-        )
+        cls.manager = make_user("Review Manager", "review.manager", [manager_group.id])
         cls.unrelated = make_user("Unrelated User", "review.unrelated", [])
 
         season = cls.env["federation.season"].create(
@@ -86,9 +80,7 @@ class TestScheduleReviewPermissions(TransactionCase):
                 "state": "frozen",
             }
         )
-        venue = cls.env["federation.venue"].create(
-            {"name": "Review Permission Venue"}
-        )
+        venue = cls.env["federation.venue"].create({"name": "Review Permission Venue"})
         matchday = cls.env["federation.matchday"].create(
             {
                 "name": "Review Permission Match Day",
@@ -127,9 +119,11 @@ class TestScheduleReviewPermissions(TransactionCase):
     def setUp(self):
         super().setUp()
         self.schedule.state = "ready_for_review"
-        self.review = self.env[
-            "federation.schedule.approval.commands"
-        ].with_user(self.planner).start_review(self.schedule.id)
+        self.review = (
+            self.env["federation.schedule.approval.commands"]
+            .with_user(self.planner)
+            .start_review(self.schedule.id)
+        )
 
     def _request_changes(self):
         self.env["federation.schedule.approval.commands"].with_user(

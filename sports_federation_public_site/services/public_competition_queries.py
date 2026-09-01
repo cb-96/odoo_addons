@@ -135,9 +135,7 @@ class PublicCompetitionQueries(models.AbstractModel):
         ):
             errors.append(_("publish at least one division"))
         if edition.state not in ("open", "in_progress", "closed"):
-            errors.append(
-                _("move the edition to Open, In Progress or Closed")
-            )
+            errors.append(_("move the edition to Open, In Progress or Closed"))
         if errors:
             raise ValidationError(
                 _("The edition cannot be published yet: %s") % "; ".join(errors)

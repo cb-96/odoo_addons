@@ -144,9 +144,7 @@ class TestOfficiatingPortalAccess(TransactionCase):
                 }
             )
         )
-        review._write_decision(
-            {"state": "approved", "reviewer_id": cls.env.user.id}
-        )
+        review._write_decision({"state": "approved", "reviewer_id": cls.env.user.id})
         publication = cls.env["federation.schedule.publication"].create(
             {
                 "schedule_id": schedule.id,

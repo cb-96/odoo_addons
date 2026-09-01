@@ -193,9 +193,7 @@ class TestPhase511Integrity(TransactionCase):
         schedule, review = self._schedule_review(self.days[0], "guard")
         with self.assertRaises(ValidationError):
             review.sudo().write({"state": "approved"})
-        review._write_decision(
-            {"state": "approved", "reviewer_id": self.env.user.id}
-        )
+        review._write_decision({"state": "approved", "reviewer_id": self.env.user.id})
         self.assertEqual(review.state, "approved")
         self.assertEqual(schedule.state, "approved")
 

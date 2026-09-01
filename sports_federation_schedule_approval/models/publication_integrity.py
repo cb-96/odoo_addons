@@ -4,7 +4,6 @@ import json
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
-
 _REVIEW_DECISION_TOKEN = object()
 
 

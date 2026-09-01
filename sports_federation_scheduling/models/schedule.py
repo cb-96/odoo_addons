@@ -147,9 +147,7 @@ class FederationSchedule(models.Model):
     def action_open_amend_schedule(self):
         self.ensure_one()
         if self.state != "published":
-            raise ValidationError(
-                "Only a published schedule can be amended."
-            )
+            raise ValidationError("Only a published schedule can be amended.")
         if self.matchday_id.state == "open":
             raise ValidationError(
                 "Close live match-day operations before amending the schedule."

@@ -295,9 +295,7 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     }
                 )
             )
-            review._write_decision(
-                {"state": "approved", "reviewer_id": SUPERUSER_ID}
-            )
+            review._write_decision({"state": "approved", "reviewer_id": SUPERUSER_ID})
             publication = env["federation.schedule.publication"].create(
                 {
                     "schedule_id": schedule.id,

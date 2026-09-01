@@ -1,17 +1,14 @@
 def migrate(cr, version):
-    cr.execute(
-        """
+    cr.execute("""
         SELECT 1
           FROM information_schema.columns
          WHERE table_name = 'federation_competition_edition'
            AND column_name = 'engine_state'
-        """
-    )
+        """)
     if not cr.fetchone():
         return
 
-    cr.execute(
-        """
+    cr.execute("""
         UPDATE federation_competition_edition edition
            SET state = CASE edition.engine_state
                WHEN 'active' THEN CASE
@@ -29,8 +26,5 @@ def migrate(cr, version):
                ELSE edition.state
            END
          WHERE edition.engine_state IS NOT NULL
-        """
-    )
-    cr.execute(
-        "ALTER TABLE federation_competition_edition DROP COLUMN engine_state"
-    )
+        """)
+    cr.execute("ALTER TABLE federation_competition_edition DROP COLUMN engine_state")

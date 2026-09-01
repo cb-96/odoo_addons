@@ -53,7 +53,6 @@ class FederationCompetitionEdition(models.Model):
         return True
 
 
-
 class FederationCompetitionRoleAssignment(models.Model):
     _name = "federation.competition.role.assignment"
     _description = "Competition Role Assignment"
