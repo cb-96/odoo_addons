@@ -82,7 +82,7 @@ CONTENT-LENGTH: 13186
 SHA256: ea97b6fc74f917497af643ec74bfe9558c419eab89cbccf778dbcdc94af8768e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 name: CI
@@ -8160,7 +8160,7 @@ CONTENT-LENGTH: 2259
 SHA256: 06ec5bd78280e6ec36832553b6a78b0316cdbef688001c7a7fdfbf13b36dd48d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env bash
@@ -11726,7 +11726,7 @@ CONTENT-LENGTH: 1305
 SHA256: 758eb47414a11d1eaa66caeaf382c98a233632a347c684a852bbced1132f2d7a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # CI/CD compose – isolated ephemeral environment for automated tests.
@@ -12894,12 +12894,12 @@ exit 0
 
 ====================================================================================================
 FILE: ci/run_tests.sh
-SIZE: 25543
-CONTENT-LENGTH: 24209
-SHA256: 97dcd7f714dce67db563075a41e38a0def63115c9373ac83f8e5dedc7fb1b7ad
+SIZE: 25873
+CONTENT-LENGTH: 24539
+SHA256: db11ddb638b78b884d8f4d0a72acecd6ee7b26d86ea0447247ea14539d6c6843
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env bash
@@ -13114,6 +13114,12 @@ http_interface = 127.0.0.1
 without_demo = True
 log_level = info
 EOF
+
+# mktemp creates the host-side file with mode 0600. The Odoo process runs as
+# the unprivileged odoo user inside the container, so it must be able to read
+# the bind-mounted configuration. The file is per-run and removed during
+# cleanup, making read-only 0644 the appropriate bind-mount permission.
+chmod 0644 "$GENERATED_CONF"
 
 # ── Topological install order (dependency-safe) ──────────────────────
 ALL_MODULES=(
@@ -26090,9 +26096,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_demo/static/tests/tours/full_competition_lifecycle_tour.js
-SIZE: 3101
-CONTENT-LENGTH: 3101
-SHA256: 69c62dbdbf4f6a1db464177604bd2e065e24d2c8ab784105989604e576028f54
+SIZE: 3047
+CONTENT-LENGTH: 3047
+SHA256: 7ab28ad6d9be5017e497812ef358ebd9a7636bd2cc1c5f70b0a66954399552ba
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: modified
@@ -26180,7 +26186,7 @@ tour.add("full_competition_lifecycle", {
         },
         {
             content: "The canonical competition route remains active",
-            trigger: 'a[href^="/competitions/"], .sf-competition-card, .o_public_competition_card',
+            trigger: "main h1, #wrapwrap h1",
         },
     ],
 });
@@ -26201,12 +26207,12 @@ from . import test_release_pilot_readiness
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/test_browser_competition_lifecycle.py
-SIZE: 2569
-CONTENT-LENGTH: 2569
-SHA256: bb778d15ffd9f9db4d09a7e2df862ab57e57bafc4805ecdc7730f93ee255f5aa
+SIZE: 2862
+CONTENT-LENGTH: 2862
+SHA256: b72b8adb0704389e34d33d53c390d7ee800c2c6e4a1b22f7d61565634c7f4043
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from odoo import Command
@@ -26231,19 +26237,21 @@ class TestBrowserCompetitionLifecycle(HttpCase):
         # federation groups, so grant the explicit operator privileges that
         # this integrated lifecycle tour is intended to exercise.
         admin = cls.env.ref("base.user_admin")
+        lifecycle_group_xmlids = (
+            "sports_federation_base.group_federation_manager",
+            "sports_federation_competition_core.group_competition_administrator",
+            "sports_federation_registration.group_registration_manager",
+            "sports_federation_format.group_competition_designer",
+            "sports_federation_calendar.group_calendar_planner",
+            "sports_federation_scheduling.group_schedule_planner",
+            "sports_federation_schedule_approval.group_schedule_approver",
+            "sports_federation_matchday.group_matchday_manager",
+        )
         admin.write(
             {
                 "group_ids": [
-                    Command.link(
-                        cls.env.ref(
-                            "sports_federation_base.group_federation_manager"
-                        ).id
-                    ),
-                    Command.link(
-                        cls.env.ref(
-                            "sports_federation_competition_core.group_competition_administrator"
-                        ).id
-                    ),
+                    Command.link(cls.env.ref(xmlid).id)
+                    for xmlid in lifecycle_group_xmlids
                 ]
             }
         )
@@ -26479,7 +26487,7 @@ CONTENT-LENGTH: 3156
 SHA256: efda72ccf4a3c9b5ecea26a6976873e1dfae8b73929f81dbe0928b758b857a23
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from pathlib import Path

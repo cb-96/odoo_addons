@@ -20,19 +20,21 @@ class TestBrowserCompetitionLifecycle(HttpCase):
         # federation groups, so grant the explicit operator privileges that
         # this integrated lifecycle tour is intended to exercise.
         admin = cls.env.ref("base.user_admin")
+        lifecycle_group_xmlids = (
+            "sports_federation_base.group_federation_manager",
+            "sports_federation_competition_core.group_competition_administrator",
+            "sports_federation_registration.group_registration_manager",
+            "sports_federation_format.group_competition_designer",
+            "sports_federation_calendar.group_calendar_planner",
+            "sports_federation_scheduling.group_schedule_planner",
+            "sports_federation_schedule_approval.group_schedule_approver",
+            "sports_federation_matchday.group_matchday_manager",
+        )
         admin.write(
             {
                 "group_ids": [
-                    Command.link(
-                        cls.env.ref(
-                            "sports_federation_base.group_federation_manager"
-                        ).id
-                    ),
-                    Command.link(
-                        cls.env.ref(
-                            "sports_federation_competition_core.group_competition_administrator"
-                        ).id
-                    ),
+                    Command.link(cls.env.ref(xmlid).id)
+                    for xmlid in lifecycle_group_xmlids
                 ]
             }
         )

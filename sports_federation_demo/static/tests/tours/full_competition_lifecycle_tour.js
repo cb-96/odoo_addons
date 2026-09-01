@@ -80,7 +80,7 @@ tour.add("full_competition_lifecycle", {
         },
         {
             content: "The canonical competition route remains active",
-            trigger: 'a[href^="/competitions/"], .sf-competition-card, .o_public_competition_card',
+            trigger: "main h1, #wrapwrap h1",
         },
     ],
 });
