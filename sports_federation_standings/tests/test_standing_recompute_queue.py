@@ -1,4 +1,7 @@
+from datetime import timedelta
 from unittest.mock import patch
+
+from odoo import fields
 
 from odoo.tests.common import TransactionCase
 
@@ -166,3 +169,28 @@ class TestStandingRecomputeQueue(TransactionCase):
 
         job.invalidate_recordset(["state"])
         self.assertEqual(job.state, "done")
+
+    def test_exhausted_job_moves_to_dead_letter_and_can_be_retried(self):
+        standing = self._create_standing('Dead Letter Standing')
+        job = self.env['federation.standing.recompute.job'].create({
+            'standing_id': standing.id, 'correlation_id': 'dead-letter-1',
+            'attempt_count': 2, 'max_attempts': 3,
+        })
+        with patch.object(type(standing), 'action_recompute', side_effect=RuntimeError('boom')):
+            self.assertFalse(job._process_single_job())
+        self.assertEqual(job.state, 'dead_letter')
+        self.assertFalse(job.next_retry_on)
+        self.assertTrue(job.dead_lettered_on)
+        job.action_retry()
+        self.assertEqual(job.state, 'pending')
+        self.assertEqual(job.attempt_count, 0)
+
+    def test_stale_running_job_is_recovered(self):
+        standing = self._create_standing('Stale Standing')
+        job = self.env['federation.standing.recompute.job'].create({
+            'standing_id': standing.id, 'correlation_id': 'stale-1',
+            'state': 'running', 'started_on': fields.Datetime.now() - timedelta(hours=1),
+        })
+        self.assertEqual(self.env['federation.standing.recompute.job']._recover_stale_running_jobs(), 1)
+        self.assertEqual(job.state, 'failed')
+        self.assertTrue(job.next_retry_on)

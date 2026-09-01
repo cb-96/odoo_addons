@@ -71,3 +71,7 @@ When retention windows or cleanup scope change:
 3. Re-run `python3 ci/check_doc_freshness.py` and `python3 ci/check_markdown_links.py`.
 4. Re-run the affected module test suites to confirm the cleanup behavior still
    matches the documented policy.
+
+## Execution evidence
+
+Every automated retention run appends a `federation.retention.evidence` record with its policy code, timestamps, outcome, and affected-record counts. Evidence is read-only to federation managers and is retained independently from the records cleaned by the policy.

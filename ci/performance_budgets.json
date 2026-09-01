@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "budgets": {
+    "public_featured_tournaments_queries": 1,
+    "public_live_tournaments_queries": 1,
+    "public_recent_results_queries": 3,
+    "public_schedule_sections_queries": 4,
+    "portal_available_players_queries": 7,
+    "season_portfolio_queries": 3,
+    "club_performance_queries": 4,
+    "report_snapshot_queries": 1
+  },
+  "required_test_files": [
+    "sports_federation_standings/tests/test_standings_performance.py",
+    "sports_federation_reporting/tests/test_report_snapshot.py",
+    "sports_federation_reporting/tests/test_year_four_reporting.py",
+    "sports_federation_public_site/tests/test_public_api.py",
+    "sports_federation_portal/tests/test_roster_portal_access.py"
+  ],
+  "required_test_classes": {
+    "sports_federation_standings/tests/test_standings_performance.py": [
+      "TestStandingsPerformance"
+    ],
+    "sports_federation_reporting/tests/test_report_snapshot.py": [
+      "TestReportSnapshot"
+    ],
+    "sports_federation_reporting/tests/test_year_four_reporting.py": [
+      "TestYearFourReporting"
+    ],
+    "sports_federation_public_site/tests/test_public_api.py": [
+      "TestPublicSiteNewEndpoints"
+    ]
+  }
+}

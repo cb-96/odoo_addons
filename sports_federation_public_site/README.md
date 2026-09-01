@@ -157,3 +157,8 @@ Canonical follow and discovery routes:
 - Public results are limited to approved results.
 - Public participant lists exclude withdrawn entries.
 - Standings exposure depends on both tournament publication and the standings visibility controls.
+
+
+## Public controller boundaries
+
+Route orchestration lives in `public_competitions.py`. Framework response, canonical resolution, authenticated club lookup, error redirect, and rate-limit response behavior live in `_public_request.py`. New domain queries belong in model query services rather than either controller helper.

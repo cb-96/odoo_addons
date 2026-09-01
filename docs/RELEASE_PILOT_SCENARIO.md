@@ -43,3 +43,13 @@ Record the release-candidate commit, database name, commands, start/end time,
 all automated results, and any manual observations in the release runbook. A
 release candidate is not accepted while any focus-lane test is skipped, flaky,
 or dependent on manual data repair.
+
+## Role-separated acceptance gate
+
+Run the operator-role contract before the browser pilot:
+
+```bash
+scripts/ci/run_rc_validation.sh focus
+```
+
+The pilot must use distinct registration, format, calendar, schedule-planning, schedule-approval, and match-day operators. Planning and approval must not be collapsed into the administrator account. The browser tour remains the navigation smoke test; owning addon tests remain authoritative for state transitions and negative workflow decisions.

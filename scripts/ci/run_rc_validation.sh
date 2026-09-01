@@ -112,6 +112,10 @@ case "$lane" in
   core) run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications' ;;
   portal) run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile' ;;
   public) run_tags '/sports_federation_public_site' ;;
+  performance)
+    python3 ci/check_performance_qualification.py
+    run_tags '/sports_federation_standings:TestStandingsPerformance,/sports_federation_reporting:TestReportSnapshot,/sports_federation_reporting:TestYearFourReporting,/sports_federation_public_site:TestPublicSiteNewEndpoints'
+    ;;
   focus) run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus' ;;
   full) run_tags 'standard' ;;
   all)
@@ -123,8 +127,10 @@ case "$lane" in
     run_upgrade
     run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile'
     run_tags '/sports_federation_public_site'
+    python3 ci/check_performance_qualification.py
+    run_tags '/sports_federation_standings:TestStandingsPerformance,/sports_federation_reporting:TestReportSnapshot,/sports_federation_reporting:TestYearFourReporting,/sports_federation_public_site:TestPublicSiteNewEndpoints'
     run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus'
     run_tags 'standard'
     ;;
-  *) echo "Usage: $0 {preflight|static|install|upgrade|core|portal|public|focus|full|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {preflight|static|install|upgrade|core|portal|public|performance|focus|full|all}" >&2; exit 2 ;;
 esac

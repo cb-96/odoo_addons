@@ -325,4 +325,11 @@ class FederationReportSchedule(models.Model):
     @api.model
     def _cron_purge_generated_files(self):
         """Execute the generated-report retention policy."""
-        return self._purge_generated_files()
+        started_on = fields.Datetime.now()
+        deleted = self._purge_generated_files()
+        self.env["federation.retention.evidence"].sudo().create({
+            "policy": "generated_report_files", "started_on": started_on,
+            "completed_on": fields.Datetime.now(), "deleted_count": deleted,
+            "status": "passed",
+        })
+        return deleted

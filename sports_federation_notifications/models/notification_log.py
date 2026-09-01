@@ -143,4 +143,11 @@ class FederationNotificationLog(models.Model):
     @api.model
     def _cron_purge_old_logs(self):
         """Execute the notification-log retention policy."""
-        return self._purge_retained_logs()
+        started_on = fields.Datetime.now()
+        deleted = self._purge_retained_logs()
+        self.env["federation.retention.evidence"].sudo().create({
+            "policy": "notification_logs", "started_on": started_on,
+            "completed_on": fields.Datetime.now(), "deleted_count": deleted,
+            "status": "passed",
+        })
+        return deleted

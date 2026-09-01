@@ -39,4 +39,11 @@ class FederationIntegrationDeliveryRetentionMixin(models.AbstractModel):
     @api.model
     def _cron_purge_retained_deliveries(self):
         """Execute the inbound-delivery retention policy."""
-        return self._purge_retained_deliveries()
+        started_on = fields.Datetime.now()
+        deleted = self._purge_retained_deliveries()
+        self.env["federation.retention.evidence"].sudo().create({
+            "policy": "integration_deliveries", "started_on": started_on,
+            "completed_on": fields.Datetime.now(), "deleted_count": deleted,
+            "status": "passed",
+        })
+        return deleted

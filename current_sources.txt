@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 848
+# FILE-COUNT: 856
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -423,9 +423,9 @@ jobs:
 
 ====================================================================================================
 FILE: .github/workflows/release-candidate.yml
-SIZE: 3000
-CONTENT-LENGTH: 3000
-SHA256: 4305b4ab65094dff630d53ba28014de37c678275d009d0cb575e2e9ced42b331
+SIZE: 3100
+CONTENT-LENGTH: 3100
+SHA256: 7de9b8d21fe2a28e28ccf07f2421ad90dfaeddcf7e96b384b7f6148fa00f4e77
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -458,6 +458,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify clean release workspace
+        run: scripts/ci/run_rc_validation.sh preflight
       - name: Run authoritative static release validation
         run: scripts/ci/run_rc_validation.sh static
 
@@ -766,9 +768,9 @@ For contributor-facing local setup and focused CI commands, continue with `CONTR
 
 ====================================================================================================
 FILE: CONTRIBUTING.md
-SIZE: 9295
-CONTENT-LENGTH: 9079
-SHA256: 6da8ee533efe4f769ebe298f76721a8c5a70b80de1ed2d9ee5eae260920caaf5
+SIZE: 9603
+CONTENT-LENGTH: 9387
+SHA256: 579e6cbb224f72795e722ae5881989da3962e71d5dd6771d5d7985bff96c1c00
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -818,6 +820,16 @@ bash ./ci/run_tests.sh --list-suites
 ```
 
 ## Pre-push checks
+
+Before release qualification, commit or intentionally discard all tracked
+changes and remove generated runtime configuration. The RC preflight enforces
+that the candidate can be reproduced from its commit:
+
+```bash
+scripts/ci/run_rc_validation.sh preflight
+```
+
+Run the normal development checks afterward:
 
 ```bash
 black --check sports_federation_base sports_federation_tournament sports_federation_standings sports_federation_venues sports_federation_portal sports_federation_public_site ci
@@ -1017,12 +1029,12 @@ module README and manifest as the final authority.
 
 ====================================================================================================
 FILE: DATA_RETENTION_POLICY.md
-SIZE: 3566
-CONTENT-LENGTH: 3566
-SHA256: f67405330f668dbc8908665ff7216b1ea546055be206048b4294ec4ac69b0fbd
+SIZE: 3855
+CONTENT-LENGTH: 3855
+SHA256: e06e9d99b2b60b16f24653e4ac4864ca560267da1a5c02f97f15aaee17a644d1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 # Data Retention Policy
@@ -1098,6 +1110,10 @@ When retention windows or cleanup scope change:
 3. Re-run `python3 ci/check_doc_freshness.py` and `python3 ci/check_markdown_links.py`.
 4. Re-run the affected module test suites to confirm the cleanup behavior still
    matches the documented policy.
+
+## Execution evidence
+
+Every automated retention run appends a `federation.retention.evidence` record with its policy code, timestamps, outcome, and affected-record counts. Evidence is read-only to federation managers and is retained independently from the records cleaned by the policy.
 
 ====================================================================================================
 FILE: DEPLOYMENT_GUIDE.md
@@ -2117,12 +2133,12 @@ Module list (high level)
 
 ====================================================================================================
 FILE: RELEASE_RUNBOOK.md
-SIZE: 20798
-CONTENT-LENGTH: 20790
-SHA256: 316983d9bc491f389baa106b9338ab8056ca1fec009d41c45214ceda69a0dd17
+SIZE: 21469
+CONTENT-LENGTH: 21461
+SHA256: 6a34e170641ab3e2496a98e5040038e5335748640fa86ab3b1467a947a3a8b2c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 # Release Runbook
@@ -2636,6 +2652,20 @@ odoo-bin -d RC_DATABASE -u sports_federation_registration,sports_federation_port
 python ci/check_registration_contract.py
 python ci/check_access_csv_integrity.py
 ```
+
+## Machine-readable qualification evidence
+
+Record every release-candidate lane against the immutable candidate commit. Evidence files are operational artifacts and must not be committed:
+
+```bash
+python3 ci/capture_release_evidence.py --lane install --status passed \
+  --database sf_rc_validation --output artifacts/release/install.json
+python3 ci/capture_release_evidence.py --lane restore --status passed \
+  --database odoo_restore_drill --backup backups/release.dump \
+  --output artifacts/release/restore.json
+```
+
+Archive the evidence directory with CI logs, database and filestore backup checksums, the migration invariant report, and the named rollback owner.
 
 ====================================================================================================
 FILE: ROADMAP.md
@@ -8406,6 +8436,63 @@ if __name__ == "__main__":
         raise SystemExit(1)
 
 ====================================================================================================
+FILE: ci/capture_release_evidence.py
+SIZE: 1791
+CONTENT-LENGTH: 1791
+SHA256: 2c3770e178a86198ab2cf709979471fa33a6514d7dcf6c7d7702e1da5fe0b476
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: modified
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Write deterministic, machine-readable evidence for an RC command."""
+from __future__ import annotations
+import argparse, hashlib, json, os, platform, subprocess
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+def run(*args: str) -> str:
+    result = subprocess.run(args, cwd=ROOT, check=True, text=True, capture_output=True)
+    return result.stdout.strip()
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--lane', required=True)
+    parser.add_argument('--status', choices=('passed','failed'), required=True)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--database')
+    parser.add_argument('--backup', type=Path)
+    args = parser.parse_args()
+    evidence = {
+        'schema_version': 1,
+        'recorded_at': datetime.now(timezone.utc).isoformat(),
+        'lane': args.lane,
+        'status': args.status,
+        'commit': run('git','rev-parse','HEAD'),
+        'branch': run('git','rev-parse','--abbrev-ref','HEAD'),
+        'database': args.database,
+        'python': platform.python_version(),
+        'runner': os.environ.get('GITHUB_RUN_ID'),
+    }
+    if args.backup:
+        evidence['backup'] = {'path': str(args.backup), 'sha256': sha256(args.backup)}
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + '\n')
+    print(args.output)
+    return 0
+if __name__ == '__main__': raise SystemExit(main())
+
+====================================================================================================
 FILE: ci/check_access_csv_integrity.py
 SIZE: 1895
 CONTENT-LENGTH: 1895
@@ -10940,6 +11027,78 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+====================================================================================================
+FILE: ci/check_release_workspace.py
+SIZE: 1720
+CONTENT-LENGTH: 1720
+SHA256: cac8a3b2dcb57250dcf662e90fd4dfc409f924af3739baa83bd8e675bec7a55b
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Fail release qualification when repository state is not reproducible."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+GENERATED_PATTERNS = (
+    "ci/odoo-ci.generated.conf.*",
+    "ci/odoo-ci.generated.runtime.conf",
+)
+
+
+def git(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", "-C", str(ROOT), *args],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+
+
+def main() -> int:
+    if not (ROOT / ".git").exists():
+        print("Release workspace check skipped: no Git checkout metadata.")
+        return 0
+
+    diff_check = git("diff", "--check")
+    if diff_check.returncode:
+        print(diff_check.stdout or diff_check.stderr, file=sys.stderr)
+        return 1
+
+    tracked_changes = git("status", "--porcelain", "--untracked-files=no")
+    if tracked_changes.returncode:
+        print(tracked_changes.stderr, file=sys.stderr)
+        return tracked_changes.returncode
+    if tracked_changes.stdout.strip():
+        print("Release workspace contains tracked changes:", file=sys.stderr)
+        print(tracked_changes.stdout, file=sys.stderr)
+        return 1
+
+    generated = sorted(
+        path.relative_to(ROOT).as_posix()
+        for pattern in GENERATED_PATTERNS
+        for path in ROOT.glob(pattern)
+    )
+    if generated:
+        print("Generated runtime configuration is present:", file=sys.stderr)
+        for path in generated:
+            print(f"- {path}", file=sys.stderr)
+        return 1
+
+    print("Release workspace is clean and reproducible.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
 ====================================================================================================
 FILE: ci/check_rules_contract.py
@@ -13714,6 +13873,27 @@ for error in errors:
 sys.exit(1 if errors else 0)
 
 ====================================================================================================
+FILE: ci/test_capture_release_evidence.py
+SIZE: 475
+CONTENT-LENGTH: 475
+SHA256: 7778ad8db160c1c48eb276830e492b2e58e7d76b0d32fa82dd616c8159a626ea
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: modified
+====================================================================================================
+
+import importlib.util
+from pathlib import Path
+
+PATH = Path(__file__).with_name('capture_release_evidence.py')
+spec = importlib.util.spec_from_file_location('capture_release_evidence', PATH)
+module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+
+def test_sha256(tmp_path):
+    path = tmp_path / 'backup.dump'; path.write_bytes(b'release-evidence')
+    assert module.sha256(path) == 'c614426d3275f5c86e8926536ed0c24fc37d8044ea5dafc3f6be80e51657f6a7'
+
+====================================================================================================
 FILE: ci/test_config.conf
 SIZE: 125
 CONTENT-LENGTH: 125
@@ -13948,12 +14128,12 @@ roadmap or a standalone review snapshot for routine changes.
 
 ====================================================================================================
 FILE: docs/RELEASE_PILOT_SCENARIO.md
-SIZE: 1955
-CONTENT-LENGTH: 1955
-SHA256: 4fc2b17cebe2ca324b6d602b19683cc5bb2d47d5983d6abe7d4184dbacf7c087
+SIZE: 2446
+CONTENT-LENGTH: 2446
+SHA256: 480e87923b00194fbdefb81db0fd76d963668e73ca0a732514011408421d6092
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 # Deterministic Release Pilot Scenario
@@ -14001,6 +14181,16 @@ Record the release-candidate commit, database name, commands, start/end time,
 all automated results, and any manual observations in the release runbook. A
 release candidate is not accepted while any focus-lane test is skipped, flaky,
 or dependent on manual data repair.
+
+## Role-separated acceptance gate
+
+Run the operator-role contract before the browser pilot:
+
+```bash
+scripts/ci/run_rc_validation.sh focus
+```
+
+The pilot must use distinct registration, format, calendar, schedule-planning, schedule-approval, and match-day operators. Planning and approval must not be collapsed into the administrator account. The browser tour remains the navigation smoke test; owning addon tests remain authoritative for state transitions and negative workflow decisions.
 
 ====================================================================================================
 FILE: docs/competition_engine_ownership.md
@@ -14982,9 +15172,9 @@ websocket-client==1.8.0
 
 ====================================================================================================
 FILE: scripts/ci/run_rc_validation.sh
-SIZE: 5535
-CONTENT-LENGTH: 5535
-SHA256: 1198332488f198dd4df492002aead010428ad69968efc2d624dfeb016a126740
+SIZE: 5641
+CONTENT-LENGTH: 5641
+SHA256: 00791b93f6b1f29dda52237be9c231d99511d4624ecba1ef76a7b6384555b638
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
 GIT-STATE: tracked
@@ -15094,6 +15284,7 @@ run_upgrade() {
 }
 
 case "$lane" in
+  preflight) python3 ci/check_release_workspace.py ;;
   static) static_checks ;;
   install)
     require_odoo
@@ -15106,6 +15297,7 @@ case "$lane" in
   focus) run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus' ;;
   full) run_tags 'standard' ;;
   all)
+    python3 ci/check_release_workspace.py
     static_checks
     require_odoo
     "${common[@]}" -i "$modules" --test-enable --test-tags 'standard'
@@ -15116,7 +15308,7 @@ case "$lane" in
     run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus'
     run_tags 'standard'
     ;;
-  *) echo "Usage: $0 {static|install|upgrade|core|portal|public|focus|full|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {preflight|static|install|upgrade|core|portal|public|focus|full|all}" >&2; exit 2 ;;
 esac
 
 ====================================================================================================
@@ -16372,12 +16564,12 @@ def migrate(cr, version):
 
 ====================================================================================================
 FILE: sports_federation_base/models/__init__.py
-SIZE: 365
-CONTENT-LENGTH: 365
-SHA256: 5ec1d96e024c684f653b231c44b9c1292b0514f3cc9fc3c718d63caa5cb8e330
+SIZE: 398
+CONTENT-LENGTH: 398
+SHA256: aaddff849d3aa8a8ee4d101e5da4dd131fa9b3917707242f026ffe842ee84554
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from . import audit_event
@@ -16392,6 +16584,7 @@ from . import federation_season
 from . import federation_season_registration
 
 from . import operational_health
+from . import retention_evidence
 
 ====================================================================================================
 FILE: sports_federation_base/models/attachment_policy.py
@@ -17719,6 +17912,34 @@ class ResConfigSettings(models.TransientModel):
     )
 
 ====================================================================================================
+FILE: sports_federation_base/models/retention_evidence.py
+SIZE: 809
+CONTENT-LENGTH: 809
+SHA256: 210b248a77f53238d02eb856dc318885a3e97cba48dc9fcb9f286eff93f7e3e2
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: modified
+====================================================================================================
+
+from odoo import fields, models
+
+
+class FederationRetentionEvidence(models.Model):
+    _name = 'federation.retention.evidence'
+    _description = 'Retention Execution Evidence'
+    _order = 'started_on desc, id desc'
+
+    policy = fields.Char(required=True, index=True)
+    started_on = fields.Datetime(required=True, default=fields.Datetime.now, index=True)
+    completed_on = fields.Datetime(required=True, default=fields.Datetime.now)
+    deleted_count = fields.Integer(required=True, default=0)
+    skipped_count = fields.Integer(required=True, default=0)
+    attachment_count = fields.Integer(required=True, default=0)
+    status = fields.Selection([('passed', 'Passed'), ('failed', 'Failed')], required=True, index=True)
+    operator_message = fields.Text()
+    correlation_id = fields.Char(index=True)
+
+====================================================================================================
 FILE: sports_federation_base/request_security.py
 SIZE: 1988
 CONTENT-LENGTH: 1988
@@ -17778,12 +17999,12 @@ class FederationRequestSecurityMixin:
 
 ====================================================================================================
 FILE: sports_federation_base/security/ir.model.access.csv
-SIZE: 1419
-CONTENT-LENGTH: 1419
-SHA256: 4e378924aabfcd06361b99d9cae8322108e57e78e1fbccdf2869f886db1396f9
+SIZE: 1594
+CONTENT-LENGTH: 1594
+SHA256: 7ea8242f20dad1b86c5766fcd475c53dcb9201e6541565e1ed477d7e7a4ee814
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
@@ -17798,6 +18019,7 @@ access_federation_season_registration_manager,federation.season.registration.man
 access_federation_request_rate_limit_system,federation.request.rate.limit.system,model_federation_request_rate_limit,base.group_system,1,1,1,1
 access_federation_audit_event_manager,federation.audit.event.manager,model_federation_audit_event,group_federation_manager,1,0,0,0
 access_federation_audit_event_system,federation.audit.event.system,model_federation_audit_event,base.group_system,1,1,1,1
+access_federation_retention_evidence_manager,federation.retention.evidence manager,model_federation_retention_evidence,sports_federation_base.group_federation_manager,1,0,0,0
 
 ====================================================================================================
 FILE: sports_federation_base/security/res_groups.xml
@@ -17833,12 +18055,12 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_base/tests/__init__.py
-SIZE: 170
-CONTENT-LENGTH: 170
-SHA256: 581b4bf81a4da972b58ab6c5bc055ff1f4e5dfa3a2175b11b75e84e7351d132e
+SIZE: 208
+CONTENT-LENGTH: 208
+SHA256: 2ad1ad673680a0846525d34dc6b88251e3019fcfdc9f0a36aec8ff5d6f1bd826
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from . import test_base
@@ -17846,6 +18068,7 @@ from . import test_attachment_policy
 from . import test_rate_limit
 from . import test_route_inventory
 from . import test_tour_season_registration
+from . import test_retention_evidence
 
 ====================================================================================================
 FILE: sports_federation_base/tests/route_inventory.py
@@ -18595,6 +18818,28 @@ class TestFederationRequestRateLimit(TransactionCase):
             ),
             2,
         )
+
+====================================================================================================
+FILE: sports_federation_base/tests/test_retention_evidence.py
+SIZE: 558
+CONTENT-LENGTH: 558
+SHA256: 870b2ff5fc25b94fb662e50835d0743e0c259d03d889d8473ee0dba0a81b7423
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: modified
+====================================================================================================
+
+from odoo.tests.common import TransactionCase
+
+
+class TestRetentionEvidence(TransactionCase):
+    def test_evidence_is_append_only_for_federation_users(self):
+        evidence = self.env['federation.retention.evidence'].sudo().create({
+            'policy': 'test', 'status': 'passed', 'deleted_count': 3,
+        })
+        self.assertEqual(evidence.deleted_count, 3)
+        manager = self.env.ref('base.user_admin')
+        self.assertFalse(self.env['federation.retention.evidence'].with_user(manager).check_access_rights('write', raise_exception=False))
 
 ====================================================================================================
 FILE: sports_federation_base/tests/test_route_inventory.py
@@ -26196,17 +26441,18 @@ tour.add("full_competition_lifecycle", {
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/__init__.py
-SIZE: 126
-CONTENT-LENGTH: 126
-SHA256: 14cad2d2e50ffde0756bcd3950c388eea243303f9c0dde0ea6e493e72757e03a
+SIZE: 170
+CONTENT-LENGTH: 170
+SHA256: b4546f56a031710d2fbd8e30f8e5887b514d10f588cd35b1a125317c39f5576d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from . import test_demo_data_pack
 from . import test_browser_competition_lifecycle
 from . import test_release_pilot_readiness
+from . import test_operator_role_acceptance
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/test_browser_competition_lifecycle.py
@@ -26484,10 +26730,62 @@ class TestDemoDataPack(TransactionCase):
         )
 
 ====================================================================================================
+FILE: sports_federation_demo/tests/test_operator_role_acceptance.py
+SIZE: 2236
+CONTENT-LENGTH: 2236
+SHA256: f4b7454f4087adf2668ea8f518994b03a2f472585cf678f0adbc19cb7752a17b
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: modified
+====================================================================================================
+
+from odoo import Command
+from odoo.tests.common import TransactionCase, tagged
+
+
+@tagged('-at_install', 'post_install', 'sf_operator_acceptance')
+class TestOperatorRoleAcceptance(TransactionCase):
+    """Prove the release pilot uses explicit, independently assignable roles."""
+
+    ROLE_MODELS = (
+        ('sports_federation_registration.group_registration_manager', 'federation.registration.window'),
+        ('sports_federation_format.group_competition_designer', 'federation.competition.structure'),
+        ('sports_federation_calendar.group_calendar_planner', 'federation.matchday'),
+        ('sports_federation_scheduling.group_schedule_planner', 'federation.schedule'),
+        ('sports_federation_schedule_approval.group_schedule_approver', 'federation.schedule.review'),
+        ('sports_federation_matchday.group_matchday_manager', 'federation.matchday.session'),
+    )
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.users = {}
+        Users = cls.env['res.users'].with_context(no_reset_password=True)
+        for index, (group_xmlid, _model) in enumerate(cls.ROLE_MODELS, start=1):
+            group = cls.env.ref(group_xmlid)
+            cls.users[group_xmlid] = Users.create({
+                'name': f'Lifecycle Operator {index}',
+                'login': f'lifecycle.operator.{index}@example.invalid',
+                'group_ids': [Command.set([cls.env.ref('base.group_user').id, group.id])],
+            })
+
+    def test_each_phase_owner_can_read_the_owned_workspace(self):
+        for group_xmlid, model_name in self.ROLE_MODELS:
+            model = self.env[model_name].with_user(self.users[group_xmlid])
+            self.assertTrue(model.check_access_rights('read', raise_exception=False), (group_xmlid, model_name))
+
+    def test_planner_and_approver_are_distinct_operators(self):
+        planner = self.users['sports_federation_scheduling.group_schedule_planner']
+        approver = self.users['sports_federation_schedule_approval.group_schedule_approver']
+        self.assertNotEqual(planner, approver)
+        review_model = self.env['federation.schedule.review'].with_user(planner)
+        self.assertFalse(review_model.check_access_rights('write', raise_exception=False))
+
+====================================================================================================
 FILE: sports_federation_demo/tests/test_release_pilot_readiness.py
-SIZE: 3156
-CONTENT-LENGTH: 3156
-SHA256: efda72ccf4a3c9b5ecea26a6976873e1dfae8b73929f81dbe0928b758b857a23
+SIZE: 3343
+CONTENT-LENGTH: 3343
+SHA256: 64f27008ca1c23de9f06cfd7c626f14b5b03660c6d323a704f7f4b8de5749b5f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -26521,6 +26819,10 @@ class TestReleasePilotReadiness(TransactionCase):
     REQUIRED_GROUPS = (
         "sports_federation_base.group_federation_manager",
         "sports_federation_competition_core.group_competition_administrator",
+        "sports_federation_registration.group_registration_manager",
+        "sports_federation_format.group_competition_designer",
+        "sports_federation_calendar.group_calendar_planner",
+        "sports_federation_scheduling.group_schedule_planner",
         "sports_federation_schedule_approval.group_schedule_approver",
         "sports_federation_matchday.group_matchday_manager",
         "sports_federation_portal.group_federation_portal_club",
@@ -26551,8 +26853,6 @@ class TestReleasePilotReadiness(TransactionCase):
             forbidden_architecture_tokens = (
                 "competitions_current",
                 "competition_current",
-                "competition_v2",
-                "competitions_v2",
             )
             normalized_source = source.lower()
             for token in forbidden_architecture_tokens:
@@ -37667,12 +37967,12 @@ class FederationIntegrationDelivery(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_import_tools/models/integration_delivery_retention_mixin.py
-SIZE: 1646
-CONTENT-LENGTH: 1646
-SHA256: 4aa02fe587525563378b588dbb3f63cfbced0899bc7939cf1cc04465d05b46b5
+SIZE: 1975
+CONTENT-LENGTH: 1975
+SHA256: 1c38d18bb54efb60aa2f7129e48be52b5a8b371a1c9d7aaeac0fc3cb1a14f8fd
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from datetime import timedelta
@@ -37716,7 +38016,14 @@ class FederationIntegrationDeliveryRetentionMixin(models.AbstractModel):
     @api.model
     def _cron_purge_retained_deliveries(self):
         """Execute the inbound-delivery retention policy."""
-        return self._purge_retained_deliveries()
+        started_on = fields.Datetime.now()
+        deleted = self._purge_retained_deliveries()
+        self.env["federation.retention.evidence"].sudo().create({
+            "policy": "integration_deliveries", "started_on": started_on,
+            "completed_on": fields.Datetime.now(), "deleted_count": deleted,
+            "status": "passed",
+        })
+        return deleted
 
 ====================================================================================================
 FILE: sports_federation_import_tools/models/integration_delivery_stage_mixin.py
@@ -45142,12 +45449,12 @@ class FederationNotificationDispatcher(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_notifications/models/notification_log.py
-SIZE: 5047
-CONTENT-LENGTH: 5047
-SHA256: 1f7299fc139f2cdf62fc6cca5b94000187d350e5fd22deddf91d2edc7f3febed
+SIZE: 5371
+CONTENT-LENGTH: 5371
+SHA256: f22179cb163665fd9bb222b436d3b303d0b13b9fc29ea0e8028760487fc21a1e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import logging
@@ -45295,7 +45602,14 @@ class FederationNotificationLog(models.Model):
     @api.model
     def _cron_purge_old_logs(self):
         """Execute the notification-log retention policy."""
-        return self._purge_retained_logs()
+        started_on = fields.Datetime.now()
+        deleted = self._purge_retained_logs()
+        self.env["federation.retention.evidence"].sudo().create({
+            "policy": "notification_logs", "started_on": started_on,
+            "completed_on": fields.Datetime.now(), "deleted_count": deleted,
+            "status": "passed",
+        })
+        return deleted
 
 ====================================================================================================
 FILE: sports_federation_notifications/models/notification_service.py
@@ -48463,9 +48777,9 @@ class TestClubRefereeDutyMatchExtension(TestClubRefereeDutyBase):
 
 ====================================================================================================
 FILE: sports_federation_officiating/tests/test_competition_officiating_contract.py
-SIZE: 1694
-CONTENT-LENGTH: 1694
-SHA256: a11bbbee488c5ffb320756239b08eb572a876ee713a683d2c1d8846a3b631c8d
+SIZE: 2007
+CONTENT-LENGTH: 2007
+SHA256: 23d17091f75cb38be28a689448c664cda2e59c115f89c21b99ce9259fdcb6a98
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -48477,35 +48791,44 @@ from odoo.tests.common import TransactionCase
 
 
 @tagged("post_install", "-at_install", "sf_officiating_competition")
-class TestcurrentOfficiatingContract(TransactionCase):
-    def test_legacy_match_cannot_receive_referee_assignment(self):
-        legacy_match = self.env["federation.match"].create(
+class TestCompetitionOfficiatingContract(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # This contract must be deterministic when the officiating addon is
+        # tested in isolation. Do not depend on demo data or another test class
+        # having created a tournament or club first.
+        cls.tournament = cls.env["federation.tournament"].create(
             {
-                "name": "Standalone legacy match",
-                "tournament_id": self.env["federation.tournament"]
-                .search([], limit=1)
-                .id,
+                "name": "Unbacked Match Contract Tournament",
+                "code": "OFF-CONTRACT",
+                "date_start": "2026-01-01",
             }
         )
+        cls.club = cls.env["federation.club"].create(
+            {"name": "Officiating Contract Club", "code": "OFF-CONTRACT"}
+        )
+
+    def _create_unbacked_match(self, name):
+        return self.env["federation.match"].create(
+            {"name": name, "tournament_id": self.tournament.id}
+        )
+
+    def test_unbacked_match_cannot_receive_referee_assignment(self):
+        match = self._create_unbacked_match("Standalone assignment match")
         referee = self.env["federation.referee"].create(
-            {"name": "current Guard Referee"}
+            {"name": "Fixture Guard Referee"}
         )
         assignment = self.env["federation.match.referee"].create(
-            {"match_id": legacy_match.id, "referee_id": referee.id, "role": "head"}
+            {"match_id": match.id, "referee_id": referee.id, "role": "head"}
         )
         with self.assertRaises(ValidationError):
             assignment._assert_fixture_backing_for_activation()
 
-    def test_legacy_match_cannot_receive_club_duty(self):
-        tournament = self.env["federation.tournament"].search([], limit=1)
-        club = self.env["federation.club"].search([], limit=1)
-        if not tournament or not club:
-            self.skipTest("Requires tournament and club fixture data")
-        legacy_match = self.env["federation.match"].create(
-            {"name": "Standalone duty match", "tournament_id": tournament.id}
-        )
+    def test_unbacked_match_cannot_receive_club_duty(self):
+        match = self._create_unbacked_match("Standalone duty match")
         duty = self.env["federation.match.club.referee.duty"].create(
-            {"match_id": legacy_match.id, "club_id": club.id, "role": "table"}
+            {"match_id": match.id, "club_id": self.club.id, "role": "table"}
         )
         with self.assertRaises(ValidationError):
             duty._assert_fixture_backing_for_activation()
@@ -66990,12 +67313,12 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_public_site/README.md
-SIZE: 9226
-CONTENT-LENGTH: 9226
-SHA256: e8210147e7c5d0c1fd89c0515d1e508865e056b854e4264ba3e7852b8dd54073
+SIZE: 9552
+CONTENT-LENGTH: 9552
+SHA256: 3497612c3c06660f7999da785e23e62d0b691f652b79d8351fda18341d6b882e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 # Sports Federation Public Site
@@ -67157,6 +67480,11 @@ Canonical follow and discovery routes:
 - Public results are limited to approved results.
 - Public participant lists exclude withdrawn entries.
 - Standings exposure depends on both tournament publication and the standings visibility controls.
+
+
+## Public controller boundaries
+
+Route orchestration lives in `public_competitions.py`. Framework response, canonical resolution, authenticated club lookup, error redirect, and rate-limit response behavior live in `_public_request.py`. New domain queries belong in model query services rather than either controller helper.
 
 ====================================================================================================
 FILE: sports_federation_public_site/__init__.py
@@ -67388,6 +67716,77 @@ class TournamentHubFilterMixin:
                 else request.env["federation.venue"].browse([])
             ),
         }
+
+====================================================================================================
+FILE: sports_federation_public_site/controllers/_public_request.py
+SIZE: 3068
+CONTENT-LENGTH: 3068
+SHA256: 4ebce0e2261119f5f4e6ee530001eedf64f651b23610fcd025d2f9f0dab43aaa
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: modified
+====================================================================================================
+
+import json
+from urllib.parse import quote_plus
+
+from odoo.http import Response, request
+from werkzeug.exceptions import NotFound
+
+
+class PublicRequestInfrastructureMixin:
+    """Framework-level response, resolution and throttling helpers.
+
+    Domain-specific route orchestration stays in the public controller. Keeping
+    these concerns separate makes privilege and publication review smaller.
+    """
+
+    def _raise_not_found(self):
+        raise NotFound()
+
+    def _make_json_response(self, payload, status=200, headers=None):
+        make_json_response = getattr(request, "make_json_response", None)
+        if make_json_response:
+            return make_json_response(payload, status=status, headers=headers)
+        return Response(json.dumps(payload), status=status, headers=headers or [], content_type="application/json; charset=utf-8")
+
+    def _resolve_tournament(self, tournament_slug=None, tournament_id=None, tournament=False, public_access=None):
+        Tournament = request.env["federation.tournament"]
+        public_domain = self._build_tournament_public_domain(public_access)
+        if tournament:
+            return Tournament.sudo().search([("id", "=", tournament.id)] + public_domain, limit=1)
+        if tournament_id:
+            return Tournament.sudo().search([("id", "=", int(tournament_id))] + public_domain, limit=1)
+        if tournament_slug:
+            return Tournament.resolve_public_slug(tournament_slug, extra_domain=public_domain)
+        return Tournament.browse([])
+
+    def _resolve_team(self, team_slug, public_access=None):
+        return request.env["federation.team"].resolve_public_slug(team_slug, extra_domain=self._build_team_public_domain(public_access))
+
+    def _canonical_redirect(self, record, slug_value, path_getter):
+        return request.redirect(path_getter()) if slug_value != record.get_public_slug_value() else None
+
+    def _get_request_user_clubs(self):
+        ClubRep = request.env.get("federation.club.representative")
+        if ClubRep is None:
+            return request.env["federation.club"].browse([])
+        return ClubRep.sudo()._get_clubs_for_user(user=request.env.user)
+
+    def _redirect_with_error(self, path, message):
+        return request.redirect(f"{path}?error={quote_plus(message)}")
+
+    def _get_rate_limit_subject(self):
+        headers = getattr(request.httprequest, "headers", {}) or {}
+        forwarded_for = (headers.get("X-Forwarded-For") or "").split(",", 1)[0].strip()
+        remote_addr = forwarded_for or (getattr(request.httprequest, "remote_addr", "") or "").strip()
+        return f"ip:{remote_addr or 'unknown'}"
+
+    def _rate_limit_response(self, scope):
+        decision = request.env["federation.request.rate.limit"].sudo().consume(scope, self._get_rate_limit_subject())
+        if decision["allowed"]:
+            return False
+        return self._make_json_response({"error": f"Too many requests. Retry after {decision['retry_after']} seconds.", "error_code": "retryable_delivery"}, status=429, headers=[("Retry-After", str(decision["retry_after"]))])
 
 ====================================================================================================
 FILE: sports_federation_public_site/controllers/public_clubs_players.py
@@ -67815,16 +68214,13 @@ class PublicCompetitionController(http.Controller):
 
 ====================================================================================================
 FILE: sports_federation_public_site/controllers/public_competitions.py
-SIZE: 26407
-CONTENT-LENGTH: 26407
-SHA256: 6a4a5f6e0e85042d28e2e38c28653e37276589194189b84b10249077ca95fbd6
+SIZE: 22515
+CONTENT-LENGTH: 22515
+SHA256: 598806286a6cd78b09185c4c473389ae785ff9795667a0799cebb81d89f3a9d1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
-
-import json
-from urllib.parse import quote_plus
 
 from odoo import http
 from odoo.addons.sports_federation_base.request_security import (
@@ -67832,122 +68228,19 @@ from odoo.addons.sports_federation_base.request_security import (
 )
 from odoo.addons.portal.controllers.portal import pager as portal_pager
 from odoo.exceptions import AccessError, ValidationError
-from odoo.http import Response, request
+from odoo.http import request
 from werkzeug.exceptions import NotFound
 
 from ._filters import TournamentHubFilterMixin
+from ._public_request import PublicRequestInfrastructureMixin
 
 
 class PublicTournamentHubController(
+    PublicRequestInfrastructureMixin,
     FederationRequestSecurityMixin,
     TournamentHubFilterMixin,
     http.Controller,
 ):
-
-    def _raise_not_found(self):
-        """Raise the framework 404 exception for hidden public resources."""
-        raise NotFound()
-
-    def _make_json_response(self, payload, status=200, headers=None):
-        """Build a JSON response for public API callers."""
-        make_json_response = getattr(request, "make_json_response", None)
-        if make_json_response:
-            return make_json_response(payload, status=status, headers=headers)
-        return Response(
-            json.dumps(payload),
-            status=status,
-            headers=headers or [],
-            content_type="application/json; charset=utf-8",
-        )
-
-    def _resolve_tournament(
-        self,
-        tournament_slug=None,
-        tournament_id=None,
-        tournament=False,
-        public_access=None,
-    ):
-        """Resolve tournament."""
-        Tournament = request.env["federation.tournament"]
-        public_domain = self._build_tournament_public_domain(public_access)
-        if tournament:
-            return Tournament.sudo().search(
-                [("id", "=", tournament.id)] + public_domain,
-                limit=1,
-            )
-        if tournament_id:
-            return Tournament.sudo().search(
-                [("id", "=", int(tournament_id))] + public_domain,
-                limit=1,
-            )
-        if tournament_slug:
-            return Tournament.resolve_public_slug(
-                tournament_slug,
-                extra_domain=public_domain,
-            )
-        return Tournament.browse([])
-
-    def _resolve_team(self, team_slug, public_access=None):
-        """Resolve team."""
-        return request.env["federation.team"].resolve_public_slug(
-            team_slug,
-            extra_domain=self._build_team_public_domain(public_access),
-        )
-
-    def _canonical_redirect(self, record, slug_value, path_getter):
-        """Handle canonical redirect."""
-        if slug_value != record.get_public_slug_value():
-            return request.redirect(path_getter())
-        return None
-
-    def _get_request_user_clubs(self):
-        """Return club scope for the authenticated website user.
-
-        Returns an empty recordset when sports_federation_portal is not
-        installed (no ``federation.club.representative`` model available).
-        """
-        ClubRep = request.env.get("federation.club.representative")
-        if ClubRep is None:
-            return request.env["federation.club"].browse([])
-        return ClubRep.sudo()._get_clubs_for_user(user=request.env.user)
-
-    def _redirect_with_error(self, path, message):
-        """Redirect to a path with a user-facing error message."""
-        return request.redirect(f"{path}?error={quote_plus(message)}")
-
-    def _get_rate_limit_subject(self):
-        """Return the caller fingerprint for public endpoints."""
-        headers = getattr(request.httprequest, "headers", {}) or {}
-        forwarded_for = (headers.get("X-Forwarded-For") or "").split(",", 1)[0].strip()
-        remote_addr = (
-            forwarded_for
-            or (getattr(request.httprequest, "remote_addr", "") or "").strip()
-        )
-        return f"ip:{remote_addr or 'unknown'}"
-
-    def _rate_limit_response(self, scope):
-        """Return a 429 response when the caller exceeds the route limit."""
-        decision = (
-            request.env["federation.request.rate.limit"]
-            .sudo()
-            .consume(
-                scope,
-                self._get_rate_limit_subject(),
-            )
-        )
-        if decision["allowed"]:
-            return False
-        return self._make_json_response(
-            {
-                "error": (
-                    "Too many requests. "
-                    f"Retry after {decision['retry_after']} seconds."
-                ),
-                "error_code": "retryable_delivery",
-            },
-            status=429,
-            headers=[("Retry-After", str(decision["retry_after"]))],
-        )
 
     @http.route(
         ["/competitions/api/json", "/tournaments/api/json"],
@@ -71696,12 +71989,12 @@ tour.add("public_site_browser_lifecycle", {
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/__init__.py
-SIZE: 322
-CONTENT-LENGTH: 322
-SHA256: 8ecc74a77b871fe6a4e957aa3edad07b32169fa248d90784260d6c833c0e11e6
+SIZE: 370
+CONTENT-LENGTH: 370
+SHA256: 1b32015d34fe06836bc756775f93cb1da68ab6b8e83bb286b4fea270c8cb762a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from . import test_http_smoke
@@ -71713,6 +72006,8 @@ from . import test_club_team_pages
 from . import test_player_pages
 from . import test_public_competition_contract
 from . import test_browser_public_site
+
+from . import test_public_controller_structure
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_browser_public_site.py
@@ -73310,6 +73605,30 @@ class TestPublicCompetitionContract(TransactionCase):
                 edition.public_slug
             )
         )
+
+====================================================================================================
+FILE: sports_federation_public_site/tests/test_public_controller_structure.py
+SIZE: 598
+CONTENT-LENGTH: 598
+SHA256: aee2512d6d192c125155409cd434d261f8b59a273ff387b7d94fa90883aea983
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: modified
+====================================================================================================
+
+from pathlib import Path
+
+from odoo.tests.common import TransactionCase
+
+
+class TestPublicControllerStructure(TransactionCase):
+    def test_request_infrastructure_is_extracted_from_route_controller(self):
+        root = Path(__file__).resolve().parents[1] / "controllers"
+        controller = (root / "public_competitions.py").read_text()
+        helper = (root / "_public_request.py").read_text()
+        self.assertIn("PublicRequestInfrastructureMixin", controller)
+        self.assertNotIn("def _get_rate_limit_subject", controller)
+        self.assertIn("def _get_rate_limit_subject", helper)
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_public_site.py
@@ -79669,12 +79988,12 @@ class FederationReportClubPerformance(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_reporting/models/report_schedule.py
-SIZE: 12573
-CONTENT-LENGTH: 12573
-SHA256: 9978c2ce328cb939981c88740c39a51485326333671c15968cf2023379d3f205
+SIZE: 12902
+CONTENT-LENGTH: 12902
+SHA256: f0ca93d9e100f3694d2d80b51e9fc6bea358432208fddfee480938ee654f2390
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import base64
@@ -80004,7 +80323,14 @@ class FederationReportSchedule(models.Model):
     @api.model
     def _cron_purge_generated_files(self):
         """Execute the generated-report retention policy."""
-        return self._purge_generated_files()
+        started_on = fields.Datetime.now()
+        deleted = self._purge_generated_files()
+        self.env["federation.retention.evidence"].sudo().create({
+            "policy": "generated_report_files", "started_on": started_on,
+            "completed_on": fields.Datetime.now(), "deleted_count": deleted,
+            "status": "passed",
+        })
+        return deleted
 
 ====================================================================================================
 FILE: sports_federation_reporting/models/report_season_checklist.py
@@ -98797,12 +99123,12 @@ class FederationScheduleSubmitWizard(models.TransientModel):
 
 ====================================================================================================
 FILE: sports_federation_standings/README.md
-SIZE: 4709
-CONTENT-LENGTH: 4709
-SHA256: caf18788af8457a26063eedc016366f5a6da728cf9a6d9ccedce75fd721a5613
+SIZE: 5027
+CONTENT-LENGTH: 5027
+SHA256: fac9e6593f4665d79b936eb12082894d8ee14db0fedb13c468f646ae81dda197
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 Sports Federation Standings
@@ -98919,6 +99245,10 @@ Key Behaviours
 - Adds ``federation.standing.recompute.job`` for asynchronous, idempotent
    standings recompute processing.
 - Adds queue cron ``Standings: Process Recompute Queue``.
+
+## Recompute job recovery
+
+Standing recompute jobs use bounded exponential retry. Exhausted jobs move to `Needs operator action`, preserve the correlation ID and error evidence, and can be explicitly returned to the queue by a manager. The queue cron also recovers jobs left in `running` after a worker interruption.
 
 ====================================================================================================
 FILE: sports_federation_standings/__init__.py
@@ -99657,12 +99987,12 @@ class FederationStandingLine(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_standings/models/standing_recompute_job.py
-SIZE: 6882
-CONTENT-LENGTH: 6882
-SHA256: 0b67d2db8a9cb1a2b86b76c1db08d10cde9613cac128a051dec77eb94d901b94
+SIZE: 8256
+CONTENT-LENGTH: 8256
+SHA256: 64fdd46996c55c447190befab5b016980da7941f9fbeb85214985a00924fa0a5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import logging
@@ -99684,7 +100014,8 @@ class FederationStandingRecomputeJob(models.Model):
         ("pending", "Pending"),
         ("running", "Running"),
         ("done", "Done"),
-        ("failed", "Failed"),
+        ("failed", "Retry scheduled"),
+        ("dead_letter", "Needs operator action"),
     ]
 
     name = fields.Char(compute="_compute_name", store=True)
@@ -99709,6 +100040,7 @@ class FederationStandingRecomputeJob(models.Model):
     attempt_count = fields.Integer(default=0)
     max_attempts = fields.Integer(default=3)
     last_error = fields.Text()
+    dead_lettered_on = fields.Datetime(index=True)
     replayed_from_job_id = fields.Many2one(
         "federation.standing.recompute.job",
         string="Replayed From",
@@ -99821,19 +100153,22 @@ class FederationStandingRecomputeJob(models.Model):
                 federation_correlation_id=self.correlation_id,
             ).action_recompute()
         except Exception as error:  # pylint: disable=broad-except
-            next_retry_on = False
-            if self.attempt_count < self.max_attempts:
-                next_retry_on = fields.Datetime.now() + timedelta(minutes=2)
+            exhausted = self.attempt_count >= self.max_attempts
+            retry_minutes = min(60, 2 ** max(1, self.attempt_count))
+            next_retry_on = (
+                False if exhausted else fields.Datetime.now() + timedelta(minutes=retry_minutes)
+            )
             self.write(
                 {
-                    "state": "failed",
+                    "state": "dead_letter" if exhausted else "failed",
                     "completed_on": fields.Datetime.now(),
                     "next_retry_on": (
                         fields.Datetime.to_string(next_retry_on)
                         if next_retry_on
                         else False
                     ),
-                    "last_error": str(error),
+                    "last_error": str(error)[:4000],
+                    "dead_lettered_on": fields.Datetime.now() if exhausted else False,
                 }
             )
             _logger.exception(
@@ -99860,8 +100195,35 @@ class FederationStandingRecomputeJob(models.Model):
         )
         return True
 
+
+    def action_retry(self):
+        """Return terminal jobs to the queue without erasing evidence."""
+        for job in self:
+            if job.state not in ("failed", "dead_letter"):
+                raise ValidationError(_("Only failed jobs can be retried."))
+            job.write({
+                "state": "pending",
+                "next_retry_on": False,
+                "completed_on": False,
+                "dead_lettered_on": False,
+                "attempt_count": 0,
+            })
+        return True
+
+    @api.model
+    def _recover_stale_running_jobs(self, stale_minutes=30):
+        deadline = fields.Datetime.now() - timedelta(minutes=stale_minutes)
+        stale = self.search([("state", "=", "running"), ("started_on", "<=", deadline)])
+        stale.write({
+            "state": "failed",
+            "next_retry_on": fields.Datetime.now(),
+            "last_error": _("Recovered after the worker stopped while processing."),
+        })
+        return len(stale)
+
     @api.model
     def _cron_process_queue(self):
+        self._recover_stale_running_jobs()
         jobs = self.search(
             [
                 ("state", "in", ("pending", "failed")),
@@ -99915,15 +100277,18 @@ from . import test_tour_standings
 
 ====================================================================================================
 FILE: sports_federation_standings/tests/test_standing_recompute_queue.py
-SIZE: 5456
-CONTENT-LENGTH: 5456
-SHA256: 9d2a739215c9d0cdcc55b380efd284d3f10ffe6afc2531757ad3fde9e193e32d
+SIZE: 6817
+CONTENT-LENGTH: 6817
+SHA256: d6eb32d2572e29e2d59ab96e14d3349836b02de3feae026dc26723d9153fc99d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
+from datetime import timedelta
 from unittest.mock import patch
+
+from odoo import fields
 
 from odoo.tests.common import TransactionCase
 
@@ -100091,6 +100456,31 @@ class TestStandingRecomputeQueue(TransactionCase):
 
         job.invalidate_recordset(["state"])
         self.assertEqual(job.state, "done")
+
+    def test_exhausted_job_moves_to_dead_letter_and_can_be_retried(self):
+        standing = self._create_standing('Dead Letter Standing')
+        job = self.env['federation.standing.recompute.job'].create({
+            'standing_id': standing.id, 'correlation_id': 'dead-letter-1',
+            'attempt_count': 2, 'max_attempts': 3,
+        })
+        with patch.object(type(standing), 'action_recompute', side_effect=RuntimeError('boom')):
+            self.assertFalse(job._process_single_job())
+        self.assertEqual(job.state, 'dead_letter')
+        self.assertFalse(job.next_retry_on)
+        self.assertTrue(job.dead_lettered_on)
+        job.action_retry()
+        self.assertEqual(job.state, 'pending')
+        self.assertEqual(job.attempt_count, 0)
+
+    def test_stale_running_job_is_recovered(self):
+        standing = self._create_standing('Stale Standing')
+        job = self.env['federation.standing.recompute.job'].create({
+            'standing_id': standing.id, 'correlation_id': 'stale-1',
+            'state': 'running', 'started_on': fields.Datetime.now() - timedelta(hours=1),
+        })
+        self.assertEqual(self.env['federation.standing.recompute.job']._recover_stale_running_jobs(), 1)
+        self.assertEqual(job.state, 'failed')
+        self.assertTrue(job.next_retry_on)
 
 ====================================================================================================
 FILE: sports_federation_standings/tests/test_standings.py

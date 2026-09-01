@@ -509,3 +509,17 @@ odoo-bin -d RC_DATABASE -u sports_federation_registration,sports_federation_port
 python ci/check_registration_contract.py
 python ci/check_access_csv_integrity.py
 ```
+
+## Machine-readable qualification evidence
+
+Record every release-candidate lane against the immutable candidate commit. Evidence files are operational artifacts and must not be committed:
+
+```bash
+python3 ci/capture_release_evidence.py --lane install --status passed \
+  --database sf_rc_validation --output artifacts/release/install.json
+python3 ci/capture_release_evidence.py --lane restore --status passed \
+  --database odoo_restore_drill --backup backups/release.dump \
+  --output artifacts/release/restore.json
+```
+
+Archive the evidence directory with CI logs, database and filestore backup checksums, the migration invariant report, and the named rollback owner.

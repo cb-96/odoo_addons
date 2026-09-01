@@ -112,3 +112,7 @@ Key Behaviours
 - Adds ``federation.standing.recompute.job`` for asynchronous, idempotent
    standings recompute processing.
 - Adds queue cron ``Standings: Process Recompute Queue``.
+
+## Recompute job recovery
+
+Standing recompute jobs use bounded exponential retry. Exhausted jobs move to `Needs operator action`, preserve the correlation ID and error evidence, and can be explicitly returned to the queue by a manager. The queue cron also recovers jobs left in `running` after a worker interruption.

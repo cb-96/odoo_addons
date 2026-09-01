@@ -17,7 +17,8 @@ class FederationStandingRecomputeJob(models.Model):
         ("pending", "Pending"),
         ("running", "Running"),
         ("done", "Done"),
-        ("failed", "Failed"),
+        ("failed", "Retry scheduled"),
+        ("dead_letter", "Needs operator action"),
     ]
 
     name = fields.Char(compute="_compute_name", store=True)
@@ -42,6 +43,7 @@ class FederationStandingRecomputeJob(models.Model):
     attempt_count = fields.Integer(default=0)
     max_attempts = fields.Integer(default=3)
     last_error = fields.Text()
+    dead_lettered_on = fields.Datetime(index=True)
     replayed_from_job_id = fields.Many2one(
         "federation.standing.recompute.job",
         string="Replayed From",
@@ -154,19 +156,22 @@ class FederationStandingRecomputeJob(models.Model):
                 federation_correlation_id=self.correlation_id,
             ).action_recompute()
         except Exception as error:  # pylint: disable=broad-except
-            next_retry_on = False
-            if self.attempt_count < self.max_attempts:
-                next_retry_on = fields.Datetime.now() + timedelta(minutes=2)
+            exhausted = self.attempt_count >= self.max_attempts
+            retry_minutes = min(60, 2 ** max(1, self.attempt_count))
+            next_retry_on = (
+                False if exhausted else fields.Datetime.now() + timedelta(minutes=retry_minutes)
+            )
             self.write(
                 {
-                    "state": "failed",
+                    "state": "dead_letter" if exhausted else "failed",
                     "completed_on": fields.Datetime.now(),
                     "next_retry_on": (
                         fields.Datetime.to_string(next_retry_on)
                         if next_retry_on
                         else False
                     ),
-                    "last_error": str(error),
+                    "last_error": str(error)[:4000],
+                    "dead_lettered_on": fields.Datetime.now() if exhausted else False,
                 }
             )
             _logger.exception(
@@ -193,8 +198,35 @@ class FederationStandingRecomputeJob(models.Model):
         )
         return True
 
+
+    def action_retry(self):
+        """Return terminal jobs to the queue without erasing evidence."""
+        for job in self:
+            if job.state not in ("failed", "dead_letter"):
+                raise ValidationError(_("Only failed jobs can be retried."))
+            job.write({
+                "state": "pending",
+                "next_retry_on": False,
+                "completed_on": False,
+                "dead_lettered_on": False,
+                "attempt_count": 0,
+            })
+        return True
+
+    @api.model
+    def _recover_stale_running_jobs(self, stale_minutes=30):
+        deadline = fields.Datetime.now() - timedelta(minutes=stale_minutes)
+        stale = self.search([("state", "=", "running"), ("started_on", "<=", deadline)])
+        stale.write({
+            "state": "failed",
+            "next_retry_on": fields.Datetime.now(),
+            "last_error": _("Recovered after the worker stopped while processing."),
+        })
+        return len(stale)
+
     @api.model
     def _cron_process_queue(self):
+        self._recover_stale_running_jobs()
         jobs = self.search(
             [
                 ("state", "in", ("pending", "failed")),

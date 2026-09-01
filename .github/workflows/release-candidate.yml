@@ -87,6 +87,7 @@ jobs:
           scripts/ci/run_rc_validation.sh core
           scripts/ci/run_rc_validation.sh portal
           scripts/ci/run_rc_validation.sh public
+          scripts/ci/run_rc_validation.sh performance
           scripts/ci/run_rc_validation.sh full
       - name: Upload Odoo logs
         if: always()

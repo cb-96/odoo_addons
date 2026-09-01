@@ -405,3 +405,14 @@ validated on every push and pull request.
 - Test method names: `test_<what>_<expected_outcome>` (e.g.,
   `test_duplicate_code_raises_validation_error`).
 - Register new test files in `tests/__init__.py` with `from . import test_myfile`.
+
+
+## Release performance qualification
+
+The release-candidate pipeline runs the maintained query-budget lane after the core, portal, and public qualification lanes:
+
+```bash
+scripts/ci/run_rc_validation.sh performance
+```
+
+The versioned registry is `ci/performance_budgets.json`. The contract checker verifies the exact targeted test classes, preventing a renamed class from silently turning the lane into an empty run. Budget increases require measured evidence in `RELEASE_RUNBOOK.md`. Synthetic data must be identified as synthetic.
