@@ -28,14 +28,28 @@ class TestOperatorRoleAcceptance(TransactionCase):
                 'group_ids': [Command.set([cls.env.ref('base.group_user').id, group.id])],
             })
 
-    def test_each_phase_owner_can_read_the_owned_workspace(self):
+    def _group_acl(self, group_xmlid, model_name):
+        group = self.env.ref(group_xmlid)
+        model = self.env["ir.model"]._get(model_name)
+        return self.env["ir.model.access"].search(
+            [("group_id", "=", group.id), ("model_id", "=", model.id)]
+        )
+
+    def test_each_phase_owner_has_read_acl_for_owned_workspace(self):
         for group_xmlid, model_name in self.ROLE_MODELS:
-            model = self.env[model_name].with_user(self.users[group_xmlid])
-            self.assertTrue(model.check_access_rights('read', raise_exception=False), (group_xmlid, model_name))
+            access = self._group_acl(group_xmlid, model_name)
+            self.assertTrue(access, (group_xmlid, model_name))
+            self.assertTrue(any(access.mapped("perm_read")), (group_xmlid, model_name))
 
     def test_planner_and_approver_are_distinct_operators(self):
-        planner = self.users['sports_federation_scheduling.group_schedule_planner']
-        approver = self.users['sports_federation_schedule_approval.group_schedule_approver']
+        planner = self.users["sports_federation_scheduling.group_schedule_planner"]
+        approver = self.users[
+            "sports_federation_schedule_approval.group_schedule_approver"
+        ]
         self.assertNotEqual(planner, approver)
-        review_model = self.env['federation.schedule.review'].with_user(planner)
-        self.assertFalse(review_model.check_access_rights('write', raise_exception=False))
+        planner_access = self._group_acl(
+            "sports_federation_scheduling.group_schedule_planner",
+            "federation.schedule.review",
+        )
+        self.assertTrue(planner_access)
+        self.assertFalse(any(planner_access.mapped("perm_write")))

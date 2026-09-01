@@ -835,6 +835,9 @@ class TestPublicApiRateLimits(TransactionCase):
         with patch(
             "odoo.addons.sports_federation_public_site.controllers.public_competitions.request",
             request_stub,
+        ), patch(
+            "odoo.addons.sports_federation_public_site.controllers._public_request.request",
+            request_stub,
         ), patch.object(
             type(rate_limit_service),
             "_get_now",
@@ -862,6 +865,9 @@ class TestPublicApiRateLimits(TransactionCase):
 
         with patch(
             "odoo.addons.sports_federation_public_site.controllers.public_competitions.request",
+            request_stub,
+        ), patch(
+            "odoo.addons.sports_federation_public_site.controllers._public_request.request",
             request_stub,
         ), patch.object(
             type(rate_limit_service),
@@ -894,6 +900,9 @@ class TestPublicApiRateLimits(TransactionCase):
             request_stub,
         ), patch(
             "odoo.addons.sports_federation_public_site.controllers.public_follow.request",
+            request_stub,
+        ), patch(
+            "odoo.addons.sports_federation_public_site.controllers._public_request.request",
             request_stub,
         ), patch.object(
             type(rate_limit_service),

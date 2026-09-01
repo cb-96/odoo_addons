@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 856
+# FILE-COUNT: 858
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -423,9 +423,9 @@ jobs:
 
 ====================================================================================================
 FILE: .github/workflows/release-candidate.yml
-SIZE: 3100
-CONTENT-LENGTH: 3100
-SHA256: 7de9b8d21fe2a28e28ccf07f2421ad90dfaeddcf7e96b384b7f6148fa00f4e77
+SIZE: 3154
+CONTENT-LENGTH: 3154
+SHA256: 510b6da55b19a4ae492e9cc30a05789545a79043f291d322cbf97acb66b243dd
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -520,6 +520,7 @@ jobs:
           scripts/ci/run_rc_validation.sh core
           scripts/ci/run_rc_validation.sh portal
           scripts/ci/run_rc_validation.sh public
+          scripts/ci/run_rc_validation.sh performance
           scripts/ci/run_rc_validation.sh full
       - name: Upload Odoo logs
         if: always()
@@ -1034,7 +1035,7 @@ CONTENT-LENGTH: 3855
 SHA256: e06e9d99b2b60b16f24653e4ac4864ca560267da1a5c02f97f15aaee17a644d1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # Data Retention Policy
@@ -2138,7 +2139,7 @@ CONTENT-LENGTH: 21461
 SHA256: 6a34e170641ab3e2496a98e5040038e5335748640fa86ab3b1467a947a3a8b2c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # Release Runbook
@@ -3768,9 +3769,9 @@ If you'd like, I can now: (1) open a PR draft for this change, (2) run a repo sc
 
 ====================================================================================================
 FILE: TESTING_GUIDE.md
-SIZE: 15295
-CONTENT-LENGTH: 15089
-SHA256: 6c7383274a964b9a523e8aba3dd6abdd26489c2b5aa0921e46ebe4b2a2d53d99
+SIZE: 15831
+CONTENT-LENGTH: 15625
+SHA256: beb29cbf3c47b4265e9292564d0718bd28acd72c87b8424d9761386429411eb6
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -4183,6 +4184,17 @@ validated on every push and pull request.
 - Test method names: `test_<what>_<expected_outcome>` (e.g.,
   `test_duplicate_code_raises_validation_error`).
 - Register new test files in `tests/__init__.py` with `from . import test_myfile`.
+
+
+## Release performance qualification
+
+The release-candidate pipeline runs the maintained query-budget lane after the core, portal, and public qualification lanes:
+
+```bash
+scripts/ci/run_rc_validation.sh performance
+```
+
+The versioned registry is `ci/performance_budgets.json`. The contract checker verifies the exact targeted test classes, preventing a renamed class from silently turning the lane into an empty run. Budget increases require measured evidence in `RELEASE_RUNBOOK.md`. Synthetic data must be identified as synthetic.
 
 ====================================================================================================
 FILE: TROUBLESHOOTING.md
@@ -8442,7 +8454,7 @@ CONTENT-LENGTH: 1791
 SHA256: 2c3770e178a86198ab2cf709979471fa33a6514d7dcf6c7d7702e1da5fe0b476
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -10328,6 +10340,75 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+====================================================================================================
+FILE: ci/check_performance_qualification.py
+SIZE: 2614
+CONTENT-LENGTH: 2614
+SHA256: 3bc0a384d23a956c09eee442db51b97d9d1bcbdcba39ea108ce3ad5b930a9ab6
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Validate the versioned release-performance qualification contract."""
+from __future__ import annotations
+import ast
+import json
+import sys
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[1]
+CONTRACT = ROOT / "ci/performance_budgets.json"
+
+def main() -> int:
+    errors = []
+    try:
+        contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        print(f"Performance qualification contract is unreadable: {error}", file=sys.stderr)
+        return 1
+    if contract.get("schema_version") != 1:
+        errors.append("schema_version must be 1")
+    budgets = contract.get("budgets")
+    if not isinstance(budgets, dict) or not budgets:
+        errors.append("budgets must be a non-empty object")
+        budgets = {}
+    else:
+        for name, value in budgets.items():
+            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+                errors.append(f"budget {name!r} must be a positive integer")
+    required_files = contract.get("required_test_files")
+    if not isinstance(required_files, list) or not required_files:
+        errors.append("required_test_files must be a non-empty list")
+        required_files = []
+    for relative in required_files:
+        if not (ROOT / relative).is_file():
+            errors.append(f"missing performance test file: {relative}")
+    required_classes = contract.get("required_test_classes", {})
+    if not isinstance(required_classes, dict):
+        errors.append("required_test_classes must be an object")
+        required_classes = {}
+    for relative, class_names in required_classes.items():
+        path = ROOT / relative
+        if not path.is_file():
+            continue
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        except (OSError, SyntaxError) as error:
+            errors.append(f"cannot inspect {relative}: {error}")
+            continue
+        available = {node.name for node in ast.walk(tree) if isinstance(node, ast.ClassDef)}
+        for class_name in class_names:
+            if class_name not in available:
+                errors.append(f"missing performance test class {class_name} in {relative}")
+    if errors:
+        print("Performance qualification contract failed:", file=sys.stderr)
+        for error in errors: print(f"- {error}", file=sys.stderr)
+        return 1
+    print(f"Performance qualification contract passed: {len(budgets)} budgets, {len(required_files)} test files.")
+    return 0
+if __name__ == "__main__": raise SystemExit(main())
 
 ====================================================================================================
 FILE: ci/check_portal_competition_ownership.py
@@ -12410,6 +12491,51 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 ====================================================================================================
+FILE: ci/performance_budgets.json
+SIZE: 1189
+CONTENT-LENGTH: 1189
+SHA256: 56581f1ab93427985bd6115544b28b41ab8968c4d773e06beea126a6b661cd14
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+{
+  "schema_version": 1,
+  "budgets": {
+    "public_featured_tournaments_queries": 1,
+    "public_live_tournaments_queries": 1,
+    "public_recent_results_queries": 3,
+    "public_schedule_sections_queries": 4,
+    "portal_available_players_queries": 7,
+    "season_portfolio_queries": 3,
+    "club_performance_queries": 4,
+    "report_snapshot_queries": 1
+  },
+  "required_test_files": [
+    "sports_federation_standings/tests/test_standings_performance.py",
+    "sports_federation_reporting/tests/test_report_snapshot.py",
+    "sports_federation_reporting/tests/test_year_four_reporting.py",
+    "sports_federation_public_site/tests/test_public_api.py",
+    "sports_federation_portal/tests/test_roster_portal_access.py"
+  ],
+  "required_test_classes": {
+    "sports_federation_standings/tests/test_standings_performance.py": [
+      "TestStandingsPerformance"
+    ],
+    "sports_federation_reporting/tests/test_report_snapshot.py": [
+      "TestReportSnapshot"
+    ],
+    "sports_federation_reporting/tests/test_year_four_reporting.py": [
+      "TestYearFourReporting"
+    ],
+    "sports_federation_public_site/tests/test_public_api.py": [
+      "TestPublicSiteNewEndpoints"
+    ]
+  }
+}
+
+====================================================================================================
 FILE: ci/prune_ci_logs.sh
 SIZE: 588
 CONTENT-LENGTH: 588
@@ -13879,7 +14005,7 @@ CONTENT-LENGTH: 475
 SHA256: 7778ad8db160c1c48eb276830e492b2e58e7d76b0d32fa82dd616c8159a626ea
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 import importlib.util
@@ -14133,7 +14259,7 @@ CONTENT-LENGTH: 2446
 SHA256: 480e87923b00194fbdefb81db0fd76d963668e73ca0a732514011408421d6092
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # Deterministic Release Pilot Scenario
@@ -15172,9 +15298,9 @@ websocket-client==1.8.0
 
 ====================================================================================================
 FILE: scripts/ci/run_rc_validation.sh
-SIZE: 5641
-CONTENT-LENGTH: 5641
-SHA256: 00791b93f6b1f29dda52237be9c231d99511d4624ecba1ef76a7b6384555b638
+SIZE: 6227
+CONTENT-LENGTH: 6227
+SHA256: ee76d82a3f714829ffa95317b55ebd4124d463729a839d40eb32100733dd4a68
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
 GIT-STATE: tracked
@@ -15294,6 +15420,10 @@ case "$lane" in
   core) run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications' ;;
   portal) run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile' ;;
   public) run_tags '/sports_federation_public_site' ;;
+  performance)
+    python3 ci/check_performance_qualification.py
+    run_tags '/sports_federation_standings:TestStandingsPerformance,/sports_federation_reporting:TestReportSnapshot,/sports_federation_reporting:TestYearFourReporting,/sports_federation_public_site:TestPublicSiteNewEndpoints'
+    ;;
   focus) run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus' ;;
   full) run_tags 'standard' ;;
   all)
@@ -15305,10 +15435,12 @@ case "$lane" in
     run_upgrade
     run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile'
     run_tags '/sports_federation_public_site'
+    python3 ci/check_performance_qualification.py
+    run_tags '/sports_federation_standings:TestStandingsPerformance,/sports_federation_reporting:TestReportSnapshot,/sports_federation_reporting:TestYearFourReporting,/sports_federation_public_site:TestPublicSiteNewEndpoints'
     run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus'
     run_tags 'standard'
     ;;
-  *) echo "Usage: $0 {preflight|static|install|upgrade|core|portal|public|focus|full|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {preflight|static|install|upgrade|core|portal|public|performance|focus|full|all}" >&2; exit 2 ;;
 esac
 
 ====================================================================================================
@@ -16569,7 +16701,7 @@ CONTENT-LENGTH: 398
 SHA256: aaddff849d3aa8a8ee4d101e5da4dd131fa9b3917707242f026ffe842ee84554
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from . import audit_event
@@ -17918,7 +18050,7 @@ CONTENT-LENGTH: 809
 SHA256: 210b248a77f53238d02eb856dc318885a3e97cba48dc9fcb9f286eff93f7e3e2
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from odoo import fields, models
@@ -18004,7 +18136,7 @@ CONTENT-LENGTH: 1594
 SHA256: 7ea8242f20dad1b86c5766fcd475c53dcb9201e6541565e1ed477d7e7a4ee814
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
@@ -18060,7 +18192,7 @@ CONTENT-LENGTH: 208
 SHA256: 2ad1ad673680a0846525d34dc6b88251e3019fcfdc9f0a36aec8ff5d6f1bd826
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from . import test_base
@@ -18821,9 +18953,9 @@ class TestFederationRequestRateLimit(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_base/tests/test_retention_evidence.py
-SIZE: 558
-CONTENT-LENGTH: 558
-SHA256: 870b2ff5fc25b94fb662e50835d0743e0c259d03d889d8473ee0dba0a81b7423
+SIZE: 1016
+CONTENT-LENGTH: 1016
+SHA256: 96016727e0abd1c894cf023a6989df4783b6c13a3b8638766ce83807130515ea
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: modified
@@ -18833,13 +18965,27 @@ from odoo.tests.common import TransactionCase
 
 
 class TestRetentionEvidence(TransactionCase):
-    def test_evidence_is_append_only_for_federation_users(self):
-        evidence = self.env['federation.retention.evidence'].sudo().create({
-            'policy': 'test', 'status': 'passed', 'deleted_count': 3,
-        })
+    def test_evidence_acl_is_read_only_for_federation_managers(self):
+        evidence = self.env["federation.retention.evidence"].sudo().create(
+            {"policy": "test", "status": "passed", "deleted_count": 3}
+        )
         self.assertEqual(evidence.deleted_count, 3)
-        manager = self.env.ref('base.user_admin')
-        self.assertFalse(self.env['federation.retention.evidence'].with_user(manager).check_access_rights('write', raise_exception=False))
+
+        manager_group = self.env.ref(
+            "sports_federation_base.group_federation_manager"
+        )
+        model = self.env["ir.model"]._get("federation.retention.evidence")
+        access = self.env["ir.model.access"].search(
+            [
+                ("group_id", "=", manager_group.id),
+                ("model_id", "=", model.id),
+            ]
+        )
+        self.assertTrue(access)
+        self.assertTrue(any(access.mapped("perm_read")))
+        self.assertFalse(any(access.mapped("perm_write")))
+        self.assertFalse(any(access.mapped("perm_create")))
+        self.assertFalse(any(access.mapped("perm_unlink")))
 
 ====================================================================================================
 FILE: sports_federation_base/tests/test_route_inventory.py
@@ -26446,7 +26592,7 @@ CONTENT-LENGTH: 170
 SHA256: b4546f56a031710d2fbd8e30f8e5887b514d10f588cd35b1a125317c39f5576d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from . import test_demo_data_pack
@@ -26731,9 +26877,9 @@ class TestDemoDataPack(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/test_operator_role_acceptance.py
-SIZE: 2236
-CONTENT-LENGTH: 2236
-SHA256: f4b7454f4087adf2668ea8f518994b03a2f472585cf678f0adbc19cb7752a17b
+SIZE: 2662
+CONTENT-LENGTH: 2662
+SHA256: 277761fc6da69fb6d9e32f864f7b1cc129a9ad1b474acb2b0b57d1d706b65cb0
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: modified
@@ -26769,17 +26915,31 @@ class TestOperatorRoleAcceptance(TransactionCase):
                 'group_ids': [Command.set([cls.env.ref('base.group_user').id, group.id])],
             })
 
-    def test_each_phase_owner_can_read_the_owned_workspace(self):
+    def _group_acl(self, group_xmlid, model_name):
+        group = self.env.ref(group_xmlid)
+        model = self.env["ir.model"]._get(model_name)
+        return self.env["ir.model.access"].search(
+            [("group_id", "=", group.id), ("model_id", "=", model.id)]
+        )
+
+    def test_each_phase_owner_has_read_acl_for_owned_workspace(self):
         for group_xmlid, model_name in self.ROLE_MODELS:
-            model = self.env[model_name].with_user(self.users[group_xmlid])
-            self.assertTrue(model.check_access_rights('read', raise_exception=False), (group_xmlid, model_name))
+            access = self._group_acl(group_xmlid, model_name)
+            self.assertTrue(access, (group_xmlid, model_name))
+            self.assertTrue(any(access.mapped("perm_read")), (group_xmlid, model_name))
 
     def test_planner_and_approver_are_distinct_operators(self):
-        planner = self.users['sports_federation_scheduling.group_schedule_planner']
-        approver = self.users['sports_federation_schedule_approval.group_schedule_approver']
+        planner = self.users["sports_federation_scheduling.group_schedule_planner"]
+        approver = self.users[
+            "sports_federation_schedule_approval.group_schedule_approver"
+        ]
         self.assertNotEqual(planner, approver)
-        review_model = self.env['federation.schedule.review'].with_user(planner)
-        self.assertFalse(review_model.check_access_rights('write', raise_exception=False))
+        planner_access = self._group_acl(
+            "sports_federation_scheduling.group_schedule_planner",
+            "federation.schedule.review",
+        )
+        self.assertTrue(planner_access)
+        self.assertFalse(any(planner_access.mapped("perm_write")))
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/test_release_pilot_readiness.py
@@ -37972,7 +38132,7 @@ CONTENT-LENGTH: 1975
 SHA256: 1c38d18bb54efb60aa2f7129e48be52b5a8b371a1c9d7aaeac0fc3cb1a14f8fd
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from datetime import timedelta
@@ -45454,7 +45614,7 @@ CONTENT-LENGTH: 5371
 SHA256: f22179cb163665fd9bb222b436d3b303d0b13b9fc29ea0e8028760487fc21a1e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 import logging
@@ -67318,7 +67478,7 @@ CONTENT-LENGTH: 9552
 SHA256: 3497612c3c06660f7999da785e23e62d0b691f652b79d8351fda18341d6b882e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # Sports Federation Public Site
@@ -67724,7 +67884,7 @@ CONTENT-LENGTH: 3068
 SHA256: 4ebce0e2261119f5f4e6ee530001eedf64f651b23610fcd025d2f9f0dab43aaa
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 import json
@@ -68219,7 +68379,7 @@ CONTENT-LENGTH: 22515
 SHA256: 598806286a6cd78b09185c4c473389ae785ff9795667a0799cebb81d89f3a9d1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from odoo import http
@@ -71994,7 +72154,7 @@ CONTENT-LENGTH: 370
 SHA256: 1b32015d34fe06836bc756775f93cb1da68ab6b8e83bb286b4fea270c8cb762a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from . import test_http_smoke
@@ -72636,12 +72796,12 @@ class TestPlayerPublicPages(HttpCase):
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_public_api.py
-SIZE: 35817
-CONTENT-LENGTH: 35811
-SHA256: b1b774122bd33c23871c442a5891422e10ae490818c1112284106f34fecb78fb
+SIZE: 36228
+CONTENT-LENGTH: 36222
+SHA256: 7a57ed070f92309531d275af09b4054c7d6cdc69d0600d5d07002cc0742c2e72
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 """
@@ -73481,6 +73641,9 @@ class TestPublicApiRateLimits(TransactionCase):
         with patch(
             "odoo.addons.sports_federation_public_site.controllers.public_competitions.request",
             request_stub,
+        ), patch(
+            "odoo.addons.sports_federation_public_site.controllers._public_request.request",
+            request_stub,
         ), patch.object(
             type(rate_limit_service),
             "_get_now",
@@ -73508,6 +73671,9 @@ class TestPublicApiRateLimits(TransactionCase):
 
         with patch(
             "odoo.addons.sports_federation_public_site.controllers.public_competitions.request",
+            request_stub,
+        ), patch(
+            "odoo.addons.sports_federation_public_site.controllers._public_request.request",
             request_stub,
         ), patch.object(
             type(rate_limit_service),
@@ -73540,6 +73706,9 @@ class TestPublicApiRateLimits(TransactionCase):
             request_stub,
         ), patch(
             "odoo.addons.sports_federation_public_site.controllers.public_follow.request",
+            request_stub,
+        ), patch(
+            "odoo.addons.sports_federation_public_site.controllers._public_request.request",
             request_stub,
         ), patch.object(
             type(rate_limit_service),
@@ -73613,7 +73782,7 @@ CONTENT-LENGTH: 598
 SHA256: aee2512d6d192c125155409cd434d261f8b59a273ff387b7d94fa90883aea983
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from pathlib import Path
@@ -79993,7 +80162,7 @@ CONTENT-LENGTH: 12902
 SHA256: f0ca93d9e100f3694d2d80b51e9fc6bea358432208fddfee480938ee654f2390
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 import base64
@@ -99128,7 +99297,7 @@ CONTENT-LENGTH: 5027
 SHA256: fac9e6593f4665d79b936eb12082894d8ee14db0fedb13c468f646ae81dda197
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 Sports Federation Standings
@@ -99992,7 +100161,7 @@ CONTENT-LENGTH: 8256
 SHA256: 64fdd46996c55c447190befab5b016980da7941f9fbeb85214985a00924fa0a5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 import logging
@@ -100277,9 +100446,9 @@ from . import test_tour_standings
 
 ====================================================================================================
 FILE: sports_federation_standings/tests/test_standing_recompute_queue.py
-SIZE: 6817
-CONTENT-LENGTH: 6817
-SHA256: d6eb32d2572e29e2d59ab96e14d3349836b02de3feae026dc26723d9153fc99d
+SIZE: 6779
+CONTENT-LENGTH: 6779
+SHA256: b383e90b767dbd951f5d88f7a713d8b6ca7423aac99fbd74919031a96efedc3f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: modified
@@ -100458,7 +100627,7 @@ class TestStandingRecomputeQueue(TransactionCase):
         self.assertEqual(job.state, "done")
 
     def test_exhausted_job_moves_to_dead_letter_and_can_be_retried(self):
-        standing = self._create_standing('Dead Letter Standing')
+        standing = self._create_standing()
         job = self.env['federation.standing.recompute.job'].create({
             'standing_id': standing.id, 'correlation_id': 'dead-letter-1',
             'attempt_count': 2, 'max_attempts': 3,
@@ -100473,7 +100642,7 @@ class TestStandingRecomputeQueue(TransactionCase):
         self.assertEqual(job.attempt_count, 0)
 
     def test_stale_running_job_is_recovered(self):
-        standing = self._create_standing('Stale Standing')
+        standing = self._create_standing()
         job = self.env['federation.standing.recompute.job'].create({
             'standing_id': standing.id, 'correlation_id': 'stale-1',
             'state': 'running', 'started_on': fields.Datetime.now() - timedelta(hours=1),

@@ -171,7 +171,7 @@ class TestStandingRecomputeQueue(TransactionCase):
         self.assertEqual(job.state, "done")
 
     def test_exhausted_job_moves_to_dead_letter_and_can_be_retried(self):
-        standing = self._create_standing('Dead Letter Standing')
+        standing = self._create_standing()
         job = self.env['federation.standing.recompute.job'].create({
             'standing_id': standing.id, 'correlation_id': 'dead-letter-1',
             'attempt_count': 2, 'max_attempts': 3,
@@ -186,7 +186,7 @@ class TestStandingRecomputeQueue(TransactionCase):
         self.assertEqual(job.attempt_count, 0)
 
     def test_stale_running_job_is_recovered(self):
-        standing = self._create_standing('Stale Standing')
+        standing = self._create_standing()
         job = self.env['federation.standing.recompute.job'].create({
             'standing_id': standing.id, 'correlation_id': 'stale-1',
             'state': 'running', 'started_on': fields.Datetime.now() - timedelta(hours=1),
