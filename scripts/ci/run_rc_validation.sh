@@ -102,6 +102,7 @@ run_upgrade() {
 }
 
 case "$lane" in
+  preflight) python3 ci/check_release_workspace.py ;;
   static) static_checks ;;
   install)
     require_odoo
@@ -114,6 +115,7 @@ case "$lane" in
   focus) run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus' ;;
   full) run_tags 'standard' ;;
   all)
+    python3 ci/check_release_workspace.py
     static_checks
     require_odoo
     "${common[@]}" -i "$modules" --test-enable --test-tags 'standard'
@@ -124,5 +126,5 @@ case "$lane" in
     run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus'
     run_tags 'standard'
     ;;
-  *) echo "Usage: $0 {static|install|upgrade|core|portal|public|focus|full|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {preflight|static|install|upgrade|core|portal|public|focus|full|all}" >&2; exit 2 ;;
 esac

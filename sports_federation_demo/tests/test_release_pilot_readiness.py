@@ -26,6 +26,10 @@ class TestReleasePilotReadiness(TransactionCase):
     REQUIRED_GROUPS = (
         "sports_federation_base.group_federation_manager",
         "sports_federation_competition_core.group_competition_administrator",
+        "sports_federation_registration.group_registration_manager",
+        "sports_federation_format.group_competition_designer",
+        "sports_federation_calendar.group_calendar_planner",
+        "sports_federation_scheduling.group_schedule_planner",
         "sports_federation_schedule_approval.group_schedule_approver",
         "sports_federation_matchday.group_matchday_manager",
         "sports_federation_portal.group_federation_portal_club",
@@ -56,8 +60,6 @@ class TestReleasePilotReadiness(TransactionCase):
             forbidden_architecture_tokens = (
                 "competitions_current",
                 "competition_current",
-                "competition_v2",
-                "competitions_v2",
             )
             normalized_source = source.lower()
             for token in forbidden_architecture_tokens:

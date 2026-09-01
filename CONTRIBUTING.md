@@ -43,6 +43,16 @@ bash ./ci/run_tests.sh --list-suites
 
 ## Pre-push checks
 
+Before release qualification, commit or intentionally discard all tracked
+changes and remove generated runtime configuration. The RC preflight enforces
+that the candidate can be reproduced from its commit:
+
+```bash
+scripts/ci/run_rc_validation.sh preflight
+```
+
+Run the normal development checks afterward:
+
 ```bash
 black --check sports_federation_base sports_federation_tournament sports_federation_standings sports_federation_venues sports_federation_portal sports_federation_public_site ci
 flake8 sports_federation_base sports_federation_tournament sports_federation_standings sports_federation_venues sports_federation_portal sports_federation_public_site ci

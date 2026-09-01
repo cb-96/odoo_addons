@@ -25,6 +25,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify clean release workspace
+        run: scripts/ci/run_rc_validation.sh preflight
       - name: Run authoritative static release validation
         run: scripts/ci/run_rc_validation.sh static
 
