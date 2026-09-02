@@ -15,7 +15,7 @@
       <xpath expr="//notebook" position="before">
         <group string="Competition workflow">
           <field name="workflow_progress" widget="progressbar"/>
-          <field name="workflow_next_action" readonly="1"/>
+          <field name="journey_state" widget="badge" readonly="1"/><field name="journey_blocker_count" readonly="1"/><field name="workflow_next_action" readonly="1"/><button name="action_open_next_workspace" type="object" string="Open Next Workspace" class="btn-primary"/>
         </group>
       </xpath>
       <xpath expr="//notebook" position="inside">

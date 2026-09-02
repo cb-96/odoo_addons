@@ -12,6 +12,7 @@ class TestPhase51ScheduleHandoff(TransactionCase):
         self.assertTrue(hasattr(schedule, "action_open_submit_for_review"))
         self.assertTrue(hasattr(schedule, "action_submit_for_review"))
         self.assertTrue(hasattr(schedule, "action_open_current_review"))
+        self.assertTrue(hasattr(review, "action_withdraw_submission"))
         self.assertTrue(hasattr(review, "action_request_changes"))
         self.assertTrue(hasattr(review, "action_approve_schedule"))
         self.assertTrue(hasattr(review, "action_publish_schedule"))
@@ -31,6 +32,7 @@ class TestPhase51ScheduleHandoff(TransactionCase):
             "sports_federation_scheduling.schedule_form"
         ).arch_db
         self.assertIn("action_open_submit_for_review", schedule_view)
+        self.assertIn("action_withdraw_submission", review_view)
         self.assertIn("action_request_changes", review_view)
         self.assertIn("action_approve_schedule", review_view)
         self.assertIn("action_publish_schedule", review_view)

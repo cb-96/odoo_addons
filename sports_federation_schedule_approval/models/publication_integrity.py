@@ -5,6 +5,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 _REVIEW_DECISION_TOKEN = object()
+_REVIEW_WITHDRAWAL_TOKEN = object()
 
 
 class FederationScheduleReviewIntegrity(models.Model):
@@ -32,7 +33,7 @@ class FederationScheduleReviewIntegrity(models.Model):
         decision_token = self.env.context.get("schedule_review_decision_token")
         if (
             decision_fields.intersection(vals)
-            and decision_token is not _REVIEW_DECISION_TOKEN
+            and decision_token not in (_REVIEW_DECISION_TOKEN, _REVIEW_WITHDRAWAL_TOKEN)
         ):
             if set(vals) == {"review_note"} and all(
                 review.state == "pending" for review in self
@@ -62,6 +63,12 @@ class FederationScheduleReviewIntegrity(models.Model):
         return self.with_context(
             schedule_review_decision_token=_REVIEW_DECISION_TOKEN
         ).write(vals)
+
+    def _write_withdrawal(self, reason):
+        self.ensure_one()
+        if self.state != "pending":
+            raise ValidationError(_("Only a pending review can be withdrawn."))
+        return self.sudo().with_context(schedule_review_decision_token=_REVIEW_WITHDRAWAL_TOKEN).write({"state": "withdrawn", "review_note": reason, "reviewed_at": fields.Datetime.now()})
 
     def unlink(self):
         raise ValidationError("Schedule reviews are retained as audit evidence.")

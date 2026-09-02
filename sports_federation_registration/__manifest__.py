@@ -1,6 +1,6 @@
 {
     "name": "Competition Registration",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.2.1",
     "category": "Sports",
     "summary": "Role-separated registration desk and finalized participant sets",
     "author": "Sports Federation",

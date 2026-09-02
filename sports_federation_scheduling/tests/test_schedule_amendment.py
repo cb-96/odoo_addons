@@ -73,11 +73,17 @@ class TestScheduleAmendment(TransactionCase):
                 "revision": 3,
             }
         )
+        cls.structure = structure
         stage = cls.env["federation.structure.stage"].create(
             {"name": "League", "structure_id": structure.id, "stage_type": "league"}
         )
+        cls.stage = stage
         fixture = cls.env["federation.fixture"].create(
             {"structure_id": structure.id, "stage_id": stage.id, "round_number": 1}
+        )
+        cls.fixture = fixture
+        cls.allocation = cls.env["federation.matchday.allocation"].create(
+            {"matchday_id": cls.matchday.id, "structure_id": structure.id, "stage_id": stage.id, "round_number": 1}
         )
         court = cls.env["federation.playing.area"].create(
             {"name": "Main Court", "venue_id": venue.id}
@@ -145,3 +151,17 @@ class TestScheduleAmendment(TransactionCase):
         self.matchday.state = "open"
         with self.assertRaises(ValidationError):
             self.schedule.action_create_revision("Unsafe live change")
+
+
+    def test_late_fixture_can_be_added_to_revision_and_removed_again(self):
+        replacement = self.schedule.action_create_revision("Late fixture added")
+        late_fixture = self.env["federation.fixture"].create(
+            {"structure_id": self.structure.id, "stage_id": self.stage.id, "round_number": 2}
+        )
+        self.allocation.manual_fixture_ids = [(4, late_fixture.id)]
+        replacement.invalidate_recordset()
+        self.assertIn(late_fixture, replacement.available_fixture_ids)
+        self.assertIn(late_fixture, replacement.unassigned_fixture_ids)
+        self.allocation.manual_fixture_ids = [(3, late_fixture.id)]
+        replacement.invalidate_recordset()
+        self.assertNotIn(late_fixture, replacement.available_fixture_ids)

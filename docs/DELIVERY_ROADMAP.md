@@ -106,7 +106,7 @@ attachment invariants. Restore and rollback complete from the recorded backup.
 
 ## Simplified Competition Journey
 
-Status: **Planned**
+Status: **Implemented**
 
 ### Objective
 
@@ -123,10 +123,17 @@ approved, and published without exposing the underlying Odoo model structure.
   from the normal path;
 - task-first club portal.
 
+### Reversibility contract
+
+- Setup templates apply editable defaults and can be cancelled.
+- Late fixtures can be added to or removed from calendar allocations.
+- Draft and change-requested schedules refresh from the current calendar plan without deleting assignments.
+- Submitting planners can withdraw pending reviews; approver-requested changes return the same schedule to an editable state.
+- Published evidence stays immutable and corrections use a linked replacement revision.
+
 ### Exit criteria
 
-A trained non-developer completes the normal journey without developer mode,
-direct model navigation, manual progression mapping, or shell access.
+A trained non-developer completes the normal journey without developer mode, direct model navigation, manual progression mapping, or shell access. Every pre-publication handoff has an explicit return path; post-publication changes use traceable replacement revisions.
 
 ## Operational Job Reliability
 

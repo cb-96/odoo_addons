@@ -5,6 +5,7 @@ from odoo.exceptions import ValidationError
 class FederationCreateCompetitionWizard(models.TransientModel):
     _name = "federation.create.competition.wizard"
     _description = "Create Competition Workflow"
+    setup_template = fields.Selection([("league", "League"), ("tournament_day", "Tournament Day"), ("cup", "Cup / Knockout")], default="league", required=True, string="Setup Template", help="Applies reversible defaults; every value remains editable before creation.")
     competition_id = fields.Many2one(
         "federation.competition", required=True, string="Competition Template"
     )
@@ -23,6 +24,11 @@ class FederationCreateCompetitionWizard(models.TransientModel):
         "wizard_id",
         string="Responsibilities",
     )
+
+    @api.onchange("setup_template")
+    def _onchange_setup_template(self):
+        for line in self.division_line_ids:
+            line.tournament_type = "single_day" if self.setup_template == "tournament_day" else "multi_day"
 
     @api.onchange("competition_id")
     def _onchange_competition(self):

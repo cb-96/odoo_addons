@@ -25,3 +25,8 @@ Submitted schedules are immutable. If a reviewer requests changes, the schedule
 returns to `changes_requested`, where the planner can edit and submit a new
 revision. Planners can use the **Reviews** smart button to inspect the current
 handoff and retained history.
+
+
+## Reversible planning
+
+Draft and change-requested schedules refresh the current calendar fixture pool. Late fixtures appear as unassigned work; stale assignments are flagged and never silently deleted. Pending submissions can be withdrawn, while published corrections use governed replacement revisions.

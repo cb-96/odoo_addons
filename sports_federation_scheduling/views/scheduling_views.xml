@@ -31,6 +31,8 @@
             invisible="state != 'published'"
           />
 
+          <button name="action_refresh_calendar_fixtures" type="object" string="Refresh Calendar Fixtures" invisible="state not in ('draft', 'changes_requested')"/>
+
           <button
             name="action_open_submit_for_review"
             type="object"
@@ -146,13 +148,16 @@
               invisible="not superseded_by_id"
             />
           </group>
+          <group string="Fixture Readiness"><field name="available_fixture_count" readonly="1"/><field name="unassigned_fixture_count" readonly="1"/><field name="stale_assignment_count" readonly="1"/></group>
+          <div class="alert alert-warning" role="alert" invisible="not stale_assignment_count">Assignments outside the current calendar plan are retained for explicit correction and are never deleted automatically.</div>
           <notebook>
+            <page string="Calendar Fixtures" name="calendar_fixtures"><field name="available_fixture_ids" readonly="1"><list><field name="name"/><field name="stage_id"/><field name="round_number"/></list></field></page>
             <page string="Assignments" name="assignments">
               <field name="assignment_ids">
                 <list editable="bottom">
                   <field
                     name="fixture_id"
-                    domain="[('structure_id', '=', parent.structure_id)]"
+                    domain="[('id', 'in', parent.available_fixture_ids)]"
                   />
 
                   <field

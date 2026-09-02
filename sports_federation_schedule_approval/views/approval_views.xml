@@ -37,6 +37,7 @@
     <field name="arch" type="xml">
       <form create="0" delete="0">
         <header>
+          <button name="action_withdraw_submission" type="object" groups="sports_federation_scheduling.group_schedule_planner,sports_federation_base.group_federation_manager" string="Withdraw Submission" invisible="state != 'pending'" confirm="Withdraw this submission and return it to planning?"/>
           <button name="action_request_changes" type="object" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager" string="Request Changes" invisible="state != 'pending'" confirm="Return this schedule to the planner for changes?"/>
           <button name="action_approve_schedule" type="object" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager" string="Approve Schedule" class="btn-primary" invisible="state != 'pending'" confirm="Approve this immutable submitted revision?"/>
           <button name="action_publish_schedule" type="object" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager" string="Publish Schedule" class="btn-primary" invisible="state != 'approved'" confirm="Publish this approved schedule for match-day execution?"/>

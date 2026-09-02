@@ -712,3 +712,8 @@ Related docs and entry points
 - competition architecture: [odoo/COMPETITION_ENGINE.md](odoo/COMPETITION_ENGINE.md#L1)
 
 If you'd like, I can now: (1) open a PR draft for this change, (2) run a repo scan of `README` and `INSTALL_LOG` files and fold additional implementation notes into this document, or (3) run the tests for a selected module to validate there are no immediate regressions.
+
+
+## Simplified competition journey and reversible handoffs
+
+Competition editions expose Draft, Ready, Live, and Finished presentation states while detailed domain states remain authoritative. Calendar allocations support explicit late fixtures. Schedules derive their fixture pool from current allocations, flag stale work without deleting it, and permit pending review withdrawal. Published corrections use linked replacement revisions so immutable evidence remains intact.

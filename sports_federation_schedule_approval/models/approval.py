@@ -16,6 +16,7 @@ class FederationScheduleReview(models.Model):
     state = fields.Selection(
         [
             ("pending", "Pending"),
+            ("withdrawn", "Withdrawn"),
             ("changes_requested", "Changes Requested"),
             ("approved", "Approved"),
         ],

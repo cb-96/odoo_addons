@@ -142,6 +142,9 @@ class FederationScheduleValidator(models.AbstractModel):
                             }
                         )
                 team_windows.setdefault(team.id, []).append((fixture, slot))
+        stale = sorted(set(assignment_map) - set(fixture_by_id))
+        for fixture_id in stale:
+            errors.append({"code": "fixture_outside_calendar_plan", "message": "An assigned fixture is no longer included in the calendar plan.", "fixture_id": fixture_id})
         missing = sorted(set(fixture_by_id) - set(assignment_map))
         return {
             "valid": not errors and not missing,

@@ -106,6 +106,20 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         return review
 
     @api.model
+    def withdraw(self, review_id, reason):
+        if not (reason or "").strip():
+            raise ValidationError(_("Explain why the schedule submission is withdrawn."))
+        review = self.env["federation.schedule.review"].browse(int(review_id)).exists()
+        if not review or review.state != "pending":
+            raise ValidationError(_("Only a pending review can be withdrawn."))
+        self.env["federation.competition.role.assignment"].assert_role(review.edition_id, "schedule_planner", "competition_director")
+        if review.submitted_by_id != self.env.user and not self.env.user.has_group("sports_federation_base.group_federation_manager"):
+            raise ValidationError(_("Only the submitting planner can withdraw this review."))
+        review._write_withdrawal(reason)
+        review.schedule_id.sudo().write({"state": "changes_requested"})
+        return True
+
+    @api.model
     def request_changes(self, review_id, note):
         if not (note or "").strip():
             raise ValidationError(_("Explain the requested schedule changes."))

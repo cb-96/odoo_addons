@@ -1,7 +1,7 @@
 <odoo>
  <record id="create_competition_wizard_form" model="ir.ui.view"><field name="name">federation.create.competition.wizard.form</field><field name="model">federation.create.competition.wizard</field><field name="arch" type="xml"><form string="Create Competition">
   <sheet><div class="oe_title"><h1>Create Competition</h1><p class="text-muted">Create the season edition, divisions, registration windows and responsibilities in one guided operation.</p></div>
-   <group string="Basics" col="4"><field name="competition_id"/><field name="season_id"/><field name="name"/><field name="rule_set_id"/><field name="date_start"/><field name="date_end"/></group>
+   <group string="Basics" col="4"><field name="setup_template"/><field name="competition_id"/><field name="season_id"/><field name="name"/><field name="rule_set_id"/><field name="date_start"/><field name="date_end"/></group>
    <group string="Registration"><field name="registration_open"/><field name="registration_close"/></group>
    <notebook><page string="Divisions"><field name="division_line_ids"><list editable="bottom"><field name="name"/><field name="code"/><field name="category"/><field name="gender"/><field name="tournament_type"/></list></field></page>
    <page string="Responsibilities"><field name="role_line_ids"><list editable="bottom"><field name="role"/><field name="user_id"/></list></field></page></notebook>

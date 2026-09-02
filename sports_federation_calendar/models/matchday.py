@@ -94,9 +94,17 @@ class FederationMatchdayAllocation(models.Model):
         "federation.structure.stage", ondelete="restrict", index=True
     )
     round_number = fields.Integer(index=True)
+    manual_fixture_ids = fields.Many2many(
+        "federation.fixture",
+        "federation_matchday_allocation_manual_fixture_rel",
+        "allocation_id",
+        "fixture_id",
+        string="Additional Fixtures",
+        help="Late fixtures included explicitly; removing them undoes the allocation.",
+    )
     fixture_ids = fields.Many2many("federation.fixture", compute="_compute_fixtures")
 
-    @api.depends("structure_id", "stage_id", "round_number")
+    @api.depends("structure_id", "stage_id", "round_number", "manual_fixture_ids")
     def _compute_fixtures(self):
         Fixture = self.env["federation.fixture"]
         for r in self:
@@ -109,7 +117,7 @@ class FederationMatchdayAllocation(models.Model):
                 domain.append(("stage_id", "=", r.stage_id.id))
             if r.round_number:
                 domain.append(("round_number", "=", r.round_number))
-            r.fixture_ids = Fixture.search(domain)
+            r.fixture_ids = Fixture.search(domain) | r.manual_fixture_ids
 
 
 class FederationScheduleSlot(models.Model):
