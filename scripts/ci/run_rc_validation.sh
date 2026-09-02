@@ -62,6 +62,7 @@ PY
   python3 ci/check_delivery_language.py
   python3 ci/check_release_qualification.py
   python3 ci/check_release_focus_contract.py
+  python3 ci/check_migration_rehearsal_contract.py
   if command -v node >/dev/null 2>&1; then
     while IFS= read -r -d '' file; do node --check "$file"; done < <(
       find sports_federation_* -path '*/static/src/*.js' -type f -print0
@@ -116,6 +117,7 @@ case "$lane" in
     python3 ci/check_performance_qualification.py
     run_tags '/sports_federation_standings:TestStandingsPerformance,/sports_federation_reporting:TestReportSnapshot,/sports_federation_reporting:TestYearFourReporting,/sports_federation_public_site:TestPublicSiteNewEndpoints'
     ;;
+  acceptance) run_tags 'sf_operator_acceptance,sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus' ;;
   focus) run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus' ;;
   full) run_tags 'standard' ;;
   all)
@@ -129,8 +131,8 @@ case "$lane" in
     run_tags '/sports_federation_public_site'
     python3 ci/check_performance_qualification.py
     run_tags '/sports_federation_standings:TestStandingsPerformance,/sports_federation_reporting:TestReportSnapshot,/sports_federation_reporting:TestYearFourReporting,/sports_federation_public_site:TestPublicSiteNewEndpoints'
-    run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus'
+    run_tags 'sf_operator_acceptance,sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus'
     run_tags 'standard'
     ;;
-  *) echo "Usage: $0 {preflight|static|install|upgrade|core|portal|public|performance|focus|full|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {preflight|static|install|upgrade|core|portal|public|performance|acceptance|focus|full|all}" >&2; exit 2 ;;
 esac

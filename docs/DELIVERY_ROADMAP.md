@@ -62,12 +62,30 @@ directory.
 
 ## Release Candidate and Migration Evidence
 
-Status: **Next**
+Status: **Implemented, pending rehearsal with an approved backup**
 
 ### Objective
 
 Prove deployment and recovery against a representative pre-refactor database and
 matching filestore.
+
+### Automation
+
+Run the complete migration rehearsal from a clean candidate checkout:
+
+```bash
+scripts/ci/run_migration_rehearsal.sh \
+  --backup-dir /path/to/approved-backup \
+  --rollback-owner "Release owner" \
+  --rollback-trigger "Invariant comparison or acceptance validation fails" \
+  --yes
+```
+
+The command restores the source backup, captures pre-upgrade invariants, upgrades
+the restored database, captures post-upgrade invariants, runs role-separated
+acceptance, restores the same backup into an independent rollback database, and
+compares all evidence. Evidence is written under
+`artifacts/release/migration/` by default.
 
 ### Deliverables
 

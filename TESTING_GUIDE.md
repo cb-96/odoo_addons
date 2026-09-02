@@ -1,6 +1,6 @@
 # Testing Guide
 
-Last updated: 2026-05-18
+Last updated: 2026-09-02
 Owner: Federation Platform Team
 
 This guide explains the project's test taxonomy, how to write tests for each
@@ -429,3 +429,19 @@ scripts/ci/run_release_baseline.sh
 This wraps the authoritative RC lanes and records lane evidence under
 `artifacts/release/baseline/`. A lane failure records failed evidence before the
 script exits. Do not use this wrapper to hide or bypass individual RC failures.
+
+
+## Migration and rollback qualification
+
+The release migration rehearsal uses versioned invariants from
+`ci/release_invariants.json` and runs role-separated acceptance against the
+upgraded database:
+
+```bash
+scripts/ci/run_rc_validation.sh acceptance
+scripts/ci/run_migration_rehearsal.sh --help
+```
+
+Keep invariant names stable once evidence has been archived. Add a count or
+integrity check when a new release-critical ownership boundary is introduced.
+Do not remove a check merely to accommodate unexplained migration drift.

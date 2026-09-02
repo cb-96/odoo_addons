@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 858
+# FILE-COUNT: 860
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -2670,9 +2670,9 @@ Archive the evidence directory with CI logs, database and filestore backup check
 
 ====================================================================================================
 FILE: ROADMAP.md
-SIZE: 6107
-CONTENT-LENGTH: 6107
-SHA256: c62d5dc042e16c846b274583103e09500720a21eaf6a59f6ead31e37bb2773c3
+SIZE: 6383
+CONTENT-LENGTH: 6383
+SHA256: a3b8d17893c100f7fd9cbca94f7de7e7d1bdff128aa1b00a8c2ba35fb7bda7b3
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -2680,9 +2680,9 @@ GIT-STATE: tracked
 
 # Sports Federation Platform Roadmap
 
-Last updated: 2026-08-20
+Last updated: 2026-09-02
 Owner: Federation Platform Team
-Last reviewed: 2026-08-20
+Last reviewed: 2026-09-02
 Review cadence: Every release
 Release train: 2026.08
 Planning horizon: 12 months
@@ -2700,6 +2700,13 @@ The platform has broad federation coverage and strong technical safeguards. The 
 - Keep every privileged portal write behind a model-owned scope check.
 - Treat migrations, restore readiness, observability, and documentation as release gates.
 - Prefer one authoritative document per concern. Delete completed mini-roadmaps and generated snapshots that duplicate tests or code.
+
+## Delivery Roadmap
+
+The executable milestone sequence is maintained in
+[`docs/DELIVERY_ROADMAP.md`](docs/DELIVERY_ROADMAP.md). This repository roadmap
+remains the priority and policy source; the delivery roadmap defines concrete
+deliverables, automation, and exit criteria.
 
 ## Current Priorities
 
@@ -3769,9 +3776,9 @@ If you'd like, I can now: (1) open a PR draft for this change, (2) run a repo sc
 
 ====================================================================================================
 FILE: TESTING_GUIDE.md
-SIZE: 15831
-CONTENT-LENGTH: 15625
-SHA256: beb29cbf3c47b4265e9292564d0718bd28acd72c87b8424d9761386429411eb6
+SIZE: 16257
+CONTENT-LENGTH: 16051
+SHA256: 012e2c1883bbfd7f8d38a4ac4373e8a3f2e4a3fdb1911e10eeb00a27dfdd5fc0
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -4195,6 +4202,19 @@ scripts/ci/run_rc_validation.sh performance
 ```
 
 The versioned registry is `ci/performance_budgets.json`. The contract checker verifies the exact targeted test classes, preventing a renamed class from silently turning the lane into an empty run. Budget increases require measured evidence in `RELEASE_RUNBOOK.md`. Synthetic data must be identified as synthetic.
+
+## Release baseline qualification
+
+After committing the candidate and confirming that no tracked changes remain,
+run the complete baseline gate:
+
+```bash
+scripts/ci/run_release_baseline.sh
+```
+
+This wraps the authoritative RC lanes and records lane evidence under
+`artifacts/release/baseline/`. A lane failure records failed evidence before the
+script exits. Do not use this wrapper to hide or bypass individual RC failures.
 
 ====================================================================================================
 FILE: TROUBLESHOOTING.md
@@ -14196,10 +14216,239 @@ print(f"Included files: {len(files)}")
 print(f"Size: {OUTPUT.stat().st_size / 1024 / 1024:.2f} MB")
 
 ====================================================================================================
+FILE: docs/DELIVERY_ROADMAP.md
+SIZE: 6793
+CONTENT-LENGTH: 6783
+SHA256: d24ccf58c8a3e9c6d937edab30118f20730cbeb7194d52b578777720ad10ec7e
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+# Delivery Roadmap
+
+Owner: Federation Platform Team
+Last updated: 2026-09-02
+Review cadence: Every release
+
+## Purpose
+
+This roadmap turns the stabilized competition architecture into an executable
+sequence of release, product, reliability, operations, and usability milestones.
+The ownership chain remains unchanged:
+
+`registration → format → calendar → scheduling → schedule approval → match day`
+
+Published schedules remain immutable, role separation remains enforced, and
+portal/public access continues through explicit ownership boundaries.
+
+## Release Baseline Qualification
+
+Status: **Implemented, pending execution on the committed candidate**
+
+### Objective
+
+Create one reproducible candidate commit for which static validation, fresh
+installation, focused release surfaces, performance qualification, browser
+focus tests, and the full standard suite all pass.
+
+### Automation
+
+Run after committing all functional changes:
+
+```bash
+scripts/ci/run_release_baseline.sh
+```
+
+The script executes:
+
+1. clean-workspace preflight;
+2. static and contract validation;
+3. fresh installation and standard tests;
+4. core qualification;
+5. portal qualification;
+6. public-site qualification;
+7. performance qualification;
+8. browser and release-focus qualification;
+9. final full standard suite;
+10. machine-readable evidence capture per lane.
+
+Evidence is written under `artifacts/release/baseline/` by default. Override this
+with `RELEASE_BASELINE_EVIDENCE_DIR` when CI provides a dedicated artifact
+directory.
+
+### Exit criteria
+
+- One immutable candidate SHA is recorded in every evidence file.
+- Test failures and errors are zero.
+- Static, ownership, workflow, migration, publication, and security contracts pass.
+- Performance budgets pass.
+- Browser lifecycle, finance, and public-site tours pass.
+- Local and GitHub release-candidate validation agree on the same commit.
+- The worktree is clean before qualification starts.
+
+## Release Candidate and Migration Evidence
+
+Status: **Next**
+
+### Objective
+
+Prove deployment and recovery against a representative pre-refactor database and
+matching filestore.
+
+### Deliverables
+
+- production-like database and filestore restore;
+- pre-upgrade invariant snapshot;
+- reviewed module upgrade;
+- post-upgrade invariant comparison;
+- role-separated operator pilot;
+- backup checksum and restore evidence;
+- rollback drill with named owner and trigger;
+- archived RC logs and machine-readable evidence.
+
+### Exit criteria
+
+The upgraded copy preserves competition, registration, fixture, schedule,
+publication, match-day, result, standings, portal, public, integration, and
+attachment invariants. Restore and rollback complete from the recorded backup.
+
+## Simplified Competition Journey
+
+Status: **Planned**
+
+### Objective
+
+Allow a normal league, tournament day, or cup to be configured, scheduled,
+approved, and published without exposing the underlying Odoo model structure.
+
+### Deliverables
+
+- template-led competition creation;
+- guided Basics, Participants, Format, Calendar, Schedule, Publish journey;
+- user-facing Draft, Ready, Live, Finished presentation states;
+- visible blockers, responsible role, and next action;
+- advanced stage graph, revision, fairness, and shared-day controls separated
+  from the normal path;
+- task-first club portal.
+
+### Exit criteria
+
+A trained non-developer completes the normal journey without developer mode,
+direct model navigation, manual progression mapping, or shell access.
+
+## Operational Job Reliability
+
+Status: **Partially implemented**
+
+### Objective
+
+Generalize the proven standings recompute reliability pattern without moving
+domain execution out of its owning addon.
+
+### Deliverables
+
+- bounded retry and backoff;
+- stale-running recovery;
+- dead-letter/operator-action state;
+- correlation IDs and sanitized error evidence;
+- idempotent manual retry;
+- operator visibility for notification, report, integration, retention, and
+  snapshot jobs;
+- shared infrastructure only after two proven consumers exist.
+
+### Exit criteria
+
+Operators can identify what failed, whether it will retry, when it will retry,
+how many attempts remain, which correlation ID applies, and whether manual retry
+is safe.
+
+## Retention Evidence and Recovery Visibility
+
+Status: **Partially implemented**
+
+### Objective
+
+Turn retention execution into auditable operational evidence and surface
+recovery readiness in one place.
+
+### Deliverables
+
+- candidate, deleted, skipped, attachment, and failure counts;
+- duration, policy window/version, dry-run flag, and correlation ID;
+- read-only retention evidence views;
+- overdue and repeated-failure alerts;
+- release-readiness checks for disabled or stale retention jobs;
+- links to restore and rollback evidence.
+
+### Exit criteria
+
+The release owner can prove that each policy ran, used the intended window,
+retained unresolved workflow evidence, cleaned matching attachments, and exposed
+failures to operators.
+
+## Consolidated Operational Dashboard
+
+Status: **Planned**
+
+### Objective
+
+Aggregate existing release, job, retention, integration, and competition queues
+without duplicating their source records or commands.
+
+### Deliverables
+
+- release readiness and last evidence status;
+- queued, retrying, dead-letter, and stale job health;
+- retention freshness and outcomes;
+- failed or partial integration deliveries;
+- registration blockers, review backlog, unpublished approved schedules,
+  match-day publication gaps, result backlog, and standings failures;
+- direct links to owning records.
+
+### Exit criteria
+
+An operator can assess release and live operational health from one dashboard and
+navigate directly to the owning workflow for remediation.
+
+## Accessibility and Operator Usability
+
+Status: **Planned**
+
+### Objective
+
+Qualify the guided journey and principal portal/public workflows for keyboard,
+mobile, terminology, and accessible error recovery.
+
+### Deliverables
+
+- keyboard-only competition setup acceptance;
+- modal focus and focus-restoration checks;
+- linked validation summaries;
+- non-color status cues and accessible icon labels;
+- mobile portal qualification;
+- raw internal-state prevention;
+- deterministic training sandbox and operator walkthrough.
+
+### Exit criteria
+
+The release pilot is completable by keyboard, principal mobile portal workflows
+remain usable, and user-facing terminology consistently describes the simplified
+journey rather than internal model states.
+
+## Change Control
+
+Each milestone must ship as focused, test-backed changes with corresponding
+workflow, module, technical, and runbook documentation. New abstractions require
+multiple proven consumers. Security checks, ownership boundaries, publication
+immutability, and release validation must not be weakened to accommodate
+implementation drift.
+
+====================================================================================================
 FILE: docs/README.md
-SIZE: 1648
-CONTENT-LENGTH: 1648
-SHA256: 055d44966ea3955ed28ce5ea70ccecbc305c320535051fcfa97d1c09a9dcaca5
+SIZE: 1752
+CONTENT-LENGTH: 1752
+SHA256: 4fa8b248b92c7e364706f00fc35f3d545f60a6bc3dd326d221a6c5d2995029d7
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -14251,6 +14500,8 @@ roadmap or a standalone review snapshot for routine changes.
 ## Engineering contracts
 
 - [Foundation source-truth contract](repository_source_truth.md)
+
+- [Delivery roadmap](DELIVERY_ROADMAP.md): executable post-stabilization milestones and exit criteria.
 
 ====================================================================================================
 FILE: docs/RELEASE_PILOT_SCENARIO.md
@@ -15442,6 +15693,95 @@ case "$lane" in
     ;;
   *) echo "Usage: $0 {preflight|static|install|upgrade|core|portal|public|performance|focus|full|all}" >&2; exit 2 ;;
 esac
+
+====================================================================================================
+FILE: scripts/ci/run_release_baseline.sh
+SIZE: 1993
+CONTENT-LENGTH: 1993
+SHA256: 21d3f40ff47e594897356b4865c2241cc1b5662e9040d0fd716c3776021df232
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$repo_root"
+
+evidence_dir="${RELEASE_BASELINE_EVIDENCE_DIR:-$repo_root/artifacts/release/baseline}"
+database="${DB_NAME:-sf_rc_validation}"
+mkdir -p "$evidence_dir"
+
+record_lane() {
+  local lane="$1"
+  local status="$2"
+  python3 ci/capture_release_evidence.py \
+    --lane "$lane" \
+    --status "$status" \
+    --database "$database" \
+    --output "$evidence_dir/$lane.json"
+}
+
+run_lane() {
+  local lane="$1"
+  echo "[Release baseline] Running RC lane: $lane"
+  if scripts/ci/run_rc_validation.sh "$lane"; then
+    record_lane "$lane" passed
+  else
+    local exit_code=$?
+    record_lane "$lane" failed || true
+    echo "[Release baseline] Lane failed: $lane" >&2
+    return "$exit_code"
+  fi
+}
+
+# Qualification is intentionally strict. Run it from the committed candidate
+# with no tracked changes or generated runtime configuration in the repository.
+run_lane preflight
+run_lane static
+run_lane install
+run_lane core
+run_lane portal
+run_lane public
+run_lane performance
+run_lane focus
+run_lane full
+
+python3 - "$evidence_dir" <<'PY'
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+root = Path(sys.argv[1])
+records = [json.loads(path.read_text()) for path in sorted(root.glob("*.json"))]
+summary = {
+    "schema_version": 1,
+    "recorded_at": datetime.now(timezone.utc).isoformat(),
+    "status": (
+        "passed"
+        if records and all(record["status"] == "passed" for record in records)
+        else "failed"
+    ),
+    "lanes": [
+        {
+            "lane": record["lane"],
+            "status": record["status"],
+            "commit": record["commit"],
+        }
+        for record in records
+    ],
+}
+(root / "summary.json").write_text(
+    json.dumps(summary, indent=2, sort_keys=True) + "\n"
+)
+print(root / "summary.json")
+PY
+
+echo "[Release baseline] Qualification passed."
+echo "[Release baseline] Evidence: $evidence_dir"
 
 ====================================================================================================
 FILE: source_collector.py
@@ -68374,13 +68714,15 @@ class PublicCompetitionController(http.Controller):
 
 ====================================================================================================
 FILE: sports_federation_public_site/controllers/public_competitions.py
-SIZE: 22525
-CONTENT-LENGTH: 22525
-SHA256: 2996b154fbfff04de9c667017897ddbf45ea5078dd180294a6f4b385ed7847f5
+SIZE: 22538
+CONTENT-LENGTH: 22538
+SHA256: 20a981000ac2333bb55691aa3672d0ac597ccca9cc5496bb69e199c00a2fa38e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
+
+import json
 
 from odoo import http
 from odoo.addons.sports_federation_base.request_security import (

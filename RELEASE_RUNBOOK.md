@@ -1,8 +1,8 @@
 # Release Runbook
 
-Last updated: 2026-08-23
+Last updated: 2026-09-02
 Owner: Federation Platform Team
-Last reviewed: 2026-08-23
+Last reviewed: 2026-09-02
 Review cadence: Every release
 Release train: 2026.08
 
@@ -536,3 +536,26 @@ python3 ci/capture_release_evidence.py --lane restore --status passed \
 ```
 
 Archive the evidence directory with CI logs, database and filestore backup checksums, the migration invariant report, and the named rollback owner.
+
+
+## Migration rehearsal evidence
+
+Run the complete rehearsal against an approved database and filestore backup:
+
+```bash
+scripts/ci/run_migration_rehearsal.sh \
+  --backup-dir /path/to/approved-backup \
+  --rollback-owner "Release owner" \
+  --rollback-trigger "Invariant comparison or acceptance validation fails" \
+  --yes
+```
+
+The rehearsal creates pre-upgrade, post-upgrade, and rollback invariant snapshots;
+validates exact counts for principal federation records; rejects ownership,
+publication, fixture-link, and attachment metadata violations; runs the
+role-separated operator acceptance lane; and writes a manifest containing the
+backup checksum, rollback owner, rollback trigger, and evidence inventory.
+
+Archive the generated `artifacts/release/migration/` directory with the candidate
+logs. A release cannot proceed when the invariant comparison or operator
+acceptance evidence is not `passed`.

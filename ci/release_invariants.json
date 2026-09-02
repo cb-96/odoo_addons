@@ -1,0 +1,32 @@
+{
+  "count_modes": {
+    "attachments": "minimum",
+    "clubs": "exact",
+    "competition_editions": "exact",
+    "fixtures": "exact",
+    "matches": "exact",
+    "players": "exact",
+    "schedule_publications": "exact",
+    "teams": "exact",
+    "tournaments": "exact"
+  },
+  "counts": {
+    "attachments": "SELECT count(*) FROM ir_attachment",
+    "clubs": "SELECT count(*) FROM federation_club",
+    "competition_editions": "SELECT count(*) FROM federation_competition_edition",
+    "fixtures": "SELECT count(*) FROM federation_fixture",
+    "matches": "SELECT count(*) FROM federation_match",
+    "players": "SELECT count(*) FROM federation_player",
+    "schedule_publications": "SELECT count(*) FROM federation_schedule_publication",
+    "teams": "SELECT count(*) FROM federation_team",
+    "tournaments": "SELECT count(*) FROM federation_tournament"
+  },
+  "schema_version": 1,
+  "zero_checks": {
+    "duplicate_live_matchday_publications": "SELECT count(*) FROM (SELECT matchday_id FROM federation_schedule_publication WHERE state = 'live' GROUP BY matchday_id HAVING count(*) > 1) violations",
+    "fixture_match_backlink_mismatches": "SELECT count(*) FROM federation_fixture fixture JOIN federation_match match ON match.id = fixture.operational_match_id WHERE match.logical_fixture_id IS DISTINCT FROM fixture.id",
+    "orphan_competition_editions": "SELECT count(*) FROM federation_competition_edition edition LEFT JOIN federation_competition competition ON competition.id = edition.competition_id LEFT JOIN federation_season season ON season.id = edition.season_id WHERE competition.id IS NULL OR season.id IS NULL",
+    "orphan_schedule_publications": "SELECT count(*) FROM federation_schedule_publication publication LEFT JOIN federation_matchday matchday ON matchday.id = publication.matchday_id WHERE matchday.id IS NULL",
+    "stored_attachments_without_filename": "SELECT count(*) FROM ir_attachment WHERE type = 'binary' AND store_fname IS NOT NULL AND store_fname = ''"
+  }
+}
