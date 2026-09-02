@@ -18958,7 +18958,7 @@ CONTENT-LENGTH: 1016
 SHA256: 96016727e0abd1c894cf023a6989df4783b6c13a3b8638766ce83807130515ea
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from odoo.tests.common import TransactionCase
@@ -26882,7 +26882,7 @@ CONTENT-LENGTH: 2662
 SHA256: 277761fc6da69fb6d9e32f864f7b1cc129a9ad1b474acb2b0b57d1d706b65cb0
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from odoo import Command
@@ -68374,9 +68374,9 @@ class PublicCompetitionController(http.Controller):
 
 ====================================================================================================
 FILE: sports_federation_public_site/controllers/public_competitions.py
-SIZE: 22515
-CONTENT-LENGTH: 22515
-SHA256: 598806286a6cd78b09185c4c473389ae785ff9795667a0799cebb81d89f3a9d1
+SIZE: 22525
+CONTENT-LENGTH: 22525
+SHA256: 2996b154fbfff04de9c667017897ddbf45ea5078dd180294a6f4b385ed7847f5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -68388,7 +68388,7 @@ from odoo.addons.sports_federation_base.request_security import (
 )
 from odoo.addons.portal.controllers.portal import pager as portal_pager
 from odoo.exceptions import AccessError, ValidationError
-from odoo.http import request
+from odoo.http import Response, request
 from werkzeug.exceptions import NotFound
 
 from ._filters import TournamentHubFilterMixin
@@ -72801,7 +72801,7 @@ CONTENT-LENGTH: 36222
 SHA256: 7a57ed070f92309531d275af09b4054c7d6cdc69d0600d5d07002cc0742c2e72
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 """
@@ -100451,7 +100451,7 @@ CONTENT-LENGTH: 6779
 SHA256: b383e90b767dbd951f5d88f7a713d8b6ca7423aac99fbd74919031a96efedc3f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from datetime import timedelta

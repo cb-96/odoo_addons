@@ -1,3 +1,5 @@
+import json
+
 from odoo import http
 from odoo.addons.sports_federation_base.request_security import (
     FederationRequestSecurityMixin,

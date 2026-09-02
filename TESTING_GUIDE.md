@@ -416,3 +416,16 @@ scripts/ci/run_rc_validation.sh performance
 ```
 
 The versioned registry is `ci/performance_budgets.json`. The contract checker verifies the exact targeted test classes, preventing a renamed class from silently turning the lane into an empty run. Budget increases require measured evidence in `RELEASE_RUNBOOK.md`. Synthetic data must be identified as synthetic.
+
+## Release baseline qualification
+
+After committing the candidate and confirming that no tracked changes remain,
+run the complete baseline gate:
+
+```bash
+scripts/ci/run_release_baseline.sh
+```
+
+This wraps the authoritative RC lanes and records lane evidence under
+`artifacts/release/baseline/`. A lane failure records failed evidence before the
+script exits. Do not use this wrapper to hide or bypass individual RC failures.

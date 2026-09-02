@@ -44,3 +44,5 @@ roadmap or a standalone review snapshot for routine changes.
 ## Engineering contracts
 
 - [Foundation source-truth contract](repository_source_truth.md)
+
+- [Delivery roadmap](DELIVERY_ROADMAP.md): executable post-stabilization milestones and exit criteria.

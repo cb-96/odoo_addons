@@ -1,8 +1,8 @@
 # Sports Federation Platform Roadmap
 
-Last updated: 2026-08-20
+Last updated: 2026-09-02
 Owner: Federation Platform Team
-Last reviewed: 2026-08-20
+Last reviewed: 2026-09-02
 Review cadence: Every release
 Release train: 2026.08
 Planning horizon: 12 months
@@ -20,6 +20,13 @@ The platform has broad federation coverage and strong technical safeguards. The 
 - Keep every privileged portal write behind a model-owned scope check.
 - Treat migrations, restore readiness, observability, and documentation as release gates.
 - Prefer one authoritative document per concern. Delete completed mini-roadmaps and generated snapshots that duplicate tests or code.
+
+## Delivery Roadmap
+
+The executable milestone sequence is maintained in
+[`docs/DELIVERY_ROADMAP.md`](docs/DELIVERY_ROADMAP.md). This repository roadmap
+remains the priority and policy source; the delivery roadmap defines concrete
+deliverables, automation, and exit criteria.
 
 ## Current Priorities
 
