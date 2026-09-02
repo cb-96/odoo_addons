@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import re, sys
+import re
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 version = re.compile(r"(?<![A-Za-z0-9])" + "V" + r"2(?![A-Za-z0-9])", re.I)

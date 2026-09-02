@@ -88,10 +88,18 @@ jobs:
 
       - name: Verify portal privilege boundaries
         run: python ci/check_portal_sudo_guard.py
-          python ci/check_portal_competition_ownership.py
-          python ci/check_officiating_contract.py
-          python ci/check_registration_contract.py
-          python ci/check_access_csv_integrity.py
+
+      - name: Verify portal competition ownership
+        run: python ci/check_portal_competition_ownership.py
+
+      - name: Verify officiating contract
+        run: python ci/check_officiating_contract.py
+
+      - name: Verify registration contract
+        run: python ci/check_registration_contract.py
+
+      - name: Verify access CSV integrity
+        run: python ci/check_access_csv_integrity.py
 
       - name: Verify source collector completeness
         run: python ci/check_source_collector_contract.py

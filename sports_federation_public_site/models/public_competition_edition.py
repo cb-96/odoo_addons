@@ -1,6 +1,6 @@
 import re
 
-from odoo import _, api, fields, models
+from odoo import api, fields, models
 
 
 class FederationCompetitionEditionPublic(models.Model):

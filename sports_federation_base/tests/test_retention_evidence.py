@@ -3,14 +3,14 @@ from odoo.tests.common import TransactionCase
 
 class TestRetentionEvidence(TransactionCase):
     def test_evidence_acl_is_read_only_for_federation_managers(self):
-        evidence = self.env["federation.retention.evidence"].sudo().create(
-            {"policy": "test", "status": "passed", "deleted_count": 3}
+        evidence = (
+            self.env["federation.retention.evidence"]
+            .sudo()
+            .create({"policy": "test", "status": "passed", "deleted_count": 3})
         )
         self.assertEqual(evidence.deleted_count, 3)
 
-        manager_group = self.env.ref(
-            "sports_federation_base.group_federation_manager"
-        )
+        manager_group = self.env.ref("sports_federation_base.group_federation_manager")
         model = self.env["ir.model"]._get("federation.retention.evidence")
         access = self.env["ir.model.access"].search(
             [
