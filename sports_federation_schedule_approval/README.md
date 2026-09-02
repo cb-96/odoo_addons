@@ -22,6 +22,8 @@ revision equality, snapshot-digest equality for schedule facts, and schedule
 revalidation. Operational match links are derived and may be materialized at
 publication. Buttons are only orchestration entry points and never duplicate
 the business rules.
+Each review records the authenticated schedule planner who submits it, so that
+planner can withdraw a pending review before an approver decides it.
 Role assignments remain administrator-managed; the Schedule Approver group
 exposes the workflow actions, while a per-edition `schedule_approver` assignment
 authorizes the operation. The role check performs a read-only internal lookup,

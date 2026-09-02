@@ -72,7 +72,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
                     "submitted_revision": schedule.revision,
                     "assignment_snapshot": snapshot,
                     "snapshot_digest": self._digest(snapshot),
-                    "submitted_by_id": schedule.write_uid.id,
+                    "submitted_by_id": self.env.user.id,
                 }
             )
         )

@@ -124,13 +124,21 @@ class TestImportTools(TransactionCase):
     def test_inbound_delivery_model_composes_split_helpers(self):
         """The delivery model should stay assembled from the focused staging and lifecycle helpers."""
         delivery_model = self.env["federation.integration.delivery"]
-        inherits = delivery_model._inherit
-        if isinstance(inherits, str):
-            inherits = [inherits]
+        inherited_model_names = {
+            model_name
+            for model_class in type(delivery_model).__mro__
+            if (model_name := getattr(model_class, "_name", None))
+        }
 
-        self.assertIn("federation.integration.delivery.stage.mixin", inherits)
-        self.assertIn("federation.integration.delivery.workflow.mixin", inherits)
-        self.assertIn("federation.integration.delivery.retention.mixin", inherits)
+        self.assertIn(
+            "federation.integration.delivery.stage.mixin", inherited_model_names
+        )
+        self.assertIn(
+            "federation.integration.delivery.workflow.mixin", inherited_model_names
+        )
+        self.assertIn(
+            "federation.integration.delivery.retention.mixin", inherited_model_names
+        )
         self.assertTrue(hasattr(delivery_model, "stage_partner_delivery_result"))
         self.assertTrue(hasattr(delivery_model, "_purge_retained_deliveries"))
 

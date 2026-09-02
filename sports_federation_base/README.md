@@ -15,6 +15,7 @@ Foundation addon for clubs, teams, seasons, and season registrations. It also pr
 - `federation.season.registration`: unique team enrollment per season
 - shared manager and user security groups
 - sequences, audit events, operational health, failure feedback, rate limiting, correlation helpers, and attachment policy services
+- the Operational Job Health administration view, including Odoo 19-compatible state and source group-by filters
 
 ## Lifecycle safeguards
 

@@ -7,7 +7,7 @@
         <field name="name"/><field name="correlation_id"/><field name="source_model"/>
         <filter name="needs_action" string="Needs Operator Action" domain="[('state','=','operator_action')]"/>
         <filter name="retry" string="Retry Scheduled" domain="[('state','=','retry')]"/>
-        <group expand="0" string="Group By"><filter name="group_state" string="State" context="{'group_by':'state'}"/><filter name="group_source" string="Source" context="{'group_by':'source_model'}"/></group>
+        <group><filter name="group_state" string="State" context="{'group_by':'state'}"/><filter name="group_source" string="Source" context="{'group_by':'source_model'}"/></group>
       </search>
     </field>
   </record>
