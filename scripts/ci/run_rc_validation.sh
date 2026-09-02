@@ -62,6 +62,7 @@ PY
   python3 ci/check_delivery_language.py
   python3 ci/check_release_qualification.py
   python3 ci/check_release_focus_contract.py
+  python3 ci/check_retention_visibility_contract.py
   python3 ci/check_migration_rehearsal_contract.py
   if command -v node >/dev/null 2>&1; then
     while IFS= read -r -d '' file; do node --check "$file"; done < <(

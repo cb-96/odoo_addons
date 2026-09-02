@@ -141,17 +141,15 @@ class FederationNotificationLog(models.Model):
         return total_deleted
 
     @api.model
+    def _retention_candidate_count(self, reference_dt=None):
+        reference_dt = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now())
+        return sum(self.sudo().search_count([("state", "=", state), ("create_date", "!=", False), ("create_date", "<", fields.Datetime.to_string(reference_dt - timedelta(days=days)))]) for state, days in self.RETENTION_DAYS_BY_STATE.items())
+
+    @api.model
     def _cron_purge_old_logs(self):
-        """Execute the notification-log retention policy."""
-        started_on = fields.Datetime.now()
-        deleted = self._purge_retained_logs()
-        self.env["federation.retention.evidence"].sudo().create(
-            {
-                "policy": "notification_logs",
-                "started_on": started_on,
-                "completed_on": fields.Datetime.now(),
-                "deleted_count": deleted,
-                "status": "passed",
-            }
-        )
+        started_on = fields.Datetime.now(); candidates = self._retention_candidate_count(started_on); Evidence = self.env["federation.retention.evidence"]
+        try: deleted = self._purge_retained_logs(started_on)
+        except Exception as error:
+            Evidence.record_failure_durable("notification_logs", started_on=started_on, candidate_count=candidates, failure_count=candidates or 1, retention_rules=self.RETENTION_DAYS_BY_STATE, operator_message=str(error), source_model=self._name); raise
+        Evidence.record_execution("notification_logs", started_on=started_on, candidate_count=candidates, deleted_count=deleted, skipped_count=max(0, candidates-deleted), retention_rules=self.RETENTION_DAYS_BY_STATE, source_model=self._name)
         return deleted

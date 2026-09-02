@@ -75,3 +75,8 @@ When retention windows or cleanup scope change:
 ## Execution evidence
 
 Every automated retention run appends a `federation.retention.evidence` record with its policy code, timestamps, outcome, and affected-record counts. Evidence is read-only to federation managers and is retained independently from the records cleaned by the policy.
+
+
+## Recovery visibility
+
+Federation managers use **Administration → Retention and Recovery** to verify policy freshness and outcomes. Failure evidence is committed independently before the owning cron re-raises, so transaction rollback cannot erase the recovery record.

@@ -1,0 +1,5 @@
+<odoo noupdate="1">
+  <record id="retention_policy_notification_logs" model="federation.retention.policy"><field name="name">Notification Logs</field><field name="code">notification_logs</field><field name="source_model">federation.notification.log</field><field name="expected_interval_hours">24</field></record>
+  <record id="retention_policy_integration_deliveries" model="federation.retention.policy"><field name="name">Integration Deliveries</field><field name="code">integration_deliveries</field><field name="source_model">federation.integration.delivery</field><field name="expected_interval_hours">24</field></record>
+  <record id="retention_policy_generated_report_files" model="federation.retention.policy"><field name="name">Generated Report Files</field><field name="code">generated_report_files</field><field name="source_model">federation.report.schedule</field><field name="expected_interval_hours">24</field></record>
+</odoo>
