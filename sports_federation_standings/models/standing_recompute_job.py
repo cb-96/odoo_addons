@@ -159,7 +159,9 @@ class FederationStandingRecomputeJob(models.Model):
             exhausted = self.attempt_count >= self.max_attempts
             retry_minutes = min(60, 2 ** max(1, self.attempt_count))
             next_retry_on = (
-                False if exhausted else fields.Datetime.now() + timedelta(minutes=retry_minutes)
+                False
+                if exhausted
+                else fields.Datetime.now() + timedelta(minutes=retry_minutes)
             )
             self.write(
                 {
@@ -198,30 +200,33 @@ class FederationStandingRecomputeJob(models.Model):
         )
         return True
 
-
     def action_retry(self):
         """Return terminal jobs to the queue without erasing evidence."""
         for job in self:
             if job.state not in ("failed", "dead_letter"):
                 raise ValidationError(_("Only failed jobs can be retried."))
-            job.write({
-                "state": "pending",
-                "next_retry_on": False,
-                "completed_on": False,
-                "dead_lettered_on": False,
-                "attempt_count": 0,
-            })
+            job.write(
+                {
+                    "state": "pending",
+                    "next_retry_on": False,
+                    "completed_on": False,
+                    "dead_lettered_on": False,
+                    "attempt_count": 0,
+                }
+            )
         return True
 
     @api.model
     def _recover_stale_running_jobs(self, stale_minutes=30):
         deadline = fields.Datetime.now() - timedelta(minutes=stale_minutes)
         stale = self.search([("state", "=", "running"), ("started_on", "<=", deadline)])
-        stale.write({
-            "state": "failed",
-            "next_retry_on": fields.Datetime.now(),
-            "last_error": _("Recovered after the worker stopped while processing."),
-        })
+        stale.write(
+            {
+                "state": "failed",
+                "next_retry_on": fields.Datetime.now(),
+                "last_error": _("Recovered after the worker stopped while processing."),
+            }
+        )
         return len(stale)
 
     @api.model

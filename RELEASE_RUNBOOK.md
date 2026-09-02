@@ -342,6 +342,19 @@ the demo module tests (5 passed, 0 failed, 0 errors) and did not report the
 **Rollback**: Revert the additive code and fixture changes. No database
 backfill, schema reversal, or migration artifact is required.
 
+### Public-site route ownership review
+
+**DB migrations**: None. The public-site controller route ownership change
+does not alter persisted data or the public API contract.
+
+**Dry-run evidence**: `python ci/check_migration_review.py --files
+sports_federation_public_site/controllers/public_competitions.py
+RELEASE_RUNBOOK.md` exited with code 0, confirming that the controller change
+has release-review evidence.
+
+**Rollback**: Revert the controller change and redeploy the prior application
+revision. No database restore or data backfill is required.
+
 ## Release train convention
 
 This runbook and `ROADMAP.md` are the two authoritative release-train

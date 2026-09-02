@@ -33,7 +33,6 @@ import re
 import subprocess
 from typing import Iterable
 
-
 ROOT = Path.cwd().resolve()
 SOURCE_OUT = ROOT / "current_sources.txt"
 JSONL_OUT = ROOT / "current_sources.jsonl.txt"
@@ -227,10 +226,7 @@ def is_excluded(path: Path) -> bool:
 def is_supported_text_file(path: Path) -> bool:
     if not path.is_file() or is_excluded(path):
         return False
-    return (
-        path.name in TEXT_FILENAMES
-        or path.suffix.lower() in TEXT_EXTENSIONS
-    )
+    return path.name in TEXT_FILENAMES or path.suffix.lower() in TEXT_EXTENSIONS
 
 
 def repository_relative(path: Path) -> Path:
@@ -276,14 +272,10 @@ def collect_repository_root_files() -> set[Path]:
 def parse_manifest(module: str) -> dict:
     manifest_path = ROOT / module / "__manifest__.py"
     if not manifest_path.is_file():
-        raise SystemExit(
-            f"Missing manifest: {manifest_path.relative_to(ROOT)}"
-        )
+        raise SystemExit(f"Missing manifest: {manifest_path.relative_to(ROOT)}")
 
     try:
-        manifest = ast.literal_eval(
-            manifest_path.read_text(encoding="utf-8")
-        )
+        manifest = ast.literal_eval(manifest_path.read_text(encoding="utf-8"))
     except (SyntaxError, ValueError, UnicodeError) as exc:
         raise SystemExit(
             f"Cannot parse {manifest_path.relative_to(ROOT)}: {exc}"
@@ -291,8 +283,7 @@ def parse_manifest(module: str) -> dict:
 
     if not isinstance(manifest, dict):
         raise SystemExit(
-            "Manifest is not a dictionary: "
-            f"{manifest_path.relative_to(ROOT)}"
+            "Manifest is not a dictionary: " f"{manifest_path.relative_to(ROOT)}"
         )
     return manifest
 
@@ -310,16 +301,12 @@ def validate_internal_dependencies(existing_modules: list[str]) -> None:
                 and dependency.startswith("sports_federation_")
                 and dependency not in available
             ):
-                missing.append(
-                    f"{module}: unresolved internal dependency {dependency}"
-                )
+                missing.append(f"{module}: unresolved internal dependency {dependency}")
 
     if missing:
         raise SystemExit(
             "Internal addon dependency validation failed:\n"
-            + "\n".join(
-                f"  - {item}" for item in sorted(set(missing))
-            )
+            + "\n".join(f"  - {item}" for item in sorted(set(missing)))
         )
 
 
@@ -390,9 +377,7 @@ def validate_manifest_references(
 
         for value in manifest.get("data", []):
             if not isinstance(value, str):
-                errors.append(
-                    f"{module}: non-string manifest data entry: {value!r}"
-                )
+                errors.append(f"{module}: non-string manifest data entry: {value!r}")
                 continue
 
             data_entries.append(value)
@@ -400,13 +385,8 @@ def validate_manifest_references(
             relative = Path(module) / value
 
             if not path.is_file():
-                errors.append(
-                    f"{module}: missing manifest data file: {value}"
-                )
-            elif (
-                is_supported_text_file(path)
-                and relative not in bundled_files
-            ):
+                errors.append(f"{module}: missing manifest data file: {value}")
+            elif is_supported_text_file(path) and relative not in bundled_files:
                 errors.append(
                     f"{module}: manifest data file omitted from bundle: {value}"
                 )
@@ -419,8 +399,7 @@ def validate_manifest_references(
         for bundle_name, entries in assets.items():
             if not isinstance(entries, (list, tuple)):
                 errors.append(
-                    f"{module}: asset bundle {bundle_name!r} "
-                    "is not a list or tuple"
+                    f"{module}: asset bundle {bundle_name!r} " "is not a list or tuple"
                 )
                 continue
 
@@ -439,13 +418,8 @@ def validate_manifest_references(
                 # asset exception list, because Odoo will still try to load the
                 # missing manifest reference.
                 if not path.is_file():
-                    errors.append(
-                        f"{module}: missing explicit asset file: {entry}"
-                    )
-                elif (
-                    is_supported_text_file(path)
-                    and relative not in bundled_files
-                ):
+                    errors.append(f"{module}: missing explicit asset file: {entry}")
+                elif is_supported_text_file(path) and relative not in bundled_files:
                     errors.append(
                         f"{module}: explicit asset omitted from bundle: {entry}"
                     )
@@ -481,17 +455,13 @@ def validate_collection_contract(files: list[Path]) -> None:
         Path("ci/run_odoo_tests.sh"),
         Path("scripts/ci/run_rc_validation.sh"),
     }
-    existing_required = {
-        path for path in required if (ROOT / path).is_file()
-    }
+    existing_required = {path for path in required if (ROOT / path).is_file()}
     missing = existing_required - bundled
 
     if missing:
         raise SystemExit(
             "Collector omitted required repository files:\n"
-            + "\n".join(
-                f"  - {path.as_posix()}" for path in sorted(missing)
-            )
+            + "\n".join(f"  - {path.as_posix()}" for path in sorted(missing))
         )
 
 
@@ -516,12 +486,8 @@ def nul_git_paths(*args: str) -> set[str]:
 def git_state_sets() -> tuple[set[str], set[str], set[str]]:
     tracked = nul_git_paths("ls-files", "-z")
     modified = nul_git_paths("diff", "--name-only", "-z")
-    modified.update(
-        nul_git_paths("diff", "--cached", "--name-only", "-z")
-    )
-    untracked = nul_git_paths(
-        "ls-files", "--others", "--exclude-standard", "-z"
-    )
+    modified.update(nul_git_paths("diff", "--cached", "--name-only", "-z"))
+    untracked = nul_git_paths("ls-files", "--others", "--exclude-standard", "-z")
     return tracked, modified, untracked
 
 
@@ -543,9 +509,7 @@ def git_file_modes() -> dict[str, str]:
             continue
 
         metadata, raw_path = entry.split(b"\t", 1)
-        mode = metadata.split(b" ", 1)[0].decode(
-            "ascii", errors="replace"
-        )
+        mode = metadata.split(b" ", 1)[0].decode("ascii", errors="replace")
         path = raw_path.decode("utf-8", errors="replace")
         modes[path] = mode
 
@@ -587,7 +551,7 @@ def build_file_record(
     path = ROOT / relative
     raw = path.read_bytes()
     content = raw.decode("utf-8", errors="replace")
-    
+
     return {
         "path": relative.as_posix(),
         "content": content,
@@ -597,7 +561,10 @@ def build_file_record(
         "git_mode": expected_git_mode(relative, modes),
         "filesystem_mode": filesystem_mode(path),
         "git_state": classify_git_state(
-            relative, tracked, modified, untracked,
+            relative,
+            tracked,
+            modified,
+            untracked,
         ),
     }
 
@@ -605,9 +572,7 @@ def build_file_record(
 def write_source_bundle(records: list[dict]) -> None:
     temporary = SOURCE_OUT.with_suffix(SOURCE_OUT.suffix + ".tmp")
 
-    with temporary.open(
-        "w", encoding="utf-8", newline="\n"
-    ) as bundle:
+    with temporary.open("w", encoding="utf-8", newline="\n") as bundle:
         bundle.write("# Sports Federation complete current source bundle\n")
         bundle.write("# Generated for review and patch construction\n")
         bundle.write(f"# FORMAT: {BUNDLE_FORMAT}\n")
@@ -622,9 +587,7 @@ def write_source_bundle(records: list[dict]) -> None:
             bundle.write(f"CONTENT-LENGTH: {record['content_length']}\n")
             bundle.write(f"SHA256: {record['sha256']}\n")
             bundle.write(f"GIT-MODE: {record['git_mode']}\n")
-            bundle.write(
-                f"FILESYSTEM-MODE: {record['filesystem_mode']}\n"
-            )
+            bundle.write(f"FILESYSTEM-MODE: {record['filesystem_mode']}\n")
             bundle.write(f"GIT-STATE: {record['git_state']}\n")
             bundle.write(SEPARATOR + "\n\n")
             bundle.write(record["content"])
@@ -638,9 +601,7 @@ def write_source_bundle(records: list[dict]) -> None:
 def write_jsonl_bundle(records: list[dict]) -> None:
     temporary = JSONL_OUT.with_suffix(JSONL_OUT.suffix + ".tmp")
 
-    with temporary.open(
-        "w", encoding="utf-8", newline="\n"
-    ) as bundle:
+    with temporary.open("w", encoding="utf-8", newline="\n") as bundle:
         metadata_record = {
             "record_type": "bundle_metadata",
             "format": BUNDLE_FORMAT,
@@ -649,16 +610,12 @@ def write_jsonl_bundle(records: list[dict]) -> None:
             "file_count": len(records),
         }
         bundle.write(
-            json.dumps(metadata_record, ensure_ascii=False, sort_keys=True)
-            + "\n"
+            json.dumps(metadata_record, ensure_ascii=False, sort_keys=True) + "\n"
         )
 
         for record in records:
             output = {"record_type": "file", **record}
-            bundle.write(
-                json.dumps(output, ensure_ascii=False, sort_keys=True)
-                + "\n"
-            )
+            bundle.write(json.dumps(output, ensure_ascii=False, sort_keys=True) + "\n")
 
     os.replace(temporary, JSONL_OUT)
 
@@ -777,9 +734,7 @@ def validate_written_bundles(records: list[dict]) -> None:
         # Text-mode newline handling can normalize the final separator newline,
         # so compare the exact logical content and all declared metadata.
         if text_record["content"] != expected["content"]:
-            raise SystemExit(
-                f"Text bundle content mismatch after round trip: {path}"
-            )
+            raise SystemExit(f"Text bundle content mismatch after round trip: {path}")
 
         for field in (
             "size_bytes",
@@ -794,9 +749,7 @@ def validate_written_bundles(records: list[dict]) -> None:
                 )
 
         if jsonl_record != expected:
-            raise SystemExit(
-                f"JSONL bundle mismatch after round trip: {path}"
-            )
+            raise SystemExit(f"JSONL bundle mismatch after round trip: {path}")
 
 
 def build_metadata(
@@ -826,14 +779,9 @@ def build_metadata(
         + command_output("git", "rev-parse", "HEAD", check=True),
         "=== REPOSITORY ROOT ===\n" + str(ROOT),
         "=== WORKTREE STATUS ===\n"
-        + command_output(
-            "git", "status", "--short", "--untracked-files=all"
-        ),
+        + command_output("git", "status", "--short", "--untracked-files=all"),
         "=== MODULE MANIFESTS ===\n"
-        + "\n".join(
-            json.dumps(item, sort_keys=True)
-            for item in module_summaries
-        ),
+        + "\n".join(json.dumps(item, sort_keys=True) for item in module_summaries),
         "=== RELEVANT RECENT HISTORY ===\n"
         + command_output(
             "git",
@@ -845,11 +793,8 @@ def build_metadata(
             *existing_modules,
         ),
         "=== RECENT REPOSITORY HISTORY ===\n"
-        + command_output(
-            "git", "log", "--oneline", "--decorate", "-15"
-        ),
-        "=== UNSTAGED DIFF STAT ===\n"
-        + command_output("git", "diff", "--stat"),
+        + command_output("git", "log", "--oneline", "--decorate", "-15"),
+        "=== UNSTAGED DIFF STAT ===\n" + command_output("git", "diff", "--stat"),
         "=== STAGED DIFF STAT ===\n"
         + command_output("git", "diff", "--cached", "--stat"),
         "=== UNSTAGED DIFF ===\n"
@@ -903,14 +848,12 @@ def build_metadata(
     sections.append(
         "=== BUNDLED FILE INVENTORY ===\n"
         "# path<TAB>size<TAB>sha256<TAB>git-mode"
-        "<TAB>filesystem-mode<TAB>git-state\n"
-        + "\n".join(inventory)
+        "<TAB>filesystem-mode<TAB>git-state\n" + "\n".join(inventory)
     )
 
     if missing_modules:
         sections.append(
-            "=== CONFIGURED MODULES NOT FOUND ===\n"
-            + "\n".join(missing_modules)
+            "=== CONFIGURED MODULES NOT FOUND ===\n" + "\n".join(missing_modules)
         )
 
     return "\n\n".join(sections).rstrip() + "\n"
@@ -971,19 +914,13 @@ def main() -> None:
         f"Created {JSONL_OUT.name}: {len(files)} files, "
         f"{JSONL_OUT.stat().st_size / 1024:.1f} KiB"
     )
-    print(
-        f"Created {META_OUT.name}: "
-        f"{META_OUT.stat().st_size / 1024:.1f} KiB"
-    )
+    print(f"Created {META_OUT.name}: " f"{META_OUT.stat().st_size / 1024:.1f} KiB")
     print("Manifest references validated: OK")
     print("Collector completeness contract: OK")
     print("Bundle round-trip validation: OK")
 
     if missing_modules:
-        print(
-            "Warning: configured modules not found: "
-            + ", ".join(missing_modules)
-        )
+        print("Warning: configured modules not found: " + ", ".join(missing_modules))
 
 
 if __name__ == "__main__":

@@ -7,8 +7,6 @@ from odoo.addons.sports_federation_base.request_security import (
 from odoo.addons.portal.controllers.portal import pager as portal_pager
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import Response, request
-from werkzeug.exceptions import NotFound
-
 from ._filters import TournamentHubFilterMixin
 from ._public_request import PublicRequestInfrastructureMixin
 

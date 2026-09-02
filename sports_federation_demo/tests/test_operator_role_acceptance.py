@@ -2,31 +2,47 @@ from odoo import Command
 from odoo.tests.common import TransactionCase, tagged
 
 
-@tagged('-at_install', 'post_install', 'sf_operator_acceptance')
+@tagged("-at_install", "post_install", "sf_operator_acceptance")
 class TestOperatorRoleAcceptance(TransactionCase):
     """Prove the release pilot uses explicit, independently assignable roles."""
 
     ROLE_MODELS = (
-        ('sports_federation_registration.group_registration_manager', 'federation.registration.window'),
-        ('sports_federation_format.group_competition_designer', 'federation.competition.structure'),
-        ('sports_federation_calendar.group_calendar_planner', 'federation.matchday'),
-        ('sports_federation_scheduling.group_schedule_planner', 'federation.schedule'),
-        ('sports_federation_schedule_approval.group_schedule_approver', 'federation.schedule.review'),
-        ('sports_federation_matchday.group_matchday_manager', 'federation.matchday.session'),
+        (
+            "sports_federation_registration.group_registration_manager",
+            "federation.registration.window",
+        ),
+        (
+            "sports_federation_format.group_competition_designer",
+            "federation.competition.structure",
+        ),
+        ("sports_federation_calendar.group_calendar_planner", "federation.matchday"),
+        ("sports_federation_scheduling.group_schedule_planner", "federation.schedule"),
+        (
+            "sports_federation_schedule_approval.group_schedule_approver",
+            "federation.schedule.review",
+        ),
+        (
+            "sports_federation_matchday.group_matchday_manager",
+            "federation.matchday.session",
+        ),
     )
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.users = {}
-        Users = cls.env['res.users'].with_context(no_reset_password=True)
+        Users = cls.env["res.users"].with_context(no_reset_password=True)
         for index, (group_xmlid, _model) in enumerate(cls.ROLE_MODELS, start=1):
             group = cls.env.ref(group_xmlid)
-            cls.users[group_xmlid] = Users.create({
-                'name': f'Lifecycle Operator {index}',
-                'login': f'lifecycle.operator.{index}@example.invalid',
-                'group_ids': [Command.set([cls.env.ref('base.group_user').id, group.id])],
-            })
+            cls.users[group_xmlid] = Users.create(
+                {
+                    "name": f"Lifecycle Operator {index}",
+                    "login": f"lifecycle.operator.{index}@example.invalid",
+                    "group_ids": [
+                        Command.set([cls.env.ref("base.group_user").id, group.id])
+                    ],
+                }
+            )
 
     def _group_acl(self, group_xmlid, model_name):
         group = self.env.ref(group_xmlid)

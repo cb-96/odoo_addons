@@ -2,7 +2,7 @@ import logging
 from uuid import uuid4
 
 from odoo.addons.sports_federation_base.correlation import ensure_correlation_id
-from odoo import _, api, fields, models
+from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
