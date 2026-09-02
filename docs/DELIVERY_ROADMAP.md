@@ -137,7 +137,7 @@ A trained non-developer completes the normal journey without developer mode, dir
 
 ## Operational Job Reliability
 
-Status: **Partially implemented**
+Status: **Implemented**
 
 ### Objective
 
@@ -154,6 +154,18 @@ domain execution out of its owning addon.
 - operator visibility for notification, report, integration, retention, and
   snapshot jobs;
 - shared infrastructure only after two proven consumers exist.
+
+### Implementation
+
+The shared `federation.operation.job` queue records source ownership, attempts,
+retry timing, correlation IDs, stale-worker recovery, terminal operator action,
+and manual retry. Notification and scheduled-report failures can be queued for
+automatic retry. Failed inbound deliveries create operator-action jobs because
+payload and governance corrections require explicit review before replay.
+
+The **Operational Job Health** administration view groups work by state and
+source, exposes sanitized failure evidence, opens the source record, and permits
+explicit retry only for failed jobs.
 
 ### Exit criteria
 

@@ -6,7 +6,7 @@
         <field name="name">federation.notification.log.form</field>
         <field name="model">federation.notification.log</field>
         <field name="arch" type="xml">
-            <form string="Notification Log">
+            <form string="Notification Log"><header><button name="action_queue_retry" type="object" string="Queue Retry" class="btn-primary" invisible="state != 'failed'"/><button name="action_acknowledge_failure" type="object" string="Acknowledge" invisible="state != 'failed' or acknowledged"/></header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_target"

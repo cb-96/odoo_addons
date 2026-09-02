@@ -1,0 +1,24 @@
+<odoo>
+  <record id="view_federation_operation_job_search" model="ir.ui.view">
+    <field name="name">federation.operation.job.search</field>
+    <field name="model">federation.operation.job</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="name"/><field name="correlation_id"/><field name="source_model"/>
+        <filter name="needs_action" string="Needs Operator Action" domain="[('state','=','operator_action')]"/>
+        <filter name="retry" string="Retry Scheduled" domain="[('state','=','retry')]"/>
+        <group expand="0" string="Group By"><filter name="group_state" string="State" context="{'group_by':'state'}"/><filter name="group_source" string="Source" context="{'group_by':'source_model'}"/></group>
+      </search>
+    </field>
+  </record>
+  <record id="view_federation_operation_job_list" model="ir.ui.view">
+    <field name="name">federation.operation.job.list</field><field name="model">federation.operation.job</field>
+    <field name="arch" type="xml"><list decoration-danger="state == 'operator_action'" decoration-warning="state == 'retry'"><field name="name"/><field name="source_model"/><field name="state" widget="badge"/><field name="attempt_count"/><field name="max_attempts"/><field name="next_retry_on"/><field name="correlation_id"/><field name="last_error"/></list></field>
+  </record>
+  <record id="view_federation_operation_job_form" model="ir.ui.view">
+    <field name="name">federation.operation.job.form</field><field name="model">federation.operation.job</field>
+    <field name="arch" type="xml"><form><header><button name="action_retry" type="object" string="Retry" class="btn-primary" invisible="state not in ('retry','operator_action')"/><button name="action_open_source" type="object" string="Open Source"/><field name="state" widget="statusbar"/></header><sheet><group><field name="name"/><field name="source_model"/><field name="source_res_id"/><field name="correlation_id"/><field name="priority"/></group><group><field name="attempt_count"/><field name="max_attempts"/><field name="requested_on"/><field name="started_on"/><field name="completed_on"/><field name="next_retry_on"/><field name="operator_action_on"/></group><group><field name="failure_category"/><field name="last_error"/></group></sheet></form></field>
+  </record>
+  <record id="action_federation_operation_job" model="ir.actions.act_window"><field name="name">Operational Job Health</field><field name="res_model">federation.operation.job</field><field name="view_mode">list,form</field><field name="search_view_id" ref="view_federation_operation_job_search"/></record>
+  <menuitem id="menu_federation_operation_job" name="Operational Job Health" parent="sports_federation_base.menu_federation_administration" action="action_federation_operation_job" sequence="90" groups="sports_federation_base.group_federation_manager"/>
+</odoo>

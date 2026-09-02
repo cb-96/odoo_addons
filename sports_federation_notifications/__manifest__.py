@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Notifications",
-    "version": "19.0.1.3.0",
+    "version": "19.0.1.3.1",
     "category": "Sports",
     "summary": "Centralized federation notification helpers, templates, and scheduled reminders",
     "description": "Notification templates, reminder jobs, and outbound communication logs.",

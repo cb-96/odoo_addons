@@ -4,3 +4,5 @@ from . import test_rate_limit
 from . import test_route_inventory
 from . import test_tour_season_registration
 from . import test_retention_evidence
+
+from . import test_operation_job

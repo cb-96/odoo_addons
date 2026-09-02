@@ -713,6 +713,9 @@ Related docs and entry points
 
 If you'd like, I can now: (1) open a PR draft for this change, (2) run a repo scan of `README` and `INSTALL_LOG` files and fold additional implementation notes into this document, or (3) run the tests for a selected module to validate there are no immediate regressions.
 
+## Operational job reliability
+
+`federation.operation.job` is the shared reliability envelope for retryable operational work.
 
 ## Simplified competition journey and reversible handoffs
 
