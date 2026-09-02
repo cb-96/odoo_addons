@@ -33,3 +33,29 @@ Validation checklist
 The integrated P0-P3 release path is documented in
 `docs/RELEASE_PILOT_SCENARIO.md`. Run
 `scripts/ci/run_rc_validation.sh focus` before promoting a release candidate.
+
+## Accessible operator training walkthrough
+
+Use the deterministic demo database with a federation manager who also has the
+competition administrator, registration manager, competition designer, calendar
+planner, schedule planner, schedule approver, and match-day manager roles.
+
+Complete the normal path without a mouse:
+
+1. Open **Competition Overview** and move through controls with `Tab` and
+   `Shift+Tab`. The focused control must always have a visible outline.
+2. Continue through **Registration**, **Format**, **Calendar**, **Schedule**, and
+   **Review**, activating links and buttons with `Enter` or `Space`.
+3. Submit an incomplete portal form. Focus must move to the error summary, and
+   invalid controls must reference that summary through `aria-describedby`.
+4. Open and close a confirmation modal. Focus must enter the modal and return to
+   the control that opened it.
+5. Repeat the club portal's competition, roster, officiating, and result tasks at
+   a 390 CSS-pixel viewport. No primary action may require horizontal page
+   scrolling.
+6. Confirm that every state is expressed as readable text. Color and icons may
+   reinforce the state but must not be the only status signal.
+
+The `keyboard_competition_setup` browser tour qualifies the canonical backend
+journey mechanically. Portal template accessibility and mobile tests qualify
+labels, error semantics, status text, responsive tables, and action wrapping.

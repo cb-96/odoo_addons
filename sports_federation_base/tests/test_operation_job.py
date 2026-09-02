@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from odoo import fields
+from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
 
@@ -33,3 +34,25 @@ class TestOperationJob(TransactionCase):
                         "started_on": fields.Datetime.now() - timedelta(hours=1)})
         self.assertGreaterEqual(self.env["federation.operation.job"]._recover_stale(), 1)
         self.assertEqual(self.job.state, "retry")
+
+
+    def test_ensure_job_is_idempotent_for_source_correlation(self):
+        source = self.job._source()
+        duplicate = self.env["federation.operation.job"].ensure_job(
+            source, self.job.correlation_id, name="Do not replace", max_attempts=9
+        )
+        self.assertEqual(duplicate, self.job)
+        self.assertEqual(duplicate.name, "Test Job")
+        self.assertEqual(duplicate.max_attempts, 2)
+
+    def test_non_retryable_failure_goes_directly_to_operator_action(self):
+        self.job._start()
+        self.job._fail("invalid payload", "data_validation", retryable=False)
+        self.assertEqual(self.job.state, "operator_action")
+        self.assertEqual(self.job.failure_category, "data_validation")
+        self.assertFalse(self.job.next_retry_on)
+        self.assertTrue(self.job.operator_action_on)
+
+    def test_manual_retry_rejects_non_failed_job(self):
+        with self.assertRaises(ValidationError):
+            self.job.action_retry()

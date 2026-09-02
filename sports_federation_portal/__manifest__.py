@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.5.0.0",
+    "version": "19.0.5.1.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -59,6 +59,7 @@ on top of the federation base modules.
         "web.assets_frontend": [
             "sports_federation_portal/static/src/scss/federation_portal.scss",
             "sports_federation_portal/static/src/js/qol_draft_guard.js",
+            "sports_federation_portal/static/src/js/accessibility_recovery.js",
         ],
     },
     "demo": [],

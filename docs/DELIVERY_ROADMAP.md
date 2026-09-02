@@ -223,7 +223,7 @@ navigate directly to the owning workflow for remediation.
 
 ## Accessibility and Operator Usability
 
-Status: **Planned**
+Status: **Implemented**
 
 ### Objective
 

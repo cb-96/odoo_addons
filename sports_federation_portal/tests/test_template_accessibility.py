@@ -193,3 +193,26 @@ class TestPortalTemplateAccessibility(TransactionCase):
                     template_text,
                     f"{template_file.name} should not render raw internal state values.",
                 )
+
+    def test_accessible_error_recovery_and_modal_focus_asset_is_registered(self):
+        manifest = (Path(__file__).resolve().parents[1] / "__manifest__.py").read_text()
+        asset_path = "sports_federation_portal/static/src/js/accessibility_recovery.js"
+        self.assertIn(asset_path, manifest)
+        source = (Path(__file__).resolve().parents[1] / "static/src/js/accessibility_recovery.js").read_text()
+        for contract in (
+            'setAttribute("aria-describedby"',
+            'setAttribute("aria-invalid", "true")',
+            'setAttribute("aria-live", "assertive")',
+            'addEventListener("shown.bs.modal"',
+            'addEventListener("hidden.bs.modal"',
+            "modalTrigger.focus()",
+        ):
+            self.assertIn(contract, source)
+
+    def test_portal_styles_expose_non_color_keyboard_focus(self):
+        stylesheet = (
+            Path(__file__).resolve().parents[1] / "static/src/scss/federation_portal.scss"
+        ).read_text()
+        self.assertIn(":focus-visible", stylesheet)
+        self.assertIn("outline:", stylesheet)
+        self.assertIn('[role="alert"]:focus', stylesheet)

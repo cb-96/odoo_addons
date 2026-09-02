@@ -208,3 +208,16 @@
 @media (prefers-reduced-motion: reduce) {
     .o_fed_portal_quicklink { transition: none; }
 }
+
+// Keyboard focus must remain visible independently from hover or status color.
+.o_portal :is(a, button, input, select, textarea, [tabindex]):focus-visible,
+.o_portal_wrap :is(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid var(--dbb-focus);
+    outline-offset: 2px;
+}
+
+.o_portal [role="alert"]:focus,
+.o_portal_wrap [role="alert"]:focus {
+    outline: 3px solid var(--dbb-focus);
+    outline-offset: 3px;
+}

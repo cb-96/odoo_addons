@@ -68,3 +68,12 @@ class TestBrowserCompetitionLifecycle(HttpCase):
             login="admin",
             timeout=180,
         )
+
+    def test_keyboard_competition_setup_browser_tour(self):
+        self.start_tour(
+            "/odoo/action-sports_federation_competition_core.action_competition_overview/"
+            f"{self.edition.id}",
+            "keyboard_competition_setup",
+            login="admin",
+            timeout=180,
+        )

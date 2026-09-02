@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Demo Data",
-    "version": "19.0.1.0.7",
+    "version": "19.0.1.1.0",
     "category": "Sports",
     "summary": "Deterministic demo-data pack for end-to-end federation walkthroughs",
     "description": """
@@ -42,6 +42,7 @@ demonstration database with realistic walkthrough content.
     "assets": {
         "web.assets_tests": [
             "sports_federation_demo/static/tests/tours/full_competition_lifecycle_tour.js",
+            "sports_federation_demo/static/tests/tours/keyboard_competition_setup_tour.js",
         ],
     },
     "demo": [

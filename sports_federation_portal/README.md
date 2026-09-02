@@ -76,3 +76,14 @@ Legacy tournament workspace routes are redirect-only and render no V1 data.
 The backend tournament-registration action is loaded before the menus that use
 it, so a fresh module install and an upgrade both build the registration menu
 without relying on stale database metadata.
+
+
+## Accessible error recovery and focus management
+
+Portal forms move keyboard focus to server-rendered error summaries, connect
+invalid controls to that summary with `aria-describedby`, and announce the
+summary through an assertive live region. Bootstrap confirmation dialogs move
+focus into the dialog and restore it to the invoking control when closed.
+Keyboard focus uses a visible outline that does not depend on color-only status
+cues. The focused accessibility suite covers these contracts together with
+mobile table and action wrapping.

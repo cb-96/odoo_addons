@@ -64,3 +64,21 @@ class TestReleasePilotReadiness(TransactionCase):
             normalized_source = source.lower()
             for token in forbidden_architecture_tokens:
                 self.assertNotIn(token, normalized_source)
+
+    def test_keyboard_setup_tour_uses_keyboard_activation_and_focus_assertions(self):
+        path = (
+            Path(__file__).resolve().parents[1]
+            / "static/tests/tours/keyboard_competition_setup_tour.js"
+        )
+        source = path.read_text(encoding="utf-8")
+        self.assertIn('key: "Enter"', source)
+        self.assertIn("document.activeElement", source)
+        for xmlid in (
+            "sports_federation_competition_core.action_competition_overview",
+            "sports_federation_registration.action_registration_desk",
+            "sports_federation_format.action_format_studio",
+            "sports_federation_calendar.action_calendar_planner",
+            "sports_federation_scheduling.action_schedule_planner_competition",
+            "sports_federation_schedule_approval.action_schedule_review_queue",
+        ):
+            self.assertIn(xmlid, source)
