@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 860
+# FILE-COUNT: 876
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -1030,9 +1030,9 @@ module README and manifest as the final authority.
 
 ====================================================================================================
 FILE: DATA_RETENTION_POLICY.md
-SIZE: 3855
-CONTENT-LENGTH: 3855
-SHA256: e06e9d99b2b60b16f24653e4ac4864ca560267da1a5c02f97f15aaee17a644d1
+SIZE: 4128
+CONTENT-LENGTH: 4126
+SHA256: cd8948f93fddf169b520d7ddc9230528120079b4d4af545df3736bd0bc84f1f0
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -1115,6 +1115,11 @@ When retention windows or cleanup scope change:
 ## Execution evidence
 
 Every automated retention run appends a `federation.retention.evidence` record with its policy code, timestamps, outcome, and affected-record counts. Evidence is read-only to federation managers and is retained independently from the records cleaned by the policy.
+
+
+## Recovery visibility
+
+Federation managers use **Administration → Retention and Recovery** to verify policy freshness and outcomes. Failure evidence is committed independently before the owning cron re-raises, so transaction rollback cannot erase the recovery record.
 
 ====================================================================================================
 FILE: DEPLOYMENT_GUIDE.md
@@ -2134,9 +2139,9 @@ Module list (high level)
 
 ====================================================================================================
 FILE: RELEASE_RUNBOOK.md
-SIZE: 21469
-CONTENT-LENGTH: 21461
-SHA256: 6a34e170641ab3e2496a98e5040038e5335748640fa86ab3b1467a947a3a8b2c
+SIZE: 22377
+CONTENT-LENGTH: 22369
+SHA256: a868038eea617ef1f2d4646db5f32c080a0c74e73f35a2443c3bcc29aad6c459
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -2144,9 +2149,9 @@ GIT-STATE: tracked
 
 # Release Runbook
 
-Last updated: 2026-08-23
+Last updated: 2026-09-02
 Owner: Federation Platform Team
-Last reviewed: 2026-08-23
+Last reviewed: 2026-09-02
 Review cadence: Every release
 Release train: 2026.08
 
@@ -2668,6 +2673,29 @@ python3 ci/capture_release_evidence.py --lane restore --status passed \
 
 Archive the evidence directory with CI logs, database and filestore backup checksums, the migration invariant report, and the named rollback owner.
 
+
+## Migration rehearsal evidence
+
+Run the complete rehearsal against an approved database and filestore backup:
+
+```bash
+scripts/ci/run_migration_rehearsal.sh \
+  --backup-dir /path/to/approved-backup \
+  --rollback-owner "Release owner" \
+  --rollback-trigger "Invariant comparison or acceptance validation fails" \
+  --yes
+```
+
+The rehearsal creates pre-upgrade, post-upgrade, and rollback invariant snapshots;
+validates exact counts for principal federation records; rejects ownership,
+publication, fixture-link, and attachment metadata violations; runs the
+role-separated operator acceptance lane; and writes a manifest containing the
+backup checksum, rollback owner, rollback trigger, and evidence inventory.
+
+Archive the generated `artifacts/release/migration/` directory with the candidate
+logs. A release cannot proceed when the invariant comparison or operator
+acceptance evidence is not `passed`.
+
 ====================================================================================================
 FILE: ROADMAP.md
 SIZE: 6383
@@ -3051,9 +3079,9 @@ Use the model enums below in code, docs, and tests:
 
 ====================================================================================================
 FILE: TECHNICAL_NOTE.md
-SIZE: 44457
-CONTENT-LENGTH: 44397
-SHA256: 82946be37c8d805d615ead19c8deda6d92ccbea9ca70bfbe607d9495fcd1a274
+SIZE: 45059
+CONTENT-LENGTH: 44999
+SHA256: 6b46a6871cdf23c7bd43f3aee1c271dd30e5d5d72bb9149fed449110c66c92e7
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -3774,11 +3802,19 @@ Related docs and entry points
 
 If you'd like, I can now: (1) open a PR draft for this change, (2) run a repo scan of `README` and `INSTALL_LOG` files and fold additional implementation notes into this document, or (3) run the tests for a selected module to validate there are no immediate regressions.
 
+## Operational job reliability
+
+`federation.operation.job` is the shared reliability envelope for retryable operational work.
+
+## Simplified competition journey and reversible handoffs
+
+Competition editions expose Draft, Ready, Live, and Finished presentation states while detailed domain states remain authoritative. Calendar allocations support explicit late fixtures. Schedules derive their fixture pool from current allocations, flag stale work without deleting it, and permit pending review withdrawal. Published corrections use linked replacement revisions so immutable evidence remains intact.
+
 ====================================================================================================
 FILE: TESTING_GUIDE.md
-SIZE: 16257
-CONTENT-LENGTH: 16051
-SHA256: 012e2c1883bbfd7f8d38a4ac4373e8a3f2e4a3fdb1911e10eeb00a27dfdd5fc0
+SIZE: 16787
+CONTENT-LENGTH: 16581
+SHA256: f19f72a77426acf51c85ded083584d836afb23af798cf9723b997648a5d51c2e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -3786,7 +3822,7 @@ GIT-STATE: tracked
 
 # Testing Guide
 
-Last updated: 2026-05-18
+Last updated: 2026-09-02
 Owner: Federation Platform Team
 
 This guide explains the project's test taxonomy, how to write tests for each
@@ -4215,6 +4251,22 @@ scripts/ci/run_release_baseline.sh
 This wraps the authoritative RC lanes and records lane evidence under
 `artifacts/release/baseline/`. A lane failure records failed evidence before the
 script exits. Do not use this wrapper to hide or bypass individual RC failures.
+
+
+## Migration and rollback qualification
+
+The release migration rehearsal uses versioned invariants from
+`ci/release_invariants.json` and runs role-separated acceptance against the
+upgraded database:
+
+```bash
+scripts/ci/run_rc_validation.sh acceptance
+scripts/ci/run_migration_rehearsal.sh --help
+```
+
+Keep invariant names stable once evidence has been archived. Add a count or
+integrity check when a new release-critical ownership boundary is introduced.
+Do not remove a check merely to accommodate unexplained migration drift.
 
 ====================================================================================================
 FILE: TROUBLESHOOTING.md
@@ -8468,6 +8520,126 @@ if __name__ == "__main__":
         raise SystemExit(1)
 
 ====================================================================================================
+FILE: ci/capture_migration_invariants.py
+SIZE: 3902
+CONTENT-LENGTH: 3902
+SHA256: c0142aed5dffe8034c35151678ea16713c9c093ba3e7a533c1c25803cd953ab4
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Capture release migration counts and integrity checks from PostgreSQL."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONTRACT = ROOT / "ci/release_invariants.json"
+
+
+def run_sql(database: str, sql: str) -> int:
+    command = [
+        "psql",
+        "--host", os.environ.get("PGHOST", "127.0.0.1"),
+        "--port", os.environ.get("PGPORT", "5432"),
+        "--username", os.environ.get("PGUSER", "odoo"),
+        "--dbname", database,
+        "--tuples-only",
+        "--no-align",
+        "--set", "ON_ERROR_STOP=1",
+        "--command", sql,
+    ]
+    result = subprocess.run(
+        command,
+        check=False,
+        text=True,
+        capture_output=True,
+        env={**os.environ, "PGPASSWORD": os.environ.get("PGPASSWORD", "odoo")},
+    )
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or result.stdout.strip())
+    value = result.stdout.strip()
+    try:
+        return int(value)
+    except ValueError as error:
+        raise RuntimeError(f"Invariant query did not return an integer: {value!r}") from error
+
+
+def validate_contract(contract: dict) -> None:
+    if contract.get("schema_version") != 1:
+        raise ValueError("Invariant contract schema_version must be 1")
+    for section in ("counts", "zero_checks"):
+        entries = contract.get(section)
+        if not isinstance(entries, dict) or not entries:
+            raise ValueError(f"Invariant contract {section} must be a non-empty object")
+        for name, query in entries.items():
+            if not isinstance(name, str) or not name.strip():
+                raise ValueError(f"Invariant contract {section} has an empty name")
+            if not isinstance(query, str) or not query.lstrip().upper().startswith("SELECT"):
+                raise ValueError(f"Invariant {name!r} must be a SELECT query")
+    modes = contract.get("count_modes", {})
+    unknown_modes = set(modes) - set(contract["counts"])
+    if unknown_modes:
+        raise ValueError(f"Count modes reference unknown counts: {sorted(unknown_modes)}")
+    for name in contract["counts"]:
+        if modes.get(name, "exact") not in {"exact", "minimum"}:
+            raise ValueError(f"Unsupported count mode for {name!r}")
+
+
+def capture(database: str, contract: dict) -> dict:
+    return {
+        "schema_version": 1,
+        "captured_at": datetime.now(timezone.utc).isoformat(),
+        "database": database,
+        "count_modes": {
+            name: contract.get("count_modes", {}).get(name, "exact")
+            for name in sorted(contract["counts"])
+        },
+        "counts": {
+            name: run_sql(database, query)
+            for name, query in sorted(contract["counts"].items())
+        },
+        "zero_checks": {
+            name: run_sql(database, query)
+            for name, query in sorted(contract["zero_checks"].items())
+        },
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--database", required=True)
+    parser.add_argument("--contract", type=Path, default=DEFAULT_CONTRACT)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+
+    try:
+        contract = json.loads(args.contract.read_text(encoding="utf-8"))
+        validate_contract(contract)
+        evidence = capture(args.database, contract)
+    except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as error:
+        print(f"Migration invariant capture failed: {error}", file=sys.stderr)
+        return 1
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n")
+    print(args.output)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+====================================================================================================
 FILE: ci/capture_release_evidence.py
 SIZE: 1791
 CONTENT-LENGTH: 1791
@@ -9581,6 +9753,61 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+====================================================================================================
+FILE: ci/check_migration_rehearsal_contract.py
+SIZE: 1507
+CONTENT-LENGTH: 1507
+SHA256: 3f6d538dc0c6975a2e5b80a09ae7e884ed86d76b92e7b3dbbb89f0ebb7fcb2db
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Keep migration rehearsal tooling and documentation wired together."""
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+REQUIRED = {
+    "ci/release_invariants.json": ("schema_version", "counts", "zero_checks"),
+    "ci/capture_migration_invariants.py": ("validate_contract", "run_sql", "count_modes"),
+    "ci/compare_migration_invariants.py": ("force_exact", "differences"),
+    "scripts/ci/run_migration_rehearsal.sh": (
+        "restore_backup_drill.sh",
+        "run_rc_validation.sh acceptance",
+        "rollback-owner",
+        "rollback-trigger",
+        "invariant-comparison.json",
+    ),
+    "RELEASE_RUNBOOK.md": ("Migration rehearsal evidence", "run_migration_rehearsal.sh"),
+    "docs/DELIVERY_ROADMAP.md": ("Release Candidate and Migration Evidence", "run_migration_rehearsal.sh"),
+}
+
+
+def main() -> int:
+    errors = []
+    for relative, tokens in REQUIRED.items():
+        path = ROOT / relative
+        if not path.is_file():
+            errors.append(f"missing {relative}")
+            continue
+        source = path.read_text(encoding="utf-8")
+        for token in tokens:
+            if token not in source:
+                errors.append(f"{relative} missing {token!r}")
+    if errors:
+        print("Migration rehearsal contract failed:")
+        for error in errors:
+            print(f"- {error}")
+        return 1
+    print("Migration rehearsal contract passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
 ====================================================================================================
 FILE: ci/check_migration_review.py
@@ -11202,6 +11429,33 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 ====================================================================================================
+FILE: ci/check_retention_visibility_contract.py
+SIZE: 1321
+CONTENT-LENGTH: 1321
+SHA256: 39b82bae76c1b5c0a879f977978a00cb527d135fd1d0a7627ac4365dbf42080c
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env python3
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[1]
+REQUIRED = {"sports_federation_base/models/retention_evidence.py": ("class FederationRetentionPolicy", "candidate_count", "record_failure_durable", "never_run", "overdue"), "sports_federation_base/views/retention_evidence_views.xml": ("Retention and Recovery", "Needs Attention", "Skipped or Failed Records"), "sports_federation_notifications/models/notification_log.py": ("_retention_candidate_count", "record_execution"), "sports_federation_import_tools/models/integration_delivery_retention_mixin.py": ("_retention_candidates", "attachment_count"), "sports_federation_reporting/models/report_schedule.py": ("_generated_file_retention_candidates", "record_execution")}
+def main():
+    errors=[]
+    for relative,tokens in REQUIRED.items():
+        path=ROOT/relative; content=path.read_text() if path.is_file() else ""
+        if not content: errors.append(f"missing {relative}")
+        errors.extend(f"{relative} missing {token!r}" for token in tokens if token not in content)
+    if errors:
+        print("Retention visibility contract failed:")
+        for error in errors: print(f"- {error}")
+        return 1
+    print("Retention visibility contract passed."); return 0
+if __name__ == "__main__": raise SystemExit(main())
+
+====================================================================================================
 FILE: ci/check_rules_contract.py
 SIZE: 1251
 CONTENT-LENGTH: 1251
@@ -11746,6 +12000,107 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+====================================================================================================
+FILE: ci/compare_migration_invariants.py
+SIZE: 3044
+CONTENT-LENGTH: 3044
+SHA256: ebf0c95f11463fa7c3d37f546d0f8e9a9553c297a016a1b31619d202d5a0e115
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Compare pre-upgrade, post-upgrade, and rollback invariant evidence."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+def load(path: Path) -> dict:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("schema_version") != 1:
+        raise ValueError(f"Unsupported invariant evidence schema in {path}")
+    return payload
+
+
+def compare(
+    reference: dict,
+    candidate: dict,
+    label: str,
+    *,
+    force_exact: bool = False,
+) -> list[dict]:
+    differences = []
+    modes = reference.get("count_modes", {})
+    for name, expected in sorted(reference.get("counts", {}).items()):
+        actual = candidate.get("counts", {}).get(name)
+        mode = "exact" if force_exact else modes.get(name, "exact")
+        violates = actual is None or (actual != expected if mode == "exact" else actual < expected)
+        if violates:
+            differences.append(
+                {
+                    "kind": "count",
+                    "name": name,
+                    "mode": mode,
+                    "expected": expected,
+                    "actual": actual,
+                    "evidence": label,
+                }
+            )
+    for name, actual in sorted(candidate.get("zero_checks", {}).items()):
+        if actual != 0:
+            differences.append(
+                {"kind": "integrity", "name": name, "expected": 0, "actual": actual, "evidence": label}
+            )
+    return differences
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--before", type=Path, required=True)
+    parser.add_argument("--after", type=Path, required=True)
+    parser.add_argument("--rollback", type=Path)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+
+    try:
+        before = load(args.before)
+        after = load(args.after)
+        differences = compare(before, after, "after")
+        rollback = load(args.rollback) if args.rollback else None
+        if rollback:
+            differences.extend(compare(before, rollback, "rollback", force_exact=True))
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        print(f"Migration invariant comparison failed: {error}", file=sys.stderr)
+        return 1
+
+    result = {
+        "schema_version": 1,
+        "compared_at": datetime.now(timezone.utc).isoformat(),
+        "status": "passed" if not differences else "failed",
+        "before": str(args.before),
+        "after": str(args.after),
+        "rollback": str(args.rollback) if args.rollback else None,
+        "differences": differences,
+    }
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    if differences:
+        print(json.dumps(result, indent=2, sort_keys=True), file=sys.stderr)
+        return 1
+    print(args.output)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
 ====================================================================================================
 FILE: ci/contracts/constraint_index_contracts.json
@@ -12598,6 +12953,49 @@ fi
 for run_dir in "${run_dirs[@]:KEEP_RUNS}"; do
   rm -rf "$LOG_DIR/$run_dir"
 done
+
+====================================================================================================
+FILE: ci/release_invariants.json
+SIZE: 1995
+CONTENT-LENGTH: 1995
+SHA256: 29fdeeb64e4b710cfda5124dbcc046d601da231e1fb9b72c12da0bab411da946
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+{
+  "count_modes": {
+    "attachments": "minimum",
+    "clubs": "exact",
+    "competition_editions": "exact",
+    "fixtures": "exact",
+    "matches": "exact",
+    "players": "exact",
+    "schedule_publications": "exact",
+    "teams": "exact",
+    "tournaments": "exact"
+  },
+  "counts": {
+    "attachments": "SELECT count(*) FROM ir_attachment",
+    "clubs": "SELECT count(*) FROM federation_club",
+    "competition_editions": "SELECT count(*) FROM federation_competition_edition",
+    "fixtures": "SELECT count(*) FROM federation_fixture",
+    "matches": "SELECT count(*) FROM federation_match",
+    "players": "SELECT count(*) FROM federation_player",
+    "schedule_publications": "SELECT count(*) FROM federation_schedule_publication",
+    "teams": "SELECT count(*) FROM federation_team",
+    "tournaments": "SELECT count(*) FROM federation_tournament"
+  },
+  "schema_version": 1,
+  "zero_checks": {
+    "duplicate_live_matchday_publications": "SELECT count(*) FROM (SELECT matchday_id FROM federation_schedule_publication WHERE state = 'live' GROUP BY matchday_id HAVING count(*) > 1) violations",
+    "fixture_match_backlink_mismatches": "SELECT count(*) FROM federation_fixture fixture JOIN federation_match match ON match.id = fixture.operational_match_id WHERE match.logical_fixture_id IS DISTINCT FROM fixture.id",
+    "orphan_competition_editions": "SELECT count(*) FROM federation_competition_edition edition LEFT JOIN federation_competition competition ON competition.id = edition.competition_id LEFT JOIN federation_season season ON season.id = edition.season_id WHERE competition.id IS NULL OR season.id IS NULL",
+    "orphan_schedule_publications": "SELECT count(*) FROM federation_schedule_publication publication LEFT JOIN federation_matchday matchday ON matchday.id = publication.matchday_id WHERE matchday.id IS NULL",
+    "stored_attachments_without_filename": "SELECT count(*) FROM ir_attachment WHERE type = 'binary' AND store_fname IS NOT NULL AND store_fname = ''"
+  }
+}
 
 ====================================================================================================
 FILE: ci/resolve_ci_scope.py
@@ -14058,6 +14456,57 @@ db_password = odoo
 db_name = test_db
 
 ====================================================================================================
+FILE: ci/test_migration_invariants.py
+SIZE: 1719
+CONTENT-LENGTH: 1719
+SHA256: d8e96a5be5af4fef2edc6c230fdb89a0dada0b4e5333f9010c2212e68e47b7c5
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+import importlib.util
+import json
+from pathlib import Path
+
+
+def load_script(name):
+    path = Path(__file__).with_name(name)
+    spec = importlib.util.spec_from_file_location(path.stem, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+capture = load_script("capture_migration_invariants.py")
+compare = load_script("compare_migration_invariants.py")
+
+
+def test_contract_is_valid():
+    contract = json.loads(Path(__file__).with_name("release_invariants.json").read_text())
+    capture.validate_contract(contract)
+
+
+def test_comparison_accepts_preserved_counts_and_clean_integrity():
+    before = {"counts": {"clubs": 3}, "count_modes": {"clubs": "exact"}, "zero_checks": {"orphans": 0}}
+    after = {"counts": {"clubs": 3}, "zero_checks": {"orphans": 0}}
+    assert compare.compare(before, after, "after") == []
+
+
+def test_comparison_reports_count_and_integrity_drift():
+    before = {"counts": {"clubs": 3}, "count_modes": {"clubs": "exact"}, "zero_checks": {"orphans": 0}}
+    after = {"counts": {"clubs": 2}, "zero_checks": {"orphans": 1}}
+    differences = compare.compare(before, after, "after")
+    assert {item["kind"] for item in differences} == {"count", "integrity"}
+
+
+def test_minimum_count_mode_allows_growth_but_not_loss():
+    before = {"counts": {"attachments": 3}, "count_modes": {"attachments": "minimum"}, "zero_checks": {}}
+    assert compare.compare(before, {"counts": {"attachments": 4}, "zero_checks": {}}, "after") == []
+    assert compare.compare(before, {"counts": {"attachments": 2}, "zero_checks": {}}, "after")
+    assert compare.compare(before, {"counts": {"attachments": 4}, "zero_checks": {}}, "rollback", force_exact=True)
+
+====================================================================================================
 FILE: ci/verify_release.sh
 SIZE: 324
 CONTENT-LENGTH: 324
@@ -14217,9 +14666,9 @@ print(f"Size: {OUTPUT.stat().st_size / 1024 / 1024:.2f} MB")
 
 ====================================================================================================
 FILE: docs/DELIVERY_ROADMAP.md
-SIZE: 6793
-CONTENT-LENGTH: 6783
-SHA256: d24ccf58c8a3e9c6d937edab30118f20730cbeb7194d52b578777720ad10ec7e
+SIZE: 8687
+CONTENT-LENGTH: 8677
+SHA256: fd9b848c61b3547d165a31196c8dfb4bacdf5a087f765b5a4e13ba3a89d88743
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -14289,12 +14738,30 @@ directory.
 
 ## Release Candidate and Migration Evidence
 
-Status: **Next**
+Status: **Implemented, pending rehearsal with an approved backup**
 
 ### Objective
 
 Prove deployment and recovery against a representative pre-refactor database and
 matching filestore.
+
+### Automation
+
+Run the complete migration rehearsal from a clean candidate checkout:
+
+```bash
+scripts/ci/run_migration_rehearsal.sh \
+  --backup-dir /path/to/approved-backup \
+  --rollback-owner "Release owner" \
+  --rollback-trigger "Invariant comparison or acceptance validation fails" \
+  --yes
+```
+
+The command restores the source backup, captures pre-upgrade invariants, upgrades
+the restored database, captures post-upgrade invariants, runs role-separated
+acceptance, restores the same backup into an independent rollback database, and
+compares all evidence. Evidence is written under
+`artifacts/release/migration/` by default.
 
 ### Deliverables
 
@@ -14315,7 +14782,7 @@ attachment invariants. Restore and rollback complete from the recorded backup.
 
 ## Simplified Competition Journey
 
-Status: **Planned**
+Status: **Implemented**
 
 ### Objective
 
@@ -14332,14 +14799,21 @@ approved, and published without exposing the underlying Odoo model structure.
   from the normal path;
 - task-first club portal.
 
+### Reversibility contract
+
+- Setup templates apply editable defaults and can be cancelled.
+- Late fixtures can be added to or removed from calendar allocations.
+- Draft and change-requested schedules refresh from the current calendar plan without deleting assignments.
+- Submitting planners can withdraw pending reviews; approver-requested changes return the same schedule to an editable state.
+- Published evidence stays immutable and corrections use a linked replacement revision.
+
 ### Exit criteria
 
-A trained non-developer completes the normal journey without developer mode,
-direct model navigation, manual progression mapping, or shell access.
+A trained non-developer completes the normal journey without developer mode, direct model navigation, manual progression mapping, or shell access. Every pre-publication handoff has an explicit return path; post-publication changes use traceable replacement revisions.
 
 ## Operational Job Reliability
 
-Status: **Partially implemented**
+Status: **Implemented**
 
 ### Objective
 
@@ -14356,6 +14830,18 @@ domain execution out of its owning addon.
 - operator visibility for notification, report, integration, retention, and
   snapshot jobs;
 - shared infrastructure only after two proven consumers exist.
+
+### Implementation
+
+The shared `federation.operation.job` queue records source ownership, attempts,
+retry timing, correlation IDs, stale-worker recovery, terminal operator action,
+and manual retry. Notification and scheduled-report failures can be queued for
+automatic retry. Failed inbound deliveries create operator-action jobs because
+payload and governance corrections require explicit review before replay.
+
+The **Operational Job Health** administration view groups work by state and
+source, exposes sanitized failure evidence, opens the source record, and permits
+explicit retry only for failed jobs.
 
 ### Exit criteria
 
@@ -15548,10 +16034,160 @@ PyYAML==6.0.2
 websocket-client==1.8.0
 
 ====================================================================================================
+FILE: scripts/ci/run_migration_rehearsal.sh
+SIZE: 4956
+CONTENT-LENGTH: 4956
+SHA256: 683641adb3d42e8c3b14c8bebf85892a8b063dc30a2a0be4204157840afd10d1
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$repo_root"
+
+usage() {
+  cat <<'EOF'
+Usage: scripts/ci/run_migration_rehearsal.sh --backup-dir PATH [options]
+
+Options:
+  --backup-dir PATH       Backup directory produced by the upgrade tooling.
+  --target-db NAME        Database restored and upgraded (default: sf_rc_migration).
+  --rollback-db NAME      Independent rollback verification database (default: sf_rc_rollback).
+  --evidence-dir PATH     Evidence output directory (default: artifacts/release/migration).
+  --rollback-owner NAME   Person accountable for the rollback decision.
+  --rollback-trigger TEXT Objective condition that requires rollback.
+  --skip-filestore        Forwarded to the restore drill.
+  --yes, -y               Skip restore confirmation prompts.
+  --help, -h              Show this help message.
+EOF
+}
+
+backup_dir=""
+target_db="${MIGRATION_TARGET_DB:-sf_rc_migration}"
+rollback_db="${MIGRATION_ROLLBACK_DB:-sf_rc_rollback}"
+evidence_dir="${MIGRATION_EVIDENCE_DIR:-$repo_root/artifacts/release/migration}"
+rollback_owner="${ROLLBACK_OWNER:-}"
+rollback_trigger="${ROLLBACK_TRIGGER:-}"
+restore_flags=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --backup-dir) backup_dir="$2"; shift 2 ;;
+    --target-db) target_db="$2"; shift 2 ;;
+    --rollback-db) rollback_db="$2"; shift 2 ;;
+    --evidence-dir) evidence_dir="$2"; shift 2 ;;
+    --rollback-owner) rollback_owner="$2"; shift 2 ;;
+    --rollback-trigger) rollback_trigger="$2"; shift 2 ;;
+    --skip-filestore) restore_flags+=(--skip-filestore); shift ;;
+    --yes|-y) restore_flags+=(--yes); shift ;;
+    --help|-h) usage; exit 0 ;;
+    *) echo "Unknown argument: $1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+[[ -n "$backup_dir" ]] || { echo "--backup-dir is required" >&2; exit 2; }
+[[ -n "$rollback_owner" ]] || { echo "--rollback-owner is required" >&2; exit 2; }
+[[ -n "$rollback_trigger" ]] || { echo "--rollback-trigger is required" >&2; exit 2; }
+command -v psql >/dev/null 2>&1 || { echo "psql is required" >&2; exit 2; }
+mkdir -p "$evidence_dir"
+
+backup_dir="$(cd "$backup_dir" && pwd)"
+dump_file="$(find "$backup_dir" -maxdepth 1 -type f -name '*.dump' -print -quit)"
+[[ -n "$dump_file" ]] || { echo "No PostgreSQL dump found in $backup_dir" >&2; exit 2; }
+
+restore_database() {
+  local database="$1"
+  local report="$2"
+  ci/restore_backup_drill.sh \
+    --backup-dir "$backup_dir" \
+    --target-db "$database" \
+    --report-file "$report" \
+    "${restore_flags[@]}"
+}
+
+restore_database "$target_db" "$evidence_dir/restore-before-upgrade.txt"
+python3 ci/capture_migration_invariants.py \
+  --database "$target_db" \
+  --output "$evidence_dir/before-upgrade.json"
+
+if UPGRADE_DB_NAME="$target_db" scripts/ci/run_rc_validation.sh upgrade; then
+  upgrade_status=passed
+else
+  upgrade_status=failed
+fi
+python3 ci/capture_release_evidence.py \
+  --lane migration-upgrade \
+  --status "$upgrade_status" \
+  --database "$target_db" \
+  --backup "$dump_file" \
+  --output "$evidence_dir/upgrade.json"
+[[ "$upgrade_status" == passed ]] || exit 1
+
+python3 ci/capture_migration_invariants.py \
+  --database "$target_db" \
+  --output "$evidence_dir/after-upgrade.json"
+
+if DB_NAME="$target_db" scripts/ci/run_rc_validation.sh acceptance; then
+  acceptance_status=passed
+else
+  acceptance_status=failed
+fi
+python3 ci/capture_release_evidence.py \
+  --lane role-separated-acceptance \
+  --status "$acceptance_status" \
+  --database "$target_db" \
+  --output "$evidence_dir/operator-acceptance.json"
+[[ "$acceptance_status" == passed ]] || exit 1
+
+restore_database "$rollback_db" "$evidence_dir/restore-rollback.txt"
+python3 ci/capture_migration_invariants.py \
+  --database "$rollback_db" \
+  --output "$evidence_dir/rollback.json"
+
+python3 ci/compare_migration_invariants.py \
+  --before "$evidence_dir/before-upgrade.json" \
+  --after "$evidence_dir/after-upgrade.json" \
+  --rollback "$evidence_dir/rollback.json" \
+  --output "$evidence_dir/invariant-comparison.json"
+
+python3 - "$evidence_dir" "$rollback_owner" "$rollback_trigger" "$dump_file" <<'PY'
+import hashlib
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+root = Path(sys.argv[1])
+owner, trigger, dump_name = sys.argv[2:]
+dump = Path(dump_name)
+digest = hashlib.sha256()
+with dump.open("rb") as stream:
+    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+        digest.update(chunk)
+manifest = {
+    "schema_version": 1,
+    "recorded_at": datetime.now(timezone.utc).isoformat(),
+    "status": "passed",
+    "rollback_owner": owner,
+    "rollback_trigger": trigger,
+    "backup": {"path": str(dump), "sha256": digest.hexdigest()},
+    "artifacts": sorted(path.name for path in root.iterdir() if path.is_file()),
+}
+(root / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+print(root / "manifest.json")
+PY
+
+echo "Migration rehearsal passed. Evidence: $evidence_dir"
+
+====================================================================================================
 FILE: scripts/ci/run_rc_validation.sh
-SIZE: 6227
-CONTENT-LENGTH: 6227
-SHA256: ee76d82a3f714829ffa95317b55ebd4124d463729a839d40eb32100733dd4a68
+SIZE: 6514
+CONTENT-LENGTH: 6514
+SHA256: ac5aa996c1579b62fd657001b9b2c05ceb08212a04d458cf21936cf1b07f6ed6
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
 GIT-STATE: tracked
@@ -15621,6 +16257,8 @@ PY
   python3 ci/check_delivery_language.py
   python3 ci/check_release_qualification.py
   python3 ci/check_release_focus_contract.py
+  python3 ci/check_retention_visibility_contract.py
+  python3 ci/check_migration_rehearsal_contract.py
   if command -v node >/dev/null 2>&1; then
     while IFS= read -r -d '' file; do node --check "$file"; done < <(
       find sports_federation_* -path '*/static/src/*.js' -type f -print0
@@ -15675,6 +16313,7 @@ case "$lane" in
     python3 ci/check_performance_qualification.py
     run_tags '/sports_federation_standings:TestStandingsPerformance,/sports_federation_reporting:TestReportSnapshot,/sports_federation_reporting:TestYearFourReporting,/sports_federation_public_site:TestPublicSiteNewEndpoints'
     ;;
+  acceptance) run_tags 'sf_operator_acceptance,sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus' ;;
   focus) run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus' ;;
   full) run_tags 'standard' ;;
   all)
@@ -15688,10 +16327,10 @@ case "$lane" in
     run_tags '/sports_federation_public_site'
     python3 ci/check_performance_qualification.py
     run_tags '/sports_federation_standings:TestStandingsPerformance,/sports_federation_reporting:TestReportSnapshot,/sports_federation_reporting:TestYearFourReporting,/sports_federation_public_site:TestPublicSiteNewEndpoints'
-    run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus'
+    run_tags 'sf_operator_acceptance,sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus'
     run_tags 'standard'
     ;;
-  *) echo "Usage: $0 {preflight|static|install|upgrade|core|portal|public|performance|focus|full|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {preflight|static|install|upgrade|core|portal|public|performance|acceptance|focus|full|all}" >&2; exit 2 ;;
 esac
 
 ====================================================================================================
@@ -16786,9 +17425,9 @@ if __name__ == "__main__":
 
 ====================================================================================================
 FILE: sports_federation_base/README.md
-SIZE: 1724
-CONTENT-LENGTH: 1724
-SHA256: 95a3fce7604f5167c98181d792b3051d7b52e5b9bc0c7992abe143229aa68dde
+SIZE: 1837
+CONTENT-LENGTH: 1837
+SHA256: 2a076071acd70d11df9123f42d7b3cfacf218cc7e3e613d08423ef097448eedf
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -16811,6 +17450,7 @@ Foundation addon for clubs, teams, seasons, and season registrations. It also pr
 - `federation.season.registration`: unique team enrollment per season
 - shared manager and user security groups
 - sequences, audit events, operational health, failure feedback, rate limiting, correlation helpers, and attachment policy services
+- the Operational Job Health administration view, including Odoo 19-compatible state and source group-by filters
 
 ## Lifecycle safeguards
 
@@ -16848,9 +17488,9 @@ from . import models
 
 ====================================================================================================
 FILE: sports_federation_base/__manifest__.py
-SIZE: 818
-CONTENT-LENGTH: 818
-SHA256: 013268a0e0e61a528317a96c8d908bab866cf046864a673be6b23bb9826f52a5
+SIZE: 986
+CONTENT-LENGTH: 986
+SHA256: 92f4593abbb01e16c91484ef2fca205aa4e0271d59c4112cc94e3aaf7eb2c8e4
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -16858,7 +17498,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Base",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.2.2",
     "category": "Sports",
     "summary": "Base module for federation clubs, teams, seasons, and registrations",
     "author": "Sports Federation",
@@ -16875,6 +17515,10 @@ GIT-STATE: tracked
         "views/federation_team_views.xml",
         "views/federation_club_views.xml",
         "views/menu_items.xml",
+        "data/retention_policy_data.xml",
+        "views/retention_evidence_views.xml",
+        "views/operation_job_views.xml",
+        "data/operation_job_cron.xml",
     ],
     "demo": [],
     "installable": True,
@@ -16965,6 +17609,41 @@ GIT-STATE: tracked
 </odoo>
 
 ====================================================================================================
+FILE: sports_federation_base/data/operation_job_cron.xml
+SIZE: 449
+CONTENT-LENGTH: 449
+SHA256: 892a069fe48d16427504eb353adda0ee6036581193face09c19ccbc7f73eb65c
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+<odoo noupdate="1">
+  <record id="ir_cron_process_operational_jobs" model="ir.cron">
+    <field name="name">Federation: Process Operational Jobs</field>
+    <field name="model_id" ref="model_federation_operation_job"/>
+    <field name="state">code</field><field name="code">model._cron_process_jobs()</field>
+    <field name="interval_number">1</field><field name="interval_type">minutes</field><field name="active">True</field>
+  </record>
+</odoo>
+
+====================================================================================================
+FILE: sports_federation_base/data/retention_policy_data.xml
+SIZE: 943
+CONTENT-LENGTH: 943
+SHA256: b91e948ebba16cf985de29db5fd7b9794242d228536d8bcbef5feff732d5b6d2
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+<odoo noupdate="1">
+  <record id="retention_policy_notification_logs" model="federation.retention.policy"><field name="name">Notification Logs</field><field name="code">notification_logs</field><field name="source_model">federation.notification.log</field><field name="expected_interval_hours">24</field></record>
+  <record id="retention_policy_integration_deliveries" model="federation.retention.policy"><field name="name">Integration Deliveries</field><field name="code">integration_deliveries</field><field name="source_model">federation.integration.delivery</field><field name="expected_interval_hours">24</field></record>
+  <record id="retention_policy_generated_report_files" model="federation.retention.policy"><field name="name">Generated Report Files</field><field name="code">generated_report_files</field><field name="source_model">federation.report.schedule</field><field name="expected_interval_hours">24</field></record>
+</odoo>
+
+====================================================================================================
 FILE: sports_federation_base/exceptions.py
 SIZE: 130
 CONTENT-LENGTH: 130
@@ -17036,9 +17715,9 @@ def migrate(cr, version):
 
 ====================================================================================================
 FILE: sports_federation_base/models/__init__.py
-SIZE: 398
-CONTENT-LENGTH: 398
-SHA256: aaddff849d3aa8a8ee4d101e5da4dd131fa9b3917707242f026ffe842ee84554
+SIZE: 427
+CONTENT-LENGTH: 427
+SHA256: 7f24467520f18fbfb7408ea69b1fbba2084da9361800ea33e50b32acfc75838f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -17057,6 +17736,8 @@ from . import federation_season_registration
 
 from . import operational_health
 from . import retention_evidence
+
+from . import operation_job
 
 ====================================================================================================
 FILE: sports_federation_base/models/attachment_policy.py
@@ -18104,6 +18785,200 @@ class FederationTeam(models.Model):
         return True
 
 ====================================================================================================
+FILE: sports_federation_base/models/operation_job.py
+SIZE: 6668
+CONTENT-LENGTH: 6668
+SHA256: f1edea492ecc312e0400521602cc2bab8e0023f59fba9281aa5d763ab02b8042
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+import logging
+from datetime import timedelta
+
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError, ValidationError
+
+_logger = logging.getLogger(__name__)
+
+
+class FederationOperationJob(models.Model):
+    _name = "federation.operation.job"
+    _description = "Operational Job"
+    _order = "priority desc, requested_on asc, id asc"
+
+    state = fields.Selection(
+        [
+            ("pending", "Pending"),
+            ("running", "Running"),
+            ("retry", "Retry Scheduled"),
+            ("done", "Done"),
+            ("operator_action", "Needs Operator Action"),
+        ],
+        default="pending",
+        required=True,
+        index=True,
+    )
+    name = fields.Char(required=True)
+    source_model = fields.Char(required=True, index=True)
+    source_res_id = fields.Integer(required=True, index=True)
+    correlation_id = fields.Char(required=True, index=True)
+    priority = fields.Integer(default=50, index=True)
+    requested_on = fields.Datetime(default=fields.Datetime.now, required=True, index=True)
+    started_on = fields.Datetime(index=True)
+    completed_on = fields.Datetime(index=True)
+    next_retry_on = fields.Datetime(index=True)
+    operator_action_on = fields.Datetime(index=True)
+    attempt_count = fields.Integer(default=0, required=True)
+    max_attempts = fields.Integer(default=3, required=True)
+    last_error = fields.Text(readonly=True)
+    failure_category = fields.Char(index=True, readonly=True)
+
+    _unique_source_correlation = models.Constraint(
+        "unique(source_model, source_res_id, correlation_id)",
+        "A source record can have only one job for a correlation ID.",
+    )
+
+    @api.constrains("attempt_count", "max_attempts")
+    def _check_attempts(self):
+        for job in self:
+            if job.attempt_count < 0 or job.max_attempts < 1:
+                raise ValidationError(_("Job attempt limits are invalid."))
+
+    @api.model
+    def ensure_job(self, source, correlation_id, name=False, max_attempts=3, priority=50):
+        source.ensure_one()
+        values = {
+            "name": name or source.display_name,
+            "source_model": source._name,
+            "source_res_id": source.id,
+            "correlation_id": correlation_id,
+            "max_attempts": max_attempts,
+            "priority": priority,
+        }
+        job = self.search(
+            [
+                ("source_model", "=", source._name),
+                ("source_res_id", "=", source.id),
+                ("correlation_id", "=", correlation_id),
+            ],
+            limit=1,
+        )
+        return job or self.create(values)
+
+    def _source(self):
+        self.ensure_one()
+        model = self.env.get(self.source_model)
+        return model.browse(self.source_res_id).exists() if model is not None else model
+
+    def _start(self):
+        self.ensure_one()
+        self.write(
+            {
+                "state": "running",
+                "started_on": fields.Datetime.now(),
+                "completed_on": False,
+                "next_retry_on": False,
+                "attempt_count": self.attempt_count + 1,
+            }
+        )
+
+    def _succeed(self):
+        self.write(
+            {
+                "state": "done",
+                "completed_on": fields.Datetime.now(),
+                "next_retry_on": False,
+                "operator_action_on": False,
+                "last_error": False,
+                "failure_category": False,
+            }
+        )
+
+    def _fail(self, error, category="unexpected_bug", retryable=True):
+        self.ensure_one()
+        exhausted = self.attempt_count >= self.max_attempts or not retryable
+        delay_minutes = min(60, 2 ** max(1, self.attempt_count))
+        self.write(
+            {
+                "state": "operator_action" if exhausted else "retry",
+                "completed_on": fields.Datetime.now(),
+                "next_retry_on": False if exhausted else fields.Datetime.now() + timedelta(minutes=delay_minutes),
+                "operator_action_on": fields.Datetime.now() if exhausted else False,
+                "last_error": str(error)[:4000],
+                "failure_category": category,
+            }
+        )
+
+    def _execute(self):
+        self.ensure_one()
+        source = self._source()
+        if not source:
+            self._fail(_("The source record no longer exists."), "data_validation", retryable=False)
+            return False
+        self._start()
+        try:
+            source.with_context(federation_correlation_id=self.correlation_id)._retry_operational_job(self)
+        except Exception as error:  # pylint: disable=broad-except
+            retryable = not isinstance(error, (UserError, ValidationError))
+            self._fail(error, "unexpected_bug", retryable=retryable)
+            _logger.exception("Operational job failed: job=%s correlation_id=%s", self.id, self.correlation_id)
+            return False
+        self._succeed()
+        return True
+
+    def action_retry(self):
+        for job in self:
+            if job.state not in ("retry", "operator_action"):
+                raise ValidationError(_("Only failed jobs can be retried."))
+            job.write(
+                {
+                    "state": "pending",
+                    "attempt_count": 0,
+                    "next_retry_on": False,
+                    "operator_action_on": False,
+                }
+            )
+        return True
+
+    def action_open_source(self):
+        self.ensure_one()
+        source = self._source()
+        if not source:
+            raise UserError(_("The source record no longer exists."))
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": source._name,
+            "res_id": source.id,
+            "view_mode": "form",
+            "target": "current",
+        }
+
+    @api.model
+    def _recover_stale(self, stale_minutes=30):
+        deadline = fields.Datetime.now() - timedelta(minutes=stale_minutes)
+        stale = self.search([("state", "=", "running"), ("started_on", "<=", deadline)])
+        for job in stale:
+            job._fail(_("Recovered after the worker stopped while processing."), "infrastructure")
+        return len(stale)
+
+    @api.model
+    def _cron_process_jobs(self):
+        self._recover_stale()
+        jobs = self.search(
+            [
+                ("state", "in", ("pending", "retry")),
+                "|",
+                ("next_retry_on", "=", False),
+                ("next_retry_on", "<=", fields.Datetime.now()),
+            ],
+            order="priority desc, requested_on asc, id asc",
+            limit=50,
+        )
+        return sum(1 for job in jobs if job._execute())
+
+====================================================================================================
 FILE: sports_federation_base/models/operational_health.py
 SIZE: 2875
 CONTENT-LENGTH: 2875
@@ -18385,31 +19260,115 @@ class ResConfigSettings(models.TransientModel):
 
 ====================================================================================================
 FILE: sports_federation_base/models/retention_evidence.py
-SIZE: 809
-CONTENT-LENGTH: 809
-SHA256: 210b248a77f53238d02eb856dc318885a3e97cba48dc9fcb9f286eff93f7e3e2
+SIZE: 6491
+CONTENT-LENGTH: 6491
+SHA256: 2c6f1e89580103f543e4346f93b25d3b20f7aff68c64898a79e9467d535b17c1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
-from odoo import fields, models
+from odoo import SUPERUSER_ID, _, api, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationRetentionPolicy(models.Model):
+    _name = "federation.retention.policy"
+    _description = "Retention Policy Health"
+    _order = "name"
+
+    name = fields.Char(required=True, translate=True)
+    code = fields.Char(required=True, index=True)
+    source_model = fields.Char(required=True)
+    active = fields.Boolean(default=True)
+    expected_interval_hours = fields.Integer(default=24, required=True)
+    policy_version = fields.Char(default="1", required=True)
+    latest_evidence_id = fields.Many2one("federation.retention.evidence", compute="_compute_health")
+    latest_success_on = fields.Datetime(compute="_compute_health")
+    health = fields.Selection([("healthy", "Healthy"), ("attention", "Attention"), ("overdue", "Overdue"), ("never_run", "Never Run")], compute="_compute_health", search="_search_health")
+    health_message = fields.Char(compute="_compute_health")
+    _unique_code = models.Constraint("unique(code)", "Retention policy codes must be unique.")
+
+    @api.constrains("expected_interval_hours")
+    def _check_expected_interval(self):
+        if any(policy.expected_interval_hours < 1 for policy in self):
+            raise ValidationError(_("Expected retention intervals must be positive."))
+
+    def _compute_health(self):
+        now = fields.Datetime.now()
+        Evidence = self.env["federation.retention.evidence"].sudo()
+        for policy in self:
+            latest = Evidence.search([("policy", "=", policy.code)], order="completed_on desc,id desc", limit=1)
+            latest_success = Evidence.search([("policy", "=", policy.code), ("status", "=", "passed")], order="completed_on desc,id desc", limit=1)
+            policy.latest_evidence_id = latest
+            policy.latest_success_on = latest_success.completed_on
+            if not latest:
+                policy.health = "never_run"; policy.health_message = _("No execution evidence has been recorded.")
+            elif latest.status == "failed":
+                policy.health = "attention"; policy.health_message = latest.operator_message or _("The latest retention execution failed.")
+            elif (now - latest.completed_on).total_seconds() / 3600 > policy.expected_interval_hours:
+                policy.health = "overdue"; policy.health_message = _("No successful execution within the expected interval.")
+            elif latest.skipped_count or latest.failure_count:
+                policy.health = "attention"; policy.health_message = _("The latest execution completed with skipped records or failures.")
+            else:
+                policy.health = "healthy"; policy.health_message = _("The latest execution completed successfully.")
+
+    @api.model
+    def _search_health(self, operator, value):
+        policies = self.search([])
+        if operator in ("=", "=="): matched = policies.filtered(lambda policy: policy.health == value)
+        elif operator == "in": matched = policies.filtered(lambda policy: policy.health in value)
+        elif operator in ("!=", "<>"): matched = policies.filtered(lambda policy: policy.health != value)
+        elif operator == "not in": matched = policies.filtered(lambda policy: policy.health not in value)
+        else: raise ValidationError(_("Unsupported retention health search operator."))
+        return [("id", "in", matched.ids)]
+
+    def action_open_evidence(self):
+        self.ensure_one()
+        action = self.env["ir.actions.actions"]._for_xml_id("sports_federation_base.action_federation_retention_evidence")
+        action["domain"] = [("policy", "=", self.code)]
+        return action
 
 
 class FederationRetentionEvidence(models.Model):
-    _name = 'federation.retention.evidence'
-    _description = 'Retention Execution Evidence'
-    _order = 'started_on desc, id desc'
+    _name = "federation.retention.evidence"
+    _description = "Retention Execution Evidence"
+    _order = "started_on desc, id desc"
 
     policy = fields.Char(required=True, index=True)
+    policy_version = fields.Char(default="1", required=True)
+    source_model = fields.Char(index=True)
     started_on = fields.Datetime(required=True, default=fields.Datetime.now, index=True)
     completed_on = fields.Datetime(required=True, default=fields.Datetime.now)
+    duration_seconds = fields.Float(readonly=True)
+    candidate_count = fields.Integer(required=True, default=0)
     deleted_count = fields.Integer(required=True, default=0)
     skipped_count = fields.Integer(required=True, default=0)
     attachment_count = fields.Integer(required=True, default=0)
-    status = fields.Selection([('passed', 'Passed'), ('failed', 'Failed')], required=True, index=True)
+    failure_count = fields.Integer(required=True, default=0)
+    status = fields.Selection([("passed", "Passed"), ("failed", "Failed")], required=True, index=True)
+    dry_run = fields.Boolean(default=False, index=True)
+    retention_rules = fields.Json()
     operator_message = fields.Text()
     correlation_id = fields.Char(index=True)
+
+    @api.model
+    def record_failure_durable(self, policy, **values):
+        """Commit failure evidence independently before the owning cron re-raises."""
+        values["status"] = "failed"
+        with self.env.registry.cursor() as cursor:
+            env = api.Environment(cursor, SUPERUSER_ID, dict(self.env.context))
+            evidence = env["federation.retention.evidence"].record_execution(policy, **values)
+            evidence_id = evidence.id
+            cursor.commit()
+        return self.browse(evidence_id)
+
+    @api.model
+    def record_execution(self, policy, *, started_on, candidate_count=0, deleted_count=0, skipped_count=0, attachment_count=0, failure_count=0, status="passed", dry_run=False, retention_rules=None, operator_message=False, correlation_id=False, source_model=False):
+        completed_on = fields.Datetime.now()
+        policy_record = self.env["federation.retention.policy"].sudo().search([("code", "=", policy)], limit=1)
+        duration = max(0, (fields.Datetime.to_datetime(completed_on) - fields.Datetime.to_datetime(started_on)).total_seconds())
+        return self.sudo().create({"policy": policy, "policy_version": policy_record.policy_version or "1", "source_model": source_model or policy_record.source_model, "started_on": started_on, "completed_on": completed_on, "duration_seconds": duration, "candidate_count": candidate_count, "deleted_count": deleted_count, "skipped_count": skipped_count, "attachment_count": attachment_count, "failure_count": failure_count, "status": status, "dry_run": dry_run, "retention_rules": retention_rules or {}, "operator_message": operator_message, "correlation_id": correlation_id})
 
 ====================================================================================================
 FILE: sports_federation_base/request_security.py
@@ -18471,9 +19430,9 @@ class FederationRequestSecurityMixin:
 
 ====================================================================================================
 FILE: sports_federation_base/security/ir.model.access.csv
-SIZE: 1594
-CONTENT-LENGTH: 1594
-SHA256: 7ea8242f20dad1b86c5766fcd475c53dcb9201e6541565e1ed477d7e7a4ee814
+SIZE: 2074
+CONTENT-LENGTH: 2074
+SHA256: f810cce424dab843dfa55b2735d301943336aaf74f27618aa1005e76344f06bb
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -18492,6 +19451,9 @@ access_federation_request_rate_limit_system,federation.request.rate.limit.system
 access_federation_audit_event_manager,federation.audit.event.manager,model_federation_audit_event,group_federation_manager,1,0,0,0
 access_federation_audit_event_system,federation.audit.event.system,model_federation_audit_event,base.group_system,1,1,1,1
 access_federation_retention_evidence_manager,federation.retention.evidence manager,model_federation_retention_evidence,sports_federation_base.group_federation_manager,1,0,0,0
+access_federation_operation_job_user,federation.operation.job user,model_federation_operation_job,sports_federation_base.group_federation_user,1,0,0,0
+access_federation_operation_job_manager,federation.operation.job manager,model_federation_operation_job,sports_federation_base.group_federation_manager,1,1,1,0
+access_federation_retention_policy_manager,federation.retention.policy manager,model_federation_retention_policy,sports_federation_base.group_federation_manager,1,1,0,0
 
 ====================================================================================================
 FILE: sports_federation_base/security/res_groups.xml
@@ -18527,9 +19489,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_base/tests/__init__.py
-SIZE: 208
-CONTENT-LENGTH: 208
-SHA256: 2ad1ad673680a0846525d34dc6b88251e3019fcfdc9f0a36aec8ff5d6f1bd826
+SIZE: 242
+CONTENT-LENGTH: 242
+SHA256: 63e36f087e42e9f0c8b65d451823f602b2fcbf93850b07255b64d090df3a57ec
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -18541,6 +19503,8 @@ from . import test_rate_limit
 from . import test_route_inventory
 from . import test_tour_season_registration
 from . import test_retention_evidence
+
+from . import test_operation_job
 
 ====================================================================================================
 FILE: sports_federation_base/tests/route_inventory.py
@@ -19226,6 +20190,52 @@ class TestFederationSeasonRegistration(TransactionCase):
                 }
             )
             self.env.cr.flush()
+
+====================================================================================================
+FILE: sports_federation_base/tests/test_operation_job.py
+SIZE: 1488
+CONTENT-LENGTH: 1488
+SHA256: 15407afd62112d8276ff891ca96a5dba2570ab213c13cb425fcc2a8edf9ce566
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from datetime import timedelta
+
+from odoo import fields
+from odoo.tests.common import TransactionCase
+
+
+class TestOperationJob(TransactionCase):
+    def setUp(self):
+        super().setUp()
+        source = self.env["res.partner"].create({"name": "Job Source"})
+        self.job = self.env["federation.operation.job"].create({
+            "name": "Test Job", "source_model": source._name,
+            "source_res_id": source.id, "correlation_id": "job-test-1",
+            "max_attempts": 2,
+        })
+
+    def test_failure_uses_backoff_then_operator_action(self):
+        self.job._start(); self.job._fail("temporary")
+        self.assertEqual(self.job.state, "retry")
+        self.assertTrue(self.job.next_retry_on)
+        self.job._start(); self.job._fail("still broken")
+        self.assertEqual(self.job.state, "operator_action")
+        self.assertFalse(self.job.next_retry_on)
+
+    def test_manual_retry_resets_terminal_job(self):
+        self.job.write({"state": "operator_action", "attempt_count": 2})
+        self.job.action_retry()
+        self.assertEqual(self.job.state, "pending")
+        self.assertEqual(self.job.attempt_count, 0)
+
+    def test_stale_running_job_is_recovered(self):
+        self.job.write({"state": "running", "attempt_count": 1,
+                        "started_on": fields.Datetime.now() - timedelta(hours=1)})
+        self.assertGreaterEqual(self.env["federation.operation.job"]._recover_stale(), 1)
+        self.assertEqual(self.job.state, "retry")
 
 ====================================================================================================
 FILE: sports_federation_base/tests/test_rate_limit.py
@@ -20080,6 +21090,41 @@ GIT-STATE: tracked
 </odoo>
 
 ====================================================================================================
+FILE: sports_federation_base/views/operation_job_views.xml
+SIZE: 2849
+CONTENT-LENGTH: 2849
+SHA256: 18684de19d4b59aab5d258d948b53739c1c1d61c167aff327913e930cd5aa7a9
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+<odoo>
+  <record id="view_federation_operation_job_search" model="ir.ui.view">
+    <field name="name">federation.operation.job.search</field>
+    <field name="model">federation.operation.job</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="name"/><field name="correlation_id"/><field name="source_model"/>
+        <filter name="needs_action" string="Needs Operator Action" domain="[('state','=','operator_action')]"/>
+        <filter name="retry" string="Retry Scheduled" domain="[('state','=','retry')]"/>
+        <group><filter name="group_state" string="State" context="{'group_by':'state'}"/><filter name="group_source" string="Source" context="{'group_by':'source_model'}"/></group>
+      </search>
+    </field>
+  </record>
+  <record id="view_federation_operation_job_list" model="ir.ui.view">
+    <field name="name">federation.operation.job.list</field><field name="model">federation.operation.job</field>
+    <field name="arch" type="xml"><list decoration-danger="state == 'operator_action'" decoration-warning="state == 'retry'"><field name="name"/><field name="source_model"/><field name="state" widget="badge"/><field name="attempt_count"/><field name="max_attempts"/><field name="next_retry_on"/><field name="correlation_id"/><field name="last_error"/></list></field>
+  </record>
+  <record id="view_federation_operation_job_form" model="ir.ui.view">
+    <field name="name">federation.operation.job.form</field><field name="model">federation.operation.job</field>
+    <field name="arch" type="xml"><form><header><button name="action_retry" type="object" string="Retry" class="btn-primary" invisible="state not in ('retry','operator_action')"/><button name="action_open_source" type="object" string="Open Source"/><field name="state" widget="statusbar"/></header><sheet><group><field name="name"/><field name="source_model"/><field name="source_res_id"/><field name="correlation_id"/><field name="priority"/></group><group><field name="attempt_count"/><field name="max_attempts"/><field name="requested_on"/><field name="started_on"/><field name="completed_on"/><field name="next_retry_on"/><field name="operator_action_on"/></group><group><field name="failure_category"/><field name="last_error"/></group></sheet></form></field>
+  </record>
+  <record id="action_federation_operation_job" model="ir.actions.act_window"><field name="name">Operational Job Health</field><field name="res_model">federation.operation.job</field><field name="view_mode">list,form</field><field name="search_view_id" ref="view_federation_operation_job_search"/></record>
+  <menuitem id="menu_federation_operation_job" name="Operational Job Health" parent="sports_federation_base.menu_federation_administration" action="action_federation_operation_job" sequence="90" groups="sports_federation_base.group_federation_manager"/>
+</odoo>
+
+====================================================================================================
 FILE: sports_federation_base/views/res_config_settings_views.xml
 SIZE: 2132
 CONTENT-LENGTH: 2132
@@ -20123,6 +21168,27 @@ GIT-STATE: tracked
 </odoo>
 
 ====================================================================================================
+FILE: sports_federation_base/views/retention_evidence_views.xml
+SIZE: 3431
+CONTENT-LENGTH: 3431
+SHA256: 13fa7c089807f044bd22a94b3c869cb9b11ed32fc1ca0258e72c8d6307a81337
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+<odoo>
+  <record id="view_federation_retention_policy_list" model="ir.ui.view"><field name="name">federation.retention.policy.list</field><field name="model">federation.retention.policy</field><field name="arch" type="xml"><list decoration-success="health == 'healthy'" decoration-warning="health in ('attention','overdue')" decoration-danger="health == 'never_run'"><field name="name"/><field name="source_model"/><field name="expected_interval_hours"/><field name="policy_version"/><field name="health" widget="badge"/><field name="latest_success_on"/><field name="health_message"/><button name="action_open_evidence" type="object" string="Evidence"/></list></field></record>
+  <record id="view_federation_retention_policy_search" model="ir.ui.view"><field name="name">federation.retention.policy.search</field><field name="model">federation.retention.policy</field><field name="arch" type="xml"><search><field name="name"/><field name="code"/><filter name="needs_attention" string="Needs Attention" domain="[('health','in',('attention','overdue','never_run'))]"/></search></field></record>
+  <record id="action_federation_retention_policy" model="ir.actions.act_window"><field name="name">Retention and Recovery</field><field name="res_model">federation.retention.policy</field><field name="view_mode">list,form</field><field name="search_view_id" ref="view_federation_retention_policy_search"/></record>
+  <record id="view_federation_retention_evidence_list" model="ir.ui.view"><field name="name">federation.retention.evidence.list</field><field name="model">federation.retention.evidence</field><field name="arch" type="xml"><list decoration-danger="status == 'failed'" decoration-warning="skipped_count or failure_count"><field name="policy"/><field name="status" widget="badge"/><field name="completed_on"/><field name="duration_seconds"/><field name="candidate_count"/><field name="deleted_count"/><field name="skipped_count"/><field name="attachment_count"/><field name="failure_count"/><field name="dry_run"/><field name="correlation_id"/></list></field></record>
+  <record id="view_federation_retention_evidence_search" model="ir.ui.view"><field name="name">federation.retention.evidence.search</field><field name="model">federation.retention.evidence</field><field name="arch" type="xml"><search><field name="policy"/><field name="correlation_id"/><filter name="failed" string="Failed" domain="[('status','=','failed')]"/><filter name="exceptions" string="Skipped or Failed Records" domain="['|',('skipped_count','>',0),('failure_count','>',0)]"/></search></field></record>
+  <record id="action_federation_retention_evidence" model="ir.actions.act_window"><field name="name">Retention Evidence</field><field name="res_model">federation.retention.evidence</field><field name="view_mode">list,form</field><field name="search_view_id" ref="view_federation_retention_evidence_search"/></record>
+  <menuitem id="menu_federation_retention_policy" name="Retention and Recovery" parent="sports_federation_base.menu_federation_administration" action="action_federation_retention_policy" sequence="80" groups="sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_federation_retention_evidence" name="Retention Evidence" parent="sports_federation_base.menu_federation_administration" action="action_federation_retention_evidence" sequence="81" groups="sports_federation_base.group_federation_manager"/>
+</odoo>
+
+====================================================================================================
 FILE: sports_federation_calendar/__init__.py
 SIZE: 44
 CONTENT-LENGTH: 44
@@ -20139,7 +21205,7 @@ from . import services
 FILE: sports_federation_calendar/__manifest__.py
 SIZE: 584
 CONTENT-LENGTH: 584
-SHA256: 208c274b5495fef5bf6a854a2793a57a2b95b02af2dd70382824239933c39e52
+SHA256: 1da9ffb8a4f6bc2f6057dc1c6c66a02986bb94793384b3b7f117a0c9fce435da
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -20147,7 +21213,7 @@ GIT-STATE: tracked
 
 {
     "name": "Competition Calendar",
-    "version": "19.0.1.6.0",
+    "version": "19.0.1.6.1",
     "category": "Sports",
     "summary": "Physical match days, allocations, court availability and slots",
     "author": "Sports Federation",
@@ -20179,9 +21245,9 @@ from . import matchday
 
 ====================================================================================================
 FILE: sports_federation_calendar/models/matchday.py
-SIZE: 16170
-CONTENT-LENGTH: 16170
-SHA256: da11d89b841f3ed2247a48c1e39be240dde93860706db398eea45c1255074a67
+SIZE: 16528
+CONTENT-LENGTH: 16528
+SHA256: 570c92e1a49ff944edd2b72331318854e7c9069c204e5f7424426fa44aa39bd1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -20283,9 +21349,17 @@ class FederationMatchdayAllocation(models.Model):
         "federation.structure.stage", ondelete="restrict", index=True
     )
     round_number = fields.Integer(index=True)
+    manual_fixture_ids = fields.Many2many(
+        "federation.fixture",
+        "federation_matchday_allocation_manual_fixture_rel",
+        "allocation_id",
+        "fixture_id",
+        string="Additional Fixtures",
+        help="Late fixtures included explicitly; removing them undoes the allocation.",
+    )
     fixture_ids = fields.Many2many("federation.fixture", compute="_compute_fixtures")
 
-    @api.depends("structure_id", "stage_id", "round_number")
+    @api.depends("structure_id", "stage_id", "round_number", "manual_fixture_ids")
     def _compute_fixtures(self):
         Fixture = self.env["federation.fixture"]
         for r in self:
@@ -20298,7 +21372,7 @@ class FederationMatchdayAllocation(models.Model):
                 domain.append(("stage_id", "=", r.stage_id.id))
             if r.round_number:
                 domain.append(("round_number", "=", r.round_number))
-            r.fixture_ids = Fixture.search(domain)
+            r.fixture_ids = Fixture.search(domain) | r.manual_fixture_ids
 
 
 class FederationScheduleSlot(models.Model):
@@ -20964,9 +22038,9 @@ class TestCalendarSlotTimeline(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_calendar/views/calendar_views.xml
-SIZE: 2459
-CONTENT-LENGTH: 2459
-SHA256: 93df98e4cca2a21b7b9897259748b039541be48e9d2c93895b96a1930d62cb33
+SIZE: 2517
+CONTENT-LENGTH: 2517
+SHA256: a9eaea360d370b2e34910ee4d1737b684729be1b7b5b044a90d106d631d200e2
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -20974,7 +22048,7 @@ GIT-STATE: tracked
 
 <odoo>
  <record id="matchday_list" model="ir.ui.view"><field name="name">federation.matchday.list</field><field name="model">federation.matchday</field><field name="arch" type="xml"><list decoration-success="state in ('scheduled','closed')" decoration-warning="spare_capacity &lt; 0"><field name="date"/><field name="name"/><field name="edition_id"/><field name="venue_id"/><field name="fixture_count"/><field name="playable_slot_count"/><field name="spare_capacity"/><field name="state" widget="badge"/></list></field></record>
- <record id="matchday_form" model="ir.ui.view"><field name="name">federation.matchday.form</field><field name="model">federation.matchday</field><field name="arch" type="xml"><form><header><button name="action_capacity_ready" type="object" string="Mark Capacity Ready" class="btn-primary" invisible="state != 'draft'"/><field name="state" widget="statusbar" statusbar_visible="draft,capacity_ready,scheduled,open,closed"/></header><sheet><div class="oe_button_box" name="button_box"/><group><field name="name"/><field name="edition_id"/><field name="date"/><field name="venue_id"/></group><group string="Capacity" col="6"><field name="fixture_count"/><field name="playable_slot_count"/><field name="spare_capacity"/></group><notebook><page string="Round Allocations"><field name="allocation_ids"><list editable="bottom"><field name="structure_id" domain="[('edition_id','=',parent.edition_id),('state','=','frozen')]"/><field name="stage_id" domain="[('structure_id','=',structure_id)]"/><field name="round_number"/><field name="fixture_ids" widget="many2many_tags" readonly="1"/></list></field></page><page string="Physical Slots"><field name="slot_ids"><list editable="bottom"><field name="court_id"/><field name="start_datetime"/><field name="end_datetime"/><field name="state"/><field name="note"/></list></field></page></notebook></sheet><chatter/></form></field></record>
+ <record id="matchday_form" model="ir.ui.view"><field name="name">federation.matchday.form</field><field name="model">federation.matchday</field><field name="arch" type="xml"><form><header><button name="action_capacity_ready" type="object" string="Mark Capacity Ready" class="btn-primary" invisible="state != 'draft'"/><field name="state" widget="statusbar" statusbar_visible="draft,capacity_ready,scheduled,open,closed"/></header><sheet><div class="oe_button_box" name="button_box"/><group><field name="name"/><field name="edition_id"/><field name="date"/><field name="venue_id"/></group><group string="Capacity" col="6"><field name="fixture_count"/><field name="playable_slot_count"/><field name="spare_capacity"/></group><notebook><page string="Round Allocations"><field name="allocation_ids"><list editable="bottom"><field name="structure_id" domain="[('edition_id','=',parent.edition_id),('state','=','frozen')]"/><field name="stage_id" domain="[('structure_id','=',structure_id)]"/><field name="round_number"/><field name="manual_fixture_ids" widget="many2many_tags"/><field name="fixture_ids" widget="many2many_tags" readonly="1"/></list></field></page><page string="Physical Slots"><field name="slot_ids"><list editable="bottom"><field name="court_id"/><field name="start_datetime"/><field name="end_datetime"/><field name="state"/><field name="note"/></list></field></page></notebook></sheet><chatter/></form></field></record>
  <record id="action_calendar_planner" model="ir.actions.act_window"><field name="name">Calendar Planner</field><field name="res_model">federation.matchday</field><field name="view_mode">calendar,list,form</field></record>
  <record id="matchday_calendar" model="ir.ui.view"><field name="name">federation.matchday.calendar</field><field name="model">federation.matchday</field><field name="arch" type="xml"><calendar date_start="date" color="venue_id"><field name="name"/><field name="venue_id"/><field name="state"/></calendar></field></record>
 </odoo>
@@ -21037,7 +22111,7 @@ from . import services
 FILE: sports_federation_competition_core/__manifest__.py
 SIZE: 553
 CONTENT-LENGTH: 553
-SHA256: 648d39a6e0cbfc2df38ee9bf44d50bc6b82fd4c356703894c21d92bc32fe111b
+SHA256: 18cd625167c1ac4824ac783820218667c366f0e759c975c0ce64cb00d3b459ef
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -21045,7 +22119,7 @@ GIT-STATE: tracked
 
 {
     "name": "Competition Core",
-    "version": "19.0.1.4.0",
+    "version": "19.0.1.4.1",
     "category": "Sports",
     "summary": "Stable competition lifecycle, role ownership, and domain events",
     "author": "Sports Federation",
@@ -21358,9 +22432,9 @@ class FederationCompetitionEvent(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_competition_core/models/competition_overview.py
-SIZE: 3327
-CONTENT-LENGTH: 3327
-SHA256: 26689fc118e5e53e5f2f4bd43f4dded597ffd203cc03cafd279b9488eba62ccd
+SIZE: 5054
+CONTENT-LENGTH: 5054
+SHA256: c3f084d99c3d788f5b25a320c5fa800503f740d5a9bab511084f2bcf491f8aa9
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -21376,6 +22450,8 @@ class FederationCompetitionEdition(models.Model):
     event_count = fields.Integer(compute="_compute_core_counts")
     workflow_progress = fields.Integer(compute="_compute_workflow_progress")
     workflow_next_action = fields.Char(compute="_compute_workflow_progress")
+    journey_state = fields.Selection([("draft", "Draft"), ("ready", "Ready"), ("live", "Live"), ("finished", "Finished")], compute="_compute_workflow_progress", string="Journey Status")
+    journey_blocker_count = fields.Integer(compute="_compute_workflow_progress")
 
     @api.depends("role_assignment_ids", "event_ids", "state")
     def _compute_core_counts(self):
@@ -21404,6 +22480,8 @@ class FederationCompetitionEdition(models.Model):
         for rec in self:
             steps = rec._workflow_steps()
             rec.workflow_progress = round(100 * sum(steps) / len(steps)) if steps else 0
+            rec.journey_blocker_count = len([step for step in steps if not step])
+            rec.journey_state = "finished" if rec.state in ("closed", "cancelled") else ("live" if "publication_ids" in rec._fields and rec.publication_ids else ("ready" if steps and all(steps[:-1]) else "draft"))
             if not rec.tournament_ids:
                 rec.workflow_next_action = _("Add at least one division")
             elif not rec.role_assignment_ids:
@@ -21444,6 +22522,15 @@ class FederationCompetitionEdition(models.Model):
             "view_mode": "list,form",
             "domain": [("edition_id", "=", self.id)],
         }
+
+
+    def action_open_next_workspace(self):
+        self.ensure_one()
+        candidates = ((not self.tournament_ids, "sports_federation_tournament.federation_tournament_action"), (not self.role_assignment_ids, "sports_federation_competition_core.action_competition_roles_competition"), ("registration_window_ids" in self._fields and not self.registration_window_ids, "sports_federation_registration.action_registration_desk"), ("structure_ids" in self._fields and not self.structure_ids, "sports_federation_format.action_format_studio"), ("matchday_ids" in self._fields and not self.matchday_ids, "sports_federation_calendar.action_calendar_planner"), ("schedule_ids" in self._fields and not self.schedule_ids, "sports_federation_scheduling.action_schedule_planner_competition"), ("publication_ids" in self._fields and not self.publication_ids, "sports_federation_schedule_approval.action_schedule_review_queue"))
+        for needed, xmlid in candidates:
+            if needed:
+                return self.env["ir.actions.actions"]._for_xml_id(xmlid)
+        return self.env["ir.actions.actions"]._for_xml_id("sports_federation_matchday.action_matchday_control")
 
 ====================================================================================================
 FILE: sports_federation_competition_core/security/ir.model.access.csv
@@ -21565,9 +22652,9 @@ class TestCompetitionCore(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_competition_core/views/competition_edition_views.xml
-SIZE: 1734
-CONTENT-LENGTH: 1734
-SHA256: d7b54c779771576d2b0fc8f047a54049a8d5a7f05a774e95adaddc57b34f0a96
+SIZE: 1947
+CONTENT-LENGTH: 1947
+SHA256: fdda54f5003c538b2eb80cc014d9a5ef0349b5a1a6bf8bc2dc5fd07e21afa1c7
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -21590,7 +22677,7 @@ GIT-STATE: tracked
       <xpath expr="//notebook" position="before">
         <group string="Competition workflow">
           <field name="workflow_progress" widget="progressbar"/>
-          <field name="workflow_next_action" readonly="1"/>
+          <field name="journey_state" widget="badge" readonly="1"/><field name="journey_blocker_count" readonly="1"/><field name="workflow_next_action" readonly="1"/><button name="action_open_next_workspace" type="object" string="Open Next Workspace" class="btn-primary"/>
         </group>
       </xpath>
       <xpath expr="//notebook" position="inside">
@@ -37032,7 +38119,7 @@ from . import wizards
 FILE: sports_federation_import_tools/__manifest__.py
 SIZE: 1110
 CONTENT-LENGTH: 1110
-SHA256: e70a7f7ef6d1fe46bbbafe445d695d8154cc2e88cb2ea3bbafde6dfdbbad1f66
+SHA256: 90b8cb4e75234f342bdd26c2933dac597c2e0a9f4b0cda91aeacf7e5cfd9d05e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -37040,7 +38127,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Import Tools",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.2.2",
     "category": "Sports",
     "summary": "Wizard-driven CSV import tools for clubs, seasons, teams, players, and tournament participants",
     "description": "CSV import wizards with dry-run validation, mapping guidance, and duplicate-safe onboarding for clubs, seasons, teams, players, and tournament participants.",
@@ -37989,9 +39076,9 @@ def migrate(cr, version):
 
 ====================================================================================================
 FILE: sports_federation_import_tools/models/__init__.py
-SIZE: 422
-CONTENT-LENGTH: 422
-SHA256: 3301e3adc82cdab88a806b12b598ac930d8cae310daa6b5811d2faa8f262e427
+SIZE: 474
+CONTENT-LENGTH: 474
+SHA256: d0ff49067342928880e7c95144e3bb728eecc5118c613bd3ad901d569f3a0897
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -38007,6 +39094,8 @@ from . import integration_partner_rotation_mixin
 from . import integration_partner_token_mixin
 from . import integration_partner
 from . import integration_partner_contract
+
+from . import integration_delivery_job_reliability
 
 ====================================================================================================
 FILE: sports_federation_import_tools/models/import_governance.py
@@ -38466,10 +39555,51 @@ class FederationIntegrationDelivery(models.Model):
                 )
 
 ====================================================================================================
+FILE: sports_federation_import_tools/models/integration_delivery_job_reliability.py
+SIZE: 1193
+CONTENT-LENGTH: 1193
+SHA256: a592158b5077f403077362552bc62c07c58b752019dc4bfde8665782f3bb60ef
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo import _, models
+from odoo.exceptions import ValidationError
+
+
+class FederationIntegrationDeliveryJobReliability(models.Model):
+    _inherit = "federation.integration.delivery"
+
+    def action_create_recovery_job(self):
+        for delivery in self:
+            if delivery.state != "failed":
+                raise ValidationError(_("Only failed deliveries need recovery."))
+            job = self.env["federation.operation.job"].ensure_job(
+                delivery,
+                delivery.idempotency_key or f"delivery-{delivery.id}",
+                name=f"Recover inbound delivery: {delivery.filename}",
+                max_attempts=1,
+            )
+            if job.state == "pending":
+                job._start()
+                job._fail(
+                    _("Open the source delivery, correct its governance or payload issue, then replay it through the import wizard."),
+                    "operator_action",
+                    retryable=False,
+                )
+        return True
+
+    def _retry_operational_job(self, job):
+        raise ValidationError(
+            _("Inbound deliveries require operator review and replay through the import wizard.")
+        )
+
+====================================================================================================
 FILE: sports_federation_import_tools/models/integration_delivery_retention_mixin.py
-SIZE: 1975
-CONTENT-LENGTH: 1975
-SHA256: 1c38d18bb54efb60aa2f7129e48be52b5a8b371a1c9d7aaeac0fc3cb1a14f8fd
+SIZE: 3033
+CONTENT-LENGTH: 3033
+SHA256: 1b38b30f4bf30973bfc39b6a49463efb3d2ed9b619e91b1b6a2988db4adf2776
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -38514,15 +39644,19 @@ class FederationIntegrationDeliveryRetentionMixin(models.AbstractModel):
         return total_deleted
 
     @api.model
+    def _retention_candidates(self, reference_dt=None):
+        reference_dt = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now()); processed_states = set(INBOUND_DELIVERY_PROCESSED_STATES); candidates = self.browse()
+        for state, days in self.RETENTION_DAYS_BY_STATE.items():
+            field = "processed_on" if state in processed_states else "received_on"; candidates |= self.sudo().search([("state", "=", state), (field, "!=", False), (field, "<", fields.Datetime.to_string(reference_dt - timedelta(days=days)))])
+        return candidates
+
+    @api.model
     def _cron_purge_retained_deliveries(self):
-        """Execute the inbound-delivery retention policy."""
-        started_on = fields.Datetime.now()
-        deleted = self._purge_retained_deliveries()
-        self.env["federation.retention.evidence"].sudo().create({
-            "policy": "integration_deliveries", "started_on": started_on,
-            "completed_on": fields.Datetime.now(), "deleted_count": deleted,
-            "status": "passed",
-        })
+        started_on = fields.Datetime.now(); candidates = self._retention_candidates(started_on); attachments = len(candidates.mapped("attachment_id")); Evidence = self.env["federation.retention.evidence"]
+        try: deleted = self._purge_retained_deliveries(started_on)
+        except Exception as error:
+            Evidence.record_failure_durable("integration_deliveries", started_on=started_on, candidate_count=len(candidates), attachment_count=attachments, failure_count=len(candidates) or 1, retention_rules=self.RETENTION_DAYS_BY_STATE, operator_message=str(error), source_model=self._name); raise
+        Evidence.record_execution("integration_deliveries", started_on=started_on, candidate_count=len(candidates), deleted_count=deleted, skipped_count=max(0,len(candidates)-deleted), attachment_count=attachments, retention_rules=self.RETENTION_DAYS_BY_STATE, source_model=self._name)
         return deleted
 
 ====================================================================================================
@@ -39451,9 +40585,9 @@ from . import test_token_rotation_cron
 
 ====================================================================================================
 FILE: sports_federation_import_tools/tests/test_import_tools.py
-SIZE: 38673
-CONTENT-LENGTH: 38673
-SHA256: 228ac836ac3f4f0920b5668eb960d78491ba0d8380aa71fbed40b39520197135
+SIZE: 38857
+CONTENT-LENGTH: 38857
+SHA256: b01771e9a9cd5085bab4ddf6855355812d08e0c1323e916f34ea949581d37423
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -39585,13 +40719,21 @@ class TestImportTools(TransactionCase):
     def test_inbound_delivery_model_composes_split_helpers(self):
         """The delivery model should stay assembled from the focused staging and lifecycle helpers."""
         delivery_model = self.env["federation.integration.delivery"]
-        inherits = delivery_model._inherit
-        if isinstance(inherits, str):
-            inherits = [inherits]
+        inherited_model_names = {
+            model_name
+            for model_class in type(delivery_model).__mro__
+            if (model_name := getattr(model_class, "_name", None))
+        }
 
-        self.assertIn("federation.integration.delivery.stage.mixin", inherits)
-        self.assertIn("federation.integration.delivery.workflow.mixin", inherits)
-        self.assertIn("federation.integration.delivery.retention.mixin", inherits)
+        self.assertIn(
+            "federation.integration.delivery.stage.mixin", inherited_model_names
+        )
+        self.assertIn(
+            "federation.integration.delivery.workflow.mixin", inherited_model_names
+        )
+        self.assertIn(
+            "federation.integration.delivery.retention.mixin", inherited_model_names
+        )
         self.assertTrue(hasattr(delivery_model, "stage_partner_delivery_result"))
         self.assertTrue(hasattr(delivery_model, "_purge_retained_deliveries"))
 
@@ -45193,7 +46335,7 @@ from . import models
 FILE: sports_federation_notifications/__manifest__.py
 SIZE: 1060
 CONTENT-LENGTH: 1060
-SHA256: 0d6510b1271384f73fa722a814bffbca343941142d3a136f6d79e4594890e6d7
+SHA256: 8d6652875ae32a79e88934a88ba52547789da06cf1a99bc8c3ed58fd2047a9d9
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -45201,7 +46343,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Notifications",
-    "version": "19.0.1.3.0",
+    "version": "19.0.1.3.2",
     "category": "Sports",
     "summary": "Centralized federation notification helpers, templates, and scheduled reminders",
     "description": "Notification templates, reminder jobs, and outbound communication logs.",
@@ -45513,9 +46655,9 @@ def migrate(cr, version):
 
 ====================================================================================================
 FILE: sports_federation_notifications/models/__init__.py
-SIZE: 152
-CONTENT-LENGTH: 152
-SHA256: 221ce073f73a5ea93796aa98c1bb33f4c4c1b6fc18c5b2ca6580a68eafc98597
+SIZE: 196
+CONTENT-LENGTH: 196
+SHA256: bd40538db0feed4ce62aba6d0b76af2d73ccc6c62c04f277c0dcff762455e7ef
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -45525,6 +46667,8 @@ from . import notification_log
 from . import notification_service
 from . import notification_dispatcher
 from . import season_registration_notifications
+
+from . import notification_job_reliability
 
 ====================================================================================================
 FILE: sports_federation_notifications/models/notification_dispatcher.py
@@ -45948,10 +47092,60 @@ class FederationNotificationDispatcher(models.AbstractModel):
         )
 
 ====================================================================================================
+FILE: sports_federation_notifications/models/notification_job_reliability.py
+SIZE: 1738
+CONTENT-LENGTH: 1738
+SHA256: b1635c5ae96e02be93b626b36ce53bb2263795a37a470f7810eb9e3f80b3723e
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo import _, models
+from odoo.exceptions import ValidationError
+
+
+class FederationNotificationJobReliability(models.Model):
+    _inherit = "federation.notification.log"
+
+    def action_queue_retry(self):
+        for log in self:
+            if log.state != "failed":
+                raise ValidationError(_("Only failed notifications can be retried."))
+            job = self.env["federation.operation.job"].ensure_job(
+                log,
+                log.correlation_id or f"notification-{log.id}",
+                name=f"Retry notification: {log.name}",
+            )
+            if job.state in ("done", "operator_action"):
+                job.action_retry()
+        return True
+
+    def _retry_operational_job(self, job):
+        self.ensure_one()
+        if self.notification_type != "email" or not self.template_xmlid:
+            raise ValidationError(_("This notification requires manual recreation."))
+        model = self.env.get(self.target_model)
+        target = model.browse(self.target_res_id).exists() if model is not None else model
+        if not target:
+            raise ValidationError(_("The notification target no longer exists."))
+        retried = self.env["federation.notification.service"].send_email_template(
+            target,
+            self.template_xmlid,
+            partner=self.recipient_partner_id or None,
+            email_to=self.recipient_email if not self.recipient_partner_id else None,
+            log_name=f"Retry: {self.name}",
+        )
+        if retried.state != "sent":
+            raise RuntimeError(retried.operator_message or _("Notification retry failed."))
+        self.write({"state": "sent", "failure_category": False, "operator_message": False})
+        return True
+
+====================================================================================================
 FILE: sports_federation_notifications/models/notification_log.py
-SIZE: 5371
-CONTENT-LENGTH: 5371
-SHA256: f22179cb163665fd9bb222b436d3b303d0b13b9fc29ea0e8028760487fc21a1e
+SIZE: 6122
+CONTENT-LENGTH: 6122
+SHA256: 148230c7fb66004194ba44e2b6ef299e481566dc34e3497d931fd601fe992631
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -46100,15 +47294,17 @@ class FederationNotificationLog(models.Model):
         return total_deleted
 
     @api.model
+    def _retention_candidate_count(self, reference_dt=None):
+        reference_dt = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now())
+        return sum(self.sudo().search_count([("state", "=", state), ("create_date", "!=", False), ("create_date", "<", fields.Datetime.to_string(reference_dt - timedelta(days=days)))]) for state, days in self.RETENTION_DAYS_BY_STATE.items())
+
+    @api.model
     def _cron_purge_old_logs(self):
-        """Execute the notification-log retention policy."""
-        started_on = fields.Datetime.now()
-        deleted = self._purge_retained_logs()
-        self.env["federation.retention.evidence"].sudo().create({
-            "policy": "notification_logs", "started_on": started_on,
-            "completed_on": fields.Datetime.now(), "deleted_count": deleted,
-            "status": "passed",
-        })
+        started_on = fields.Datetime.now(); candidates = self._retention_candidate_count(started_on); Evidence = self.env["federation.retention.evidence"]
+        try: deleted = self._purge_retained_logs(started_on)
+        except Exception as error:
+            Evidence.record_failure_durable("notification_logs", started_on=started_on, candidate_count=candidates, failure_count=candidates or 1, retention_rules=self.RETENTION_DAYS_BY_STATE, operator_message=str(error), source_model=self._name); raise
+        Evidence.record_execution("notification_logs", started_on=started_on, candidate_count=candidates, deleted_count=deleted, skipped_count=max(0, candidates-deleted), retention_rules=self.RETENTION_DAYS_BY_STATE, source_model=self._name)
         return deleted
 
 ====================================================================================================
@@ -47370,9 +48566,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_notifications/views/notification_log_views.xml
-SIZE: 5492
-CONTENT-LENGTH: 5492
-SHA256: b4442a45564f32fdc3268383932f92a0890d4074144c70507f41c4dd9e1b93fd
+SIZE: 5753
+CONTENT-LENGTH: 5753
+SHA256: 97c0af9cc6ccf6f2cc99e28d6c39cf61cadac4d9d0168100d6e1b90c2e0e1019
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -47386,7 +48582,7 @@ GIT-STATE: tracked
         <field name="name">federation.notification.log.form</field>
         <field name="model">federation.notification.log</field>
         <field name="arch" type="xml">
-            <form string="Notification Log">
+            <form string="Notification Log"><header><button name="action_queue_retry" type="object" string="Queue Retry" class="btn-primary" invisible="state != 'failed'"/><button name="action_acknowledge_failure" type="object" string="Acknowledge" invisible="state != 'failed' or acknowledged"/></header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_target"
@@ -77306,7 +78502,7 @@ from . import wizards
 FILE: sports_federation_registration/__manifest__.py
 SIZE: 589
 CONTENT-LENGTH: 589
-SHA256: 584ccefbfd08cf35bfa9ec1a037b6d8c441819552bc9aa880c00800c82db677c
+SHA256: 6a61537a8033197b22e886339bff9c972160bac51ae118610cb906b579915ac1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -77314,7 +78510,7 @@ GIT-STATE: tracked
 
 {
     "name": "Competition Registration",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.2.1",
     "category": "Sports",
     "summary": "Role-separated registration desk and finalized participant sets",
     "author": "Sports Federation",
@@ -77887,9 +79083,9 @@ from . import create_competition_wizard
 
 ====================================================================================================
 FILE: sports_federation_registration/wizards/create_competition_wizard.py
-SIZE: 5732
-CONTENT-LENGTH: 5732
-SHA256: 40e354ee2318f8dedd96397406b29d527b7624191ac07d66eb0ba64a84a8b997
+SIZE: 6229
+CONTENT-LENGTH: 6229
+SHA256: d39a06cf2bbcf9a46a81572c44be17aea1fc24d4771d8fa18492efc721d67a10
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -77902,6 +79098,7 @@ from odoo.exceptions import ValidationError
 class FederationCreateCompetitionWizard(models.TransientModel):
     _name = "federation.create.competition.wizard"
     _description = "Create Competition Workflow"
+    setup_template = fields.Selection([("league", "League"), ("tournament_day", "Tournament Day"), ("cup", "Cup / Knockout")], default="league", required=True, string="Setup Template", help="Applies reversible defaults; every value remains editable before creation.")
     competition_id = fields.Many2one(
         "federation.competition", required=True, string="Competition Template"
     )
@@ -77920,6 +79117,11 @@ class FederationCreateCompetitionWizard(models.TransientModel):
         "wizard_id",
         string="Responsibilities",
     )
+
+    @api.onchange("setup_template")
+    def _onchange_setup_template(self):
+        for line in self.division_line_ids:
+            line.tournament_type = "single_day" if self.setup_template == "tournament_day" else "multi_day"
 
     @api.onchange("competition_id")
     def _onchange_competition(self):
@@ -78046,9 +79248,9 @@ class FederationCreateCompetitionRoleWizard(models.TransientModel):
 
 ====================================================================================================
 FILE: sports_federation_registration/wizards/create_competition_wizard_views.xml
-SIZE: 1662
-CONTENT-LENGTH: 1662
-SHA256: 67d2cba8ec4901ce71ddf498cad706bf91647bea936adffc8746be1ace4e7520
+SIZE: 1692
+CONTENT-LENGTH: 1692
+SHA256: ac427e782cd0850ba9cd2307775cf7c43876465e64f31c88f1a820b910b7f39f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -78057,7 +79259,7 @@ GIT-STATE: tracked
 <odoo>
  <record id="create_competition_wizard_form" model="ir.ui.view"><field name="name">federation.create.competition.wizard.form</field><field name="model">federation.create.competition.wizard</field><field name="arch" type="xml"><form string="Create Competition">
   <sheet><div class="oe_title"><h1>Create Competition</h1><p class="text-muted">Create the season edition, divisions, registration windows and responsibilities in one guided operation.</p></div>
-   <group string="Basics" col="4"><field name="competition_id"/><field name="season_id"/><field name="name"/><field name="rule_set_id"/><field name="date_start"/><field name="date_end"/></group>
+   <group string="Basics" col="4"><field name="setup_template"/><field name="competition_id"/><field name="season_id"/><field name="name"/><field name="rule_set_id"/><field name="date_start"/><field name="date_end"/></group>
    <group string="Registration"><field name="registration_open"/><field name="registration_close"/></group>
    <notebook><page string="Divisions"><field name="division_line_ids"><list editable="bottom"><field name="name"/><field name="code"/><field name="category"/><field name="gender"/><field name="tournament_type"/></list></field></page>
    <page string="Responsibilities"><field name="role_line_ids"><list editable="bottom"><field name="role"/><field name="user_id"/></list></field></page></notebook>
@@ -78396,7 +79598,7 @@ from . import controllers
 FILE: sports_federation_reporting/__manifest__.py
 SIZE: 1700
 CONTENT-LENGTH: 1700
-SHA256: 17c562126a3aba28092cda7e43d9743cdeeacd0cd8440ef808f058d7cfc7ceb9
+SHA256: 675b1b3a2c017455d094d2676bb4b219bafee43e91efe4ed347c2adaa90bc559
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -78404,7 +79606,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Reporting",
-    "version": "19.0.1.3.2",
+    "version": "19.0.1.3.4",
     "category": "Sports",
     "summary": "Reporting models for federation data",
     "description": "Reporting models and dashboards for participation, officiating, compliance, and finance.",
@@ -78791,9 +79993,9 @@ def migrate(cr, version):
 
 ====================================================================================================
 FILE: sports_federation_reporting/models/__init__.py
-SIZE: 738
-CONTENT-LENGTH: 738
-SHA256: bcccb2c36efc39ea4d5aed07757bfad27c0296b0a5e3e22bf7d40dc97c627e86
+SIZE: 785
+CONTENT-LENGTH: 785
+SHA256: 8cb8de65a58f6e747361affcadecf54896677427d7e668ad40a4baea5338b1d3
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -78819,6 +80021,8 @@ from . import report_schedule
 from . import report_operator_checklist
 from . import report_club_compliance_summary
 from . import report_officiating_coverage
+
+from . import report_schedule_job_reliability
 
 ====================================================================================================
 FILE: sports_federation_reporting/models/report_audit_event.py
@@ -80499,9 +81703,9 @@ class FederationReportClubPerformance(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_reporting/models/report_schedule.py
-SIZE: 12902
-CONTENT-LENGTH: 12902
-SHA256: f0ca93d9e100f3694d2d80b51e9fc6bea358432208fddfee480938ee654f2390
+SIZE: 13802
+CONTENT-LENGTH: 13802
+SHA256: aa48592cdcc8b7e0bb7f258d63c2250068b56b59087d48f9c67a752073314001
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -80832,16 +82036,57 @@ class FederationReportSchedule(models.Model):
         return len(schedules)
 
     @api.model
+    def _generated_file_retention_candidates(self, reference_dt=None):
+        reference_dt = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now()); cutoff = fields.Datetime.to_string(reference_dt - timedelta(days=self.GENERATED_FILE_RETENTION_DAYS))
+        return self.search([("generated_file", "!=", False), ("last_run_on", "!=", False), ("last_run_on", "<", cutoff)])
+
+    @api.model
     def _cron_purge_generated_files(self):
-        """Execute the generated-report retention policy."""
-        started_on = fields.Datetime.now()
-        deleted = self._purge_generated_files()
-        self.env["federation.retention.evidence"].sudo().create({
-            "policy": "generated_report_files", "started_on": started_on,
-            "completed_on": fields.Datetime.now(), "deleted_count": deleted,
-            "status": "passed",
-        })
+        started_on = fields.Datetime.now(); candidates = self._generated_file_retention_candidates(started_on); Evidence = self.env["federation.retention.evidence"]
+        try: deleted = self._purge_generated_files(started_on)
+        except Exception as error:
+            Evidence.record_failure_durable("generated_report_files", started_on=started_on, candidate_count=len(candidates), attachment_count=len(candidates), failure_count=len(candidates) or 1, retention_rules={"generated_file_days": self.GENERATED_FILE_RETENTION_DAYS}, operator_message=str(error), source_model=self._name); raise
+        Evidence.record_execution("generated_report_files", started_on=started_on, candidate_count=len(candidates), deleted_count=deleted, skipped_count=max(0,len(candidates)-deleted), attachment_count=deleted, retention_rules={"generated_file_days": self.GENERATED_FILE_RETENTION_DAYS}, source_model=self._name)
         return deleted
+
+====================================================================================================
+FILE: sports_federation_reporting/models/report_schedule_job_reliability.py
+SIZE: 1141
+CONTENT-LENGTH: 1141
+SHA256: 9fea7bee1fe81856084b2d9cac421d1d34d21c864a0372024c22d04ff9fdef0c
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo import _, models
+from odoo.exceptions import ValidationError
+
+
+class FederationReportScheduleJobReliability(models.Model):
+    _inherit = "federation.report.schedule"
+
+    def action_queue_retry(self):
+        for schedule in self:
+            if schedule.last_run_status != "failed":
+                raise ValidationError(_("Only failed report schedules can be retried."))
+            correlation_id = f"report-schedule-{schedule.id}-{schedule.consecutive_failure_count}"
+            job = self.env["federation.operation.job"].ensure_job(
+                schedule,
+                correlation_id,
+                name=f"Retry report: {schedule.name}",
+            )
+            if job.state in ("done", "operator_action"):
+                job.action_retry()
+        return True
+
+    def _retry_operational_job(self, job):
+        self.ensure_one()
+        self._generate_single_report()
+        self.invalidate_recordset(["last_run_status", "last_operator_message"])
+        if self.last_run_status == "failed":
+            raise RuntimeError(self.last_operator_message or _("Scheduled report retry failed."))
+        return True
 
 ====================================================================================================
 FILE: sports_federation_reporting/models/report_season_checklist.py
@@ -95853,9 +97098,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/README.md
-SIZE: 2540
-CONTENT-LENGTH: 2540
-SHA256: f09718912ae4aff8fcea4b97c10df0edcbbf6111083e8a36182c70b4c5fe6053
+SIZE: 2688
+CONTENT-LENGTH: 2688
+SHA256: a382a6f3b9416754bd3aa224e7a4f30b780d2c2380d7eb3ef09257d91f2c45d5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -95885,6 +97130,8 @@ revision equality, snapshot-digest equality for schedule facts, and schedule
 revalidation. Operational match links are derived and may be materialized at
 publication. Buttons are only orchestration entry points and never duplicate
 the business rules.
+Each review records the authenticated schedule planner who submits it, so that
+planner can withdraw a pending review before an approver decides it.
 Role assignments remain administrator-managed; the Schedule Approver group
 exposes the workflow actions, while a per-edition `schedule_approver` assignment
 authorizes the operation. The role check performs a read-only internal lookup,
@@ -95931,7 +97178,7 @@ from . import wizards
 FILE: sports_federation_schedule_approval/__manifest__.py
 SIZE: 571
 CONTENT-LENGTH: 571
-SHA256: 6940274f60aa2770a3202eb3a95968072a951fea42807a4ee37476571926987b
+SHA256: 4c6770988266fbf5de0a8915bf9b5aae2be83df621f137bc6ede438d4f45d04c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -95939,7 +97186,7 @@ GIT-STATE: tracked
 
 {
     "name": "Schedule Approval",
-    "version": "19.0.2.3.0",
+    "version": "19.0.2.3.1",
     "category": "Sports",
     "summary": "Independent review, approval and immutable publication snapshots",
     "author": "Sports Federation",
@@ -95991,9 +97238,9 @@ from . import workflow_actions
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/models/approval.py
-SIZE: 2119
-CONTENT-LENGTH: 2119
-SHA256: 70d6f918b26f517d6e1a1bf91958998c28fefb365229fc6fba11543bae70bc7b
+SIZE: 2159
+CONTENT-LENGTH: 2159
+SHA256: 737f978c25520becac36052b82035267c0c37e00530d9cef888d2e21aecdfdf4
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -96017,6 +97264,7 @@ class FederationScheduleReview(models.Model):
     state = fields.Selection(
         [
             ("pending", "Pending"),
+            ("withdrawn", "Withdrawn"),
             ("changes_requested", "Changes Requested"),
             ("approved", "Approved"),
         ],
@@ -96063,9 +97311,9 @@ class FederationSchedulePublication(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/models/publication_integrity.py
-SIZE: 4779
-CONTENT-LENGTH: 4779
-SHA256: 312ef96f17b0b049ede503b381e73ef7b8a5bee061e27e88151cc967a22231dc
+SIZE: 5215
+CONTENT-LENGTH: 5215
+SHA256: cacf1795e42794a5d80ef389dd361a59acb27122be359fb6b9b55d98b2065af4
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -96078,6 +97326,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 _REVIEW_DECISION_TOKEN = object()
+_REVIEW_WITHDRAWAL_TOKEN = object()
 
 
 class FederationScheduleReviewIntegrity(models.Model):
@@ -96105,7 +97354,7 @@ class FederationScheduleReviewIntegrity(models.Model):
         decision_token = self.env.context.get("schedule_review_decision_token")
         if (
             decision_fields.intersection(vals)
-            and decision_token is not _REVIEW_DECISION_TOKEN
+            and decision_token not in (_REVIEW_DECISION_TOKEN, _REVIEW_WITHDRAWAL_TOKEN)
         ):
             if set(vals) == {"review_note"} and all(
                 review.state == "pending" for review in self
@@ -96135,6 +97384,12 @@ class FederationScheduleReviewIntegrity(models.Model):
         return self.with_context(
             schedule_review_decision_token=_REVIEW_DECISION_TOKEN
         ).write(vals)
+
+    def _write_withdrawal(self, reason):
+        self.ensure_one()
+        if self.state != "pending":
+            raise ValidationError(_("Only a pending review can be withdrawn."))
+        return self.sudo().with_context(schedule_review_decision_token=_REVIEW_WITHDRAWAL_TOKEN).write({"state": "withdrawn", "review_note": reason, "reviewed_at": fields.Datetime.now()})
 
     def unlink(self):
         raise ValidationError("Schedule reviews are retained as audit evidence.")
@@ -96204,9 +97459,9 @@ class FederationMatchPublishedSlot(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/models/workflow_actions.py
-SIZE: 4949
-CONTENT-LENGTH: 4949
-SHA256: ae0bdf75d81d6b9b490b6e4b4e65a9903a6eaaa25c5d74a56efac6863e7a774c
+SIZE: 5155
+CONTENT-LENGTH: 5155
+SHA256: 0079c813f781f4f81ef36b702e5c8caf85b8cfcb7f58bc5232358164d534a0af
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -96286,6 +97541,11 @@ class FederationScheduleReviewActions(models.Model):
             "view_mode": "form",
             "target": "current",
         }
+
+    def action_withdraw_submission(self):
+        self.ensure_one()
+        self.env["federation.schedule.approval.commands"].withdraw(self.id, self.review_note)
+        return self.action_open_schedule()
 
     def action_request_changes(self):
         self.ensure_one()
@@ -96416,9 +97676,9 @@ from . import approval_commands
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/services/approval_commands.py
-SIZE: 11426
-CONTENT-LENGTH: 11426
-SHA256: 57ef1682360fabe33b87bf71245a1c8d096ffdd15089ca45278765c337cfcf3d
+SIZE: 12325
+CONTENT-LENGTH: 12325
+SHA256: 1242fdf6f46acf9e8c9b39d23b1dcc5a60b0a5eab5ecfe0f6de22a611ac6c46d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -96498,7 +97758,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
                     "submitted_revision": schedule.revision,
                     "assignment_snapshot": snapshot,
                     "snapshot_digest": self._digest(snapshot),
-                    "submitted_by_id": schedule.write_uid.id,
+                    "submitted_by_id": self.env.user.id,
                 }
             )
         )
@@ -96530,6 +97790,20 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
                 )
             )
         return review
+
+    @api.model
+    def withdraw(self, review_id, reason):
+        if not (reason or "").strip():
+            raise ValidationError(_("Explain why the schedule submission is withdrawn."))
+        review = self.env["federation.schedule.review"].browse(int(review_id)).exists()
+        if not review or review.state != "pending":
+            raise ValidationError(_("Only a pending review can be withdrawn."))
+        self.env["federation.competition.role.assignment"].assert_role(review.edition_id, "schedule_planner", "competition_director")
+        if review.submitted_by_id != self.env.user and not self.env.user.has_group("sports_federation_base.group_federation_manager"):
+            raise ValidationError(_("Only the submitting planner can withdraw this review."))
+        review._write_withdrawal(reason)
+        review.schedule_id.sudo().write({"state": "changes_requested"})
+        return True
 
     @api.model
     def request_changes(self, review_id, note):
@@ -97037,9 +98311,9 @@ class TestPhase511Integrity(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/tests/test_review_permissions.py
-SIZE: 7007
-CONTENT-LENGTH: 7007
-SHA256: b7dcfe774372c196876917a5b82ab4aba8c7b1ef0f6d7075f29799496ef8d1fc
+SIZE: 7351
+CONTENT-LENGTH: 7351
+SHA256: cba932081ca9fb34254f50d4f563e9525e772966491259f2d459818f2c91435e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -97225,11 +98499,17 @@ class TestScheduleReviewPermissions(TransactionCase):
             with self.subTest(values=values), self.assertRaises(ValidationError):
                 review.write(values)
 
+
+    def test_submitting_planner_can_withdraw_pending_review(self):
+        self.env["federation.schedule.approval.commands"].with_user(self.planner).withdraw(self.review.id, "Calendar planning added another fixture.")
+        self.assertEqual(self.review.state, "withdrawn")
+        self.assertEqual(self.schedule.state, "changes_requested")
+
 ====================================================================================================
 FILE: sports_federation_schedule_approval/tests/test_schedule_handoff.py
-SIZE: 1800
-CONTENT-LENGTH: 1800
-SHA256: 1566d5230f56cab1caaebb0e09748837113f7c075e93266db0d84f1541f3a23b
+SIZE: 1936
+CONTENT-LENGTH: 1936
+SHA256: b0f5d417268491c6d005992d0adcdbda9e46306111e5d39ce6a935fefc7a4210
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -97249,6 +98529,7 @@ class TestPhase51ScheduleHandoff(TransactionCase):
         self.assertTrue(hasattr(schedule, "action_open_submit_for_review"))
         self.assertTrue(hasattr(schedule, "action_submit_for_review"))
         self.assertTrue(hasattr(schedule, "action_open_current_review"))
+        self.assertTrue(hasattr(review, "action_withdraw_submission"))
         self.assertTrue(hasattr(review, "action_request_changes"))
         self.assertTrue(hasattr(review, "action_approve_schedule"))
         self.assertTrue(hasattr(review, "action_publish_schedule"))
@@ -97268,15 +98549,16 @@ class TestPhase51ScheduleHandoff(TransactionCase):
             "sports_federation_scheduling.schedule_form"
         ).arch_db
         self.assertIn("action_open_submit_for_review", schedule_view)
+        self.assertIn("action_withdraw_submission", review_view)
         self.assertIn("action_request_changes", review_view)
         self.assertIn("action_approve_schedule", review_view)
         self.assertIn("action_publish_schedule", review_view)
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/views/approval_views.xml
-SIZE: 8732
-CONTENT-LENGTH: 8732
-SHA256: db8be0a31aafab142fa9efc95d7d23a9630b10a6d7b0ebe91ed8f130ca242140
+SIZE: 9031
+CONTENT-LENGTH: 9031
+SHA256: dd0ac646ddbd44a913e5143a7b37447a963c29be71443d1029a8c2bf0a2d1ed8
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -97321,6 +98603,7 @@ GIT-STATE: tracked
     <field name="arch" type="xml">
       <form create="0" delete="0">
         <header>
+          <button name="action_withdraw_submission" type="object" groups="sports_federation_scheduling.group_schedule_planner,sports_federation_base.group_federation_manager" string="Withdraw Submission" invisible="state != 'pending'" confirm="Withdraw this submission and return it to planning?"/>
           <button name="action_request_changes" type="object" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager" string="Request Changes" invisible="state != 'pending'" confirm="Return this schedule to the planner for changes?"/>
           <button name="action_approve_schedule" type="object" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager" string="Approve Schedule" class="btn-primary" invisible="state != 'pending'" confirm="Approve this immutable submitted revision?"/>
           <button name="action_publish_schedule" type="object" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager" string="Publish Schedule" class="btn-primary" invisible="state != 'approved'" confirm="Publish this approved schedule for match-day execution?"/>
@@ -97560,9 +98843,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_scheduling/README.md
-SIZE: 1297
-CONTENT-LENGTH: 1297
-SHA256: 5739035035f9d4bd235fa1da1e9642c79bb0ee7d94ffcf3a5f662c6e2bc211b7
+SIZE: 1604
+CONTENT-LENGTH: 1604
+SHA256: 52436ebc15b89f27e992ec99b10ba0f7d3d08a384d1365041ee3c6ff6501897b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -97596,6 +98879,11 @@ returns to `changes_requested`, where the planner can edit and submit a new
 revision. Planners can use the **Reviews** smart button to inspect the current
 handoff and retained history.
 
+
+## Reversible planning
+
+Draft and change-requested schedules refresh the current calendar fixture pool. Late fixtures appear as unassigned work; stale assignments are flagged and never silently deleted. Pending submissions can be withdrawn, while published corrections use governed replacement revisions.
+
 ====================================================================================================
 FILE: sports_federation_scheduling/__init__.py
 SIZE: 66
@@ -97614,7 +98902,7 @@ from . import wizards
 FILE: sports_federation_scheduling/__manifest__.py
 SIZE: 664
 CONTENT-LENGTH: 664
-SHA256: 39bfe9d3c07cbc304fa31dfba8365814f7171e90213fe2e41919b9894b656ed9
+SHA256: 1a6fda9a4733d8e33fdf937d7e6c0a7daca25a1419942e45ac5fa656e2c40260
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -97622,7 +98910,7 @@ GIT-STATE: tracked
 
 {
     "name": "Competition Scheduling",
-    "version": "19.0.3.3.2",
+    "version": "19.0.3.3.3",
     "category": "Sports",
     "summary": "Working schedules, assignments, validation and deterministic proposals",
     "author": "Sports Federation",
@@ -97675,9 +98963,9 @@ from . import schedule_integrity
 
 ====================================================================================================
 FILE: sports_federation_scheduling/models/schedule.py
-SIZE: 9252
-CONTENT-LENGTH: 9252
-SHA256: 26fc973f1f4a7ccface47a3071c0703f04ec6d97ee8235bab8cf48199574b446
+SIZE: 11542
+CONTENT-LENGTH: 11542
+SHA256: 2ff51c2b995ea9fdc4ddaa82f63f3347af386064a11436dad43a870c45314e41
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -97720,6 +99008,32 @@ class FederationSchedule(models.Model):
         index=True,
     )
     revision = fields.Integer(default=0, required=True, copy=False, index=True)
+    available_fixture_ids = fields.Many2many("federation.fixture", compute="_compute_fixture_readiness", string="Calendar Fixtures")
+    unassigned_fixture_ids = fields.Many2many("federation.fixture", compute="_compute_fixture_readiness", string="Unassigned Fixtures")
+    stale_assignment_ids = fields.Many2many("federation.schedule.assignment", compute="_compute_fixture_readiness", string="Assignments Outside Calendar Plan")
+    available_fixture_count = fields.Integer(compute="_compute_fixture_readiness")
+    unassigned_fixture_count = fields.Integer(compute="_compute_fixture_readiness")
+    stale_assignment_count = fields.Integer(compute="_compute_fixture_readiness")
+
+    @api.depends("matchday_id.allocation_ids.fixture_ids", "matchday_id.allocation_ids.manual_fixture_ids", "assignment_ids.fixture_id")
+    def _compute_fixture_readiness(self):
+        for schedule in self:
+            fixtures = schedule.matchday_id.allocation_ids.mapped("fixture_ids")
+            assigned = schedule.assignment_ids.mapped("fixture_id")
+            schedule.available_fixture_ids = fixtures
+            schedule.unassigned_fixture_ids = fixtures - assigned
+            schedule.stale_assignment_ids = schedule.assignment_ids.filtered(lambda item: item.fixture_id not in fixtures)
+            schedule.available_fixture_count = len(fixtures)
+            schedule.unassigned_fixture_count = len(fixtures - assigned)
+            schedule.stale_assignment_count = len(schedule.stale_assignment_ids)
+
+    def action_refresh_calendar_fixtures(self):
+        self.ensure_one()
+        self.env["federation.competition.role.assignment"].assert_role(self.edition_id, "schedule_planner", "competition_director")
+        self.assert_mutable()
+        self.invalidate_recordset(["available_fixture_ids", "unassigned_fixture_ids", "stale_assignment_ids", "available_fixture_count", "unassigned_fixture_count", "stale_assignment_count"])
+        return {"type": "ir.actions.client", "tag": "display_notification", "params": {"title": "Calendar fixtures refreshed", "message": f"{self.available_fixture_count} fixtures available; {self.unassigned_fixture_count} require a slot.", "type": "warning" if self.unassigned_fixture_count else "success", "next": {"type": "ir.actions.client", "tag": "reload"}}}
+
     fairness_same_club_weight = fields.Float(
         string="Same-club overlap weight",
         default=40.0,
@@ -98620,9 +99934,9 @@ class FederationScheduleQueries(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_scheduling/services/schedule_validator.py
-SIZE: 6411
-CONTENT-LENGTH: 6411
-SHA256: 1161e9a32271102be329caf493a9340f5f4aa208d8d0b332630d8e9670b969bf
+SIZE: 6682
+CONTENT-LENGTH: 6682
+SHA256: b23edfa70f84264d35e21dd17c1ef5bb5113378974380385b1909c3eb841912e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -98772,6 +100086,9 @@ class FederationScheduleValidator(models.AbstractModel):
                             }
                         )
                 team_windows.setdefault(team.id, []).append((fixture, slot))
+        stale = sorted(set(assignment_map) - set(fixture_by_id))
+        for fixture_id in stale:
+            errors.append({"code": "fixture_outside_calendar_plan", "message": "An assigned fixture is no longer included in the calendar plan.", "fixture_id": fixture_id})
         missing = sorted(set(fixture_by_id) - set(assignment_map))
         return {
             "valid": not errors and not missing,
@@ -98872,9 +100189,9 @@ class TestFairnessSolver(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_scheduling/tests/test_schedule_amendment.py
-SIZE: 5838
-CONTENT-LENGTH: 5838
-SHA256: 678e4a7307da70436c281f4bf6fb2ddc9ce1de8d611963a727a88f51c75022b3
+SIZE: 6893
+CONTENT-LENGTH: 6893
+SHA256: 74fbb3f80a54efba65830a140dedbc1277e7096c8888db10af46a9da772f5d38
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -98955,11 +100272,17 @@ class TestScheduleAmendment(TransactionCase):
                 "revision": 3,
             }
         )
+        cls.structure = structure
         stage = cls.env["federation.structure.stage"].create(
             {"name": "League", "structure_id": structure.id, "stage_type": "league"}
         )
+        cls.stage = stage
         fixture = cls.env["federation.fixture"].create(
             {"structure_id": structure.id, "stage_id": stage.id, "round_number": 1}
+        )
+        cls.fixture = fixture
+        cls.allocation = cls.env["federation.matchday.allocation"].create(
+            {"matchday_id": cls.matchday.id, "structure_id": structure.id, "stage_id": stage.id, "round_number": 1}
         )
         court = cls.env["federation.playing.area"].create(
             {"name": "Main Court", "venue_id": venue.id}
@@ -99027,6 +100350,20 @@ class TestScheduleAmendment(TransactionCase):
         self.matchday.state = "open"
         with self.assertRaises(ValidationError):
             self.schedule.action_create_revision("Unsafe live change")
+
+
+    def test_late_fixture_can_be_added_to_revision_and_removed_again(self):
+        replacement = self.schedule.action_create_revision("Late fixture added")
+        late_fixture = self.env["federation.fixture"].create(
+            {"structure_id": self.structure.id, "stage_id": self.stage.id, "round_number": 2}
+        )
+        self.allocation.manual_fixture_ids = [(4, late_fixture.id)]
+        replacement.invalidate_recordset()
+        self.assertIn(late_fixture, replacement.available_fixture_ids)
+        self.assertIn(late_fixture, replacement.unassigned_fixture_ids)
+        self.allocation.manual_fixture_ids = [(3, late_fixture.id)]
+        replacement.invalidate_recordset()
+        self.assertNotIn(late_fixture, replacement.available_fixture_ids)
 
 ====================================================================================================
 FILE: sports_federation_scheduling/views/amend_schedule_wizard_views.xml
@@ -99115,9 +100452,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_scheduling/views/scheduling_views.xml
-SIZE: 5938
-CONTENT-LENGTH: 5938
-SHA256: 7d4decf35f9d367deb820e62ceb30eae64f5e4f923016a75dcae7eea8ee42bd6
+SIZE: 6754
+CONTENT-LENGTH: 6754
+SHA256: 367ba988bf9778e177e202c8c5ef89465a6ebc7212a333027da1f45f18f1fb5c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -99155,6 +100492,8 @@ GIT-STATE: tracked
             class="btn-primary"
             invisible="state != 'published'"
           />
+
+          <button name="action_refresh_calendar_fixtures" type="object" string="Refresh Calendar Fixtures" invisible="state not in ('draft', 'changes_requested')"/>
 
           <button
             name="action_open_submit_for_review"
@@ -99271,13 +100610,16 @@ GIT-STATE: tracked
               invisible="not superseded_by_id"
             />
           </group>
+          <group string="Fixture Readiness"><field name="available_fixture_count" readonly="1"/><field name="unassigned_fixture_count" readonly="1"/><field name="stale_assignment_count" readonly="1"/></group>
+          <div class="alert alert-warning" role="alert" invisible="not stale_assignment_count">Assignments outside the current calendar plan are retained for explicit correction and are never deleted automatically.</div>
           <notebook>
+            <page string="Calendar Fixtures" name="calendar_fixtures"><field name="available_fixture_ids" readonly="1"><list><field name="name"/><field name="stage_id"/><field name="round_number"/></list></field></page>
             <page string="Assignments" name="assignments">
               <field name="assignment_ids">
                 <list editable="bottom">
                   <field
                     name="fixture_id"
-                    domain="[('structure_id', '=', parent.structure_id)]"
+                    domain="[('id', 'in', parent.available_fixture_ids)]"
                   />
 
                   <field

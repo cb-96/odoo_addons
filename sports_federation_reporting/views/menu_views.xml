@@ -140,4 +140,6 @@
               groups="sports_federation_base.group_federation_manager"
               sequence="90"/>
 
+    <menuitem id="menu_federation_operational_dashboard" name="Operational Health" parent="menu_federation_reporting" action="action_server_federation_operational_dashboard" groups="sports_federation_base.group_federation_manager" sequence="1"/>
+
 </odoo>

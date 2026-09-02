@@ -300,3 +300,22 @@ For recurring in-application reporting, create records under **Federation → Re
 Each schedule stores the last generated CSV snapshot directly on the schedule record.
 Use **Federation → Reporting → Operator Checklist** for the release-readiness
 queue view that links back to the underlying exception surfaces.
+
+
+## Consolidated operational dashboard
+
+Federation managers open **Reporting → Operational Health** to assess release
+readiness and live operational queues without copying source records into a
+reporting table. The transient dashboard counts the owning models at refresh
+time and every queue link opens those records directly.
+
+Release automation can expose its latest committed evidence through these
+system parameters:
+
+- `sports_federation.release.last_status`: `passed` or `failed`;
+- `sports_federation.release.last_sha`: qualified candidate commit;
+- `sports_federation.release.last_completed_on`: UTC completion timestamp;
+- `sports_federation.release.evidence_url`: operator-accessible evidence URL.
+
+If no release status is recorded, the dashboard explicitly reports that release
+evidence is unknown rather than treating the candidate as ready.
