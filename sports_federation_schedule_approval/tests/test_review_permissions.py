@@ -178,8 +178,9 @@ class TestScheduleReviewPermissions(TransactionCase):
             with self.subTest(values=values), self.assertRaises(ValidationError):
                 review.write(values)
 
-
     def test_submitting_planner_can_withdraw_pending_review(self):
-        self.env["federation.schedule.approval.commands"].with_user(self.planner).withdraw(self.review.id, "Calendar planning added another fixture.")
+        self.env["federation.schedule.approval.commands"].with_user(
+            self.planner
+        ).withdraw(self.review.id, "Calendar planning added another fixture.")
         self.assertEqual(self.review.state, "withdrawn")
         self.assertEqual(self.schedule.state, "changes_requested")

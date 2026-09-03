@@ -198,7 +198,10 @@ class TestPortalTemplateAccessibility(TransactionCase):
         manifest = (Path(__file__).resolve().parents[1] / "__manifest__.py").read_text()
         asset_path = "sports_federation_portal/static/src/js/accessibility_recovery.js"
         self.assertIn(asset_path, manifest)
-        source = (Path(__file__).resolve().parents[1] / "static/src/js/accessibility_recovery.js").read_text()
+        source = (
+            Path(__file__).resolve().parents[1]
+            / "static/src/js/accessibility_recovery.js"
+        ).read_text()
         for contract in (
             'setAttribute("aria-describedby"',
             'setAttribute("aria-invalid", "true")',
@@ -211,7 +214,8 @@ class TestPortalTemplateAccessibility(TransactionCase):
 
     def test_portal_styles_expose_non_color_keyboard_focus(self):
         stylesheet = (
-            Path(__file__).resolve().parents[1] / "static/src/scss/federation_portal.scss"
+            Path(__file__).resolve().parents[1]
+            / "static/src/scss/federation_portal.scss"
         ).read_text()
         self.assertIn(":focus-visible", stylesheet)
         self.assertIn("outline:", stylesheet)

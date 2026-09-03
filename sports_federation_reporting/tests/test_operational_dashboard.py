@@ -4,7 +4,16 @@ from odoo.tests import TransactionCase
 
 class TestOperationalDashboard(TransactionCase):
     def test_snapshot_aggregates_source_queues_without_persisting_copies(self):
-        self.env["federation.operation.job"].create({"name": "Dashboard retry", "source_model": "federation.report.schedule", "source_res_id": 42, "correlation_id": "dashboard-retry", "state": "retry", "next_retry_on": fields.Datetime.now()})
+        self.env["federation.operation.job"].create(
+            {
+                "name": "Dashboard retry",
+                "source_model": "federation.report.schedule",
+                "source_res_id": 42,
+                "correlation_id": "dashboard-retry",
+                "state": "retry",
+                "next_retry_on": fields.Datetime.now(),
+            }
+        )
         values = self.env["federation.operational.dashboard"]._snapshot_values()
         self.assertGreaterEqual(values["retrying_job_count"], 1)
         self.assertEqual(values["overall_status"], "attention")
@@ -24,7 +33,6 @@ class TestOperationalDashboard(TransactionCase):
         self.assertEqual(values["release_status"], "failed")
         self.assertEqual(values["release_candidate_sha"], "deadbeef")
         self.assertEqual(values["overall_status"], "blocked")
-
 
     def test_stale_running_jobs_block_dashboard_health_without_mutation(self):
         from datetime import timedelta

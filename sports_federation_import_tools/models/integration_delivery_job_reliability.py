@@ -18,7 +18,9 @@ class FederationIntegrationDeliveryJobReliability(models.Model):
             if job.state == "pending":
                 job._start()
                 job._fail(
-                    _("Open the source delivery, correct its governance or payload issue, then replay it through the import wizard."),
+                    _(
+                        "Open the source delivery, correct its governance or payload issue, then replay it through the import wizard."
+                    ),
                     "operator_action",
                     retryable=False,
                 )
@@ -26,5 +28,7 @@ class FederationIntegrationDeliveryJobReliability(models.Model):
 
     def _retry_operational_job(self, job):
         raise ValidationError(
-            _("Inbound deliveries require operator review and replay through the import wizard.")
+            _(
+                "Inbound deliveries require operator review and replay through the import wizard."
+            )
         )

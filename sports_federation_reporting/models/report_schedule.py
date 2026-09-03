@@ -324,14 +324,49 @@ class FederationReportSchedule(models.Model):
 
     @api.model
     def _generated_file_retention_candidates(self, reference_dt=None):
-        reference_dt = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now()); cutoff = fields.Datetime.to_string(reference_dt - timedelta(days=self.GENERATED_FILE_RETENTION_DAYS))
-        return self.search([("generated_file", "!=", False), ("last_run_on", "!=", False), ("last_run_on", "<", cutoff)])
+        reference_dt = fields.Datetime.to_datetime(
+            reference_dt or fields.Datetime.now()
+        )
+        cutoff = fields.Datetime.to_string(
+            reference_dt - timedelta(days=self.GENERATED_FILE_RETENTION_DAYS)
+        )
+        return self.search(
+            [
+                ("generated_file", "!=", False),
+                ("last_run_on", "!=", False),
+                ("last_run_on", "<", cutoff),
+            ]
+        )
 
     @api.model
     def _cron_purge_generated_files(self):
-        started_on = fields.Datetime.now(); candidates = self._generated_file_retention_candidates(started_on); Evidence = self.env["federation.retention.evidence"]
-        try: deleted = self._purge_generated_files(started_on)
+        started_on = fields.Datetime.now()
+        candidates = self._generated_file_retention_candidates(started_on)
+        Evidence = self.env["federation.retention.evidence"]
+        try:
+            deleted = self._purge_generated_files(started_on)
         except Exception as error:
-            Evidence.record_failure_durable("generated_report_files", started_on=started_on, candidate_count=len(candidates), attachment_count=len(candidates), failure_count=len(candidates) or 1, retention_rules={"generated_file_days": self.GENERATED_FILE_RETENTION_DAYS}, operator_message=str(error), source_model=self._name); raise
-        Evidence.record_execution("generated_report_files", started_on=started_on, candidate_count=len(candidates), deleted_count=deleted, skipped_count=max(0,len(candidates)-deleted), attachment_count=deleted, retention_rules={"generated_file_days": self.GENERATED_FILE_RETENTION_DAYS}, source_model=self._name)
+            Evidence.record_failure_durable(
+                "generated_report_files",
+                started_on=started_on,
+                candidate_count=len(candidates),
+                attachment_count=len(candidates),
+                failure_count=len(candidates) or 1,
+                retention_rules={
+                    "generated_file_days": self.GENERATED_FILE_RETENTION_DAYS
+                },
+                operator_message=str(error),
+                source_model=self._name,
+            )
+            raise
+        Evidence.record_execution(
+            "generated_report_files",
+            started_on=started_on,
+            candidate_count=len(candidates),
+            deleted_count=deleted,
+            skipped_count=max(0, len(candidates) - deleted),
+            attachment_count=deleted,
+            retention_rules={"generated_file_days": self.GENERATED_FILE_RETENTION_DAYS},
+            source_model=self._name,
+        )
         return deleted

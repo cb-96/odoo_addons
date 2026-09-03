@@ -6,7 +6,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = {
     "ci/release_invariants.json": ("schema_version", "counts", "zero_checks"),
-    "ci/capture_migration_invariants.py": ("validate_contract", "run_sql", "count_modes"),
+    "ci/capture_migration_invariants.py": (
+        "validate_contract",
+        "run_sql",
+        "count_modes",
+    ),
     "ci/compare_migration_invariants.py": ("force_exact", "differences"),
     "scripts/ci/run_migration_rehearsal.sh": (
         "restore_backup_drill.sh",
@@ -15,8 +19,14 @@ REQUIRED = {
         "rollback-trigger",
         "invariant-comparison.json",
     ),
-    "RELEASE_RUNBOOK.md": ("Migration rehearsal evidence", "run_migration_rehearsal.sh"),
-    "docs/DELIVERY_ROADMAP.md": ("Release Candidate and Migration Evidence", "run_migration_rehearsal.sh"),
+    "RELEASE_RUNBOOK.md": (
+        "Migration rehearsal evidence",
+        "run_migration_rehearsal.sh",
+    ),
+    "docs/DELIVERY_ROADMAP.md": (
+        "Release Candidate and Migration Evidence",
+        "run_migration_rehearsal.sh",
+    ),
 }
 
 

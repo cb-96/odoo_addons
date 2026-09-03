@@ -31,17 +31,33 @@ class FederationCompetitionStructure(models.Model):
         required=True,
     )
     pool_count = fields.Integer(default=2, required=True)
-    series_length = fields.Selection([("1", "Single match"), ("3", "Best of 3"), ("5", "Best of 5"), ("7", "Best of 7")], default="1", required=True)
+    series_length = fields.Selection(
+        [
+            ("1", "Single match"),
+            ("3", "Best of 3"),
+            ("5", "Best of 5"),
+            ("7", "Best of 7"),
+        ],
+        default="1",
+        required=True,
+    )
     estimated_fixture_count = fields.Integer(compute="_compute_feasibility")
     estimated_round_count = fields.Integer(compute="_compute_feasibility")
     generation_feasible = fields.Boolean(compute="_compute_feasibility")
     feasibility_message = fields.Char(compute="_compute_feasibility")
 
-    @api.depends("format_type", "participant_set_id.line_ids", "pool_count", "series_length")
+    @api.depends(
+        "format_type", "participant_set_id.line_ids", "pool_count", "series_length"
+    )
     def _compute_feasibility(self):
         analyzer = self.env["federation.format.feasibility"]
         for record in self:
-            result = analyzer.estimate(record.format_type, len(record.participant_set_id.line_ids), pool_count=record.pool_count, series_length=record.series_length)
+            result = analyzer.estimate(
+                record.format_type,
+                len(record.participant_set_id.line_ids),
+                pool_count=record.pool_count,
+                series_length=record.series_length,
+            )
             record.generation_feasible = result["feasible"]
             record.estimated_fixture_count = result["fixture_count"]
             record.estimated_round_count = result["round_count"]
@@ -49,7 +65,16 @@ class FederationCompetitionStructure(models.Model):
 
     def action_check_feasibility(self):
         self.ensure_one()
-        return {"type": "ir.actions.client", "tag": "display_notification", "params": {"title": "Format feasibility", "message": self.feasibility_message, "type": "success" if self.generation_feasible else "danger", "sticky": not self.generation_feasible}}
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Format feasibility",
+                "message": self.feasibility_message,
+                "type": "success" if self.generation_feasible else "danger",
+                "sticky": not self.generation_feasible,
+            },
+        }
 
     state = fields.Selection(
         [
@@ -73,9 +98,31 @@ class FederationCompetitionStructure(models.Model):
         for rec in self:
             if not rec.generation_feasible and rec.format_type != "custom":
                 raise ValidationError(rec.feasibility_message)
-            if not rec.stage_ids and rec.format_type in ("single_round_robin", "double_round_robin", "knockout", "placement_bracket"):
-                stage_type = "league" if rec.format_type in ("single_round_robin", "double_round_robin") else "placement" if rec.format_type == "placement_bracket" else "knockout"
-                self.env["federation.structure.stage"].create({"name": rec.name, "structure_id": rec.id, "sequence": 10, "stage_type": stage_type, "format_type": rec.format_type, "source_type": "registration"})
+            if not rec.stage_ids and rec.format_type in (
+                "single_round_robin",
+                "double_round_robin",
+                "knockout",
+                "placement_bracket",
+            ):
+                stage_type = (
+                    "league"
+                    if rec.format_type in ("single_round_robin", "double_round_robin")
+                    else (
+                        "placement"
+                        if rec.format_type == "placement_bracket"
+                        else "knockout"
+                    )
+                )
+                self.env["federation.structure.stage"].create(
+                    {
+                        "name": rec.name,
+                        "structure_id": rec.id,
+                        "sequence": 10,
+                        "stage_type": stage_type,
+                        "format_type": rec.format_type,
+                        "source_type": "registration",
+                    }
+                )
             roots = rec.stage_ids.filtered(
                 lambda stage: not stage.incoming_progression_ids
             )

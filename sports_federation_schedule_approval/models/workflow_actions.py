@@ -75,7 +75,9 @@ class FederationScheduleReviewActions(models.Model):
 
     def action_withdraw_submission(self):
         self.ensure_one()
-        self.env["federation.schedule.approval.commands"].withdraw(self.id, self.review_note)
+        self.env["federation.schedule.approval.commands"].withdraw(
+            self.id, self.review_note
+        )
         return self.action_open_schedule()
 
     def action_request_changes(self):

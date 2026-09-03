@@ -24,7 +24,6 @@ class TestRetentionEvidence(TransactionCase):
         self.assertFalse(any(access.mapped("perm_create")))
         self.assertFalse(any(access.mapped("perm_unlink")))
 
-
     def test_record_execution_keeps_complete_policy_evidence(self):
         from datetime import timedelta
 

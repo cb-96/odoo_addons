@@ -8,7 +8,16 @@ class FederationCompetitionEdition(models.Model):
     event_count = fields.Integer(compute="_compute_core_counts")
     workflow_progress = fields.Integer(compute="_compute_workflow_progress")
     workflow_next_action = fields.Char(compute="_compute_workflow_progress")
-    journey_state = fields.Selection([("draft", "Draft"), ("ready", "Ready"), ("live", "Live"), ("finished", "Finished")], compute="_compute_workflow_progress", string="Journey Status")
+    journey_state = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("ready", "Ready"),
+            ("live", "Live"),
+            ("finished", "Finished"),
+        ],
+        compute="_compute_workflow_progress",
+        string="Journey Status",
+    )
     journey_blocker_count = fields.Integer(compute="_compute_workflow_progress")
 
     @api.depends("role_assignment_ids", "event_ids", "state")
@@ -39,7 +48,15 @@ class FederationCompetitionEdition(models.Model):
             steps = rec._workflow_steps()
             rec.workflow_progress = round(100 * sum(steps) / len(steps)) if steps else 0
             rec.journey_blocker_count = len([step for step in steps if not step])
-            rec.journey_state = "finished" if rec.state in ("closed", "cancelled") else ("live" if "publication_ids" in rec._fields and rec.publication_ids else ("ready" if steps and all(steps[:-1]) else "draft"))
+            rec.journey_state = (
+                "finished"
+                if rec.state in ("closed", "cancelled")
+                else (
+                    "live"
+                    if "publication_ids" in rec._fields and rec.publication_ids
+                    else ("ready" if steps and all(steps[:-1]) else "draft")
+                )
+            )
             if not rec.tournament_ids:
                 rec.workflow_next_action = _("Add at least one division")
             elif not rec.role_assignment_ids:
@@ -81,11 +98,42 @@ class FederationCompetitionEdition(models.Model):
             "domain": [("edition_id", "=", self.id)],
         }
 
-
     def action_open_next_workspace(self):
         self.ensure_one()
-        candidates = ((not self.tournament_ids, "sports_federation_tournament.federation_tournament_action"), (not self.role_assignment_ids, "sports_federation_competition_core.action_competition_roles_competition"), ("registration_window_ids" in self._fields and not self.registration_window_ids, "sports_federation_registration.action_registration_desk"), ("structure_ids" in self._fields and not self.structure_ids, "sports_federation_format.action_format_studio"), ("matchday_ids" in self._fields and not self.matchday_ids, "sports_federation_calendar.action_calendar_planner"), ("schedule_ids" in self._fields and not self.schedule_ids, "sports_federation_scheduling.action_schedule_planner_competition"), ("publication_ids" in self._fields and not self.publication_ids, "sports_federation_schedule_approval.action_schedule_review_queue"))
+        candidates = (
+            (
+                not self.tournament_ids,
+                "sports_federation_tournament.federation_tournament_action",
+            ),
+            (
+                not self.role_assignment_ids,
+                "sports_federation_competition_core.action_competition_roles_competition",
+            ),
+            (
+                "registration_window_ids" in self._fields
+                and not self.registration_window_ids,
+                "sports_federation_registration.action_registration_desk",
+            ),
+            (
+                "structure_ids" in self._fields and not self.structure_ids,
+                "sports_federation_format.action_format_studio",
+            ),
+            (
+                "matchday_ids" in self._fields and not self.matchday_ids,
+                "sports_federation_calendar.action_calendar_planner",
+            ),
+            (
+                "schedule_ids" in self._fields and not self.schedule_ids,
+                "sports_federation_scheduling.action_schedule_planner_competition",
+            ),
+            (
+                "publication_ids" in self._fields and not self.publication_ids,
+                "sports_federation_schedule_approval.action_schedule_review_queue",
+            ),
+        )
         for needed, xmlid in candidates:
             if needed:
                 return self.env["ir.actions.actions"]._for_xml_id(xmlid)
-        return self.env["ir.actions.actions"]._for_xml_id("sports_federation_matchday.action_matchday_control")
+        return self.env["ir.actions.actions"]._for_xml_id(
+            "sports_federation_matchday.action_matchday_control"
+        )

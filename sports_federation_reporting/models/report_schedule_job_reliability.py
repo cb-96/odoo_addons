@@ -9,7 +9,9 @@ class FederationReportScheduleJobReliability(models.Model):
         for schedule in self:
             if schedule.last_run_status != "failed":
                 raise ValidationError(_("Only failed report schedules can be retried."))
-            correlation_id = f"report-schedule-{schedule.id}-{schedule.consecutive_failure_count}"
+            correlation_id = (
+                f"report-schedule-{schedule.id}-{schedule.consecutive_failure_count}"
+            )
             job = self.env["federation.operation.job"].ensure_job(
                 schedule,
                 correlation_id,
@@ -24,5 +26,7 @@ class FederationReportScheduleJobReliability(models.Model):
         self._generate_single_report()
         self.invalidate_recordset(["last_run_status", "last_operator_message"])
         if self.last_run_status == "failed":
-            raise RuntimeError(self.last_operator_message or _("Scheduled report retry failed."))
+            raise RuntimeError(
+                self.last_operator_message or _("Scheduled report retry failed.")
+            )
         return True

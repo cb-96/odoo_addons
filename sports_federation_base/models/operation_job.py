@@ -29,7 +29,9 @@ class FederationOperationJob(models.Model):
     source_res_id = fields.Integer(required=True, index=True)
     correlation_id = fields.Char(required=True, index=True)
     priority = fields.Integer(default=50, index=True)
-    requested_on = fields.Datetime(default=fields.Datetime.now, required=True, index=True)
+    requested_on = fields.Datetime(
+        default=fields.Datetime.now, required=True, index=True
+    )
     started_on = fields.Datetime(index=True)
     completed_on = fields.Datetime(index=True)
     next_retry_on = fields.Datetime(index=True)
@@ -51,7 +53,9 @@ class FederationOperationJob(models.Model):
                 raise ValidationError(_("Job attempt limits are invalid."))
 
     @api.model
-    def ensure_job(self, source, correlation_id, name=False, max_attempts=3, priority=50):
+    def ensure_job(
+        self, source, correlation_id, name=False, max_attempts=3, priority=50
+    ):
         source.ensure_one()
         values = {
             "name": name or source.display_name,
@@ -108,7 +112,11 @@ class FederationOperationJob(models.Model):
             {
                 "state": "operator_action" if exhausted else "retry",
                 "completed_on": fields.Datetime.now(),
-                "next_retry_on": False if exhausted else fields.Datetime.now() + timedelta(minutes=delay_minutes),
+                "next_retry_on": (
+                    False
+                    if exhausted
+                    else fields.Datetime.now() + timedelta(minutes=delay_minutes)
+                ),
                 "operator_action_on": fields.Datetime.now() if exhausted else False,
                 "last_error": str(error)[:4000],
                 "failure_category": category,
@@ -119,15 +127,25 @@ class FederationOperationJob(models.Model):
         self.ensure_one()
         source = self._source()
         if not source:
-            self._fail(_("The source record no longer exists."), "data_validation", retryable=False)
+            self._fail(
+                _("The source record no longer exists."),
+                "data_validation",
+                retryable=False,
+            )
             return False
         self._start()
         try:
-            source.with_context(federation_correlation_id=self.correlation_id)._retry_operational_job(self)
+            source.with_context(
+                federation_correlation_id=self.correlation_id
+            )._retry_operational_job(self)
         except Exception as error:  # pylint: disable=broad-except
             retryable = not isinstance(error, (UserError, ValidationError))
             self._fail(error, "unexpected_bug", retryable=retryable)
-            _logger.exception("Operational job failed: job=%s correlation_id=%s", self.id, self.correlation_id)
+            _logger.exception(
+                "Operational job failed: job=%s correlation_id=%s",
+                self.id,
+                self.correlation_id,
+            )
             return False
         self._succeed()
         return True
@@ -164,7 +182,10 @@ class FederationOperationJob(models.Model):
         deadline = fields.Datetime.now() - timedelta(minutes=stale_minutes)
         stale = self.search([("state", "=", "running"), ("started_on", "<=", deadline)])
         for job in stale:
-            job._fail(_("Recovered after the worker stopped while processing."), "infrastructure")
+            job._fail(
+                _("Recovered after the worker stopped while processing."),
+                "infrastructure",
+            )
         return len(stale)
 
     @api.model

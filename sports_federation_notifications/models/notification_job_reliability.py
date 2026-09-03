@@ -23,7 +23,9 @@ class FederationNotificationJobReliability(models.Model):
         if self.notification_type != "email" or not self.template_xmlid:
             raise ValidationError(_("This notification requires manual recreation."))
         model = self.env.get(self.target_model)
-        target = model.browse(self.target_res_id).exists() if model is not None else model
+        target = (
+            model.browse(self.target_res_id).exists() if model is not None else model
+        )
         if not target:
             raise ValidationError(_("The notification target no longer exists."))
         retried = self.env["federation.notification.service"].send_email_template(
@@ -34,6 +36,10 @@ class FederationNotificationJobReliability(models.Model):
             log_name=f"Retry: {self.name}",
         )
         if retried.state != "sent":
-            raise RuntimeError(retried.operator_message or _("Notification retry failed."))
-        self.write({"state": "sent", "failure_category": False, "operator_message": False})
+            raise RuntimeError(
+                retried.operator_message or _("Notification retry failed.")
+            )
+        self.write(
+            {"state": "sent", "failure_category": False, "operator_message": False}
+        )
         return True

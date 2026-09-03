@@ -35,31 +35,69 @@ class FederationSchedule(models.Model):
         index=True,
     )
     revision = fields.Integer(default=0, required=True, copy=False, index=True)
-    available_fixture_ids = fields.Many2many("federation.fixture", compute="_compute_fixture_readiness", string="Calendar Fixtures")
-    unassigned_fixture_ids = fields.Many2many("federation.fixture", compute="_compute_fixture_readiness", string="Unassigned Fixtures")
-    stale_assignment_ids = fields.Many2many("federation.schedule.assignment", compute="_compute_fixture_readiness", string="Assignments Outside Calendar Plan")
+    available_fixture_ids = fields.Many2many(
+        "federation.fixture",
+        compute="_compute_fixture_readiness",
+        string="Calendar Fixtures",
+    )
+    unassigned_fixture_ids = fields.Many2many(
+        "federation.fixture",
+        compute="_compute_fixture_readiness",
+        string="Unassigned Fixtures",
+    )
+    stale_assignment_ids = fields.Many2many(
+        "federation.schedule.assignment",
+        compute="_compute_fixture_readiness",
+        string="Assignments Outside Calendar Plan",
+    )
     available_fixture_count = fields.Integer(compute="_compute_fixture_readiness")
     unassigned_fixture_count = fields.Integer(compute="_compute_fixture_readiness")
     stale_assignment_count = fields.Integer(compute="_compute_fixture_readiness")
 
-    @api.depends("matchday_id.allocation_ids.fixture_ids", "matchday_id.allocation_ids.manual_fixture_ids", "assignment_ids.fixture_id")
+    @api.depends(
+        "matchday_id.allocation_ids.fixture_ids",
+        "matchday_id.allocation_ids.manual_fixture_ids",
+        "assignment_ids.fixture_id",
+    )
     def _compute_fixture_readiness(self):
         for schedule in self:
             fixtures = schedule.matchday_id.allocation_ids.mapped("fixture_ids")
             assigned = schedule.assignment_ids.mapped("fixture_id")
             schedule.available_fixture_ids = fixtures
             schedule.unassigned_fixture_ids = fixtures - assigned
-            schedule.stale_assignment_ids = schedule.assignment_ids.filtered(lambda item: item.fixture_id not in fixtures)
+            schedule.stale_assignment_ids = schedule.assignment_ids.filtered(
+                lambda item: item.fixture_id not in fixtures
+            )
             schedule.available_fixture_count = len(fixtures)
             schedule.unassigned_fixture_count = len(fixtures - assigned)
             schedule.stale_assignment_count = len(schedule.stale_assignment_ids)
 
     def action_refresh_calendar_fixtures(self):
         self.ensure_one()
-        self.env["federation.competition.role.assignment"].assert_role(self.edition_id, "schedule_planner", "competition_director")
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "schedule_planner", "competition_director"
+        )
         self.assert_mutable()
-        self.invalidate_recordset(["available_fixture_ids", "unassigned_fixture_ids", "stale_assignment_ids", "available_fixture_count", "unassigned_fixture_count", "stale_assignment_count"])
-        return {"type": "ir.actions.client", "tag": "display_notification", "params": {"title": "Calendar fixtures refreshed", "message": f"{self.available_fixture_count} fixtures available; {self.unassigned_fixture_count} require a slot.", "type": "warning" if self.unassigned_fixture_count else "success", "next": {"type": "ir.actions.client", "tag": "reload"}}}
+        self.invalidate_recordset(
+            [
+                "available_fixture_ids",
+                "unassigned_fixture_ids",
+                "stale_assignment_ids",
+                "available_fixture_count",
+                "unassigned_fixture_count",
+                "stale_assignment_count",
+            ]
+        )
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Calendar fixtures refreshed",
+                "message": f"{self.available_fixture_count} fixtures available; {self.unassigned_fixture_count} require a slot.",
+                "type": "warning" if self.unassigned_fixture_count else "success",
+                "next": {"type": "ir.actions.client", "tag": "reload"},
+            },
+        }
 
     fairness_same_club_weight = fields.Float(
         string="Same-club overlap weight",

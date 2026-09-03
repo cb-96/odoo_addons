@@ -29,7 +29,9 @@ def compare(
     for name, expected in sorted(reference.get("counts", {}).items()):
         actual = candidate.get("counts", {}).get(name)
         mode = "exact" if force_exact else modes.get(name, "exact")
-        violates = actual is None or (actual != expected if mode == "exact" else actual < expected)
+        violates = actual is None or (
+            actual != expected if mode == "exact" else actual < expected
+        )
         if violates:
             differences.append(
                 {
@@ -44,7 +46,13 @@ def compare(
     for name, actual in sorted(candidate.get("zero_checks", {}).items()):
         if actual != 0:
             differences.append(
-                {"kind": "integrity", "name": name, "expected": 0, "actual": actual, "evidence": label}
+                {
+                    "kind": "integrity",
+                    "name": name,
+                    "expected": 0,
+                    "actual": actual,
+                    "evidence": label,
+                }
             )
     return differences
 

@@ -18,14 +18,20 @@ DEFAULT_CONTRACT = ROOT / "ci/release_invariants.json"
 def run_sql(database: str, sql: str) -> int:
     command = [
         "psql",
-        "--host", os.environ.get("PGHOST", "127.0.0.1"),
-        "--port", os.environ.get("PGPORT", "5432"),
-        "--username", os.environ.get("PGUSER", "odoo"),
-        "--dbname", database,
+        "--host",
+        os.environ.get("PGHOST", "127.0.0.1"),
+        "--port",
+        os.environ.get("PGPORT", "5432"),
+        "--username",
+        os.environ.get("PGUSER", "odoo"),
+        "--dbname",
+        database,
         "--tuples-only",
         "--no-align",
-        "--set", "ON_ERROR_STOP=1",
-        "--command", sql,
+        "--set",
+        "ON_ERROR_STOP=1",
+        "--command",
+        sql,
     ]
     result = subprocess.run(
         command,
@@ -40,7 +46,9 @@ def run_sql(database: str, sql: str) -> int:
     try:
         return int(value)
     except ValueError as error:
-        raise RuntimeError(f"Invariant query did not return an integer: {value!r}") from error
+        raise RuntimeError(
+            f"Invariant query did not return an integer: {value!r}"
+        ) from error
 
 
 def validate_contract(contract: dict) -> None:
@@ -53,12 +61,16 @@ def validate_contract(contract: dict) -> None:
         for name, query in entries.items():
             if not isinstance(name, str) or not name.strip():
                 raise ValueError(f"Invariant contract {section} has an empty name")
-            if not isinstance(query, str) or not query.lstrip().upper().startswith("SELECT"):
+            if not isinstance(query, str) or not query.lstrip().upper().startswith(
+                "SELECT"
+            ):
                 raise ValueError(f"Invariant {name!r} must be a SELECT query")
     modes = contract.get("count_modes", {})
     unknown_modes = set(modes) - set(contract["counts"])
     if unknown_modes:
-        raise ValueError(f"Count modes reference unknown counts: {sorted(unknown_modes)}")
+        raise ValueError(
+            f"Count modes reference unknown counts: {sorted(unknown_modes)}"
+        )
     for name in contract["counts"]:
         if modes.get(name, "exact") not in {"exact", "minimum"}:
             raise ValueError(f"Unsupported count mode for {name!r}")
