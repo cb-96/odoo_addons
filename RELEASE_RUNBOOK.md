@@ -61,6 +61,17 @@ order, and keeps officiating assignment visibility limited to live current
 publications. No database migration is required; the portal manifest is bumped
 from `19.0.4.0.0` to `19.0.4.1.0`.
 
+### Formatting-only model review evidence
+
+The 2026-09-03 formatting change touched model files in
+`sports_federation_base`, `sports_federation_competition_core`,
+`sports_federation_format`, `sports_federation_import_tools`,
+`sports_federation_notifications`, `sports_federation_reporting`,
+`sports_federation_schedule_approval`, and
+`sports_federation_scheduling`. It made no schema, data, or workflow changes,
+so no database migration is required. The migration-review dry run must include
+this record and pass before release promotion.
+
 Dry-run evidence captured on 2026-08-23:
 
 ```text
