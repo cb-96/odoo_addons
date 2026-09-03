@@ -9,7 +9,13 @@ class FederationFormatFeasibility(models.AbstractModel):
 
     @api.model
     def estimate(
-        self, format_type, participant_count, *, pool_count=1, series_length=1
+        self,
+        format_type,
+        participant_count,
+        *,
+        pool_count=1,
+        series_length=1,
+        swiss_round_count=1,
     ):
         participant_count = int(participant_count or 0)
         pool_count = max(1, int(pool_count or 1))
@@ -59,10 +65,25 @@ class FederationFormatFeasibility(models.AbstractModel):
             rounds = swiss_round_count
         elif format_type == "double_elimination":
             if participant_count < 4 or participant_count & (participant_count - 1):
-                return {"feasible": False, "fixture_count": 0, "round_count": 0, "message": _("Double elimination requires a power-of-two field of at least four teams.")}
-            routes = self.env["federation.dynamic.pairing"].double_elimination_routes(participant_count)
-            fixtures = routes["winner_bracket_matches"] + routes["loser_bracket_matches"] + routes["grand_final_matches"]
-            rounds = routes["winner_bracket_rounds"] + routes["loser_bracket_rounds"] + 2
+                return {
+                    "feasible": False,
+                    "fixture_count": 0,
+                    "round_count": 0,
+                    "message": _(
+                        "Double elimination requires a power-of-two field of at least four teams."
+                    ),
+                }
+            routes = self.env["federation.dynamic.pairing"].double_elimination_routes(
+                participant_count
+            )
+            fixtures = (
+                routes["winner_bracket_matches"]
+                + routes["loser_bracket_matches"]
+                + routes["grand_final_matches"]
+            )
+            rounds = (
+                routes["winner_bracket_rounds"] + routes["loser_bracket_rounds"] + 2
+            )
         elif format_type == "ladder":
             fixtures = 0
             rounds = 0

@@ -16,8 +16,12 @@ class FederationOperationTaskPortal(FederationPortalBase):
         task_groups = {
             "overdue": tasks.filtered(lambda task: task.deadline and task.is_overdue),
             "blocking": tasks.filtered("blocking"),
-            "waiting_federation": tasks.filtered(lambda task: task.waiting_on == "federation"),
-            "mine": tasks.filtered(lambda task: task.assigned_user_id == request.env.user),
+            "waiting_federation": tasks.filtered(
+                lambda task: task.waiting_on == "federation"
+            ),
+            "mine": tasks.filtered(
+                lambda task: task.assigned_user_id == request.env.user
+            ),
         }
         completed_steps = 4 - len(set(tasks.mapped("task_type")))
         journey_percent = max(0, min(100, int(completed_steps * 25)))

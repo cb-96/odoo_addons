@@ -27,7 +27,12 @@ class FederationCompetitionFormatTemplate(models.Model):
     )
     pool_count = fields.Integer(default=2, required=True)
     series_length = fields.Selection(
-        [("1", "Single match"), ("3", "Best of 3"), ("5", "Best of 5"), ("7", "Best of 7")],
+        [
+            ("1", "Single match"),
+            ("3", "Best of 3"),
+            ("5", "Best of 5"),
+            ("7", "Best of 7"),
+        ],
         default="1",
         required=True,
     )
@@ -42,8 +47,14 @@ class FederationCompetitionFormatTemplate(models.Model):
     @api.constrains("version", "pool_count", "swiss_round_count")
     def _check_positive_values(self):
         for template in self:
-            if template.version < 1 or template.pool_count < 1 or template.swiss_round_count < 1:
-                raise ValidationError("Template version and format counts must be positive.")
+            if (
+                template.version < 1
+                or template.pool_count < 1
+                or template.swiss_round_count < 1
+            ):
+                raise ValidationError(
+                    "Template version and format counts must be positive."
+                )
 
     def action_create_structure(self, edition, division, participant_set):
         self.ensure_one()

@@ -29,8 +29,12 @@ class TestAdvancedCompetitionEngine(TransactionCase):
             previous_pairs=[(1, 2), (3, 4)],
             standings={1: 3, 2: 3, 3: 0, 4: 0},
         )
-        self.assertNotIn(frozenset((1, 2)), {frozenset(pair) for pair in result["pairs"]})
-        self.assertNotIn(frozenset((3, 4)), {frozenset(pair) for pair in result["pairs"]})
+        self.assertNotIn(
+            frozenset((1, 2)), {frozenset(pair) for pair in result["pairs"]}
+        )
+        self.assertNotIn(
+            frozenset((3, 4)), {frozenset(pair) for pair in result["pairs"]}
+        )
 
     def test_feasibility_covers_dynamic_formats(self):
         analyzer = self.env["federation.format.feasibility"]

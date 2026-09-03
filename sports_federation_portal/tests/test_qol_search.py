@@ -6,7 +6,12 @@ class TestQolSearch(TransactionCase):
         self.assertEqual(self.env["federation.qol.search"].search_everywhere("x"), [])
 
     def test_search_returns_typed_direct_links(self):
-        team = self.env["federation.team"].create({"name": "Unique Search Team"})
+        club = self.env["federation.club"].create(
+            {"name": "Unique Search Club", "code": "UNIQUE-SEARCH"}
+        )
+        team = self.env["federation.team"].create(
+            {"name": "Unique Search Team", "club_id": club.id}
+        )
         results = self.env["federation.qol.search"].search_everywhere("Unique Search")
         match = next(item for item in results if item["model"] == "federation.team")
         self.assertEqual(match["name"], team.display_name)

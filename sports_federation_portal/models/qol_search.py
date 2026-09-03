@@ -6,12 +6,36 @@ class FederationQolSearch(models.AbstractModel):
     _description = "Federation Cross-Module Search"
 
     SEARCH_SURFACES = (
-        ("federation.competition.edition", "name", "/odoo/action-sports_federation_competition_core.action_competition_overview/%s"),
-        ("federation.tournament", "name", "/odoo/action-sports_federation_tournament.action_federation_tournament/%s"),
-        ("federation.team", "name", "/odoo/action-sports_federation_base.action_federation_team/%s"),
-        ("federation.registration.window", "name", "/odoo/action-sports_federation_registration.action_registration_desk/%s"),
-        ("federation.schedule", "name", "/odoo/action-sports_federation_scheduling.action_schedule_planner_competition/%s"),
-        ("federation.match", "display_name", "/odoo/action-sports_federation_tournament.action_federation_match/%s"),
+        (
+            "federation.competition.edition",
+            "name",
+            "/odoo/action-sports_federation_competition_core.action_competition_overview/%s",
+        ),
+        (
+            "federation.tournament",
+            "name",
+            "/odoo/action-sports_federation_tournament.action_federation_tournament/%s",
+        ),
+        (
+            "federation.team",
+            "name",
+            "/odoo/action-sports_federation_base.action_federation_team/%s",
+        ),
+        (
+            "federation.registration.window",
+            "name",
+            "/odoo/action-sports_federation_registration.action_registration_desk/%s",
+        ),
+        (
+            "federation.schedule",
+            "name",
+            "/odoo/action-sports_federation_scheduling.action_schedule_planner_competition/%s",
+        ),
+        (
+            "federation.match",
+            "display_name",
+            "/odoo/action-sports_federation_tournament.action_federation_match/%s",
+        ),
     )
 
     @api.model
@@ -24,7 +48,9 @@ class FederationQolSearch(models.AbstractModel):
             model = self.env.get(model_name)
             if model is None or field_name not in model._fields:
                 continue
-            records = model.sudo().search([(field_name, "ilike", term)], limit=limit_per_model)
+            records = model.sudo().search(
+                [(field_name, "ilike", term)], limit=limit_per_model
+            )
             results.extend(
                 {
                     "model": model_name,

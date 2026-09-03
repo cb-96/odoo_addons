@@ -51,7 +51,11 @@ class FederationCompetitionStructure(models.Model):
     feasibility_message = fields.Char(compute="_compute_feasibility")
 
     @api.depends(
-        "format_type", "participant_set_id.line_ids", "pool_count", "series_length", "swiss_round_count"
+        "format_type",
+        "participant_set_id.line_ids",
+        "pool_count",
+        "series_length",
+        "swiss_round_count",
     )
     def _compute_feasibility(self):
         analyzer = self.env["federation.format.feasibility"]
@@ -61,6 +65,7 @@ class FederationCompetitionStructure(models.Model):
                 len(record.participant_set_id.line_ids),
                 pool_count=record.pool_count,
                 series_length=record.series_length,
+                swiss_round_count=record.swiss_round_count,
             )
             record.generation_feasible = result["feasible"]
             record.estimated_fixture_count = result["fixture_count"]
