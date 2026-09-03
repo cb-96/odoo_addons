@@ -31,7 +31,16 @@ require_odoo() {
 }
 
 static_checks() {
-  python3 -m compileall -q sports_federation_*
+  python3 - <<'PY'
+from pathlib import Path
+import tokenize
+
+for addon in sorted(Path('.').glob('sports_federation_*')):
+    for path in sorted(addon.rglob('*.py')):
+        with tokenize.open(path) as source_file:
+            compile(source_file.read(), str(path), 'exec', dont_inherit=True)
+print('Python syntax check passed without writing bytecode')
+PY
   python3 - <<'PY'
 from pathlib import Path
 from xml.etree import ElementTree

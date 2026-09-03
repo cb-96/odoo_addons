@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from odoo import _, api, models
 from odoo.exceptions import ValidationError
 

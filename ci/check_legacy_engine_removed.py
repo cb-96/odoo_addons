@@ -35,7 +35,8 @@ SUFFIXES = {
     ".txt",
 }
 errors = []
-if (ROOT / "sports_federation_competition_engine").exists():
+legacy_addon = ROOT / "sports_federation_competition_engine"
+if (legacy_addon / "__manifest__.py").exists():
     errors.append("legacy addon directory still exists")
 files = list(SCAN_FILES)
 for base in SCAN_ROOTS:

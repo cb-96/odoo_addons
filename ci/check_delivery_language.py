@@ -10,19 +10,26 @@ errors = []
 for p in ROOT.rglob("*"):
     relative = p.relative_to(ROOT)
     if (
-        p.is_file()
-        and ".git" not in p.parts
-        and "migrations" not in p.parts
-        and (version.search(str(relative)) or delivery.search(str(relative)))
+        not p.is_file()
+        or ".git" in p.parts
+        or "__pycache__" in p.parts
+        or "migrations" in p.parts
+        or p.suffix == ".pyc"
     ):
+        continue
+    if version.search(str(relative)) or delivery.search(str(relative)):
         errors.append(f"{relative}: obsolete delivery language in path")
-    if (
-        p.is_file()
-        and ".git" not in p.parts
-        and "migrations" not in p.parts
-        and p.suffix
-        in {".py", ".xml", ".md", ".json", ".yaml", ".yml", ".sh", ".js", ".scss"}
-    ):
+    if p.suffix in {
+        ".py",
+        ".xml",
+        ".md",
+        ".json",
+        ".yaml",
+        ".yml",
+        ".sh",
+        ".js",
+        ".scss",
+    }:
         for n, line in enumerate(p.read_text().splitlines(), 1):
             if version.search(line) or delivery.search(line):
                 errors.append(f"{p.relative_to(ROOT)}:{n}: {line.strip()}")

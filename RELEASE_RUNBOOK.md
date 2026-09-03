@@ -1,8 +1,8 @@
 # Release Runbook
 
-Last updated: 2026-09-02
+Last updated: 2026-09-03
 Owner: Federation Platform Team
-Last reviewed: 2026-09-02
+Last reviewed: 2026-09-03
 Review cadence: Every release
 Release train: 2026.08
 
@@ -91,6 +91,29 @@ Exit code: 0; 116 tests run, 116 passed, 0 failed, 0 errors; 30 post-tests
 Rollback is the standard backup restore procedure in this runbook. Do not
 restore the deleted V1 controller or broaden portal publication access as a
 rollback workaround.
+
+### Release-candidate readiness review
+
+The release-candidate readiness contracts cover role-separated access,
+workflow recovery actions, portal usability surfaces, performance profile
+metadata, and the required release evidence files. Run the static lane before
+starting database qualification:
+
+```bash
+scripts/ci/run_rc_validation.sh static
+```
+
+The complete candidate sequence is:
+
+```bash
+scripts/ci/run_release_candidate.sh --backup-dir /path/to/approved-backup
+```
+
+The script performs the product-readiness and usability contract checks,
+release-baseline lanes, and (when an approved backup is supplied) the migration
+rehearsal. Record the candidate SHA, lane results, database names, and any
+rollback observations with the release ticket. Browser lanes require a Chrome
+executable; a candidate is not accepted when those lanes are silently skipped.
 
 If the release changes addon responsibility boundaries or adds a new
 `sports_federation_*` module, update `MODULE_OWNERS.yaml` in the same release

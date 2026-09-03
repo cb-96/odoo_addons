@@ -16,6 +16,8 @@ scoring and tie resolution.
 Dependencies
 ------------
 
+- ``sports_federation_base``: Shared federation models, groups, and correlation
+   utilities imported directly by the standings implementation.
 - ``sports_federation_tournament``: Tournaments, stages, groups, and matches.
 - ``sports_federation_rules``: Rule sets for scoring and tie-breaks.
 - ``mail``: Chatter integration.
