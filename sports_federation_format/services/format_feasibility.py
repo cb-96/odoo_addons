@@ -14,6 +14,7 @@ class FederationFormatFeasibility(models.AbstractModel):
         participant_count = int(participant_count or 0)
         pool_count = max(1, int(pool_count or 1))
         series_length = max(1, int(series_length or 1))
+        swiss_round_count = max(1, int(swiss_round_count or 1))
         if participant_count < 2:
             return {
                 "feasible": False,
@@ -53,6 +54,18 @@ class FederationFormatFeasibility(models.AbstractModel):
             rounds = max(size if size % 2 else size - 1 for size in sizes) + ceil(
                 log2(min(participant_count, 2 * pool_count))
             )
+        elif format_type == "swiss":
+            fixtures = (participant_count // 2) * swiss_round_count
+            rounds = swiss_round_count
+        elif format_type == "double_elimination":
+            if participant_count < 4 or participant_count & (participant_count - 1):
+                return {"feasible": False, "fixture_count": 0, "round_count": 0, "message": _("Double elimination requires a power-of-two field of at least four teams.")}
+            routes = self.env["federation.dynamic.pairing"].double_elimination_routes(participant_count)
+            fixtures = routes["winner_bracket_matches"] + routes["loser_bracket_matches"] + routes["grand_final_matches"]
+            rounds = routes["winner_bracket_rounds"] + routes["loser_bracket_rounds"] + 2
+        elif format_type == "ladder":
+            fixtures = 0
+            rounds = 0
         elif format_type == "split_pools":
             if participant_count < 6:
                 return {

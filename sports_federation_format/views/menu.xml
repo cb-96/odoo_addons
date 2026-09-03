@@ -1,1 +1,2 @@
-<odoo><menuitem id="menu_format_studio" name="Format Studio" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_format_studio" sequence="30"/></odoo>
+<odoo><menuitem id="menu_format_studio" name="Format Studio" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_format_studio" sequence="30"/><menuitem id="menu_format_templates" name="Format Templates" parent="menu_format_root" action="action_competition_format_template" sequence="30" groups="sports_federation_base.group_federation_manager"/>
+</odoo>

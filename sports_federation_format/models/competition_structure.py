@@ -26,6 +26,9 @@ class FederationCompetitionStructure(models.Model):
             ("pool_knockout", "Pools then Knockout"),
             ("split_pools", "League then Championship/Relegation Pools"),
             ("placement_bracket", "Placement Bracket"),
+            ("swiss", "Swiss"),
+            ("double_elimination", "Double Elimination"),
+            ("ladder", "Challenge Ladder"),
             ("custom", "Custom"),
         ],
         required=True,
@@ -41,13 +44,14 @@ class FederationCompetitionStructure(models.Model):
         default="1",
         required=True,
     )
+    swiss_round_count = fields.Integer(default=5, required=True)
     estimated_fixture_count = fields.Integer(compute="_compute_feasibility")
     estimated_round_count = fields.Integer(compute="_compute_feasibility")
     generation_feasible = fields.Boolean(compute="_compute_feasibility")
     feasibility_message = fields.Char(compute="_compute_feasibility")
 
     @api.depends(
-        "format_type", "participant_set_id.line_ids", "pool_count", "series_length"
+        "format_type", "participant_set_id.line_ids", "pool_count", "series_length", "swiss_round_count"
     )
     def _compute_feasibility(self):
         analyzer = self.env["federation.format.feasibility"]

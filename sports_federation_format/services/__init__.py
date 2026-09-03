@@ -4,3 +4,7 @@ from . import graph_validator
 from . import round_robin_generator
 
 from . import format_feasibility
+
+from . import competition_simulator
+
+from . import dynamic_pairing

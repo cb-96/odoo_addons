@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 881
+# FILE-COUNT: 884
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -77,9 +77,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: .github/workflows/ci.yml
-SIZE: 13186
-CONTENT-LENGTH: 13186
-SHA256: ea97b6fc74f917497af643ec74bfe9558c419eab89cbccf778dbcdc94af8768e
+SIZE: 13379
+CONTENT-LENGTH: 13379
+SHA256: c8cae818b461e039986ee488e17b54c7f7a5845afd86e2888750e86b7d6fece5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -175,10 +175,18 @@ jobs:
 
       - name: Verify portal privilege boundaries
         run: python ci/check_portal_sudo_guard.py
-          python ci/check_portal_competition_ownership.py
-          python ci/check_officiating_contract.py
-          python ci/check_registration_contract.py
-          python ci/check_access_csv_integrity.py
+
+      - name: Verify portal competition ownership
+        run: python ci/check_portal_competition_ownership.py
+
+      - name: Verify officiating contract
+        run: python ci/check_officiating_contract.py
+
+      - name: Verify registration contract
+        run: python ci/check_registration_contract.py
+
+      - name: Verify access CSV integrity
+        run: python ci/check_access_csv_integrity.py
 
       - name: Verify source collector completeness
         run: python ci/check_source_collector_contract.py
@@ -2139,9 +2147,9 @@ Module list (high level)
 
 ====================================================================================================
 FILE: RELEASE_RUNBOOK.md
-SIZE: 22377
-CONTENT-LENGTH: 22369
-SHA256: a868038eea617ef1f2d4646db5f32c080a0c74e73f35a2443c3bcc29aad6c459
+SIZE: 23470
+CONTENT-LENGTH: 23462
+SHA256: 5d0c4dfad2f356c40df9803362d10e8842267e8b1d1cafc078ae6bd3fec1524f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -2209,6 +2217,17 @@ controller, restores the tournament-registration view in the manifest data
 order, and keeps officiating assignment visibility limited to live current
 publications. No database migration is required; the portal manifest is bumped
 from `19.0.4.0.0` to `19.0.4.1.0`.
+
+### Formatting-only model review evidence
+
+The 2026-09-03 formatting change touched model files in
+`sports_federation_base`, `sports_federation_competition_core`,
+`sports_federation_format`, `sports_federation_import_tools`,
+`sports_federation_notifications`, `sports_federation_reporting`,
+`sports_federation_schedule_approval`, and
+`sports_federation_scheduling`. It made no schema, data, or workflow changes,
+so no database migration is required. The migration-review dry run must include
+this record and pass before release promotion.
 
 Dry-run evidence captured on 2026-08-23:
 
@@ -2490,6 +2509,19 @@ the demo module tests (5 passed, 0 failed, 0 errors) and did not report the
 
 **Rollback**: Revert the additive code and fixture changes. No database
 backfill, schema reversal, or migration artifact is required.
+
+### Public-site route ownership review
+
+**DB migrations**: None. The public-site controller route ownership change
+does not alter persisted data or the public API contract.
+
+**Dry-run evidence**: `python ci/check_migration_review.py --files
+sports_federation_public_site/controllers/public_competitions.py
+RELEASE_RUNBOOK.md` exited with code 0, confirming that the controller change
+has release-review evidence.
+
+**Rollback**: Revert the controller change and redeploy the prior application
+revision. No database restore or data backfill is required.
 
 ## Release train convention
 
@@ -8521,9 +8553,9 @@ if __name__ == "__main__":
 
 ====================================================================================================
 FILE: ci/capture_migration_invariants.py
-SIZE: 3902
-CONTENT-LENGTH: 3902
-SHA256: c0142aed5dffe8034c35151678ea16713c9c093ba3e7a533c1c25803cd953ab4
+SIZE: 4024
+CONTENT-LENGTH: 4024
+SHA256: 0902d130908b1d38a15ea2a64b0faa8fe37c1a58529e8a59f5f1215a2dc2d611
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
 GIT-STATE: tracked
@@ -8549,14 +8581,20 @@ DEFAULT_CONTRACT = ROOT / "ci/release_invariants.json"
 def run_sql(database: str, sql: str) -> int:
     command = [
         "psql",
-        "--host", os.environ.get("PGHOST", "127.0.0.1"),
-        "--port", os.environ.get("PGPORT", "5432"),
-        "--username", os.environ.get("PGUSER", "odoo"),
-        "--dbname", database,
+        "--host",
+        os.environ.get("PGHOST", "127.0.0.1"),
+        "--port",
+        os.environ.get("PGPORT", "5432"),
+        "--username",
+        os.environ.get("PGUSER", "odoo"),
+        "--dbname",
+        database,
         "--tuples-only",
         "--no-align",
-        "--set", "ON_ERROR_STOP=1",
-        "--command", sql,
+        "--set",
+        "ON_ERROR_STOP=1",
+        "--command",
+        sql,
     ]
     result = subprocess.run(
         command,
@@ -8571,7 +8609,9 @@ def run_sql(database: str, sql: str) -> int:
     try:
         return int(value)
     except ValueError as error:
-        raise RuntimeError(f"Invariant query did not return an integer: {value!r}") from error
+        raise RuntimeError(
+            f"Invariant query did not return an integer: {value!r}"
+        ) from error
 
 
 def validate_contract(contract: dict) -> None:
@@ -8584,12 +8624,16 @@ def validate_contract(contract: dict) -> None:
         for name, query in entries.items():
             if not isinstance(name, str) or not name.strip():
                 raise ValueError(f"Invariant contract {section} has an empty name")
-            if not isinstance(query, str) or not query.lstrip().upper().startswith("SELECT"):
+            if not isinstance(query, str) or not query.lstrip().upper().startswith(
+                "SELECT"
+            ):
                 raise ValueError(f"Invariant {name!r} must be a SELECT query")
     modes = contract.get("count_modes", {})
     unknown_modes = set(modes) - set(contract["counts"])
     if unknown_modes:
-        raise ValueError(f"Count modes reference unknown counts: {sorted(unknown_modes)}")
+        raise ValueError(
+            f"Count modes reference unknown counts: {sorted(unknown_modes)}"
+        )
     for name in contract["counts"]:
         if modes.get(name, "exact") not in {"exact", "minimum"}:
             raise ValueError(f"Unsupported count mode for {name!r}")
@@ -8641,9 +8685,9 @@ if __name__ == "__main__":
 
 ====================================================================================================
 FILE: ci/capture_release_evidence.py
-SIZE: 1791
-CONTENT-LENGTH: 1791
-SHA256: 2c3770e178a86198ab2cf709979471fa33a6514d7dcf6c7d7702e1da5fe0b476
+SIZE: 1837
+CONTENT-LENGTH: 1837
+SHA256: 4e5df340f40258c45fe1a9fd230e5cbc599af3303ebae5d4ca62c30dc8410e9f
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
 GIT-STATE: tracked
@@ -8651,63 +8695,76 @@ GIT-STATE: tracked
 
 #!/usr/bin/env python3
 """Write deterministic, machine-readable evidence for an RC command."""
+
 from __future__ import annotations
-import argparse, hashlib, json, os, platform, subprocess
+import argparse
+import hashlib
+import json
+import os
+import platform
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+
 def run(*args: str) -> str:
     result = subprocess.run(args, cwd=ROOT, check=True, text=True, capture_output=True)
     return result.stdout.strip()
 
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
-    with path.open('rb') as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
 
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument('--lane', required=True)
-    parser.add_argument('--status', choices=('passed','failed'), required=True)
-    parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--database')
-    parser.add_argument('--backup', type=Path)
+    parser.add_argument("--lane", required=True)
+    parser.add_argument("--status", choices=("passed", "failed"), required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--database")
+    parser.add_argument("--backup", type=Path)
     args = parser.parse_args()
     evidence = {
-        'schema_version': 1,
-        'recorded_at': datetime.now(timezone.utc).isoformat(),
-        'lane': args.lane,
-        'status': args.status,
-        'commit': run('git','rev-parse','HEAD'),
-        'branch': run('git','rev-parse','--abbrev-ref','HEAD'),
-        'database': args.database,
-        'python': platform.python_version(),
-        'runner': os.environ.get('GITHUB_RUN_ID'),
+        "schema_version": 1,
+        "recorded_at": datetime.now(timezone.utc).isoformat(),
+        "lane": args.lane,
+        "status": args.status,
+        "commit": run("git", "rev-parse", "HEAD"),
+        "branch": run("git", "rev-parse", "--abbrev-ref", "HEAD"),
+        "database": args.database,
+        "python": platform.python_version(),
+        "runner": os.environ.get("GITHUB_RUN_ID"),
     }
     if args.backup:
-        evidence['backup'] = {'path': str(args.backup), 'sha256': sha256(args.backup)}
+        evidence["backup"] = {"path": str(args.backup), "sha256": sha256(args.backup)}
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + '\n')
+    args.output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n")
     print(args.output)
     return 0
-if __name__ == '__main__': raise SystemExit(main())
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
 ====================================================================================================
 FILE: ci/check_access_csv_integrity.py
-SIZE: 1895
-CONTENT-LENGTH: 1895
-SHA256: a4bce2ccaa8a3d47f200defeb9c16d2955c7ae411510b8099d84540a3b1a221a
+SIZE: 1901
+CONTENT-LENGTH: 1901
+SHA256: 3d3ea123909b6bce5bacf110bbfba7654a13750f46eca85680c30d723e26ef0c
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
 GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
-import csv, sys
+import csv
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8916,9 +8973,9 @@ print(f"Addon integrity check passed for {len(addons)} addons.")
 
 ====================================================================================================
 FILE: ci/check_ci_hygiene.py
-SIZE: 3729
-CONTENT-LENGTH: 3729
-SHA256: d72f06c59b4cecaf22ba57061cfcb73c791810e313d8a7a5745f1cbde6745288
+SIZE: 3872
+CONTENT-LENGTH: 3872
+SHA256: 6c4469bc2153d3f3c75b9c0197394722d218784e816d83ba8216780fa25ba506
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -8941,8 +8998,11 @@ KNOWN_LEGACY_COMPOSE = {
     "docker-compose.override.yaml",
     "docker-compose.integration_officiating.yaml",
     "docker-compose.public_site.legacy.yaml",
+    "docker-compose.public_site.workflow.yaml",
     "docker-compose.result_control.legacy.yaml",
+    "docker-compose.result_control.workflow.yaml",
     "docker-compose.rosters.legacy.yaml",
+    "docker-compose.rosters.workflow.yaml",
     "docker-compose.sf_engine.yaml",
     "docker-compose.temp.yaml",
     "docker-compose.temp_task.yaml",
@@ -9228,9 +9288,9 @@ if __name__ == "__main__":
 
 ====================================================================================================
 FILE: ci/check_delivery_language.py
-SIZE: 1176
-CONTENT-LENGTH: 1176
-SHA256: b4e256e821a057a7dfc886436c67dec3e94186cb1ccedf36d27ba867fd7d11ee
+SIZE: 1182
+CONTENT-LENGTH: 1182
+SHA256: 8cb33d2dd278c1fa26e0a7a65ecd9d6c64e8b93c65e4e4e51688bd3edaaafefe
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -9238,7 +9298,8 @@ GIT-STATE: tracked
 
 #!/usr/bin/env python3
 from pathlib import Path
-import re, sys
+import re
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 version = re.compile(r"(?<![A-Za-z0-9])" + "V" + r"2(?![A-Za-z0-9])", re.I)
@@ -9756,9 +9817,9 @@ if __name__ == "__main__":
 
 ====================================================================================================
 FILE: ci/check_migration_rehearsal_contract.py
-SIZE: 1507
-CONTENT-LENGTH: 1507
-SHA256: 3f6d538dc0c6975a2e5b80a09ae7e884ed86d76b92e7b3dbbb89f0ebb7fcb2db
+SIZE: 1584
+CONTENT-LENGTH: 1584
+SHA256: ca50c399b83d27b49636a77160329d575c00be705d4c2e5aa1ead93711af2466
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
 GIT-STATE: tracked
@@ -9772,7 +9833,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = {
     "ci/release_invariants.json": ("schema_version", "counts", "zero_checks"),
-    "ci/capture_migration_invariants.py": ("validate_contract", "run_sql", "count_modes"),
+    "ci/capture_migration_invariants.py": (
+        "validate_contract",
+        "run_sql",
+        "count_modes",
+    ),
     "ci/compare_migration_invariants.py": ("force_exact", "differences"),
     "scripts/ci/run_migration_rehearsal.sh": (
         "restore_backup_drill.sh",
@@ -9781,8 +9846,14 @@ REQUIRED = {
         "rollback-trigger",
         "invariant-comparison.json",
     ),
-    "RELEASE_RUNBOOK.md": ("Migration rehearsal evidence", "run_migration_rehearsal.sh"),
-    "docs/DELIVERY_ROADMAP.md": ("Release Candidate and Migration Evidence", "run_migration_rehearsal.sh"),
+    "RELEASE_RUNBOOK.md": (
+        "Migration rehearsal evidence",
+        "run_migration_rehearsal.sh",
+    ),
+    "docs/DELIVERY_ROADMAP.md": (
+        "Release Candidate and Migration Evidence",
+        "run_migration_rehearsal.sh",
+    ),
 }
 
 
@@ -10590,9 +10661,9 @@ if __name__ == "__main__":
 
 ====================================================================================================
 FILE: ci/check_performance_qualification.py
-SIZE: 2614
-CONTENT-LENGTH: 2614
-SHA256: 3bc0a384d23a956c09eee442db51b97d9d1bcbdcba39ea108ce3ad5b930a9ab6
+SIZE: 2744
+CONTENT-LENGTH: 2744
+SHA256: 448ee593a2faf71eabdea31d91158e718e5fbb091e516177b7f8e7e1eb0846da
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
 GIT-STATE: tracked
@@ -10600,20 +10671,26 @@ GIT-STATE: tracked
 
 #!/usr/bin/env python3
 """Validate the versioned release-performance qualification contract."""
+
 from __future__ import annotations
 import ast
 import json
 import sys
 from pathlib import Path
+
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "ci/performance_budgets.json"
+
 
 def main() -> int:
     errors = []
     try:
         contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
-        print(f"Performance qualification contract is unreadable: {error}", file=sys.stderr)
+        print(
+            f"Performance qualification contract is unreadable: {error}",
+            file=sys.stderr,
+        )
         return 1
     if contract.get("schema_version") != 1:
         errors.append("schema_version must be 1")
@@ -10645,17 +10722,27 @@ def main() -> int:
         except (OSError, SyntaxError) as error:
             errors.append(f"cannot inspect {relative}: {error}")
             continue
-        available = {node.name for node in ast.walk(tree) if isinstance(node, ast.ClassDef)}
+        available = {
+            node.name for node in ast.walk(tree) if isinstance(node, ast.ClassDef)
+        }
         for class_name in class_names:
             if class_name not in available:
-                errors.append(f"missing performance test class {class_name} in {relative}")
+                errors.append(
+                    f"missing performance test class {class_name} in {relative}"
+                )
     if errors:
         print("Performance qualification contract failed:", file=sys.stderr)
-        for error in errors: print(f"- {error}", file=sys.stderr)
+        for error in errors:
+            print(f"- {error}", file=sys.stderr)
         return 1
-    print(f"Performance qualification contract passed: {len(budgets)} budgets, {len(required_files)} test files.")
+    print(
+        f"Performance qualification contract passed: {len(budgets)} budgets, {len(required_files)} test files."
+    )
     return 0
-if __name__ == "__main__": raise SystemExit(main())
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
 ====================================================================================================
 FILE: ci/check_portal_competition_ownership.py
@@ -11430,9 +11517,9 @@ if __name__ == "__main__":
 
 ====================================================================================================
 FILE: ci/check_retention_visibility_contract.py
-SIZE: 1321
-CONTENT-LENGTH: 1321
-SHA256: 39b82bae76c1b5c0a879f977978a00cb527d135fd1d0a7627ac4365dbf42080c
+SIZE: 1565
+CONTENT-LENGTH: 1565
+SHA256: 730ee908b2f4a039085aa23d564ef2342e71c8a9e73a4ffffa3abcb0f27dee97
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
 GIT-STATE: tracked
@@ -11440,20 +11527,57 @@ GIT-STATE: tracked
 
 #!/usr/bin/env python3
 from pathlib import Path
+
 ROOT = Path(__file__).resolve().parents[1]
-REQUIRED = {"sports_federation_base/models/retention_evidence.py": ("class FederationRetentionPolicy", "candidate_count", "record_failure_durable", "never_run", "overdue"), "sports_federation_base/views/retention_evidence_views.xml": ("Retention and Recovery", "Needs Attention", "Skipped or Failed Records"), "sports_federation_notifications/models/notification_log.py": ("_retention_candidate_count", "record_execution"), "sports_federation_import_tools/models/integration_delivery_retention_mixin.py": ("_retention_candidates", "attachment_count"), "sports_federation_reporting/models/report_schedule.py": ("_generated_file_retention_candidates", "record_execution")}
+REQUIRED = {
+    "sports_federation_base/models/retention_evidence.py": (
+        "class FederationRetentionPolicy",
+        "candidate_count",
+        "record_failure_durable",
+        "never_run",
+        "overdue",
+    ),
+    "sports_federation_base/views/retention_evidence_views.xml": (
+        "Retention and Recovery",
+        "Needs Attention",
+        "Skipped or Failed Records",
+    ),
+    "sports_federation_notifications/models/notification_log.py": (
+        "_retention_candidate_count",
+        "record_execution",
+    ),
+    "sports_federation_import_tools/models/integration_delivery_retention_mixin.py": (
+        "_retention_candidates",
+        "attachment_count",
+    ),
+    "sports_federation_reporting/models/report_schedule.py": (
+        "_generated_file_retention_candidates",
+        "record_execution",
+    ),
+}
+
+
 def main():
-    errors=[]
-    for relative,tokens in REQUIRED.items():
-        path=ROOT/relative; content=path.read_text() if path.is_file() else ""
-        if not content: errors.append(f"missing {relative}")
-        errors.extend(f"{relative} missing {token!r}" for token in tokens if token not in content)
+    errors = []
+    for relative, tokens in REQUIRED.items():
+        path = ROOT / relative
+        content = path.read_text() if path.is_file() else ""
+        if not content:
+            errors.append(f"missing {relative}")
+        errors.extend(
+            f"{relative} missing {token!r}" for token in tokens if token not in content
+        )
     if errors:
         print("Retention visibility contract failed:")
-        for error in errors: print(f"- {error}")
+        for error in errors:
+            print(f"- {error}")
         return 1
-    print("Retention visibility contract passed."); return 0
-if __name__ == "__main__": raise SystemExit(main())
+    print("Retention visibility contract passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
 ====================================================================================================
 FILE: ci/check_rules_contract.py
@@ -12003,9 +12127,9 @@ if __name__ == "__main__":
 
 ====================================================================================================
 FILE: ci/compare_migration_invariants.py
-SIZE: 3044
-CONTENT-LENGTH: 3044
-SHA256: ebf0c95f11463fa7c3d37f546d0f8e9a9553c297a016a1b31619d202d5a0e115
+SIZE: 3185
+CONTENT-LENGTH: 3185
+SHA256: fcb14fc9766f21fafb94f8f63cb58040a471a21d01514b0b63a40ea5c10f2f6a
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
 GIT-STATE: tracked
@@ -12042,7 +12166,9 @@ def compare(
     for name, expected in sorted(reference.get("counts", {}).items()):
         actual = candidate.get("counts", {}).get(name)
         mode = "exact" if force_exact else modes.get(name, "exact")
-        violates = actual is None or (actual != expected if mode == "exact" else actual < expected)
+        violates = actual is None or (
+            actual != expected if mode == "exact" else actual < expected
+        )
         if violates:
             differences.append(
                 {
@@ -12057,7 +12183,13 @@ def compare(
     for name, actual in sorted(candidate.get("zero_checks", {}).items()):
         if actual != 0:
             differences.append(
-                {"kind": "integrity", "name": name, "expected": 0, "actual": actual, "evidence": label}
+                {
+                    "kind": "integrity",
+                    "name": name,
+                    "expected": 0,
+                    "actual": actual,
+                    "evidence": label,
+                }
             )
     return differences
 
@@ -14418,9 +14550,9 @@ sys.exit(1 if errors else 0)
 
 ====================================================================================================
 FILE: ci/test_capture_release_evidence.py
-SIZE: 475
-CONTENT-LENGTH: 475
-SHA256: 7778ad8db160c1c48eb276830e492b2e58e7d76b0d32fa82dd616c8159a626ea
+SIZE: 502
+CONTENT-LENGTH: 502
+SHA256: 95fc4b421d21a8ae69e7af4b514d36d7139ff2a468590c9b5b3b3392eb0974a3
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -14429,13 +14561,19 @@ GIT-STATE: tracked
 import importlib.util
 from pathlib import Path
 
-PATH = Path(__file__).with_name('capture_release_evidence.py')
-spec = importlib.util.spec_from_file_location('capture_release_evidence', PATH)
-module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+PATH = Path(__file__).with_name("capture_release_evidence.py")
+spec = importlib.util.spec_from_file_location("capture_release_evidence", PATH)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
 
 def test_sha256(tmp_path):
-    path = tmp_path / 'backup.dump'; path.write_bytes(b'release-evidence')
-    assert module.sha256(path) == 'c614426d3275f5c86e8926536ed0c24fc37d8044ea5dafc3f6be80e51657f6a7'
+    path = tmp_path / "backup.dump"
+    path.write_bytes(b"release-evidence")
+    assert (
+        module.sha256(path)
+        == "c614426d3275f5c86e8926536ed0c24fc37d8044ea5dafc3f6be80e51657f6a7"
+    )
 
 ====================================================================================================
 FILE: ci/test_config.conf
@@ -14457,9 +14595,9 @@ db_name = test_db
 
 ====================================================================================================
 FILE: ci/test_migration_invariants.py
-SIZE: 1719
-CONTENT-LENGTH: 1719
-SHA256: d8e96a5be5af4fef2edc6c230fdb89a0dada0b4e5333f9010c2212e68e47b7c5
+SIZE: 1925
+CONTENT-LENGTH: 1925
+SHA256: d685a3f651f707f4285db4c8bc90ba6550b4475c730a0c793761f9748c96476d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -14483,28 +14621,54 @@ compare = load_script("compare_migration_invariants.py")
 
 
 def test_contract_is_valid():
-    contract = json.loads(Path(__file__).with_name("release_invariants.json").read_text())
+    contract = json.loads(
+        Path(__file__).with_name("release_invariants.json").read_text()
+    )
     capture.validate_contract(contract)
 
 
 def test_comparison_accepts_preserved_counts_and_clean_integrity():
-    before = {"counts": {"clubs": 3}, "count_modes": {"clubs": "exact"}, "zero_checks": {"orphans": 0}}
+    before = {
+        "counts": {"clubs": 3},
+        "count_modes": {"clubs": "exact"},
+        "zero_checks": {"orphans": 0},
+    }
     after = {"counts": {"clubs": 3}, "zero_checks": {"orphans": 0}}
     assert compare.compare(before, after, "after") == []
 
 
 def test_comparison_reports_count_and_integrity_drift():
-    before = {"counts": {"clubs": 3}, "count_modes": {"clubs": "exact"}, "zero_checks": {"orphans": 0}}
+    before = {
+        "counts": {"clubs": 3},
+        "count_modes": {"clubs": "exact"},
+        "zero_checks": {"orphans": 0},
+    }
     after = {"counts": {"clubs": 2}, "zero_checks": {"orphans": 1}}
     differences = compare.compare(before, after, "after")
     assert {item["kind"] for item in differences} == {"count", "integrity"}
 
 
 def test_minimum_count_mode_allows_growth_but_not_loss():
-    before = {"counts": {"attachments": 3}, "count_modes": {"attachments": "minimum"}, "zero_checks": {}}
-    assert compare.compare(before, {"counts": {"attachments": 4}, "zero_checks": {}}, "after") == []
-    assert compare.compare(before, {"counts": {"attachments": 2}, "zero_checks": {}}, "after")
-    assert compare.compare(before, {"counts": {"attachments": 4}, "zero_checks": {}}, "rollback", force_exact=True)
+    before = {
+        "counts": {"attachments": 3},
+        "count_modes": {"attachments": "minimum"},
+        "zero_checks": {},
+    }
+    assert (
+        compare.compare(
+            before, {"counts": {"attachments": 4}, "zero_checks": {}}, "after"
+        )
+        == []
+    )
+    assert compare.compare(
+        before, {"counts": {"attachments": 2}, "zero_checks": {}}, "after"
+    )
+    assert compare.compare(
+        before,
+        {"counts": {"attachments": 4}, "zero_checks": {}},
+        "rollback",
+        force_exact=True,
+    )
 
 ====================================================================================================
 FILE: ci/verify_release.sh
@@ -14663,6 +14827,36 @@ with OUTPUT.open("w", encoding="utf-8") as output:
 print(f"Created: {OUTPUT}")
 print(f"Included files: {len(files)}")
 print(f"Size: {OUTPUT.stat().st_size / 1024 / 1024:.2f} MB")
+
+====================================================================================================
+FILE: docs/COMPETITION_ENGINE_ROADMAP.md
+SIZE: 1036
+CONTENT-LENGTH: 1036
+SHA256: bccb5e950fabbbaefff9e810054114a138dc542715f495aaffc1a7bf4a3d7711
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+# Competition Engine Product Roadmap
+
+Owner: Federation Competition Operations
+Last updated: 2026-09-03
+Review cadence: Every release
+
+## Format generation completeness
+
+Status: **Implemented for deterministic formats**
+
+The engine supports single and double leagues, seeded knockout cups, placement brackets, match series, pools followed by knockout, championship/relegation splits, and custom acyclic multi-stage graphs. Feasibility checks expose fixture and round estimates and reject invalid configurations before generation.
+
+Swiss pairing, ladders, and double elimination remain deliberate exclusions until their dynamic pairing, challenge, loser-bracket, and reset-final semantics can be represented completely.
+
+## Club representative workspace
+
+Status: **Implemented**
+
+The task-first portal exposes deadlines, blockers, responsible party, next action, and direct source navigation for registration, roster readiness, referee duties, and result follow-up. Existing mobile and accessibility qualification remains authoritative.
 
 ====================================================================================================
 FILE: docs/DELIVERY_ROADMAP.md
@@ -14932,9 +15126,9 @@ implementation drift.
 
 ====================================================================================================
 FILE: docs/README.md
-SIZE: 1752
-CONTENT-LENGTH: 1752
-SHA256: 4fa8b248b92c7e364706f00fc35f3d545f60a6bc3dd326d221a6c5d2995029d7
+SIZE: 1750
+CONTENT-LENGTH: 1750
+SHA256: cbfcc9e7ea3b6f06ed2e553f389f08ab8385a748339fececb1d819fc596e633a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -14985,7 +15179,7 @@ roadmap or a standalone review snapshot for routine changes.
 
 ## Engineering contracts
 
-- [Foundation source-truth contract](repository_source_truth.md)
+- [Foundation source-truth contract](workflow_source_truth.md)
 
 - [Delivery roadmap](DELIVERY_ROADMAP.md): executable post-stabilization milestones and exit criteria.
 
@@ -16424,9 +16618,9 @@ echo "[Release baseline] Evidence: $evidence_dir"
 
 ====================================================================================================
 FILE: source_collector.py
-SIZE: 28900
-CONTENT-LENGTH: 28900
-SHA256: 697bfa0c73678337601b0605db2b385fde54b0520e4d3a49f26b0a65527d53d4
+SIZE: 28101
+CONTENT-LENGTH: 28101
+SHA256: e3cf6351f251f5953fae5f3d1cd39e35981bd3511fff1d13935fd48dd1aab456
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -16466,7 +16660,6 @@ from pathlib import Path
 import re
 import subprocess
 from typing import Iterable
-
 
 ROOT = Path.cwd().resolve()
 SOURCE_OUT = ROOT / "current_sources.txt"
@@ -16661,10 +16854,7 @@ def is_excluded(path: Path) -> bool:
 def is_supported_text_file(path: Path) -> bool:
     if not path.is_file() or is_excluded(path):
         return False
-    return (
-        path.name in TEXT_FILENAMES
-        or path.suffix.lower() in TEXT_EXTENSIONS
-    )
+    return path.name in TEXT_FILENAMES or path.suffix.lower() in TEXT_EXTENSIONS
 
 
 def repository_relative(path: Path) -> Path:
@@ -16710,14 +16900,10 @@ def collect_repository_root_files() -> set[Path]:
 def parse_manifest(module: str) -> dict:
     manifest_path = ROOT / module / "__manifest__.py"
     if not manifest_path.is_file():
-        raise SystemExit(
-            f"Missing manifest: {manifest_path.relative_to(ROOT)}"
-        )
+        raise SystemExit(f"Missing manifest: {manifest_path.relative_to(ROOT)}")
 
     try:
-        manifest = ast.literal_eval(
-            manifest_path.read_text(encoding="utf-8")
-        )
+        manifest = ast.literal_eval(manifest_path.read_text(encoding="utf-8"))
     except (SyntaxError, ValueError, UnicodeError) as exc:
         raise SystemExit(
             f"Cannot parse {manifest_path.relative_to(ROOT)}: {exc}"
@@ -16725,8 +16911,7 @@ def parse_manifest(module: str) -> dict:
 
     if not isinstance(manifest, dict):
         raise SystemExit(
-            "Manifest is not a dictionary: "
-            f"{manifest_path.relative_to(ROOT)}"
+            "Manifest is not a dictionary: " f"{manifest_path.relative_to(ROOT)}"
         )
     return manifest
 
@@ -16744,16 +16929,12 @@ def validate_internal_dependencies(existing_modules: list[str]) -> None:
                 and dependency.startswith("sports_federation_")
                 and dependency not in available
             ):
-                missing.append(
-                    f"{module}: unresolved internal dependency {dependency}"
-                )
+                missing.append(f"{module}: unresolved internal dependency {dependency}")
 
     if missing:
         raise SystemExit(
             "Internal addon dependency validation failed:\n"
-            + "\n".join(
-                f"  - {item}" for item in sorted(set(missing))
-            )
+            + "\n".join(f"  - {item}" for item in sorted(set(missing)))
         )
 
 
@@ -16824,9 +17005,7 @@ def validate_manifest_references(
 
         for value in manifest.get("data", []):
             if not isinstance(value, str):
-                errors.append(
-                    f"{module}: non-string manifest data entry: {value!r}"
-                )
+                errors.append(f"{module}: non-string manifest data entry: {value!r}")
                 continue
 
             data_entries.append(value)
@@ -16834,13 +17013,8 @@ def validate_manifest_references(
             relative = Path(module) / value
 
             if not path.is_file():
-                errors.append(
-                    f"{module}: missing manifest data file: {value}"
-                )
-            elif (
-                is_supported_text_file(path)
-                and relative not in bundled_files
-            ):
+                errors.append(f"{module}: missing manifest data file: {value}")
+            elif is_supported_text_file(path) and relative not in bundled_files:
                 errors.append(
                     f"{module}: manifest data file omitted from bundle: {value}"
                 )
@@ -16853,8 +17027,7 @@ def validate_manifest_references(
         for bundle_name, entries in assets.items():
             if not isinstance(entries, (list, tuple)):
                 errors.append(
-                    f"{module}: asset bundle {bundle_name!r} "
-                    "is not a list or tuple"
+                    f"{module}: asset bundle {bundle_name!r} " "is not a list or tuple"
                 )
                 continue
 
@@ -16873,13 +17046,8 @@ def validate_manifest_references(
                 # asset exception list, because Odoo will still try to load the
                 # missing manifest reference.
                 if not path.is_file():
-                    errors.append(
-                        f"{module}: missing explicit asset file: {entry}"
-                    )
-                elif (
-                    is_supported_text_file(path)
-                    and relative not in bundled_files
-                ):
+                    errors.append(f"{module}: missing explicit asset file: {entry}")
+                elif is_supported_text_file(path) and relative not in bundled_files:
                     errors.append(
                         f"{module}: explicit asset omitted from bundle: {entry}"
                     )
@@ -16915,17 +17083,13 @@ def validate_collection_contract(files: list[Path]) -> None:
         Path("ci/run_odoo_tests.sh"),
         Path("scripts/ci/run_rc_validation.sh"),
     }
-    existing_required = {
-        path for path in required if (ROOT / path).is_file()
-    }
+    existing_required = {path for path in required if (ROOT / path).is_file()}
     missing = existing_required - bundled
 
     if missing:
         raise SystemExit(
             "Collector omitted required repository files:\n"
-            + "\n".join(
-                f"  - {path.as_posix()}" for path in sorted(missing)
-            )
+            + "\n".join(f"  - {path.as_posix()}" for path in sorted(missing))
         )
 
 
@@ -16950,12 +17114,8 @@ def nul_git_paths(*args: str) -> set[str]:
 def git_state_sets() -> tuple[set[str], set[str], set[str]]:
     tracked = nul_git_paths("ls-files", "-z")
     modified = nul_git_paths("diff", "--name-only", "-z")
-    modified.update(
-        nul_git_paths("diff", "--cached", "--name-only", "-z")
-    )
-    untracked = nul_git_paths(
-        "ls-files", "--others", "--exclude-standard", "-z"
-    )
+    modified.update(nul_git_paths("diff", "--cached", "--name-only", "-z"))
+    untracked = nul_git_paths("ls-files", "--others", "--exclude-standard", "-z")
     return tracked, modified, untracked
 
 
@@ -16977,9 +17137,7 @@ def git_file_modes() -> dict[str, str]:
             continue
 
         metadata, raw_path = entry.split(b"\t", 1)
-        mode = metadata.split(b" ", 1)[0].decode(
-            "ascii", errors="replace"
-        )
+        mode = metadata.split(b" ", 1)[0].decode("ascii", errors="replace")
         path = raw_path.decode("utf-8", errors="replace")
         modes[path] = mode
 
@@ -17021,7 +17179,7 @@ def build_file_record(
     path = ROOT / relative
     raw = path.read_bytes()
     content = raw.decode("utf-8", errors="replace")
-    
+
     return {
         "path": relative.as_posix(),
         "content": content,
@@ -17031,7 +17189,10 @@ def build_file_record(
         "git_mode": expected_git_mode(relative, modes),
         "filesystem_mode": filesystem_mode(path),
         "git_state": classify_git_state(
-            relative, tracked, modified, untracked,
+            relative,
+            tracked,
+            modified,
+            untracked,
         ),
     }
 
@@ -17039,9 +17200,7 @@ def build_file_record(
 def write_source_bundle(records: list[dict]) -> None:
     temporary = SOURCE_OUT.with_suffix(SOURCE_OUT.suffix + ".tmp")
 
-    with temporary.open(
-        "w", encoding="utf-8", newline="\n"
-    ) as bundle:
+    with temporary.open("w", encoding="utf-8", newline="\n") as bundle:
         bundle.write("# Sports Federation complete current source bundle\n")
         bundle.write("# Generated for review and patch construction\n")
         bundle.write(f"# FORMAT: {BUNDLE_FORMAT}\n")
@@ -17056,9 +17215,7 @@ def write_source_bundle(records: list[dict]) -> None:
             bundle.write(f"CONTENT-LENGTH: {record['content_length']}\n")
             bundle.write(f"SHA256: {record['sha256']}\n")
             bundle.write(f"GIT-MODE: {record['git_mode']}\n")
-            bundle.write(
-                f"FILESYSTEM-MODE: {record['filesystem_mode']}\n"
-            )
+            bundle.write(f"FILESYSTEM-MODE: {record['filesystem_mode']}\n")
             bundle.write(f"GIT-STATE: {record['git_state']}\n")
             bundle.write(SEPARATOR + "\n\n")
             bundle.write(record["content"])
@@ -17072,9 +17229,7 @@ def write_source_bundle(records: list[dict]) -> None:
 def write_jsonl_bundle(records: list[dict]) -> None:
     temporary = JSONL_OUT.with_suffix(JSONL_OUT.suffix + ".tmp")
 
-    with temporary.open(
-        "w", encoding="utf-8", newline="\n"
-    ) as bundle:
+    with temporary.open("w", encoding="utf-8", newline="\n") as bundle:
         metadata_record = {
             "record_type": "bundle_metadata",
             "format": BUNDLE_FORMAT,
@@ -17083,16 +17238,12 @@ def write_jsonl_bundle(records: list[dict]) -> None:
             "file_count": len(records),
         }
         bundle.write(
-            json.dumps(metadata_record, ensure_ascii=False, sort_keys=True)
-            + "\n"
+            json.dumps(metadata_record, ensure_ascii=False, sort_keys=True) + "\n"
         )
 
         for record in records:
             output = {"record_type": "file", **record}
-            bundle.write(
-                json.dumps(output, ensure_ascii=False, sort_keys=True)
-                + "\n"
-            )
+            bundle.write(json.dumps(output, ensure_ascii=False, sort_keys=True) + "\n")
 
     os.replace(temporary, JSONL_OUT)
 
@@ -17211,9 +17362,7 @@ def validate_written_bundles(records: list[dict]) -> None:
         # Text-mode newline handling can normalize the final separator newline,
         # so compare the exact logical content and all declared metadata.
         if text_record["content"] != expected["content"]:
-            raise SystemExit(
-                f"Text bundle content mismatch after round trip: {path}"
-            )
+            raise SystemExit(f"Text bundle content mismatch after round trip: {path}")
 
         for field in (
             "size_bytes",
@@ -17228,9 +17377,7 @@ def validate_written_bundles(records: list[dict]) -> None:
                 )
 
         if jsonl_record != expected:
-            raise SystemExit(
-                f"JSONL bundle mismatch after round trip: {path}"
-            )
+            raise SystemExit(f"JSONL bundle mismatch after round trip: {path}")
 
 
 def build_metadata(
@@ -17260,14 +17407,9 @@ def build_metadata(
         + command_output("git", "rev-parse", "HEAD", check=True),
         "=== REPOSITORY ROOT ===\n" + str(ROOT),
         "=== WORKTREE STATUS ===\n"
-        + command_output(
-            "git", "status", "--short", "--untracked-files=all"
-        ),
+        + command_output("git", "status", "--short", "--untracked-files=all"),
         "=== MODULE MANIFESTS ===\n"
-        + "\n".join(
-            json.dumps(item, sort_keys=True)
-            for item in module_summaries
-        ),
+        + "\n".join(json.dumps(item, sort_keys=True) for item in module_summaries),
         "=== RELEVANT RECENT HISTORY ===\n"
         + command_output(
             "git",
@@ -17279,11 +17421,8 @@ def build_metadata(
             *existing_modules,
         ),
         "=== RECENT REPOSITORY HISTORY ===\n"
-        + command_output(
-            "git", "log", "--oneline", "--decorate", "-15"
-        ),
-        "=== UNSTAGED DIFF STAT ===\n"
-        + command_output("git", "diff", "--stat"),
+        + command_output("git", "log", "--oneline", "--decorate", "-15"),
+        "=== UNSTAGED DIFF STAT ===\n" + command_output("git", "diff", "--stat"),
         "=== STAGED DIFF STAT ===\n"
         + command_output("git", "diff", "--cached", "--stat"),
         "=== UNSTAGED DIFF ===\n"
@@ -17337,14 +17476,12 @@ def build_metadata(
     sections.append(
         "=== BUNDLED FILE INVENTORY ===\n"
         "# path<TAB>size<TAB>sha256<TAB>git-mode"
-        "<TAB>filesystem-mode<TAB>git-state\n"
-        + "\n".join(inventory)
+        "<TAB>filesystem-mode<TAB>git-state\n" + "\n".join(inventory)
     )
 
     if missing_modules:
         sections.append(
-            "=== CONFIGURED MODULES NOT FOUND ===\n"
-            + "\n".join(missing_modules)
+            "=== CONFIGURED MODULES NOT FOUND ===\n" + "\n".join(missing_modules)
         )
 
     return "\n\n".join(sections).rstrip() + "\n"
@@ -17405,19 +17542,13 @@ def main() -> None:
         f"Created {JSONL_OUT.name}: {len(files)} files, "
         f"{JSONL_OUT.stat().st_size / 1024:.1f} KiB"
     )
-    print(
-        f"Created {META_OUT.name}: "
-        f"{META_OUT.stat().st_size / 1024:.1f} KiB"
-    )
+    print(f"Created {META_OUT.name}: " f"{META_OUT.stat().st_size / 1024:.1f} KiB")
     print("Manifest references validated: OK")
     print("Collector completeness contract: OK")
     print("Bundle round-trip validation: OK")
 
     if missing_modules:
-        print(
-            "Warning: configured modules not found: "
-            + ", ".join(missing_modules)
-        )
+        print("Warning: configured modules not found: " + ", ".join(missing_modules))
 
 
 if __name__ == "__main__":
@@ -18786,9 +18917,9 @@ class FederationTeam(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_base/models/operation_job.py
-SIZE: 6668
-CONTENT-LENGTH: 6668
-SHA256: f1edea492ecc312e0400521602cc2bab8e0023f59fba9281aa5d763ab02b8042
+SIZE: 6979
+CONTENT-LENGTH: 6979
+SHA256: 4e195af4e4261af34be49998ad859eda236e7cd8795121f76ecc86030687de96
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -18825,7 +18956,9 @@ class FederationOperationJob(models.Model):
     source_res_id = fields.Integer(required=True, index=True)
     correlation_id = fields.Char(required=True, index=True)
     priority = fields.Integer(default=50, index=True)
-    requested_on = fields.Datetime(default=fields.Datetime.now, required=True, index=True)
+    requested_on = fields.Datetime(
+        default=fields.Datetime.now, required=True, index=True
+    )
     started_on = fields.Datetime(index=True)
     completed_on = fields.Datetime(index=True)
     next_retry_on = fields.Datetime(index=True)
@@ -18847,7 +18980,9 @@ class FederationOperationJob(models.Model):
                 raise ValidationError(_("Job attempt limits are invalid."))
 
     @api.model
-    def ensure_job(self, source, correlation_id, name=False, max_attempts=3, priority=50):
+    def ensure_job(
+        self, source, correlation_id, name=False, max_attempts=3, priority=50
+    ):
         source.ensure_one()
         values = {
             "name": name or source.display_name,
@@ -18904,7 +19039,11 @@ class FederationOperationJob(models.Model):
             {
                 "state": "operator_action" if exhausted else "retry",
                 "completed_on": fields.Datetime.now(),
-                "next_retry_on": False if exhausted else fields.Datetime.now() + timedelta(minutes=delay_minutes),
+                "next_retry_on": (
+                    False
+                    if exhausted
+                    else fields.Datetime.now() + timedelta(minutes=delay_minutes)
+                ),
                 "operator_action_on": fields.Datetime.now() if exhausted else False,
                 "last_error": str(error)[:4000],
                 "failure_category": category,
@@ -18915,15 +19054,25 @@ class FederationOperationJob(models.Model):
         self.ensure_one()
         source = self._source()
         if not source:
-            self._fail(_("The source record no longer exists."), "data_validation", retryable=False)
+            self._fail(
+                _("The source record no longer exists."),
+                "data_validation",
+                retryable=False,
+            )
             return False
         self._start()
         try:
-            source.with_context(federation_correlation_id=self.correlation_id)._retry_operational_job(self)
+            source.with_context(
+                federation_correlation_id=self.correlation_id
+            )._retry_operational_job(self)
         except Exception as error:  # pylint: disable=broad-except
             retryable = not isinstance(error, (UserError, ValidationError))
             self._fail(error, "unexpected_bug", retryable=retryable)
-            _logger.exception("Operational job failed: job=%s correlation_id=%s", self.id, self.correlation_id)
+            _logger.exception(
+                "Operational job failed: job=%s correlation_id=%s",
+                self.id,
+                self.correlation_id,
+            )
             return False
         self._succeed()
         return True
@@ -18960,7 +19109,10 @@ class FederationOperationJob(models.Model):
         deadline = fields.Datetime.now() - timedelta(minutes=stale_minutes)
         stale = self.search([("state", "=", "running"), ("started_on", "<=", deadline)])
         for job in stale:
-            job._fail(_("Recovered after the worker stopped while processing."), "infrastructure")
+            job._fail(
+                _("Recovered after the worker stopped while processing."),
+                "infrastructure",
+            )
         return len(stale)
 
     @api.model
@@ -19260,9 +19412,9 @@ class ResConfigSettings(models.TransientModel):
 
 ====================================================================================================
 FILE: sports_federation_base/models/retention_evidence.py
-SIZE: 6491
-CONTENT-LENGTH: 6491
-SHA256: 2c6f1e89580103f543e4346f93b25d3b20f7aff68c64898a79e9467d535b17c1
+SIZE: 7668
+CONTENT-LENGTH: 7668
+SHA256: 54a92ff40e0e33b72ab5c191fbf9005d8b0c1a7d80a3631f7d216ba86623b787
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -19283,11 +19435,24 @@ class FederationRetentionPolicy(models.Model):
     active = fields.Boolean(default=True)
     expected_interval_hours = fields.Integer(default=24, required=True)
     policy_version = fields.Char(default="1", required=True)
-    latest_evidence_id = fields.Many2one("federation.retention.evidence", compute="_compute_health")
+    latest_evidence_id = fields.Many2one(
+        "federation.retention.evidence", compute="_compute_health"
+    )
     latest_success_on = fields.Datetime(compute="_compute_health")
-    health = fields.Selection([("healthy", "Healthy"), ("attention", "Attention"), ("overdue", "Overdue"), ("never_run", "Never Run")], compute="_compute_health", search="_search_health")
+    health = fields.Selection(
+        [
+            ("healthy", "Healthy"),
+            ("attention", "Attention"),
+            ("overdue", "Overdue"),
+            ("never_run", "Never Run"),
+        ],
+        compute="_compute_health",
+        search="_search_health",
+    )
     health_message = fields.Char(compute="_compute_health")
-    _unique_code = models.Constraint("unique(code)", "Retention policy codes must be unique.")
+    _unique_code = models.Constraint(
+        "unique(code)", "Retention policy codes must be unique."
+    )
 
     @api.constrains("expected_interval_hours")
     def _check_expected_interval(self):
@@ -19298,34 +19463,64 @@ class FederationRetentionPolicy(models.Model):
         now = fields.Datetime.now()
         Evidence = self.env["federation.retention.evidence"].sudo()
         for policy in self:
-            latest = Evidence.search([("policy", "=", policy.code)], order="completed_on desc,id desc", limit=1)
-            latest_success = Evidence.search([("policy", "=", policy.code), ("status", "=", "passed")], order="completed_on desc,id desc", limit=1)
+            latest = Evidence.search(
+                [("policy", "=", policy.code)],
+                order="completed_on desc,id desc",
+                limit=1,
+            )
+            latest_success = Evidence.search(
+                [("policy", "=", policy.code), ("status", "=", "passed")],
+                order="completed_on desc,id desc",
+                limit=1,
+            )
             policy.latest_evidence_id = latest
             policy.latest_success_on = latest_success.completed_on
             if not latest:
-                policy.health = "never_run"; policy.health_message = _("No execution evidence has been recorded.")
+                policy.health = "never_run"
+                policy.health_message = _("No execution evidence has been recorded.")
             elif latest.status == "failed":
-                policy.health = "attention"; policy.health_message = latest.operator_message or _("The latest retention execution failed.")
-            elif (now - latest.completed_on).total_seconds() / 3600 > policy.expected_interval_hours:
-                policy.health = "overdue"; policy.health_message = _("No successful execution within the expected interval.")
+                policy.health = "attention"
+                policy.health_message = latest.operator_message or _(
+                    "The latest retention execution failed."
+                )
+            elif (
+                now - latest.completed_on
+            ).total_seconds() / 3600 > policy.expected_interval_hours:
+                policy.health = "overdue"
+                policy.health_message = _(
+                    "No successful execution within the expected interval."
+                )
             elif latest.skipped_count or latest.failure_count:
-                policy.health = "attention"; policy.health_message = _("The latest execution completed with skipped records or failures.")
+                policy.health = "attention"
+                policy.health_message = _(
+                    "The latest execution completed with skipped records or failures."
+                )
             else:
-                policy.health = "healthy"; policy.health_message = _("The latest execution completed successfully.")
+                policy.health = "healthy"
+                policy.health_message = _(
+                    "The latest execution completed successfully."
+                )
 
     @api.model
     def _search_health(self, operator, value):
         policies = self.search([])
-        if operator in ("=", "=="): matched = policies.filtered(lambda policy: policy.health == value)
-        elif operator == "in": matched = policies.filtered(lambda policy: policy.health in value)
-        elif operator in ("!=", "<>"): matched = policies.filtered(lambda policy: policy.health != value)
-        elif operator == "not in": matched = policies.filtered(lambda policy: policy.health not in value)
-        else: raise ValidationError(_("Unsupported retention health search operator."))
+        if operator in ("=", "=="):
+            matched = policies.filtered(lambda policy: policy.health == value)
+        elif operator == "in":
+            matched = policies.filtered(lambda policy: policy.health in value)
+        elif operator in ("!=", "<>"):
+            matched = policies.filtered(lambda policy: policy.health != value)
+        elif operator == "not in":
+            matched = policies.filtered(lambda policy: policy.health not in value)
+        else:
+            raise ValidationError(_("Unsupported retention health search operator."))
         return [("id", "in", matched.ids)]
 
     def action_open_evidence(self):
         self.ensure_one()
-        action = self.env["ir.actions.actions"]._for_xml_id("sports_federation_base.action_federation_retention_evidence")
+        action = self.env["ir.actions.actions"]._for_xml_id(
+            "sports_federation_base.action_federation_retention_evidence"
+        )
         action["domain"] = [("policy", "=", self.code)]
         return action
 
@@ -19346,7 +19541,9 @@ class FederationRetentionEvidence(models.Model):
     skipped_count = fields.Integer(required=True, default=0)
     attachment_count = fields.Integer(required=True, default=0)
     failure_count = fields.Integer(required=True, default=0)
-    status = fields.Selection([("passed", "Passed"), ("failed", "Failed")], required=True, index=True)
+    status = fields.Selection(
+        [("passed", "Passed"), ("failed", "Failed")], required=True, index=True
+    )
     dry_run = fields.Boolean(default=False, index=True)
     retention_rules = fields.Json()
     operator_message = fields.Text()
@@ -19358,17 +19555,64 @@ class FederationRetentionEvidence(models.Model):
         values["status"] = "failed"
         with self.env.registry.cursor() as cursor:
             env = api.Environment(cursor, SUPERUSER_ID, dict(self.env.context))
-            evidence = env["federation.retention.evidence"].record_execution(policy, **values)
+            evidence = env["federation.retention.evidence"].record_execution(
+                policy, **values
+            )
             evidence_id = evidence.id
             cursor.commit()
         return self.browse(evidence_id)
 
     @api.model
-    def record_execution(self, policy, *, started_on, candidate_count=0, deleted_count=0, skipped_count=0, attachment_count=0, failure_count=0, status="passed", dry_run=False, retention_rules=None, operator_message=False, correlation_id=False, source_model=False):
+    def record_execution(
+        self,
+        policy,
+        *,
+        started_on,
+        candidate_count=0,
+        deleted_count=0,
+        skipped_count=0,
+        attachment_count=0,
+        failure_count=0,
+        status="passed",
+        dry_run=False,
+        retention_rules=None,
+        operator_message=False,
+        correlation_id=False,
+        source_model=False
+    ):
         completed_on = fields.Datetime.now()
-        policy_record = self.env["federation.retention.policy"].sudo().search([("code", "=", policy)], limit=1)
-        duration = max(0, (fields.Datetime.to_datetime(completed_on) - fields.Datetime.to_datetime(started_on)).total_seconds())
-        return self.sudo().create({"policy": policy, "policy_version": policy_record.policy_version or "1", "source_model": source_model or policy_record.source_model, "started_on": started_on, "completed_on": completed_on, "duration_seconds": duration, "candidate_count": candidate_count, "deleted_count": deleted_count, "skipped_count": skipped_count, "attachment_count": attachment_count, "failure_count": failure_count, "status": status, "dry_run": dry_run, "retention_rules": retention_rules or {}, "operator_message": operator_message, "correlation_id": correlation_id})
+        policy_record = (
+            self.env["federation.retention.policy"]
+            .sudo()
+            .search([("code", "=", policy)], limit=1)
+        )
+        duration = max(
+            0,
+            (
+                fields.Datetime.to_datetime(completed_on)
+                - fields.Datetime.to_datetime(started_on)
+            ).total_seconds(),
+        )
+        return self.sudo().create(
+            {
+                "policy": policy,
+                "policy_version": policy_record.policy_version or "1",
+                "source_model": source_model or policy_record.source_model,
+                "started_on": started_on,
+                "completed_on": completed_on,
+                "duration_seconds": duration,
+                "candidate_count": candidate_count,
+                "deleted_count": deleted_count,
+                "skipped_count": skipped_count,
+                "attachment_count": attachment_count,
+                "failure_count": failure_count,
+                "status": status,
+                "dry_run": dry_run,
+                "retention_rules": retention_rules or {},
+                "operator_message": operator_message,
+                "correlation_id": correlation_id,
+            }
+        )
 
 ====================================================================================================
 FILE: sports_federation_base/request_security.py
@@ -20193,9 +20437,9 @@ class TestFederationSeasonRegistration(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_base/tests/test_operation_job.py
-SIZE: 2506
-CONTENT-LENGTH: 2506
-SHA256: e55b9b0e52f90548ad548c20f786cf611c111e5b9b389d58fc7085790ff74716
+SIZE: 2672
+CONTENT-LENGTH: 2672
+SHA256: 29e88769a49957e3bfd8fc718028fcccdfe7a9c86d33d4b1dbcb6968a546fac7
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -20212,17 +20456,23 @@ class TestOperationJob(TransactionCase):
     def setUp(self):
         super().setUp()
         source = self.env["res.partner"].create({"name": "Job Source"})
-        self.job = self.env["federation.operation.job"].create({
-            "name": "Test Job", "source_model": source._name,
-            "source_res_id": source.id, "correlation_id": "job-test-1",
-            "max_attempts": 2,
-        })
+        self.job = self.env["federation.operation.job"].create(
+            {
+                "name": "Test Job",
+                "source_model": source._name,
+                "source_res_id": source.id,
+                "correlation_id": "job-test-1",
+                "max_attempts": 2,
+            }
+        )
 
     def test_failure_uses_backoff_then_operator_action(self):
-        self.job._start(); self.job._fail("temporary")
+        self.job._start()
+        self.job._fail("temporary")
         self.assertEqual(self.job.state, "retry")
         self.assertTrue(self.job.next_retry_on)
-        self.job._start(); self.job._fail("still broken")
+        self.job._start()
+        self.job._fail("still broken")
         self.assertEqual(self.job.state, "operator_action")
         self.assertFalse(self.job.next_retry_on)
 
@@ -20233,11 +20483,17 @@ class TestOperationJob(TransactionCase):
         self.assertEqual(self.job.attempt_count, 0)
 
     def test_stale_running_job_is_recovered(self):
-        self.job.write({"state": "running", "attempt_count": 1,
-                        "started_on": fields.Datetime.now() - timedelta(hours=1)})
-        self.assertGreaterEqual(self.env["federation.operation.job"]._recover_stale(), 1)
+        self.job.write(
+            {
+                "state": "running",
+                "attempt_count": 1,
+                "started_on": fields.Datetime.now() - timedelta(hours=1),
+            }
+        )
+        self.assertGreaterEqual(
+            self.env["federation.operation.job"]._recover_stale(), 1
+        )
         self.assertEqual(self.job.state, "retry")
-
 
     def test_ensure_job_is_idempotent_for_source_correlation(self):
         source = self.job._source()
@@ -20326,9 +20582,9 @@ class TestFederationRequestRateLimit(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_base/tests/test_retention_evidence.py
-SIZE: 3252
-CONTENT-LENGTH: 3252
-SHA256: 81dc9d50a1212b2c7e789d22fdcd5a6c9f87b1d6651b5ca6d8a59d4c56f92761
+SIZE: 3257
+CONTENT-LENGTH: 3257
+SHA256: 5b14e7cb0c6f96c931f95e8aeb5c47be2de8215f52de9e8878db7875d986991f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -20339,14 +20595,14 @@ from odoo.tests.common import TransactionCase
 
 class TestRetentionEvidence(TransactionCase):
     def test_evidence_acl_is_read_only_for_federation_managers(self):
-        evidence = self.env["federation.retention.evidence"].sudo().create(
-            {"policy": "test", "status": "passed", "deleted_count": 3}
+        evidence = (
+            self.env["federation.retention.evidence"]
+            .sudo()
+            .create({"policy": "test", "status": "passed", "deleted_count": 3})
         )
         self.assertEqual(evidence.deleted_count, 3)
 
-        manager_group = self.env.ref(
-            "sports_federation_base.group_federation_manager"
-        )
+        manager_group = self.env.ref("sports_federation_base.group_federation_manager")
         model = self.env["ir.model"]._get("federation.retention.evidence")
         access = self.env["ir.model.access"].search(
             [
@@ -20359,7 +20615,6 @@ class TestRetentionEvidence(TransactionCase):
         self.assertFalse(any(access.mapped("perm_write")))
         self.assertFalse(any(access.mapped("perm_create")))
         self.assertFalse(any(access.mapped("perm_unlink")))
-
 
     def test_record_execution_keeps_complete_policy_evidence(self):
         from datetime import timedelta
@@ -22512,9 +22767,9 @@ class FederationCompetitionEvent(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_competition_core/models/competition_overview.py
-SIZE: 5054
-CONTENT-LENGTH: 5054
-SHA256: c3f084d99c3d788f5b25a320c5fa800503f740d5a9bab511084f2bcf491f8aa9
+SIZE: 5747
+CONTENT-LENGTH: 5747
+SHA256: 23e6c153f53d2f8c707fdf16d07cd9551da8ca066ba117fd72cc6da0fb015998
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -22530,7 +22785,16 @@ class FederationCompetitionEdition(models.Model):
     event_count = fields.Integer(compute="_compute_core_counts")
     workflow_progress = fields.Integer(compute="_compute_workflow_progress")
     workflow_next_action = fields.Char(compute="_compute_workflow_progress")
-    journey_state = fields.Selection([("draft", "Draft"), ("ready", "Ready"), ("live", "Live"), ("finished", "Finished")], compute="_compute_workflow_progress", string="Journey Status")
+    journey_state = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("ready", "Ready"),
+            ("live", "Live"),
+            ("finished", "Finished"),
+        ],
+        compute="_compute_workflow_progress",
+        string="Journey Status",
+    )
     journey_blocker_count = fields.Integer(compute="_compute_workflow_progress")
 
     @api.depends("role_assignment_ids", "event_ids", "state")
@@ -22561,7 +22825,15 @@ class FederationCompetitionEdition(models.Model):
             steps = rec._workflow_steps()
             rec.workflow_progress = round(100 * sum(steps) / len(steps)) if steps else 0
             rec.journey_blocker_count = len([step for step in steps if not step])
-            rec.journey_state = "finished" if rec.state in ("closed", "cancelled") else ("live" if "publication_ids" in rec._fields and rec.publication_ids else ("ready" if steps and all(steps[:-1]) else "draft"))
+            rec.journey_state = (
+                "finished"
+                if rec.state in ("closed", "cancelled")
+                else (
+                    "live"
+                    if "publication_ids" in rec._fields and rec.publication_ids
+                    else ("ready" if steps and all(steps[:-1]) else "draft")
+                )
+            )
             if not rec.tournament_ids:
                 rec.workflow_next_action = _("Add at least one division")
             elif not rec.role_assignment_ids:
@@ -22603,14 +22875,45 @@ class FederationCompetitionEdition(models.Model):
             "domain": [("edition_id", "=", self.id)],
         }
 
-
     def action_open_next_workspace(self):
         self.ensure_one()
-        candidates = ((not self.tournament_ids, "sports_federation_tournament.federation_tournament_action"), (not self.role_assignment_ids, "sports_federation_competition_core.action_competition_roles_competition"), ("registration_window_ids" in self._fields and not self.registration_window_ids, "sports_federation_registration.action_registration_desk"), ("structure_ids" in self._fields and not self.structure_ids, "sports_federation_format.action_format_studio"), ("matchday_ids" in self._fields and not self.matchday_ids, "sports_federation_calendar.action_calendar_planner"), ("schedule_ids" in self._fields and not self.schedule_ids, "sports_federation_scheduling.action_schedule_planner_competition"), ("publication_ids" in self._fields and not self.publication_ids, "sports_federation_schedule_approval.action_schedule_review_queue"))
+        candidates = (
+            (
+                not self.tournament_ids,
+                "sports_federation_tournament.federation_tournament_action",
+            ),
+            (
+                not self.role_assignment_ids,
+                "sports_federation_competition_core.action_competition_roles_competition",
+            ),
+            (
+                "registration_window_ids" in self._fields
+                and not self.registration_window_ids,
+                "sports_federation_registration.action_registration_desk",
+            ),
+            (
+                "structure_ids" in self._fields and not self.structure_ids,
+                "sports_federation_format.action_format_studio",
+            ),
+            (
+                "matchday_ids" in self._fields and not self.matchday_ids,
+                "sports_federation_calendar.action_calendar_planner",
+            ),
+            (
+                "schedule_ids" in self._fields and not self.schedule_ids,
+                "sports_federation_scheduling.action_schedule_planner_competition",
+            ),
+            (
+                "publication_ids" in self._fields and not self.publication_ids,
+                "sports_federation_schedule_approval.action_schedule_review_queue",
+            ),
+        )
         for needed, xmlid in candidates:
             if needed:
                 return self.env["ir.actions.actions"]._for_xml_id(xmlid)
-        return self.env["ir.actions.actions"]._for_xml_id("sports_federation_matchday.action_matchday_control")
+        return self.env["ir.actions.actions"]._for_xml_id(
+            "sports_federation_matchday.action_matchday_control"
+        )
 
 ====================================================================================================
 FILE: sports_federation_competition_core/security/ir.model.access.csv
@@ -28495,9 +28798,9 @@ class TestDemoDataPack(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/test_operator_role_acceptance.py
-SIZE: 2662
-CONTENT-LENGTH: 2662
-SHA256: 277761fc6da69fb6d9e32f864f7b1cc129a9ad1b474acb2b0b57d1d706b65cb0
+SIZE: 2894
+CONTENT-LENGTH: 2894
+SHA256: 10b34fa8507108490e19a6c8a5a56773eaaff0536e707e5611e220bd1f07cca2
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -28507,31 +28810,47 @@ from odoo import Command
 from odoo.tests.common import TransactionCase, tagged
 
 
-@tagged('-at_install', 'post_install', 'sf_operator_acceptance')
+@tagged("-at_install", "post_install", "sf_operator_acceptance")
 class TestOperatorRoleAcceptance(TransactionCase):
     """Prove the release pilot uses explicit, independently assignable roles."""
 
     ROLE_MODELS = (
-        ('sports_federation_registration.group_registration_manager', 'federation.registration.window'),
-        ('sports_federation_format.group_competition_designer', 'federation.competition.structure'),
-        ('sports_federation_calendar.group_calendar_planner', 'federation.matchday'),
-        ('sports_federation_scheduling.group_schedule_planner', 'federation.schedule'),
-        ('sports_federation_schedule_approval.group_schedule_approver', 'federation.schedule.review'),
-        ('sports_federation_matchday.group_matchday_manager', 'federation.matchday.session'),
+        (
+            "sports_federation_registration.group_registration_manager",
+            "federation.registration.window",
+        ),
+        (
+            "sports_federation_format.group_competition_designer",
+            "federation.competition.structure",
+        ),
+        ("sports_federation_calendar.group_calendar_planner", "federation.matchday"),
+        ("sports_federation_scheduling.group_schedule_planner", "federation.schedule"),
+        (
+            "sports_federation_schedule_approval.group_schedule_approver",
+            "federation.schedule.review",
+        ),
+        (
+            "sports_federation_matchday.group_matchday_manager",
+            "federation.matchday.session",
+        ),
     )
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.users = {}
-        Users = cls.env['res.users'].with_context(no_reset_password=True)
+        Users = cls.env["res.users"].with_context(no_reset_password=True)
         for index, (group_xmlid, _model) in enumerate(cls.ROLE_MODELS, start=1):
             group = cls.env.ref(group_xmlid)
-            cls.users[group_xmlid] = Users.create({
-                'name': f'Lifecycle Operator {index}',
-                'login': f'lifecycle.operator.{index}@example.invalid',
-                'group_ids': [Command.set([cls.env.ref('base.group_user').id, group.id])],
-            })
+            cls.users[group_xmlid] = Users.create(
+                {
+                    "name": f"Lifecycle Operator {index}",
+                    "login": f"lifecycle.operator.{index}@example.invalid",
+                    "group_ids": [
+                        Command.set([cls.env.ref("base.group_user").id, group.id])
+                    ],
+                }
+            )
 
     def _group_acl(self, group_xmlid, model_name):
         group = self.env.ref(group_xmlid)
@@ -34769,9 +35088,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_format/README.md
-SIZE: 961
-CONTENT-LENGTH: 961
-SHA256: d73a40dc3d2f572086142936fee47b7fec58ba86686176bb29f43ca4be7f0ef2
+SIZE: 1428
+CONTENT-LENGTH: 1428
+SHA256: 7c527aeced8da21ff2fd2701dc53c9ce8e9d1586b33b663b7efda898a87f43dc
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -34798,6 +35117,9 @@ are stored as immutable snapshots.
 Stage-graph access rules are loaded from `security/ir.model.access.csv`. The
 structure form extension identifies the stage tab by its `stage_ids` field so
 the view remains safe when translated page labels change.
+## Supported format generation
+
+The format studio now estimates fixture and round counts before generation. It supports single and double leagues, seeded knockout and placement brackets, match series, pool-to-knockout configuration, and championship/relegation splits. Dynamic Swiss, ladder, and double-elimination formats are deliberately not advertised as automatic because they require round-by-round or reset-final semantics outside the immutable fixture graph.
 
 ====================================================================================================
 FILE: sports_federation_format/__init__.py
@@ -34816,7 +35138,7 @@ from . import services
 FILE: sports_federation_format/__manifest__.py
 SIZE: 619
 CONTENT-LENGTH: 619
-SHA256: 6e83f8b9d85f1471d7ba429812c3527374d09566a0f61012507d1795e5225e38
+SHA256: 3aea98252e76136d3bf0b06d249672e918dadf589d0620d66c14df31e7290af5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -34824,7 +35146,7 @@ GIT-STATE: tracked
 
 {
     "name": "Competition Format",
-    "version": "19.0.4.0.0",
+    "version": "19.0.5.0.0",
     "category": "Sports",
     "summary": "Versioned competition structures, stages, progression and fixtures",
     "author": "Sports Federation",
@@ -34861,9 +35183,9 @@ from . import fixture_result_bridge
 
 ====================================================================================================
 FILE: sports_federation_format/models/competition_structure.py
-SIZE: 4958
-CONTENT-LENGTH: 4958
-SHA256: 9be19259e67ebb7e6849d7cdec43f01568fd48e4c16930365e7807b83416106b
+SIZE: 7989
+CONTENT-LENGTH: 7989
+SHA256: 71ab5859a102761d2335c3878d0d30d1eeaa4b9cce51f56a9142b09bce0dc51b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -34895,10 +35217,58 @@ class FederationCompetitionStructure(models.Model):
             ("double_round_robin", "Double League"),
             ("knockout", "Knockout Cup"),
             ("pool_knockout", "Pools then Knockout"),
+            ("split_pools", "League then Championship/Relegation Pools"),
+            ("placement_bracket", "Placement Bracket"),
             ("custom", "Custom"),
         ],
         required=True,
     )
+    pool_count = fields.Integer(default=2, required=True)
+    series_length = fields.Selection(
+        [
+            ("1", "Single match"),
+            ("3", "Best of 3"),
+            ("5", "Best of 5"),
+            ("7", "Best of 7"),
+        ],
+        default="1",
+        required=True,
+    )
+    estimated_fixture_count = fields.Integer(compute="_compute_feasibility")
+    estimated_round_count = fields.Integer(compute="_compute_feasibility")
+    generation_feasible = fields.Boolean(compute="_compute_feasibility")
+    feasibility_message = fields.Char(compute="_compute_feasibility")
+
+    @api.depends(
+        "format_type", "participant_set_id.line_ids", "pool_count", "series_length"
+    )
+    def _compute_feasibility(self):
+        analyzer = self.env["federation.format.feasibility"]
+        for record in self:
+            result = analyzer.estimate(
+                record.format_type,
+                len(record.participant_set_id.line_ids),
+                pool_count=record.pool_count,
+                series_length=record.series_length,
+            )
+            record.generation_feasible = result["feasible"]
+            record.estimated_fixture_count = result["fixture_count"]
+            record.estimated_round_count = result["round_count"]
+            record.feasibility_message = result["message"]
+
+    def action_check_feasibility(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Format feasibility",
+                "message": self.feasibility_message,
+                "type": "success" if self.generation_feasible else "danger",
+                "sticky": not self.generation_feasible,
+            },
+        }
+
     state = fields.Selection(
         [
             ("draft", "Draft"),
@@ -34919,6 +35289,33 @@ class FederationCompetitionStructure(models.Model):
 
     def action_generate(self):
         for rec in self:
+            if not rec.generation_feasible and rec.format_type != "custom":
+                raise ValidationError(rec.feasibility_message)
+            if not rec.stage_ids and rec.format_type in (
+                "single_round_robin",
+                "double_round_robin",
+                "knockout",
+                "placement_bracket",
+            ):
+                stage_type = (
+                    "league"
+                    if rec.format_type in ("single_round_robin", "double_round_robin")
+                    else (
+                        "placement"
+                        if rec.format_type == "placement_bracket"
+                        else "knockout"
+                    )
+                )
+                self.env["federation.structure.stage"].create(
+                    {
+                        "name": rec.name,
+                        "structure_id": rec.id,
+                        "sequence": 10,
+                        "stage_type": stage_type,
+                        "format_type": rec.format_type,
+                        "source_type": "registration",
+                    }
+                )
             roots = rec.stage_ids.filtered(
                 lambda stage: not stage.incoming_progression_ids
             )
@@ -35435,9 +35832,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_format/services/__init__.py
-SIZE: 134
-CONTENT-LENGTH: 134
-SHA256: 6bafdea3c820adf337cf79a71061b087995652108eeb6b83e3ff9c6dd59510b9
+SIZE: 168
+CONTENT-LENGTH: 168
+SHA256: 0f221cb22b36f8e181e4221aac2e6deb7b4666c3c62a5b1c367de3afd514fb62
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -35447,6 +35844,8 @@ from . import stage_graph_engine
 from . import fixture_materializer
 from . import graph_validator
 from . import round_robin_generator
+
+from . import format_feasibility
 
 ====================================================================================================
 FILE: sports_federation_format/services/fixture_materializer.py
@@ -35509,6 +35908,108 @@ class FederationFixtureMaterializer(models.AbstractModel):
             fixture.operational_match_id = match
             matches |= match
         return matches
+
+====================================================================================================
+FILE: sports_federation_format/services/format_feasibility.py
+SIZE: 3596
+CONTENT-LENGTH: 3596
+SHA256: 50c485edeb94be0904435fa3b207413d48364e537a83d6bb564034ad7a028526
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from math import ceil, log2
+
+from odoo import _, api, models
+
+
+class FederationFormatFeasibility(models.AbstractModel):
+    _name = "federation.format.feasibility"
+    _description = "Competition Format Feasibility"
+
+    @api.model
+    def estimate(
+        self, format_type, participant_count, *, pool_count=1, series_length=1
+    ):
+        participant_count = int(participant_count or 0)
+        pool_count = max(1, int(pool_count or 1))
+        series_length = max(1, int(series_length or 1))
+        if participant_count < 2:
+            return {
+                "feasible": False,
+                "fixture_count": 0,
+                "round_count": 0,
+                "message": _("At least two participants are required."),
+            }
+        if format_type == "single_round_robin":
+            fixtures = participant_count * (participant_count - 1) // 2
+            rounds = (
+                participant_count if participant_count % 2 else participant_count - 1
+            )
+        elif format_type == "double_round_robin":
+            fixtures = participant_count * (participant_count - 1)
+            rounds = 2 * (
+                participant_count if participant_count % 2 else participant_count - 1
+            )
+        elif format_type in ("knockout", "placement_bracket"):
+            fixtures = (participant_count - 1) * series_length
+            rounds = ceil(log2(participant_count)) * series_length
+        elif format_type == "pool_knockout":
+            if pool_count > participant_count // 2:
+                return {
+                    "feasible": False,
+                    "fixture_count": 0,
+                    "round_count": 0,
+                    "message": _("Every pool must contain at least two participants."),
+                }
+            sizes = [participant_count // pool_count] * pool_count
+            for index in range(participant_count % pool_count):
+                sizes[index] += 1
+            fixtures = (
+                sum(size * (size - 1) // 2 for size in sizes)
+                + min(participant_count, 2 * pool_count)
+                - 1
+            )
+            rounds = max(size if size % 2 else size - 1 for size in sizes) + ceil(
+                log2(min(participant_count, 2 * pool_count))
+            )
+        elif format_type == "split_pools":
+            if participant_count < 6:
+                return {
+                    "feasible": False,
+                    "fixture_count": 0,
+                    "round_count": 0,
+                    "message": _(
+                        "Split-pool competitions require at least six participants."
+                    ),
+                }
+            upper = ceil(participant_count / 2)
+            lower = participant_count - upper
+            fixtures = (
+                participant_count * (participant_count - 1) // 2
+                + upper * (upper - 1) // 2
+                + lower * (lower - 1) // 2
+            )
+            rounds = participant_count - 1 + max(upper - 1, lower - 1)
+        else:
+            return {
+                "feasible": False,
+                "fixture_count": 0,
+                "round_count": 0,
+                "message": _(
+                    "This format is configured manually and cannot be estimated automatically."
+                ),
+            }
+        return {
+            "feasible": True,
+            "fixture_count": fixtures,
+            "round_count": rounds,
+            "message": _(
+                "The format can be generated for %(teams)s participants.",
+                teams=participant_count,
+            ),
+        }
 
 ====================================================================================================
 FILE: sports_federation_format/services/graph_validator.py
@@ -36053,9 +36554,9 @@ class FederationStageGraphEngine(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_format/tests/__init__.py
-SIZE: 82
-CONTENT-LENGTH: 82
-SHA256: 4cb4c506f9b97ded4e8351517c0513a14e05b779353a1d3241826df2df9d78ee
+SIZE: 121
+CONTENT-LENGTH: 121
+SHA256: b280db4ffdc1855ba1360ac86c8d15c933238ab007829dab38a741af58a3b6ae
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -36063,6 +36564,8 @@ GIT-STATE: tracked
 
 from . import test_stage_graph_engine
 from . import test_fixture_result_ownership
+
+from . import test_format_feasibility
 
 ====================================================================================================
 FILE: sports_federation_format/tests/test_fixture_result_ownership.py
@@ -36229,6 +36732,54 @@ class TestFixtureResultOwnership(TransactionCase):
         self.assertFalse(stage.standing_snapshot_id)
         self.assertEqual(stage.graph_state, "active")
         self.assertEqual(stage.stage_fixture_ids[0].state, "ready")
+
+====================================================================================================
+FILE: sports_federation_format/tests/test_format_feasibility.py
+SIZE: 1529
+CONTENT-LENGTH: 1529
+SHA256: 0f7a77a8f78e8362f35d5aba0480202ea118763cfb1e96f10da443dbe00b0d9b
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo.tests import TransactionCase
+
+
+class TestFormatFeasibility(TransactionCase):
+    def test_common_formats_have_deterministic_counts(self):
+        analyzer = self.env["federation.format.feasibility"]
+        self.assertEqual(
+            (
+                analyzer.estimate("single_round_robin", 6)["fixture_count"],
+                analyzer.estimate("single_round_robin", 6)["round_count"],
+            ),
+            (15, 5),
+        )
+        self.assertEqual(
+            (
+                analyzer.estimate("double_round_robin", 6)["fixture_count"],
+                analyzer.estimate("double_round_robin", 6)["round_count"],
+            ),
+            (30, 10),
+        )
+        knockout = analyzer.estimate("knockout", 8, series_length=3)
+        self.assertEqual((knockout["fixture_count"], knockout["round_count"]), (21, 9))
+
+    def test_pool_knockout_handles_uneven_pool_sizes(self):
+        result = self.env["federation.format.feasibility"].estimate(
+            "pool_knockout", 10, pool_count=3
+        )
+        self.assertTrue(result["feasible"])
+        self.assertEqual((result["fixture_count"], result["round_count"]), (17, 6))
+
+    def test_impossible_formats_explain_failure(self):
+        analyzer = self.env["federation.format.feasibility"]
+        self.assertFalse(
+            analyzer.estimate("pool_knockout", 6, pool_count=4)["feasible"]
+        )
+        self.assertFalse(analyzer.estimate("split_pools", 5)["feasible"])
+        self.assertFalse(analyzer.estimate("custom", 8)["feasible"])
 
 ====================================================================================================
 FILE: sports_federation_format/tests/test_stage_graph_engine.py
@@ -36435,17 +36986,17 @@ class TestStageGraphEngine(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_format/views/format_views.xml
-SIZE: 2000
-CONTENT-LENGTH: 2000
-SHA256: 93b4ddb0bf32399c149057ffdc8d68100df4c7f14c70459028fa0ff659722743
+SIZE: 2876
+CONTENT-LENGTH: 2876
+SHA256: 0809cfa6080d4c05206c3270b853a8ed1c6eb90d8ecdfa63e516b6b00ec0018f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
 <odoo>
- <record id="structure_list" model="ir.ui.view"><field name="name">federation.competition.structure.list</field><field name="model">federation.competition.structure</field><field name="arch" type="xml"><list decoration-success="state == 'frozen'"><field name="name"/><field name="edition_id"/><field name="division_id"/><field name="participant_set_id"/><field name="format_type"/><field name="version"/><field name="state" widget="badge"/></list></field></record>
- <record id="structure_form" model="ir.ui.view"><field name="name">federation.competition.structure.form</field><field name="model">federation.competition.structure</field><field name="arch" type="xml"><form><header><button name="action_generate" type="object" string="Generate Fixtures" class="btn-primary" invisible="state == 'frozen'"/><button name="action_freeze" type="object" string="Freeze Structure" class="btn-primary" invisible="state != 'generated'"/><field name="state" widget="statusbar" statusbar_visible="draft,generated,frozen"/></header><sheet><group><field name="name"/><field name="edition_id"/><field name="division_id" domain="[('edition_id','=',edition_id)]"/><field name="participant_set_id" domain="[('division_id','=',division_id),('state','=','finalized')]"/><field name="format_type"/><field name="version"/></group><notebook><page string="Stages"><field name="stage_ids"><list editable="bottom"><field name="sequence"/><field name="name"/><field name="stage_type"/></list></field></page><page string="Fixtures"><field name="fixture_ids"><list><field name="stage_id"/><field name="round_number"/><field name="sequence"/><field name="home_team_id"/><field name="away_team_id"/><field name="state"/></list></field></page></notebook></sheet><chatter/></form></field></record>
+ <record id="structure_list" model="ir.ui.view"><field name="name">federation.competition.structure.list</field><field name="model">federation.competition.structure</field><field name="arch" type="xml"><list decoration-success="state == 'frozen'"><field name="name"/><field name="edition_id"/><field name="division_id"/><field name="participant_set_id"/><field name="format_type"/><field name="pool_count" invisible="format_type not in ('pool_knockout', 'split_pools')"/><field name="series_length" invisible="format_type not in ('knockout', 'placement_bracket')"/><field name="version"/><field name="generation_feasible" readonly="1"/><field name="estimated_fixture_count" readonly="1"/><field name="estimated_round_count" readonly="1"/><field name="feasibility_message" readonly="1"/><field name="state" widget="badge"/></list></field></record>
+ <record id="structure_form" model="ir.ui.view"><field name="name">federation.competition.structure.form</field><field name="model">federation.competition.structure</field><field name="arch" type="xml"><form><header><button name="action_check_feasibility" type="object" string="Check Feasibility" invisible="state == 'frozen'"/><button name="action_generate" type="object" string="Generate Fixtures" class="btn-primary" invisible="state == 'frozen'"/><button name="action_freeze" type="object" string="Freeze Structure" class="btn-primary" invisible="state != 'generated'"/><field name="state" widget="statusbar" statusbar_visible="draft,generated,frozen"/></header><sheet><group><field name="name"/><field name="edition_id"/><field name="division_id" domain="[('edition_id','=',edition_id)]"/><field name="participant_set_id" domain="[('division_id','=',division_id),('state','=','finalized')]"/><field name="format_type"/><field name="pool_count" invisible="format_type not in ('pool_knockout', 'split_pools')"/><field name="series_length" invisible="format_type not in ('knockout', 'placement_bracket')"/><field name="version"/><field name="generation_feasible" readonly="1"/><field name="estimated_fixture_count" readonly="1"/><field name="estimated_round_count" readonly="1"/><field name="feasibility_message" readonly="1"/></group><notebook><page string="Stages"><field name="stage_ids"><list editable="bottom"><field name="sequence"/><field name="name"/><field name="stage_type"/></list></field></page><page string="Fixtures"><field name="fixture_ids"><list><field name="stage_id"/><field name="round_number"/><field name="sequence"/><field name="home_team_id"/><field name="away_team_id"/><field name="state"/></list></field></page></notebook></sheet><chatter/></form></field></record>
  <record id="action_format_studio" model="ir.actions.act_window"><field name="name">Format Studio</field><field name="res_model">federation.competition.structure</field><field name="view_mode">list,form</field></record>
 </odoo>
 
@@ -39765,9 +40316,9 @@ class FederationIntegrationDelivery(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_import_tools/models/integration_delivery_job_reliability.py
-SIZE: 1193
-CONTENT-LENGTH: 1193
-SHA256: a592158b5077f403077362552bc62c07c58b752019dc4bfde8665782f3bb60ef
+SIZE: 1269
+CONTENT-LENGTH: 1269
+SHA256: 52ab149db6a342c57beb6a3a8f79d82d0abfb1505ce7a2a2fd01f87e05bca634
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -39793,7 +40344,9 @@ class FederationIntegrationDeliveryJobReliability(models.Model):
             if job.state == "pending":
                 job._start()
                 job._fail(
-                    _("Open the source delivery, correct its governance or payload issue, then replay it through the import wizard."),
+                    _(
+                        "Open the source delivery, correct its governance or payload issue, then replay it through the import wizard."
+                    ),
                     "operator_action",
                     retryable=False,
                 )
@@ -39801,14 +40354,16 @@ class FederationIntegrationDeliveryJobReliability(models.Model):
 
     def _retry_operational_job(self, job):
         raise ValidationError(
-            _("Inbound deliveries require operator review and replay through the import wizard.")
+            _(
+                "Inbound deliveries require operator review and replay through the import wizard."
+            )
         )
 
 ====================================================================================================
 FILE: sports_federation_import_tools/models/integration_delivery_retention_mixin.py
-SIZE: 3033
-CONTENT-LENGTH: 3033
-SHA256: 1b38b30f4bf30973bfc39b6a49463efb3d2ed9b619e91b1b6a2988db4adf2776
+SIZE: 3581
+CONTENT-LENGTH: 3581
+SHA256: 61a8171f6463963eff12c479af699a9c6bf6870410e2f85a90521bf937a2125e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -39854,18 +40409,56 @@ class FederationIntegrationDeliveryRetentionMixin(models.AbstractModel):
 
     @api.model
     def _retention_candidates(self, reference_dt=None):
-        reference_dt = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now()); processed_states = set(INBOUND_DELIVERY_PROCESSED_STATES); candidates = self.browse()
+        reference_dt = fields.Datetime.to_datetime(
+            reference_dt or fields.Datetime.now()
+        )
+        processed_states = set(INBOUND_DELIVERY_PROCESSED_STATES)
+        candidates = self.browse()
         for state, days in self.RETENTION_DAYS_BY_STATE.items():
-            field = "processed_on" if state in processed_states else "received_on"; candidates |= self.sudo().search([("state", "=", state), (field, "!=", False), (field, "<", fields.Datetime.to_string(reference_dt - timedelta(days=days)))])
+            field = "processed_on" if state in processed_states else "received_on"
+            candidates |= self.sudo().search(
+                [
+                    ("state", "=", state),
+                    (field, "!=", False),
+                    (
+                        field,
+                        "<",
+                        fields.Datetime.to_string(reference_dt - timedelta(days=days)),
+                    ),
+                ]
+            )
         return candidates
 
     @api.model
     def _cron_purge_retained_deliveries(self):
-        started_on = fields.Datetime.now(); candidates = self._retention_candidates(started_on); attachments = len(candidates.mapped("attachment_id")); Evidence = self.env["federation.retention.evidence"]
-        try: deleted = self._purge_retained_deliveries(started_on)
+        started_on = fields.Datetime.now()
+        candidates = self._retention_candidates(started_on)
+        attachments = len(candidates.mapped("attachment_id"))
+        Evidence = self.env["federation.retention.evidence"]
+        try:
+            deleted = self._purge_retained_deliveries(started_on)
         except Exception as error:
-            Evidence.record_failure_durable("integration_deliveries", started_on=started_on, candidate_count=len(candidates), attachment_count=attachments, failure_count=len(candidates) or 1, retention_rules=self.RETENTION_DAYS_BY_STATE, operator_message=str(error), source_model=self._name); raise
-        Evidence.record_execution("integration_deliveries", started_on=started_on, candidate_count=len(candidates), deleted_count=deleted, skipped_count=max(0,len(candidates)-deleted), attachment_count=attachments, retention_rules=self.RETENTION_DAYS_BY_STATE, source_model=self._name)
+            Evidence.record_failure_durable(
+                "integration_deliveries",
+                started_on=started_on,
+                candidate_count=len(candidates),
+                attachment_count=attachments,
+                failure_count=len(candidates) or 1,
+                retention_rules=self.RETENTION_DAYS_BY_STATE,
+                operator_message=str(error),
+                source_model=self._name,
+            )
+            raise
+        Evidence.record_execution(
+            "integration_deliveries",
+            started_on=started_on,
+            candidate_count=len(candidates),
+            deleted_count=deleted,
+            skipped_count=max(0, len(candidates) - deleted),
+            attachment_count=attachments,
+            retention_rules=self.RETENTION_DAYS_BY_STATE,
+            source_model=self._name,
+        )
         return deleted
 
 ====================================================================================================
@@ -47302,9 +47895,9 @@ class FederationNotificationDispatcher(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_notifications/models/notification_job_reliability.py
-SIZE: 1738
-CONTENT-LENGTH: 1738
-SHA256: b1635c5ae96e02be93b626b36ce53bb2263795a37a470f7810eb9e3f80b3723e
+SIZE: 1814
+CONTENT-LENGTH: 1814
+SHA256: 51b0c0138fdb79d3140f94cc3348f7b2da5859984ad137a7164c3f1a4e82cba6
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -47335,7 +47928,9 @@ class FederationNotificationJobReliability(models.Model):
         if self.notification_type != "email" or not self.template_xmlid:
             raise ValidationError(_("This notification requires manual recreation."))
         model = self.env.get(self.target_model)
-        target = model.browse(self.target_res_id).exists() if model is not None else model
+        target = (
+            model.browse(self.target_res_id).exists() if model is not None else model
+        )
         if not target:
             raise ValidationError(_("The notification target no longer exists."))
         retried = self.env["federation.notification.service"].send_email_template(
@@ -47346,15 +47941,19 @@ class FederationNotificationJobReliability(models.Model):
             log_name=f"Retry: {self.name}",
         )
         if retried.state != "sent":
-            raise RuntimeError(retried.operator_message or _("Notification retry failed."))
-        self.write({"state": "sent", "failure_category": False, "operator_message": False})
+            raise RuntimeError(
+                retried.operator_message or _("Notification retry failed.")
+            )
+        self.write(
+            {"state": "sent", "failure_category": False, "operator_message": False}
+        )
         return True
 
 ====================================================================================================
 FILE: sports_federation_notifications/models/notification_log.py
-SIZE: 6122
-CONTENT-LENGTH: 6122
-SHA256: 148230c7fb66004194ba44e2b6ef299e481566dc34e3497d931fd601fe992631
+SIZE: 6643
+CONTENT-LENGTH: 6643
+SHA256: e99047360ab6c3ca624734f79a4c528e8a2016efac51193c3e3582a85be7b554
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -47504,16 +48103,51 @@ class FederationNotificationLog(models.Model):
 
     @api.model
     def _retention_candidate_count(self, reference_dt=None):
-        reference_dt = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now())
-        return sum(self.sudo().search_count([("state", "=", state), ("create_date", "!=", False), ("create_date", "<", fields.Datetime.to_string(reference_dt - timedelta(days=days)))]) for state, days in self.RETENTION_DAYS_BY_STATE.items())
+        reference_dt = fields.Datetime.to_datetime(
+            reference_dt or fields.Datetime.now()
+        )
+        return sum(
+            self.sudo().search_count(
+                [
+                    ("state", "=", state),
+                    ("create_date", "!=", False),
+                    (
+                        "create_date",
+                        "<",
+                        fields.Datetime.to_string(reference_dt - timedelta(days=days)),
+                    ),
+                ]
+            )
+            for state, days in self.RETENTION_DAYS_BY_STATE.items()
+        )
 
     @api.model
     def _cron_purge_old_logs(self):
-        started_on = fields.Datetime.now(); candidates = self._retention_candidate_count(started_on); Evidence = self.env["federation.retention.evidence"]
-        try: deleted = self._purge_retained_logs(started_on)
+        started_on = fields.Datetime.now()
+        candidates = self._retention_candidate_count(started_on)
+        Evidence = self.env["federation.retention.evidence"]
+        try:
+            deleted = self._purge_retained_logs(started_on)
         except Exception as error:
-            Evidence.record_failure_durable("notification_logs", started_on=started_on, candidate_count=candidates, failure_count=candidates or 1, retention_rules=self.RETENTION_DAYS_BY_STATE, operator_message=str(error), source_model=self._name); raise
-        Evidence.record_execution("notification_logs", started_on=started_on, candidate_count=candidates, deleted_count=deleted, skipped_count=max(0, candidates-deleted), retention_rules=self.RETENTION_DAYS_BY_STATE, source_model=self._name)
+            Evidence.record_failure_durable(
+                "notification_logs",
+                started_on=started_on,
+                candidate_count=candidates,
+                failure_count=candidates or 1,
+                retention_rules=self.RETENTION_DAYS_BY_STATE,
+                operator_message=str(error),
+                source_model=self._name,
+            )
+            raise
+        Evidence.record_execution(
+            "notification_logs",
+            started_on=started_on,
+            candidate_count=candidates,
+            deleted_count=deleted,
+            skipped_count=max(0, candidates - deleted),
+            retention_rules=self.RETENTION_DAYS_BY_STATE,
+            source_model=self._name,
+        )
         return deleted
 
 ====================================================================================================
@@ -57790,15 +58424,15 @@ from . import federation_competition_entry
 
 ====================================================================================================
 FILE: sports_federation_portal/models/competition_queries.py
-SIZE: 10898
-CONTENT-LENGTH: 10898
-SHA256: 9a7361b7b2fbcfbefb5e43a00e0ea71401cb9b2a8901bc3759b593c8b245439b
+SIZE: 10890
+CONTENT-LENGTH: 10890
+SHA256: adb349fd81982b9962ad2cf88838686bdd5c5b69033754983bdb0ce6e6d467d4
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
-from odoo import _, api, fields, models
+from odoo import _, api, models
 from odoo.exceptions import AccessError
 
 
@@ -65473,9 +66107,9 @@ class TestTeamPortalAccess(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_template_accessibility.py
-SIZE: 9598
-CONTENT-LENGTH: 9598
-SHA256: 150cb53fc1a3dc27f74df63ac724082349c0503b06485f9e244c5b388c03e0a0
+SIZE: 9644
+CONTENT-LENGTH: 9644
+SHA256: 0641219057db3151471b354227f06d35765d37137071c06ff7ab9d5e2449a81e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -65681,7 +66315,10 @@ class TestPortalTemplateAccessibility(TransactionCase):
         manifest = (Path(__file__).resolve().parents[1] / "__manifest__.py").read_text()
         asset_path = "sports_federation_portal/static/src/js/accessibility_recovery.js"
         self.assertIn(asset_path, manifest)
-        source = (Path(__file__).resolve().parents[1] / "static/src/js/accessibility_recovery.js").read_text()
+        source = (
+            Path(__file__).resolve().parents[1]
+            / "static/src/js/accessibility_recovery.js"
+        ).read_text()
         for contract in (
             'setAttribute("aria-describedby"',
             'setAttribute("aria-invalid", "true")',
@@ -65694,7 +66331,8 @@ class TestPortalTemplateAccessibility(TransactionCase):
 
     def test_portal_styles_expose_non_color_keyboard_focus(self):
         stylesheet = (
-            Path(__file__).resolve().parents[1] / "static/src/scss/federation_portal.scss"
+            Path(__file__).resolve().parents[1]
+            / "static/src/scss/federation_portal.scss"
         ).read_text()
         self.assertIn(":focus-visible", stylesheet)
         self.assertIn("outline:", stylesheet)
@@ -69779,9 +70417,9 @@ class TournamentHubFilterMixin:
 
 ====================================================================================================
 FILE: sports_federation_public_site/controllers/_public_request.py
-SIZE: 3068
-CONTENT-LENGTH: 3068
-SHA256: 4ebce0e2261119f5f4e6ee530001eedf64f651b23610fcd025d2f9f0dab43aaa
+SIZE: 3514
+CONTENT-LENGTH: 3514
+SHA256: cfa5d117e40159b89023fe44a0147913a9c56afd8af9d2aae0dfbb40aa58adc5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -69808,24 +70446,47 @@ class PublicRequestInfrastructureMixin:
         make_json_response = getattr(request, "make_json_response", None)
         if make_json_response:
             return make_json_response(payload, status=status, headers=headers)
-        return Response(json.dumps(payload), status=status, headers=headers or [], content_type="application/json; charset=utf-8")
+        return Response(
+            json.dumps(payload),
+            status=status,
+            headers=headers or [],
+            content_type="application/json; charset=utf-8",
+        )
 
-    def _resolve_tournament(self, tournament_slug=None, tournament_id=None, tournament=False, public_access=None):
+    def _resolve_tournament(
+        self,
+        tournament_slug=None,
+        tournament_id=None,
+        tournament=False,
+        public_access=None,
+    ):
         Tournament = request.env["federation.tournament"]
         public_domain = self._build_tournament_public_domain(public_access)
         if tournament:
-            return Tournament.sudo().search([("id", "=", tournament.id)] + public_domain, limit=1)
+            return Tournament.sudo().search(
+                [("id", "=", tournament.id)] + public_domain, limit=1
+            )
         if tournament_id:
-            return Tournament.sudo().search([("id", "=", int(tournament_id))] + public_domain, limit=1)
+            return Tournament.sudo().search(
+                [("id", "=", int(tournament_id))] + public_domain, limit=1
+            )
         if tournament_slug:
-            return Tournament.resolve_public_slug(tournament_slug, extra_domain=public_domain)
+            return Tournament.resolve_public_slug(
+                tournament_slug, extra_domain=public_domain
+            )
         return Tournament.browse([])
 
     def _resolve_team(self, team_slug, public_access=None):
-        return request.env["federation.team"].resolve_public_slug(team_slug, extra_domain=self._build_team_public_domain(public_access))
+        return request.env["federation.team"].resolve_public_slug(
+            team_slug, extra_domain=self._build_team_public_domain(public_access)
+        )
 
     def _canonical_redirect(self, record, slug_value, path_getter):
-        return request.redirect(path_getter()) if slug_value != record.get_public_slug_value() else None
+        return (
+            request.redirect(path_getter())
+            if slug_value != record.get_public_slug_value()
+            else None
+        )
 
     def _get_request_user_clubs(self):
         ClubRep = request.env.get("federation.club.representative")
@@ -69839,14 +70500,28 @@ class PublicRequestInfrastructureMixin:
     def _get_rate_limit_subject(self):
         headers = getattr(request.httprequest, "headers", {}) or {}
         forwarded_for = (headers.get("X-Forwarded-For") or "").split(",", 1)[0].strip()
-        remote_addr = forwarded_for or (getattr(request.httprequest, "remote_addr", "") or "").strip()
+        remote_addr = (
+            forwarded_for
+            or (getattr(request.httprequest, "remote_addr", "") or "").strip()
+        )
         return f"ip:{remote_addr or 'unknown'}"
 
     def _rate_limit_response(self, scope):
-        decision = request.env["federation.request.rate.limit"].sudo().consume(scope, self._get_rate_limit_subject())
+        decision = (
+            request.env["federation.request.rate.limit"]
+            .sudo()
+            .consume(scope, self._get_rate_limit_subject())
+        )
         if decision["allowed"]:
             return False
-        return self._make_json_response({"error": f"Too many requests. Retry after {decision['retry_after']} seconds.", "error_code": "retryable_delivery"}, status=429, headers=[("Retry-After", str(decision["retry_after"]))])
+        return self._make_json_response(
+            {
+                "error": f"Too many requests. Retry after {decision['retry_after']} seconds.",
+                "error_code": "retryable_delivery",
+            },
+            status=429,
+            headers=[("Retry-After", str(decision["retry_after"]))],
+        )
 
 ====================================================================================================
 FILE: sports_federation_public_site/controllers/public_clubs_players.py
@@ -70274,9 +70949,9 @@ class PublicCompetitionController(http.Controller):
 
 ====================================================================================================
 FILE: sports_federation_public_site/controllers/public_competitions.py
-SIZE: 22538
-CONTENT-LENGTH: 22538
-SHA256: 20a981000ac2333bb55691aa3672d0ac597ccca9cc5496bb69e199c00a2fa38e
+SIZE: 22496
+CONTENT-LENGTH: 22496
+SHA256: b4b70871e33c826bbf8d74371c7650325936058b4b8f0ca0da236fd4f78299c0
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -70291,8 +70966,6 @@ from odoo.addons.sports_federation_base.request_security import (
 from odoo.addons.portal.controllers.portal import pager as portal_pager
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import Response, request
-from werkzeug.exceptions import NotFound
-
 from ._filters import TournamentHubFilterMixin
 from ._public_request import PublicRequestInfrastructureMixin
 
@@ -71330,9 +72003,9 @@ class FederationClub(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_public_site/models/public_competition_edition.py
-SIZE: 1540
-CONTENT-LENGTH: 1540
-SHA256: 039630c975bdb3ee53cc545d38a8c097722369614223690dea474050a3980c41
+SIZE: 1537
+CONTENT-LENGTH: 1537
+SHA256: 3ffd0083afa57722e0816219b40dd78866664840b135d48ff1a857864fbaa2d6
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -71340,7 +72013,7 @@ GIT-STATE: tracked
 
 import re
 
-from odoo import _, api, fields, models
+from odoo import api, fields, models
 
 
 class FederationCompetitionEditionPublic(models.Model):
@@ -79447,9 +80120,9 @@ from . import create_competition_wizard
 
 ====================================================================================================
 FILE: sports_federation_registration/wizards/create_competition_wizard.py
-SIZE: 6229
-CONTENT-LENGTH: 6229
-SHA256: d39a06cf2bbcf9a46a81572c44be17aea1fc24d4771d8fa18492efc721d67a10
+SIZE: 6355
+CONTENT-LENGTH: 6355
+SHA256: e8a00bee904050c9b7c3d7c776bda0e0fc06b94c1b4cb0eb845bb6ae27ba8f79
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -79462,7 +80135,17 @@ from odoo.exceptions import ValidationError
 class FederationCreateCompetitionWizard(models.TransientModel):
     _name = "federation.create.competition.wizard"
     _description = "Create Competition Workflow"
-    setup_template = fields.Selection([("league", "League"), ("tournament_day", "Tournament Day"), ("cup", "Cup / Knockout")], default="league", required=True, string="Setup Template", help="Applies reversible defaults; every value remains editable before creation.")
+    setup_template = fields.Selection(
+        [
+            ("league", "League"),
+            ("tournament_day", "Tournament Day"),
+            ("cup", "Cup / Knockout"),
+        ],
+        default="league",
+        required=True,
+        string="Setup Template",
+        help="Applies reversible defaults; every value remains editable before creation.",
+    )
     competition_id = fields.Many2one(
         "federation.competition", required=True, string="Competition Template"
     )
@@ -79485,7 +80168,9 @@ class FederationCreateCompetitionWizard(models.TransientModel):
     @api.onchange("setup_template")
     def _onchange_setup_template(self):
         for line in self.division_line_ids:
-            line.tournament_type = "single_day" if self.setup_template == "tournament_day" else "multi_day"
+            line.tournament_type = (
+                "single_day" if self.setup_template == "tournament_day" else "multi_day"
+            )
 
     @api.onchange("competition_id")
     def _onchange_competition(self):
@@ -80416,9 +81101,9 @@ from . import operational_dashboard
 
 ====================================================================================================
 FILE: sports_federation_reporting/models/operational_dashboard.py
-SIZE: 8056
-CONTENT-LENGTH: 8056
-SHA256: 9277a02dca49084f9ff1dc8cb8935bef6cdacbc20f6724c267a8b537ecfd27fe
+SIZE: 10916
+CONTENT-LENGTH: 10916
+SHA256: ce62aa4c06c7037541d4f3993999350f3a683be5ad967811fa88217fb7f69796
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -80435,7 +81120,15 @@ class FederationOperationalDashboard(models.TransientModel):
 
     name = fields.Char(default="Operational Health", readonly=True)
     refreshed_on = fields.Datetime(default=fields.Datetime.now, readonly=True)
-    release_status = fields.Selection([("unknown", "Evidence Not Recorded"), ("passed", "Ready"), ("failed", "Blocked")], default="unknown", readonly=True)
+    release_status = fields.Selection(
+        [
+            ("unknown", "Evidence Not Recorded"),
+            ("passed", "Ready"),
+            ("failed", "Blocked"),
+        ],
+        default="unknown",
+        readonly=True,
+    )
     release_candidate_sha = fields.Char(readonly=True)
     release_completed_on = fields.Datetime(readonly=True)
     release_evidence_url = fields.Char(readonly=True)
@@ -80452,7 +81145,15 @@ class FederationOperationalDashboard(models.TransientModel):
     publication_gap_count = fields.Integer(readonly=True)
     result_backlog_count = fields.Integer(readonly=True)
     standings_failure_count = fields.Integer(readonly=True)
-    overall_status = fields.Selection([("healthy", "Healthy"), ("attention", "Attention Required"), ("blocked", "Blocked")], default="healthy", readonly=True)
+    overall_status = fields.Selection(
+        [
+            ("healthy", "Healthy"),
+            ("attention", "Attention Required"),
+            ("blocked", "Blocked"),
+        ],
+        default="healthy",
+        readonly=True,
+    )
     overall_message = fields.Text(readonly=True)
 
     @api.model
@@ -80465,43 +81166,146 @@ class FederationOperationalDashboard(models.TransientModel):
     def _snapshot_values(self):
         now = fields.Datetime.now()
         params = self.env["ir.config_parameter"].sudo()
-        release_status = params.get_param("sports_federation.release.last_status", "unknown")
+        release_status = params.get_param(
+            "sports_federation.release.last_status", "unknown"
+        )
         if release_status not in {"passed", "failed"}:
             release_status = "unknown"
         values = {
             "refreshed_on": now,
             "release_status": release_status,
-            "release_candidate_sha": params.get_param("sports_federation.release.last_sha") or False,
-            "release_completed_on": params.get_param("sports_federation.release.last_completed_on") or False,
-            "release_evidence_url": params.get_param("sports_federation.release.evidence_url") or False,
-            "queued_job_count": self._safe_count("federation.operation.job", [("state", "=", "pending")]),
-            "retrying_job_count": self._safe_count("federation.operation.job", [("state", "=", "retry")]),
-            "operator_action_job_count": self._safe_count("federation.operation.job", [("state", "=", "operator_action")]),
-            "stale_job_count": self._safe_count("federation.operation.job", [("state", "=", "running"), ("started_on", "<", now - timedelta(minutes=15))]),
-            "retention_attention_count": self._safe_count("federation.retention.policy", [("health", "in", ["attention", "overdue", "never_run"])]),
-            "retention_failed_count": self._safe_count("federation.retention.evidence", [("status", "=", "failed")]),
-            "integration_failure_count": self._safe_count("federation.integration.delivery", [("state", "in", ["processed_with_errors", "failed"])]),
-            "registration_blocker_count": self._safe_count("federation.competition.entry", [("state", "in", ["submitted", "rejected"])]),
-            "review_backlog_count": self._safe_count("federation.schedule.review", [("state", "=", "pending")]),
-            "unpublished_approved_count": self._safe_count("federation.schedule", [("state", "=", "approved")]),
-            "publication_gap_count": self._safe_count("federation.matchday", [("state", "in", ["scheduled", "open"]), ("current_publication_id", "=", False)]),
-            "result_backlog_count": self._safe_count("federation.match", [("result_state", "in", ["submitted", "verified", "contested", "corrected"])]),
-            "standings_failure_count": self._safe_count("federation.operation.job", [("state", "=", "operator_action"), ("source_model", "in", ["federation.standing", "federation.tournament"])]),
+            "release_candidate_sha": params.get_param(
+                "sports_federation.release.last_sha"
+            )
+            or False,
+            "release_completed_on": params.get_param(
+                "sports_federation.release.last_completed_on"
+            )
+            or False,
+            "release_evidence_url": params.get_param(
+                "sports_federation.release.evidence_url"
+            )
+            or False,
+            "queued_job_count": self._safe_count(
+                "federation.operation.job", [("state", "=", "pending")]
+            ),
+            "retrying_job_count": self._safe_count(
+                "federation.operation.job", [("state", "=", "retry")]
+            ),
+            "operator_action_job_count": self._safe_count(
+                "federation.operation.job", [("state", "=", "operator_action")]
+            ),
+            "stale_job_count": self._safe_count(
+                "federation.operation.job",
+                [
+                    ("state", "=", "running"),
+                    ("started_on", "<", now - timedelta(minutes=15)),
+                ],
+            ),
+            "retention_attention_count": self._safe_count(
+                "federation.retention.policy",
+                [("health", "in", ["attention", "overdue", "never_run"])],
+            ),
+            "retention_failed_count": self._safe_count(
+                "federation.retention.evidence", [("status", "=", "failed")]
+            ),
+            "integration_failure_count": self._safe_count(
+                "federation.integration.delivery",
+                [("state", "in", ["processed_with_errors", "failed"])],
+            ),
+            "registration_blocker_count": self._safe_count(
+                "federation.competition.entry",
+                [("state", "in", ["submitted", "rejected"])],
+            ),
+            "review_backlog_count": self._safe_count(
+                "federation.schedule.review", [("state", "=", "pending")]
+            ),
+            "unpublished_approved_count": self._safe_count(
+                "federation.schedule", [("state", "=", "approved")]
+            ),
+            "publication_gap_count": self._safe_count(
+                "federation.matchday",
+                [
+                    ("state", "in", ["scheduled", "open"]),
+                    ("current_publication_id", "=", False),
+                ],
+            ),
+            "result_backlog_count": self._safe_count(
+                "federation.match",
+                [
+                    (
+                        "result_state",
+                        "in",
+                        ["submitted", "verified", "contested", "corrected"],
+                    )
+                ],
+            ),
+            "standings_failure_count": self._safe_count(
+                "federation.operation.job",
+                [
+                    ("state", "=", "operator_action"),
+                    (
+                        "source_model",
+                        "in",
+                        ["federation.standing", "federation.tournament"],
+                    ),
+                ],
+            ),
         }
-        blocked = sum(values[key] for key in ("operator_action_job_count", "stale_job_count", "retention_failed_count", "integration_failure_count", "publication_gap_count", "standings_failure_count"))
-        attention = sum(values[key] for key in ("retrying_job_count", "retention_attention_count", "registration_blocker_count", "review_backlog_count", "unpublished_approved_count", "result_backlog_count"))
+        blocked = sum(
+            values[key]
+            for key in (
+                "operator_action_job_count",
+                "stale_job_count",
+                "retention_failed_count",
+                "integration_failure_count",
+                "publication_gap_count",
+                "standings_failure_count",
+            )
+        )
+        attention = sum(
+            values[key]
+            for key in (
+                "retrying_job_count",
+                "retention_attention_count",
+                "registration_blocker_count",
+                "review_backlog_count",
+                "unpublished_approved_count",
+                "result_backlog_count",
+            )
+        )
         if release_status == "failed" or blocked:
-            values.update(overall_status="blocked", overall_message=_("One or more operational queues require immediate remediation."))
+            values.update(
+                overall_status="blocked",
+                overall_message=_(
+                    "One or more operational queues require immediate remediation."
+                ),
+            )
         elif release_status == "unknown" or attention:
-            values.update(overall_status="attention", overall_message=_("Operational work is pending or release evidence has not been recorded."))
+            values.update(
+                overall_status="attention",
+                overall_message=_(
+                    "Operational work is pending or release evidence has not been recorded."
+                ),
+            )
         else:
-            values.update(overall_status="healthy", overall_message=_("No blocking operational conditions were found."))
+            values.update(
+                overall_status="healthy",
+                overall_message=_("No blocking operational conditions were found."),
+            )
         return values
 
     @api.model
     def action_open_dashboard(self):
         dashboard = self.create(self._snapshot_values())
-        return {"type": "ir.actions.act_window", "name": _("Operational Health"), "res_model": self._name, "res_id": dashboard.id, "view_mode": "form", "target": "current"}
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Operational Health"),
+            "res_model": self._name,
+            "res_id": dashboard.id,
+            "view_mode": "form",
+            "target": "current",
+        }
 
     def action_refresh(self):
         self.ensure_one()
@@ -80510,23 +81314,110 @@ class FederationOperationalDashboard(models.TransientModel):
 
     def _open_queue(self, model_name, domain, name):
         self.ensure_one()
-        return {"type": "ir.actions.act_window", "name": name, "res_model": model_name, "view_mode": "list,form", "domain": domain, "target": "current"}
+        return {
+            "type": "ir.actions.act_window",
+            "name": name,
+            "res_model": model_name,
+            "view_mode": "list,form",
+            "domain": domain,
+            "target": "current",
+        }
 
-    def action_open_jobs(self): return self._open_queue("federation.operation.job", [("state", "in", ["pending", "retry", "operator_action", "running"])], _("Operational Jobs"))
-    def action_open_retention(self): return self._open_queue("federation.retention.policy", [], _("Retention and Recovery"))
-    def action_open_integrations(self): return self._open_queue("federation.integration.delivery", [("state", "in", ["processed_with_errors", "failed"])], _("Integration Deliveries"))
-    def action_open_registrations(self): return self._open_queue("federation.competition.entry", [("state", "in", ["submitted", "rejected"])], _("Registration Blockers"))
-    def action_open_reviews(self): return self._open_queue("federation.schedule.review", [("state", "=", "pending")], _("Schedule Review Backlog"))
-    def action_open_unpublished(self): return self._open_queue("federation.schedule", [("state", "=", "approved")], _("Approved Schedules Awaiting Publication"))
-    def action_open_publication_gaps(self): return self._open_queue("federation.matchday", [("state", "in", ["scheduled", "open"]), ("current_publication_id", "=", False)], _("Match-Day Publication Gaps"))
-    def action_open_results(self): return self._open_queue("federation.match", [("result_state", "in", ["submitted", "verified", "contested", "corrected"])], _("Result Backlog"))
-    def action_open_standings_failures(self): return self._open_queue("federation.operation.job", [("state", "=", "operator_action"), ("source_model", "in", ["federation.standing", "federation.tournament"])], _("Standings Failures"))
+    def action_open_jobs(self):
+        return self._open_queue(
+            "federation.operation.job",
+            [("state", "in", ["pending", "retry", "operator_action", "running"])],
+            _("Operational Jobs"),
+        )
+
+    def action_open_retention(self):
+        return self._open_queue(
+            "federation.retention.policy", [], _("Retention and Recovery")
+        )
+
+    def action_open_integrations(self):
+        return self._open_queue(
+            "federation.integration.delivery",
+            [("state", "in", ["processed_with_errors", "failed"])],
+            _("Integration Deliveries"),
+        )
+
+    def action_open_registrations(self):
+        return self._open_queue(
+            "federation.competition.entry",
+            [("state", "in", ["submitted", "rejected"])],
+            _("Registration Blockers"),
+        )
+
+    def action_open_reviews(self):
+        return self._open_queue(
+            "federation.schedule.review",
+            [("state", "=", "pending")],
+            _("Schedule Review Backlog"),
+        )
+
+    def action_open_unpublished(self):
+        return self._open_queue(
+            "federation.schedule",
+            [("state", "=", "approved")],
+            _("Approved Schedules Awaiting Publication"),
+        )
+
+    def action_open_publication_gaps(self):
+        return self._open_queue(
+            "federation.matchday",
+            [
+                ("state", "in", ["scheduled", "open"]),
+                ("current_publication_id", "=", False),
+            ],
+            _("Match-Day Publication Gaps"),
+        )
+
+    def action_open_results(self):
+        return self._open_queue(
+            "federation.match",
+            [
+                (
+                    "result_state",
+                    "in",
+                    ["submitted", "verified", "contested", "corrected"],
+                )
+            ],
+            _("Result Backlog"),
+        )
+
+    def action_open_standings_failures(self):
+        return self._open_queue(
+            "federation.operation.job",
+            [
+                ("state", "=", "operator_action"),
+                (
+                    "source_model",
+                    "in",
+                    ["federation.standing", "federation.tournament"],
+                ),
+            ],
+            _("Standings Failures"),
+        )
 
     def action_open_release_evidence(self):
         self.ensure_one()
         if not self.release_evidence_url:
-            return {"type": "ir.actions.client", "tag": "display_notification", "params": {"title": _("Release evidence"), "message": _("No release evidence URL has been recorded."), "type": "warning", "sticky": False}}
-        return {"type": "ir.actions.act_url", "url": self.release_evidence_url, "target": "new"}
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _("Release evidence"),
+                    "message": _("No release evidence URL has been recorded."),
+                    "type": "warning",
+                    "sticky": False,
+                },
+            }
+        return {
+            "type": "ir.actions.act_url",
+            "url": self.release_evidence_url,
+            "target": "new",
+        }
 
 ====================================================================================================
 FILE: sports_federation_reporting/models/report_audit_event.py
@@ -82207,9 +83098,9 @@ class FederationReportClubPerformance(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_reporting/models/report_schedule.py
-SIZE: 13802
-CONTENT-LENGTH: 13802
-SHA256: aa48592cdcc8b7e0bb7f258d63c2250068b56b59087d48f9c67a752073314001
+SIZE: 14266
+CONTENT-LENGTH: 14266
+SHA256: 5c186aa9c014e2b82348cd680f7dc81af3e60db5911de83d08fd8a3450d3e2d8
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -82541,23 +83432,58 @@ class FederationReportSchedule(models.Model):
 
     @api.model
     def _generated_file_retention_candidates(self, reference_dt=None):
-        reference_dt = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now()); cutoff = fields.Datetime.to_string(reference_dt - timedelta(days=self.GENERATED_FILE_RETENTION_DAYS))
-        return self.search([("generated_file", "!=", False), ("last_run_on", "!=", False), ("last_run_on", "<", cutoff)])
+        reference_dt = fields.Datetime.to_datetime(
+            reference_dt or fields.Datetime.now()
+        )
+        cutoff = fields.Datetime.to_string(
+            reference_dt - timedelta(days=self.GENERATED_FILE_RETENTION_DAYS)
+        )
+        return self.search(
+            [
+                ("generated_file", "!=", False),
+                ("last_run_on", "!=", False),
+                ("last_run_on", "<", cutoff),
+            ]
+        )
 
     @api.model
     def _cron_purge_generated_files(self):
-        started_on = fields.Datetime.now(); candidates = self._generated_file_retention_candidates(started_on); Evidence = self.env["federation.retention.evidence"]
-        try: deleted = self._purge_generated_files(started_on)
+        started_on = fields.Datetime.now()
+        candidates = self._generated_file_retention_candidates(started_on)
+        Evidence = self.env["federation.retention.evidence"]
+        try:
+            deleted = self._purge_generated_files(started_on)
         except Exception as error:
-            Evidence.record_failure_durable("generated_report_files", started_on=started_on, candidate_count=len(candidates), attachment_count=len(candidates), failure_count=len(candidates) or 1, retention_rules={"generated_file_days": self.GENERATED_FILE_RETENTION_DAYS}, operator_message=str(error), source_model=self._name); raise
-        Evidence.record_execution("generated_report_files", started_on=started_on, candidate_count=len(candidates), deleted_count=deleted, skipped_count=max(0,len(candidates)-deleted), attachment_count=deleted, retention_rules={"generated_file_days": self.GENERATED_FILE_RETENTION_DAYS}, source_model=self._name)
+            Evidence.record_failure_durable(
+                "generated_report_files",
+                started_on=started_on,
+                candidate_count=len(candidates),
+                attachment_count=len(candidates),
+                failure_count=len(candidates) or 1,
+                retention_rules={
+                    "generated_file_days": self.GENERATED_FILE_RETENTION_DAYS
+                },
+                operator_message=str(error),
+                source_model=self._name,
+            )
+            raise
+        Evidence.record_execution(
+            "generated_report_files",
+            started_on=started_on,
+            candidate_count=len(candidates),
+            deleted_count=deleted,
+            skipped_count=max(0, len(candidates) - deleted),
+            attachment_count=deleted,
+            retention_rules={"generated_file_days": self.GENERATED_FILE_RETENTION_DAYS},
+            source_model=self._name,
+        )
         return deleted
 
 ====================================================================================================
 FILE: sports_federation_reporting/models/report_schedule_job_reliability.py
-SIZE: 1141
-CONTENT-LENGTH: 1141
-SHA256: 9fea7bee1fe81856084b2d9cac421d1d34d21c864a0372024c22d04ff9fdef0c
+SIZE: 1203
+CONTENT-LENGTH: 1203
+SHA256: de2ea9fbf0201d21e4ba873294542e0e3ceef2676a4a63bc0eb9570b9a12137e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -82574,7 +83500,9 @@ class FederationReportScheduleJobReliability(models.Model):
         for schedule in self:
             if schedule.last_run_status != "failed":
                 raise ValidationError(_("Only failed report schedules can be retried."))
-            correlation_id = f"report-schedule-{schedule.id}-{schedule.consecutive_failure_count}"
+            correlation_id = (
+                f"report-schedule-{schedule.id}-{schedule.consecutive_failure_count}"
+            )
             job = self.env["federation.operation.job"].ensure_job(
                 schedule,
                 correlation_id,
@@ -82589,7 +83517,9 @@ class FederationReportScheduleJobReliability(models.Model):
         self._generate_single_report()
         self.invalidate_recordset(["last_run_status", "last_operator_message"])
         if self.last_run_status == "failed":
-            raise RuntimeError(self.last_operator_message or _("Scheduled report retry failed."))
+            raise RuntimeError(
+                self.last_operator_message or _("Scheduled report retry failed.")
+            )
         return True
 
 ====================================================================================================
@@ -84604,9 +85534,9 @@ class TestKpiCsvExport(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_reporting/tests/test_operational_dashboard.py
-SIZE: 3474
-CONTENT-LENGTH: 3474
-SHA256: 11a18329f2d5b9f534814d4a3628fd40dc98ef7acf7514591a8f2b40994c7d7c
+SIZE: 3606
+CONTENT-LENGTH: 3606
+SHA256: 1d43b82c3ffc6ddaf90a320ec4bd9e15befdce1cdfc3cb79cf7c8ff2d52b1ab7
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -84618,7 +85548,16 @@ from odoo.tests import TransactionCase
 
 class TestOperationalDashboard(TransactionCase):
     def test_snapshot_aggregates_source_queues_without_persisting_copies(self):
-        self.env["federation.operation.job"].create({"name": "Dashboard retry", "source_model": "federation.report.schedule", "source_res_id": 42, "correlation_id": "dashboard-retry", "state": "retry", "next_retry_on": fields.Datetime.now()})
+        self.env["federation.operation.job"].create(
+            {
+                "name": "Dashboard retry",
+                "source_model": "federation.report.schedule",
+                "source_res_id": 42,
+                "correlation_id": "dashboard-retry",
+                "state": "retry",
+                "next_retry_on": fields.Datetime.now(),
+            }
+        )
         values = self.env["federation.operational.dashboard"]._snapshot_values()
         self.assertGreaterEqual(values["retrying_job_count"], 1)
         self.assertEqual(values["overall_status"], "attention")
@@ -84638,7 +85577,6 @@ class TestOperationalDashboard(TransactionCase):
         self.assertEqual(values["release_status"], "failed")
         self.assertEqual(values["release_candidate_sha"], "deadbeef")
         self.assertEqual(values["overall_status"], "blocked")
-
 
     def test_stale_running_jobs_block_dashboard_health_without_mutation(self):
         from datetime import timedelta
@@ -97916,9 +98854,9 @@ class FederationSchedulePublication(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/models/publication_integrity.py
-SIZE: 5215
-CONTENT-LENGTH: 5215
-SHA256: cacf1795e42794a5d80ef389dd361a59acb27122be359fb6b9b55d98b2065af4
+SIZE: 5373
+CONTENT-LENGTH: 5373
+SHA256: 1c888c258df2ba4dd49db1a78f83c2be8145e0f7bd66c88785a63bd9bdc2e6f2
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -97957,9 +98895,9 @@ class FederationScheduleReviewIntegrity(models.Model):
         if evidence_fields.intersection(vals) and self:
             raise ValidationError(_("Submitted review evidence is immutable."))
         decision_token = self.env.context.get("schedule_review_decision_token")
-        if (
-            decision_fields.intersection(vals)
-            and decision_token not in (_REVIEW_DECISION_TOKEN, _REVIEW_WITHDRAWAL_TOKEN)
+        if decision_fields.intersection(vals) and decision_token not in (
+            _REVIEW_DECISION_TOKEN,
+            _REVIEW_WITHDRAWAL_TOKEN,
         ):
             if set(vals) == {"review_note"} and all(
                 review.state == "pending" for review in self
@@ -97994,7 +98932,17 @@ class FederationScheduleReviewIntegrity(models.Model):
         self.ensure_one()
         if self.state != "pending":
             raise ValidationError(_("Only a pending review can be withdrawn."))
-        return self.sudo().with_context(schedule_review_decision_token=_REVIEW_WITHDRAWAL_TOKEN).write({"state": "withdrawn", "review_note": reason, "reviewed_at": fields.Datetime.now()})
+        return (
+            self.sudo()
+            .with_context(schedule_review_decision_token=_REVIEW_WITHDRAWAL_TOKEN)
+            .write(
+                {
+                    "state": "withdrawn",
+                    "review_note": reason,
+                    "reviewed_at": fields.Datetime.now(),
+                }
+            )
+        )
 
     def unlink(self):
         raise ValidationError("Schedule reviews are retained as audit evidence.")
@@ -98064,9 +99012,9 @@ class FederationMatchPublishedSlot(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/models/workflow_actions.py
-SIZE: 5155
-CONTENT-LENGTH: 5155
-SHA256: 0079c813f781f4f81ef36b702e5c8caf85b8cfcb7f58bc5232358164d534a0af
+SIZE: 5177
+CONTENT-LENGTH: 5177
+SHA256: ee8e297574bebb3245a80c36f85c238667d705f0b704b18576abb147f58952cb
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -98149,7 +99097,9 @@ class FederationScheduleReviewActions(models.Model):
 
     def action_withdraw_submission(self):
         self.ensure_one()
-        self.env["federation.schedule.approval.commands"].withdraw(self.id, self.review_note)
+        self.env["federation.schedule.approval.commands"].withdraw(
+            self.id, self.review_note
+        )
         return self.action_open_schedule()
 
     def action_request_changes(self):
@@ -98281,9 +99231,9 @@ from . import approval_commands
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/services/approval_commands.py
-SIZE: 12325
-CONTENT-LENGTH: 12325
-SHA256: 1242fdf6f46acf9e8c9b39d23b1dcc5a60b0a5eab5ecfe0f6de22a611ac6c46d
+SIZE: 12429
+CONTENT-LENGTH: 12429
+SHA256: e01a0b9397f223c0671f1c58be6fa37d93ade747bf4a51fd3bebb4d6bf1e1683
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -98399,13 +99349,21 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
     @api.model
     def withdraw(self, review_id, reason):
         if not (reason or "").strip():
-            raise ValidationError(_("Explain why the schedule submission is withdrawn."))
+            raise ValidationError(
+                _("Explain why the schedule submission is withdrawn.")
+            )
         review = self.env["federation.schedule.review"].browse(int(review_id)).exists()
         if not review or review.state != "pending":
             raise ValidationError(_("Only a pending review can be withdrawn."))
-        self.env["federation.competition.role.assignment"].assert_role(review.edition_id, "schedule_planner", "competition_director")
-        if review.submitted_by_id != self.env.user and not self.env.user.has_group("sports_federation_base.group_federation_manager"):
-            raise ValidationError(_("Only the submitting planner can withdraw this review."))
+        self.env["federation.competition.role.assignment"].assert_role(
+            review.edition_id, "schedule_planner", "competition_director"
+        )
+        if review.submitted_by_id != self.env.user and not self.env.user.has_group(
+            "sports_federation_base.group_federation_manager"
+        ):
+            raise ValidationError(
+                _("Only the submitting planner can withdraw this review.")
+            )
         review._write_withdrawal(reason)
         review.schedule_id.sudo().write({"state": "changes_requested"})
         return True
@@ -98916,9 +99874,9 @@ class TestPhase511Integrity(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/tests/test_review_permissions.py
-SIZE: 7351
-CONTENT-LENGTH: 7351
-SHA256: cba932081ca9fb34254f50d4f563e9525e772966491259f2d459818f2c91435e
+SIZE: 7372
+CONTENT-LENGTH: 7372
+SHA256: acba561999c9d99cc9d8adc13966569b39dd43e73970cbbb23371f736394ad78
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -99104,9 +100062,10 @@ class TestScheduleReviewPermissions(TransactionCase):
             with self.subTest(values=values), self.assertRaises(ValidationError):
                 review.write(values)
 
-
     def test_submitting_planner_can_withdraw_pending_review(self):
-        self.env["federation.schedule.approval.commands"].with_user(self.planner).withdraw(self.review.id, "Calendar planning added another fixture.")
+        self.env["federation.schedule.approval.commands"].with_user(
+            self.planner
+        ).withdraw(self.review.id, "Calendar planning added another fixture.")
         self.assertEqual(self.review.state, "withdrawn")
         self.assertEqual(self.schedule.state, "changes_requested")
 
@@ -99568,9 +100527,9 @@ from . import schedule_integrity
 
 ====================================================================================================
 FILE: sports_federation_scheduling/models/schedule.py
-SIZE: 11542
-CONTENT-LENGTH: 11542
-SHA256: 2ff51c2b995ea9fdc4ddaa82f63f3347af386064a11436dad43a870c45314e41
+SIZE: 11977
+CONTENT-LENGTH: 11977
+SHA256: c99c1cd2f6050581ee420a63206c5d45c852bdcda95375a7d88764614d49525c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -99613,31 +100572,69 @@ class FederationSchedule(models.Model):
         index=True,
     )
     revision = fields.Integer(default=0, required=True, copy=False, index=True)
-    available_fixture_ids = fields.Many2many("federation.fixture", compute="_compute_fixture_readiness", string="Calendar Fixtures")
-    unassigned_fixture_ids = fields.Many2many("federation.fixture", compute="_compute_fixture_readiness", string="Unassigned Fixtures")
-    stale_assignment_ids = fields.Many2many("federation.schedule.assignment", compute="_compute_fixture_readiness", string="Assignments Outside Calendar Plan")
+    available_fixture_ids = fields.Many2many(
+        "federation.fixture",
+        compute="_compute_fixture_readiness",
+        string="Calendar Fixtures",
+    )
+    unassigned_fixture_ids = fields.Many2many(
+        "federation.fixture",
+        compute="_compute_fixture_readiness",
+        string="Unassigned Fixtures",
+    )
+    stale_assignment_ids = fields.Many2many(
+        "federation.schedule.assignment",
+        compute="_compute_fixture_readiness",
+        string="Assignments Outside Calendar Plan",
+    )
     available_fixture_count = fields.Integer(compute="_compute_fixture_readiness")
     unassigned_fixture_count = fields.Integer(compute="_compute_fixture_readiness")
     stale_assignment_count = fields.Integer(compute="_compute_fixture_readiness")
 
-    @api.depends("matchday_id.allocation_ids.fixture_ids", "matchday_id.allocation_ids.manual_fixture_ids", "assignment_ids.fixture_id")
+    @api.depends(
+        "matchday_id.allocation_ids.fixture_ids",
+        "matchday_id.allocation_ids.manual_fixture_ids",
+        "assignment_ids.fixture_id",
+    )
     def _compute_fixture_readiness(self):
         for schedule in self:
             fixtures = schedule.matchday_id.allocation_ids.mapped("fixture_ids")
             assigned = schedule.assignment_ids.mapped("fixture_id")
             schedule.available_fixture_ids = fixtures
             schedule.unassigned_fixture_ids = fixtures - assigned
-            schedule.stale_assignment_ids = schedule.assignment_ids.filtered(lambda item: item.fixture_id not in fixtures)
+            schedule.stale_assignment_ids = schedule.assignment_ids.filtered(
+                lambda item: item.fixture_id not in fixtures
+            )
             schedule.available_fixture_count = len(fixtures)
             schedule.unassigned_fixture_count = len(fixtures - assigned)
             schedule.stale_assignment_count = len(schedule.stale_assignment_ids)
 
     def action_refresh_calendar_fixtures(self):
         self.ensure_one()
-        self.env["federation.competition.role.assignment"].assert_role(self.edition_id, "schedule_planner", "competition_director")
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "schedule_planner", "competition_director"
+        )
         self.assert_mutable()
-        self.invalidate_recordset(["available_fixture_ids", "unassigned_fixture_ids", "stale_assignment_ids", "available_fixture_count", "unassigned_fixture_count", "stale_assignment_count"])
-        return {"type": "ir.actions.client", "tag": "display_notification", "params": {"title": "Calendar fixtures refreshed", "message": f"{self.available_fixture_count} fixtures available; {self.unassigned_fixture_count} require a slot.", "type": "warning" if self.unassigned_fixture_count else "success", "next": {"type": "ir.actions.client", "tag": "reload"}}}
+        self.invalidate_recordset(
+            [
+                "available_fixture_ids",
+                "unassigned_fixture_ids",
+                "stale_assignment_ids",
+                "available_fixture_count",
+                "unassigned_fixture_count",
+                "stale_assignment_count",
+            ]
+        )
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Calendar fixtures refreshed",
+                "message": f"{self.available_fixture_count} fixtures available; {self.unassigned_fixture_count} require a slot.",
+                "type": "warning" if self.unassigned_fixture_count else "success",
+                "next": {"type": "ir.actions.client", "tag": "reload"},
+            },
+        }
 
     fairness_same_club_weight = fields.Float(
         string="Same-club overlap weight",
@@ -99858,15 +100855,15 @@ class FederationScheduleChange(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_scheduling/models/schedule_integrity.py
-SIZE: 4195
-CONTENT-LENGTH: 4195
-SHA256: 4fc9f7cb8e57f6b4ca4a9f965d2afed369d05d564ae2e56e2f0c05642a65925b
+SIZE: 4198
+CONTENT-LENGTH: 4198
+SHA256: 053adc8088d367265677c9f3a85b44d89f87528beb476d6bac57d61a067ab93b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
-from odoo import api, models
+from odoo import _, api, models
 from odoo.exceptions import ValidationError
 
 
@@ -100539,9 +101536,9 @@ class FederationScheduleQueries(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_scheduling/services/schedule_validator.py
-SIZE: 6682
-CONTENT-LENGTH: 6682
-SHA256: b23edfa70f84264d35e21dd17c1ef5bb5113378974380385b1909c3eb841912e
+SIZE: 6791
+CONTENT-LENGTH: 6791
+SHA256: 07d241fb656ed912a84f74275d0851596138e0aee661835f19f00f421cb9cdcc
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -100693,7 +101690,13 @@ class FederationScheduleValidator(models.AbstractModel):
                 team_windows.setdefault(team.id, []).append((fixture, slot))
         stale = sorted(set(assignment_map) - set(fixture_by_id))
         for fixture_id in stale:
-            errors.append({"code": "fixture_outside_calendar_plan", "message": "An assigned fixture is no longer included in the calendar plan.", "fixture_id": fixture_id})
+            errors.append(
+                {
+                    "code": "fixture_outside_calendar_plan",
+                    "message": "An assigned fixture is no longer included in the calendar plan.",
+                    "fixture_id": fixture_id,
+                }
+            )
         missing = sorted(set(fixture_by_id) - set(assignment_map))
         return {
             "valid": not errors and not missing,
@@ -100794,9 +101797,9 @@ class TestFairnessSolver(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_scheduling/tests/test_schedule_amendment.py
-SIZE: 6893
-CONTENT-LENGTH: 6893
-SHA256: 74fbb3f80a54efba65830a140dedbc1277e7096c8888db10af46a9da772f5d38
+SIZE: 7034
+CONTENT-LENGTH: 7034
+SHA256: 2a2a40a66f5de73b0686a388fe493ca5160ab348879f0827476f1497663ba6a9
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -100887,7 +101890,12 @@ class TestScheduleAmendment(TransactionCase):
         )
         cls.fixture = fixture
         cls.allocation = cls.env["federation.matchday.allocation"].create(
-            {"matchday_id": cls.matchday.id, "structure_id": structure.id, "stage_id": stage.id, "round_number": 1}
+            {
+                "matchday_id": cls.matchday.id,
+                "structure_id": structure.id,
+                "stage_id": stage.id,
+                "round_number": 1,
+            }
         )
         court = cls.env["federation.playing.area"].create(
             {"name": "Main Court", "venue_id": venue.id}
@@ -100956,11 +101964,14 @@ class TestScheduleAmendment(TransactionCase):
         with self.assertRaises(ValidationError):
             self.schedule.action_create_revision("Unsafe live change")
 
-
     def test_late_fixture_can_be_added_to_revision_and_removed_again(self):
         replacement = self.schedule.action_create_revision("Late fixture added")
         late_fixture = self.env["federation.fixture"].create(
-            {"structure_id": self.structure.id, "stage_id": self.stage.id, "round_number": 2}
+            {
+                "structure_id": self.structure.id,
+                "stage_id": self.stage.id,
+                "round_number": 2,
+            }
         )
         self.allocation.manual_fixture_ids = [(4, late_fixture.id)]
         replacement.invalidate_recordset()
@@ -101882,9 +102893,9 @@ class FederationTournament(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_standings/models/standing.py
-SIZE: 20317
-CONTENT-LENGTH: 20296
-SHA256: 276209b8594ac82b8916dd59efa74e9e66afd34a2fb5a0a1441c761a9dc79c27
+SIZE: 20314
+CONTENT-LENGTH: 20293
+SHA256: 8de88818b9e3b7268aaf53e6999818abba6ac45f2ffb08475f130d8c85ba2c29
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -101894,7 +102905,7 @@ import logging
 from uuid import uuid4
 
 from odoo.addons.sports_federation_base.correlation import ensure_correlation_id
-from odoo import _, api, fields, models
+from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -102445,9 +103456,9 @@ class FederationStandingLine(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_standings/models/standing_recompute_job.py
-SIZE: 8256
-CONTENT-LENGTH: 8256
-SHA256: 64fdd46996c55c447190befab5b016980da7941f9fbeb85214985a00924fa0a5
+SIZE: 8379
+CONTENT-LENGTH: 8379
+SHA256: 3057fbf36e55bea5c0b037efc7bba38ce50d5dd1c84b97ba264e820155eba04a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -102614,7 +103625,9 @@ class FederationStandingRecomputeJob(models.Model):
             exhausted = self.attempt_count >= self.max_attempts
             retry_minutes = min(60, 2 ** max(1, self.attempt_count))
             next_retry_on = (
-                False if exhausted else fields.Datetime.now() + timedelta(minutes=retry_minutes)
+                False
+                if exhausted
+                else fields.Datetime.now() + timedelta(minutes=retry_minutes)
             )
             self.write(
                 {
@@ -102653,30 +103666,33 @@ class FederationStandingRecomputeJob(models.Model):
         )
         return True
 
-
     def action_retry(self):
         """Return terminal jobs to the queue without erasing evidence."""
         for job in self:
             if job.state not in ("failed", "dead_letter"):
                 raise ValidationError(_("Only failed jobs can be retried."))
-            job.write({
-                "state": "pending",
-                "next_retry_on": False,
-                "completed_on": False,
-                "dead_lettered_on": False,
-                "attempt_count": 0,
-            })
+            job.write(
+                {
+                    "state": "pending",
+                    "next_retry_on": False,
+                    "completed_on": False,
+                    "dead_lettered_on": False,
+                    "attempt_count": 0,
+                }
+            )
         return True
 
     @api.model
     def _recover_stale_running_jobs(self, stale_minutes=30):
         deadline = fields.Datetime.now() - timedelta(minutes=stale_minutes)
         stale = self.search([("state", "=", "running"), ("started_on", "<=", deadline)])
-        stale.write({
-            "state": "failed",
-            "next_retry_on": fields.Datetime.now(),
-            "last_error": _("Recovered after the worker stopped while processing."),
-        })
+        stale.write(
+            {
+                "state": "failed",
+                "next_retry_on": fields.Datetime.now(),
+                "last_error": _("Recovered after the worker stopped while processing."),
+            }
+        )
         return len(stale)
 
     @api.model
@@ -102735,9 +103751,9 @@ from . import test_tour_standings
 
 ====================================================================================================
 FILE: sports_federation_standings/tests/test_standing_recompute_queue.py
-SIZE: 6779
-CONTENT-LENGTH: 6779
-SHA256: b383e90b767dbd951f5d88f7a713d8b6ca7423aac99fbd74919031a96efedc3f
+SIZE: 6968
+CONTENT-LENGTH: 6968
+SHA256: bc700307b4c0bbb2a7753e407a568b01d1060967c4ad0e4d0ca44dfe90017a00
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -102917,27 +103933,40 @@ class TestStandingRecomputeQueue(TransactionCase):
 
     def test_exhausted_job_moves_to_dead_letter_and_can_be_retried(self):
         standing = self._create_standing()
-        job = self.env['federation.standing.recompute.job'].create({
-            'standing_id': standing.id, 'correlation_id': 'dead-letter-1',
-            'attempt_count': 2, 'max_attempts': 3,
-        })
-        with patch.object(type(standing), 'action_recompute', side_effect=RuntimeError('boom')):
+        job = self.env["federation.standing.recompute.job"].create(
+            {
+                "standing_id": standing.id,
+                "correlation_id": "dead-letter-1",
+                "attempt_count": 2,
+                "max_attempts": 3,
+            }
+        )
+        with patch.object(
+            type(standing), "action_recompute", side_effect=RuntimeError("boom")
+        ):
             self.assertFalse(job._process_single_job())
-        self.assertEqual(job.state, 'dead_letter')
+        self.assertEqual(job.state, "dead_letter")
         self.assertFalse(job.next_retry_on)
         self.assertTrue(job.dead_lettered_on)
         job.action_retry()
-        self.assertEqual(job.state, 'pending')
+        self.assertEqual(job.state, "pending")
         self.assertEqual(job.attempt_count, 0)
 
     def test_stale_running_job_is_recovered(self):
         standing = self._create_standing()
-        job = self.env['federation.standing.recompute.job'].create({
-            'standing_id': standing.id, 'correlation_id': 'stale-1',
-            'state': 'running', 'started_on': fields.Datetime.now() - timedelta(hours=1),
-        })
-        self.assertEqual(self.env['federation.standing.recompute.job']._recover_stale_running_jobs(), 1)
-        self.assertEqual(job.state, 'failed')
+        job = self.env["federation.standing.recompute.job"].create(
+            {
+                "standing_id": standing.id,
+                "correlation_id": "stale-1",
+                "state": "running",
+                "started_on": fields.Datetime.now() - timedelta(hours=1),
+            }
+        )
+        self.assertEqual(
+            self.env["federation.standing.recompute.job"]._recover_stale_running_jobs(),
+            1,
+        )
+        self.assertEqual(job.state, "failed")
         self.assertTrue(job.next_retry_on)
 
 ====================================================================================================
