@@ -87,3 +87,18 @@ class TestFederationOperationTasks(TransactionCase):
         )
         with self.assertRaisesRegex(Exception, "Blocking tasks"):
             task.action_acknowledge()
+
+    def test_operation_task_opens_its_owning_record(self):
+        task = self.env["federation.operation.task"].create(
+            {
+                "name": "Open source",
+                "task_type": "registration",
+                "audience": "manager",
+                "source_model": self.window._name,
+                "source_record_id": self.window.id,
+                "source_key": f"{self.window._name}:{self.window.id}:open",
+            }
+        )
+        action = task.action_open_source()
+        self.assertEqual(action["res_model"], self.window._name)
+        self.assertEqual(action["res_id"], self.window.id)

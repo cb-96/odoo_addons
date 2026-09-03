@@ -15,3 +15,5 @@ from . import portal_status_labels
 from . import operation_task
 from . import competition_queries
 from . import federation_competition_entry
+
+from . import qol_search

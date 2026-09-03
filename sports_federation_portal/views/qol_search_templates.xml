@@ -1,0 +1,10 @@
+<odoo>
+ <template id="federation_qol_search_results" name="Federation Search">
+  <t t-call="portal.portal_layout"><div class="container py-4">
+   <h2>Federation search</h2>
+   <form action="/federation/search" method="get" role="search" class="d-flex gap-2 mb-4"><label for="federation_search_q" class="visually-hidden">Search competitions, teams, schedules and matches</label><input id="federation_search_q" name="q" class="form-control" t-att-value="query" placeholder="Competition, team, schedule or match" minlength="2"/><button class="btn btn-primary">Search</button></form>
+   <p t-if="query and not results" class="alert alert-info" role="status">No matching federation records were found.</p>
+   <div class="list-group" t-if="results"><a t-foreach="results" t-as="result" t-att-href="result['url']" class="list-group-item list-group-item-action"><strong t-esc="result['name']"/><span class="badge text-bg-secondary ms-2" t-esc="result['type']"/></a></div>
+  </div></t>
+ </template>
+</odoo>

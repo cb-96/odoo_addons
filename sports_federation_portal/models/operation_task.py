@@ -432,6 +432,25 @@ class FederationOperationTask(models.Model):
             )
             user_tasks.write({"digest_sent_on": today})
 
+    def action_open_source(self):
+        self.ensure_one()
+        source = self.env.get(self.source_model)
+        source = source.browse(self.source_record_id).exists() if source is not None else source
+        if not source:
+            raise ValidationError(_("The source record no longer exists."))
+        return {"type": "ir.actions.act_window", "name": source.display_name, "res_model": source._name, "res_id": source.id, "view_mode": "form", "target": "current"}
+
+    def action_retry_source(self):
+        self.ensure_one()
+        source = self.env.get(self.source_model)
+        source = source.browse(self.source_record_id).exists() if source is not None else source
+        if not source:
+            raise ValidationError(_("The source record no longer exists."))
+        if source._name != "federation.operation.job" or source.state not in ("retry", "operator_action"):
+            raise ValidationError(_("This item must be corrected in its owning workflow."))
+        source.action_retry()
+        return self.action_open_source()
+
     def action_acknowledge(self):
         """Acknowledge a warning without pretending the source is resolved."""
         for task in self:

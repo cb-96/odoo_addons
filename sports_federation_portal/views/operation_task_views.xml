@@ -23,7 +23,7 @@
         <field name="name">federation.operation.task.form</field>
         <field name="model">federation.operation.task</field>
         <field name="arch" type="xml">
-            <form string="Operational Task">
+            <form string="Operational Task"><header><button name="action_open_source" type="object" string="Open Source" class="btn-primary"/><button name="action_retry_source" type="object" string="Retry / Return to Draft" invisible="state == 'done'"/></header>
                 <header>
                     <button name="action_acknowledge" type="object" string="Acknowledge" class="btn-secondary" invisible="state != 'open' or blocking"/>
                     <button name="action_escalate" type="object" string="Escalate" class="btn-primary"/>

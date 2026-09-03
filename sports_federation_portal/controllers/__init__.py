@@ -8,3 +8,5 @@ from . import operation_tasks
 from . import manager_operation_tasks
 from . import qol
 from . import competition_portal
+
+from . import qol_search
