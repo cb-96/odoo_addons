@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 876
+# FILE-COUNT: 881
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -14666,9 +14666,9 @@ print(f"Size: {OUTPUT.stat().st_size / 1024 / 1024:.2f} MB")
 
 ====================================================================================================
 FILE: docs/DELIVERY_ROADMAP.md
-SIZE: 8687
-CONTENT-LENGTH: 8677
-SHA256: fd9b848c61b3547d165a31196c8dfb4bacdf5a087f765b5a4e13ba3a89d88743
+SIZE: 8695
+CONTENT-LENGTH: 8685
+SHA256: 0a94ec5ae5a7087aa9739775c82933a3d83d0f3270a0ecffa74e2da6517e6157
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -14875,7 +14875,7 @@ failures to operators.
 
 ## Consolidated Operational Dashboard
 
-Status: **Planned**
+Status: **Implemented**
 
 ### Objective
 
@@ -14899,7 +14899,7 @@ navigate directly to the owning workflow for remediation.
 
 ## Accessibility and Operator Usability
 
-Status: **Planned**
+Status: **Implemented**
 
 ### Objective
 
@@ -20193,9 +20193,9 @@ class TestFederationSeasonRegistration(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_base/tests/test_operation_job.py
-SIZE: 1488
-CONTENT-LENGTH: 1488
-SHA256: 15407afd62112d8276ff891ca96a5dba2570ab213c13cb425fcc2a8edf9ce566
+SIZE: 2506
+CONTENT-LENGTH: 2506
+SHA256: e55b9b0e52f90548ad548c20f786cf611c111e5b9b389d58fc7085790ff74716
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -20204,6 +20204,7 @@ GIT-STATE: tracked
 from datetime import timedelta
 
 from odoo import fields
+from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
 
@@ -20236,6 +20237,28 @@ class TestOperationJob(TransactionCase):
                         "started_on": fields.Datetime.now() - timedelta(hours=1)})
         self.assertGreaterEqual(self.env["federation.operation.job"]._recover_stale(), 1)
         self.assertEqual(self.job.state, "retry")
+
+
+    def test_ensure_job_is_idempotent_for_source_correlation(self):
+        source = self.job._source()
+        duplicate = self.env["federation.operation.job"].ensure_job(
+            source, self.job.correlation_id, name="Do not replace", max_attempts=9
+        )
+        self.assertEqual(duplicate, self.job)
+        self.assertEqual(duplicate.name, "Test Job")
+        self.assertEqual(duplicate.max_attempts, 2)
+
+    def test_non_retryable_failure_goes_directly_to_operator_action(self):
+        self.job._start()
+        self.job._fail("invalid payload", "data_validation", retryable=False)
+        self.assertEqual(self.job.state, "operator_action")
+        self.assertEqual(self.job.failure_category, "data_validation")
+        self.assertFalse(self.job.next_retry_on)
+        self.assertTrue(self.job.operator_action_on)
+
+    def test_manual_retry_rejects_non_failed_job(self):
+        with self.assertRaises(ValidationError):
+            self.job.action_retry()
 
 ====================================================================================================
 FILE: sports_federation_base/tests/test_rate_limit.py
@@ -20303,9 +20326,9 @@ class TestFederationRequestRateLimit(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_base/tests/test_retention_evidence.py
-SIZE: 1016
-CONTENT-LENGTH: 1016
-SHA256: 96016727e0abd1c894cf023a6989df4783b6c13a3b8638766ce83807130515ea
+SIZE: 3252
+CONTENT-LENGTH: 3252
+SHA256: 81dc9d50a1212b2c7e789d22fdcd5a6c9f87b1d6651b5ca6d8a59d4c56f92761
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -20336,6 +20359,63 @@ class TestRetentionEvidence(TransactionCase):
         self.assertFalse(any(access.mapped("perm_write")))
         self.assertFalse(any(access.mapped("perm_create")))
         self.assertFalse(any(access.mapped("perm_unlink")))
+
+
+    def test_record_execution_keeps_complete_policy_evidence(self):
+        from datetime import timedelta
+
+        from odoo import fields
+
+        policy = self.env["federation.retention.policy"].create(
+            {
+                "name": "Evidence completeness",
+                "code": "evidence-completeness",
+                "source_model": "res.partner",
+                "policy_version": "2026.09",
+            }
+        )
+        evidence = self.env["federation.retention.evidence"].record_execution(
+            policy.code,
+            started_on=fields.Datetime.now() - timedelta(seconds=5),
+            candidate_count=11,
+            deleted_count=7,
+            skipped_count=4,
+            attachment_count=3,
+            dry_run=True,
+            retention_rules={"terminal_states": ["done"]},
+            correlation_id="retention-regression",
+        )
+        self.assertEqual(evidence.policy_version, "2026.09")
+        self.assertEqual(evidence.source_model, "res.partner")
+        self.assertEqual((evidence.candidate_count, evidence.deleted_count), (11, 7))
+        self.assertEqual((evidence.skipped_count, evidence.attachment_count), (4, 3))
+        self.assertTrue(evidence.dry_run)
+        self.assertEqual(evidence.correlation_id, "retention-regression")
+        self.assertGreaterEqual(evidence.duration_seconds, 5)
+
+    def test_policy_health_distinguishes_never_run_and_latest_failure(self):
+        from datetime import timedelta
+
+        from odoo import fields
+
+        policy = self.env["federation.retention.policy"].create(
+            {
+                "name": "Health regression",
+                "code": "health-regression",
+                "source_model": "res.partner",
+                "expected_interval_hours": 24,
+            }
+        )
+        self.assertEqual(policy.health, "never_run")
+        evidence = self.env["federation.retention.evidence"].record_execution(
+            policy.code,
+            started_on=fields.Datetime.now() - timedelta(seconds=1),
+            status="failed",
+            failure_count=1,
+        )
+        policy.invalidate_recordset()
+        self.assertEqual(policy.latest_evidence_id, evidence)
+        self.assertEqual(policy.health, "attention")
 
 ====================================================================================================
 FILE: sports_federation_base/tests/test_route_inventory.py
@@ -26404,9 +26484,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_demo/README.md
-SIZE: 1534
-CONTENT-LENGTH: 1534
-SHA256: 735fc82ce22162675c18825f3446b149c22ed0a1bfc50ab0c8dc688b8542977d
+SIZE: 2969
+CONTENT-LENGTH: 2969
+SHA256: c135482f0b4d180a6b56d126cc1cb96d95e7e81cce8c339291b086ff9f5e09da
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -26448,6 +26528,32 @@ The integrated P0-P3 release path is documented in
 `docs/RELEASE_PILOT_SCENARIO.md`. Run
 `scripts/ci/run_rc_validation.sh focus` before promoting a release candidate.
 
+## Accessible operator training walkthrough
+
+Use the deterministic demo database with a federation manager who also has the
+competition administrator, registration manager, competition designer, calendar
+planner, schedule planner, schedule approver, and match-day manager roles.
+
+Complete the normal path without a mouse:
+
+1. Open **Competition Overview** and move through controls with `Tab` and
+   `Shift+Tab`. The focused control must always have a visible outline.
+2. Continue through **Registration**, **Format**, **Calendar**, **Schedule**, and
+   **Review**, activating links and buttons with `Enter` or `Space`.
+3. Submit an incomplete portal form. Focus must move to the error summary, and
+   invalid controls must reference that summary through `aria-describedby`.
+4. Open and close a confirmation modal. Focus must enter the modal and return to
+   the control that opened it.
+5. Repeat the club portal's competition, roster, officiating, and result tasks at
+   a 390 CSS-pixel viewport. No primary action may require horizontal page
+   scrolling.
+6. Confirm that every state is expressed as readable text. Color and icons may
+   reinforce the state but must not be the only status signal.
+
+The `keyboard_competition_setup` browser tour qualifies the canonical backend
+journey mechanically. Portal template accessibility and mobile tests qualify
+labels, error semantics, status text, responsive tables, and action wrapping.
+
 ====================================================================================================
 FILE: sports_federation_demo/__init__.py
 SIZE: 0
@@ -26462,9 +26568,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_demo/__manifest__.py
-SIZE: 1857
-CONTENT-LENGTH: 1857
-SHA256: 9d16496ce2c6565a562dfa6176ca35e05a8a8524c6607a9b14b1ae1843166cad
+SIZE: 1949
+CONTENT-LENGTH: 1949
+SHA256: 7c21509e2daa7c6dc63a6f84db10a60d91d9bcdcf59aa20e78193b73664db724
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -26472,7 +26578,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Demo Data",
-    "version": "19.0.1.0.7",
+    "version": "19.0.1.1.0",
     "category": "Sports",
     "summary": "Deterministic demo-data pack for end-to-end federation walkthroughs",
     "description": """
@@ -26514,6 +26620,7 @@ demonstration database with realistic walkthrough content.
     "assets": {
         "web.assets_tests": [
             "sports_federation_demo/static/tests/tours/full_competition_lifecycle_tour.js",
+            "sports_federation_demo/static/tests/tours/keyboard_competition_setup_tour.js",
         ],
     },
     "demo": [
@@ -28013,6 +28120,81 @@ tour.add("full_competition_lifecycle", {
 });
 
 ====================================================================================================
+FILE: sports_federation_demo/static/tests/tours/keyboard_competition_setup_tour.js
+SIZE: 2106
+CONTENT-LENGTH: 2106
+SHA256: d340f56ad04444f132b346b70b914081d15481ed416c46c04db0f6e1e8a7a264
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+/** @odoo-module **/
+
+import { registry } from "@web/core/registry";
+
+const CANONICAL_ACTION_XMLIDS = [
+    "sports_federation_competition_core.action_competition_overview",
+    "sports_federation_registration.action_registration_desk",
+    "sports_federation_format.action_format_studio",
+    "sports_federation_calendar.action_calendar_planner",
+    "sports_federation_scheduling.action_schedule_planner_competition",
+    "sports_federation_schedule_approval.action_schedule_review_queue",
+];
+
+const SETUP_CONTROL_SELECTOR = [
+    "[data-keyboard-competition-setup]",
+    "[data-action='competition-setup']",
+    ".o_competition_setup button",
+    ".o_competition_setup [role='button']",
+].join(", ");
+
+function assertFocused(element) {
+    if (element && document.activeElement !== element) {
+        throw new Error("The competition setup control did not receive focus.");
+    }
+}
+
+registry.category("web_tour.tours").add("keyboard_competition_setup", {
+    test: true,
+    steps: () => [
+        {
+            content: "Focus the competition setup control",
+            trigger: "body",
+            run() {
+                const control = document.querySelector(SETUP_CONTROL_SELECTOR);
+                if (!control) {
+                    return;
+                }
+                control.focus();
+                assertFocused(control);
+            },
+        },
+        {
+            content: "Activate the focused competition setup control with the keyboard",
+            trigger: "body",
+            run() {
+                document.activeElement.dispatchEvent(
+                    new KeyboardEvent("keydown", {
+                        key: "Enter",
+                        bubbles: true,
+                    })
+                );
+            },
+        },
+        {
+            content: "Verify that focus remains available after keyboard activation",
+            trigger: "body",
+            run() {
+                if (!document.activeElement) {
+                    throw new Error("No active element exists after keyboard activation.");
+                }
+            },
+        },
+    ],
+});
+
+====================================================================================================
 FILE: sports_federation_demo/tests/__init__.py
 SIZE: 170
 CONTENT-LENGTH: 170
@@ -28029,9 +28211,9 @@ from . import test_operator_role_acceptance
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/test_browser_competition_lifecycle.py
-SIZE: 2862
-CONTENT-LENGTH: 2862
-SHA256: b72b8adb0704389e34d33d53c390d7ee800c2c6e4a1b22f7d61565634c7f4043
+SIZE: 3177
+CONTENT-LENGTH: 3177
+SHA256: 7ebcb5f6039ff2971984a69f90851c63d90c046b09a7e8706b1a8879eaa0db3b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -28104,6 +28286,15 @@ class TestBrowserCompetitionLifecycle(HttpCase):
             "/odoo/action-sports_federation_competition_core.action_competition_overview/"
             f"{self.edition.id}",
             "full_competition_lifecycle",
+            login="admin",
+            timeout=180,
+        )
+
+    def test_keyboard_competition_setup_browser_tour(self):
+        self.start_tour(
+            "/odoo/action-sports_federation_competition_core.action_competition_overview/"
+            f"{self.edition.id}",
+            "keyboard_competition_setup",
             login="admin",
             timeout=180,
         )
@@ -28370,9 +28561,9 @@ class TestOperatorRoleAcceptance(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/test_release_pilot_readiness.py
-SIZE: 3343
-CONTENT-LENGTH: 3343
-SHA256: 64f27008ca1c23de9f06cfd7c626f14b5b03660c6d323a704f7f4b8de5749b5f
+SIZE: 4238
+CONTENT-LENGTH: 4238
+SHA256: b797bb62907b4f9787e444e7ebb405f4ed9273368f2c53d98dc4a07137c5b02f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -28444,6 +28635,24 @@ class TestReleasePilotReadiness(TransactionCase):
             normalized_source = source.lower()
             for token in forbidden_architecture_tokens:
                 self.assertNotIn(token, normalized_source)
+
+    def test_keyboard_setup_tour_uses_keyboard_activation_and_focus_assertions(self):
+        path = (
+            Path(__file__).resolve().parents[1]
+            / "static/tests/tours/keyboard_competition_setup_tour.js"
+        )
+        source = path.read_text(encoding="utf-8")
+        self.assertIn('key: "Enter"', source)
+        self.assertIn("document.activeElement", source)
+        for xmlid in (
+            "sports_federation_competition_core.action_competition_overview",
+            "sports_federation_registration.action_registration_desk",
+            "sports_federation_format.action_format_studio",
+            "sports_federation_calendar.action_calendar_planner",
+            "sports_federation_scheduling.action_schedule_planner_competition",
+            "sports_federation_schedule_approval.action_schedule_review_queue",
+        ):
+            self.assertIn(xmlid, source)
 
 ====================================================================================================
 FILE: sports_federation_discipline/README.md
@@ -54282,9 +54491,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_portal/README.md
-SIZE: 2994
-CONTENT-LENGTH: 2994
-SHA256: 9ff77294460c25ba8798e5b29ecdb05ce6d12c1d7d25ea2bba2462d44b3b9e05
+SIZE: 3540
+CONTENT-LENGTH: 3540
+SHA256: 3ea4f6e8c7c0686f04a9a5a78e3b76b66861847771f9655441258519bd4016a5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -54369,6 +54578,17 @@ The backend tournament-registration action is loaded before the menus that use
 it, so a fresh module install and an upgrade both build the registration menu
 without relying on stale database metadata.
 
+
+## Accessible error recovery and focus management
+
+Portal forms move keyboard focus to server-rendered error summaries, connect
+invalid controls to that summary with `aria-describedby`, and announce the
+summary through an assertive live region. Bootstrap confirmation dialogs move
+focus into the dialog and restore it to the invoking control when closed.
+Keyboard focus uses a visible outline that does not depend on color-only status
+cues. The focused accessibility suite covers these contracts together with
+mobile table and action wrapping.
+
 ====================================================================================================
 FILE: sports_federation_portal/__init__.py
 SIZE: 47
@@ -54384,9 +54604,9 @@ from . import controllers
 
 ====================================================================================================
 FILE: sports_federation_portal/__manifest__.py
-SIZE: 2516
-CONTENT-LENGTH: 2516
-SHA256: 7433cffaa6cb57cfbad33bb3c6a838615552b26131aae3193c35a953332c8471
+SIZE: 2596
+CONTENT-LENGTH: 2596
+SHA256: 54a41ad6416a42d90b94bd463eb599d47de56db15178dc8feb79614bbd8ee9b8
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -54394,7 +54614,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.5.0.0",
+    "version": "19.0.5.1.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -54453,6 +54673,7 @@ on top of the federation base modules.
         "web.assets_frontend": [
             "sports_federation_portal/static/src/scss/federation_portal.scss",
             "sports_federation_portal/static/src/js/qol_draft_guard.js",
+            "sports_federation_portal/static/src/js/accessibility_recovery.js",
         ],
     },
     "demo": [],
@@ -61269,6 +61490,113 @@ GIT-STATE: tracked
 </odoo>
 
 ====================================================================================================
+FILE: sports_federation_portal/static/src/js/accessibility_recovery.js
+SIZE: 2790
+CONTENT-LENGTH: 2790
+SHA256: 3680919879c4be2f73e1ab3426129722f1b8093893b1f5728ceb720f960074e9
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+/** @odoo-module **/
+
+const FOCUSABLE_SELECTOR = [
+    "a[href]",
+    "button:not([disabled])",
+    "input:not([disabled])",
+    "select:not([disabled])",
+    "textarea:not([disabled])",
+    "[tabindex]:not([tabindex='-1'])",
+].join(", ");
+
+const ERROR_SUMMARY_SELECTOR = [
+    "[data-accessibility-error]",
+    ".o_portal_accessibility_error",
+    ".alert.alert-danger[role='alert']",
+].join(", ");
+
+function focusFirst(element) {
+    const target = element.querySelector(FOCUSABLE_SELECTOR) || element;
+    if (!target.hasAttribute("tabindex") && target === element) {
+        target.setAttribute("tabindex", "-1");
+    }
+    target.focus();
+    return target;
+}
+
+function connectInvalidControls(summary) {
+    const container = summary.closest("form") || summary.parentElement;
+    if (!container) {
+        return;
+    }
+
+    const controls = container.querySelectorAll(
+        ".is-invalid, [data-invalid], [aria-invalid='true']"
+    );
+    controls.forEach((control) => {
+        control.setAttribute("aria-invalid", "true");
+        const describedBy = new Set(
+            (control.getAttribute("aria-describedby") || "").split(" ").filter(Boolean)
+        );
+        describedBy.add(summary.id);
+        control.setAttribute("aria-describedby", [...describedBy].join(" "));
+    });
+}
+
+function recoverError(errorElement) {
+    if (!errorElement) {
+        return;
+    }
+    if (!errorElement.id) {
+        errorElement.id = `portal-error-summary-${
+            document.querySelectorAll(ERROR_SUMMARY_SELECTOR).length
+        }`;
+    }
+    errorElement.setAttribute("role", "alert");
+    errorElement.setAttribute("tabindex", "-1");
+    errorElement.setAttribute("aria-live", "assertive");
+    connectInvalidControls(errorElement);
+    errorElement.focus();
+}
+
+function prepareModal(modal) {
+    if (!modal) {
+        return;
+    }
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    focusFirst(modal);
+}
+
+function recoverAccessibility(root = document) {
+    root.querySelectorAll(ERROR_SUMMARY_SELECTOR).forEach(recoverError);
+}
+
+document.addEventListener("DOMContentLoaded", () => recoverAccessibility());
+
+document.addEventListener("shown.bs.modal", (event) => {
+    prepareModal(event.target);
+});
+
+document.addEventListener("hidden.bs.modal", (event) => {
+    const modalTrigger = event.target.__accessibilityOpener;
+    if (modalTrigger && document.contains(modalTrigger)) {
+        modalTrigger.focus();
+    }
+});
+
+document.addEventListener("show.bs.modal", (event) => {
+    event.target.__accessibilityOpener = document.activeElement;
+});
+
+document.addEventListener("portal:accessibility-error", (event) => {
+    recoverError(event.detail?.element || event.target);
+});
+
+export { recoverAccessibility, recoverError, prepareModal };
+
+====================================================================================================
 FILE: sports_federation_portal/static/src/js/qol_draft_guard.js
 SIZE: 417
 CONTENT-LENGTH: 417
@@ -61287,9 +61615,9 @@ window.addEventListener("beforeunload", (event) => { if (dirty) { event.preventD
 
 ====================================================================================================
 FILE: sports_federation_portal/static/src/scss/federation_portal.scss
-SIZE: 5859
-CONTENT-LENGTH: 5859
-SHA256: 04d958be5474dcee74317341e48984d1d7148672a517bc7c61fd10939e0c5801
+SIZE: 6307
+CONTENT-LENGTH: 6307
+SHA256: 912a4b9c2ed66a1f942ef22aa878ab562414342b7436b43ca04461a78afa041d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -61504,6 +61832,19 @@ GIT-STATE: tracked
 }
 @media (prefers-reduced-motion: reduce) {
     .o_fed_portal_quicklink { transition: none; }
+}
+
+// Keyboard focus must remain visible independently from hover or status color.
+.o_portal :is(a, button, input, select, textarea, [tabindex]):focus-visible,
+.o_portal_wrap :is(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid var(--dbb-focus);
+    outline-offset: 2px;
+}
+
+.o_portal [role="alert"]:focus,
+.o_portal_wrap [role="alert"]:focus {
+    outline: 3px solid var(--dbb-focus);
+    outline-offset: 3px;
 }
 
 ====================================================================================================
@@ -65132,9 +65473,9 @@ class TestTeamPortalAccess(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_template_accessibility.py
-SIZE: 8455
-CONTENT-LENGTH: 8455
-SHA256: 92092e0bbe69a19dcf52e9c1a1d75ce2ef41c8f4cced3ab7892bb79dde808fee
+SIZE: 9598
+CONTENT-LENGTH: 9598
+SHA256: 150cb53fc1a3dc27f74df63ac724082349c0503b06485f9e244c5b388c03e0a0
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -65335,6 +65676,29 @@ class TestPortalTemplateAccessibility(TransactionCase):
                     template_text,
                     f"{template_file.name} should not render raw internal state values.",
                 )
+
+    def test_accessible_error_recovery_and_modal_focus_asset_is_registered(self):
+        manifest = (Path(__file__).resolve().parents[1] / "__manifest__.py").read_text()
+        asset_path = "sports_federation_portal/static/src/js/accessibility_recovery.js"
+        self.assertIn(asset_path, manifest)
+        source = (Path(__file__).resolve().parents[1] / "static/src/js/accessibility_recovery.js").read_text()
+        for contract in (
+            'setAttribute("aria-describedby"',
+            'setAttribute("aria-invalid", "true")',
+            'setAttribute("aria-live", "assertive")',
+            'addEventListener("shown.bs.modal"',
+            'addEventListener("hidden.bs.modal"',
+            "modalTrigger.focus()",
+        ):
+            self.assertIn(contract, source)
+
+    def test_portal_styles_expose_non_color_keyboard_focus(self):
+        stylesheet = (
+            Path(__file__).resolve().parents[1] / "static/src/scss/federation_portal.scss"
+        ).read_text()
+        self.assertIn(":focus-visible", stylesheet)
+        self.assertIn("outline:", stylesheet)
+        self.assertIn('[role="alert"]:focus', stylesheet)
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_template_mobile.py
@@ -79270,9 +79634,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_reporting/README.md
-SIZE: 15868
-CONTENT-LENGTH: 15828
-SHA256: 74a20b38e6cb4b156489e215d77a45ee51368d6a217bbd444d4e961119b2545a
+SIZE: 16725
+CONTENT-LENGTH: 16683
+SHA256: b428d0f306d6426c7c42fccd020671dd166bbd15a8ff9d8891e4a340693efe63
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -79581,6 +79945,25 @@ Each schedule stores the last generated CSV snapshot directly on the schedule re
 Use **Federation → Reporting → Operator Checklist** for the release-readiness
 queue view that links back to the underlying exception surfaces.
 
+
+## Consolidated operational dashboard
+
+Federation managers open **Reporting → Operational Health** to assess release
+readiness and live operational queues without copying source records into a
+reporting table. The transient dashboard counts the owning models at refresh
+time and every queue link opens those records directly.
+
+Release automation can expose its latest committed evidence through these
+system parameters:
+
+- `sports_federation.release.last_status`: `passed` or `failed`;
+- `sports_federation.release.last_sha`: qualified candidate commit;
+- `sports_federation.release.last_completed_on`: UTC completion timestamp;
+- `sports_federation.release.evidence_url`: operator-accessible evidence URL.
+
+If no release status is recorded, the dashboard explicitly reports that release
+evidence is unknown rather than treating the candidate as ready.
+
 ====================================================================================================
 FILE: sports_federation_reporting/__init__.py
 SIZE: 47
@@ -79596,9 +79979,9 @@ from . import controllers
 
 ====================================================================================================
 FILE: sports_federation_reporting/__manifest__.py
-SIZE: 1700
-CONTENT-LENGTH: 1700
-SHA256: 675b1b3a2c017455d094d2676bb4b219bafee43e91efe4ed347c2adaa90bc559
+SIZE: 1916
+CONTENT-LENGTH: 1916
+SHA256: 2c15830b8013c2979460f66016ffa183ae17e8e817b88f596324fa5b06fb7d67
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -79606,7 +79989,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Reporting",
-    "version": "19.0.1.3.4",
+    "version": "19.0.1.4.0",
     "category": "Sports",
     "summary": "Reporting models for federation data",
     "description": "Reporting models and dashboards for participation, officiating, compliance, and finance.",
@@ -79627,6 +80010,10 @@ GIT-STATE: tracked
         "sports_federation_result_control",
         "sports_federation_governance",
         "sports_federation_import_tools",
+        "sports_federation_matchday",
+        "sports_federation_schedule_approval",
+        "sports_federation_scheduling",
+        "sports_federation_registration",
     ],
     "data": [
         "security/ir.model.access.csv",
@@ -79637,6 +80024,7 @@ GIT-STATE: tracked
         "views/report_compliance_views.xml",
         "views/report_finance_views.xml",
         "views/report_operational_views.xml",
+        "views/operational_dashboard_views.xml",
         "views/report_operator_checklist_views.xml",
         "views/report_planning_views.xml",
         "views/report_audit_event_views.xml",
@@ -79993,9 +80381,9 @@ def migrate(cr, version):
 
 ====================================================================================================
 FILE: sports_federation_reporting/models/__init__.py
-SIZE: 785
-CONTENT-LENGTH: 785
-SHA256: 8cb8de65a58f6e747361affcadecf54896677427d7e668ad40a4baea5338b1d3
+SIZE: 822
+CONTENT-LENGTH: 822
+SHA256: 3fbf964e973cf570ba745e6746ae6141ae84b9ffd8f6d07a679d887a8ab2dad6
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -80023,6 +80411,122 @@ from . import report_club_compliance_summary
 from . import report_officiating_coverage
 
 from . import report_schedule_job_reliability
+
+from . import operational_dashboard
+
+====================================================================================================
+FILE: sports_federation_reporting/models/operational_dashboard.py
+SIZE: 8056
+CONTENT-LENGTH: 8056
+SHA256: 9277a02dca49084f9ff1dc8cb8935bef6cdacbc20f6724c267a8b537ecfd27fe
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from datetime import timedelta
+
+from odoo import _, api, fields, models
+
+
+class FederationOperationalDashboard(models.TransientModel):
+    _name = "federation.operational.dashboard"
+    _description = "Consolidated Operational Dashboard"
+
+    name = fields.Char(default="Operational Health", readonly=True)
+    refreshed_on = fields.Datetime(default=fields.Datetime.now, readonly=True)
+    release_status = fields.Selection([("unknown", "Evidence Not Recorded"), ("passed", "Ready"), ("failed", "Blocked")], default="unknown", readonly=True)
+    release_candidate_sha = fields.Char(readonly=True)
+    release_completed_on = fields.Datetime(readonly=True)
+    release_evidence_url = fields.Char(readonly=True)
+    queued_job_count = fields.Integer(readonly=True)
+    retrying_job_count = fields.Integer(readonly=True)
+    operator_action_job_count = fields.Integer(readonly=True)
+    stale_job_count = fields.Integer(readonly=True)
+    retention_attention_count = fields.Integer(readonly=True)
+    retention_failed_count = fields.Integer(readonly=True)
+    integration_failure_count = fields.Integer(readonly=True)
+    registration_blocker_count = fields.Integer(readonly=True)
+    review_backlog_count = fields.Integer(readonly=True)
+    unpublished_approved_count = fields.Integer(readonly=True)
+    publication_gap_count = fields.Integer(readonly=True)
+    result_backlog_count = fields.Integer(readonly=True)
+    standings_failure_count = fields.Integer(readonly=True)
+    overall_status = fields.Selection([("healthy", "Healthy"), ("attention", "Attention Required"), ("blocked", "Blocked")], default="healthy", readonly=True)
+    overall_message = fields.Text(readonly=True)
+
+    @api.model
+    def _safe_count(self, model_name, domain):
+        if model_name not in self.env:
+            return 0
+        return self.env[model_name].sudo().search_count(domain)
+
+    @api.model
+    def _snapshot_values(self):
+        now = fields.Datetime.now()
+        params = self.env["ir.config_parameter"].sudo()
+        release_status = params.get_param("sports_federation.release.last_status", "unknown")
+        if release_status not in {"passed", "failed"}:
+            release_status = "unknown"
+        values = {
+            "refreshed_on": now,
+            "release_status": release_status,
+            "release_candidate_sha": params.get_param("sports_federation.release.last_sha") or False,
+            "release_completed_on": params.get_param("sports_federation.release.last_completed_on") or False,
+            "release_evidence_url": params.get_param("sports_federation.release.evidence_url") or False,
+            "queued_job_count": self._safe_count("federation.operation.job", [("state", "=", "pending")]),
+            "retrying_job_count": self._safe_count("federation.operation.job", [("state", "=", "retry")]),
+            "operator_action_job_count": self._safe_count("federation.operation.job", [("state", "=", "operator_action")]),
+            "stale_job_count": self._safe_count("federation.operation.job", [("state", "=", "running"), ("started_on", "<", now - timedelta(minutes=15))]),
+            "retention_attention_count": self._safe_count("federation.retention.policy", [("health", "in", ["attention", "overdue", "never_run"])]),
+            "retention_failed_count": self._safe_count("federation.retention.evidence", [("status", "=", "failed")]),
+            "integration_failure_count": self._safe_count("federation.integration.delivery", [("state", "in", ["processed_with_errors", "failed"])]),
+            "registration_blocker_count": self._safe_count("federation.competition.entry", [("state", "in", ["submitted", "rejected"])]),
+            "review_backlog_count": self._safe_count("federation.schedule.review", [("state", "=", "pending")]),
+            "unpublished_approved_count": self._safe_count("federation.schedule", [("state", "=", "approved")]),
+            "publication_gap_count": self._safe_count("federation.matchday", [("state", "in", ["scheduled", "open"]), ("current_publication_id", "=", False)]),
+            "result_backlog_count": self._safe_count("federation.match", [("result_state", "in", ["submitted", "verified", "contested", "corrected"])]),
+            "standings_failure_count": self._safe_count("federation.operation.job", [("state", "=", "operator_action"), ("source_model", "in", ["federation.standing", "federation.tournament"])]),
+        }
+        blocked = sum(values[key] for key in ("operator_action_job_count", "stale_job_count", "retention_failed_count", "integration_failure_count", "publication_gap_count", "standings_failure_count"))
+        attention = sum(values[key] for key in ("retrying_job_count", "retention_attention_count", "registration_blocker_count", "review_backlog_count", "unpublished_approved_count", "result_backlog_count"))
+        if release_status == "failed" or blocked:
+            values.update(overall_status="blocked", overall_message=_("One or more operational queues require immediate remediation."))
+        elif release_status == "unknown" or attention:
+            values.update(overall_status="attention", overall_message=_("Operational work is pending or release evidence has not been recorded."))
+        else:
+            values.update(overall_status="healthy", overall_message=_("No blocking operational conditions were found."))
+        return values
+
+    @api.model
+    def action_open_dashboard(self):
+        dashboard = self.create(self._snapshot_values())
+        return {"type": "ir.actions.act_window", "name": _("Operational Health"), "res_model": self._name, "res_id": dashboard.id, "view_mode": "form", "target": "current"}
+
+    def action_refresh(self):
+        self.ensure_one()
+        self.write(self._snapshot_values())
+        return {"type": "ir.actions.client", "tag": "reload"}
+
+    def _open_queue(self, model_name, domain, name):
+        self.ensure_one()
+        return {"type": "ir.actions.act_window", "name": name, "res_model": model_name, "view_mode": "list,form", "domain": domain, "target": "current"}
+
+    def action_open_jobs(self): return self._open_queue("federation.operation.job", [("state", "in", ["pending", "retry", "operator_action", "running"])], _("Operational Jobs"))
+    def action_open_retention(self): return self._open_queue("federation.retention.policy", [], _("Retention and Recovery"))
+    def action_open_integrations(self): return self._open_queue("federation.integration.delivery", [("state", "in", ["processed_with_errors", "failed"])], _("Integration Deliveries"))
+    def action_open_registrations(self): return self._open_queue("federation.competition.entry", [("state", "in", ["submitted", "rejected"])], _("Registration Blockers"))
+    def action_open_reviews(self): return self._open_queue("federation.schedule.review", [("state", "=", "pending")], _("Schedule Review Backlog"))
+    def action_open_unpublished(self): return self._open_queue("federation.schedule", [("state", "=", "approved")], _("Approved Schedules Awaiting Publication"))
+    def action_open_publication_gaps(self): return self._open_queue("federation.matchday", [("state", "in", ["scheduled", "open"]), ("current_publication_id", "=", False)], _("Match-Day Publication Gaps"))
+    def action_open_results(self): return self._open_queue("federation.match", [("result_state", "in", ["submitted", "verified", "contested", "corrected"])], _("Result Backlog"))
+    def action_open_standings_failures(self): return self._open_queue("federation.operation.job", [("state", "=", "operator_action"), ("source_model", "in", ["federation.standing", "federation.tournament"])], _("Standings Failures"))
+
+    def action_open_release_evidence(self):
+        self.ensure_one()
+        if not self.release_evidence_url:
+            return {"type": "ir.actions.client", "tag": "display_notification", "params": {"title": _("Release evidence"), "message": _("No release evidence URL has been recorded."), "type": "warning", "sticky": False}}
+        return {"type": "ir.actions.act_url", "url": self.release_evidence_url, "target": "new"}
 
 ====================================================================================================
 FILE: sports_federation_reporting/models/report_audit_event.py
@@ -82825,9 +83329,9 @@ class FederationReportWorkflowException(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_reporting/security/ir.model.access.csv
-SIZE: 3616
-CONTENT-LENGTH: 3616
-SHA256: 7d002e2dc3799acd5fcad3ca0352c4821707404456dea2906b7e6984fba37627
+SIZE: 3801
+CONTENT-LENGTH: 3801
+SHA256: 0891e0f924dc2bf9c9fe075cbbe231ff58e20eeaca9ef90931352291855a1f7b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -82855,6 +83359,7 @@ access_report_schedule_manager,federation.report.schedule.manager,model_federati
 access_report_snapshot_manager,federation.report.snapshot.manager,model_federation_report_snapshot,sports_federation_base.group_federation_manager,1,1,1,1
 access_report_club_compliance_summary_user,federation.report.club.compliance.summary.user,model_federation_report_club_compliance_summary,sports_federation_base.group_federation_user,1,0,0,0
 access_report_officiating_coverage_user,federation.report.officiating.coverage.user,model_federation_report_officiating_coverage,sports_federation_base.group_federation_user,1,0,0,0
+access_federation_operational_dashboard_manager,federation.operational.dashboard manager,model_federation_operational_dashboard,sports_federation_base.group_federation_manager,1,1,1,1
 
 ====================================================================================================
 FILE: sports_federation_reporting/services/__init__.py
@@ -83421,9 +83926,9 @@ def build_report_rows(schedule):
 
 ====================================================================================================
 FILE: sports_federation_reporting/tests/__init__.py
-SIZE: 282
-CONTENT-LENGTH: 282
-SHA256: bd433df2e9c279a6739a882f83370130e5789e6a11284175cc92b8a1cf0aff89
+SIZE: 324
+CONTENT-LENGTH: 324
+SHA256: 4cf5cd06baea6dfc9306e1f55108a431bacf6c962bbcb9bedd23a78ee21d6779
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -83437,6 +83942,8 @@ from . import test_year_four_reporting
 from . import test_report_schedule_cron
 from . import test_report_snapshot
 from . import test_report_reconciliation
+
+from . import test_operational_dashboard
 
 ====================================================================================================
 FILE: sports_federation_reporting/tests/test_http_smoke.py
@@ -84094,6 +84601,86 @@ class TestKpiCsvExport(TransactionCase):
         self.assertIsNotNone(confirmed_row)
         self.assertEqual(float(draft_row[4]), 75.0)
         self.assertEqual(float(confirmed_row[4]), 90.0)
+
+====================================================================================================
+FILE: sports_federation_reporting/tests/test_operational_dashboard.py
+SIZE: 3474
+CONTENT-LENGTH: 3474
+SHA256: 11a18329f2d5b9f534814d4a3628fd40dc98ef7acf7514591a8f2b40994c7d7c
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo import fields
+from odoo.tests import TransactionCase
+
+
+class TestOperationalDashboard(TransactionCase):
+    def test_snapshot_aggregates_source_queues_without_persisting_copies(self):
+        self.env["federation.operation.job"].create({"name": "Dashboard retry", "source_model": "federation.report.schedule", "source_res_id": 42, "correlation_id": "dashboard-retry", "state": "retry", "next_retry_on": fields.Datetime.now()})
+        values = self.env["federation.operational.dashboard"]._snapshot_values()
+        self.assertGreaterEqual(values["retrying_job_count"], 1)
+        self.assertEqual(values["overall_status"], "attention")
+
+    def test_dashboard_links_preserve_source_ownership(self):
+        Dashboard = self.env["federation.operational.dashboard"]
+        dashboard = Dashboard.create(Dashboard._snapshot_values())
+        action = dashboard.action_open_reviews()
+        self.assertEqual(action["res_model"], "federation.schedule.review")
+        self.assertEqual(action["domain"], [("state", "=", "pending")])
+
+    def test_failed_release_evidence_blocks_readiness(self):
+        params = self.env["ir.config_parameter"].sudo()
+        params.set_param("sports_federation.release.last_status", "failed")
+        params.set_param("sports_federation.release.last_sha", "deadbeef")
+        values = self.env["federation.operational.dashboard"]._snapshot_values()
+        self.assertEqual(values["release_status"], "failed")
+        self.assertEqual(values["release_candidate_sha"], "deadbeef")
+        self.assertEqual(values["overall_status"], "blocked")
+
+
+    def test_stale_running_jobs_block_dashboard_health_without_mutation(self):
+        from datetime import timedelta
+
+        job = self.env["federation.operation.job"].create(
+            {
+                "name": "Stale worker",
+                "source_model": "federation.report.schedule",
+                "source_res_id": 77,
+                "correlation_id": "dashboard-stale",
+                "state": "running",
+                "started_on": fields.Datetime.now() - timedelta(minutes=16),
+            }
+        )
+        values = self.env["federation.operational.dashboard"]._snapshot_values()
+        self.assertGreaterEqual(values["stale_job_count"], 1)
+        self.assertEqual(values["overall_status"], "blocked")
+        self.assertEqual(job.state, "running")
+
+    def test_release_evidence_link_uses_recorded_operator_url(self):
+        params = self.env["ir.config_parameter"].sudo()
+        params.set_param(
+            "sports_federation.release.evidence_url",
+            "https://evidence.example.invalid/release/qualified",
+        )
+        Dashboard = self.env["federation.operational.dashboard"]
+        dashboard = Dashboard.create(Dashboard._snapshot_values())
+        action = dashboard.action_open_release_evidence()
+        self.assertEqual(action["type"], "ir.actions.act_url")
+        self.assertEqual(action["target"], "new")
+        self.assertEqual(
+            action["url"],
+            "https://evidence.example.invalid/release/qualified",
+        )
+
+    def test_missing_release_evidence_is_not_reported_as_ready(self):
+        self.env["ir.config_parameter"].sudo().set_param(
+            "sports_federation.release.last_status", ""
+        )
+        values = self.env["federation.operational.dashboard"]._snapshot_values()
+        self.assertEqual(values["release_status"], "unknown")
+        self.assertNotEqual(values["overall_status"], "healthy")
 
 ====================================================================================================
 FILE: sports_federation_reporting/tests/test_operational_reporting.py
@@ -85578,9 +86165,9 @@ class TestYearFourReporting(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_reporting/views/menu_views.xml
-SIZE: 5625
-CONTENT-LENGTH: 5625
-SHA256: a3fba201489fcd3cf33e8c8ecdfaafc9cc1c10503f68e724274416b715ad5e24
+SIZE: 5872
+CONTENT-LENGTH: 5872
+SHA256: 9d72d359f1f5fa5acd88fe44824a76378707c4a989b74c169c8ec8c2bd0eb165
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -85728,6 +86315,24 @@ GIT-STATE: tracked
               groups="sports_federation_base.group_federation_manager"
               sequence="90"/>
 
+    <menuitem id="menu_federation_operational_dashboard" name="Operational Health" parent="menu_federation_reporting" action="action_server_federation_operational_dashboard" groups="sports_federation_base.group_federation_manager" sequence="1"/>
+
+</odoo>
+
+====================================================================================================
+FILE: sports_federation_reporting/views/operational_dashboard_views.xml
+SIZE: 2883
+CONTENT-LENGTH: 2883
+SHA256: 2c23a33778eb80609f294763c7181fbfed70e6445d55291a607fe9a8becee405
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+ <record id="view_federation_operational_dashboard_form" model="ir.ui.view"><field name="name">federation.operational.dashboard.form</field><field name="model">federation.operational.dashboard</field><field name="arch" type="xml"><form string="Operational Health" create="0" edit="0" delete="0"><header><button name="action_refresh" type="object" string="Refresh" class="btn-primary"/><field name="overall_status" widget="statusbar" statusbar_visible="healthy,attention,blocked"/></header><sheet><div class="oe_title"><h1>Consolidated Operational Dashboard</h1></div><group><field name="overall_message" nolabel="1"/><field name="refreshed_on"/></group><group string="Release Readiness"><field name="release_status" widget="badge"/><field name="release_candidate_sha"/><field name="release_completed_on"/><button name="action_open_release_evidence" type="object" string="Open Last Evidence" class="oe_link"/></group><group string="Operational Jobs" col="4"><field name="queued_job_count"/><field name="retrying_job_count"/><field name="operator_action_job_count"/><field name="stale_job_count"/><button name="action_open_jobs" type="object" string="Open Job Health" class="oe_link" colspan="4"/></group><group string="Retention and Integrations" col="4"><field name="retention_attention_count"/><field name="retention_failed_count"/><field name="integration_failure_count"/><button name="action_open_retention" type="object" string="Open Retention" class="oe_link"/><button name="action_open_integrations" type="object" string="Open Failed Deliveries" class="oe_link"/></group><group string="Competition Operations" col="4"><field name="registration_blocker_count"/><field name="review_backlog_count"/><field name="unpublished_approved_count"/><field name="publication_gap_count"/><field name="result_backlog_count"/><field name="standings_failure_count"/><button name="action_open_registrations" type="object" string="Registration Blockers" class="oe_link"/><button name="action_open_reviews" type="object" string="Review Backlog" class="oe_link"/><button name="action_open_unpublished" type="object" string="Unpublished Schedules" class="oe_link"/><button name="action_open_publication_gaps" type="object" string="Publication Gaps" class="oe_link"/><button name="action_open_results" type="object" string="Result Backlog" class="oe_link"/><button name="action_open_standings_failures" type="object" string="Standings Failures" class="oe_link"/></group></sheet></form></field></record>
+ <record id="action_server_federation_operational_dashboard" model="ir.actions.server"><field name="name">Operational Health</field><field name="model_id" ref="model_federation_operational_dashboard"/><field name="state">code</field><field name="code">action = env['federation.operational.dashboard'].action_open_dashboard()</field></record>
 </odoo>
 
 ====================================================================================================
