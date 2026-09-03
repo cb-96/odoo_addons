@@ -19,3 +19,6 @@ are stored as immutable snapshots.
 Stage-graph access rules are loaded from `security/ir.model.access.csv`. The
 structure form extension identifies the stage tab by its `stage_ids` field so
 the view remains safe when translated page labels change.
+## Supported format generation
+
+The format studio now estimates fixture and round counts before generation. It supports single and double leagues, seeded knockout and placement brackets, match series, pool-to-knockout configuration, and championship/relegation splits. Dynamic Swiss, ladder, and double-elimination formats are deliberately not advertised as automatic because they require round-by-round or reset-final semantics outside the immutable fixture graph.
