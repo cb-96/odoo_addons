@@ -62,6 +62,8 @@ PY
   python3 ci/check_delivery_language.py
   python3 ci/check_release_qualification.py
   python3 ci/check_release_focus_contract.py
+  python3 ci/check_rc_product_readiness.py
+  python3 ci/check_rc_usability.py
   python3 ci/check_retention_visibility_contract.py
   python3 ci/check_migration_rehearsal_contract.py
   if command -v node >/dev/null 2>&1; then

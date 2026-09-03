@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "roles": {
+    "sports_federation_base.group_federation_manager": {
+      "can_read": ["federation.operation.job", "federation.retention.evidence", "federation.operation.task"],
+      "must_not_create": ["federation.retention.evidence"]
+    },
+    "sports_federation_registration.group_registration_manager": {
+      "can_read": ["federation.registration.window", "federation.competition.entry"],
+      "must_not_write": ["federation.schedule.review"]
+    },
+    "sports_federation_scheduling.group_schedule_planner": {
+      "can_read": ["federation.schedule"],
+      "must_not_write": ["federation.schedule.publication"]
+    },
+    "sports_federation_schedule_approval.group_schedule_approver": {
+      "can_read": ["federation.schedule.review"],
+      "must_not_create": ["federation.schedule.assignment"]
+    },
+    "sports_federation_matchday.group_matchday_manager": {
+      "can_read": ["federation.matchday.session"],
+      "must_not_write": ["federation.schedule.publication"]
+    },
+    "sports_federation_portal.group_federation_portal_club": {
+      "can_read": ["federation.operation.task"],
+      "must_not_write": ["federation.schedule.review", "federation.schedule.publication", "federation.retention.evidence"]
+    }
+  }
+}

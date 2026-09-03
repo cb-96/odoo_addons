@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "profiles": {
+    "small": {"clubs": 10, "teams_per_club": 2, "matches": 180},
+    "medium": {"clubs": 100, "teams_per_club": 3, "matches": 2500},
+    "large": {"clubs": 500, "teams_per_club": 4, "matches": 10000}
+  },
+  "qualified_surfaces": ["standings", "portal_task_inbox", "operational_dashboard", "cross_module_search"]
+}

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "workflows": {
+    "competition_entry": {
+      "model": "federation.competition.entry",
+      "source": "sports_federation_registration/models/registration.py",
+      "actions": [
+        "action_submit",
+        "action_return",
+        "action_reject",
+        "action_withdraw"
+      ]
+    },
+    "schedule_review": {
+      "model": "federation.schedule.review",
+      "source": "sports_federation_schedule_approval/models/workflow_actions.py",
+      "actions": [
+        "action_withdraw_submission",
+        "action_request_changes",
+        "action_approve_schedule"
+      ]
+    },
+    "publication_replacement": {
+      "model": "federation.schedule",
+      "source": "sports_federation_scheduling/models/schedule_integrity.py",
+      "actions": [
+        "action_create_revision"
+      ]
+    },
+    "operational_job": {
+      "model": "federation.operation.job",
+      "source": "sports_federation_base/models/operation_job.py",
+      "actions": [
+        "action_retry",
+        "action_open_source"
+      ]
+    },
+    "standing_correction": {
+      "model": "federation.standing",
+      "source": "sports_federation_standings/models/standing.py",
+      "actions": [
+        "action_recompute"
+      ]
+    }
+  }
+}

@@ -61,6 +61,7 @@ on top of the federation base modules.
             "sports_federation_portal/static/src/scss/federation_portal.scss",
             "sports_federation_portal/static/src/js/qol_draft_guard.js",
             "sports_federation_portal/static/src/js/accessibility_recovery.js",
+            "sports_federation_portal/static/src/js/portal_quick_actions.js",
         ],
     },
     "demo": [],

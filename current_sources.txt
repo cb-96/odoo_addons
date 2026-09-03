@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 884
+# FILE-COUNT: 894
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -14857,6 +14857,41 @@ Swiss pairing, ladders, and double elimination remain deliberate exclusions unti
 Status: **Implemented**
 
 The task-first portal exposes deadlines, blockers, responsible party, next action, and direct source navigation for registration, roster readiness, referee duties, and result follow-up. Existing mobile and accessibility qualification remains authoritative.
+
+====================================================================================================
+FILE: docs/COMPETITION_OPERATIONS_QOL_ROADMAP.md
+SIZE: 1609
+CONTENT-LENGTH: 1609
+SHA256: ac4c4505c8e719791b29d41dbb6d1a79e86cfa70d008494b21470e7f6767031e
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+# Competition Operations Quality of Life Roadmap
+
+Owner: Federation Competition Operations
+Last updated: 2026-09-03
+Review cadence: Every release
+
+## Purpose
+
+Reduce clicks, ambiguity, recovery time, and support requests without adding a parallel workflow or another dashboard.
+
+## Implemented contracts
+
+- Operational tasks expose blocker, next step, deadline, responsible club, assignee, urgency bucket, digest status, and direct source navigation.
+- Retryable operational jobs can be retried from the task; business recovery remains in the owning workflow so reasons and role separation are preserved.
+- Backend and portal actions use state-based visibility and native Odoo favorites for reusable queue filters.
+- Registration decisions, reminders, and governed imports provide safe bulk operations; schedule changes remain revision-owned.
+- Chatter and tracked activities provide the authoritative timeline without copying events into another model.
+- Club work is grouped into action now, due soon, waiting, and recently completed, with daily digest notifications.
+- Authenticated cross-module search resolves competitions, tournaments, teams, registration windows, schedules, and matches to typed direct links.
+- Existing operational queues and the consolidated dashboard remain the action workbench; no duplicate KPI model is introduced.
+
+## Exit criteria
+
+Users can identify the next action and owner, reach the source in one step, retry failed jobs safely, process supported bulk work, review authoritative history, find records without knowing module boundaries, and work from urgency-based queues.
 
 ====================================================================================================
 FILE: docs/DELIVERY_ROADMAP.md
@@ -35088,9 +35123,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_format/README.md
-SIZE: 1428
-CONTENT-LENGTH: 1428
-SHA256: 7c527aeced8da21ff2fd2701dc53c9ce8e9d1586b33b663b7efda898a87f43dc
+SIZE: 1599
+CONTENT-LENGTH: 1599
+SHA256: a77ea3a8e64ed4bd839025fe8e3e21961d32e160ec3c607bd480eaa5b7eb539d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -35119,7 +35154,7 @@ structure form extension identifies the stage tab by its `stage_ids` field so
 the view remains safe when translated page labels change.
 ## Supported format generation
 
-The format studio now estimates fixture and round counts before generation. It supports single and double leagues, seeded knockout and placement brackets, match series, pool-to-knockout configuration, and championship/relegation splits. Dynamic Swiss, ladder, and double-elimination formats are deliberately not advertised as automatic because they require round-by-round or reset-final semantics outside the immutable fixture graph.
+The format studio now estimates fixture and round counts before generation. It supports single and double leagues, seeded knockout and placement brackets, match series, pool-to-knockout configuration, championship/relegation splits, Swiss rounds, ladder formats, and power-of-two double elimination. Swiss round counts are configurable on the structure, while double elimination uses the dynamic pairing service to account for its winner, loser, and reset-final routes. These estimates are planning guidance; format-specific generation workflows remain responsible for validating the final fixture graph.
 
 ====================================================================================================
 FILE: sports_federation_format/__init__.py
@@ -35136,9 +35171,9 @@ from . import services
 
 ====================================================================================================
 FILE: sports_federation_format/__manifest__.py
-SIZE: 619
-CONTENT-LENGTH: 619
-SHA256: 3aea98252e76136d3bf0b06d249672e918dadf589d0620d66c14df31e7290af5
+SIZE: 662
+CONTENT-LENGTH: 662
+SHA256: 1b352d4c78b7e8792fa3601119a218e60ebf2d458703b62d1c7d446c857bf545
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -35146,7 +35181,7 @@ GIT-STATE: tracked
 
 {
     "name": "Competition Format",
-    "version": "19.0.5.0.0",
+    "version": "19.0.6.0.0",
     "category": "Sports",
     "summary": "Versioned competition structures, stages, progression and fixtures",
     "author": "Sports Federation",
@@ -35159,6 +35194,7 @@ GIT-STATE: tracked
         "security/security.xml",
         "security/ir.model.access.csv",
         "views/format_views.xml",
+        "views/format_template_views.xml",
         "views/stage_graph_views.xml",
         "views/menu.xml",
     ],
@@ -35169,9 +35205,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_format/models/__init__.py
-SIZE: 98
-CONTENT-LENGTH: 98
-SHA256: b7f99b5ed0300af81cb818259bcc5c8ec067c1c0fad4f6a5d234d429b093dbfe
+SIZE: 129
+CONTENT-LENGTH: 129
+SHA256: c8d056c1f19c51478576abd36a49535dbd96ef41956afa2e6f3ff7e519ed2294
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -35181,11 +35217,13 @@ from . import competition_structure
 from . import stage_graph
 from . import fixture_result_bridge
 
+from . import format_template
+
 ====================================================================================================
 FILE: sports_federation_format/models/competition_structure.py
-SIZE: 7989
-CONTENT-LENGTH: 7989
-SHA256: 71ab5859a102761d2335c3878d0d30d1eeaa4b9cce51f56a9142b09bce0dc51b
+SIZE: 8302
+CONTENT-LENGTH: 8302
+SHA256: e58420632322fc22c1a75fac496b7c019137da60951b5a316d3849c5841c6b8a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -35219,6 +35257,9 @@ class FederationCompetitionStructure(models.Model):
             ("pool_knockout", "Pools then Knockout"),
             ("split_pools", "League then Championship/Relegation Pools"),
             ("placement_bracket", "Placement Bracket"),
+            ("swiss", "Swiss"),
+            ("double_elimination", "Double Elimination"),
+            ("ladder", "Challenge Ladder"),
             ("custom", "Custom"),
         ],
         required=True,
@@ -35234,13 +35275,18 @@ class FederationCompetitionStructure(models.Model):
         default="1",
         required=True,
     )
+    swiss_round_count = fields.Integer(default=5, required=True)
     estimated_fixture_count = fields.Integer(compute="_compute_feasibility")
     estimated_round_count = fields.Integer(compute="_compute_feasibility")
     generation_feasible = fields.Boolean(compute="_compute_feasibility")
     feasibility_message = fields.Char(compute="_compute_feasibility")
 
     @api.depends(
-        "format_type", "participant_set_id.line_ids", "pool_count", "series_length"
+        "format_type",
+        "participant_set_id.line_ids",
+        "pool_count",
+        "series_length",
+        "swiss_round_count",
     )
     def _compute_feasibility(self):
         analyzer = self.env["federation.format.feasibility"]
@@ -35250,6 +35296,7 @@ class FederationCompetitionStructure(models.Model):
                 len(record.participant_set_id.line_ids),
                 pool_count=record.pool_count,
                 series_length=record.series_length,
+                swiss_round_count=record.swiss_round_count,
             )
             record.generation_feasible = result["feasible"]
             record.estimated_fixture_count = result["fixture_count"]
@@ -35524,6 +35571,97 @@ class FederationFixtureBridgeConstraint(models.Model):
                 )
 
 ====================================================================================================
+FILE: sports_federation_format/models/format_template.py
+SIZE: 2870
+CONTENT-LENGTH: 2870
+SHA256: a4ca08a6579604ad5150553d2205c2af1848eefeb35e74e198d7b00ad985fc8f
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationCompetitionFormatTemplate(models.Model):
+    _name = "federation.competition.format.template"
+    _description = "Versioned Competition Format Template"
+    _order = "code, version desc, id desc"
+
+    name = fields.Char(required=True, translate=True)
+    code = fields.Char(required=True, index=True)
+    version = fields.Integer(default=1, required=True)
+    active = fields.Boolean(default=True)
+    format_type = fields.Selection(
+        [
+            ("single_round_robin", "League"),
+            ("double_round_robin", "Double League"),
+            ("knockout", "Knockout Cup"),
+            ("pool_knockout", "Pools then Knockout"),
+            ("split_pools", "Championship/Relegation Pools"),
+            ("placement_bracket", "Placement Bracket"),
+            ("swiss", "Swiss"),
+            ("double_elimination", "Double Elimination"),
+            ("ladder", "Challenge Ladder"),
+        ],
+        required=True,
+    )
+    pool_count = fields.Integer(default=2, required=True)
+    series_length = fields.Selection(
+        [
+            ("1", "Single match"),
+            ("3", "Best of 3"),
+            ("5", "Best of 5"),
+            ("7", "Best of 7"),
+        ],
+        default="1",
+        required=True,
+    )
+    swiss_round_count = fields.Integer(default=5)
+    configuration = fields.Json(default=dict)
+    notes = fields.Text()
+
+    _unique_code_version = models.Constraint(
+        "unique(code, version)", "Template code and version must be unique."
+    )
+
+    @api.constrains("version", "pool_count", "swiss_round_count")
+    def _check_positive_values(self):
+        for template in self:
+            if (
+                template.version < 1
+                or template.pool_count < 1
+                or template.swiss_round_count < 1
+            ):
+                raise ValidationError(
+                    "Template version and format counts must be positive."
+                )
+
+    def action_create_structure(self, edition, division, participant_set):
+        self.ensure_one()
+        return self.env["federation.competition.structure"].create(
+            {
+                "name": f"{edition.display_name} - {self.name} v{self.version}",
+                "edition_id": edition.id,
+                "division_id": division.id,
+                "participant_set_id": participant_set.id,
+                "format_type": self.format_type,
+                "pool_count": self.pool_count,
+                "series_length": self.series_length,
+                "template_id": self.id,
+            }
+        )
+
+
+class FederationCompetitionStructureTemplate(models.Model):
+    _inherit = "federation.competition.structure"
+
+    template_id = fields.Many2one(
+        "federation.competition.format.template", readonly=True, ondelete="restrict"
+    )
+
+====================================================================================================
 FILE: sports_federation_format/models/stage_graph.py
 SIZE: 9135
 CONTENT-LENGTH: 9135
@@ -35789,9 +35927,9 @@ class FederationStageStandingLine(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_format/security/ir.model.access.csv
-SIZE: 1293
-CONTENT-LENGTH: 1293
-SHA256: 1a1a5fb4f925132cb4e600ba8687713b7ffc2ba69dd6590b88ceccfe689f02d9
+SIZE: 1688
+CONTENT-LENGTH: 1688
+SHA256: dea952f1823e09d92e11cc8c2dc7c2512cf908f68dab9210975f115ad1c33e12
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -35805,6 +35943,8 @@ access_stage_participant_manager,stage.participant.manager,model_federation_stag
 access_stage_progression_manager,stage.progression.manager,model_federation_structure_stage_progression,sports_federation_base.group_federation_manager,1,1,1,1
 access_stage_snapshot_manager,stage.snapshot.manager,model_federation_stage_standing_snapshot,sports_federation_base.group_federation_manager,1,1,1,0
 access_stage_line_manager,stage.line.manager,model_federation_stage_standing_line,sports_federation_base.group_federation_manager,1,0,0,0
+access_federation_competition_format_template_user,federation.competition.format.template user,model_federation_competition_format_template,sports_federation_base.group_federation_user,1,0,0,0
+access_federation_competition_format_template_manager,federation.competition.format.template manager,model_federation_competition_format_template,sports_federation_base.group_federation_manager,1,1,1,1
 
 ====================================================================================================
 FILE: sports_federation_format/security/security.xml
@@ -35832,9 +35972,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_format/services/__init__.py
-SIZE: 168
-CONTENT-LENGTH: 168
-SHA256: 0f221cb22b36f8e181e4221aac2e6deb7b4666c3c62a5b1c367de3afd514fb62
+SIZE: 236
+CONTENT-LENGTH: 236
+SHA256: 1757a69fd02eb853d541a40ad8189074575542ca074f26a2fdaaf672ce66e552
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -35846,6 +35986,165 @@ from . import graph_validator
 from . import round_robin_generator
 
 from . import format_feasibility
+
+from . import competition_simulator
+
+from . import dynamic_pairing
+
+====================================================================================================
+FILE: sports_federation_format/services/competition_simulator.py
+SIZE: 2313
+CONTENT-LENGTH: 2313
+SHA256: 57c3f715e7628b03aeade91b03adf7aee2f847b6f5d70e6b168f148579d59696
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+import random
+
+from odoo import _, api, models
+from odoo.exceptions import ValidationError
+
+
+class FederationCompetitionSimulator(models.AbstractModel):
+    _name = "federation.competition.simulator"
+    _description = "Competition Structure Simulator"
+
+    @api.model
+    def validate_structure(self, structure):
+        self.env["federation.stage.graph.validator"].validate(structure)
+        issues = []
+        stages = structure.stage_ids
+        for stage in stages:
+            incoming = stage.incoming_progression_ids.filtered("active")
+            if stage.source_type == "progression" and not incoming:
+                issues.append(
+                    _(
+                        "Stage %(stage)s has no incoming progression.",
+                        stage=stage.display_name,
+                    )
+                )
+            for progression in stage.outgoing_progression_ids.filtered("active"):
+                if progression.rank_to - progression.rank_from + 1 < 1:
+                    issues.append(
+                        _(
+                            "Progression from %(stage)s selects no teams.",
+                            stage=stage.display_name,
+                        )
+                    )
+        unreachable = stages.filtered(
+            lambda stage: stage.source_type == "progression"
+            and not stage.incoming_progression_ids
+        )
+        if unreachable:
+            issues.append(_("The graph contains unreachable stages."))
+        return {"valid": not issues, "issues": issues}
+
+    @api.model
+    def simulate(self, structure, seed=1):
+        validation = self.validate_structure(structure)
+        if not validation["valid"]:
+            raise ValidationError("\n".join(validation["issues"]))
+        rng = random.Random(seed)
+        results = []
+        for fixture in structure.fixture_ids.sorted(
+            lambda item: (item.round_number, item.sequence, item.id)
+        ):
+            if fixture.bye_team_id:
+                continue
+            results.append(
+                {
+                    "fixture_id": fixture.id,
+                    "home_score": rng.randint(0, 5),
+                    "away_score": rng.randint(0, 5),
+                }
+            )
+        return {"seed": seed, "fixture_count": len(results), "results": results}
+
+====================================================================================================
+FILE: sports_federation_format/services/dynamic_pairing.py
+SIZE: 2758
+CONTENT-LENGTH: 2758
+SHA256: 0cddaa1bb8b1b34fbd052b9ba4c88e39dcfd4b32f1d7fa206519cff6280852d6
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from collections import defaultdict
+
+from odoo import _, api, models
+from odoo.exceptions import ValidationError
+
+
+class FederationDynamicPairing(models.AbstractModel):
+    _name = "federation.dynamic.pairing"
+    _description = "Dynamic Competition Pairing"
+
+    @api.model
+    def swiss_pairs(self, participants, previous_pairs=None, standings=None):
+        team_ids = list(participants.mapped("team_id").ids)
+        previous = {frozenset(pair) for pair in (previous_pairs or [])}
+        points = standings or {}
+        ordered = sorted(
+            team_ids, key=lambda team_id: (-points.get(team_id, 0), team_id)
+        )
+        bye = ordered.pop() if len(ordered) % 2 else False
+        pairs = []
+        while ordered:
+            home = ordered.pop(0)
+            opponent_index = next(
+                (
+                    index
+                    for index, away in enumerate(ordered)
+                    if frozenset((home, away)) not in previous
+                ),
+                None,
+            )
+            if opponent_index is None:
+                raise ValidationError(
+                    _(
+                        "No repeat-free Swiss pairing is available for the current score group."
+                    )
+                )
+            pairs.append((home, ordered.pop(opponent_index)))
+        return {"pairs": pairs, "bye_team_id": bye}
+
+    @api.model
+    def ladder_challenge(self, challenger_rank, opponent_rank, max_distance=3):
+        if challenger_rank <= opponent_rank:
+            raise ValidationError(
+                _("A ladder challenge must target a higher-ranked opponent.")
+            )
+        if challenger_rank - opponent_rank > max_distance:
+            raise ValidationError(
+                _("The opponent is outside the allowed challenge distance.")
+            )
+        return {
+            "allowed": True,
+            "winner_rank": opponent_rank,
+            "loser_rank": challenger_rank,
+        }
+
+    @api.model
+    def double_elimination_routes(self, participant_count):
+        participant_count = int(participant_count or 0)
+        if participant_count < 4 or participant_count & (participant_count - 1):
+            raise ValidationError(
+                _(
+                    "Double elimination requires a power-of-two field of at least four teams."
+                )
+            )
+        winners_rounds = participant_count.bit_length() - 1
+        losers_rounds = 2 * winners_rounds - 2
+        return {
+            "winner_bracket_matches": participant_count - 1,
+            "loser_bracket_matches": participant_count - 2,
+            "grand_final_matches": 2,
+            "winner_bracket_rounds": winners_rounds,
+            "loser_bracket_rounds": losers_rounds,
+        }
 
 ====================================================================================================
 FILE: sports_federation_format/services/fixture_materializer.py
@@ -35911,9 +36210,9 @@ class FederationFixtureMaterializer(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_format/services/format_feasibility.py
-SIZE: 3596
-CONTENT-LENGTH: 3596
-SHA256: 50c485edeb94be0904435fa3b207413d48364e537a83d6bb564034ad7a028526
+SIZE: 4854
+CONTENT-LENGTH: 4854
+SHA256: 9fd25a3462b319c4fc88e226073e88973416dce87dd652040aab7294d9bdcc41
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -35930,11 +36229,18 @@ class FederationFormatFeasibility(models.AbstractModel):
 
     @api.model
     def estimate(
-        self, format_type, participant_count, *, pool_count=1, series_length=1
+        self,
+        format_type,
+        participant_count,
+        *,
+        pool_count=1,
+        series_length=1,
+        swiss_round_count=1,
     ):
         participant_count = int(participant_count or 0)
         pool_count = max(1, int(pool_count or 1))
         series_length = max(1, int(series_length or 1))
+        swiss_round_count = max(1, int(swiss_round_count or 1))
         if participant_count < 2:
             return {
                 "feasible": False,
@@ -35974,6 +36280,33 @@ class FederationFormatFeasibility(models.AbstractModel):
             rounds = max(size if size % 2 else size - 1 for size in sizes) + ceil(
                 log2(min(participant_count, 2 * pool_count))
             )
+        elif format_type == "swiss":
+            fixtures = (participant_count // 2) * swiss_round_count
+            rounds = swiss_round_count
+        elif format_type == "double_elimination":
+            if participant_count < 4 or participant_count & (participant_count - 1):
+                return {
+                    "feasible": False,
+                    "fixture_count": 0,
+                    "round_count": 0,
+                    "message": _(
+                        "Double elimination requires a power-of-two field of at least four teams."
+                    ),
+                }
+            routes = self.env["federation.dynamic.pairing"].double_elimination_routes(
+                participant_count
+            )
+            fixtures = (
+                routes["winner_bracket_matches"]
+                + routes["loser_bracket_matches"]
+                + routes["grand_final_matches"]
+            )
+            rounds = (
+                routes["winner_bracket_rounds"] + routes["loser_bracket_rounds"] + 2
+            )
+        elif format_type == "ladder":
+            fixtures = 0
+            rounds = 0
         elif format_type == "split_pools":
             if participant_count < 6:
                 return {
@@ -36554,9 +36887,9 @@ class FederationStageGraphEngine(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_format/tests/__init__.py
-SIZE: 121
-CONTENT-LENGTH: 121
-SHA256: b280db4ffdc1855ba1360ac86c8d15c933238ab007829dab38a741af58a3b6ae
+SIZE: 169
+CONTENT-LENGTH: 169
+SHA256: 211a541c29d04d0cab1d931f6040040e122305a480d19cc89c74cbf2d7a3d526
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -36566,6 +36899,66 @@ from . import test_stage_graph_engine
 from . import test_fixture_result_ownership
 
 from . import test_format_feasibility
+
+from . import test_advanced_competition_engine
+
+====================================================================================================
+FILE: sports_federation_format/tests/test_advanced_competition_engine.py
+SIZE: 2090
+CONTENT-LENGTH: 2090
+SHA256: 621f455d0301bb71c319f62a64cfc6ebb12587d267d6fa3a1e3f003e7b95bd11
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from unittest.mock import MagicMock
+
+from odoo.exceptions import ValidationError
+from odoo.tests import TransactionCase
+
+
+class TestAdvancedCompetitionEngine(TransactionCase):
+    def test_double_elimination_route_counts(self):
+        routes = self.env["federation.dynamic.pairing"].double_elimination_routes(8)
+        self.assertEqual(routes["winner_bracket_matches"], 7)
+        self.assertEqual(routes["loser_bracket_matches"], 6)
+        self.assertEqual(routes["grand_final_matches"], 2)
+
+    def test_double_elimination_rejects_non_power_of_two(self):
+        with self.assertRaises(ValidationError):
+            self.env["federation.dynamic.pairing"].double_elimination_routes(6)
+
+    def test_ladder_challenge_distance(self):
+        service = self.env["federation.dynamic.pairing"]
+        self.assertTrue(service.ladder_challenge(5, 3, max_distance=3)["allowed"])
+        with self.assertRaises(ValidationError):
+            service.ladder_challenge(7, 2, max_distance=3)
+
+    def test_swiss_pairing_avoids_previous_opponents(self):
+        participants = MagicMock()
+        participants.mapped.return_value.ids = [1, 2, 3, 4]
+        result = self.env["federation.dynamic.pairing"].swiss_pairs(
+            participants,
+            previous_pairs=[(1, 2), (3, 4)],
+            standings={1: 3, 2: 3, 3: 0, 4: 0},
+        )
+        self.assertNotIn(
+            frozenset((1, 2)), {frozenset(pair) for pair in result["pairs"]}
+        )
+        self.assertNotIn(
+            frozenset((3, 4)), {frozenset(pair) for pair in result["pairs"]}
+        )
+
+    def test_feasibility_covers_dynamic_formats(self):
+        analyzer = self.env["federation.format.feasibility"]
+        swiss = analyzer.estimate("swiss", 9, swiss_round_count=5)
+        self.assertEqual((swiss["fixture_count"], swiss["round_count"]), (20, 5))
+        double = analyzer.estimate("double_elimination", 8)
+        self.assertEqual(double["fixture_count"], 15)
+        ladder = analyzer.estimate("ladder", 12)
+        self.assertTrue(ladder["feasible"])
+        self.assertEqual(ladder["fixture_count"], 0)
 
 ====================================================================================================
 FILE: sports_federation_format/tests/test_fixture_result_ownership.py
@@ -36985,32 +37378,49 @@ class TestStageGraphEngine(TransactionCase):
             )
 
 ====================================================================================================
-FILE: sports_federation_format/views/format_views.xml
-SIZE: 2876
-CONTENT-LENGTH: 2876
-SHA256: 0809cfa6080d4c05206c3270b853a8ed1c6eb90d8ecdfa63e516b6b00ec0018f
+FILE: sports_federation_format/views/format_template_views.xml
+SIZE: 1419
+CONTENT-LENGTH: 1419
+SHA256: 261d0891d4e9daccac9f07d8b228123dbce989ee899c121efc854b9d6ea7e227
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
 <odoo>
- <record id="structure_list" model="ir.ui.view"><field name="name">federation.competition.structure.list</field><field name="model">federation.competition.structure</field><field name="arch" type="xml"><list decoration-success="state == 'frozen'"><field name="name"/><field name="edition_id"/><field name="division_id"/><field name="participant_set_id"/><field name="format_type"/><field name="pool_count" invisible="format_type not in ('pool_knockout', 'split_pools')"/><field name="series_length" invisible="format_type not in ('knockout', 'placement_bracket')"/><field name="version"/><field name="generation_feasible" readonly="1"/><field name="estimated_fixture_count" readonly="1"/><field name="estimated_round_count" readonly="1"/><field name="feasibility_message" readonly="1"/><field name="state" widget="badge"/></list></field></record>
- <record id="structure_form" model="ir.ui.view"><field name="name">federation.competition.structure.form</field><field name="model">federation.competition.structure</field><field name="arch" type="xml"><form><header><button name="action_check_feasibility" type="object" string="Check Feasibility" invisible="state == 'frozen'"/><button name="action_generate" type="object" string="Generate Fixtures" class="btn-primary" invisible="state == 'frozen'"/><button name="action_freeze" type="object" string="Freeze Structure" class="btn-primary" invisible="state != 'generated'"/><field name="state" widget="statusbar" statusbar_visible="draft,generated,frozen"/></header><sheet><group><field name="name"/><field name="edition_id"/><field name="division_id" domain="[('edition_id','=',edition_id)]"/><field name="participant_set_id" domain="[('division_id','=',division_id),('state','=','finalized')]"/><field name="format_type"/><field name="pool_count" invisible="format_type not in ('pool_knockout', 'split_pools')"/><field name="series_length" invisible="format_type not in ('knockout', 'placement_bracket')"/><field name="version"/><field name="generation_feasible" readonly="1"/><field name="estimated_fixture_count" readonly="1"/><field name="estimated_round_count" readonly="1"/><field name="feasibility_message" readonly="1"/></group><notebook><page string="Stages"><field name="stage_ids"><list editable="bottom"><field name="sequence"/><field name="name"/><field name="stage_type"/></list></field></page><page string="Fixtures"><field name="fixture_ids"><list><field name="stage_id"/><field name="round_number"/><field name="sequence"/><field name="home_team_id"/><field name="away_team_id"/><field name="state"/></list></field></page></notebook></sheet><chatter/></form></field></record>
- <record id="action_format_studio" model="ir.actions.act_window"><field name="name">Format Studio</field><field name="res_model">federation.competition.structure</field><field name="view_mode">list,form</field></record>
+ <record id="view_competition_format_template_list" model="ir.ui.view"><field name="name">federation.competition.format.template.list</field><field name="model">federation.competition.format.template</field><field name="arch" type="xml"><list><field name="code"/><field name="name"/><field name="version"/><field name="format_type"/><field name="pool_count"/><field name="series_length"/><field name="active"/></list></field></record>
+ <record id="view_competition_format_template_form" model="ir.ui.view"><field name="name">federation.competition.format.template.form</field><field name="model">federation.competition.format.template</field><field name="arch" type="xml"><form><sheet><group><field name="name"/><field name="code"/><field name="version"/><field name="active"/><field name="format_type"/><field name="pool_count" invisible="format_type not in ('pool_knockout', 'split_pools')"/><field name="series_length" invisible="format_type not in ('knockout', 'placement_bracket')"/><field name="swiss_round_count" invisible="format_type != 'swiss'"/><field name="configuration" widget="json"/><field name="notes"/></group></sheet></form></field></record>
+ <record id="action_competition_format_template" model="ir.actions.act_window"><field name="name">Format Templates</field><field name="res_model">federation.competition.format.template</field><field name="view_mode">list,form</field></record>
 </odoo>
 
 ====================================================================================================
-FILE: sports_federation_format/views/menu.xml
-SIZE: 199
-CONTENT-LENGTH: 199
-SHA256: 9c0c01c0a97d8f2fb2098e0c9bef4cbe37115cd2fbaccabb6c8c6272925efac6
+FILE: sports_federation_format/views/format_views.xml
+SIZE: 3012
+CONTENT-LENGTH: 3012
+SHA256: b4bce800a1716b4e3d66f75b78bfcafa9eb75fd5949dc537a85401615dca33a5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
-<odoo><menuitem id="menu_format_studio" name="Format Studio" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_format_studio" sequence="30"/></odoo>
+<odoo>
+ <record id="structure_list" model="ir.ui.view"><field name="name">federation.competition.structure.list</field><field name="model">federation.competition.structure</field><field name="arch" type="xml"><list decoration-success="state == 'frozen'"><field name="name"/><field name="edition_id"/><field name="division_id"/><field name="participant_set_id"/><field name="format_type"/><field name="pool_count" invisible="format_type not in ('pool_knockout', 'split_pools')"/><field name="series_length" invisible="format_type not in ('knockout', 'placement_bracket')"/><field name="swiss_round_count" invisible="format_type != 'swiss'"/><field name="version"/><field name="generation_feasible" readonly="1"/><field name="estimated_fixture_count" readonly="1"/><field name="estimated_round_count" readonly="1"/><field name="feasibility_message" readonly="1"/><field name="state" widget="badge"/></list></field></record>
+ <record id="structure_form" model="ir.ui.view"><field name="name">federation.competition.structure.form</field><field name="model">federation.competition.structure</field><field name="arch" type="xml"><form><header><button name="action_check_feasibility" type="object" string="Check Feasibility" invisible="state == 'frozen'"/><button name="action_generate" type="object" string="Generate Fixtures" class="btn-primary" invisible="state == 'frozen'"/><button name="action_freeze" type="object" string="Freeze Structure" class="btn-primary" invisible="state != 'generated'"/><field name="state" widget="statusbar" statusbar_visible="draft,generated,frozen"/></header><sheet><group><field name="name"/><field name="edition_id"/><field name="division_id" domain="[('edition_id','=',edition_id)]"/><field name="participant_set_id" domain="[('division_id','=',division_id),('state','=','finalized')]"/><field name="format_type"/><field name="pool_count" invisible="format_type not in ('pool_knockout', 'split_pools')"/><field name="series_length" invisible="format_type not in ('knockout', 'placement_bracket')"/><field name="swiss_round_count" invisible="format_type != 'swiss'"/><field name="version"/><field name="generation_feasible" readonly="1"/><field name="estimated_fixture_count" readonly="1"/><field name="estimated_round_count" readonly="1"/><field name="feasibility_message" readonly="1"/></group><notebook><page string="Stages"><field name="stage_ids"><list editable="bottom"><field name="sequence"/><field name="name"/><field name="stage_type"/></list></field></page><page string="Fixtures"><field name="fixture_ids"><list><field name="stage_id"/><field name="round_number"/><field name="sequence"/><field name="home_team_id"/><field name="away_team_id"/><field name="state"/></list></field></page></notebook></sheet><chatter/></form></field></record>
+ <record id="action_format_studio" model="ir.actions.act_window"><field name="name">Format Studio</field><field name="res_model">federation.competition.structure</field><field name="view_mode">list,form</field></record>
+</odoo>
+
+====================================================================================================
+FILE: sports_federation_format/views/menu.xml
+SIZE: 462
+CONTENT-LENGTH: 462
+SHA256: c3ad2c367edd80896e7f5f969aaaf0ff4790e24cd5d253ed467f1ac71a4af581
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+<odoo><menuitem id="menu_format_studio" name="Format Studio" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_format_studio" sequence="30"/><menuitem id="menu_format_templates" name="Format Templates" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_competition_format_template" sequence="30" groups="sports_federation_base.group_federation_manager"/>
+</odoo>
 
 ====================================================================================================
 FILE: sports_federation_format/views/stage_graph_views.xml
@@ -55238,9 +55648,9 @@ from . import controllers
 
 ====================================================================================================
 FILE: sports_federation_portal/__manifest__.py
-SIZE: 2596
-CONTENT-LENGTH: 2596
-SHA256: 54a41ad6416a42d90b94bd463eb599d47de56db15178dc8feb79614bbd8ee9b8
+SIZE: 2638
+CONTENT-LENGTH: 2638
+SHA256: 7add221b8e98484c6070c08218dd242a91d814bfbe26d6ee31ded8282eb8b8cb
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -55248,7 +55658,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.5.1.0",
+    "version": "19.0.6.0.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -55293,6 +55703,7 @@ on top of the federation base modules.
         "views/federation_match_sheet_views.xml",
         "views/federation_club_representative_portal_views.xml",
         "views/qol_views.xml",
+        "views/qol_search_templates.xml",
         "views/portal_templates.xml",
         "views/competition_templates.xml",
         "views/portal_officiating_templates.xml",
@@ -55319,9 +55730,9 @@ on top of the federation base modules.
 
 ====================================================================================================
 FILE: sports_federation_portal/controllers/__init__.py
-SIZE: 271
-CONTENT-LENGTH: 271
-SHA256: 55a7aca05c5c13cf2c093f2d0d19887504fc5e25c58f8f7beaec0d733d44e89a
+SIZE: 297
+CONTENT-LENGTH: 297
+SHA256: 508336a02379da378e5b88b91d2512c78adff5f761a590b2d72fd2de561a27b5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -55337,6 +55748,8 @@ from . import operation_tasks
 from . import manager_operation_tasks
 from . import qol
 from . import competition_portal
+
+from . import qol_search
 
 ====================================================================================================
 FILE: sports_federation_portal/controllers/competition_portal.py
@@ -56272,9 +56685,9 @@ class FederationOfficiatingPortal(http.Controller):
 
 ====================================================================================================
 FILE: sports_federation_portal/controllers/operation_tasks.py
-SIZE: 767
-CONTENT-LENGTH: 767
-SHA256: b2360d80a99636d4a385adf5090982cbbcb896ff48fd41c02ccc07a1965613d3
+SIZE: 1467
+CONTENT-LENGTH: 1467
+SHA256: 2ff1122fca80bf5a3297c3e172a4b275d53c953b297a7abb0eb403ad11156b54
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -56295,9 +56708,26 @@ class FederationOperationTaskPortal(FederationPortalBase):
         Task.sync_for_user(user=request.env.user)
         domain = Task._portal_get_domain(user=request.env.user)
         tasks = Task.search(domain + [("state", "!=", "done")])
+        task_groups = {
+            "overdue": tasks.filtered(lambda task: task.deadline and task.is_overdue),
+            "blocking": tasks.filtered("blocking"),
+            "waiting_federation": tasks.filtered(
+                lambda task: task.waiting_on == "federation"
+            ),
+            "mine": tasks.filtered(
+                lambda task: task.assigned_user_id == request.env.user
+            ),
+        }
+        completed_steps = 4 - len(set(tasks.mapped("task_type")))
+        journey_percent = max(0, min(100, int(completed_steps * 25)))
         return request.render(
             "sports_federation_portal.portal_my_operation_tasks",
-            {"tasks": tasks, "page_name": "my_action_items"},
+            {
+                "tasks": tasks,
+                "task_groups": task_groups,
+                "journey_percent": journey_percent,
+                "page_name": "my_action_items",
+            },
         )
 
 ====================================================================================================
@@ -57148,6 +57578,31 @@ class FederationQoLPortal(FederationPortalBase):
             f"/my/rosters/{roster_id}",
             success=_("%(copied)s player(s) copied; %(skipped)s skipped for review.")
             % {"copied": copied, "skipped": skipped},
+        )
+
+====================================================================================================
+FILE: sports_federation_portal/controllers/qol_search.py
+SIZE: 549
+CONTENT-LENGTH: 549
+SHA256: 3f3f4cee5859951c7366ed2b498ec3edb6cabf7c9d97cd77b30cffcc6281c53f
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo import http
+from odoo.http import request
+
+from .portal_helpers import FederationPortalBase
+
+
+class FederationQolSearchPortal(FederationPortalBase):
+    @http.route("/federation/search", type="http", auth="user", website=True)
+    def federation_search(self, q="", **kw):
+        results = request.env["federation.qol.search"].search_everywhere(q)
+        return request.render(
+            "sports_federation_portal.federation_qol_search_results",
+            {"query": q, "results": results, "page_name": "federation_search"},
         )
 
 ====================================================================================================
@@ -58396,9 +58851,9 @@ def migrate(cr, version):
 
 ====================================================================================================
 FILE: sports_federation_portal/models/__init__.py
-SIZE: 590
-CONTENT-LENGTH: 590
-SHA256: f1758c74cc47cdbabf920ceea2ad5e8214983755ca1beb1f522add0189d09197
+SIZE: 616
+CONTENT-LENGTH: 616
+SHA256: 0926acd03b1842e390fc92532be5a9222db9a06d8ea628c6c0de23b95bb5620d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -58421,6 +58876,8 @@ from . import portal_status_labels
 from . import operation_task
 from . import competition_queries
 from . import federation_competition_entry
+
+from . import qol_search
 
 ====================================================================================================
 FILE: sports_federation_portal/models/competition_queries.py
@@ -60918,9 +61375,9 @@ class FederationTeamRosterLine(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_portal/models/operation_task.py
-SIZE: 16676
-CONTENT-LENGTH: 16676
-SHA256: 02267e2b06f956588b4f7e12ee442a52207dbcb00a8a9e084c338533a2048de1
+SIZE: 17971
+CONTENT-LENGTH: 17971
+SHA256: 31029f1adf78af641287ec7fdc437ac93708a88c1f74cc343cb19d21831ab027
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -61360,6 +61817,45 @@ class FederationOperationTask(models.Model):
             )
             user_tasks.write({"digest_sent_on": today})
 
+    def action_open_source(self):
+        self.ensure_one()
+        source = self.env.get(self.source_model)
+        source = (
+            source.browse(self.source_record_id).exists()
+            if source is not None
+            else source
+        )
+        if not source:
+            raise ValidationError(_("The source record no longer exists."))
+        return {
+            "type": "ir.actions.act_window",
+            "name": source.display_name,
+            "res_model": source._name,
+            "res_id": source.id,
+            "view_mode": "form",
+            "target": "current",
+        }
+
+    def action_retry_source(self):
+        self.ensure_one()
+        source = self.env.get(self.source_model)
+        source = (
+            source.browse(self.source_record_id).exists()
+            if source is not None
+            else source
+        )
+        if not source:
+            raise ValidationError(_("The source record no longer exists."))
+        if source._name != "federation.operation.job" or source.state not in (
+            "retry",
+            "operator_action",
+        ):
+            raise ValidationError(
+                _("This item must be corrected in its owning workflow.")
+            )
+        source.action_retry()
+        return self.action_open_source()
+
     def action_acknowledge(self):
         """Acknowledge a warning without pretending the source is resolved."""
         for task in self:
@@ -61774,6 +62270,80 @@ class FederationPlayerLicense(models.Model):
         return self._PORTAL_LICENSE_STATE_LABELS.get(
             self.state, self._portal_label_from_selection("state")
         )
+
+====================================================================================================
+FILE: sports_federation_portal/models/qol_search.py
+SIZE: 2117
+CONTENT-LENGTH: 2117
+SHA256: 5fba7a87b5cde5e360f37614098ff9a79b68753f6aeebe7c8dc4155f35e8d718
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo import _, api, models
+
+
+class FederationQolSearch(models.AbstractModel):
+    _name = "federation.qol.search"
+    _description = "Federation Cross-Module Search"
+
+    SEARCH_SURFACES = (
+        (
+            "federation.competition.edition",
+            "name",
+            "/odoo/action-sports_federation_competition_core.action_competition_overview/%s",
+        ),
+        (
+            "federation.tournament",
+            "name",
+            "/odoo/action-sports_federation_tournament.action_federation_tournament/%s",
+        ),
+        (
+            "federation.team",
+            "name",
+            "/odoo/action-sports_federation_base.action_federation_team/%s",
+        ),
+        (
+            "federation.registration.window",
+            "name",
+            "/odoo/action-sports_federation_registration.action_registration_desk/%s",
+        ),
+        (
+            "federation.schedule",
+            "name",
+            "/odoo/action-sports_federation_scheduling.action_schedule_planner_competition/%s",
+        ),
+        (
+            "federation.match",
+            "display_name",
+            "/odoo/action-sports_federation_tournament.action_federation_match/%s",
+        ),
+    )
+
+    @api.model
+    def search_everywhere(self, term, limit_per_model=5):
+        term = (term or "").strip()
+        if len(term) < 2:
+            return []
+        results = []
+        for model_name, field_name, url_template in self.SEARCH_SURFACES:
+            model = self.env.get(model_name)
+            if model is None or field_name not in model._fields:
+                continue
+            records = model.sudo().search(
+                [(field_name, "ilike", term)], limit=limit_per_model
+            )
+            results.extend(
+                {
+                    "model": model_name,
+                    "type": model._description,
+                    "name": record.display_name,
+                    "url": url_template % record.id,
+                }
+                for record in records
+            )
+        return sorted(results, key=lambda item: (item["type"], item["name"].lower()))
 
 ====================================================================================================
 FILE: sports_federation_portal/models/res_partner.py
@@ -62483,9 +63053,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/__init__.py
-SIZE: 614
-CONTENT-LENGTH: 614
-SHA256: 00780c67f5b6edf35335203d8316aa3f2608f7b1d7d798fc6639f65bc91f12dc
+SIZE: 645
+CONTENT-LENGTH: 645
+SHA256: b15c86f64beca82f3c97dd7fee319aec2b9e008c283469b90d20557278848171
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -62509,6 +63079,8 @@ from . import test_qol
 from . import test_production_security_matrix
 
 from . import test_competition_portal
+
+from . import test_qol_search
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_club_representative.py
@@ -63937,9 +64509,9 @@ class TestOfficiatingPortalAccess(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_operation_tasks.py
-SIZE: 3086
-CONTENT-LENGTH: 3086
-SHA256: b3127bf77fac4d166be2327ade32c967c50cb61df4733638210e6f7537a10e33
+SIZE: 3714
+CONTENT-LENGTH: 3714
+SHA256: 6db19e28a6ed71030995452897d5ee868cd653348353ca3a868cbfc4a19cf8e2
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -64034,6 +64606,21 @@ class TestFederationOperationTasks(TransactionCase):
         )
         with self.assertRaisesRegex(Exception, "Blocking tasks"):
             task.action_acknowledge()
+
+    def test_operation_task_opens_its_owning_record(self):
+        task = self.env["federation.operation.task"].create(
+            {
+                "name": "Open source",
+                "task_type": "registration",
+                "audience": "manager",
+                "source_model": self.window._name,
+                "source_record_id": self.window.id,
+                "source_key": f"{self.window._name}:{self.window.id}:open",
+            }
+        )
+        action = task.action_open_source()
+        self.assertEqual(action["res_model"], self.window._name)
+        self.assertEqual(action["res_id"], self.window.id)
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_player_portal_access.py
@@ -64747,6 +65334,36 @@ class TestPortalQoL(TransactionCase):
             }
         )
         self.assertIn(task.work_bucket, ("now", "soon"))
+
+====================================================================================================
+FILE: sports_federation_portal/tests/test_qol_search.py
+SIZE: 846
+CONTENT-LENGTH: 846
+SHA256: b9f190988d4d22d35f299a09a6e5436a7935ea48fcb73a49f379f59fa826061a
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo.tests import TransactionCase
+
+
+class TestQolSearch(TransactionCase):
+    def test_short_queries_return_no_results(self):
+        self.assertEqual(self.env["federation.qol.search"].search_everywhere("x"), [])
+
+    def test_search_returns_typed_direct_links(self):
+        club = self.env["federation.club"].create(
+            {"name": "Unique Search Club", "code": "UNIQUE-SEARCH"}
+        )
+        team = self.env["federation.team"].create(
+            {"name": "Unique Search Team", "club_id": club.id}
+        )
+        results = self.env["federation.qol.search"].search_everywhere("Unique Search")
+        match = next(item for item in results if item["model"] == "federation.team")
+        self.assertEqual(match["name"], team.display_name)
+        self.assertIn(str(team.id), match["url"])
+        self.assertTrue(match["type"])
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_result_portal_access.py
@@ -67233,9 +67850,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_portal/views/operation_task_views.xml
-SIZE: 4953
-CONTENT-LENGTH: 4953
-SHA256: 5b82de6a4687c3d339fc8049d58da5bc675226416dd42ed4375db6976c790c4b
+SIZE: 5171
+CONTENT-LENGTH: 5171
+SHA256: 886eb41e35abb93d90dc697aa85af3855b9fd169e7dcd1e14ed977b11d2d3f16
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -67266,7 +67883,7 @@ GIT-STATE: tracked
         <field name="name">federation.operation.task.form</field>
         <field name="model">federation.operation.task</field>
         <field name="arch" type="xml">
-            <form string="Operational Task">
+            <form string="Operational Task"><header><button name="action_open_source" type="object" string="Open Source" class="btn-primary"/><button name="action_retry_source" type="object" string="Retry / Return to Draft" invisible="state == 'done'"/></header>
                 <header>
                     <button name="action_acknowledge" type="object" string="Acknowledge" class="btn-secondary" invisible="state != 'open' or blocking"/>
                     <button name="action_escalate" type="object" string="Escalate" class="btn-primary"/>
@@ -69077,9 +69694,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_portal/views/portal_templates.xml
-SIZE: 53894
-CONTENT-LENGTH: 53866
-SHA256: 6224a7622ebfc6a70dbf42d2b4f36011b44fed95fcf5991815b3a4b533182fa8
+SIZE: 54867
+CONTENT-LENGTH: 54839
+SHA256: be430bd45d54fbcaddd8bf0c9c81256b493100f9c50ecfdca32609308029da19
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -69194,7 +69811,7 @@ GIT-STATE: tracked
     <template id="portal_my_operation_tasks" name="Club Work Inbox">
       <t t-call="portal.portal_layout"><div class="container py-4">
         <div class="d-flex justify-content-between gap-3 flex-wrap mb-4"><div><h2><i class="fa fa-inbox me-2"/>Club work inbox</h2><p class="text-muted mb-0">Deadlines, returned work and direct next steps in one place.</p></div><a href="/my/milestones" class="btn btn-outline-primary">Milestones</a></div>
-        <div t-if="success" class="alert alert-success" role="status"><t t-esc="success"/></div><div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div>
+        <div t-if="success" class="alert alert-success" role="status"><t t-esc="success"/></div><div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div><div class="card mb-4"><div class="card-body"><div class="d-flex justify-content-between"><strong>Competition readiness</strong><span><t t-esc="journey_percent"/>%</span></div><div class="progress mt-2" role="progressbar" aria-label="Competition readiness" t-att-aria-valuenow="journey_percent" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" t-attf-style="width: #{journey_percent}%"/></div><div class="row g-2 mt-3"><div class="col-6 col-lg-3"><span class="badge text-bg-danger"><t t-esc="len(task_groups['overdue'])"/> overdue</span></div><div class="col-6 col-lg-3"><span class="badge text-bg-warning"><t t-esc="len(task_groups['blocking'])"/> blocking</span></div><div class="col-6 col-lg-3"><span class="badge text-bg-info"><t t-esc="len(task_groups['waiting_federation'])"/> with federation</span></div><div class="col-6 col-lg-3"><span class="badge text-bg-primary"><t t-esc="len(task_groups['mine'])"/> assigned to me</span></div></div></div></div>
         <nav class="d-flex gap-2 flex-wrap mb-4" aria-label="Inbox filters"><a t-attf-class="btn btn-sm #{'btn-primary' if active_scope == 'my' else 'btn-outline-primary'}" href="/my/action-items?scope=my">My actions</a><a t-attf-class="btn btn-sm #{'btn-primary' if active_scope == 'club' else 'btn-outline-primary'}" href="/my/action-items?scope=club">All club actions</a><a class="btn btn-sm btn-outline-secondary" href="/my/action-items?scope=club&amp;status=recent">Completed recently</a><t t-foreach="task_type_labels.items()" t-as="kind"><a class="btn btn-sm btn-outline-secondary" t-attf-href="/my/action-items?scope=#{active_scope}&amp;task_type=#{kind[0]}"><t t-esc="kind[1]"/></a></t></nav>
         <t t-foreach="[('now','Needs action now'),('soon','Due soon'),('waiting','Waiting for someone else'),('recent','Completed recently')]" t-as="bucket"><section t-if="buckets.get(bucket[0])" class="mb-4"><h3 class="h5"><t t-esc="bucket[1]"/></h3><div class="vstack gap-3"><article t-foreach="buckets[bucket[0]]" t-as="task" class="card"><div class="card-body"><div class="d-flex justify-content-between gap-3 flex-wrap"><div><div class="d-flex gap-2 flex-wrap"><strong><t t-esc="task.name"/></strong><span t-if="task.blocking" class="badge text-bg-danger">Blocking</span><span t-if="task.is_overdue" class="badge text-bg-warning">Overdue</span></div><p class="text-muted small mb-1"><t t-esc="task.blocking_reason"/></p><div class="small"><strong>Next:</strong> <t t-esc="task.next_step"/><t t-if="task.deadline"> · <t t-esc="task.deadline" t-options="{'widget':'datetime'}"/></t></div><div class="small text-muted" t-if="task.assigned_user_id">Owner: <t t-esc="task.assigned_user_id.name"/></div></div><a t-if="task.action_url" t-att-href="task.action_url" class="btn btn-primary align-self-start">Open</a></div><form t-if="task.state != 'done' and representatives" action="/my/action-items/assign" method="POST" class="d-flex gap-2 flex-wrap mt-3"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><input type="hidden" name="task_id" t-att-value="task.id"/><label t-attf-for="assignee_#{task.id}" class="visually-hidden">Assign action</label><select t-attf-id="assignee_#{task.id}" name="user_id" class="form-select form-select-sm w-auto"><t t-foreach="representatives" t-as="rep"><option t-att-value="rep.effective_user_id.id" t-att-selected="task.assigned_user_id == rep.effective_user_id"><t t-esc="rep.effective_user_id.name"/> · <t t-esc="rep.operational_role or rep.role_type_id.name"/></option></t></select><button class="btn btn-sm btn-outline-secondary">Assign</button></form></div></article></div></section></t>
         <div t-if="not tasks" class="text-center py-5"><i class="fa fa-check-circle fa-3x text-success"/><h3>All clear</h3><p class="text-muted">There are no actions in this view.</p></div>
@@ -69896,6 +70513,27 @@ GIT-STATE: tracked
         </t>
     </template>
 
+</odoo>
+
+====================================================================================================
+FILE: sports_federation_portal/views/qol_search_templates.xml
+SIZE: 998
+CONTENT-LENGTH: 998
+SHA256: 4101f2c478de47ad0d25d76e5aad129bd155b801ef6c09dead27dfb27ba89a2c
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+<odoo>
+ <template id="federation_qol_search_results" name="Federation Search">
+  <t t-call="portal.portal_layout"><div class="container py-4">
+   <h2>Federation search</h2>
+   <form action="/federation/search" method="get" role="search" class="d-flex gap-2 mb-4"><label for="federation_search_q" class="visually-hidden">Search competitions, teams, schedules and matches</label><input id="federation_search_q" name="q" class="form-control" t-att-value="query" placeholder="Competition, team, schedule or match" minlength="2"/><button class="btn btn-primary">Search</button></form>
+   <p t-if="query and not results" class="alert alert-info" role="status">No matching federation records were found.</p>
+   <div class="list-group" t-if="results"><a t-foreach="results" t-as="result" t-att-href="result['url']" class="list-group-item list-group-item-action"><strong t-esc="result['name']"/><span class="badge text-bg-secondary ms-2" t-esc="result['type']"/></a></div>
+  </div></t>
+ </template>
 </odoo>
 
 ====================================================================================================

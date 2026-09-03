@@ -1,0 +1,8 @@
+/** @odoo-module **/
+const STORAGE_KEY = "sf_recent_portal_items";
+const MAX_RECENT = 8;
+function loadRecent(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");}catch{return [];}}
+function remember(){if(!location.pathname.startsWith("/my/"))return;const title=document.querySelector("main h1,main h2")?.textContent?.trim()||document.title;const current={title,url:location.pathname+location.search};localStorage.setItem(STORAGE_KEY,JSON.stringify([current,...loadRecent().filter(x=>x.url!==current.url)].slice(0,MAX_RECENT)));}
+function render(){const heading=document.querySelector("main h1,main h2");if(!heading)return;const box=document.createElement("div");box.className="d-flex flex-wrap gap-2 mb-3";const copy=document.createElement("button");copy.type="button";copy.className="btn btn-sm btn-outline-secondary";copy.textContent="Copy direct link";copy.onclick=async()=>{await navigator.clipboard.writeText(location.href);copy.textContent="Link copied";};const help=document.createElement("a");help.href="/my/action-items";help.className="btn btn-sm btn-outline-secondary";help.textContent="What happens next?";box.append(copy,help);const recent=loadRecent().slice(1);if(recent.length){const details=document.createElement("details"),summary=document.createElement("summary"),list=document.createElement("div");summary.textContent="Recent items";summary.className="btn btn-sm btn-outline-secondary";for(const item of recent){const link=document.createElement("a");link.href=item.url;link.textContent=item.title;link.className="d-block py-1";list.append(link);}details.append(summary,list);box.append(details);}heading.after(box);}
+document.addEventListener("DOMContentLoaded",()=>{remember();render();});
+export { loadRecent, remember, render };
