@@ -1,0 +1,52 @@
+<odoo>
+  <record id="matchday_slot_generation_wizard_form" model="ir.ui.view">
+    <field name="name">federation.matchday.slot.generation.wizard.form</field>
+    <field name="model">federation.matchday.slot.generation.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Generate Match-Day Slots">
+        <sheet>
+          <div class="alert alert-info" role="status">
+            Total slot duration must already include possible overtime, clearance, and setup for the next match. Venue and playing-area constraint windows are excluded automatically.
+          </div>
+          <group>
+            <group string="Game Day">
+              <field name="matchday_id"/>
+              <field name="venue_id"/>
+              <field name="court_ids" widget="many2many_tags" options="{'no_create': True}"/>
+            </group>
+            <group string="Time Window">
+              <field name="start_hour" widget="float_time"/>
+              <field name="end_hour" widget="float_time"/>
+              <field name="slot_duration_minutes"/>
+            </group>
+          </group>
+          <group string="Noon Pause">
+            <field name="noon_pause"/>
+            <field name="noon_pause_minutes" invisible="not noon_pause" required="noon_pause"/>
+          </group>
+          <group string="Generation">
+            <field name="replace_existing_slots"/>
+          </group>
+          <group string="Preview" col="6">
+            <field name="generated_slot_count" readonly="1"/>
+            <field name="pause_slot_count" readonly="1"/>
+            <field name="blocked_slot_count" readonly="1"/>
+          </group>
+          <div class="alert alert-warning" role="alert" invisible="not blocked_slot_count">
+            Some candidate slots overlap venue availability constraints and will not be created.
+          </div>
+        </sheet>
+        <footer>
+          <button name="action_generate" type="object" string="Generate Slots" class="btn-primary"/>
+          <button string="Cancel" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+  <record id="action_matchday_slot_generation_wizard" model="ir.actions.act_window">
+    <field name="name">Generate Match-Day Slots</field>
+    <field name="res_model">federation.matchday.slot.generation.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+  </record>
+</odoo>

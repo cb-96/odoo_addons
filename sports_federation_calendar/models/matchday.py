@@ -68,6 +68,20 @@ class FederationMatchday(models.Model):
             )
             r.spare_capacity = r.playable_slot_count - r.fixture_count
 
+    def action_open_slot_generator(self):
+        self.ensure_one()
+        if self.state not in ("draft", "capacity_ready"):
+            raise ValidationError(
+                _("Match-day slots can only be generated before scheduling starts.")
+            )
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_calendar.action_matchday_slot_generation_wizard"
+        )
+        action["context"] = {
+            "default_matchday_id": self.id,
+        }
+        return action
+
     def action_capacity_ready(self):
         for r in self:
             if not r.slot_ids.filtered(lambda s: s.state == "available"):
