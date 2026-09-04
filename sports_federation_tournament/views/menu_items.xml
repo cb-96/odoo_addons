@@ -5,18 +5,18 @@
               name="Competition Templates"
               parent="sports_federation_base.menu_federation_competitions"
               action="federation_competition_action"
-              sequence="10"/>
+              sequence="30"/>
 
     <menuitem id="menu_federation_competition_edition"
               name="Season Competitions"
               parent="sports_federation_base.menu_federation_competitions"
               action="federation_competition_edition_action"
-              sequence="20"/>
+              sequence="15"/>
 
     <menuitem id="menu_federation_tournament"
-              name="Advanced Records"
+              name="Structure &amp; Fixtures"
               parent="sports_federation_base.menu_federation_planning"
-              sequence="90"/>
+              sequence="10"/>
 
     <menuitem id="menu_federation_tournament_config"
               name="Tournament Structure"
@@ -37,9 +37,9 @@
 
     <menuitem id="menu_federation_matches"
               name="Matches"
-              parent="menu_federation_tournament"
+              parent="sports_federation_base.menu_federation_match_day"
               action="federation_match_action"
-              sequence="30"/>
+              sequence="10"/>
 
     <menuitem id="menu_federation_tournament_list"
               name="Divisions &amp; Tournaments"

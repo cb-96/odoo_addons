@@ -7,4 +7,4 @@ club ownership, eligibility, duplicate-entry and capacity rules.
 
 The portal 19.0.5.0.0 migration drops the test-only V1 tournament-registration
 table. Take a verified backup before upgrading. Federation staff review entries
-through **Federation → Competition Workflow → Registration Desk**.
+through **Federation → Competitions → Competition Operations → Registration Desk**.

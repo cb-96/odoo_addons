@@ -4,7 +4,7 @@
               name="Standings"
               parent="sports_federation_base.menu_federation_publication"
               action="action_federation_standing"
-              sequence="10"/>
+              sequence="30"/>
 
     <menuitem id="menu_federation_standing_recompute_jobs"
               name="Recompute Queue"

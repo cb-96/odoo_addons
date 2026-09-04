@@ -53,3 +53,5 @@ roadmap or a standalone review snapshot for routine changes.
 - [Release pilot scenario](RELEASE_PILOT_SCENARIO.md)
 
 - [Public competition API](PUBLIC_COMPETITION_API.md)
+
+- [`FEDERATION_BACKEND_NAVIGATION.md`](FEDERATION_BACKEND_NAVIGATION.md): canonical backend work areas, menu ownership, and navigation change rules.

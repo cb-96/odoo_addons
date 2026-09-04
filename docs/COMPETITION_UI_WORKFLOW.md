@@ -9,53 +9,7 @@ This guide replaces conceptual module names with the menus that actually exist i
 
 ## Actual backend menu map
 
-```text
-Federation
-├── Setup
-│   ├── Core Records
-│   │   ├── Clubs
-│   │   └── Teams
-│   ├── Seasons
-│   ├── Season Registrations
-│   └── Competition Setup
-│       ├── Competition Templates
-│       ├── Season Competitions
-│       └── Rules & Policies
-├── Competition Workflow
-│   ├── Create Competition
-│   ├── Competition Overview
-│   ├── Registration Desk
-│   ├── Format Studio
-│   ├── Format Templates
-│   ├── Calendar Planner
-│   ├── Schedule Planner
-│   ├── Schedule Review Queue
-│   ├── Match-Day Control
-│   └── Technical Records
-├── Planning
-│   ├── Operational Action Queue
-│   └── Advanced Records
-│       ├── Divisions & Tournaments
-│       ├── Matches
-│       └── Tournament Structure
-├── Match Day
-│   ├── Match Sheets
-│   ├── Venues
-│   ├── Officiating
-│   └── Discipline
-├── Publication
-│   ├── Standings
-│   ├── Approved Schedules
-│   └── Schedule Publications
-└── Administration
-    ├── Reporting
-    │   └── Operational Health
-    ├── Retention and Recovery
-    ├── Retention Evidence
-    └── Operational Job Health
-```
-
-There is no backend menu named **Competitions**, **Registrations**, **Scheduling**, **Schedule Approval**, **Results**, or **Competition Engine**. Those are concepts or addon names, not current navigation labels.
+The canonical backend structure is maintained in [`FEDERATION_BACKEND_NAVIGATION.md`](FEDERATION_BACKEND_NAVIGATION.md). The competition journey lives under **Federation > Competitions > Competition Operations**; supporting records are placed under the business area that owns them.
 
 ## Actual club portal links
 
@@ -77,11 +31,11 @@ My Account
 Use:
 
 ```text
-Federation > Setup > Seasons
-Federation > Setup > Competition Setup > Competition Templates
-Federation > Setup > Competition Setup > Rules & Policies > Rule Sets & Policies
-Federation > Setup > Core Records > Clubs
-Federation > Setup > Core Records > Teams
+Federation > Competitions > Seasons
+Federation > Competitions > Competition Templates
+Federation > Competitions > Rules & Policies > Rule Sets & Policies
+Federation > Clubs & People > Club Directory > Clubs
+Federation > Clubs & People > Club Directory > Teams
 ```
 
 Create the season, reusable competition definition, rule set, clubs, and teams. Points, tie-break, eligibility, and qualification components are below **Rules & Policies > Advanced Components**.
@@ -93,7 +47,7 @@ Create the season, reusable competition definition, rule set, clubs, and teams. 
 Preferred menu:
 
 ```text
-Federation > Competition Workflow > Create Competition
+Federation > Competitions > Competition Operations > Create Competition
 ```
 
 The wizard selects the setup template, competition template, season, dates, optional rule set, registration dates, divisions, and responsibilities. It creates the season competition, divisions, registration windows, and role assignments, then opens the season competition.
@@ -101,9 +55,9 @@ The wizard selects the setup template, competition template, season, dates, opti
 Inspect the records through:
 
 ```text
-Federation > Setup > Competition Setup > Season Competitions
-Federation > Planning > Advanced Records > Divisions & Tournaments
-Federation > Competition Workflow > Competition Overview
+Federation > Competitions > Season Competitions
+Federation > Competitions > Competition Records > Structure & Fixtures > Divisions & Tournaments
+Federation > Competitions > Competition Operations > Competition Overview
 ```
 
 **Recovery:** Correct newly created records before clubs submit. There is no generic **Undo Competition Wizard** button. If downstream entries, fixtures, schedules, results, or publications exist, preserve the original records and create controlled replacements.
@@ -113,7 +67,7 @@ Federation > Competition Workflow > Competition Overview
 Backend:
 
 ```text
-Federation > Competition Workflow > Registration Desk
+Federation > Competitions > Competition Operations > Registration Desk
 ```
 
 Club portal:
@@ -131,7 +85,7 @@ Use **Open Registration** on a draft registration window. Clubs prepare and subm
 Menu:
 
 ```text
-Federation > Competition Workflow > Registration Desk
+Federation > Competitions > Competition Operations > Registration Desk
 ```
 
 Close the registration window and press **Finalize Participants**. The finalized participant set feeds the format structure.
@@ -143,8 +97,8 @@ Close the registration window and press **Finalize Participants**. The finalized
 Menus:
 
 ```text
-Federation > Competition Workflow > Format Templates
-Federation > Competition Workflow > Format Studio
+Federation > Competitions > Competition Operations > Format Templates
+Federation > Competitions > Competition Operations > Format Studio
 ```
 
 **Format Templates** is manager-only. In **Format Studio**, select the season competition, division, finalized participant set, and format settings. Use **Check Feasibility**, then **Generate Fixtures**. For multi-stage structures use **Validate Stage Graph**. Once accepted, use **Freeze Structure**.
@@ -156,7 +110,7 @@ Federation > Competition Workflow > Format Studio
 There is no standalone **Stage Progression** menu. Stage controls are on the structure opened from:
 
 ```text
-Federation > Competition Workflow > Format Studio
+Federation > Competitions > Competition Operations > Format Studio
 ```
 
 Available stage actions are **Prepare**, **Start**, and **Freeze & Progress**.
@@ -168,13 +122,13 @@ Available stage actions are **Prepare**, **Start**, and **Freeze & Progress**.
 Menu:
 
 ```text
-Federation > Competition Workflow > Calendar Planner
+Federation > Competitions > Competition Operations > Calendar Planner
 ```
 
 Create match days, slot windows, and capacity, then use **Mark Capacity Ready**. Venue setup and constraints are under:
 
 ```text
-Federation > Match Day > Venues
+Federation > Match Operations > Venues
 ```
 
 **Recovery:** Edit draft calendar records. If a schedule already uses the calendar, make the deliberate calendar correction and refresh the working schedule. Stale assignments are flagged, not silently deleted.
@@ -184,7 +138,7 @@ Federation > Match Day > Venues
 Menu:
 
 ```text
-Federation > Competition Workflow > Schedule Planner
+Federation > Competitions > Competition Operations > Schedule Planner
 ```
 
 Use **Refresh Calendar Fixtures**. Assign dates, times, venues, and courts manually, or use **Auto-schedule**, **Preview**, and **Apply Auto-schedule**. Review fairness warnings.
@@ -196,13 +150,13 @@ Use **Refresh Calendar Fixtures**. Assign dates, times, venues, and courts manua
 Planner menu:
 
 ```text
-Federation > Competition Workflow > Schedule Planner
+Federation > Competitions > Competition Operations > Schedule Planner
 ```
 
 Use **Submit for Review**. Approver menu:
 
 ```text
-Federation > Competition Workflow > Schedule Review Queue
+Federation > Competitions > Competition Operations > Schedule Review Queue
 ```
 
 The review exposes **Withdraw Submission**, **Request Changes**, and **Approve Schedule** according to state and role.
@@ -214,26 +168,26 @@ The review exposes **Withdraw Submission**, **Request Changes**, and **Approve S
 Use **Publish Schedule** on an approved review. The two real publication menus are:
 
 ```text
-Federation > Publication > Approved Schedules
-Federation > Publication > Schedule Publications
+Federation > Publishing > Approved Schedules
+Federation > Publishing > Schedule Publications
 ```
 
-**Recovery:** Live publications are immutable. Open the published schedule under **Federation > Competition Workflow > Schedule Planner**, use **Amend Schedule**, enter a reason, and press **Create Amendment**. The replacement follows submit, review, approve, and publish again. The old publication becomes superseded. There is no in-place **Unpublish** button.
+**Recovery:** Live publications are immutable. Open the published schedule under **Federation > Competitions > Competition Operations > Schedule Planner**, use **Amend Schedule**, enter a reason, and press **Create Amendment**. The replacement follows submit, review, approve, and publish again. The old publication becomes superseded. There is no in-place **Unpublish** button.
 
 ### 11. Operate match day
 
 Menu:
 
 ```text
-Federation > Competition Workflow > Match-Day Control
+Federation > Competitions > Competition Operations > Match-Day Control
 ```
 
 Use **Open Match Day** when ready. During operations use **Update Court**, **Report Incident**, or **Operational Schedule Change**. Finish with **Close Match Day**. Supporting records are under:
 
 ```text
-Federation > Match Day > Match Sheets
-Federation > Competition Workflow > Technical Records > Incidents
-Federation > Competition Workflow > Technical Records > Operational Deviations
+Federation > Match Operations > Match Sheets
+Federation > Competitions > Competition Operations > Technical Records > Incidents
+Federation > Competitions > Competition Operations > Technical Records > Operational Deviations
 ```
 
 **Recovery:** Resolve incident and deviation records with **Resolve**. Operational changes are recorded rather than silently altering the approved publication. Correct the planning baseline through a schedule amendment.
@@ -243,7 +197,7 @@ Federation > Competition Workflow > Technical Records > Operational Deviations
 Backend menu:
 
 ```text
-Federation > Planning > Advanced Records > Matches
+Federation > Match Operations > Matches
 ```
 
 Result Control extends the match form; there is no separate backend **Results** menu. The form provides **Submit Result**, **Verify Result**, **Approve Result**, **Raise Dispute / Request Exception**, **Correct Result**, and **Reset to Draft**.
@@ -261,7 +215,7 @@ My Account > Results
 Menu:
 
 ```text
-Federation > Publication > Standings
+Federation > Publishing > Standings
 ```
 
 Use **Recompute** or **Queue Recompute**, inspect lines and tie-break notes, and then use **Freeze**.
@@ -273,20 +227,20 @@ Use **Recompute** or **Queue Recompute**, inspect lines and tie-break notes, and
 Menus:
 
 ```text
-Federation > Planning > Operational Action Queue
-Federation > Administration > Reporting > Operational Health
-Federation > Administration > Operational Job Health
+Federation > Administration > Action Queue
+Federation > Insights > Reports & Insights > Overview & Readiness > Operational Health
+Federation > Administration > System Health > Operational Job Health
 ```
 
 Use source links to correct business records in their owning workflow. Retry only retryable jobs.
 
 ## Required terminology in operator documentation
 
-- Use **Federation > Competition Workflow**, not “Competition Engine”.
+- Use **Federation > Competitions > Competition Operations**, not “Competition Engine”.
 - Use **Registration Desk**, not “Registration Windows” as a menu.
 - Use **Schedule Planner**, not “Scheduling > Schedules”.
 - Use **Schedule Review Queue**, not “Schedule Approval > Reviews”.
-- Use **Publication > Schedule Publications**, not “Schedule Approval > Publications”.
-- Use **Planning > Advanced Records > Matches**, not “Results > Match Results”.
-- Use **Publication > Standings**, not “Standings > Standings”.
+- Use **Publishing > Schedule Publications**, not “Schedule Approval > Publications”.
+- Use **Match Operations > Matches**, not “Results > Match Results”.
+- Use **Publishing > Standings**, not “Standings > Standings”.
 - Use **Format Studio** for stage progression; there is no standalone progression menu.

@@ -1,29 +1,48 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import sys
+
 from lxml import etree
 
 ROOT = Path(__file__).resolve().parents[1]
-GUIDE = ROOT / "docs/COMPETITION_UI_WORKFLOW.md"
-PATHS = (
-    ("Federation", "Setup", "Seasons"),
-    ("Federation", "Setup", "Competition Setup", "Competition Templates"),
-    ("Federation", "Setup", "Competition Setup", "Season Competitions"),
-    ("Federation", "Competition Workflow", "Create Competition"),
-    ("Federation", "Competition Workflow", "Competition Overview"),
-    ("Federation", "Competition Workflow", "Registration Desk"),
-    ("Federation", "Competition Workflow", "Format Studio"),
-    ("Federation", "Competition Workflow", "Calendar Planner"),
-    ("Federation", "Competition Workflow", "Schedule Planner"),
-    ("Federation", "Competition Workflow", "Schedule Review Queue"),
-    ("Federation", "Competition Workflow", "Match-Day Control"),
-    ("Federation", "Planning", "Advanced Records", "Matches"),
-    ("Federation", "Publication", "Approved Schedules"),
-    ("Federation", "Publication", "Schedule Publications"),
-    ("Federation", "Publication", "Standings"),
-    ("Federation", "Administration", "Reporting", "Operational Health"),
-    ("Federation", "Administration", "Operational Job Health"),
+NAVIGATION = ROOT / "docs/FEDERATION_BACKEND_NAVIGATION.md"
+WORKFLOW = ROOT / "docs/COMPETITION_UI_WORKFLOW.md"
+ROOT_MENU = "sports_federation_base.menu_federation_root"
+TOP_LEVEL = (
+    "Competitions",
+    "Clubs & People",
+    "Match Operations",
+    "Publishing",
+    "Finance & Assurance",
+    "Insights",
+    "Administration",
 )
+REQUIRED_PATHS = (
+    ("Federation", "Competitions", "Seasons"),
+    ("Federation", "Competitions", "Season Competitions"),
+    ("Federation", "Competitions", "Competition Operations", "Create Competition"),
+    ("Federation", "Competitions", "Competition Operations", "Competition Overview"),
+    ("Federation", "Competitions", "Competition Operations", "Registration Desk"),
+    ("Federation", "Competitions", "Competition Operations", "Format Studio"),
+    ("Federation", "Competitions", "Competition Operations", "Calendar Planner"),
+    ("Federation", "Competitions", "Competition Operations", "Schedule Planner"),
+    ("Federation", "Competitions", "Competition Operations", "Schedule Review Queue"),
+    ("Federation", "Clubs & People", "Club Directory", "Clubs"),
+    ("Federation", "Clubs & People", "Club Directory", "Teams"),
+    ("Federation", "Match Operations", "Match-Day Control"),
+    ("Federation", "Match Operations", "Matches"),
+    ("Federation", "Match Operations", "Match Sheets"),
+    ("Federation", "Publishing", "Approved Schedules"),
+    ("Federation", "Publishing", "Schedule Publications"),
+    ("Federation", "Publishing", "Standings"),
+    ("Federation", "Finance & Assurance", "Finance"),
+    ("Federation", "Finance & Assurance", "Compliance"),
+    ("Federation", "Finance & Assurance", "Governance"),
+    ("Federation", "Insights", "Reports & Insights", "Overview & Readiness", "Operational Health"),
+    ("Federation", "Administration", "Action Queue"),
+    ("Federation", "Administration", "System Health", "Operational Job Health"),
+)
+FORBIDDEN_TOP_LEVEL = {"Setup", "Planning", "Competition Workflow", "Match Day", "Publication"}
 
 
 def index():
@@ -31,25 +50,31 @@ def index():
     for path in ROOT.glob("sports_federation_*/views/*.xml"):
         try:
             tree = etree.parse(str(path))
-        except etree.XMLSyntaxError:
-            continue
+        except etree.XMLSyntaxError as exc:
+            raise RuntimeError(f"cannot parse {path}: {exc}") from exc
         module = path.parts[-3]
-        for node in tree.xpath("//menuitem"):
+        for node in tree.xpath("//menuitem[@id]"):
             rid = node.get("id")
             xmlid = rid if "." in rid else f"{module}.{rid}"
             parent = node.get("parent", "")
             parent = parent if not parent or "." in parent else f"{module}.{parent}"
-            records[xmlid] = {"name": node.get("name", ""), "parent": parent}
+            records[xmlid] = {
+                "name": node.get("name", ""),
+                "parent": parent,
+                "sequence": int(node.get("sequence", "10")),
+            }
     return records
 
 
-def exists(records, labels):
-    for xid, record in records.items():
+def path_exists(records, labels):
+    for record in records.values():
         if record["name"] != labels[-1]:
             continue
         names = [record["name"]]
         parent = record["parent"]
-        while parent in records:
+        visited = set()
+        while parent in records and parent not in visited:
+            visited.add(parent)
             record = records[parent]
             names.append(record["name"])
             parent = record["parent"]
@@ -60,20 +85,40 @@ def exists(records, labels):
 
 def main():
     records = index()
-    guide = GUIDE.read_text()
+    navigation = NAVIGATION.read_text(encoding="utf-8")
+    workflow = WORKFLOW.read_text(encoding="utf-8")
     errors = []
-    for labels in PATHS:
+
+    top_level = tuple(
+        record["name"]
+        for record in sorted(
+            (record for record in records.values() if record["parent"] == ROOT_MENU),
+            key=lambda record: (record["sequence"], record["name"]),
+        )
+    )
+    if top_level != TOP_LEVEL:
+        errors.append(f"root work areas are {top_level!r}, expected {TOP_LEVEL!r}")
+    stale = FORBIDDEN_TOP_LEVEL.intersection(top_level)
+    if stale:
+        errors.append("obsolete root categories remain: " + ", ".join(sorted(stale)))
+
+    for labels in REQUIRED_PATHS:
         rendered = " > ".join(labels)
-        if not exists(records, labels):
+        if not path_exists(records, labels):
             errors.append(f"menu path missing: {rendered}")
-        if rendered not in guide:
-            errors.append(f"guide path missing: {rendered}")
+        if rendered not in navigation and rendered not in workflow:
+            errors.append(f"documented path missing: {rendered}")
+
+    for label in TOP_LEVEL:
+        if f"**{label}**" not in navigation:
+            errors.append(f"navigation purpose is undocumented: {label}")
+
     if errors:
-        print("Competition UI workflow contract failed:", file=sys.stderr)
+        print("Federation backend navigation contract failed:", file=sys.stderr)
         for error in errors:
             print(f"- {error}", file=sys.stderr)
         return 1
-    print("Competition UI workflow menu paths passed.")
+    print("Federation backend navigation structure passed.")
     return 0
 
 

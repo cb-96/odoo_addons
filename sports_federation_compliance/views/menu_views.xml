@@ -7,7 +7,7 @@
     <!-- Compliance Submenu -->
     <menuitem id="menu_federation_compliance"
               name="Compliance"
-              parent="sports_federation_base.menu_federation_administration"
+              parent="sports_federation_base.menu_federation_business"
               sequence="20"
               groups="sports_federation_base.group_federation_user,sports_federation_base.group_federation_manager"/>
 

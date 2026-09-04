@@ -94,7 +94,7 @@
               name="Public Editorial"
               parent="sports_federation_base.menu_federation_publication"
               action="action_federation_public_editorial_items"
-              sequence="20"
+              sequence="40"
               groups="sports_federation_base.group_federation_manager"/>
 
 </odoo>

@@ -20,6 +20,7 @@ Quick links
 - High-level context: `CONTEXT.md`
 - Technical notes: `TECHNICAL_NOTE.md`
 - Documentation map: `docs/README.md`
+- Backend navigation: `docs/FEDERATION_BACKEND_NAVIGATION.md`
 - Architecture decisions: `adr/README.md`
 - Route inventory: `ROUTE_INVENTORY.md`
 - Release runbook: `RELEASE_RUNBOOK.md`

@@ -1,6 +1,6 @@
 # Competition Engine
 
-> **UI navigation:** operators use **Federation → Competition Workflow**. See [`docs/COMPETITION_UI_WORKFLOW.md`](docs/COMPETITION_UI_WORKFLOW.md).
+> **UI navigation:** operators use **Federation → Competitions → Competition Operations**. See [`docs/COMPETITION_UI_WORKFLOW.md`](docs/COMPETITION_UI_WORKFLOW.md).
 
 This implementation provides role-owned capabilities and explicit handovers for competition planning and operations.
 

@@ -47,7 +47,7 @@ Blocking vs warning-only model:
 
 ## Verified UI navigation
 
-Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md). The main journey is under **Federation → Competition Workflow**; addon names below describe ownership, not menu labels.
+Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md). The main journey is under **Federation → Competitions → Competition Operations**; addon names below describe ownership, not menu labels.
 
 ## Step-by-Step Flow
 
@@ -216,7 +216,7 @@ including byes and future-round wiring for non-power-of-two participant counts.
    scaffold common stage/group/progression combinations (for recurring
    tournaments). Use `action_apply()` from the template to create stages and
    progression rules for a tournament in a single step.
-5. Generate the next stage in **Federation → Competition Workflow → Format Studio**, then assign it in **Schedule Planner**.
+5. Generate the next stage in **Federation → Competitions → Competition Operations → Format Studio**, then assign it in **Schedule Planner**.
 6. Typical workflow: freeze the round-robin standing, auto-advance the top-ranked
    teams into the knockout stage through a `federation.stage.progression` rule,
    then schedule those knockout matches onto the planned knockout rounds.

@@ -7,14 +7,14 @@
 
     <!-- Backend menu for portal module -->
     <menuitem id="menu_federation_portal_root"
-              name="Clubs &amp; People"
-              parent="sports_federation_base.menu_federation_root"
-              sequence="50"/>
+              name="Representatives &amp; Access"
+              parent="sports_federation_base.menu_federation_setup"
+              sequence="30"/>
 
     <menuitem id="menu_federation_club_representative_portal"
-              name="Representatives &amp; Access"
+              name="Representative Workspace"
               parent="menu_federation_portal_root"
               action="action_federation_club_representative_portal"
-              sequence="20"/>
+              sequence="10"/>
 
 </odoo>

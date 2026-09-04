@@ -2,9 +2,9 @@
 <odoo>
 
     <menuitem id="menu_federation_people"
-              name="People"
+              name="Players &amp; Licensing"
               parent="sports_federation_base.menu_federation_setup"
-              sequence="50"/>
+              sequence="20"/>
 
     <menuitem id="menu_federation_player"
               name="Players"

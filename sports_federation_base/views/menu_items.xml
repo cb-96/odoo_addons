@@ -7,32 +7,42 @@
               sequence="100"/>
 
     <menuitem id="menu_federation_setup"
-              name="Setup"
-              parent="menu_federation_root"
-              sequence="10"/>
-
-    <menuitem id="menu_federation_planning"
-              name="Planning"
+              name="Clubs &amp; People"
               parent="menu_federation_root"
               sequence="20"/>
 
+    <menuitem id="menu_federation_planning"
+              name="Competition Records"
+              parent="menu_federation_competitions"
+              sequence="80"/>
+
     <menuitem id="menu_federation_match_day"
-              name="Match Day"
+              name="Match Operations"
               parent="menu_federation_root"
               sequence="30"/>
 
     <menuitem id="menu_federation_publication"
-              name="Publication"
+              name="Publishing"
               parent="menu_federation_root"
               sequence="40"/>
+
+    <menuitem id="menu_federation_business"
+              name="Finance &amp; Assurance"
+              parent="menu_federation_root"
+              sequence="50"/>
+
+    <menuitem id="menu_federation_insights"
+              name="Insights"
+              parent="menu_federation_root"
+              sequence="60"/>
 
     <menuitem id="menu_federation_administration"
               name="Administration"
               parent="menu_federation_root"
-              sequence="50"/>
+              sequence="70"/>
 
     <menuitem id="menu_federation_master_data"
-              name="Core Records"
+              name="Club Directory"
               parent="menu_federation_setup"
               sequence="10"/>
 
@@ -50,9 +60,9 @@
 
     <menuitem id="menu_federation_season"
               name="Seasons"
-              parent="menu_federation_setup"
+              parent="menu_federation_competitions"
               action="federation_season_action"
-              sequence="20"/>
+              sequence="10"/>
 
     <menuitem id="menu_federation_registration"
               name="Season Registrations"
@@ -60,8 +70,14 @@
               action="federation_season_registration_action"
               sequence="30"/>
     <menuitem id="menu_federation_competitions"
-              name="Competition Setup"
-              parent="menu_federation_setup"
-              sequence="40"/>
+              name="Competitions"
+              parent="menu_federation_root"
+              sequence="10"/>
+
+    <menuitem id="menu_federation_system_health"
+              name="System Health"
+              parent="menu_federation_administration"
+              sequence="90"
+              groups="sports_federation_base.group_federation_manager"/>
 
 </odoo>

@@ -3,143 +3,164 @@
 
     <!-- Reporting submenu -->
     <menuitem id="menu_federation_reporting"
-              name="Reporting"
-              parent="sports_federation_base.menu_federation_administration"
-              sequence="60"/>
+              name="Reports &amp; Insights"
+              parent="sports_federation_base.menu_federation_insights"
+              sequence="10"/>
+
+    <menuitem id="menu_federation_reporting_overview"
+              name="Overview &amp; Readiness"
+              parent="menu_federation_reporting"
+              sequence="10"/>
+
+    <menuitem id="menu_federation_reporting_performance"
+              name="Performance"
+              parent="menu_federation_reporting"
+              sequence="20"/>
+
+    <menuitem id="menu_federation_reporting_assurance"
+              name="Assurance &amp; Exceptions"
+              parent="menu_federation_reporting"
+              sequence="30"/>
+
+    <menuitem id="menu_federation_reporting_automation"
+              name="Automation &amp; History"
+              parent="menu_federation_reporting"
+              sequence="40"/>
+
 
     <menuitem id="menu_federation_report_operator_checklist"
               name="Operator Checklist"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_overview"
               action="action_federation_report_operator_checklist"
               sequence="2"/>
 
     <menuitem id="menu_federation_report_portal_audit"
               name="Portal Audit"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_portal_audit"
               sequence="3"/>
 
     <menuitem id="menu_federation_report_token_rotation_audit"
               name="Token Rotation Audit"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_token_rotation_audit"
               sequence="4"/>
 
     <!-- Participation Report -->
     <menuitem id="menu_federation_report_operational"
               name="Operational KPIs"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_operational"
               sequence="5"/>
 
     <menuitem id="menu_federation_report_season_portfolio"
               name="Season Portfolio"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_season_portfolio"
               sequence="7"/>
 
     <menuitem id="menu_federation_report_participation"
               name="Participation"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_participation"
               sequence="10"/>
 
     <menuitem id="menu_federation_report_club_performance"
               name="Club Performance"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_club_performance"
               sequence="12"/>
 
     <menuitem id="menu_federation_report_standing_reconciliation"
               name="Standings Reconciliation"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_standing_reconciliation"
               sequence="15"/>
 
     <!-- Officiating Report -->
     <menuitem id="menu_federation_report_officiating"
               name="Officiating"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_officiating"
               sequence="20"/>
 
     <!-- Compliance Report -->
     <menuitem id="menu_federation_report_compliance"
               name="Compliance"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_compliance"
               sequence="30"/>
 
     <!-- Club Compliance Summary -->
     <menuitem id="menu_federation_report_club_compliance_summary"
               name="Club Compliance Summary"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_club_compliance_summary"
               sequence="32"/>
 
     <!-- Referee Coverage KPI -->
     <menuitem id="menu_federation_report_officiating_coverage"
               name="Referee Coverage"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_officiating_coverage"
               sequence="22"/>
 
     <!-- Finance Report -->
     <menuitem id="menu_federation_report_finance"
               name="Finance"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_finance"
               sequence="40"/>
 
     <menuitem id="menu_federation_report_finance_reconciliation"
               name="Finance Reconciliation"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_finance_reconciliation"
               sequence="45"/>
 
     <menuitem id="menu_federation_report_notification_exception"
               name="Notification Exceptions"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_notification_exception"
               sequence="50"/>
 
     <menuitem id="menu_federation_report_finance_exception"
               name="Finance Exceptions"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_finance_exception"
               sequence="55"/>
 
     <menuitem id="menu_federation_report_workflow_exception"
               name="Workflow Exceptions"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_workflow_exception"
               sequence="60"/>
 
     <menuitem id="menu_federation_report_compliance_remediation"
               name="Compliance Remediation"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_compliance_remediation"
               sequence="62"/>
 
     <menuitem id="menu_federation_report_season_checklist"
               name="Season Checklists"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_overview"
               action="action_federation_report_season_checklist"
               sequence="65"/>
 
     <menuitem id="menu_federation_report_snapshot"
               name="Trend Snapshots"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_automation"
               action="action_federation_report_snapshot"
               sequence="70"/>
 
     <menuitem id="menu_federation_report_schedule"
               name="Report Schedules"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_automation"
               action="action_federation_report_schedule"
               groups="sports_federation_base.group_federation_manager"
               sequence="90"/>
 
-    <menuitem id="menu_federation_operational_dashboard" name="Operational Health" parent="menu_federation_reporting" action="action_server_federation_operational_dashboard" groups="sports_federation_base.group_federation_manager" sequence="1"/>
+    <menuitem id="menu_federation_operational_dashboard" name="Operational Health" parent="menu_federation_reporting_overview" action="action_server_federation_operational_dashboard" groups="sports_federation_base.group_federation_manager" sequence="1"/>
 
 </odoo>

@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 906
+# FILE-COUNT: 907
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -9127,7 +9127,7 @@ CONTENT-LENGTH: 2954
 SHA256: 8f990157e20901b443229b3edb1799a86ef9649975a872cd295d688ac468506d
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -11023,7 +11023,7 @@ CONTENT-LENGTH: 3091
 SHA256: 60cf27ab200ca68e7bf65166c9672a1941ed14ad95ef26f3b5510abb0c6a1ec2
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -11114,7 +11114,7 @@ CONTENT-LENGTH: 1124
 SHA256: 9457774a391c35ff8d4357b746cf70e950882dca9ebc49262ad1bcedc7803761
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -11550,7 +11550,7 @@ CONTENT-LENGTH: 1976
 SHA256: 7dfadfe4ff8e326c4cf6e0f715ba68416a07d658e84657ba3e3d2a19e300691e
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -15838,7 +15838,7 @@ CONTENT-LENGTH: 640
 SHA256: 4ac7fd1a66c99519f4841d85699799aba84783304e8a8313b8b61c8c92ac3ba8
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 # Public Competition API
@@ -56307,7 +56307,7 @@ CONTENT-LENGTH: 2804
 SHA256: 3b6056500f679c13c0c45ebcd5a4091a40bcbe9315857bc2ba0ec4e992d4f8ef
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -56726,7 +56726,7 @@ CONTENT-LENGTH: 853
 SHA256: fb3f40167618e7c15c92dd18cd2346f5919192ffcff81ce7df01ba745a82458e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 from odoo import http
@@ -67443,7 +67443,7 @@ CONTENT-LENGTH: 10098
 SHA256: bde74c81228bc3bfc91c4579e13411bfcac926ce949758480bc29fa604b684c4
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from pathlib import Path
@@ -68688,7 +68688,7 @@ CONTENT-LENGTH: 3677
 SHA256: 2a8cb603062c3f1ca913012f354153501ae987d70091fad07f1a5328cef1d60e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 <?xml version="1.0" encoding="utf-8"?>
@@ -71449,9 +71449,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_public_site/README.md
-SIZE: 9558
-CONTENT-LENGTH: 9558
-SHA256: 4e66aab2eb5740f405ed046ccc7a7c2183de0973d1b3fddcb59b9655dda911ba
+SIZE: 9985
+CONTENT-LENGTH: 9985
+SHA256: 8554edeb303f783288fd939fb762b27693a009ae6f7ed9b3fb93b191d7a6833d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -71622,6 +71622,10 @@ Route orchestration lives in `public_competitions.py`. Framework response, canon
 ## Complete competition API
 
 `GET /api/v1/competitions` lists published competitions; `GET /api/v1/competitions/<edition-slug>` aggregates every published division and its public teams, schedules, approved results, standings, brackets, and links.
+
+## Competition route upgrade safety
+
+The `19.0.3.0.0` pre-migration repairs the stored selector of the competition-hub editorial extension before Odoo reloads its parent template. This prevents databases upgraded from the former route namespace from failing registry initialization while the canonical `/competitions` templates are loaded. Fresh installations already use the canonical selector and require no special action.
 
 ====================================================================================================
 FILE: sports_federation_public_site/__init__.py
@@ -72137,7 +72141,7 @@ CONTENT-LENGTH: 9651
 SHA256: 3447dcc6695c747143d6bba458525ce9a153b4118b9fb3fdd74e11caae6c9bea
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 import json
@@ -72433,7 +72437,7 @@ CONTENT-LENGTH: 12429
 SHA256: 2255afe9bd91b6e4a4f8df0717431f9a1fec6ad786ef2311ec7c65b64dbd60fe
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 import json
@@ -73020,6 +73024,54 @@ def migrate(cr, version):
     )
 
 ====================================================================================================
+FILE: sports_federation_public_site/migrations/19.0.3.0.0/pre-migrate.py
+SIZE: 1009
+CONTENT-LENGTH: 1009
+SHA256: 0d55730668ceee9854d620863dbef47d02572a0ac7af120b9f4f66aec34a3ac9
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+import logging
+
+
+_logger = logging.getLogger(__name__)
+
+_VIEW_MODULE = "sports_federation_public_site"
+_VIEW_NAME = "page_tournaments_hub_discovery_sections"
+_OLD_ACTION = "/" + "tournaments"
+_NEW_ACTION = "/competitions"
+
+
+def migrate(cr, version):
+    """Repair the stored inherited-view selector before parent views are reloaded."""
+    cr.execute(
+        """
+        UPDATE ir_ui_view AS view
+           SET arch_db = replace(view.arch_db::text, %s, %s)::jsonb
+          FROM ir_model_data AS data
+         WHERE data.module = %s
+           AND data.name = %s
+           AND data.model = 'ir.ui.view'
+           AND data.res_id = view.id
+           AND view.arch_db::text LIKE %s
+        """,
+        (
+            _OLD_ACTION,
+            _NEW_ACTION,
+            _VIEW_MODULE,
+            _VIEW_NAME,
+            f"%{_OLD_ACTION}%",
+        ),
+    )
+    if cr.rowcount:
+        _logger.info(
+            "Updated the stored competition-hub discovery selector to %s",
+            _NEW_ACTION,
+        )
+
+====================================================================================================
 FILE: sports_federation_public_site/models/__init__.py
 SIZE: 337
 CONTENT-LENGTH: 337
@@ -73187,7 +73239,7 @@ CONTENT-LENGTH: 3268
 SHA256: 3eb5ebcec2de26231427a8613c50c454e2733fb0004c2cd0293a880e7518cb04
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 import re
@@ -74666,7 +74718,7 @@ CONTENT-LENGTH: 13305
 SHA256: 6334308bbcdbcb63ec7c0dbf8f147769c2bc604ab758cc6b4a33e746ac15512e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 import re
@@ -76521,7 +76573,7 @@ CONTENT-LENGTH: 34419
 SHA256: b7b07e757e8bf40ab6cfc93036b078d3de6a4950fa135a495f8e6d0060497d52
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 """
@@ -77406,12 +77458,12 @@ class TestPublicApiRateLimits(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_public_competition_contract.py
-SIZE: 4668
-CONTENT-LENGTH: 4668
-SHA256: 452cacb0254fe532791e40328b8a71e1c4d83e51f0c3048d0166cb78078630ab
+SIZE: 5138
+CONTENT-LENGTH: 5138
+SHA256: 9f08bae65bc5d39a6c034106074ec2daa81f0cf413283f68877406914b2870cf
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from pathlib import Path
@@ -77516,6 +77568,17 @@ class TestPublicCompetitionContract(TransactionCase):
             "/competitions/namespace-edition/divisions/",
             division.get_public_schedule_ics_path(),
         )
+
+    def test_route_cutover_repairs_stored_hub_inheritance_before_upgrade(self):
+        migration = (
+            Path(__file__).resolve().parents[1]
+            / "migrations"
+            / "19.0.3.0.0"
+            / "pre-migrate.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("page_tournaments_hub_discovery_sections", migration)
+        self.assertIn("UPDATE ir_ui_view", migration)
+        self.assertIn('_NEW_ACTION = "/competitions"', migration)
 
     def test_source_defines_no_removed_public_route_namespace(self):
         source_roots = (

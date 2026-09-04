@@ -4,21 +4,21 @@
     <!-- Add menu items under Federation journey menus -->
     <menuitem id="menu_federation_club_role_type"
               name="Club Role Types"
-              parent="sports_federation_base.menu_federation_administration"
+              parent="sports_federation_portal.menu_federation_portal_root"
               action="action_federation_club_role_type"
               sequence="30"/>
 
     <menuitem id="menu_federation_club_representative"
               name="Club Representatives"
-              parent="sports_federation_base.menu_federation_administration"
+              parent="sports_federation_portal.menu_federation_portal_root"
               action="action_federation_club_representative"
-              sequence="40"/>
+              sequence="20"/>
 
     <menuitem id="menu_federation_operation_task"
-              name="Operational Action Queue"
-              parent="sports_federation_base.menu_federation_planning"
+              name="Action Queue"
+              parent="sports_federation_base.menu_federation_administration"
               action="action_federation_operation_task"
               groups="sports_federation_base.group_federation_manager"
-              sequence="20"/>
+              sequence="10"/>
 
 </odoo>
