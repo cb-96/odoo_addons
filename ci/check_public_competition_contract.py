@@ -22,6 +22,8 @@ portal_templates = (
 legacy_controller = (
     ROOT / "sports_federation_public_site/controllers/public_competitions.py"
 ).read_text()
+public_sources = "\n".join(path.read_text(encoding="utf-8") for base in (ROOT / "sports_federation_public_site", ROOT / "sports_federation_portal") for path in base.rglob("*") if path.suffix in {".py", ".xml", ".js"})
+
 checks = {
     "edition publication boundary": '("website_published", "=", True)' in queries,
     "division ownership": "division.edition_id == edition" in queries,
@@ -30,11 +32,11 @@ checks = {
     "immutable publication match boundary": '("schedule_publication_id", "=", publication.id)'
     in schedule,
     "edition routes": "/competitions/<string:edition_slug>" in controller,
+    "no tournament route namespace": all(token not in public_sources for token in ("/" + "tournaments", "/" + "tournament/", "/api/v1/" + "tournaments")),
+    "competition registration route": "/competitions/<string:edition_slug>/register" in legacy_controller,
+    "competition division calendar route": "/competitions/<string:edition_slug>/divisions/<string:division_slug>/schedule.ics" in legacy_controller,
     "single competition hub owner": (
         '@http.route(["/competitions"]' not in legacy_controller
-    ),
-    "single tournament redirect owner": (
-        '["/tournaments", "/tournaments/page/<int:page>"]' not in legacy_controller
     ),
     "no legacy competition overview alias": (
         "\"/competitions/<model('federation.tournament'):tournament>\","

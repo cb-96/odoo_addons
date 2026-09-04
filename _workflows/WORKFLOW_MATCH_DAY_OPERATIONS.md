@@ -18,7 +18,7 @@ Primary surfaces by phase:
    tasks, and the backend **Gameday Planner** is the staff-only day-level
    surface for slot assignment and final one-day adjustments.
 - **Live operations** — use the **Live Operations Board** at
-   `/sports/tournament/<id>/operations` once matches are underway.
+   `/sports/competitions/<edition-slug>/operations` once matches are underway.
 - **Result follow-up** — use the portal **Result Follow-Up Queue** after full
    time when results still need approval, contests, or standings follow-up.
    Backend match and tournament records are specialist follow-up surfaces, not
@@ -246,7 +246,7 @@ Match: draft → scheduled → in_progress → done
 
 ## Tournament Operations Board
 
-A live operations board is available at `/sports/tournament/<id>/operations` for tournament day use:
+A live operations board is available at `/sports/competitions/<edition-slug>/operations` for tournament day use:
 
 - **Audience**: tournament organizers, court managers, result table volunteers, federation admins.
 - **Access**: portal users with provable tournament-scoped activity (registration, participant record, or visible match in club/team scope); internal federation staff via their normal Odoo session.

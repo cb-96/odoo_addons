@@ -233,7 +233,7 @@ Verify the stack is healthy after installation:
 docker compose ps
 
 # 2. Open the public tournaments page (should return 200)
-curl -sI http://localhost:10019/tournaments | head -5
+curl -sI http://localhost:10019/competitions | head -5
 
 # 3. Open the portal login page (should return 200)
 curl -sI http://localhost:10019/web/login | head -5
@@ -246,7 +246,7 @@ bash addons/ci/run_tests.sh --suite release_surfaces
 ```
 
 A healthy stack shows:
-- HTTP 200 on `/tournaments` and `/web/login`
+- HTTP 200 on `/competitions` and `/web/login`
 - Valid JSON on `/competitions/api/json`
 - All CI tests passing
 

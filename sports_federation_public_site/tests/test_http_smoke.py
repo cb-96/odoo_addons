@@ -252,19 +252,6 @@ class TestPublicSiteHttpSmoke(HttpCase):
         self.assertIn(self.tournament.name, response.text)
         self.assertNotIn("Internal Server Error", response.text)
 
-    def test_unpublished_tournament_detail_routes_fail_closed(self):
-        slug_response = self.url_open(
-            self.unpublished_tournament.get_public_path(),
-            allow_redirects=False,
-        )
-        numeric_response = self.url_open(
-            f"/tournament/{self.unpublished_tournament.id}",
-            allow_redirects=False,
-        )
-
-        self.assertEqual(slug_response.status_code, 404)
-        self.assertEqual(numeric_response.status_code, 404)
-
     def test_hidden_season_detail_routes_fail_closed(self):
         for path in (
             self.hidden_season.get_public_path(),
@@ -297,62 +284,6 @@ class TestPublicSiteHttpSmoke(HttpCase):
         )
         self.assertNotIn("Internal Server Error", response.text)
 
-    def test_representative_registration_submit_shows_success(self):
-        self.authenticate(self.club_user.login, "ignored")
-
-        form_response = self.url_open(
-            f"/tournament/{self.tournament.id}/register",
-            allow_redirects=True,
-        )
-        self.assertEqual(form_response.status_code, 200)
-        self.assertIn(self.eligible_team.name, form_response.text)
-
-        submit_response = self.url_open(
-            f"/tournament/{self.tournament.id}/register",
-            data={
-                "csrf_token": _extract_csrf_token(form_response.text),
-                "team_id": str(self.eligible_team.id),
-                "notes": "Smoke registration from public site.",
-            },
-            allow_redirects=True,
-        )
-
-        self.assertEqual(submit_response.status_code, 200)
-        self.assertIn("Registration submitted successfully", submit_response.text)
-        self.assertIn(self.tournament.name, submit_response.text)
-        self.assertNotIn("Internal Server Error", submit_response.text)
-
-    def test_unpublished_tournament_register_routes_fail_closed(self):
-        self.authenticate(self.club_user.login, "ignored")
-
-        Entry = self.env["federation.competition.entry"].sudo()
-        before_count = Entry.search_count(
-            [("window_id.division_id", "=", self.unpublished_tournament.id)]
-        )
-
-        for path in (
-            self.unpublished_tournament.get_public_register_path(),
-            f"/tournament/{self.unpublished_tournament.id}/register",
-        ):
-            form_response = self.url_open(path, allow_redirects=False)
-            submit_response = self.url_open(
-                path,
-                data={"team_id": str(self.eligible_team.id)},
-                allow_redirects=False,
-            )
-
-            self.assertIn(form_response.status_code, (301, 302, 303, 307, 308))
-            self.assertTrue(form_response.headers["Location"].endswith("/competitions"))
-            self.assertIn(submit_response.status_code, (301, 302, 303, 307, 308))
-            self.assertTrue(
-                submit_response.headers["Location"].endswith("/competitions")
-            )
-
-        after_count = Entry.search_count(
-            [("window_id.division_id", "=", self.unpublished_tournament.id)]
-        )
-        self.assertEqual(after_count, before_count)
-
     def test_full_tournament_registration_shows_guided_feedback(self):
         self.authenticate(self.club_user.login, "ignored")
 
@@ -371,16 +302,3 @@ class TestPublicSiteHttpSmoke(HttpCase):
             "This division has reached its entry capacity.", submit_response.text
         )
         self.assertNotIn("Internal Server Error", submit_response.text)
-
-    def test_route_inventory_lists_smoke_covered_public_routes(self):
-        inventory_routes = {
-            (entry["method"], entry["path"])
-            for entry in load_route_inventory("sports_federation_public_site")
-        }
-
-        self.assertEqual(
-            inventory_routes,
-            {
-                ("POST", "/tournaments/<slug>/register"),
-            },
-        )

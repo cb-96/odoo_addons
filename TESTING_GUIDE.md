@@ -59,7 +59,7 @@ from odoo.tests.common import HttpCase, tagged
 @tagged("-at_install", "post_install")
 class TestPublicSiteHttpSmoke(HttpCase):
     def test_tournaments_list_returns_200(self):
-        response = self.url_open("/tournaments")
+        response = self.url_open("/competitions")
         self.assertEqual(response.status_code, 200)
 ```
 

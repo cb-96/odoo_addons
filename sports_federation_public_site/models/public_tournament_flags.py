@@ -128,47 +128,47 @@ class FederationTournament(models.Model):
     def get_public_path(self):
         """Return public path."""
         self.ensure_one()
-        return f"/tournaments/{self.get_public_slug_value()}"
+        return f"/competitions/{self.edition_id.public_slug}?division_id={self.id}"
 
     def get_public_register_path(self):
         """Return public register path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/register"
+        return f"/competitions/{self.edition_id.public_slug}/register?division_id={self.id}"
 
     def get_public_teams_path(self):
         """Return public teams path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/teams"
+        return self.get_public_path()
 
     def get_public_schedule_path(self):
         """Return public schedule path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/schedule"
+        return f"/competitions/{self.edition_id.public_slug}/schedule?division_id={self.id}"
 
     def get_public_results_path(self):
         """Return public results path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/results"
+        return self.get_public_path()
 
     def get_public_standings_path(self):
         """Return public standings path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/standings"
+        return self.get_public_path()
 
     def get_public_bracket_path(self):
         """Return public bracket path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/bracket"
+        return f"/competitions/{self.edition_id.public_slug}/format?division_id={self.id}"
 
     def get_public_feed_path(self):
         """Return public feed path."""
         self.ensure_one()
-        return f"/api/v1/tournaments/{self.get_public_slug_value()}/feed"
+        return f"/api/v1/competitions/{self.edition_id.public_slug}"
 
     def get_public_schedule_ics_path(self):
         """Return public schedule ICS path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/schedule.ics"
+        return f"/competitions/{self.edition_id.public_slug}/divisions/{self.get_public_slug_value()}/schedule.ics"
 
     @api.model
     def _get_public_site_search_domain(self, search=None):

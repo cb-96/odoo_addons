@@ -136,7 +136,7 @@
                     </div>
                 </section>
 
-                <form action="/tournaments" method="GET" class="card border-0 shadow-sm mb-5">
+                <form action="/competitions" method="GET" class="card border-0 shadow-sm mb-5">
                     <div class="card-body row g-3 align-items-end">
                         <div class="col-lg-3">
                             <label class="form-label" for="hub_search">Search</label>
@@ -344,7 +344,7 @@
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item active" t-esc="tournament.name"/>
                     </ol>
                 </nav>
@@ -566,7 +566,7 @@
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item"><a t-att-href="tournament.get_public_path()" t-esc="tournament.name"/></li>
                         <li class="breadcrumb-item active">Register</li>
                     </ol>
@@ -638,7 +638,7 @@
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item active" t-esc="team.name"/>
                     </ol>
                 </nav>

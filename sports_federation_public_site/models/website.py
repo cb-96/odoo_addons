@@ -79,8 +79,8 @@ class Website(models.Model):
                                     <div class="col-lg-3 pt24 pb24">
                                         <h5>Explore</h5>
                                         <ul class="list-unstyled">
-                                            <li><a href="/tournaments">Tournaments</a></li>
-                                            <li><a href="/tournaments#published">Tournament Updates</a></li>
+                                            <li><a href="/competitions">Tournaments</a></li>
+                                            <li><a href="/competitions">Tournament Updates</a></li>
                                             <li><a href="/seasons">Seasons</a></li>
                                             <li><a href="/my/home">Portal</a></li>
                                         </ul>

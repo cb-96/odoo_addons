@@ -115,15 +115,15 @@ Canonical public surfaces include:
 
 | URL | Content |
 |-----|---------|
-| `/tournaments` | Main tournament hub with featured, live, recent, and archived sections |
+| `/competitions` | Main tournament hub with featured, live, recent, and archived sections |
 | `/competitions/<edition-slug>` | Canonical competition edition overview page |
-| `/tournaments/<slug>/teams` | Published participant list excluding withdrawn entries |
-| `/tournaments/<slug>/standings` | Public standings page when enabled |
-| `/tournaments/<slug>/results` | Approved public results when enabled |
-| `/tournaments/<slug>/schedule` | Upcoming fixtures |
-| `/tournaments/<slug>/bracket` | Public bracket view when bracket data exists |
-| `/tournaments/<slug>/schedule.ics` | Tournament schedule calendar export |
-| `/api/v1/tournaments/<slug>/feed` | Stable v1 JSON feed |
+| `/competitions/<edition-slug>/teams` | Published participant list excluding withdrawn entries |
+| `/competitions/<edition-slug>/standings` | Public standings page when enabled |
+| `/competitions/<edition-slug>/results` | Approved public results when enabled |
+| `/competitions/<edition-slug>/schedule` | Upcoming fixtures |
+| `/competitions/<edition-slug>/bracket` | Public bracket view when bracket data exists |
+| `/competitions/<edition-slug>/divisions/<division-slug>/schedule.ics` | Tournament schedule calendar export |
+| `/api/v1/competitions/<edition-slug>` | Stable v1 JSON feed |
 | `/seasons/<slug>` | Season landing page with editorial and tournament aggregation |
 | `/teams/<slug>` | Public team profile page |
 | `/teams/<slug>/schedule` | Team-centric grouped upcoming schedule |
@@ -132,7 +132,7 @@ Canonical public surfaces include:
 | `/api/v1/teams/<slug>/feed` | Stable v1 team follow feed |
 
 Older `/competitions` and numeric routes remain as compatibility paths, but the
-authoritative public URLs are the slug-based `/tournaments/...` routes.
+authoritative public URLs are the slug-based `/competitions/...` routes.
 Compatibility routes only redirect while the tournament still matches the
 relevant publication guard; unpublished tournaments fail closed instead of
 resolving through direct slug or numeric paths. Season detail routes apply the
@@ -171,7 +171,7 @@ As the tournament progresses:
 | Tournament results visibility enabled | Optional | `public_site` |
 | Standings record website-published | Yes, for standings page | `standings` |
 | Tournament standings visibility enabled | Optional | `public_site` |
-| Editorial item linked to season/tournament/team | Yes, for editorial content | `public_site` |
+| Editorial item linked to season/competition-division/team | Yes, for editorial content | `public_site` |
 | Editorial item publish window valid | Yes, when scheduling | `public_site` |
 
 ## Exception and Recovery Model
@@ -180,7 +180,7 @@ As the tournament progresses:
   an approved exception path.
 - If results are disputed or corrected after publication, treat public
   visibility as a recovery loop: rollback visibility if required, resolve the
-  dispute and approval chain, then republish standings/tournament surfaces from
+  dispute and approval chain, then republish standings/competition surfaces from
   the owning records.
 
 ## Access Control

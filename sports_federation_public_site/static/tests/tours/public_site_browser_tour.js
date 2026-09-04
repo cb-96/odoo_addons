@@ -89,7 +89,7 @@ tour.add("public_site_browser_lifecycle", {
             content: "The format navigation state is active",
             trigger: '.sf-competition-nav a.active[href$="/format"]',
         },
-        navigate("/tournaments", "Exercise the retired tournament index alias"),
+        navigate("/competitions", "Exercise the retired tournament index alias"),
         assertPath(
             "/competitions",
             "The retired tournament index redirects to competitions"

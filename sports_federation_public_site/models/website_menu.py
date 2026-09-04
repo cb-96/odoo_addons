@@ -9,7 +9,7 @@ class WebsiteMenu(models.Model):
         """Return public site coverage menu values."""
         return {
             "name": "Tournament Updates",
-            "url": "/tournaments#published",
+            "url": "/competitions",
             "sequence": 10,
             "is_visible": True,
         }

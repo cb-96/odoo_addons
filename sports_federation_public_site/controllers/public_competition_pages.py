@@ -16,32 +16,6 @@ class PublicCompetitionController(PublicRequestInfrastructureMixin, http.Control
             raise request.not_found()
         return edition
 
-    @http.route(
-        ["/tournaments", "/tournaments/page/<int:page>"],
-        type="http",
-        auth="public",
-        website=True,
-        sitemap=False,
-    )
-    def legacy_tournament_hub(self, page=1, **kw):
-        return request.redirect("/competitions", code=301)
-
-    @http.route(
-        ["/tournaments/<string:tournament_slug>", "/tournament/<int:tournament_id>"],
-        type="http",
-        auth="public",
-        website=True,
-        sitemap=False,
-    )
-    def legacy_tournament_detail(self, tournament_slug=None, tournament_id=None, **kw):
-        division = self._queries().resolve_legacy_division(
-            slug=tournament_slug, division_id=tournament_id
-        )
-        location = self._queries().canonical_location(division)
-        if not location:
-            raise request.not_found()
-        return request.redirect(location, code=301)
-
     @http.route(["/api/v1/competitions"], type="http", auth="public", methods=["GET"], website=False, sitemap=False)
     def competition_api_index(self, **kw):
         blocked = self._rate_limit_response("public_competition_index")

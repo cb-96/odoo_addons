@@ -215,19 +215,19 @@ components:
             $ref: "#/components/schemas/StandingEntry"
 
 paths:
-  /api/v1/tournaments/{slug}/feed:
+  /api/v1/competitions/{edition_slug}:
     get:
-      operationId: getTournamentFeed
-      summary: Get the structured JSON feed for a published tournament.
+      operationId: getCompetitionFeed
+      summary: Get the complete published competition feed.
       tags:
         - Tournament Feed
       parameters:
-        - name: slug
+        - name: edition_slug
           in: path
           required: true
           schema:
             type: string
-          description: Public slug or numeric ID of the tournament.
+          description: Public competition edition slug.
       responses:
         "200":
           description: Tournament feed payload.
@@ -253,19 +253,25 @@ paths:
               schema:
                 type: integer
                 minimum: 1
-  /tournaments/{slug}/schedule.ics:
+  /competitions/{edition_slug}/divisions/{division_slug}/schedule.ics:
     get:
-      operationId: getTournamentScheduleIcs
-      summary: Download the iCalendar (.ics) schedule for a published tournament.
+      operationId: getCompetitionDivisionScheduleCalendar
+      summary: Download the iCalendar (.ics) schedule for a published division.
       tags:
         - Calendar Export
       parameters:
-        - name: slug
+        - name: edition_slug
           in: path
           required: true
           schema:
             type: string
-          description: Public slug or numeric ID of the tournament.
+          description: Public competition edition slug.
+        - name: division_slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Public competition division slug.
       responses:
         "200":
           description: iCalendar file for the tournament schedule.

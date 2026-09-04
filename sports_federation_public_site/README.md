@@ -93,28 +93,24 @@ archived back to draft.
 
 ### `PublicTournamentHubController`
 
-Canonical public routes:
+Canonical public routes use one namespace only:
 
 | Route | Auth | Description |
 |-------|------|-------------|
-| `GET /tournaments` | public | Main public tournament hub with featured, live, recent, and archive sections |
-| `POST /tournaments/api/json` | public | JSON list of published tournaments |
-| `GET /competitions/<edition-slug>` | public | Canonical competition edition overview page |
-| `GET /tournaments/<slug>/teams` | public | Published participant list excluding withdrawn entries |
-| `GET /tournaments/<slug>/standings` | public | Published standings page |
-| `GET /tournaments/<slug>/results` | public | Approved public results |
-| `GET /tournaments/<slug>/schedule` | public | Public schedule grouped for easier browsing |
-| `GET /tournaments/<slug>/bracket` | public | Public bracket sections when bracket data exists |
-| `GET /tournaments/<slug>/schedule.ics` | public | ICS calendar export for the tournament schedule |
-| `GET /api/v1/tournaments/<slug>/feed` | public | Stable v1 JSON tournament feed |
-| `GET /teams/<slug>` | public | Public team profile page |
-| `GET /tournaments/<slug>/register` | user | Website registration form |
-| `POST /tournaments/<slug>/register` | user | Website registration submission via `federation.competition.entry._portal_submit_entry()` |
+| `GET /competitions` | public | Competition hub |
+| `POST /competitions/api/json` | public | Published competition discovery |
+| `GET /competitions/<edition-slug>` | public | Competition overview with published divisions |
+| `GET /competitions/<edition-slug>/format` | public | Published format and bracket information |
+| `GET /competitions/<edition-slug>/schedule` | public | Published competition schedule |
+| `GET /competitions/<edition-slug>/gamedays/<matchday-id>` | public | Published game-day board |
+| `GET /competitions/<edition-slug>/register?division_id=<division-id>` | user | Club registration form |
+| `POST /competitions/<edition-slug>/register?division_id=<division-id>` | user | Club registration submission |
+| `GET /competitions/<edition-slug>/divisions/<division-slug>/schedule.ics` | public | Division calendar export |
+| `GET /api/v1/competitions` | public | Published competition API index |
+| `GET /api/v1/competitions/<edition-slug>` | public | Complete published competition feed |
+| `GET /teams/<slug>` | public | Public team profile |
 
-Compatibility routes remain available for older links, including `/competitions`,
-`/competitions/archive`, numeric `/tournament/<id>` paths, numeric register/feed
-paths, and older coverage aliases. Team profile routes and season follow routes
-resolve through publication-scoped domains before redirects or rendering.
+There are no tournament-named or numeric compatibility routes. The product had not been released when the namespace was consolidated, so only `/competitions` is supported.
 
 ### `PublicFollowController`
 

@@ -245,7 +245,7 @@ including byes and future-round wiring for non-power-of-two participant counts.
    results are still pending or whether website publication is the next valid
    step.
 4. Participant club and team contacts receive a tournament-publication email the first time the tournament is published.
-5. Public pages become available at `/tournaments/<slug>` and the related
+5. Public pages become available at `/competitions/<edition-slug>` and the related
    canonical `/competitions/...` route family.
 
 ## State Diagram

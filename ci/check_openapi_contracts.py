@@ -32,8 +32,8 @@ INTEGRATION_GOLDEN_EXAMPLES_PATH = (
     REPO_ROOT / "openapi" / "examples" / "INTEGRATION_GOLDEN_EXAMPLES.md"
 )
 PUBLIC_FEEDS_REQUIRED_PATHS = {
-    "/api/v1/tournaments/{slug}/feed": {"get"},
-    "/tournaments/{slug}/schedule.ics": {"get"},
+    "/api/v1/competitions/{edition_slug}": {"get"},
+    "/competitions/{edition_slug}/divisions/{division_slug}/schedule.ics": {"get"},
 }
 
 

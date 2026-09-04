@@ -276,8 +276,8 @@ Verify these operator checkpoints immediately after the upgrade:
 4. Validate the public and portal release surfaces manually if the release
    touched them:
    - `/web/login`
-   - `/tournaments`
-   - `/tournaments/<slug>/register`
+   - `/competitions`
+   - `/competitions/<edition-slug>/register?division_id=<division-id>`
    - `/my/teams/new`
    - `/my/season-registration/new`
    - `/my/compliance`

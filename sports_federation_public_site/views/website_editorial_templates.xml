@@ -161,7 +161,7 @@
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item"><a t-att-href="team.get_public_path()" t-esc="team.name"/></li>
                         <li class="breadcrumb-item active">Schedule</li>
                     </ol>
@@ -198,7 +198,7 @@
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item"><a t-att-href="team.get_public_path()" t-esc="team.name"/></li>
                         <li class="breadcrumb-item active">Results</li>
                     </ol>
@@ -228,7 +228,7 @@
     <template id="page_tournaments_hub_discovery_sections"
               inherit_id="sports_federation_public_site.page_tournaments_hub"
               priority="40">
-        <xpath expr="//form[@action='/tournaments']" position="after">
+        <xpath expr="//form[@action='/competitions']" position="after">
             <t t-set="public_seasons" t-value="request.env['federation.season'].get_public_published_seasons(limit=4)"/>
             <t t-set="editorial_items" t-value="request.env['federation.public.editorial.item'].get_live_items(limit=3)"/>
 

@@ -113,7 +113,7 @@ provides a human review checkpoint:
 1. With standings in `computed` or `frozen` state, publish the record from the
    Website tab.
 2. `website_published` is set to `True`.
-3. The standings page at `/tournaments/<slug>/standings` now reflects the
+3. The standings page at `/competitions/<edition-slug>/standings` now reflects the
    table.
 
 If `sports_federation_notifications` is installed, a notification is dispatched

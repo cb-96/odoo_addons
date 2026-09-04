@@ -7,7 +7,7 @@
         <field name="version">v1</field>
         <field name="direction">outbound</field>
         <field name="transport">json</field>
-        <field name="route_hint">/api/v1/tournaments/&lt;slug&gt;/feed</field>
+        <field name="route_hint">/api/v1/competitions/&lt;slug&gt;/feed</field>
         <field name="description">Published tournament feed for partner consumption with stable contract headers.</field>
         <field name="required_module">sports_federation_public_site</field>
     </record>

@@ -59,9 +59,9 @@ Import contracts:
 
 ## Tournament Feed
 
-- Canonical route: `/api/v1/tournaments/<slug>/feed`
+- Canonical route: `/api/v1/competitions/<edition-slug>`
 - Compatibility routes:
-  - `/api/v1/tournaments/<id>/feed`
+  - `/api/v1/competitions/<edition-slug>`
   - `/api/v1/competitions/<id>/feed`
 - Response type: `application/json`
 - Headers:
@@ -76,8 +76,8 @@ Import contracts:
 
 ## Tournament Schedule Calendar
 
-- Canonical route: `/tournaments/<slug>/schedule.ics`
-- Compatibility route: `/tournament/<id>/schedule.ics`
+- Canonical route: `/competitions/<edition-slug>/divisions/<division-slug>/schedule.ics`
+- Compatibility route: `/competitions/<edition-slug>/divisions/<division-slug>/schedule.ics`
 - Response type: `text/calendar`
 - Headers:
   - `X-Federation-Contract: tournament_schedule_ics`
@@ -281,9 +281,6 @@ any contract-facing deprecation decision.
 
 | Surface | Canonical replacement | Target exit |
 |---|---|---|
-| `/tournaments`, `/tournaments/<slug>`, numeric tournament page routes | `/competitions`, `/competitions/<edition-slug>` | 2026-10-01 |
-| Numeric public tournament page routes | Edition routes under `/competitions/<edition-slug>` | 2026-10-01 |
-| Numeric or competition-named v1 tournament feeds | `/api/v1/tournaments/<slug>/feed` | 2026-10-01 |
 | Player import `name` column fallback | Explicit `first_name`, `last_name` columns | 2026-10-15 |
 | Team import name fallbacks | `club_code` and explicit team naming columns | 2026-10-15 |
 | Participant import tournament/team name fallbacks | `tournament_code` and `team_code` | 2026-10-15 |

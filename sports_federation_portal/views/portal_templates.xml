@@ -605,7 +605,7 @@
                         <h2><i class="fa fa-trophy me-2"/>My Tournament Registrations</h2>
                     </div>
                     <div class="col-auto">
-                        <a href="/tournaments" class="btn btn-primary">
+                        <a href="/competitions" class="btn btn-primary">
                             <i class="fa fa-plus me-1"/> Browse Tournaments
                         </a>
                     </div>
@@ -639,7 +639,7 @@
                                     <tr>
                                         <td><t t-esc="reg.name"/></td>
                                         <td>
-                                            <a t-attf-href="/tournament/#{reg.tournament_id.id}">
+                                            <a t-att-href="reg.tournament_id.get_public_path()">
                                                 <t t-esc="reg.tournament_id.name"/>
                                             </a>
                                         </td>
@@ -684,7 +684,7 @@
                         </div>
                         <div t-if="not registrations" class="text-center py-4">
                             <p class="text-muted">No tournament registrations have been sent yet. Browse the published tournament hub to find the next open event.</p>
-                            <a href="/tournaments" class="btn btn-primary">
+                            <a href="/competitions" class="btn btn-primary">
                                 Browse Tournaments
                             </a>
                         </div>

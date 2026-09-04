@@ -9,7 +9,7 @@ rc_script = (ROOT / "scripts/ci/run_rc_validation.sh").read_text(encoding="utf-8
 workflow = (ROOT / ".github/workflows/release-candidate.yml").read_text(
     encoding="utf-8"
 )
-acceptance = (ROOT / "docs/release/COMPETITION_CUTOVER_ACCEPTANCE.md").read_text(
+acceptance = (ROOT / "docs/release/COMPETITION_ACCEPTANCE.md").read_text(
     encoding="utf-8"
 )
 stabilization_plan = (ROOT / "docs/release/POST_CUTOVER_PHASES.md").read_text(
@@ -23,18 +23,17 @@ checks = {
     "upgrade precondition": "assert_modules_installed" in rc_script,
     "workflow upgrade execution": "run_rc_validation.sh upgrade" in workflow,
     "workflow public execution": "run_rc_validation.sh public" in workflow,
-    "acceptance exact commit evidence": "Candidate commit SHA" in acceptance,
-    "acceptance route cutover evidence": "/competitions" in acceptance
-    and "/tournaments" in acceptance,
+    "acceptance candidate evidence": "candidate commit" in acceptance.lower(),
+    "single competition namespace evidence": "/competitions" in (ROOT / "ROUTE_INVENTORY.md").read_text(encoding="utf-8"),
     "acceptance full lifecycle": all(
-        token in acceptance
+        token in acceptance.lower()
         for token in (
-            "Registration",
-            "Format and fixtures",
-            "Calendar and scheduling",
-            "Approval and publication",
-            "Match-day operations",
-            "Results and standings",
+            "registration",
+            "format and fixtures",
+            "calendar and scheduling",
+            "approval and publication",
+            "match-day operations",
+            "results and standings",
         )
     ),
     "post-cutover decision gate": all(

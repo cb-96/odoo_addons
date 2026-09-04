@@ -15,20 +15,20 @@ The machine-readable route inventory and controller tests remain the authoritati
 
 ### Tournament operations board
 
-- `GET /sports/tournament/<tournament_id>/operations`
+- `GET /sports/competitions/<tournament_id>/operations`
   - Owner: `sports_federation_portal`
   - Controller: `FederationTournamentOperationsPortal.portal_tournament_operations_page`
   - Downstream boundary: tournament operations access resolver
   - Purpose: authenticated operations-board shell
 
-- `POST /sports/tournament/<tournament_id>/operations/data`
+- `POST /sports/competitions/<tournament_id>/operations/data`
   - Owner: `sports_federation_portal`
   - Controller: `FederationTournamentOperationsPortal.portal_tournament_operations_data`
   - Downstream boundary: `federation.tournament._operations_get_payload`
   - Purpose: scoped JSON-RPC board payload
   - Safeguards: authenticated user, CSRF, model-owned access scope
 
-- `POST /sports/tournament/<tournament_id>/operations/matches/<match_id>/action`
+- `POST /sports/competitions/<tournament_id>/operations/matches/<match_id>/action`
   - Owner: `sports_federation_portal`
   - Controller: `FederationTournamentOperationsPortal.portal_tournament_operations_action`
   - Downstream boundary: tournament operations action service
@@ -65,9 +65,9 @@ Canonical public competition pages and match-day publication views are owned by 
 
 Critical public contracts include:
 
-- `GET /api/v1/tournaments/<slug>/feed`
-- `GET /tournaments/<slug>/schedule.ics`
-- `POST /tournaments/<slug>/register`
+- `GET /api/v1/competitions/<edition-slug>`
+- `GET /competitions/<edition-slug>/divisions/<division-slug>/schedule.ics`
+- `POST /competitions/<edition-slug>/register?division_id=<division-id>`
 
 Public reads must enforce applicable publication flags. Public registration writes must use the shared registration model boundary.
 

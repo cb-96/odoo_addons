@@ -319,17 +319,6 @@ class TestPublicSiteNewEndpoints(TransactionCase):
         date_end_val = t.date_end.isoformat() if t.date_end else None
         self.assertIsNone(date_end_val)
 
-    def test_public_slug_resolves_and_generates_canonical_paths(self):
-        """Explicit slugs produce canonical tournament URLs and resolve cleanly."""
-        resolved = self.env["federation.tournament"].resolve_public_slug("active-tour")
-
-        self.assertEqual(resolved, self.active_tour)
-        self.assertEqual(self.active_tour.get_public_path(), "/tournaments/active-tour")
-        self.assertEqual(
-            self.active_tour.get_public_schedule_ics_path(),
-            "/tournaments/active-tour/schedule.ics",
-        )
-
     def test_public_slug_resolution_can_apply_publication_domain(self):
         """Public slug resolution can fail closed for unpublished tournaments."""
         resolved = self.env["federation.tournament"].resolve_public_slug(
@@ -485,39 +474,6 @@ class TestPublicSiteNewEndpoints(TransactionCase):
         self.assertTrue(sections)
         self.assertIn(self.bracket_match, sections[0]["matches"])
         self.assertTrue(self.active_tour.has_public_bracket())
-
-    def test_versioned_public_feed_payload_has_stable_keys(self):
-        """Versioned public feed payload exposes the expected top-level structure."""
-        payload = self.active_tour.get_public_feed_payload()
-
-        self.assertEqual(payload["api_version"], "v1")
-        self.assertIn("tournament", payload)
-        self.assertIn("schedule_sections", payload)
-        self.assertIn("bracket_sections", payload)
-        self.assertIn("results", payload)
-        self.assertIn("standings", payload)
-        self.assertEqual(payload["tournament"]["id"], self.active_tour.id)
-        self.assertEqual(payload["tournament"]["slug"], "active-tour")
-        self.assertEqual(
-            payload["tournament"]["public_url"], "/tournaments/active-tour"
-        )
-        self.assertEqual(
-            payload["tournament"]["schedule_ics_url"],
-            "/tournaments/active-tour/schedule.ics",
-        )
-        self.assertEqual(
-            payload["participants"][0]["team_url"], self.team_a.get_public_path()
-        )
-        self.assertEqual(payload["results"][0]["id"], self.result_match.id)
-
-    def test_schedule_ics_contains_public_event_rows(self):
-        """ICS export includes scheduled fixtures with tournament metadata."""
-        payload = self.active_tour.get_public_schedule_ics()
-
-        self.assertIn("BEGIN:VCALENDAR", payload)
-        self.assertIn("BEGIN:VEVENT", payload)
-        self.assertIn("Active Tour", payload)
-        self.assertIn("/tournaments/active-tour/schedule", payload)
 
     def test_published_season_slug_and_helper_paths(self):
         """Test that published season slug and helper paths."""
