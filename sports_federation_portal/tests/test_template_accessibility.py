@@ -220,3 +220,12 @@ class TestPortalTemplateAccessibility(TransactionCase):
         self.assertIn(":focus-visible", stylesheet)
         self.assertIn("outline:", stylesheet)
         self.assertIn('[role="alert"]:focus', stylesheet)
+
+
+    def test_data_api_tutorial_explains_privacy_and_examples(self):
+        source = (Path(__file__).resolve().parents[1] / "views/portal_data_api_templates.xml").read_text()
+        self.assertIn("No API key is required", source)
+        self.assertIn("personal data", source)
+        self.assertIn("curl", source)
+        self.assertIn("JavaScript example", source)
+        self.assertIn("X-Federation-Contract-Version", source)

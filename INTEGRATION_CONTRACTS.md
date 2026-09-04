@@ -345,3 +345,8 @@ notifications:
 Delivery failures must not roll back the business transaction. Failed sends are
 logged for retry or operator investigation; dispatcher methods must not raise a
 business validation error.
+
+
+## Public competition feed v1
+
+`GET /api/v1/competitions` and `GET /api/v1/competitions/<edition_slug>` expose only published, non-sensitive competition data. Responses advertise `X-Federation-Contract-Version: v1` and may be cached for 60 seconds.

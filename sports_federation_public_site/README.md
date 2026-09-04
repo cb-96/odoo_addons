@@ -162,3 +162,8 @@ Canonical follow and discovery routes:
 ## Public controller boundaries
 
 Route orchestration lives in `public_competitions.py`. Framework response, canonical resolution, authenticated club lookup, error redirect, and rate-limit response behavior live in `_public_request.py`. New domain queries belong in model query services rather than either controller helper.
+
+
+## Complete competition API
+
+`GET /api/v1/competitions` lists published competitions; `GET /api/v1/competitions/<edition-slug>` aggregates every published division and its public teams, schedules, approved results, standings, brackets, and links.

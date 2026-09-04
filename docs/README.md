@@ -51,3 +51,5 @@ roadmap or a standalone review snapshot for routine changes.
 - [Competition engine roadmap](COMPETITION_ENGINE_ROADMAP.md)
 - [Competition operations QoL roadmap](COMPETITION_OPERATIONS_QOL_ROADMAP.md)
 - [Release pilot scenario](RELEASE_PILOT_SCENARIO.md)
+
+- [Public competition API](PUBLIC_COMPETITION_API.md)

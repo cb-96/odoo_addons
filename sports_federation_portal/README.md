@@ -87,3 +87,8 @@ focus into the dialog and restore it to the invoking control when closed.
 Keyboard focus uses a visible outline that does not depend on color-only status
 cues. The focused accessibility suite covers these contracts together with
 mobile table and action wrapping.
+
+
+## Club competition data tutorial
+
+Club representatives use **My Account > Data API** (`/my/data-api`) for live URLs, curl and JavaScript examples, privacy rules, and caching guidance.

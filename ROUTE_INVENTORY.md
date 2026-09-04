@@ -126,3 +126,10 @@ The previous `/web/login` entry was removed from this inventory because no match
 
 The former tournament-workspace and tournament-operations URLs are temporary
 redirects and are not data sources.
+
+
+## Public competition data API
+
+- `GET /api/v1/competitions`: public competition index.
+- `GET /api/v1/competitions/<edition_slug>`: complete published competition feed.
+- `GET /my/data-api`: authenticated club tutorial.
