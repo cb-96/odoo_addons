@@ -157,6 +157,111 @@ class TestScheduleAmendment(TransactionCase):
         with self.assertRaises(ValidationError):
             self.schedule.action_create_revision("Unsafe live change")
 
+    def _add_second_division_fixture(self):
+        division = self.env["federation.tournament"].create(
+            {
+                "name": "Additional Division",
+                "edition_id": self.edition.id,
+                "competition_id": self.edition.competition_id.id,
+                "season_id": self.edition.season_id.id,
+                "date_start": "2026-10-01",
+            }
+        )
+        participants = self.env["federation.participant.set"].create(
+            {
+                "name": "Additional Division Participants",
+                "edition_id": self.edition.id,
+                "division_id": division.id,
+                "state": "finalized",
+            }
+        )
+        structure = self.env["federation.competition.structure"].create(
+            {
+                "name": "Additional Division Structure",
+                "edition_id": self.edition.id,
+                "division_id": division.id,
+                "participant_set_id": participants.id,
+                "format_type": "custom",
+                "state": "frozen",
+            }
+        )
+        stage = self.env["federation.structure.stage"].create(
+            {
+                "name": "Additional Division League",
+                "structure_id": structure.id,
+                "stage_type": "league",
+            }
+        )
+        clubs = self.env["federation.club"].create(
+            [{"name": "Additional Home Club"}, {"name": "Additional Away Club"}]
+        )
+        teams = self.env["federation.team"].create(
+            [
+                {"name": "Additional Home", "club_id": clubs[0].id},
+                {"name": "Additional Away", "club_id": clubs[1].id},
+            ]
+        )
+        fixture = self.env["federation.fixture"].create(
+            {
+                "structure_id": structure.id,
+                "stage_id": stage.id,
+                "round_number": 1,
+                "home_team_id": teams[0].id,
+                "away_team_id": teams[1].id,
+                "state": "ready",
+            }
+        )
+        self.env["federation.matchday.allocation"].create(
+            {
+                "matchday_id": self.matchday.id,
+                "structure_id": structure.id,
+                "stage_id": stage.id,
+                "round_number": 1,
+            }
+        )
+        return fixture
+
+    def test_revision_and_auto_planner_include_new_division_fixture(self):
+        replacement = self.schedule.action_create_revision(
+            "Add another division to the match day"
+        )
+        original_clubs = self.env["federation.club"].create(
+            [{"name": "Original Home Club"}, {"name": "Original Away Club"}]
+        )
+        original_teams = self.env["federation.team"].create(
+            [
+                {"name": "Original Home", "club_id": original_clubs[0].id},
+                {"name": "Original Away", "club_id": original_clubs[1].id},
+            ]
+        )
+        self.fixture.write(
+            {
+                "home_team_id": original_teams[0].id,
+                "away_team_id": original_teams[1].id,
+                "state": "ready",
+            }
+        )
+        fixture = self._add_second_division_fixture()
+        court = self.schedule.assignment_ids.slot_id.court_id
+        self.env["federation.schedule.slot"].create(
+            {
+                "matchday_id": self.matchday.id,
+                "court_id": court.id,
+                "start_datetime": "2026-10-10 11:00:00",
+                "end_datetime": "2026-10-10 12:00:00",
+            }
+        )
+
+        replacement.invalidate_recordset()
+        proposal = self.env["federation.schedule.fairness.solver"].propose(replacement)
+
+        self.assertIn(fixture, replacement.available_fixture_ids)
+        self.assertIn(fixture, replacement.unassigned_fixture_ids)
+        self.assertIn(
+            fixture.id,
+            [assignment["fixture_id"] for assignment in proposal["assignments"]],
+        )
+
     def test_late_fixture_can_be_added_to_revision_and_removed_again(self):
         replacement = self.schedule.action_create_revision("Late fixture added")
         late_fixture = self.env["federation.fixture"].create(

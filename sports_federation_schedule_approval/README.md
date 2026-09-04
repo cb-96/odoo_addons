@@ -50,3 +50,8 @@ versioned and replaced per match day, not per edition. Publication confirmation
 locks the match day and verifies the expected current publication before
 allocating the next version. Replacements require a dedicated reason that is
 separate from the review note.
+
+
+## Expanded match-day publication guard
+
+Immediately before replacing a live publication, the approval service validates the approved schedule against every fixture currently allocated to the physical match day. A division or fixture added after review invalidates that review for publication purposes. The planner must refresh the schedule, assign the newly exposed fixtures, and submit the complete replacement for review again. This guarantees that Match-Day Control and public publishing consume one complete multi-division publication.

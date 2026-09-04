@@ -11,9 +11,9 @@ class FederationDataApiPortal(FederationPortalBase):
             return request.redirect("/my")
 
         base_url = request.httprequest.url_root.rstrip("/")
-        editions = request.env[
-            "federation.public.competition.queries"
-        ].list_editions(archived=False)
+        editions = request.env["federation.public.competition.queries"].list_editions(
+            archived=False
+        )
         return request.render(
             "sports_federation_portal.portal_data_api_tutorial",
             {

@@ -189,6 +189,21 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             raise ValidationError(
                 _("Close live match-day operations before replacing publication.")
             )
+        validation = self.env["federation.schedule.validator"].validate_map(
+            schedule,
+            {
+                assignment.fixture_id.id: assignment.slot_id.id
+                for assignment in schedule.assignment_ids
+            },
+        )
+        if not validation["valid"]:
+            raise ValidationError(
+                _(
+                    "The match-day fixture plan changed after review. Return the "
+                    "schedule to planning, assign every current fixture, and review "
+                    "the complete replacement before publishing."
+                )
+            )
         review = self.env["federation.schedule.review"].search(
             [
                 ("schedule_id", "=", schedule.id),

@@ -38,11 +38,23 @@ REQUIRED_PATHS = (
     ("Federation", "Finance & Assurance", "Finance"),
     ("Federation", "Finance & Assurance", "Compliance"),
     ("Federation", "Finance & Assurance", "Governance"),
-    ("Federation", "Insights", "Reports & Insights", "Overview & Readiness", "Operational Health"),
+    (
+        "Federation",
+        "Insights",
+        "Reports & Insights",
+        "Overview & Readiness",
+        "Operational Health",
+    ),
     ("Federation", "Administration", "Action Queue"),
     ("Federation", "Administration", "System Health", "Operational Job Health"),
 )
-FORBIDDEN_TOP_LEVEL = {"Setup", "Planning", "Competition Workflow", "Match Day", "Publication"}
+FORBIDDEN_TOP_LEVEL = {
+    "Setup",
+    "Planning",
+    "Competition Workflow",
+    "Match Day",
+    "Publication",
+}
 
 
 def index():

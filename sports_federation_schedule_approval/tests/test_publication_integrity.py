@@ -189,6 +189,37 @@ class TestPhase511Integrity(TransactionCase):
         )
         return schedule, review
 
+    def test_publication_rejects_fixture_added_after_review(self):
+        schedule, review = self._valid_schedule_review(
+            self.days[0], "expanded-after-review"
+        )
+        fixture = schedule.assignment_ids.fixture_id
+        self.env["federation.fixture"].create(
+            {
+                "structure_id": fixture.structure_id.id,
+                "stage_id": fixture.stage_id.id,
+                "round_number": fixture.round_number,
+                "home_team_id": fixture.home_team_id.id,
+                "away_team_id": fixture.away_team_id.id,
+                "state": "ready",
+            }
+        )
+        self.env["federation.competition.role.assignment"].sudo().create(
+            {
+                "edition_id": self.edition.id,
+                "role": "schedule_approver",
+                "user_id": self.env.user.id,
+            }
+        )
+
+        with self.assertRaisesRegex(
+            ValidationError, "fixture plan changed after review"
+        ):
+            self.env["federation.schedule.approval.commands"].publish(schedule.id)
+
+        self.assertFalse(self.days[0].current_publication_id)
+        self.assertEqual(review.state, "pending")
+
     def test_review_decision_fields_reject_direct_writes(self):
         schedule, review = self._schedule_review(self.days[0], "guard")
         with self.assertRaises(ValidationError):

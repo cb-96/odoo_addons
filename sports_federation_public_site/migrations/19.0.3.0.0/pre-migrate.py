@@ -1,6 +1,5 @@
 import logging
 
-
 _logger = logging.getLogger(__name__)
 
 _VIEW_MODULE = "sports_federation_public_site"

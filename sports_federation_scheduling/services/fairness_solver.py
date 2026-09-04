@@ -22,11 +22,10 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
             lambda a: not replace_automatic or a.method != "automatic"
         )
         assignment_map = {a.fixture_id.id: a.slot_id.id for a in retained}
+        # A physical match day may combine several division structures. The
+        # schedule's structure is its creation context, not a boundary for the
+        # fixture pool that must be planned and published.
         allocated = schedule.matchday_id.allocation_ids.mapped("fixture_ids")
-        if schedule.structure_id:
-            allocated = allocated.filtered(
-                lambda f: f.structure_id == schedule.structure_id
-            )
         fixtures = allocated.filtered(lambda f: f.id not in assignment_map).sorted(
             lambda f: (f.round_number, f.sequence, f.id)
         )
