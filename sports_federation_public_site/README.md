@@ -163,3 +163,7 @@ Route orchestration lives in `public_competitions.py`. Framework response, canon
 ## Complete competition API
 
 `GET /api/v1/competitions` lists published competitions; `GET /api/v1/competitions/<edition-slug>` aggregates every published division and its public teams, schedules, approved results, standings, brackets, and links.
+
+## Competition route upgrade safety
+
+The `19.0.3.0.0` pre-migration repairs the stored selector of the competition-hub editorial extension before Odoo reloads its parent template. This prevents databases upgraded from the former route namespace from failing registry initialization while the canonical `/competitions` templates are loaded. Fresh installations already use the canonical selector and require no special action.

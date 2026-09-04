@@ -24,7 +24,8 @@ checks = {
     "workflow upgrade execution": "run_rc_validation.sh upgrade" in workflow,
     "workflow public execution": "run_rc_validation.sh public" in workflow,
     "acceptance candidate evidence": "candidate commit" in acceptance.lower(),
-    "single competition namespace evidence": "/competitions" in (ROOT / "ROUTE_INVENTORY.md").read_text(encoding="utf-8"),
+    "single competition namespace evidence": "/competitions"
+    in (ROOT / "ROUTE_INVENTORY.md").read_text(encoding="utf-8"),
     "acceptance full lifecycle": all(
         token in acceptance.lower()
         for token in (

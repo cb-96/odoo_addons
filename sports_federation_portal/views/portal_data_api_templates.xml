@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_data_api_tutorial" name="Competition Data API Tutorial">
+        <t t-call="portal.portal_layout">
+            <div class="container py-4">
+                <h1>Competition Data API</h1>
+                <p class="lead">Use the public read-only API to show published matches, standings, and schedules on your club website.</p>
+                <div class="alert alert-info" role="note">
+                    <strong>No API key is required.</strong>
+                    Contact details, personal data, internal notes, discipline data, drafts, and unapproved results are excluded.
+                </div>
+                <section class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="h4">Start here</h2>
+                        <pre class="bg-light border rounded p-3"><code>GET <t t-esc="index_url"/></code></pre>
+                        <pre class="bg-light border rounded p-3"><code>curl -H "Accept: application/json" "<t t-esc="index_url"/>"</code></pre>
+                    </div>
+                </section>
+                <section class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="h4">Published competitions</h2>
+                        <div class="list-group" t-if="editions">
+                            <div t-foreach="editions" t-as="edition" class="list-group-item">
+                                <strong><t t-esc="edition.name"/></strong>
+                                <div><code><t t-esc="base_url + edition.get_public_api_path()"/></code></div>
+                                <a class="btn btn-sm btn-outline-primary mt-2" target="_blank" rel="noopener" t-att-href="edition.get_public_api_path()">Open JSON</a>
+                            </div>
+                        </div>
+                        <p t-else="" class="text-muted">No competitions are currently published.</p>
+                    </div>
+                </section>
+                <section class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="h4">JavaScript example</h2>
+                        <pre class="bg-light border rounded p-3"><code>const response = await fetch("<t t-esc="index_url"/>");
+if (!response.ok) throw new Error(`API error: ${response.status}`);
+const index = await response.json();
+const competition = await fetch(index.competitions[0].api_url).then(r =&gt; r.json());
+console.log(competition.divisions);</code></pre>
+                    </div>
+                </section>
+                <section class="card">
+                    <div class="card-body">
+                        <h2 class="h4">Usage rules</h2>
+                        <ul>
+                            <li>Read the <code>X-Federation-Contract-Version</code> header.</li>
+                            <li>Cache responses for at least 60 seconds.</li>
+                            <li>Expect HTTP 404 for unpublished competitions.</li>
+                            <li>Use the supplied website URLs when linking users back.</li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_home_data_api_link" inherit_id="sports_federation_portal.portal_federation_links" name="Portal API quick link">
+        <xpath expr="//nav[hasclass('o_fed_portal_quicknav')]" position="inside">
+            <a class="o_fed_portal_quicklink" href="/my/data-api">
+                <i class="fa fa-code" aria-hidden="true"/>
+                <strong>Data API</strong>
+            </a>
+        </xpath>
+    </template>
+</odoo>

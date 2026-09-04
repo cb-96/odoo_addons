@@ -164,7 +164,9 @@ class PublicTournamentHubController(
             tournament.get_public_detail_context(),
         )
 
-    def _competition_division_or_404(self, edition_slug, division_slug=None, division_id=None):
+    def _competition_division_or_404(
+        self, edition_slug, division_slug=None, division_id=None
+    ):
         queries = request.env["federation.public.competition.queries"]
         edition = queries.resolve_edition(edition_slug)
         if not edition:
@@ -177,46 +179,126 @@ class PublicTournamentHubController(
                 self._raise_not_found()
             division = divisions.filtered(lambda item: item.id == division_id)[:1]
         else:
-            division = divisions.filtered(lambda item: item.get_public_slug_value() == division_slug)[:1]
+            division = divisions.filtered(
+                lambda item: item.get_public_slug_value() == division_slug
+            )[:1]
         if not division:
             self._raise_not_found()
         return edition, division
 
-    @http.route(["/competitions/<string:edition_slug>/register"], type="http", auth="user", website=True, methods=["GET"])
+    @http.route(
+        ["/competitions/<string:edition_slug>/register"],
+        type="http",
+        auth="user",
+        website=True,
+        methods=["GET"],
+    )
     def competition_register_form(self, edition_slug, division_id=None, **kw):
-        edition, division = self._competition_division_or_404(edition_slug, division_id=division_id)
+        edition, division = self._competition_division_or_404(
+            edition_slug, division_id=division_id
+        )
         if division.state != "open":
             return request.redirect(f"/competitions/{edition.public_slug}")
         clubs = self._get_request_user_clubs()
         if not clubs:
-            return request.render("sports_federation_public_site.page_tournament_register", {"error": "You are not registered as a club representative. Please contact the federation.", "tournament": division})
+            return request.render(
+                "sports_federation_public_site.page_tournament_register",
+                {
+                    "error": "You are not registered as a club representative. Please contact the federation.",
+                    "tournament": division,
+                },
+            )
         Entry = request.env["federation.competition.entry"]
         window = Entry._portal_open_window_for_division(division)
         if not window:
             return request.redirect(f"/competitions/{edition.public_slug}")
-        existing = Entry.sudo().search([("window_id", "=", window.id), ("team_id.club_id", "in", clubs.ids), ("state", "!=", "withdrawn")])
-        blocked = {team.id: "Already registered or currently awaiting review." for team in existing.mapped("team_id")}
-        snapshot = division.sudo().get_team_selection_snapshot(extra_domain=[("club_id", "in", clubs.ids)], blocked_reason_by_team_id=blocked)
-        return request.render("sports_federation_public_site.page_tournament_register", {"tournament": division, "clubs": clubs, "teams": snapshot["available_teams"], "excluded_teams": [{"name": item["team"].name, "club": item["team"].club_id.name, "reason": item["reason"]} for item in snapshot["excluded_teams"]], "error": kw.get("error"), "success": kw.get("success")})
+        existing = Entry.sudo().search(
+            [
+                ("window_id", "=", window.id),
+                ("team_id.club_id", "in", clubs.ids),
+                ("state", "!=", "withdrawn"),
+            ]
+        )
+        blocked = {
+            team.id: "Already registered or currently awaiting review."
+            for team in existing.mapped("team_id")
+        }
+        snapshot = division.sudo().get_team_selection_snapshot(
+            extra_domain=[("club_id", "in", clubs.ids)],
+            blocked_reason_by_team_id=blocked,
+        )
+        return request.render(
+            "sports_federation_public_site.page_tournament_register",
+            {
+                "tournament": division,
+                "clubs": clubs,
+                "teams": snapshot["available_teams"],
+                "excluded_teams": [
+                    {
+                        "name": item["team"].name,
+                        "club": item["team"].club_id.name,
+                        "reason": item["reason"],
+                    }
+                    for item in snapshot["excluded_teams"]
+                ],
+                "error": kw.get("error"),
+                "success": kw.get("success"),
+            },
+        )
 
-    @http.route(["/competitions/<string:edition_slug>/register"], type="http", auth="user", website=True, methods=["POST"], csrf=False)
-    def competition_register_submit(self, edition_slug, division_id=None, team_id=None, notes="", **kw):
-        edition, division = self._competition_division_or_404(edition_slug, division_id=division_id)
+    @http.route(
+        ["/competitions/<string:edition_slug>/register"],
+        type="http",
+        auth="user",
+        website=True,
+        methods=["POST"],
+        csrf=False,
+    )
+    def competition_register_submit(
+        self, edition_slug, division_id=None, team_id=None, notes="", **kw
+    ):
+        edition, division = self._competition_division_or_404(
+            edition_slug, division_id=division_id
+        )
         path = division.get_public_register_path()
         if division.state != "open":
             return request.redirect(f"/competitions/{edition.public_slug}")
         try:
-            self._validate_manual_csrf(kw.get("csrf_token")); team_id = int(team_id)
-            request.env["federation.competition.entry"]._portal_submit_entry(division, request.env["federation.team"].sudo().browse(team_id), notes=notes, user=request.env.user)
+            self._validate_manual_csrf(kw.get("csrf_token"))
+            team_id = int(team_id)
+            request.env["federation.competition.entry"]._portal_submit_entry(
+                division,
+                request.env["federation.team"].sudo().browse(team_id),
+                notes=notes,
+                user=request.env.user,
+            )
         except (AccessError, ValidationError, TypeError, ValueError) as error:
             return self._redirect_with_error(path, str(error))
         return request.redirect(f"{path}&success=Registration+submitted+successfully")
 
-    @http.route(["/competitions/<string:edition_slug>/divisions/<string:division_slug>/schedule.ics"], type="http", auth="public", methods=["GET"])
+    @http.route(
+        [
+            "/competitions/<string:edition_slug>/divisions/<string:division_slug>/schedule.ics"
+        ],
+        type="http",
+        auth="public",
+        methods=["GET"],
+    )
     def competition_division_schedule_ics(self, edition_slug, division_slug, **kw):
-        _edition, division = self._competition_division_or_404(edition_slug, division_slug=division_slug)
-        content = division.get_public_schedule_ics(); filename = f"{division.get_public_slug_value()}-schedule.ics"
-        return Response(content, content_type="text/calendar; charset=utf-8", headers=[("Content-Disposition", f'attachment; filename="{filename}"'), ("X-Federation-Contract", "competition_division_schedule_ics"), ("X-Federation-Contract-Version", "ics_v1")])
+        _edition, division = self._competition_division_or_404(
+            edition_slug, division_slug=division_slug
+        )
+        content = division.get_public_schedule_ics()
+        filename = f"{division.get_public_slug_value()}-schedule.ics"
+        return Response(
+            content,
+            content_type="text/calendar; charset=utf-8",
+            headers=[
+                ("Content-Disposition", f'attachment; filename="{filename}"'),
+                ("X-Federation-Contract", "competition_division_schedule_ics"),
+                ("X-Federation-Contract-Version", "ics_v1"),
+            ],
+        )
 
     @http.route(["/teams/<string:team_slug>"], type="http", auth="public", website=True)
     def team_detail(self, team_slug, **kw):

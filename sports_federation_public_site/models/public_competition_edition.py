@@ -46,26 +46,48 @@ class FederationCompetitionEditionPublic(models.Model):
             "target": "new",
         }
 
-
     def get_public_api_path(self):
         self.ensure_one()
         return f"/api/v1/competitions/{self.public_slug}"
 
     def get_public_api_payload(self):
         self.ensure_one()
-        divisions = self.env["federation.public.competition.queries"].public_divisions(self)
+        divisions = self.env["federation.public.competition.queries"].public_divisions(
+            self
+        )
         return {
-            "api_version": "v1", "contract": "competition_feed",
+            "api_version": "v1",
+            "contract": "competition_feed",
             "competition": {
-                "id": self.id, "name": self.name, "slug": self.public_slug,
+                "id": self.id,
+                "name": self.name,
+                "slug": self.public_slug,
                 "state": self.state,
-                "season": {"id": self.season_id.id, "name": self.season_id.display_name} if self.season_id else None,
-                "date_start": fields.Date.to_string(self.date_start) if self.date_start else None,
-                "date_end": fields.Date.to_string(self.date_end) if self.date_end else None,
+                "season": (
+                    {"id": self.season_id.id, "name": self.season_id.display_name}
+                    if self.season_id
+                    else None
+                ),
+                "date_start": (
+                    fields.Date.to_string(self.date_start) if self.date_start else None
+                ),
+                "date_end": (
+                    fields.Date.to_string(self.date_end) if self.date_end else None
+                ),
                 "summary": self.public_summary or None,
                 "website_url": f"/competitions/{self.public_slug}",
                 "api_url": self.get_public_api_path(),
             },
             "divisions": [division.get_public_feed_payload() for division in divisions],
-            "privacy": {"scope": "published competition data only", "excluded": ["contact details", "personal data", "internal notes", "disciplinary data", "unpublished schedules", "draft or unapproved results"]},
+            "privacy": {
+                "scope": "published competition data only",
+                "excluded": [
+                    "contact details",
+                    "personal data",
+                    "internal notes",
+                    "disciplinary data",
+                    "unpublished schedules",
+                    "draft or unapproved results",
+                ],
+            },
         }

@@ -16,6 +16,9 @@ from unittest.mock import patch
 from odoo.addons.sports_federation_public_site.controllers.public_competitions import (
     PublicTournamentHubController,
 )
+from odoo.addons.sports_federation_public_site.controllers.public_competition_pages import (
+    PublicCompetitionController,
+)
 from odoo.addons.sports_federation_public_site.controllers.public_follow import (
     PublicSeasonAndTeamController,
 )
@@ -629,6 +632,7 @@ class TestPublicApiRateLimits(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.hub_controller = PublicTournamentHubController()
+        cls.competition_controller = PublicCompetitionController()
         cls.follow_controller = PublicSeasonAndTeamController()
         cls.club = cls.env["federation.club"].create(
             {
@@ -666,13 +670,14 @@ class TestPublicApiRateLimits(TransactionCase):
         competition = cls.env["federation.competition"].create(
             {"name": "Rate Limit Competition", "code": "RLC"}
         )
-        edition = cls.env["federation.competition.edition"].create(
+        cls.edition = cls.env["federation.competition.edition"].create(
             {
                 "name": "Rate Limit 2026",
                 "competition_id": competition.id,
                 "season_id": cls.season.id,
                 "website_published": True,
                 "public_slug": "rate-limit-2026",
+                "state": "open",
             }
         )
         cls.tournament = cls.env["federation.tournament"].create(
@@ -680,7 +685,7 @@ class TestPublicApiRateLimits(TransactionCase):
                 "name": "Rate Limit Tournament",
                 "code": "RLT",
                 "season_id": cls.season.id,
-                "edition_id": edition.id,
+                "edition_id": cls.edition.id,
                 "competition_id": competition.id,
                 "date_start": "2026-06-01",
                 "state": "in_progress",
@@ -820,7 +825,7 @@ class TestPublicApiRateLimits(TransactionCase):
         frozen_time = datetime(2026, 4, 18, 12, 0, 0)
 
         with patch(
-            "odoo.addons.sports_federation_public_site.controllers.public_competitions.request",
+            "odoo.addons.sports_federation_public_site.controllers.public_competition_pages.request",
             request_stub,
         ), patch(
             "odoo.addons.sports_federation_public_site.controllers._public_request.request",
@@ -830,11 +835,11 @@ class TestPublicApiRateLimits(TransactionCase):
             "_get_now",
             return_value=frozen_time,
         ):
-            response = self.hub_controller.competition_feed_v1(
-                tournament_slug=self.tournament.public_slug
+            response = self.competition_controller.competition_api_feed(
+                edition_slug=self.edition.public_slug
             )
-            blocked = self.hub_controller.competition_feed_v1(
-                tournament_slug=self.tournament.public_slug
+            blocked = self.competition_controller.competition_api_feed(
+                edition_slug=self.edition.public_slug
             )
 
         self.assertEqual(response.status_code, 200)

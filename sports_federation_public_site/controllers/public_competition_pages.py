@@ -16,22 +16,69 @@ class PublicCompetitionController(PublicRequestInfrastructureMixin, http.Control
             raise request.not_found()
         return edition
 
-    @http.route(["/api/v1/competitions"], type="http", auth="public", methods=["GET"], website=False, sitemap=False)
+    @http.route(
+        ["/api/v1/competitions"],
+        type="http",
+        auth="public",
+        methods=["GET"],
+        website=False,
+        sitemap=False,
+    )
     def competition_api_index(self, **kw):
         blocked = self._rate_limit_response("public_competition_index")
         if blocked:
             return blocked
         editions = self._queries().list_editions(archived=False)
-        payload = {"api_version": "v1", "contract": "competition_index", "competitions": [{"id": e.id, "name": e.name, "slug": e.public_slug, "state": e.state, "season": e.season_id.display_name if e.season_id else None, "website_url": f"/competitions/{e.public_slug}", "api_url": e.get_public_api_path()} for e in editions]}
-        return Response(json.dumps(payload, sort_keys=True), content_type="application/json; charset=utf-8", headers=[("Cache-Control", "public, max-age=60"), ("X-Content-Type-Options", "nosniff"), ("X-Federation-Contract", "competition_index"), ("X-Federation-Contract-Version", "v1")])
+        payload = {
+            "api_version": "v1",
+            "contract": "competition_index",
+            "competitions": [
+                {
+                    "id": e.id,
+                    "name": e.name,
+                    "slug": e.public_slug,
+                    "state": e.state,
+                    "season": e.season_id.display_name if e.season_id else None,
+                    "website_url": f"/competitions/{e.public_slug}",
+                    "api_url": e.get_public_api_path(),
+                }
+                for e in editions
+            ],
+        }
+        return Response(
+            json.dumps(payload, sort_keys=True),
+            content_type="application/json; charset=utf-8",
+            headers=[
+                ("Cache-Control", "public, max-age=60"),
+                ("X-Content-Type-Options", "nosniff"),
+                ("X-Federation-Contract", "competition_index"),
+                ("X-Federation-Contract-Version", "v1"),
+            ],
+        )
 
-    @http.route(["/api/v1/competitions/<string:edition_slug>"], type="http", auth="public", methods=["GET"], website=False, sitemap=False)
+    @http.route(
+        ["/api/v1/competitions/<string:edition_slug>"],
+        type="http",
+        auth="public",
+        methods=["GET"],
+        website=False,
+        sitemap=False,
+    )
     def competition_api_feed(self, edition_slug, **kw):
         blocked = self._rate_limit_response("public_competition_feed")
         if blocked:
             return blocked
         edition = self._edition_or_404(edition_slug)
-        return Response(json.dumps(edition.get_public_api_payload(), sort_keys=True), content_type="application/json; charset=utf-8", headers=[("Cache-Control", "public, max-age=60"), ("X-Content-Type-Options", "nosniff"), ("X-Federation-Contract", "competition_feed"), ("X-Federation-Contract-Version", "v1")])
+        return Response(
+            json.dumps(edition.get_public_api_payload(), sort_keys=True),
+            content_type="application/json; charset=utf-8",
+            headers=[
+                ("Cache-Control", "public, max-age=60"),
+                ("X-Content-Type-Options", "nosniff"),
+                ("X-Federation-Contract", "competition_feed"),
+                ("X-Federation-Contract-Version", "v1"),
+            ],
+        )
 
     @http.route(
         ["/competitions", "/competitions/page/<int:page>"],

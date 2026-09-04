@@ -48,6 +48,7 @@ on top of the federation base modules.
         "views/qol_views.xml",
         "views/qol_search_templates.xml",
         "views/portal_templates.xml",
+        "views/portal_data_api_templates.xml",
         "views/competition_templates.xml",
         "views/portal_officiating_templates.xml",
         "views/portal_roster_templates.xml",

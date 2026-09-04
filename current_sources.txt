@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 904
+# FILE-COUNT: 906
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -586,15 +586,17 @@ _logs/
 
 ====================================================================================================
 FILE: COMPETITION_ENGINE.md
-SIZE: 2809
-CONTENT-LENGTH: 2809
-SHA256: 2c6a2ef0be5e1aece6060a09b33b5da37b58fc1a0bca7e3604aa9cde951df0b0
+SIZE: 2960
+CONTENT-LENGTH: 2958
+SHA256: 8a6134bdc49a652926415bc8b5dbe090ef4e20e65477ff8d33289a25394ae680
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
 # Competition Engine
+
+> **UI navigation:** operators use **Federation → Competition Workflow**. See [`docs/COMPETITION_UI_WORKFLOW.md`](docs/COMPETITION_UI_WORKFLOW.md).
 
 This implementation provides role-owned capabilities and explicit handovers for competition planning and operations.
 
@@ -1132,9 +1134,9 @@ Federation managers use **Administration → Retention and Recovery** to verify 
 
 ====================================================================================================
 FILE: DEPLOYMENT_GUIDE.md
-SIZE: 8090
-CONTENT-LENGTH: 8032
-SHA256: 24df0af9ff07c7bce941ce84aed331feaa0a9b85c371478bb8028341e0b3127b
+SIZE: 8092
+CONTENT-LENGTH: 8034
+SHA256: 1bc79dfd5485d3b7445f66b1058b0aa64cae8876af4c45e70454e1eacfa0c732
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -1375,7 +1377,7 @@ Verify the stack is healthy after installation:
 docker compose ps
 
 # 2. Open the public tournaments page (should return 200)
-curl -sI http://localhost:10019/tournaments | head -5
+curl -sI http://localhost:10019/competitions | head -5
 
 # 3. Open the portal login page (should return 200)
 curl -sI http://localhost:10019/web/login | head -5
@@ -1388,7 +1390,7 @@ bash addons/ci/run_tests.sh --suite release_surfaces
 ```
 
 A healthy stack shows:
-- HTTP 200 on `/tournaments` and `/web/login`
+- HTTP 200 on `/competitions` and `/web/login`
 - Valid JSON on `/competitions/api/json`
 - All CI tests passing
 
@@ -1425,79 +1427,60 @@ See [RELEASE_RUNBOOK.md](RELEASE_RUNBOOK.md) for the full backup and restore dri
 
 ====================================================================================================
 FILE: DOCUMENTATION_REVIEW.md
-SIZE: 2574
-CONTENT-LENGTH: 2574
-SHA256: d6a9aae1d7d70ef0b3704027a7026345e298df86c1788bdc8a5bc900cb5ba51f
+SIZE: 1439
+CONTENT-LENGTH: 1439
+SHA256: af88584a6022e2518a7f127c979ee4c6d6b46d06d1bba2a5aabe77e9b17dcb6c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
-# Documentation Consolidation Review
+# Documentation Review
 
-Review date: 2026-08-20
-Reviewed source: attached source bundle plus eight separately attached repository-level Markdown files
+Review date: 2026-09-04
+Reviewed source: commit `035b5167f6e42c0fcaabe9c73c097f6c63167400`
+Owner: Federation Platform Team
 
-## Outcome
+## Scope
 
-- 21 Markdown files reviewed
-- 15 retained and updated
-- 6 recommended for deletion
-- no new standalone policy files introduced
+The second pass reviewed all repository Markdown, all 26 addon manifests,
+backend menu XML, portal routes, release scripts, CI documentation contracts,
+controller routes, workflow descriptions, OpenAPI references, and addon README
+coverage.
 
-## Deleted as redundant
+## Corrections
 
-- `sports_federation_notifications/ROADMAP_RC.md`
-- `sports_federation_portal/ROADMAP_RC.md`
-- `sports_federation_portal/PORTAL_OWNERSHIP_COVERAGE.md`
-- `sports_federation_portal/PORTAL_OWNERSHIP_TEST_MATRIX.md`
-- `sports_federation_result_control/ROADMAP_RC.md`
-- `sports_federation_rules/ROADMAP_RC.md`
+- Added the canonical competition UI and recovery guide.
+- Corrected obsolete menu terminology across workflows and ownership docs.
+- Added menu-to-documentation drift validation.
+- Restored integration and public-feed OpenAPI contracts, examples, and error
+  documentation required by code and CI.
+- Added missing Calendar and Competition Core READMEs.
+- Replaced implementation-era roadmap priority labels with durable headings.
+- Corrected delivery statuses and the release documentation index.
+- Added RC logfile diagnostics and corrected a deterministic SHA test fixture.
 
-### Rationale
+## Enforced checks
 
-The four `ROADMAP_RC.md` files were tiny release snapshots whose remaining bullets are either implemented invariants or broader repository roadmap concerns. Keeping them creates stale, ownerless parallel roadmaps.
-
-The two portal ownership snapshots duplicate each other, the portal README, ADR-0001, and the live tests. Static coverage dashboards become inaccurate whenever tests move. The durable ownership rules are now in the portal README and ADR; test files remain the authoritative coverage map.
-
-## Retained repository-level documents
-
-- `ROADMAP.md`: one current product and engineering roadmap
-- `ROUTE_INVENTORY.md`: human-readable critical route ownership
-- `INTEGRATION_CONTRACTS.md`: partner and public compatibility policy
-- `DATA_RETENTION_POLICY.md`: retention windows and cleanup contract
-- `adr/*`: accepted durable architecture decisions
-
-## Important corrections
-
-- Added missing roadmap freshness metadata.
-- Replaced the 100-item roadmap backlog with current priorities and explicit statuses.
-- Marked the competition ownership decomposition as complete for the current release.
-- Added workflow simplification as the primary product priority.
-- Removed the unverified `/web/login` ownership row.
-- Added the tournament-operations JSON-RPC load and action routes.
-- Updated ADR-0001 to describe `federation.portal.privilege` rather than direct `with_user().sudo()` use.
-- Consolidated module documentation and removed release-candidate mini-roadmaps.
-
-## Apply and verify
-
-Review the patch, then run:
-
-```bash
-git apply --check documentation_consolidation_2026-08-20.patch
-git apply documentation_consolidation_2026-08-20.patch
-python3 ci/check_doc_freshness.py
-python3 ci/check_markdown_links.py
-bash ci/run_repo_lint.sh --strict
+```text
+ci/check_markdown_links.py
+ci/check_doc_freshness.py
+ci/check_delivery_language.py
+ci/check_competition_ui_workflow.py
+ci/check_openapi_contracts.py
 ```
 
-The patch was generated from the supplied snapshot. If the branch has moved, apply individual files from the ZIP or regenerate the patch from the current branch.
+## Evidence still required
+
+Release baseline execution and migration rehearsal remain pending until they run
+against a clean committed candidate and an approved production-like backup.
+That is release evidence still to collect, not unresolved documentation debt.
 
 ====================================================================================================
 FILE: INTEGRATION_CONTRACTS.md
-SIZE: 13653
-CONTENT-LENGTH: 13653
-SHA256: f5f947714c0fa4cfc6a029516b92ce11d8414544e266f5931fe00bc4247a2314
+SIZE: 13639
+CONTENT-LENGTH: 13639
+SHA256: 685106690a1ea0777bedc6a79a53d7cc4f15f0e4db6ce0b2090585a9741109b1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -1564,9 +1547,9 @@ Import contracts:
 
 ## Tournament Feed
 
-- Canonical route: `/api/v1/tournaments/<slug>/feed`
+- Canonical route: `/api/v1/competitions/<edition-slug>`
 - Compatibility routes:
-  - `/api/v1/tournaments/<id>/feed`
+  - `/api/v1/competitions/<edition-slug>`
   - `/api/v1/competitions/<id>/feed`
 - Response type: `application/json`
 - Headers:
@@ -1581,8 +1564,8 @@ Import contracts:
 
 ## Tournament Schedule Calendar
 
-- Canonical route: `/tournaments/<slug>/schedule.ics`
-- Compatibility route: `/tournament/<id>/schedule.ics`
+- Canonical route: `/competitions/<edition-slug>/divisions/<division-slug>/schedule.ics`
+- Compatibility route: `/competitions/<edition-slug>/divisions/<division-slug>/schedule.ics`
 - Response type: `text/calendar`
 - Headers:
   - `X-Federation-Contract: tournament_schedule_ics`
@@ -1786,9 +1769,6 @@ any contract-facing deprecation decision.
 
 | Surface | Canonical replacement | Target exit |
 |---|---|---|
-| `/tournaments`, `/tournaments/<slug>`, numeric tournament page routes | `/competitions`, `/competitions/<edition-slug>` | 2026-10-01 |
-| Numeric public tournament page routes | Edition routes under `/competitions/<edition-slug>` | 2026-10-01 |
-| Numeric or competition-named v1 tournament feeds | `/api/v1/tournaments/<slug>/feed` | 2026-10-01 |
 | Player import `name` column fallback | Explicit `first_name`, `last_name` columns | 2026-10-15 |
 | Team import name fallbacks | `club_code` and explicit team naming columns | 2026-10-15 |
 | Participant import tournament/team name fallbacks | `tournament_code` and `team_code` | 2026-10-15 |
@@ -1850,6 +1830,11 @@ notifications:
 Delivery failures must not roll back the business transaction. Failed sends are
 logged for retry or operator investigation; dispatcher methods must not raise a
 business validation error.
+
+
+## Public competition feed v1
+
+`GET /api/v1/competitions` and `GET /api/v1/competitions/<edition_slug>` expose only published, non-sensitive competition data. Responses advertise `X-Federation-Contract-Version: v1` and may be cached for 60 seconds.
 
 ====================================================================================================
 FILE: MODULE_OWNERS.yaml
@@ -1973,9 +1958,9 @@ modules:
 
 ====================================================================================================
 FILE: README.md
-SIZE: 6872
-CONTENT-LENGTH: 6852
-SHA256: 9346942c44e8ee70916ab3f47f4b0703ad698e817a9349f65dfde3b4e48bb10e
+SIZE: 7008
+CONTENT-LENGTH: 6988
+SHA256: 4f00be3844536d6c00c4046fd731e4a7f06737ba7f2306d76560beda232f84ea
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -2146,11 +2131,16 @@ Module list (high level)
 - `sports_federation_finance_bridge` — finance event helpers
 - `sports_federation_public_site` / `sports_federation_portal` — public pages and portal flows
 
+
+## Operator workflow
+
+Use [`docs/COMPETITION_UI_WORKFLOW.md`](docs/COMPETITION_UI_WORKFLOW.md) for verified backend and portal paths.
+
 ====================================================================================================
 FILE: RELEASE_RUNBOOK.md
-SIZE: 24329
-CONTENT-LENGTH: 24321
-SHA256: ec60a4938d296ea1d85b5aaa5e86e632cb722ddae537cd42f378b24716155cc3
+SIZE: 24823
+CONTENT-LENGTH: 24815
+SHA256: 3b5f3d686b2093e7ef3859a6c77445b9573fe4cd8182bbb0dac265f148d5171d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -2434,8 +2424,8 @@ Verify these operator checkpoints immediately after the upgrade:
 4. Validate the public and portal release surfaces manually if the release
    touched them:
    - `/web/login`
-   - `/tournaments`
-   - `/tournaments/<slug>/register`
+   - `/competitions`
+   - `/competitions/<edition-slug>/register?division_id=<division-id>`
    - `/my/teams/new`
    - `/my/season-registration/new`
    - `/my/compliance`
@@ -2752,11 +2742,21 @@ Archive the generated `artifacts/release/migration/` directory with the candidat
 logs. A release cannot proceed when the invariant comparison or operator
 acceptance evidence is not `passed`.
 
+
+## Operator documentation qualification
+
+The RC static lane validates essential paths in [`docs/COMPETITION_UI_WORKFLOW.md`](docs/COMPETITION_UI_WORKFLOW.md) against menu XML.
+
+
+## RC lane failure visibility
+
+Odoo lanes write to `odoo-rc.log`. On a non-zero exit the runner prints an error summary and the final 200 lines. gettext `Empty msgid` warnings alone do not explain exit code 1; use the first test failure or module-load traceback in the logfile.
+
 ====================================================================================================
 FILE: ROADMAP.md
-SIZE: 6383
-CONTENT-LENGTH: 6383
-SHA256: a3b8d17893c100f7fd9cbca94f7de7e7d1bdff128aa1b00a8c2ba35fb7bda7b3
+SIZE: 1975
+CONTENT-LENGTH: 1975
+SHA256: 3e7f4a152b3e03d64afe9f4c5de8e0e4dec0f458722dd219677525f51f64158e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -2764,160 +2764,67 @@ GIT-STATE: tracked
 
 # Sports Federation Platform Roadmap
 
-Last updated: 2026-09-02
+Last updated: 2026-09-04
+Last reviewed: 2026-09-04
 Owner: Federation Platform Team
-Last reviewed: 2026-09-02
 Review cadence: Every release
-Release train: 2026.08
-Planning horizon: 12 months
-Scope: All federation addons, shared CI, documentation, runbooks, and release operations
+Release target: First release candidate
 
-## Product Direction
+## Product direction
 
-The platform has broad federation coverage and strong technical safeguards. The next release cycle must prioritize simpler operator workflows, clearer ownership boundaries, and production evidence over additional domain breadth.
+The platform is feature-complete for the first release candidate. Scope is frozen
+except for release blockers, security or integrity defects, accessibility
+regressions, migration defects, documentation drift, and missing evidence.
 
-## Delivery Principles
+## Current priorities
 
-- Keep internal audit, security, revision, and concurrency safeguards.
-- Hide technical implementation concepts from normal club and tournament users.
-- Use guided defaults for common workflows and progressive disclosure for expert controls.
-- Keep every privileged portal write behind a model-owned scope check.
-- Treat migrations, restore readiness, observability, and documentation as release gates.
-- Prefer one authoritative document per concern. Delete completed mini-roadmaps and generated snapshots that duplicate tests or code.
+### Candidate qualification
 
-## Delivery Roadmap
+Status: **Automation implemented; execution evidence required**
 
-The executable milestone sequence is maintained in
-[`docs/DELIVERY_ROADMAP.md`](docs/DELIVERY_ROADMAP.md). This repository roadmap
-remains the priority and policy source; the delivery roadmap defines concrete
-deliverables, automation, and exit criteria.
+Run clean install, same-version upgrade, focused suites, performance lanes,
+acceptance tours, and the full standard suite on one committed SHA.
 
-## Current Priorities
+### Migration rehearsal
 
-### P0: Simplify competition and portal workflows
+Status: **Automation implemented; approved backup required**
 
-Status: In progress
+Restore an approved production-like backup, compare invariants, and record the
+backup checksum, candidate SHA, timings, and reviewer sign-off.
 
-- Provide template-led setup for league, tournament-day, and cup formats.
-- Reduce user-facing lifecycle language to Draft, Ready, Live, and Finished while retaining richer internal states.
-- Keep stage graphs, schedule revisions, fairness tuning, and shared-day controls behind Advanced tools.
-- Make normal schedules preparable without manually managing stages, rounds, or progression mappings.
-- Keep the club portal task-first: teams, registrations, upcoming matches, and action items.
+### Security, recovery, and operations
 
-Success criterion: a normal competition can be configured, scheduled, and published without users understanding the underlying Odoo data model.
+Status: **Implemented; maintain as release gates**
 
-### P0: Maintain competition ownership boundaries
+Preserve role separation, portal ownership, immutable publication replacement,
+bounded job retry, retention evidence, recovery visibility, and source-owned
+correction workflows.
 
-Status: Complete for the current release
+### Accessibility and documentation
 
-- Keep registration, format, calendar, scheduling, schedule approval, and
-	match-day operations as explicit handovers.
-- Keep fairness, validation, publication, and operational commands in their
-	owning modules rather than recreating a shared orchestration facade.
-- Preserve immutable published snapshots, audit events, and optimistic
-	concurrency guards while extending the flow.
+Status: **Implemented; execution and continuous maintenance required**
 
-### P0: Release and migration confidence
+Qualify keyboard, mobile, accessible recovery, empty states, and real operator
+terminology. Keep menus, routes, OpenAPI contracts, workflows, module READMEs,
+and release runbooks synchronized with code.
 
-Status: In progress
+## Approval criteria
 
-- Keep strict lint, workflow-contract, constraint/index, OpenAPI, migration-evidence, and dependency-drift checks green.
-- Run module upgrades against a production-like database copy.
-- Record backup, restore, rollback, and migration evidence for each release candidate.
-- Resolve dependency-drift warnings before release, even when they are non-blocking.
+A candidate is approvable only when all RC lanes pass on the exact committed
+SHA, migration rehearsal passes on an approved backup, no release blocker
+remains, documentation matches the product, evidence is complete, and the
+release owner records sign-off.
 
-### P0: Security and ownership boundaries
+## Deferred expansion
 
-Status: Ongoing
-
-- Maintain negative cross-club and direct-ID access tests for every portal write route.
-- Keep elevated access centralized in `federation.portal.privilege`.
-- Extend secret redaction, token rotation, upload scanning, and audit-event coverage.
-- Require a security review for every new public, portal, or partner integration route.
-
-### P1: Background-job reliability
-
-Status: Planned
-
-- Standardize retry and backoff behavior.
-- Add dead-letter and operator recovery surfaces.
-- Alert on stale or repeatedly failing scheduled actions.
-- Link failures through correlation IDs.
-
-### P1: Retention evidence
-
-Status: Partially complete
-
-Default cleanup windows and scheduled actions exist for notification logs, inbound deliveries, and generated report artifacts. Remaining work is evidence and exception visibility.
-
-- Test policy-to-code retention mappings.
-- Surface last run, deleted count, and exceptions.
-- Include retention health in release readiness.
-
-### P1: Test strategy and CI runtime
-
-Status: In progress
-
-- Maintain smoke, contract, focused-module, and release-candidate tiers.
-- Keep ownership, optimistic-concurrency, migration, and production-like
-	restore-drill checks mandatory.
-- Pin lint-tool versions so local and CI behavior remain identical.
-- Track suite runtime and quarantine only with an owner and expiry date.
-
-### P1: Documentation governance
-
-Status: In progress
-
-- Keep `ROADMAP.md`, `ROUTE_INVENTORY.md`, `INTEGRATION_CONTRACTS.md`, `DATA_RETENTION_POLICY.md`, and accepted ADRs within their freshness budget.
-- Update documentation in the same change as routes, contracts, state transitions, retention, or architecture decisions.
-- Prefer durable policy documents over one-line release-candidate roadmaps.
-
-### P2: Accessibility and usability
-
-Status: Planned
-
-- Add route-level accessibility checks for primary portal and public journeys.
-- Cover keyboard-only planner and operations-board scenarios.
-- Add terminology consistency checks for user-facing labels.
-- Expand deterministic training and sandbox scenarios.
-
-### P2: Operational dashboards
-
-Status: Planned
-
-- Consolidate release gates, job health, retention evidence, integration failures, and recovery readiness.
-- Provide actionable remediation links rather than passive status metrics.
-
-## Completed Foundations
-
-The repository already contains substantial foundations that should be maintained rather than reimplemented:
-
-- workflow state contract validation
-- constraint and index contract validation
-- migration review evidence checks
-- OpenAPI contract validation
-- portal ownership and negative access suites
-- result-control separation of duties
-- schedule revisions, optimistic concurrency, idempotency, and planner history
-- versioned extension contracts and fault isolation
-- correlation IDs in key operational paths
-- performance smoke and production-like tournament simulations
-
-## Release Review Checklist
-
-At every release:
-
-1. Re-rank current priorities using incidents, operator feedback, and test evidence.
-2. Move genuinely completed work to release notes rather than growing a permanent completed backlog here.
-3. Review contract deprecations and target dates.
-4. Review route ownership, ADRs, retention, and dependency drift.
-5. Record any deferred P0 item with an owner, reason, and target release.
+No new format, dashboard, integration, or workflow breadth enters the first
+candidate. Product expansion resumes after release feedback is reviewed.
 
 ====================================================================================================
 FILE: ROUTE_INVENTORY.md
-SIZE: 5929
-CONTENT-LENGTH: 5929
-SHA256: d4048f61d6378a5991389c50d563031fcd8f6fe11ad54246f94856a6c123ae93
+SIZE: 6232
+CONTENT-LENGTH: 6232
+SHA256: 425cacfc56b7aaae29cf7690bc6df1971dcd8a5b733aafddf7fc1602fc9daa25
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -2940,20 +2847,20 @@ The machine-readable route inventory and controller tests remain the authoritati
 
 ### Tournament operations board
 
-- `GET /sports/tournament/<tournament_id>/operations`
+- `GET /sports/competitions/<tournament_id>/operations`
   - Owner: `sports_federation_portal`
   - Controller: `FederationTournamentOperationsPortal.portal_tournament_operations_page`
   - Downstream boundary: tournament operations access resolver
   - Purpose: authenticated operations-board shell
 
-- `POST /sports/tournament/<tournament_id>/operations/data`
+- `POST /sports/competitions/<tournament_id>/operations/data`
   - Owner: `sports_federation_portal`
   - Controller: `FederationTournamentOperationsPortal.portal_tournament_operations_data`
   - Downstream boundary: `federation.tournament._operations_get_payload`
   - Purpose: scoped JSON-RPC board payload
   - Safeguards: authenticated user, CSRF, model-owned access scope
 
-- `POST /sports/tournament/<tournament_id>/operations/matches/<match_id>/action`
+- `POST /sports/competitions/<tournament_id>/operations/matches/<match_id>/action`
   - Owner: `sports_federation_portal`
   - Controller: `FederationTournamentOperationsPortal.portal_tournament_operations_action`
   - Downstream boundary: tournament operations action service
@@ -2990,9 +2897,9 @@ Canonical public competition pages and match-day publication views are owned by 
 
 Critical public contracts include:
 
-- `GET /api/v1/tournaments/<slug>/feed`
-- `GET /tournaments/<slug>/schedule.ics`
-- `POST /tournaments/<slug>/register`
+- `GET /api/v1/competitions/<edition-slug>`
+- `GET /competitions/<edition-slug>/divisions/<division-slug>/schedule.ics`
+- `POST /competitions/<edition-slug>/register?division_id=<division-id>`
 
 Public reads must enforce applicable publication flags. Public registration writes must use the shared registration model boundary.
 
@@ -3051,6 +2958,13 @@ The previous `/web/login` entry was removed from this inventory because no match
 
 The former tournament-workspace and tournament-operations URLs are temporary
 redirects and are not data sources.
+
+
+## Public competition data API
+
+- `GET /api/v1/competitions`: public competition index.
+- `GET /api/v1/competitions/<edition_slug>`: complete published competition feed.
+- `GET /my/data-api`: authenticated club tutorial.
 
 ====================================================================================================
 FILE: STATE_AND_OWNERSHIP_MATRIX.md
@@ -3135,9 +3049,9 @@ Use the model enums below in code, docs, and tests:
 
 ====================================================================================================
 FILE: TECHNICAL_NOTE.md
-SIZE: 45059
-CONTENT-LENGTH: 44999
-SHA256: 6b46a6871cdf23c7bd43f3aee1c271dd30e5d5d72bb9149fed449110c66c92e7
+SIZE: 45071
+CONTENT-LENGTH: 45011
+SHA256: d2343cf7c801f6cc2f608ea143a83f7a6d928fc47fc30291125439f9d8448f36
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -3676,7 +3590,7 @@ Portal patterns
 - Use a dedicated `federation.club.representative` model to map `res.users` → `federation.club` for portal ownership and record rules.
 - Controllers must perform ownership validation (`_get_clubs_for_user()`) before writes. Record rules are enforcement, controllers are defense-in-depth.
 - ORM-level ownership constraints should mirror controller checks for portal-created registrations so bypassing a controller does not widen access.
-- The tournament operations board (`/sports/tournament/<id>/operations`) extends these patterns with an Owl frontend. Portal access requires provable tournament-scoped activity (registration, participant, or visible match). Writes delegate to existing result-control action methods. The Owl app uses standalone `mount()` from `@odoo/owl`, not the backend webclient `mountComponent`, since it runs inside the website/portal frontend context. It mounts immediately so the board can render its own loading and error states, applies a 30-second timeout to the first payload fetch, and relies on a server-side payload that includes ranked action-queue rows, court summaries, next-step hints, and schedule labels so the browser stays presentation-focused.
+- The tournament operations board (`/sports/competitions/<edition-slug>/operations`) extends these patterns with an Owl frontend. Portal access requires provable tournament-scoped activity (registration, participant, or visible match). Writes delegate to existing result-control action methods. The Owl app uses standalone `mount()` from `@odoo/owl`, not the backend webclient `mountComponent`, since it runs inside the website/portal frontend context. It mounts immediately so the board can render its own loading and error states, applies a 30-second timeout to the first payload fetch, and relies on a server-side payload that includes ranked action-queue rows, court summaries, next-step hints, and schedule labels so the browser stays presentation-focused.
 
 Public site
 
@@ -3868,9 +3782,9 @@ Competition editions expose Draft, Ready, Live, and Finished presentation states
 
 ====================================================================================================
 FILE: TESTING_GUIDE.md
-SIZE: 16787
-CONTENT-LENGTH: 16581
-SHA256: f19f72a77426acf51c85ded083584d836afb23af798cf9723b997648a5d51c2e
+SIZE: 16788
+CONTENT-LENGTH: 16582
+SHA256: d0b469190026b2d7c6b38e2ca41dbce2c15732c60d809b7b2ed006a869a9b4f3
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -3937,7 +3851,7 @@ from odoo.tests.common import HttpCase, tagged
 @tagged("-at_install", "post_install")
 class TestPublicSiteHttpSmoke(HttpCase):
     def test_tournaments_list_returns_200(self):
-        response = self.url_open("/tournaments")
+        response = self.url_open("/competitions")
         self.assertEqual(response.status_code, 200)
 ```
 
@@ -4326,9 +4240,9 @@ Do not remove a check merely to accommodate unexplained migration drift.
 
 ====================================================================================================
 FILE: TROUBLESHOOTING.md
-SIZE: 13567
-CONTENT-LENGTH: 13484
-SHA256: 263f32077dd46a75aec4d6aee173880e9efcc6ccb8bf2d2f91744ed4f61753d1
+SIZE: 13934
+CONTENT-LENGTH: 13851
+SHA256: 4a69d0201e3197eac147b39054979a0a3073fb63a236170ea37ba053061d45b8
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -4723,6 +4637,15 @@ If none of the above applies:
    reproduce the issue.
 4. Open a bug report in the project tracker with the log excerpt, module
    version (`__manifest__.py` `version` field), and reproduction steps.
+
+
+## RC install exits with only gettext warnings
+
+The gettext warning is not the failing test. Odoo output is stored in `odoo-rc.log`; exit code 1 means installation or tests failed. The runner prints the decisive log tail. Also inspect the `odoo-rc-logs` artifact. Reproduce with:
+
+```bash
+ODOO_LOGFILE="$PWD/odoo-rc.log" scripts/ci/run_rc_validation.sh install
+```
 
 ====================================================================================================
 FILE: _workflows/WORKFLOW_APPEAL_DISPUTE.md
@@ -6024,9 +5947,9 @@ consistent operator model:
 
 ====================================================================================================
 FILE: _workflows/WORKFLOW_MATCH_DAY_OPERATIONS.md
-SIZE: 16996
-CONTENT-LENGTH: 16910
-SHA256: 465be49e946c0bd776805b284f95b2338d7ae3b28e7d49278322f8bc0c22d19d
+SIZE: 17020
+CONTENT-LENGTH: 16934
+SHA256: 8242285f402cf1955060d4ba2d2dd00243ad194979a44991c9bc59196cd4fbcf
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -6052,7 +5975,7 @@ Primary surfaces by phase:
    tasks, and the backend **Gameday Planner** is the staff-only day-level
    surface for slot assignment and final one-day adjustments.
 - **Live operations** — use the **Live Operations Board** at
-   `/sports/tournament/<id>/operations` once matches are underway.
+   `/sports/competitions/<edition-slug>/operations` once matches are underway.
 - **Result follow-up** — use the portal **Result Follow-Up Queue** after full
    time when results still need approval, contests, or standings follow-up.
    Backend match and tournament records are specialist follow-up surfaces, not
@@ -6280,7 +6203,7 @@ Match: draft → scheduled → in_progress → done
 
 ## Tournament Operations Board
 
-A live operations board is available at `/sports/tournament/<id>/operations` for tournament day use:
+A live operations board is available at `/sports/competitions/<edition-slug>/operations` for tournament day use:
 
 - **Audience**: tournament organizers, court managers, result table volunteers, federation admins.
 - **Access**: portal users with provable tournament-scoped activity (registration, participant record, or visible match in club/team scope); internal federation staff via their normal Odoo session.
@@ -6820,9 +6743,9 @@ Player:  active → suspended → active (reinstatement)
 
 ====================================================================================================
 FILE: _workflows/WORKFLOW_PUBLIC_PUBLICATION.md
-SIZE: 8445
-CONTENT-LENGTH: 8425
-SHA256: 4cc4aeb2bec39e89ef6f1716d0770058f9c8f60ef64141207e620c81ee17ac88
+SIZE: 8542
+CONTENT-LENGTH: 8522
+SHA256: 1a8662806085c5bcf8a856c94c463ed1b03bf17c4adf66988938d184821bb86e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -6945,15 +6868,15 @@ Canonical public surfaces include:
 
 | URL | Content |
 |-----|---------|
-| `/tournaments` | Main tournament hub with featured, live, recent, and archived sections |
+| `/competitions` | Main tournament hub with featured, live, recent, and archived sections |
 | `/competitions/<edition-slug>` | Canonical competition edition overview page |
-| `/tournaments/<slug>/teams` | Published participant list excluding withdrawn entries |
-| `/tournaments/<slug>/standings` | Public standings page when enabled |
-| `/tournaments/<slug>/results` | Approved public results when enabled |
-| `/tournaments/<slug>/schedule` | Upcoming fixtures |
-| `/tournaments/<slug>/bracket` | Public bracket view when bracket data exists |
-| `/tournaments/<slug>/schedule.ics` | Tournament schedule calendar export |
-| `/api/v1/tournaments/<slug>/feed` | Stable v1 JSON feed |
+| `/competitions/<edition-slug>/teams` | Published participant list excluding withdrawn entries |
+| `/competitions/<edition-slug>/standings` | Public standings page when enabled |
+| `/competitions/<edition-slug>/results` | Approved public results when enabled |
+| `/competitions/<edition-slug>/schedule` | Upcoming fixtures |
+| `/competitions/<edition-slug>/bracket` | Public bracket view when bracket data exists |
+| `/competitions/<edition-slug>/divisions/<division-slug>/schedule.ics` | Tournament schedule calendar export |
+| `/api/v1/competitions/<edition-slug>` | Stable v1 JSON feed |
 | `/seasons/<slug>` | Season landing page with editorial and tournament aggregation |
 | `/teams/<slug>` | Public team profile page |
 | `/teams/<slug>/schedule` | Team-centric grouped upcoming schedule |
@@ -6962,7 +6885,7 @@ Canonical public surfaces include:
 | `/api/v1/teams/<slug>/feed` | Stable v1 team follow feed |
 
 Older `/competitions` and numeric routes remain as compatibility paths, but the
-authoritative public URLs are the slug-based `/tournaments/...` routes.
+authoritative public URLs are the slug-based `/competitions/...` routes.
 Compatibility routes only redirect while the tournament still matches the
 relevant publication guard; unpublished tournaments fail closed instead of
 resolving through direct slug or numeric paths. Season detail routes apply the
@@ -7001,7 +6924,7 @@ As the tournament progresses:
 | Tournament results visibility enabled | Optional | `public_site` |
 | Standings record website-published | Yes, for standings page | `standings` |
 | Tournament standings visibility enabled | Optional | `public_site` |
-| Editorial item linked to season/tournament/team | Yes, for editorial content | `public_site` |
+| Editorial item linked to season/competition-division/team | Yes, for editorial content | `public_site` |
 | Editorial item publish window valid | Yes, when scheduling | `public_site` |
 
 ## Exception and Recovery Model
@@ -7010,7 +6933,7 @@ As the tournament progresses:
   an approved exception path.
 - If results are disputed or corrected after publication, treat public
   visibility as a recovery loop: rollback visibility if required, resolve the
-  dispute and approval chain, then republish standings/tournament surfaces from
+  dispute and approval chain, then republish standings/competition surfaces from
   the owning records.
 
 ## Access Control
@@ -7033,9 +6956,9 @@ redirects, rendering, or feed and registration reads.
 
 ====================================================================================================
 FILE: _workflows/WORKFLOW_RESULT_PIPELINE.md
-SIZE: 7144
-CONTENT-LENGTH: 7110
-SHA256: d5810a281d609680df4aca57ea98b94c2fa989b9249c04d644ce7a5534305150
+SIZE: 7517
+CONTENT-LENGTH: 7471
+SHA256: d68963c10b29e838e16de19d71464cb41d5c1fdd6b639ec9744bebbadf0375fd
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -7064,6 +6987,10 @@ data-entry errors and disputed scores from corrupting competition tables.
 | `sports_federation_public_site` | Publishing approved results publicly |
 | `mail` | Chatter audit trail on matches |
 
+## Verified UI navigation
+
+Backend users open **Federation → Planning → Advanced Records → Matches**. Club representatives use **My Account → Results**. Standings are under **Federation → Publication → Standings**. Result Control adds buttons to the match form; it does not add a separate Results menu.
+
 ## Step-by-Step Flow
 
 ### 1. Score Entry
@@ -7085,7 +7012,7 @@ At this point the result is entered but **not yet official**.
 1. Click **Submit Result** on the match form.
 2. `result_state` transitions from `draft` → `submitted`.
 3. `result_submitted_by_id` and `result_submitted_on` are recorded automatically.
-4. The result is now in the verification queue.
+4. The submitted result remains on the match record and is ready for users in the Result Verifier group.
 5. A todo activity is created for each user in the Result Verifier group.
 
 ### 3. Result Verification
@@ -7608,9 +7535,9 @@ License: draft → active → expired
 
 ====================================================================================================
 FILE: _workflows/WORKFLOW_STANDINGS_LIFECYCLE.md
-SIZE: 6880
-CONTENT-LENGTH: 6858
-SHA256: 86e83a191263b79c6c7853d709420122651e9df47981ed344187fff6581ca353
+SIZE: 6889
+CONTENT-LENGTH: 6867
+SHA256: 5f4f4090720ce7beaeb793767efd8dae49614b26c3b90434ad07c34f150aa2f3
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -7731,7 +7658,7 @@ provides a human review checkpoint:
 1. With standings in `computed` or `frozen` state, publish the record from the
    Website tab.
 2. `website_published` is set to `True`.
-3. The standings page at `/tournaments/<slug>/standings` now reflects the
+3. The standings page at `/competitions/<edition-slug>/standings` now reflects the
    table.
 
 If `sports_federation_notifications` is installed, a notification is dispatched
@@ -7786,9 +7713,9 @@ When a result is contested after standings have been computed:
 
 ====================================================================================================
 FILE: _workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md
-SIZE: 13078
-CONTENT-LENGTH: 13020
-SHA256: 7006557805831eab890948323e37d682c5927710a716dc892c72b811761ea024
+SIZE: 13371
+CONTENT-LENGTH: 13307
+SHA256: 11d7ca4871c052911bf5c52d833dbc3299f598440aa57e75114da763d970048b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -7840,6 +7767,10 @@ Blocking vs warning-only model:
 | `sports_federation_standings` | Standings computation at each stage |
 | `sports_federation_notifications` | Participant-confirmation and publication notifications |
 | `sports_federation_public_site` | Public publication of tournament pages |
+
+## Verified UI navigation
+
+Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md). The main journey is under **Federation → Competition Workflow**; addon names below describe ownership, not menu labels.
 
 ## Step-by-Step Flow
 
@@ -8008,7 +7939,7 @@ including byes and future-round wiring for non-power-of-two participant counts.
    scaffold common stage/group/progression combinations (for recurring
    tournaments). Use `action_apply()` from the template to create stages and
    progression rules for a tournament in a single step.
-5. Generate the next stage's schedule using competition engine wizards.
+5. Generate the next stage in **Federation → Competition Workflow → Format Studio**, then assign it in **Schedule Planner**.
 6. Typical workflow: freeze the round-robin standing, auto-advance the top-ranked
    teams into the knockout stage through a `federation.stage.progression` rule,
    then schedule those knockout matches onto the planned knockout rounds.
@@ -8037,7 +7968,7 @@ including byes and future-round wiring for non-power-of-two participant counts.
    results are still pending or whether website publication is the next valid
    step.
 4. Participant club and team contacts receive a tournament-publication email the first time the tournament is published.
-5. Public pages become available at `/tournaments/<slug>` and the related
+5. Public pages become available at `/competitions/<edition-slug>` and the related
    canonical `/competitions/...` route family.
 
 ## State Diagram
@@ -9191,71 +9122,95 @@ print("Phases 3-5 contract passed.")
 
 ====================================================================================================
 FILE: ci/check_competition_ui_workflow.py
-SIZE: 2478
-CONTENT-LENGTH: 2478
-SHA256: 9d7f689368e20e5c2022a3f680abb34970cbab32e4cb9ca4e8366da5a3c54554
-GIT-MODE: 100644
+SIZE: 2954
+CONTENT-LENGTH: 2954
+SHA256: 8f990157e20901b443229b3edb1799a86ef9649975a872cd295d688ac468506d
+GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: untracked
+GIT-STATE: modified
 ====================================================================================================
 
 #!/usr/bin/env python3
 from pathlib import Path
 import sys
 from lxml import etree
-ROOT=Path(__file__).resolve().parents[1]
-GUIDE=ROOT/"docs/COMPETITION_UI_WORKFLOW.md"
-PATHS=(
-("Federation","Setup","Seasons"),
-("Federation","Setup","Competition Setup","Competition Templates"),
-("Federation","Setup","Competition Setup","Season Competitions"),
-("Federation","Competition Workflow","Create Competition"),
-("Federation","Competition Workflow","Competition Overview"),
-("Federation","Competition Workflow","Registration Desk"),
-("Federation","Competition Workflow","Format Studio"),
-("Federation","Competition Workflow","Calendar Planner"),
-("Federation","Competition Workflow","Schedule Planner"),
-("Federation","Competition Workflow","Schedule Review Queue"),
-("Federation","Competition Workflow","Match-Day Control"),
-("Federation","Planning","Advanced Records","Matches"),
-("Federation","Publication","Approved Schedules"),
-("Federation","Publication","Schedule Publications"),
-("Federation","Publication","Standings"),
-("Federation","Administration","Reporting","Operational Health"),
-("Federation","Administration","Operational Job Health"),
+
+ROOT = Path(__file__).resolve().parents[1]
+GUIDE = ROOT / "docs/COMPETITION_UI_WORKFLOW.md"
+PATHS = (
+    ("Federation", "Setup", "Seasons"),
+    ("Federation", "Setup", "Competition Setup", "Competition Templates"),
+    ("Federation", "Setup", "Competition Setup", "Season Competitions"),
+    ("Federation", "Competition Workflow", "Create Competition"),
+    ("Federation", "Competition Workflow", "Competition Overview"),
+    ("Federation", "Competition Workflow", "Registration Desk"),
+    ("Federation", "Competition Workflow", "Format Studio"),
+    ("Federation", "Competition Workflow", "Calendar Planner"),
+    ("Federation", "Competition Workflow", "Schedule Planner"),
+    ("Federation", "Competition Workflow", "Schedule Review Queue"),
+    ("Federation", "Competition Workflow", "Match-Day Control"),
+    ("Federation", "Planning", "Advanced Records", "Matches"),
+    ("Federation", "Publication", "Approved Schedules"),
+    ("Federation", "Publication", "Schedule Publications"),
+    ("Federation", "Publication", "Standings"),
+    ("Federation", "Administration", "Reporting", "Operational Health"),
+    ("Federation", "Administration", "Operational Job Health"),
 )
+
+
 def index():
- records={}
- for path in ROOT.glob("sports_federation_*/views/*.xml"):
-  try:tree=etree.parse(str(path))
-  except etree.XMLSyntaxError:continue
-  module=path.parts[-3]
-  for node in tree.xpath("//menuitem"):
-   rid=node.get("id");xmlid=rid if "." in rid else f"{module}.{rid}"
-   parent=node.get("parent","");parent=parent if not parent or "." in parent else f"{module}.{parent}"
-   records[xmlid]={"name":node.get("name",""),"parent":parent}
- return records
-def exists(records,labels):
- for xid,record in records.items():
-  if record["name"]!=labels[-1]:continue
-  names=[record["name"]];parent=record["parent"]
-  while parent in records:
-   record=records[parent];names.append(record["name"]);parent=record["parent"]
-  if tuple(reversed(names))==labels:return True
- return False
+    records = {}
+    for path in ROOT.glob("sports_federation_*/views/*.xml"):
+        try:
+            tree = etree.parse(str(path))
+        except etree.XMLSyntaxError:
+            continue
+        module = path.parts[-3]
+        for node in tree.xpath("//menuitem"):
+            rid = node.get("id")
+            xmlid = rid if "." in rid else f"{module}.{rid}"
+            parent = node.get("parent", "")
+            parent = parent if not parent or "." in parent else f"{module}.{parent}"
+            records[xmlid] = {"name": node.get("name", ""), "parent": parent}
+    return records
+
+
+def exists(records, labels):
+    for xid, record in records.items():
+        if record["name"] != labels[-1]:
+            continue
+        names = [record["name"]]
+        parent = record["parent"]
+        while parent in records:
+            record = records[parent]
+            names.append(record["name"])
+            parent = record["parent"]
+        if tuple(reversed(names)) == labels:
+            return True
+    return False
+
+
 def main():
- records=index();guide=GUIDE.read_text();errors=[]
- for labels in PATHS:
-  rendered=" > ".join(labels)
-  if not exists(records,labels):errors.append(f"menu path missing: {rendered}")
-  if rendered not in guide:errors.append(f"guide path missing: {rendered}")
- if errors:
-  print("Competition UI workflow contract failed:", file=sys.stderr)
-  for error in errors:
-   print(f"- {error}", file=sys.stderr)
-  return 1
- print("Competition UI workflow menu paths passed.");return 0
-if __name__=="__main__":raise SystemExit(main())
+    records = index()
+    guide = GUIDE.read_text()
+    errors = []
+    for labels in PATHS:
+        rendered = " > ".join(labels)
+        if not exists(records, labels):
+            errors.append(f"menu path missing: {rendered}")
+        if rendered not in guide:
+            errors.append(f"guide path missing: {rendered}")
+    if errors:
+        print("Competition UI workflow contract failed:", file=sys.stderr)
+        for error in errors:
+            print(f"- {error}", file=sys.stderr)
+        return 1
+    print("Competition UI workflow menu paths passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
 ====================================================================================================
 FILE: ci/check_constraint_index_contracts.py
@@ -10472,9 +10427,9 @@ print("Officiating and legacy-match contract passed.")
 
 ====================================================================================================
 FILE: ci/check_openapi_contracts.py
-SIZE: 10659
-CONTENT-LENGTH: 10557
-SHA256: 885ad49c6f9805dfab5441a1e255264c027c039c74223302bd51a062abbe4e7c
+SIZE: 10698
+CONTENT-LENGTH: 10596
+SHA256: 835027e1f06852d15a49c48e0053066061d67b31d34e9f5d849ff60efd9b9a5f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -10514,8 +10469,8 @@ INTEGRATION_GOLDEN_EXAMPLES_PATH = (
     REPO_ROOT / "openapi" / "examples" / "INTEGRATION_GOLDEN_EXAMPLES.md"
 )
 PUBLIC_FEEDS_REQUIRED_PATHS = {
-    "/api/v1/tournaments/{slug}/feed": {"get"},
-    "/tournaments/{slug}/schedule.ics": {"get"},
+    "/api/v1/competitions/{edition_slug}": {"get"},
+    "/competitions/{edition_slug}/divisions/{division_slug}/schedule.ics": {"get"},
 }
 
 
@@ -11063,12 +11018,12 @@ if __name__ == "__main__":
 
 ====================================================================================================
 FILE: ci/check_public_competition_contract.py
-SIZE: 2476
-CONTENT-LENGTH: 2476
-SHA256: 3269d44a825744f3ba8a83d060f3ac32b803219e23fe006fd67db2ecf9e06b74
+SIZE: 3091
+CONTENT-LENGTH: 3091
+SHA256: 60cf27ab200ca68e7bf65166c9672a1941ed14ad95ef26f3b5510abb0c6a1ec2
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -11095,6 +11050,16 @@ portal_templates = (
 legacy_controller = (
     ROOT / "sports_federation_public_site/controllers/public_competitions.py"
 ).read_text()
+public_sources = "\n".join(
+    path.read_text(encoding="utf-8")
+    for base in (
+        ROOT / "sports_federation_public_site",
+        ROOT / "sports_federation_portal",
+    )
+    for path in base.rglob("*")
+    if path.suffix in {".py", ".xml", ".js"}
+)
+
 checks = {
     "edition publication boundary": '("website_published", "=", True)' in queries,
     "division ownership": "division.edition_id == edition" in queries,
@@ -11103,11 +11068,20 @@ checks = {
     "immutable publication match boundary": '("schedule_publication_id", "=", publication.id)'
     in schedule,
     "edition routes": "/competitions/<string:edition_slug>" in controller,
+    "no tournament route namespace": all(
+        token not in public_sources
+        for token in (
+            "/" + "tournaments",
+            "/" + "tournament/",
+            "/api/v1/" + "tournaments",
+        )
+    ),
+    "competition registration route": "/competitions/<string:edition_slug>/register"
+    in legacy_controller,
+    "competition division calendar route": "/competitions/<string:edition_slug>/divisions/<string:division_slug>/schedule.ics"
+    in legacy_controller,
     "single competition hub owner": (
         '@http.route(["/competitions"]' not in legacy_controller
-    ),
-    "single tournament redirect owner": (
-        '["/tournaments", "/tournaments/page/<int:page>"]' not in legacy_controller
     ),
     "no legacy competition overview alias": (
         "\"/competitions/<model('federation.tournament'):tournament>\","
@@ -11135,12 +11109,12 @@ print("Public competition contract passed.")
 
 ====================================================================================================
 FILE: ci/check_public_route_cutover_docs.py
-SIZE: 909
-CONTENT-LENGTH: 909
-SHA256: bb678586d242d17bc4a84e635b540b803589c5441dd153f8d44c6d29196cae9b
+SIZE: 1124
+CONTENT-LENGTH: 1124
+SHA256: 9457774a391c35ff8d4357b746cf70e950882dca9ebc49262ad1bcedc7803761
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -11148,24 +11122,29 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-checks = {
-    "ADR canonical namespace": "/competitions"
-    in (ROOT / "adr/0003-public-route-ownership.md").read_text(),
-    "route inventory canonical namespace": "under `/competitions`"
-    in (ROOT / "ROUTE_INVENTORY.md").read_text(),
-    "public workflow canonical edition route": "/competitions/<edition-slug>"
-    in (ROOT / "_workflows/WORKFLOW_PUBLIC_PUBLICATION.md").read_text(),
-    "integration deprecates tournament pages": "`/tournaments`, `/tournaments/<slug>`"
-    in (ROOT / "INTEGRATION_CONTRACTS.md").read_text(),
-}
-failed = [name for name, passed in checks.items() if not passed]
-if failed:
+contracts = (ROOT / "INTEGRATION_CONTRACTS.md").read_text(encoding="utf-8")
+inventory = (ROOT / "ROUTE_INVENTORY.md").read_text(encoding="utf-8")
+readme = (ROOT / "sports_federation_public_site/README.md").read_text(encoding="utf-8")
+forbidden = ("/" + "tournaments", "/" + "tournament/", "/api/v1/" + "tournaments")
+failures = []
+for name, content in (
+    ("integration contracts", contracts),
+    ("route inventory", inventory),
+    ("public-site README", readme),
+):
+    for token in forbidden:
+        if token in content:
+            failures.append(f"{name} still documents removed route {token}")
+for token in ("/api/v1/competitions", "/competitions/<edition-slug>"):
+    if token not in contracts + inventory + readme:
+        failures.append(f"canonical competition route is undocumented: {token}")
+if failures:
     print(
-        "Public route cutover documentation failed: " + ", ".join(failed),
+        "Public route namespace documentation failed: " + "; ".join(failures),
         file=sys.stderr,
     )
     raise SystemExit(1)
-print("Public route cutover documentation passed.")
+print("Public route namespace documentation passed.")
 
 ====================================================================================================
 FILE: ci/check_publication_integrity_contract.py
@@ -11566,12 +11545,12 @@ print("Release-focus contract passed.")
 
 ====================================================================================================
 FILE: ci/check_release_qualification.py
-SIZE: 1957
-CONTENT-LENGTH: 1957
-SHA256: 9de0f004288705fc9ad65e802d42f40ef342b2019c46069ff864d977d5ab165d
+SIZE: 1976
+CONTENT-LENGTH: 1976
+SHA256: 7dfadfe4ff8e326c4cf6e0f715ba68416a07d658e84657ba3e3d2a19e300691e
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -11585,7 +11564,7 @@ rc_script = (ROOT / "scripts/ci/run_rc_validation.sh").read_text(encoding="utf-8
 workflow = (ROOT / ".github/workflows/release-candidate.yml").read_text(
     encoding="utf-8"
 )
-acceptance = (ROOT / "docs/release/COMPETITION_CUTOVER_ACCEPTANCE.md").read_text(
+acceptance = (ROOT / "docs/release/COMPETITION_ACCEPTANCE.md").read_text(
     encoding="utf-8"
 )
 stabilization_plan = (ROOT / "docs/release/POST_CUTOVER_PHASES.md").read_text(
@@ -11599,18 +11578,18 @@ checks = {
     "upgrade precondition": "assert_modules_installed" in rc_script,
     "workflow upgrade execution": "run_rc_validation.sh upgrade" in workflow,
     "workflow public execution": "run_rc_validation.sh public" in workflow,
-    "acceptance exact commit evidence": "Candidate commit SHA" in acceptance,
-    "acceptance route cutover evidence": "/competitions" in acceptance
-    and "/tournaments" in acceptance,
+    "acceptance candidate evidence": "candidate commit" in acceptance.lower(),
+    "single competition namespace evidence": "/competitions"
+    in (ROOT / "ROUTE_INVENTORY.md").read_text(encoding="utf-8"),
     "acceptance full lifecycle": all(
-        token in acceptance
+        token in acceptance.lower()
         for token in (
-            "Registration",
-            "Format and fixtures",
-            "Calendar and scheduling",
-            "Approval and publication",
-            "Match-day operations",
-            "Results and standings",
+            "registration",
+            "format and fixtures",
+            "calendar and scheduling",
+            "approval and publication",
+            "match-day operations",
+            "results and standings",
         )
     ),
     "post-cutover decision gate": all(
@@ -14918,7 +14897,7 @@ sys.exit(1 if errors else 0)
 FILE: ci/test_capture_release_evidence.py
 SIZE: 502
 CONTENT-LENGTH: 502
-SHA256: 95fc4b421d21a8ae69e7af4b514d36d7139ff2a468590c9b5b3b3392eb0974a3
+SHA256: e514337bae1382d4363b5dea8897391a73d28ccfc8f7428cd918174608d77646
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -14938,7 +14917,7 @@ def test_sha256(tmp_path):
     path.write_bytes(b"release-evidence")
     assert (
         module.sha256(path)
-        == "c614426d3275f5c86e8926536ed0c24fc37d8044ea5dafc3f6be80e51657f6a7"
+        == "86d2013e196c2988bd1058ee04da96a95ff8dc094d511295329b207e74eb88b6"
     )
 
 ====================================================================================================
@@ -15218,15 +15197,17 @@ print(f"Size: {OUTPUT.stat().st_size / 1024 / 1024:.2f} MB")
 
 ====================================================================================================
 FILE: docs/COMPETITION_ENGINE_ROADMAP.md
-SIZE: 1036
-CONTENT-LENGTH: 1036
-SHA256: bccb5e950fabbbaefff9e810054114a138dc542715f495aaffc1a7bf4a3d7711
+SIZE: 1191
+CONTENT-LENGTH: 1189
+SHA256: 179811da31e4ac1f069730607f918a3f68b304c8ef4080278c3e630384616890
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
 # Competition Engine Product Roadmap
+
+> **UI terminology:** the actual backend menu is **Federation → Competition Workflow**. See [`COMPETITION_UI_WORKFLOW.md`](COMPETITION_UI_WORKFLOW.md).
 
 Owner: Federation Competition Operations
 Last updated: 2026-09-03
@@ -15288,7 +15269,7 @@ CONTENT-LENGTH: 10699
 SHA256: cd08e472281fa27aa4999aa4f0206a44e569cde6e1abcb981f0b34229033f40a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 # Competition Workflow in the User Interface
@@ -15586,9 +15567,9 @@ Use source links to correct business records in their owning workflow. Retry onl
 
 ====================================================================================================
 FILE: docs/DELIVERY_ROADMAP.md
-SIZE: 8695
-CONTENT-LENGTH: 8685
-SHA256: 0a94ec5ae5a7087aa9739775c82933a3d83d0f3270a0ecffa74e2da6517e6157
+SIZE: 8685
+CONTENT-LENGTH: 8675
+SHA256: 42be6fb8c7e87798d70090bf3701f695b00991e74f043c8110615509842c8fc1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -15771,7 +15752,7 @@ is safe.
 
 ## Retention Evidence and Recovery Visibility
 
-Status: **Partially implemented**
+Status: **Implemented**
 
 ### Objective
 
@@ -15851,10 +15832,40 @@ immutability, and release validation must not be weakened to accommodate
 implementation drift.
 
 ====================================================================================================
+FILE: docs/PUBLIC_COMPETITION_API.md
+SIZE: 640
+CONTENT-LENGTH: 640
+SHA256: 4ac7fd1a66c99519f4841d85699799aba84783304e8a8313b8b61c8c92ac3ba8
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: untracked
+====================================================================================================
+
+# Public Competition API
+
+Owner: Federation Platform Team
+Last updated: 2026-09-04
+
+Clubs can consume non-sensitive published data through:
+
+```text
+GET /api/v1/competitions
+GET /api/v1/competitions/<edition-slug>
+```
+
+The detail feed aggregates published divisions, teams, schedule sections,
+approved results, standings, brackets, and canonical links. It excludes contact
+details, personal data, internal notes, discipline records, unpublished
+schedules, and unapproved results.
+
+Responses advertise contract version `v1` and allow 60-second caching. Club
+representatives use **My Account > Data API** or `/my/data-api` for live examples.
+
+====================================================================================================
 FILE: docs/README.md
-SIZE: 1750
-CONTENT-LENGTH: 1750
-SHA256: cbfcc9e7ea3b6f06ed2e553f389f08ab8385a748339fececb1d819fc596e633a
+SIZE: 2062
+CONTENT-LENGTH: 2062
+SHA256: 51d04f10db9ba7eb03690c645993e49cb9f8bdae1ecb434ad7c53cc907408150
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -15885,7 +15896,6 @@ below.
 - [Route inventory](../ROUTE_INVENTORY.md)
 - [Module ownership](../MODULE_OWNERS.yaml)
 - [Architecture decisions](../adr/README.md)
-- [OpenAPI contracts](../openapi/integration_v1.yaml)
 
 ## Workflows
 
@@ -15908,6 +15918,14 @@ roadmap or a standalone review snapshot for routine changes.
 - [Foundation source-truth contract](workflow_source_truth.md)
 
 - [Delivery roadmap](DELIVERY_ROADMAP.md): executable post-stabilization milestones and exit criteria.
+
+- [Competition UI workflow](COMPETITION_UI_WORKFLOW.md)
+- [Release candidate roadmap](RELEASE_CANDIDATE_ROADMAP.md)
+- [Competition engine roadmap](COMPETITION_ENGINE_ROADMAP.md)
+- [Competition operations QoL roadmap](COMPETITION_OPERATIONS_QOL_ROADMAP.md)
+- [Release pilot scenario](RELEASE_PILOT_SCENARIO.md)
+
+- [Public competition API](PUBLIC_COMPETITION_API.md)
 
 ====================================================================================================
 FILE: docs/RELEASE_CANDIDATE_ROADMAP.md
@@ -15957,7 +15975,7 @@ CONTENT-LENGTH: 2613
 SHA256: ce8864d3e61be962f21126be5ea277001dc11c7dd951ccfc88fb93e664769fa0
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # Deterministic Release Pilot Scenario
@@ -16442,9 +16460,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: docs/registration_ownership.md
-SIZE: 516
-CONTENT-LENGTH: 510
-SHA256: b95118a8858bdfbaf2fb73bbf80b4e8612de55e82776f36aaac8ed0ef7a4ce3b
+SIZE: 533
+CONTENT-LENGTH: 525
+SHA256: a4188a5c4d4a205dbd4003dcb3b9473ed02baa1ee120c6e479b49521133285b1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -16459,7 +16477,7 @@ club ownership, eligibility, duplicate-entry and capacity rules.
 
 The portal 19.0.5.0.0 migration drops the test-only V1 tournament-registration
 table. Take a verified backup before upgrading. Federation staff review entries
-through **Competition Engine → Registration Desk**.
+through **Federation → Competition Workflow → Registration Desk**.
 
 ====================================================================================================
 FILE: docs/release/COMPETITION_ACCEPTANCE.md
@@ -16474,165 +16492,6 @@ GIT-STATE: tracked
 # Competition Release Acceptance
 
 Record the candidate commit, fresh-install result, restored-database upgrade, public and portal checks, backup restore, and human approvals. Validate registration, format and fixtures, calendar and scheduling, approval and publication, match-day operations, results and standings, access isolation, mobile usability, and rollback. Critical or high defects block release.
-
-====================================================================================================
-FILE: docs/release/COMPETITION_CUTOVER_ACCEPTANCE.md
-SIZE: 5404
-CONTENT-LENGTH: 5404
-SHA256: 48c429058115e86402e5f45a829ed79ae0acd0b19cda0d532ca5331aaa7e7a23
-GIT-MODE: 100644
-FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
-====================================================================================================
-
-# Competition Cutover Acceptance Record
-
-Use this record for the `/tournaments` to `/competitions` release candidate. Complete every mandatory field and attach evidence to the release ticket. Do not commit personal data, credentials, database dumps, or unredacted email samples.
-
-## Candidate identity
-
-- Candidate commit SHA:
-- Branch or release tag:
-- Validation date:
-- Release coordinator:
-- Fresh-install database identifier:
-- Upgrade-source snapshot identifier:
-- Upgrade database identifier:
-- Odoo version or commit:
-- PostgreSQL version:
-- Browser and mobile viewport:
-
-## Automated gate evidence
-
-Record the run URL or artifact identifier and result for each gate.
-
-- Repository lint and contracts:
-- Fresh installation:
-- Restored-database upgrade:
-- Competition core suite:
-- Portal suite:
-- Public-site suite:
-- Backup restore drill:
-- Runtime route inventory:
-- Open critical defects:
-- Open high defects:
-
-## Canonical route cutover
-
-1. `GET /competitions` returns the current competition hub.
-2. `GET /competitions/archive` returns archived competition editions only.
-3. `GET /competitions/<edition-slug>` exposes only a published edition with at least one published division.
-4. Format, schedule, match-day, standings, results, and bracket links remain inside the canonical `/competitions` namespace.
-5. `GET /tournaments` redirects once to `/competitions`.
-6. A legacy tournament detail URL redirects once to the matching edition and preserves the intended division.
-7. Legacy schedule, standings, results, teams, and bracket URLs redirect once without a loop.
-8. Unpublished editions, divisions, match days, and schedule publications return 404 or remain absent.
-9. Versioned feed and calendar contracts retained by policy still return their declared contract version.
-
-Evidence:
-
-- Canonical route screenshots or HTTP transcript:
-- Legacy redirect transcript:
-- Publication-boundary evidence:
-- Feed and calendar contract evidence:
-
-## Full competition lifecycle
-
-### Registration
-
-- Create a competition and season edition.
-- Create at least two divisions and registration windows.
-- Register teams through the intended backend and portal paths.
-- Confirm that cross-club access and duplicate submission are blocked.
-- Confirm ownership is edition and division based, not legacy workspace based.
-
-Result and evidence:
-
-### Format and fixtures
-
-- Create a group stage followed by knockout or placement stages.
-- Validate graph cycle rejection and source mappings.
-- Materialize fixtures twice and confirm no duplicates.
-- Confirm every operational match is fixture backed.
-
-Result and evidence:
-
-### Calendar and scheduling
-
-- Create at least two match days, multiple courts, breaks, and slots.
-- Run deterministic and weighted-fairness scheduling.
-- Review conflicts, rest time, unscheduled fixtures, and repeated execution.
-- Confirm stale concurrent planner changes are rejected without overwriting the winning revision.
-
-Result and evidence:
-
-### Approval and publication
-
-- Submit the schedule for approval.
-- Confirm the submitter cannot perform an unauthorized approval.
-- Publish an approved immutable schedule revision.
-- Modify planning data and confirm the live publication does not change silently.
-
-Result and evidence:
-
-### Match-day operations
-
-- Open the published match day.
-- Assign officials and confirm availability and overlap checks.
-- Start and complete matches through operational commands.
-- Confirm operational slot changes do not rewrite the approved publication.
-
-Result and evidence:
-
-### Results and standings
-
-- Submit, verify, and approve results with separate users.
-- Confirm an approved result enters official standings once.
-- Contest, correct, and reapprove one result.
-- Recompute and freeze standings, then progress the next stage.
-- Confirm the public competition page reflects the approved outcome and bracket progression.
-
-Result and evidence:
-
-## Portal and public isolation
-
-- Club A cannot read or mutate Club B registrations, rosters, match sheets, duties, or results.
-- Anonymous users cannot see unpublished competition data.
-- Portal users see only live schedule publications relevant to represented teams.
-- Public and portal pages use competition terminology without migration-generation language.
-
-Result and evidence:
-
-## Recovery and upgrade
-
-- Restore the selected pre-cutover snapshot into the isolated upgrade database.
-- Run the `upgrade` RC lane and retain the complete log.
-- Verify migration warnings, row counts, legacy cleanup, menus, routes, and module states.
-- Restart workers during a non-destructive action and confirm no duplicate records.
-- Restore the post-publication backup to another database and verify schedules, results, audits, and attachments.
-- Rehearse rollback to the documented restore point.
-
-Result and evidence:
-
-## Defect disposition
-
-For every defect record severity, reproducible steps, evidence, owner, target package, and disposition. Critical and high defects are automatic no-go conditions.
-
-- Defect register location:
-- Accepted medium defects and rationale:
-- Deferred low defects:
-
-## Decision
-
-- Automated gates: PASS / FAIL
-- Human acceptance: PASS / FAIL
-- Restore and rollback: PASS / FAIL
-- Technical owner approval:
-- Tournament operations approval:
-- Club representative approval:
-- Security or governance approval:
-- Data or process owner approval:
-- Final decision: GO / NO-GO
 
 ====================================================================================================
 FILE: docs/release/HUMAN_ACCEPTANCE_TEST.md
@@ -16807,9 +16666,9 @@ Measure graph generation, materialization, fairness scheduling, validation, stan
 
 ====================================================================================================
 FILE: docs/release/POST_CUTOVER_PHASES.md
-SIZE: 1290
-CONTENT-LENGTH: 1290
-SHA256: ce1bf18b9008e5cfec7c85a67dba423dc75b22b8073aa7387ded93f05b1acb3f
+SIZE: 1291
+CONTENT-LENGTH: 1291
+SHA256: 1384df3287fff1379804b264fd43cdc866f10d72cbffab3b5e2aea23d436c0c8
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -17151,12 +17010,12 @@ echo "Migration rehearsal passed. Evidence: $evidence_dir"
 
 ====================================================================================================
 FILE: scripts/ci/run_rc_validation.sh
-SIZE: 6948
-CONTENT-LENGTH: 6948
-SHA256: 828e6a34b3c5396688348f5b60784de13ee612fa5e57b0d366a30e4bf6860593
+SIZE: 7658
+CONTENT-LENGTH: 7658
+SHA256: c4162ecfb88ea553f0f3412119b41f068066fff5bf7dacedab5b3e5941d17a9a
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env bash
@@ -17183,6 +17042,24 @@ common=(
   --log-level=test
   --logfile="${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
 )
+
+print_odoo_failure() {
+  local exit_code="$1" logfile="${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
+  echo "ERROR: Odoo RC lane '$lane' failed with exit code $exit_code." >&2
+  if [[ -f "$logfile" ]]; then
+    echo "--- Odoo failure summary ---" >&2
+    grep -E "(^|[[:space:]])(ERROR|CRITICAL)[[:space:]]|FAIL:|ERROR:|[0-9]+ failed|[0-9]+ error" "$logfile" | tail -n 120 >&2 || true
+    echo "--- Last 200 Odoo log lines ---" >&2
+    tail -n 200 "$logfile" >&2 || true
+  fi
+  return "$exit_code"
+}
+
+run_odoo() {
+  local logfile="${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
+  : > "$logfile"
+  if "$@"; then return 0; else local rc=$?; print_odoo_failure "$rc"; return "$rc"; fi
+}
 
 require_odoo() {
   if [[ ! -x "$odoo_bin" ]]; then
@@ -17247,7 +17124,7 @@ PY
 run_tags() {
   local tags="$1"
   require_odoo
-  "${common[@]}" -u "$modules" --test-enable --test-tags "$tags"
+  run_odoo "${common[@]}" -u "$modules" --test-enable --test-tags "$tags"
 }
 
 assert_modules_installed() {
@@ -17273,7 +17150,7 @@ run_upgrade() {
   assert_modules_installed "$upgrade_db_name"
   local upgrade_common=("${common[@]}")
   upgrade_common[2]="$upgrade_db_name"
-  "${upgrade_common[@]}" -u "$modules"
+  run_odoo "${upgrade_common[@]}" -u "$modules"
 }
 
 case "$lane" in
@@ -17281,7 +17158,7 @@ case "$lane" in
   static) static_checks ;;
   install)
     require_odoo
-    "${common[@]}" -i "$modules" --test-enable --test-tags 'standard'
+    run_odoo "${common[@]}" -i "$modules" --test-enable --test-tags 'standard'
     ;;
   upgrade) run_upgrade ;;
   core) run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications' ;;
@@ -17298,7 +17175,7 @@ case "$lane" in
     python3 ci/check_release_workspace.py
     static_checks
     require_odoo
-    "${common[@]}" -i "$modules" --test-enable --test-tags 'standard'
+    run_odoo "${common[@]}" -i "$modules" --test-enable --test-tags 'standard'
     run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications'
     run_upgrade
     run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile'
@@ -23759,9 +23636,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_competition_core/services/__init__.py
-SIZE: 0
-CONTENT-LENGTH: 0
-SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+SIZE: 1
+CONTENT-LENGTH: 1
+SHA256: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -27596,7 +27473,7 @@ CONTENT-LENGTH: 3157
 SHA256: c099561a7d167f930f043dddfbf63f54b108d9698883bd0ba9f140dcf6ae8a59
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # sports_federation_demo
@@ -27668,9 +27545,9 @@ Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md) duri
 
 ====================================================================================================
 FILE: sports_federation_demo/__init__.py
-SIZE: 0
-CONTENT-LENGTH: 0
-SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+SIZE: 1
+CONTENT-LENGTH: 1
+SHA256: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -31788,9 +31665,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_finance_bridge/README.md
-SIZE: 7994
-CONTENT-LENGTH: 7964
-SHA256: 6320651fcdc55b07c0c6d2a54e4365ed8bed93bf40776085a93c279fc3843e1a
+SIZE: 7995
+CONTENT-LENGTH: 7965
+SHA256: 3c9e4090c00a9b9bc7c243c99d7bac31b9b5d9089b454c21fa1fb1afbbf53e36
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -40589,9 +40466,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_import_tools/data/integration_contract_data.xml
-SIZE: 5704
-CONTENT-LENGTH: 5704
-SHA256: d0b7daa36913716baf0e4e5caf774cd1111838e73771bdfb2de274c71e13cef0
+SIZE: 5705
+CONTENT-LENGTH: 5705
+SHA256: 643b6ad71e226413090b6fdb2c7c0ece741e6341442a76126dafb975cb307ae6
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -40606,7 +40483,7 @@ GIT-STATE: tracked
         <field name="version">v1</field>
         <field name="direction">outbound</field>
         <field name="transport">json</field>
-        <field name="route_hint">/api/v1/tournaments/&lt;slug&gt;/feed</field>
+        <field name="route_hint">/api/v1/competitions/&lt;slug&gt;/feed</field>
         <field name="description">Published tournament feed for partner consumption with stable contract headers.</field>
         <field name="required_module">sports_federation_public_site</field>
     </record>
@@ -56307,9 +56184,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_portal/README.md
-SIZE: 3540
-CONTENT-LENGTH: 3540
-SHA256: 3ea4f6e8c7c0686f04a9a5a78e3b76b66861847771f9655441258519bd4016a5
+SIZE: 3727
+CONTENT-LENGTH: 3727
+SHA256: 20882b3c9483b628db1e4dd12c84940bfd66b2b4f9416ade24df2df785f0e97f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -56405,6 +56282,11 @@ Keyboard focus uses a visible outline that does not depend on color-only status
 cues. The focused accessibility suite covers these contracts together with
 mobile table and action wrapping.
 
+
+## Club competition data tutorial
+
+Club representatives use **My Account > Data API** (`/my/data-api`) for live URLs, curl and JavaScript examples, privacy rules, and caching guidance.
+
 ====================================================================================================
 FILE: sports_federation_portal/__init__.py
 SIZE: 47
@@ -56420,17 +56302,17 @@ from . import controllers
 
 ====================================================================================================
 FILE: sports_federation_portal/__manifest__.py
-SIZE: 2716
-CONTENT-LENGTH: 2716
-SHA256: 399d2cdb8ddefb02524743222ae1437e3464d0cdff04164d3e8cda870ee5cce7
+SIZE: 2804
+CONTENT-LENGTH: 2804
+SHA256: 3b6056500f679c13c0c45ebcd5a4091a40bcbe9315857bc2ba0ec4e992d4f8ef
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.6.0.0",
+    "version": "19.0.7.0.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -56458,6 +56340,7 @@ on top of the federation base modules.
         "sports_federation_schedule_approval",
         "sports_federation_matchday",
         "sports_federation_standings",
+        "sports_federation_public_site",
     ],
     "data": [
         "security/res_groups.xml",
@@ -56477,6 +56360,7 @@ on top of the federation base modules.
         "views/qol_views.xml",
         "views/qol_search_templates.xml",
         "views/portal_templates.xml",
+        "views/portal_data_api_templates.xml",
         "views/competition_templates.xml",
         "views/portal_officiating_templates.xml",
         "views/portal_roster_templates.xml",
@@ -56503,9 +56387,9 @@ on top of the federation base modules.
 
 ====================================================================================================
 FILE: sports_federation_portal/controllers/__init__.py
-SIZE: 297
-CONTENT-LENGTH: 297
-SHA256: 508336a02379da378e5b88b91d2512c78adff5f761a590b2d72fd2de561a27b5
+SIZE: 321
+CONTENT-LENGTH: 321
+SHA256: a22f598d895afc4b1a3802695d601f8ba8f31d29b7a3bd2acff7d5458e558941
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -56523,6 +56407,8 @@ from . import qol
 from . import competition_portal
 
 from . import qol_search
+
+from . import data_api
 
 ====================================================================================================
 FILE: sports_federation_portal/controllers/competition_portal.py
@@ -56832,6 +56718,42 @@ class FederationPortalcurrent(FederationPortalBase):
                 },
             }
         return {"ok": True, "payload": self._serialize_matchday_workspace(workspace)}
+
+====================================================================================================
+FILE: sports_federation_portal/controllers/data_api.py
+SIZE: 853
+CONTENT-LENGTH: 853
+SHA256: fb3f40167618e7c15c92dd18cd2346f5919192ffcff81ce7df01ba745a82458e
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: untracked
+====================================================================================================
+
+from odoo import http
+from odoo.http import request
+
+from .portal_helpers import FederationPortalBase
+
+
+class FederationDataApiPortal(FederationPortalBase):
+    @http.route("/my/data-api", type="http", auth="user", website=True)
+    def data_api_tutorial(self, **kw):
+        if not self._get_portal_clubs():
+            return request.redirect("/my")
+
+        base_url = request.httprequest.url_root.rstrip("/")
+        editions = request.env[
+            "federation.public.competition.queries"
+        ].list_editions(archived=False)
+        return request.render(
+            "sports_federation_portal.portal_data_api_tutorial",
+            {
+                "page_name": "data_api",
+                "base_url": base_url,
+                "index_url": f"{base_url}/api/v1/competitions",
+                "editions": editions,
+            },
+        )
 
 ====================================================================================================
 FILE: sports_federation_portal/controllers/main.py
@@ -67516,12 +67438,12 @@ class TestTeamPortalAccess(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_template_accessibility.py
-SIZE: 9644
-CONTENT-LENGTH: 9644
-SHA256: 0641219057db3151471b354227f06d35765d37137071c06ff7ab9d5e2449a81e
+SIZE: 10098
+CONTENT-LENGTH: 10098
+SHA256: bde74c81228bc3bfc91c4579e13411bfcac926ce949758480bc29fa604b684c4
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from pathlib import Path
@@ -67746,6 +67668,16 @@ class TestPortalTemplateAccessibility(TransactionCase):
         self.assertIn(":focus-visible", stylesheet)
         self.assertIn("outline:", stylesheet)
         self.assertIn('[role="alert"]:focus', stylesheet)
+
+    def test_data_api_tutorial_explains_privacy_and_examples(self):
+        source = (
+            Path(__file__).resolve().parents[1] / "views/portal_data_api_templates.xml"
+        ).read_text()
+        self.assertIn("No API key is required", source)
+        self.assertIn("personal data", source)
+        self.assertIn("curl", source)
+        self.assertIn("JavaScript example", source)
+        self.assertIn("X-Federation-Contract-Version", source)
 
 ====================================================================================================
 FILE: sports_federation_portal/tests/test_template_mobile.py
@@ -68747,6 +68679,82 @@ GIT-STATE: tracked
         <field name="domain">[('audience', '=', 'manager'), ('state', '!=', 'done')]</field>
         <field name="context">{'search_default_open': 1}</field>
     </record>
+</odoo>
+
+====================================================================================================
+FILE: sports_federation_portal/views/portal_data_api_templates.xml
+SIZE: 3677
+CONTENT-LENGTH: 3677
+SHA256: 2a8cb603062c3f1ca913012f354153501ae987d70091fad07f1a5328cef1d60e
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: untracked
+====================================================================================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_data_api_tutorial" name="Competition Data API Tutorial">
+        <t t-call="portal.portal_layout">
+            <div class="container py-4">
+                <h1>Competition Data API</h1>
+                <p class="lead">Use the public read-only API to show published matches, standings, and schedules on your club website.</p>
+                <div class="alert alert-info" role="note">
+                    <strong>No API key is required.</strong>
+                    Contact details, personal data, internal notes, discipline data, drafts, and unapproved results are excluded.
+                </div>
+                <section class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="h4">Start here</h2>
+                        <pre class="bg-light border rounded p-3"><code>GET <t t-esc="index_url"/></code></pre>
+                        <pre class="bg-light border rounded p-3"><code>curl -H "Accept: application/json" "<t t-esc="index_url"/>"</code></pre>
+                    </div>
+                </section>
+                <section class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="h4">Published competitions</h2>
+                        <div class="list-group" t-if="editions">
+                            <div t-foreach="editions" t-as="edition" class="list-group-item">
+                                <strong><t t-esc="edition.name"/></strong>
+                                <div><code><t t-esc="base_url + edition.get_public_api_path()"/></code></div>
+                                <a class="btn btn-sm btn-outline-primary mt-2" target="_blank" rel="noopener" t-att-href="edition.get_public_api_path()">Open JSON</a>
+                            </div>
+                        </div>
+                        <p t-else="" class="text-muted">No competitions are currently published.</p>
+                    </div>
+                </section>
+                <section class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="h4">JavaScript example</h2>
+                        <pre class="bg-light border rounded p-3"><code>const response = await fetch("<t t-esc="index_url"/>");
+if (!response.ok) throw new Error(`API error: ${response.status}`);
+const index = await response.json();
+const competition = await fetch(index.competitions[0].api_url).then(r =&gt; r.json());
+console.log(competition.divisions);</code></pre>
+                    </div>
+                </section>
+                <section class="card">
+                    <div class="card-body">
+                        <h2 class="h4">Usage rules</h2>
+                        <ul>
+                            <li>Read the <code>X-Federation-Contract-Version</code> header.</li>
+                            <li>Cache responses for at least 60 seconds.</li>
+                            <li>Expect HTTP 404 for unpublished competitions.</li>
+                            <li>Use the supplied website URLs when linking users back.</li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_home_data_api_link" inherit_id="sports_federation_portal.portal_federation_links" name="Portal API quick link">
+        <xpath expr="//nav[hasclass('o_fed_portal_quicknav')]" position="inside">
+            <a class="o_fed_portal_quicklink" href="/my/data-api">
+                <i class="fa fa-code" aria-hidden="true"/>
+                <strong>Data API</strong>
+            </a>
+        </xpath>
+    </template>
 </odoo>
 
 ====================================================================================================
@@ -70486,9 +70494,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_portal/views/portal_templates.xml
-SIZE: 55005
-CONTENT-LENGTH: 54977
-SHA256: e4ae26cf628b9d5242d831a6e25b31e3dbadab84061ecb2fe3d3ba9f0d953aaf
+SIZE: 55006
+CONTENT-LENGTH: 54978
+SHA256: 965a3492a89627bdb168cf1004548b20a01687534fb21f663f6846810c634b62
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -71101,7 +71109,7 @@ GIT-STATE: tracked
                         <h2><i class="fa fa-trophy me-2"/>My Tournament Registrations</h2>
                     </div>
                     <div class="col-auto">
-                        <a href="/tournaments" class="btn btn-primary">
+                        <a href="/competitions" class="btn btn-primary">
                             <i class="fa fa-plus me-1"/> Browse Tournaments
                         </a>
                     </div>
@@ -71135,7 +71143,7 @@ GIT-STATE: tracked
                                     <tr>
                                         <td><t t-esc="reg.name"/></td>
                                         <td>
-                                            <a t-attf-href="/tournament/#{reg.tournament_id.id}">
+                                            <a t-att-href="reg.tournament_id.get_public_path()">
                                                 <t t-esc="reg.tournament_id.name"/>
                                             </a>
                                         </td>
@@ -71180,7 +71188,7 @@ GIT-STATE: tracked
                         </div>
                         <div t-if="not registrations" class="text-center py-4">
                             <p class="text-muted">No tournament registrations have been sent yet. Browse the published tournament hub to find the next open event.</p>
-                            <a href="/tournaments" class="btn btn-primary">
+                            <a href="/competitions" class="btn btn-primary">
                                 Browse Tournaments
                             </a>
                         </div>
@@ -71441,9 +71449,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_public_site/README.md
-SIZE: 9552
-CONTENT-LENGTH: 9552
-SHA256: 3497612c3c06660f7999da785e23e62d0b691f652b79d8351fda18341d6b882e
+SIZE: 9558
+CONTENT-LENGTH: 9558
+SHA256: 4e66aab2eb5740f405ed046ccc7a7c2183de0973d1b3fddcb59b9655dda911ba
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -71544,28 +71552,24 @@ archived back to draft.
 
 ### `PublicTournamentHubController`
 
-Canonical public routes:
+Canonical public routes use one namespace only:
 
 | Route | Auth | Description |
 |-------|------|-------------|
-| `GET /tournaments` | public | Main public tournament hub with featured, live, recent, and archive sections |
-| `POST /tournaments/api/json` | public | JSON list of published tournaments |
-| `GET /competitions/<edition-slug>` | public | Canonical competition edition overview page |
-| `GET /tournaments/<slug>/teams` | public | Published participant list excluding withdrawn entries |
-| `GET /tournaments/<slug>/standings` | public | Published standings page |
-| `GET /tournaments/<slug>/results` | public | Approved public results |
-| `GET /tournaments/<slug>/schedule` | public | Public schedule grouped for easier browsing |
-| `GET /tournaments/<slug>/bracket` | public | Public bracket sections when bracket data exists |
-| `GET /tournaments/<slug>/schedule.ics` | public | ICS calendar export for the tournament schedule |
-| `GET /api/v1/tournaments/<slug>/feed` | public | Stable v1 JSON tournament feed |
-| `GET /teams/<slug>` | public | Public team profile page |
-| `GET /tournaments/<slug>/register` | user | Website registration form |
-| `POST /tournaments/<slug>/register` | user | Website registration submission via `federation.competition.entry._portal_submit_entry()` |
+| `GET /competitions` | public | Competition hub |
+| `POST /competitions/api/json` | public | Published competition discovery |
+| `GET /competitions/<edition-slug>` | public | Competition overview with published divisions |
+| `GET /competitions/<edition-slug>/format` | public | Published format and bracket information |
+| `GET /competitions/<edition-slug>/schedule` | public | Published competition schedule |
+| `GET /competitions/<edition-slug>/gamedays/<matchday-id>` | public | Published game-day board |
+| `GET /competitions/<edition-slug>/register?division_id=<division-id>` | user | Club registration form |
+| `POST /competitions/<edition-slug>/register?division_id=<division-id>` | user | Club registration submission |
+| `GET /competitions/<edition-slug>/divisions/<division-slug>/schedule.ics` | public | Division calendar export |
+| `GET /api/v1/competitions` | public | Published competition API index |
+| `GET /api/v1/competitions/<edition-slug>` | public | Complete published competition feed |
+| `GET /teams/<slug>` | public | Public team profile |
 
-Compatibility routes remain available for older links, including `/competitions`,
-`/competitions/archive`, numeric `/tournament/<id>` paths, numeric register/feed
-paths, and older coverage aliases. Team profile routes and season follow routes
-resolve through publication-scoped domains before redirects or rendering.
+There are no tournament-named or numeric compatibility routes. The product had not been released when the namespace was consolidated, so only `/competitions` is supported.
 
 ### `PublicFollowController`
 
@@ -71614,6 +71618,11 @@ Canonical follow and discovery routes:
 
 Route orchestration lives in `public_competitions.py`. Framework response, canonical resolution, authenticated club lookup, error redirect, and rate-limit response behavior live in `_public_request.py`. New domain queries belong in model query services rather than either controller helper.
 
+
+## Complete competition API
+
+`GET /api/v1/competitions` lists published competitions; `GET /api/v1/competitions/<edition-slug>` aggregates every published division and its public teams, schedules, approved results, standings, brackets, and links.
+
 ====================================================================================================
 FILE: sports_federation_public_site/__init__.py
 SIZE: 104
@@ -71633,7 +71642,7 @@ from . import services
 FILE: sports_federation_public_site/__manifest__.py
 SIZE: 1990
 CONTENT-LENGTH: 1990
-SHA256: 7794af13fde37216c1ee3ee642d7d8b629d138c12fab15e0e8f516ae45ef2b4f
+SHA256: 9c30e131b57b3726b2688f700dff4262b1bc887a34422e18e445fd8f40f825ba
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -71641,7 +71650,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Public Site",
-    "version": "19.0.2.0.3",
+    "version": "19.0.3.0.0",
     "category": "Sports",
     "summary": "Public competition, match-day, standings and bracket experience",
     "description": "Public website pages for tournament coverage, standings, results, schedules, and federation events.",
@@ -72123,12 +72132,12 @@ class PublicPlayersController(http.Controller):
 
 ====================================================================================================
 FILE: sports_federation_public_site/controllers/public_competition_pages.py
-SIZE: 8179
-CONTENT-LENGTH: 8179
-SHA256: 08140f6d98048be7f3f05b51a0d03aea67a84c81514e23d544a114ff9ddf34a3
+SIZE: 9651
+CONTENT-LENGTH: 9651
+SHA256: 3447dcc6695c747143d6bba458525ce9a153b4118b9fb3fdd74e11caae6c9bea
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import json
@@ -72136,8 +72145,10 @@ import json
 from odoo import http
 from odoo.http import Response, request
 
+from ._public_request import PublicRequestInfrastructureMixin
 
-class PublicCompetitionController(http.Controller):
+
+class PublicCompetitionController(PublicRequestInfrastructureMixin, http.Controller):
     def _queries(self):
         return request.env["federation.public.competition.queries"]
 
@@ -72148,30 +72159,68 @@ class PublicCompetitionController(http.Controller):
         return edition
 
     @http.route(
-        ["/tournaments", "/tournaments/page/<int:page>"],
+        ["/api/v1/competitions"],
         type="http",
         auth="public",
-        website=True,
+        methods=["GET"],
+        website=False,
         sitemap=False,
     )
-    def legacy_tournament_hub(self, page=1, **kw):
-        return request.redirect("/competitions", code=301)
+    def competition_api_index(self, **kw):
+        blocked = self._rate_limit_response("public_competition_index")
+        if blocked:
+            return blocked
+        editions = self._queries().list_editions(archived=False)
+        payload = {
+            "api_version": "v1",
+            "contract": "competition_index",
+            "competitions": [
+                {
+                    "id": e.id,
+                    "name": e.name,
+                    "slug": e.public_slug,
+                    "state": e.state,
+                    "season": e.season_id.display_name if e.season_id else None,
+                    "website_url": f"/competitions/{e.public_slug}",
+                    "api_url": e.get_public_api_path(),
+                }
+                for e in editions
+            ],
+        }
+        return Response(
+            json.dumps(payload, sort_keys=True),
+            content_type="application/json; charset=utf-8",
+            headers=[
+                ("Cache-Control", "public, max-age=60"),
+                ("X-Content-Type-Options", "nosniff"),
+                ("X-Federation-Contract", "competition_index"),
+                ("X-Federation-Contract-Version", "v1"),
+            ],
+        )
 
     @http.route(
-        ["/tournaments/<string:tournament_slug>", "/tournament/<int:tournament_id>"],
+        ["/api/v1/competitions/<string:edition_slug>"],
         type="http",
         auth="public",
-        website=True,
+        methods=["GET"],
+        website=False,
         sitemap=False,
     )
-    def legacy_tournament_detail(self, tournament_slug=None, tournament_id=None, **kw):
-        division = self._queries().resolve_legacy_division(
-            slug=tournament_slug, division_id=tournament_id
+    def competition_api_feed(self, edition_slug, **kw):
+        blocked = self._rate_limit_response("public_competition_feed")
+        if blocked:
+            return blocked
+        edition = self._edition_or_404(edition_slug)
+        return Response(
+            json.dumps(edition.get_public_api_payload(), sort_keys=True),
+            content_type="application/json; charset=utf-8",
+            headers=[
+                ("Cache-Control", "public, max-age=60"),
+                ("X-Content-Type-Options", "nosniff"),
+                ("X-Federation-Contract", "competition_feed"),
+                ("X-Federation-Contract-Version", "v1"),
+            ],
         )
-        location = self._queries().canonical_location(division)
-        if not location:
-            raise request.not_found()
-        return request.redirect(location, code=301)
 
     @http.route(
         ["/competitions", "/competitions/page/<int:page>"],
@@ -72379,12 +72428,12 @@ class PublicCompetitionController(http.Controller):
 
 ====================================================================================================
 FILE: sports_federation_public_site/controllers/public_competitions.py
-SIZE: 22496
-CONTENT-LENGTH: 22496
-SHA256: b4b70871e33c826bbf8d74371c7650325936058b4b8f0ca0da236fd4f78299c0
+SIZE: 12429
+CONTENT-LENGTH: 12429
+SHA256: 2255afe9bd91b6e4a4f8df0717431f9a1fec6ad786ef2311ec7c65b64dbd60fe
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import json
@@ -72408,7 +72457,7 @@ class PublicTournamentHubController(
 ):
 
     @http.route(
-        ["/competitions/api/json", "/tournaments/api/json"],
+        ["/competitions/api/json"],
         type="jsonrpc",
         auth="public",
         methods=["POST"],
@@ -72452,7 +72501,7 @@ class PublicTournamentHubController(
         total = Tournament.search_count(main_domain)
         step = 12
         pager = portal_pager(
-            url="/tournaments",
+            url="/competitions",
             total=total,
             page=page,
             step=step,
@@ -72529,23 +72578,6 @@ class PublicTournamentHubController(
             "sports_federation_public_site.page_tournaments_hub", values
         )
 
-    @http.route(
-        ["/tournament/<int:tournament_id>/coverage"],
-        type="http",
-        auth="public",
-        website=True,
-    )
-    def legacy_public_overview(self, tournament_id=None, tournament=False, **kw):
-        """Handle legacy public overview."""
-        tournament = self._resolve_tournament(
-            tournament_id=tournament_id,
-            tournament=tournament,
-            public_access="detail",
-        )
-        if not tournament.exists():
-            self._raise_not_found()
-        return request.redirect(tournament.get_public_path())
-
     def _legacy_tournament_detail(self, tournament_slug=None, tournament_id=None, **kw):
         """Handle tournament detail."""
         tournament = self._resolve_tournament(
@@ -72570,36 +72602,54 @@ class PublicTournamentHubController(
             tournament.get_public_detail_context(),
         )
 
+    def _competition_division_or_404(
+        self, edition_slug, division_slug=None, division_id=None
+    ):
+        queries = request.env["federation.public.competition.queries"]
+        edition = queries.resolve_edition(edition_slug)
+        if not edition:
+            self._raise_not_found()
+        divisions = queries.public_divisions(edition)
+        if division_id:
+            try:
+                division_id = int(division_id)
+            except (TypeError, ValueError):
+                self._raise_not_found()
+            division = divisions.filtered(lambda item: item.id == division_id)[:1]
+        else:
+            division = divisions.filtered(
+                lambda item: item.get_public_slug_value() == division_slug
+            )[:1]
+        if not division:
+            self._raise_not_found()
+        return edition, division
+
     @http.route(
-        ["/tournaments/<string:tournament_slug>/register"],
+        ["/competitions/<string:edition_slug>/register"],
         type="http",
         auth="user",
         website=True,
         methods=["GET"],
     )
-    def tournament_register_form(self, tournament_slug=None, **kw):
-        """Handle tournament register form."""
-        tournament = self._resolve_tournament(
-            tournament_slug=tournament_slug,
-            public_access="detail",
+    def competition_register_form(self, edition_slug, division_id=None, **kw):
+        edition, division = self._competition_division_or_404(
+            edition_slug, division_id=division_id
         )
-        if not tournament.exists() or tournament.state != "open":
-            return request.redirect("/competitions")
-
+        if division.state != "open":
+            return request.redirect(f"/competitions/{edition.public_slug}")
         clubs = self._get_request_user_clubs()
         if not clubs:
-            values = {
-                "error": "You are not registered as a club representative. Please contact the federation.",
-                "tournament": tournament,
-            }
             return request.render(
-                "sports_federation_public_site.page_tournament_register", values
+                "sports_federation_public_site.page_tournament_register",
+                {
+                    "error": "You are not registered as a club representative. Please contact the federation.",
+                    "tournament": division,
+                },
             )
-
         Entry = request.env["federation.competition.entry"]
-        window = Entry._portal_open_window_for_division(tournament)
+        window = Entry._portal_open_window_for_division(division)
         if not window:
-            return request.redirect("/competitions")
+            return request.redirect(f"/competitions/{edition.public_slug}")
         existing = Entry.sudo().search(
             [
                 ("window_id", "=", window.id),
@@ -72607,385 +72657,84 @@ class PublicTournamentHubController(
                 ("state", "!=", "withdrawn"),
             ]
         )
-        blocked_reason_by_team_id = {
+        blocked = {
             team.id: "Already registered or currently awaiting review."
             for team in existing.mapped("team_id")
         }
-        selection_snapshot = tournament.sudo().get_team_selection_snapshot(
+        snapshot = division.sudo().get_team_selection_snapshot(
             extra_domain=[("club_id", "in", clubs.ids)],
-            blocked_reason_by_team_id=blocked_reason_by_team_id,
+            blocked_reason_by_team_id=blocked,
         )
-        values = {
-            "tournament": tournament,
-            "clubs": clubs,
-            "teams": selection_snapshot["available_teams"],
-            "excluded_teams": [
-                {
-                    "name": item["team"].name,
-                    "club": item["team"].club_id.name,
-                    "reason": item["reason"],
-                }
-                for item in selection_snapshot["excluded_teams"]
-            ],
-            "error": kw.get("error"),
-            "success": kw.get("success"),
-        }
         return request.render(
-            "sports_federation_public_site.page_tournament_register", values
+            "sports_federation_public_site.page_tournament_register",
+            {
+                "tournament": division,
+                "clubs": clubs,
+                "teams": snapshot["available_teams"],
+                "excluded_teams": [
+                    {
+                        "name": item["team"].name,
+                        "club": item["team"].club_id.name,
+                        "reason": item["reason"],
+                    }
+                    for item in snapshot["excluded_teams"]
+                ],
+                "error": kw.get("error"),
+                "success": kw.get("success"),
+            },
         )
 
     @http.route(
-        ["/tournament/<int:tournament_id>/register"],
-        type="http",
-        auth="user",
-        website=True,
-        methods=["GET"],
-    )
-    def tournament_register_form_legacy(self, tournament_id, **kw):
-        """Handle tournament register form legacy."""
-        tournament = self._resolve_tournament(
-            tournament_id=tournament_id,
-            public_access="detail",
-        )
-        if not tournament.exists():
-            return request.redirect("/competitions")
-        return request.redirect(tournament.get_public_register_path())
-
-    @http.route(
-        ["/tournaments/<string:tournament_slug>/register"],
+        ["/competitions/<string:edition_slug>/register"],
         type="http",
         auth="user",
         website=True,
         methods=["POST"],
         csrf=False,
     )
-    def tournament_register_submit(self, tournament_slug, team_id, notes="", **kw):
-        """Handle tournament register submit."""
-        tournament = self._resolve_tournament(
-            tournament_slug=tournament_slug,
-            public_access="detail",
+    def competition_register_submit(
+        self, edition_slug, division_id=None, team_id=None, notes="", **kw
+    ):
+        edition, division = self._competition_division_or_404(
+            edition_slug, division_id=division_id
         )
-        if not tournament.exists() or tournament.state != "open":
-            return request.redirect("/competitions")
-
+        path = division.get_public_register_path()
+        if division.state != "open":
+            return request.redirect(f"/competitions/{edition.public_slug}")
         try:
             self._validate_manual_csrf(kw.get("csrf_token"))
-        except ValidationError as error:
-            return self._redirect_with_error(
-                tournament.get_public_register_path(),
-                str(error),
-            )
-
-        try:
             team_id = int(team_id)
-        except (ValueError, TypeError):
-            return self._redirect_with_error(
-                tournament.get_public_register_path(),
-                "Invalid team selection",
-            )
-
-        Entry = request.env["federation.competition.entry"]
-        try:
-            Entry._portal_submit_entry(
-                tournament,
+            request.env["federation.competition.entry"]._portal_submit_entry(
+                division,
                 request.env["federation.team"].sudo().browse(team_id),
                 notes=notes,
                 user=request.env.user,
             )
-        except (AccessError, ValidationError) as error:
-            return self._redirect_with_error(
-                tournament.get_public_register_path(),
-                str(error),
-            )
-
-        return request.redirect(
-            f"{tournament.get_public_register_path()}?success=Registration+submitted+successfully"
-        )
-
-    @http.route(
-        ["/tournament/<int:tournament_id>/register"],
-        type="http",
-        auth="user",
-        website=True,
-        methods=["POST"],
-        csrf=False,
-    )
-    def tournament_register_submit_legacy(self, tournament_id, team_id, notes="", **kw):
-        """Handle tournament register submit legacy."""
-        tournament = self._resolve_tournament(
-            tournament_id=tournament_id,
-            public_access="detail",
-        )
-        if not tournament.exists():
-            return request.redirect("/competitions")
-        return self.tournament_register_submit(
-            tournament.get_public_slug_value(), team_id, notes=notes, **kw
-        )
+        except (AccessError, ValidationError, TypeError, ValueError) as error:
+            return self._redirect_with_error(path, str(error))
+        return request.redirect(f"{path}&success=Registration+submitted+successfully")
 
     @http.route(
         [
-            "/tournaments/<string:tournament_slug>/teams",
-            "/tournament/<int:tournament_id>/teams",
-            "/competitions/<model('federation.tournament'):tournament>/teams",
-        ],
-        type="http",
-        auth="public",
-        website=True,
-    )
-    def tournament_teams(
-        self, tournament_slug=None, tournament_id=None, tournament=False, **kw
-    ):
-        """Handle tournament teams."""
-        tournament = self._resolve_tournament(
-            tournament_slug=tournament_slug,
-            tournament_id=tournament_id,
-            tournament=tournament,
-            public_access="detail",
-        )
-        if not tournament.exists():
-            self._raise_not_found()
-        if tournament_slug:
-            redirect = self._canonical_redirect(
-                tournament, tournament_slug, tournament.get_public_teams_path
-            )
-            if redirect:
-                return redirect
-        else:
-            return request.redirect(tournament.get_public_teams_path())
-
-        values = {
-            "tournament": tournament,
-            "participants": tournament.get_public_participants(),
-            "page_name": "competition_teams",
-        }
-        return request.render(
-            "sports_federation_public_site.page_competition_teams", values
-        )
-
-    @http.route(
-        [
-            "/tournaments/<string:tournament_slug>/standings",
-            "/tournament/<int:tournament_id>/standings",
-            "/competitions/<model('federation.tournament'):tournament>/standings",
-        ],
-        type="http",
-        auth="public",
-        website=True,
-    )
-    def tournament_standings(
-        self, tournament_slug=None, tournament_id=None, tournament=False, **kw
-    ):
-        """Handle tournament standings."""
-        tournament = self._resolve_tournament(
-            tournament_slug=tournament_slug,
-            tournament_id=tournament_id,
-            tournament=tournament,
-            public_access="standings",
-        )
-        if not tournament.exists():
-            self._raise_not_found()
-        if tournament_slug:
-            redirect = self._canonical_redirect(
-                tournament, tournament_slug, tournament.get_public_standings_path
-            )
-            if redirect:
-                return redirect
-        else:
-            return request.redirect(tournament.get_public_standings_path())
-
-        values = {
-            "tournament": tournament,
-            "standings": tournament.get_public_standings(),
-            "page_name": "competition_standings",
-        }
-        return request.render(
-            "sports_federation_public_site.page_competition_standings", values
-        )
-
-    @http.route(
-        [
-            "/tournaments/<string:tournament_slug>/results",
-            "/tournament/<int:tournament_id>/results",
-            "/competitions/<model('federation.tournament'):tournament>/results",
-        ],
-        type="http",
-        auth="public",
-        website=True,
-    )
-    def tournament_results(
-        self, tournament_slug=None, tournament_id=None, tournament=False, **kw
-    ):
-        """Handle tournament results."""
-        tournament = self._resolve_tournament(
-            tournament_slug=tournament_slug,
-            tournament_id=tournament_id,
-            tournament=tournament,
-            public_access="results",
-        )
-        if not tournament.exists():
-            self._raise_not_found()
-        if tournament_slug:
-            redirect = self._canonical_redirect(
-                tournament, tournament_slug, tournament.get_public_results_path
-            )
-            if redirect:
-                return redirect
-        else:
-            return request.redirect(tournament.get_public_results_path())
-
-        values = {
-            "tournament": tournament,
-            "matches": tournament.get_public_result_matches(),
-            "page_name": "competition_results",
-        }
-        return request.render(
-            "sports_federation_public_site.page_competition_results", values
-        )
-
-    @http.route(
-        [
-            "/tournaments/<string:tournament_slug>/schedule",
-            "/tournament/<int:tournament_id>/schedule",
-            "/competitions/<model('federation.tournament'):tournament>/schedule",
-        ],
-        type="http",
-        auth="public",
-        website=True,
-    )
-    def tournament_schedule(
-        self, tournament_slug=None, tournament_id=None, tournament=False, **kw
-    ):
-        """Handle tournament schedule."""
-        tournament = self._resolve_tournament(
-            tournament_slug=tournament_slug,
-            tournament_id=tournament_id,
-            tournament=tournament,
-            public_access="detail",
-        )
-        if not tournament.exists():
-            self._raise_not_found()
-        if tournament_slug:
-            redirect = self._canonical_redirect(
-                tournament, tournament_slug, tournament.get_public_schedule_path
-            )
-            if redirect:
-                return redirect
-        else:
-            return request.redirect(tournament.get_public_schedule_path())
-
-        values = {
-            "tournament": tournament,
-            "schedule_sections": tournament.get_public_schedule_sections(),
-            "page_name": "competition_schedule",
-        }
-        return request.render(
-            "sports_federation_public_site.page_competition_schedule", values
-        )
-
-    @http.route(
-        [
-            "/tournaments/<string:tournament_slug>/bracket",
-            "/tournament/<int:tournament_id>/bracket",
-            "/competitions/<model('federation.tournament'):tournament>/bracket",
-        ],
-        type="http",
-        auth="public",
-        website=True,
-    )
-    def tournament_bracket(
-        self, tournament_slug=None, tournament_id=None, tournament=False, **kw
-    ):
-        """Handle tournament bracket."""
-        tournament = self._resolve_tournament(
-            tournament_slug=tournament_slug,
-            tournament_id=tournament_id,
-            tournament=tournament,
-            public_access="detail",
-        )
-        if not tournament.exists() or not tournament.has_public_bracket():
-            self._raise_not_found()
-        if tournament_slug:
-            redirect = self._canonical_redirect(
-                tournament, tournament_slug, tournament.get_public_bracket_path
-            )
-            if redirect:
-                return redirect
-        else:
-            return request.redirect(tournament.get_public_bracket_path())
-
-        values = {
-            "tournament": tournament,
-            "bracket_sections": tournament.get_public_bracket_sections(),
-            "page_name": "competition_bracket",
-        }
-        return request.render(
-            "sports_federation_public_site.page_competition_bracket", values
-        )
-
-    @http.route(
-        [
-            "/tournaments/<string:tournament_slug>/schedule.ics",
-            "/tournament/<int:tournament_id>/schedule.ics",
+            "/competitions/<string:edition_slug>/divisions/<string:division_slug>/schedule.ics"
         ],
         type="http",
         auth="public",
         methods=["GET"],
     )
-    def tournament_schedule_ics(self, tournament_slug=None, tournament_id=None, **kw):
-        """Handle tournament schedule ICS."""
-        tournament = self._resolve_tournament(
-            tournament_slug=tournament_slug,
-            tournament_id=tournament_id,
-            public_access="detail",
+    def competition_division_schedule_ics(self, edition_slug, division_slug, **kw):
+        _edition, division = self._competition_division_or_404(
+            edition_slug, division_slug=division_slug
         )
-        if not tournament.exists():
-            self._raise_not_found()
-        if tournament_slug:
-            redirect = self._canonical_redirect(
-                tournament, tournament_slug, tournament.get_public_schedule_ics_path
-            )
-            if redirect:
-                return redirect
-        content = tournament.get_public_schedule_ics()
-        filename = f"{tournament.get_public_slug_value()}-schedule.ics"
+        content = division.get_public_schedule_ics()
+        filename = f"{division.get_public_slug_value()}-schedule.ics"
         return Response(
             content,
             content_type="text/calendar; charset=utf-8",
             headers=[
                 ("Content-Disposition", f'attachment; filename="{filename}"'),
-                ("X-Federation-Contract", "tournament_schedule_ics"),
+                ("X-Federation-Contract", "competition_division_schedule_ics"),
                 ("X-Federation-Contract-Version", "ics_v1"),
-            ],
-        )
-
-    @http.route(
-        [
-            "/api/v1/tournaments/<string:tournament_slug>/feed",
-            "/api/v1/tournaments/<int:tournament_id>/feed",
-            "/api/v1/competitions/<int:tournament_id>/feed",
-        ],
-        type="http",
-        auth="public",
-        methods=["GET"],
-    )
-    def competition_feed_v1(self, tournament_slug=None, tournament_id=None, **kw):
-        """Handle competition feed v1."""
-        blocked_response = self._rate_limit_response("public_competition_feed")
-        if blocked_response:
-            return blocked_response
-        tournament = self._resolve_tournament(
-            tournament_slug=tournament_slug,
-            tournament_id=tournament_id,
-            public_access="detail",
-        )
-        if not tournament.exists():
-            self._raise_not_found()
-        return Response(
-            json.dumps(tournament.get_public_feed_payload()),
-            content_type="application/json; charset=utf-8",
-            headers=[
-                ("X-Federation-Contract", "tournament_feed"),
-                ("X-Federation-Contract-Version", "v1"),
             ],
         )
 
@@ -73433,12 +73182,12 @@ class FederationClub(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_public_site/models/public_competition_edition.py
-SIZE: 1537
-CONTENT-LENGTH: 1537
-SHA256: 3ffd0083afa57722e0816219b40dd78866664840b135d48ff1a857864fbaa2d6
+SIZE: 3268
+CONTENT-LENGTH: 3268
+SHA256: 3eb5ebcec2de26231427a8613c50c454e2733fb0004c2cd0293a880e7518cb04
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import re
@@ -73487,6 +73236,52 @@ class FederationCompetitionEditionPublic(models.Model):
             "type": "ir.actions.act_url",
             "url": f"/competitions/{self.public_slug or 'preview'}?preview=1",
             "target": "new",
+        }
+
+    def get_public_api_path(self):
+        self.ensure_one()
+        return f"/api/v1/competitions/{self.public_slug}"
+
+    def get_public_api_payload(self):
+        self.ensure_one()
+        divisions = self.env["federation.public.competition.queries"].public_divisions(
+            self
+        )
+        return {
+            "api_version": "v1",
+            "contract": "competition_feed",
+            "competition": {
+                "id": self.id,
+                "name": self.name,
+                "slug": self.public_slug,
+                "state": self.state,
+                "season": (
+                    {"id": self.season_id.id, "name": self.season_id.display_name}
+                    if self.season_id
+                    else None
+                ),
+                "date_start": (
+                    fields.Date.to_string(self.date_start) if self.date_start else None
+                ),
+                "date_end": (
+                    fields.Date.to_string(self.date_end) if self.date_end else None
+                ),
+                "summary": self.public_summary or None,
+                "website_url": f"/competitions/{self.public_slug}",
+                "api_url": self.get_public_api_path(),
+            },
+            "divisions": [division.get_public_feed_payload() for division in divisions],
+            "privacy": {
+                "scope": "published competition data only",
+                "excluded": [
+                    "contact details",
+                    "personal data",
+                    "internal notes",
+                    "disciplinary data",
+                    "unpublished schedules",
+                    "draft or unapproved results",
+                ],
+            },
         }
 
 ====================================================================================================
@@ -74866,12 +74661,12 @@ class FederationTournament(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_public_site/models/public_tournament_flags.py
-SIZE: 13121
-CONTENT-LENGTH: 13121
-SHA256: aa53b0d7902850a242e7afc481eb18e65720df6684327b0f29d835e51cac077e
+SIZE: 13305
+CONTENT-LENGTH: 13305
+SHA256: 6334308bbcdbcb63ec7c0dbf8f147769c2bc604ab758cc6b4a33e746ac15512e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import re
@@ -75004,47 +74799,49 @@ class FederationTournament(models.Model):
     def get_public_path(self):
         """Return public path."""
         self.ensure_one()
-        return f"/tournaments/{self.get_public_slug_value()}"
+        return f"/competitions/{self.edition_id.public_slug}?division_id={self.id}"
 
     def get_public_register_path(self):
         """Return public register path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/register"
+        return f"/competitions/{self.edition_id.public_slug}/register?division_id={self.id}"
 
     def get_public_teams_path(self):
         """Return public teams path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/teams"
+        return self.get_public_path()
 
     def get_public_schedule_path(self):
         """Return public schedule path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/schedule"
+        return f"/competitions/{self.edition_id.public_slug}/schedule?division_id={self.id}"
 
     def get_public_results_path(self):
         """Return public results path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/results"
+        return self.get_public_path()
 
     def get_public_standings_path(self):
         """Return public standings path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/standings"
+        return self.get_public_path()
 
     def get_public_bracket_path(self):
         """Return public bracket path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/bracket"
+        return (
+            f"/competitions/{self.edition_id.public_slug}/format?division_id={self.id}"
+        )
 
     def get_public_feed_path(self):
         """Return public feed path."""
         self.ensure_one()
-        return f"/api/v1/tournaments/{self.get_public_slug_value()}/feed"
+        return f"/api/v1/competitions/{self.edition_id.public_slug}"
 
     def get_public_schedule_ics_path(self):
         """Return public schedule ICS path."""
         self.ensure_one()
-        return f"{self.get_public_path()}/schedule.ics"
+        return f"/competitions/{self.edition_id.public_slug}/divisions/{self.get_public_slug_value()}/schedule.ics"
 
     @api.model
     def _get_public_site_search_domain(self, search=None):
@@ -75265,9 +75062,9 @@ class FederationTournament(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_public_site/models/website.py
-SIZE: 9467
-CONTENT-LENGTH: 9467
-SHA256: 97b62e532976f5108080444ae3eed27aa7718fdd8c5bf9be08376e33070c2e37
+SIZE: 9459
+CONTENT-LENGTH: 9459
+SHA256: 96c207a97002c5e191335e7abc7850a0586b0b83e14c419ee86d2a331ab1ae3f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -75354,8 +75151,8 @@ class Website(models.Model):
                                     <div class="col-lg-3 pt24 pb24">
                                         <h5>Explore</h5>
                                         <ul class="list-unstyled">
-                                            <li><a href="/tournaments">Tournaments</a></li>
-                                            <li><a href="/tournaments#published">Tournament Updates</a></li>
+                                            <li><a href="/competitions">Tournaments</a></li>
+                                            <li><a href="/competitions">Tournament Updates</a></li>
                                             <li><a href="/seasons">Seasons</a></li>
                                             <li><a href="/my/home">Portal</a></li>
                                         </ul>
@@ -75496,9 +75293,9 @@ class Website(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_public_site/models/website_menu.py
-SIZE: 2890
-CONTENT-LENGTH: 2890
-SHA256: 6ee679fbfa81c88e8e80c2d7146b7f8f4844802c939c90f66a2015e21ea85bcb
+SIZE: 2881
+CONTENT-LENGTH: 2881
+SHA256: 3b92e4e3c707b40e1d74760d7580cbbf82360e026f517f1d83722c51f69d4f99
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -75515,7 +75312,7 @@ class WebsiteMenu(models.Model):
         """Return public site coverage menu values."""
         return {
             "name": "Tournament Updates",
-            "url": "/tournaments#published",
+            "url": "/competitions",
             "sequence": 10,
             "is_visible": True,
         }
@@ -76027,9 +75824,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_public_site/static/tests/tours/public_site_browser_tour.js
-SIZE: 4027
-CONTENT-LENGTH: 4027
-SHA256: 90040a143acaac51e9e2d12327c755f33a6f4321f33441e7dd87180318dca630
+SIZE: 4028
+CONTENT-LENGTH: 4028
+SHA256: 2ef570e85906bd7f71f5409b71de67297dde43da2980422d76357dd232e6fead
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -76126,7 +75923,7 @@ tour.add("public_site_browser_lifecycle", {
             content: "The format navigation state is active",
             trigger: '.sf-competition-nav a.active[href$="/format"]',
         },
-        navigate("/tournaments", "Exercise the retired tournament index alias"),
+        navigate("/competitions", "Exercise the retired tournament index alias"),
         assertPath(
             "/competitions",
             "The retired tournament index redirects to competitions"
@@ -76322,9 +76119,9 @@ class TestClubPublicPages(HttpCase):
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_http_smoke.py
-SIZE: 15531
-CONTENT-LENGTH: 15531
-SHA256: 4c36d4db1b307e166cb26e14f63acfe453cde4e2bf7e5ead6dc50a9f5438a019
+SIZE: 12313
+CONTENT-LENGTH: 12313
+SHA256: 1b233cfbba676cc7a8eecbe0e51f6a0b9e8f8293803686eedb7d3f5a55eb65da
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -76584,19 +76381,6 @@ class TestPublicSiteHttpSmoke(HttpCase):
         self.assertIn(self.tournament.name, response.text)
         self.assertNotIn("Internal Server Error", response.text)
 
-    def test_unpublished_tournament_detail_routes_fail_closed(self):
-        slug_response = self.url_open(
-            self.unpublished_tournament.get_public_path(),
-            allow_redirects=False,
-        )
-        numeric_response = self.url_open(
-            f"/tournament/{self.unpublished_tournament.id}",
-            allow_redirects=False,
-        )
-
-        self.assertEqual(slug_response.status_code, 404)
-        self.assertEqual(numeric_response.status_code, 404)
-
     def test_hidden_season_detail_routes_fail_closed(self):
         for path in (
             self.hidden_season.get_public_path(),
@@ -76629,62 +76413,6 @@ class TestPublicSiteHttpSmoke(HttpCase):
         )
         self.assertNotIn("Internal Server Error", response.text)
 
-    def test_representative_registration_submit_shows_success(self):
-        self.authenticate(self.club_user.login, "ignored")
-
-        form_response = self.url_open(
-            f"/tournament/{self.tournament.id}/register",
-            allow_redirects=True,
-        )
-        self.assertEqual(form_response.status_code, 200)
-        self.assertIn(self.eligible_team.name, form_response.text)
-
-        submit_response = self.url_open(
-            f"/tournament/{self.tournament.id}/register",
-            data={
-                "csrf_token": _extract_csrf_token(form_response.text),
-                "team_id": str(self.eligible_team.id),
-                "notes": "Smoke registration from public site.",
-            },
-            allow_redirects=True,
-        )
-
-        self.assertEqual(submit_response.status_code, 200)
-        self.assertIn("Registration submitted successfully", submit_response.text)
-        self.assertIn(self.tournament.name, submit_response.text)
-        self.assertNotIn("Internal Server Error", submit_response.text)
-
-    def test_unpublished_tournament_register_routes_fail_closed(self):
-        self.authenticate(self.club_user.login, "ignored")
-
-        Entry = self.env["federation.competition.entry"].sudo()
-        before_count = Entry.search_count(
-            [("window_id.division_id", "=", self.unpublished_tournament.id)]
-        )
-
-        for path in (
-            self.unpublished_tournament.get_public_register_path(),
-            f"/tournament/{self.unpublished_tournament.id}/register",
-        ):
-            form_response = self.url_open(path, allow_redirects=False)
-            submit_response = self.url_open(
-                path,
-                data={"team_id": str(self.eligible_team.id)},
-                allow_redirects=False,
-            )
-
-            self.assertIn(form_response.status_code, (301, 302, 303, 307, 308))
-            self.assertTrue(form_response.headers["Location"].endswith("/competitions"))
-            self.assertIn(submit_response.status_code, (301, 302, 303, 307, 308))
-            self.assertTrue(
-                submit_response.headers["Location"].endswith("/competitions")
-            )
-
-        after_count = Entry.search_count(
-            [("window_id.division_id", "=", self.unpublished_tournament.id)]
-        )
-        self.assertEqual(after_count, before_count)
-
     def test_full_tournament_registration_shows_guided_feedback(self):
         self.authenticate(self.club_user.login, "ignored")
 
@@ -76703,19 +76431,6 @@ class TestPublicSiteHttpSmoke(HttpCase):
             "This division has reached its entry capacity.", submit_response.text
         )
         self.assertNotIn("Internal Server Error", submit_response.text)
-
-    def test_route_inventory_lists_smoke_covered_public_routes(self):
-        inventory_routes = {
-            (entry["method"], entry["path"])
-            for entry in load_route_inventory("sports_federation_public_site")
-        }
-
-        self.assertEqual(
-            inventory_routes,
-            {
-                ("POST", "/tournaments/<slug>/register"),
-            },
-        )
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_player_pages.py
@@ -76801,12 +76516,12 @@ class TestPlayerPublicPages(HttpCase):
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_public_api.py
-SIZE: 36228
-CONTENT-LENGTH: 36222
-SHA256: 7a57ed070f92309531d275af09b4054c7d6cdc69d0600d5d07002cc0742c2e72
+SIZE: 34425
+CONTENT-LENGTH: 34419
+SHA256: b7b07e757e8bf40ab6cfc93036b078d3de6a4950fa135a495f8e6d0060497d52
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 """
@@ -76826,6 +76541,9 @@ from unittest.mock import patch
 
 from odoo.addons.sports_federation_public_site.controllers.public_competitions import (
     PublicTournamentHubController,
+)
+from odoo.addons.sports_federation_public_site.controllers.public_competition_pages import (
+    PublicCompetitionController,
 )
 from odoo.addons.sports_federation_public_site.controllers.public_follow import (
     PublicSeasonAndTeamController,
@@ -77130,17 +76848,6 @@ class TestPublicSiteNewEndpoints(TransactionCase):
         date_end_val = t.date_end.isoformat() if t.date_end else None
         self.assertIsNone(date_end_val)
 
-    def test_public_slug_resolves_and_generates_canonical_paths(self):
-        """Explicit slugs produce canonical tournament URLs and resolve cleanly."""
-        resolved = self.env["federation.tournament"].resolve_public_slug("active-tour")
-
-        self.assertEqual(resolved, self.active_tour)
-        self.assertEqual(self.active_tour.get_public_path(), "/tournaments/active-tour")
-        self.assertEqual(
-            self.active_tour.get_public_schedule_ics_path(),
-            "/tournaments/active-tour/schedule.ics",
-        )
-
     def test_public_slug_resolution_can_apply_publication_domain(self):
         """Public slug resolution can fail closed for unpublished tournaments."""
         resolved = self.env["federation.tournament"].resolve_public_slug(
@@ -77297,39 +77004,6 @@ class TestPublicSiteNewEndpoints(TransactionCase):
         self.assertIn(self.bracket_match, sections[0]["matches"])
         self.assertTrue(self.active_tour.has_public_bracket())
 
-    def test_versioned_public_feed_payload_has_stable_keys(self):
-        """Versioned public feed payload exposes the expected top-level structure."""
-        payload = self.active_tour.get_public_feed_payload()
-
-        self.assertEqual(payload["api_version"], "v1")
-        self.assertIn("tournament", payload)
-        self.assertIn("schedule_sections", payload)
-        self.assertIn("bracket_sections", payload)
-        self.assertIn("results", payload)
-        self.assertIn("standings", payload)
-        self.assertEqual(payload["tournament"]["id"], self.active_tour.id)
-        self.assertEqual(payload["tournament"]["slug"], "active-tour")
-        self.assertEqual(
-            payload["tournament"]["public_url"], "/tournaments/active-tour"
-        )
-        self.assertEqual(
-            payload["tournament"]["schedule_ics_url"],
-            "/tournaments/active-tour/schedule.ics",
-        )
-        self.assertEqual(
-            payload["participants"][0]["team_url"], self.team_a.get_public_path()
-        )
-        self.assertEqual(payload["results"][0]["id"], self.result_match.id)
-
-    def test_schedule_ics_contains_public_event_rows(self):
-        """ICS export includes scheduled fixtures with tournament metadata."""
-        payload = self.active_tour.get_public_schedule_ics()
-
-        self.assertIn("BEGIN:VCALENDAR", payload)
-        self.assertIn("BEGIN:VEVENT", payload)
-        self.assertIn("Active Tour", payload)
-        self.assertIn("/tournaments/active-tour/schedule", payload)
-
     def test_published_season_slug_and_helper_paths(self):
         """Test that published season slug and helper paths."""
         resolved = self.env["federation.season"].resolve_public_slug("ps-season")
@@ -77484,6 +77158,7 @@ class TestPublicApiRateLimits(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.hub_controller = PublicTournamentHubController()
+        cls.competition_controller = PublicCompetitionController()
         cls.follow_controller = PublicSeasonAndTeamController()
         cls.club = cls.env["federation.club"].create(
             {
@@ -77521,13 +77196,14 @@ class TestPublicApiRateLimits(TransactionCase):
         competition = cls.env["federation.competition"].create(
             {"name": "Rate Limit Competition", "code": "RLC"}
         )
-        edition = cls.env["federation.competition.edition"].create(
+        cls.edition = cls.env["federation.competition.edition"].create(
             {
                 "name": "Rate Limit 2026",
                 "competition_id": competition.id,
                 "season_id": cls.season.id,
                 "website_published": True,
                 "public_slug": "rate-limit-2026",
+                "state": "open",
             }
         )
         cls.tournament = cls.env["federation.tournament"].create(
@@ -77535,7 +77211,7 @@ class TestPublicApiRateLimits(TransactionCase):
                 "name": "Rate Limit Tournament",
                 "code": "RLT",
                 "season_id": cls.season.id,
-                "edition_id": edition.id,
+                "edition_id": cls.edition.id,
                 "competition_id": competition.id,
                 "date_start": "2026-06-01",
                 "state": "in_progress",
@@ -77675,7 +77351,7 @@ class TestPublicApiRateLimits(TransactionCase):
         frozen_time = datetime(2026, 4, 18, 12, 0, 0)
 
         with patch(
-            "odoo.addons.sports_federation_public_site.controllers.public_competitions.request",
+            "odoo.addons.sports_federation_public_site.controllers.public_competition_pages.request",
             request_stub,
         ), patch(
             "odoo.addons.sports_federation_public_site.controllers._public_request.request",
@@ -77685,11 +77361,11 @@ class TestPublicApiRateLimits(TransactionCase):
             "_get_now",
             return_value=frozen_time,
         ):
-            response = self.hub_controller.competition_feed_v1(
-                tournament_slug=self.tournament.public_slug
+            response = self.competition_controller.competition_api_feed(
+                edition_slug=self.edition.public_slug
             )
-            blocked = self.hub_controller.competition_feed_v1(
-                tournament_slug=self.tournament.public_slug
+            blocked = self.competition_controller.competition_api_feed(
+                edition_slug=self.edition.public_slug
             )
 
         self.assertEqual(response.status_code, 200)
@@ -77730,29 +77406,20 @@ class TestPublicApiRateLimits(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_public_competition_contract.py
-SIZE: 1505
-CONTENT-LENGTH: 1505
-SHA256: f48dc82f6bb105e34946fb4ceb9ba83fd0c92968b77125a9e12011b7f650e924
+SIZE: 4668
+CONTENT-LENGTH: 4668
+SHA256: 452cacb0254fe532791e40328b8a71e1c4d83e51f0c3048d0166cb78078630ab
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
+
+from pathlib import Path
 
 from odoo.tests.common import TransactionCase
 
 
 class TestPublicCompetitionContract(TransactionCase):
-    def test_legacy_division_is_not_public(self):
-        legacy = self.env["federation.tournament"].create(
-            {
-                "name": "Legacy test",
-                "date_start": "2026-08-23",
-                "website_published": True,
-            }
-        )
-        editions = self.env["federation.public.competition.queries"].list_editions()
-        self.assertNotIn(legacy, editions.mapped("tournament_ids"))
-
     def test_unpublished_edition_hides_published_child(self):
         season = self.env["federation.season"].create(
             {
@@ -77780,6 +77447,93 @@ class TestPublicCompetitionContract(TransactionCase):
             )
         )
 
+    def test_competition_api_payload_excludes_private_fields(self):
+        season = self.env["federation.season"].create(
+            {"name": "API season", "date_start": "2026-01-01", "date_end": "2026-12-31"}
+        )
+        competition = self.env["federation.competition"].create(
+            {"name": "API competition", "competition_type": "league"}
+        )
+        edition = self.env["federation.competition.edition"].create(
+            {
+                "name": "API edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+                "state": "open",
+                "public_slug": "api-edition",
+                "website_published": True,
+            }
+        )
+        payload = edition.get_public_api_payload()
+        self.assertEqual(payload["api_version"], "v1")
+        self.assertEqual(
+            payload["competition"]["api_url"], "/api/v1/competitions/api-edition"
+        )
+        self.assertEqual(payload["divisions"], [])
+        public_data = str(
+            {"competition": payload["competition"], "divisions": payload["divisions"]}
+        ).lower()
+        for private_name in ("email", "phone", "internal_note", "disciplinary_case"):
+            self.assertNotIn(private_name, public_data)
+
+    def test_public_division_helpers_use_competition_namespace(self):
+        season = self.env["federation.season"].create(
+            {
+                "name": "Namespace season",
+                "date_start": "2026-01-01",
+                "date_end": "2026-12-31",
+            }
+        )
+        competition = self.env["federation.competition"].create(
+            {"name": "Namespace competition", "competition_type": "league"}
+        )
+        edition = self.env["federation.competition.edition"].create(
+            {
+                "name": "Namespace edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+                "state": "open",
+                "public_slug": "namespace-edition",
+                "website_published": True,
+            }
+        )
+        division = self.env["federation.tournament"].create(
+            {
+                "name": "Division A",
+                "edition_id": edition.id,
+                "date_start": "2026-01-01",
+                "website_published": True,
+            }
+        )
+        self.assertEqual(
+            division.get_public_path(),
+            f"/competitions/namespace-edition?division_id={division.id}",
+        )
+        self.assertEqual(
+            division.get_public_feed_path(), "/api/v1/competitions/namespace-edition"
+        )
+        self.assertIn(
+            "/competitions/namespace-edition/divisions/",
+            division.get_public_schedule_ics_path(),
+        )
+
+    def test_source_defines_no_removed_public_route_namespace(self):
+        source_roots = (
+            Path(__file__).resolve().parents[1] / "controllers",
+            Path(__file__).resolve().parents[1] / "models",
+            Path(__file__).resolve().parents[1] / "views",
+        )
+        removed = ("/" + "tournaments", "/" + "tournament/", "/api/v1/" + "tournaments")
+        for source_root in source_roots:
+            for path in source_root.rglob("*"):
+                if path.suffix not in {".py", ".xml"}:
+                    continue
+                content = path.read_text(encoding="utf-8")
+                for route in removed:
+                    self.assertNotIn(
+                        route, content, f"Removed route remains in {path}: {route}"
+                    )
+
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_public_controller_structure.py
 SIZE: 598
@@ -77806,9 +77560,9 @@ class TestPublicControllerStructure(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_public_site.py
-SIZE: 16087
-CONTENT-LENGTH: 16087
-SHA256: 6dacaccde36af26d71e0700b039074a59669c0ba5355b08a981ff12b5e89f2dc
+SIZE: 12393
+CONTENT-LENGTH: 12393
+SHA256: 3ba90605ab7f221e2d55ee39baa037447320112dfc376384f41da50bcd7534e5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -78014,105 +77768,6 @@ class TestPublicSite(TransactionCase):
                     "public_slug": "shared-slug",
                 }
             )
-
-    def test_menu_cleanup_rehomes_legacy_competitions_menu(self):
-        """Test that menu cleanup rehomes legacy competitions menu."""
-        website = self.env["website"].search([], limit=1)
-        root_menu = self.env["website.menu"].create(
-            {
-                "name": "Top Menu Cleanup Root",
-                "url": "#",
-                "website_id": website.id,
-            }
-        )
-        tournament_menu = self.env["website.menu"].create(
-            {
-                "name": "Tournaments",
-                "url": "/tournaments",
-                "parent_id": root_menu.id,
-                "sequence": 50,
-                "website_id": website.id,
-            }
-        )
-        legacy_menu = self.env["website.menu"].create(
-            {
-                "name": "Competitions",
-                "url": "/competitions",
-                "parent_id": root_menu.id,
-                "sequence": 55,
-                "is_visible": True,
-                "website_id": website.id,
-            }
-        )
-
-        self.env["website.menu"]._cleanup_stale_public_site_menus()
-
-        legacy_menu = self.env["website.menu"].browse(legacy_menu.id)
-        self.assertEqual(legacy_menu.parent_id, tournament_menu)
-        self.assertEqual(legacy_menu.name, "Tournament Updates")
-        self.assertEqual(legacy_menu.url, "/tournaments#published")
-        self.assertTrue(legacy_menu.is_visible)
-        self.assertEqual(legacy_menu.sequence, 10)
-
-    def test_menu_cleanup_hides_duplicate_legacy_entries(self):
-        """Test that menu cleanup hides duplicate legacy entries."""
-        website = self.env["website"].search([], limit=1)
-        root_menu = self.env["website.menu"].create(
-            {
-                "name": "Top Menu Cleanup Duplicate Root",
-                "url": "#",
-                "website_id": website.id,
-            }
-        )
-        tournament_menu = self.env["website.menu"].create(
-            {
-                "name": "Tournaments",
-                "url": "/tournaments",
-                "parent_id": root_menu.id,
-                "sequence": 50,
-                "website_id": website.id,
-            }
-        )
-        published_menu = self.env["website.menu"].create(
-            {
-                "name": "Tournament Updates",
-                "url": "/tournaments#published",
-                "parent_id": tournament_menu.id,
-                "sequence": 10,
-                "is_visible": True,
-                "website_id": website.id,
-            }
-        )
-        legacy_sibling = self.env["website.menu"].create(
-            {
-                "name": "Competitions",
-                "url": "/competitions",
-                "parent_id": root_menu.id,
-                "sequence": 55,
-                "is_visible": True,
-                "website_id": website.id,
-            }
-        )
-        legacy_child = self.env["website.menu"].create(
-            {
-                "name": "Competition Archive",
-                "url": "/competitions/archive",
-                "parent_id": tournament_menu.id,
-                "sequence": 15,
-                "is_visible": True,
-                "website_id": website.id,
-            }
-        )
-
-        self.env["website.menu"]._cleanup_stale_public_site_menus()
-
-        published_menu = self.env["website.menu"].browse(published_menu.id)
-        self.assertEqual(published_menu.parent_id, tournament_menu)
-        self.assertEqual(published_menu.name, "Tournament Updates")
-        self.assertEqual(published_menu.url, "/tournaments#published")
-        self.assertTrue(published_menu.is_visible)
-        self.assertFalse(legacy_sibling.exists())
-        self.assertFalse(legacy_child.exists())
 
     def test_website_cleanup_rebrands_placeholder_shell_and_footer(self):
         """Test that website cleanup rebrands placeholder shell and footer."""
@@ -79355,9 +79010,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_public_site/views/website_editorial_templates.xml
-SIZE: 16094
-CONTENT-LENGTH: 16094
-SHA256: 17f450197335319d6bdf7b15c543f5af2a333025f3dd264db426704f8586fd2f
+SIZE: 16097
+CONTENT-LENGTH: 16097
+SHA256: 87ef2b8eac571bf730aa79dc203d2eb22e4dcdb4dab757020de5dcc26cddc0eb
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -79526,7 +79181,7 @@ GIT-STATE: tracked
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item"><a t-att-href="team.get_public_path()" t-esc="team.name"/></li>
                         <li class="breadcrumb-item active">Schedule</li>
                     </ol>
@@ -79563,7 +79218,7 @@ GIT-STATE: tracked
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item"><a t-att-href="team.get_public_path()" t-esc="team.name"/></li>
                         <li class="breadcrumb-item active">Results</li>
                     </ol>
@@ -79593,7 +79248,7 @@ GIT-STATE: tracked
     <template id="page_tournaments_hub_discovery_sections"
               inherit_id="sports_federation_public_site.page_tournaments_hub"
               priority="40">
-        <xpath expr="//form[@action='/tournaments']" position="after">
+        <xpath expr="//form[@action='/competitions']" position="after">
             <t t-set="public_seasons" t-value="request.env['federation.season'].get_public_published_seasons(limit=4)"/>
             <t t-set="editorial_items" t-value="request.env['federation.public.editorial.item'].get_live_items(limit=3)"/>
 
@@ -79645,9 +79300,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_public_site/views/website_hub_templates.xml
-SIZE: 50686
-CONTENT-LENGTH: 50674
-SHA256: 08088bf7f7eab1dd7f0e7c27ad274e7a3c9feb4fa2f73c0445cbb448c4d35b9f
+SIZE: 50690
+CONTENT-LENGTH: 50678
+SHA256: 2da3c083c597edda37de5d674313199ef5f7c40c82e78abcee84fd6f4a8549a2
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -79791,7 +79446,7 @@ GIT-STATE: tracked
                     </div>
                 </section>
 
-                <form action="/tournaments" method="GET" class="card border-0 shadow-sm mb-5">
+                <form action="/competitions" method="GET" class="card border-0 shadow-sm mb-5">
                     <div class="card-body row g-3 align-items-end">
                         <div class="col-lg-3">
                             <label class="form-label" for="hub_search">Search</label>
@@ -79999,7 +79654,7 @@ GIT-STATE: tracked
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item active" t-esc="tournament.name"/>
                     </ol>
                 </nav>
@@ -80221,7 +79876,7 @@ GIT-STATE: tracked
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item"><a t-att-href="tournament.get_public_path()" t-esc="tournament.name"/></li>
                         <li class="breadcrumb-item active">Register</li>
                     </ol>
@@ -80293,7 +79948,7 @@ GIT-STATE: tracked
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item active" t-esc="team.name"/>
                     </ol>
                 </nav>
@@ -80427,9 +80082,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_public_site/views/website_templates.xml
-SIZE: 27818
-CONTENT-LENGTH: 27816
-SHA256: dbae1314454633dc1a69426f88abf562dce772c5fa877d874b86368e8c060aba
+SIZE: 27825
+CONTENT-LENGTH: 27823
+SHA256: 88a008882896aec293d4e60dde6431bdc3339e27091303de959de004e08abb83
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -80486,7 +80141,7 @@ GIT-STATE: tracked
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item"><a t-att-href="tournament.get_public_path()">Tournament Hub</a></li>
                         <li class="breadcrumb-item active">Overview</li>
                     </ol>
@@ -80559,7 +80214,7 @@ GIT-STATE: tracked
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item"><a t-att-href="tournament.get_public_path()">Tournament Hub</a></li>
                         <li class="breadcrumb-item active">Standings</li>
                     </ol>
@@ -80629,7 +80284,7 @@ GIT-STATE: tracked
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item"><a t-att-href="tournament.get_public_path()">Tournament Hub</a></li>
                         <li class="breadcrumb-item active">Results</li>
                     </ol>
@@ -80695,7 +80350,7 @@ GIT-STATE: tracked
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item"><a t-att-href="tournament.get_public_path()">Tournament Hub</a></li>
                         <li class="breadcrumb-item active">Schedule</li>
                     </ol>
@@ -80768,7 +80423,7 @@ GIT-STATE: tracked
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item"><a t-att-href="tournament.get_public_path()">Tournament Hub</a></li>
                         <li class="breadcrumb-item active">Bracket</li>
                     </ol>
@@ -80826,7 +80481,7 @@ GIT-STATE: tracked
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item active">Archive</li>
                     </ol>
                 </nav>
@@ -80868,7 +80523,7 @@ GIT-STATE: tracked
             <div class="container py-4">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/tournaments">Tournaments</a></li>
+                        <li class="breadcrumb-item"><a href="/competitions">Tournaments</a></li>
                         <li class="breadcrumb-item">
                             <a t-att-href="tournament.get_public_path()">Tournament Hub</a>
                         </li>
@@ -81350,9 +81005,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_registration/services/__init__.py
-SIZE: 0
-CONTENT-LENGTH: 0
-SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+SIZE: 1
+CONTENT-LENGTH: 1
+SHA256: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked

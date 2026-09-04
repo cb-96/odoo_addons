@@ -158,7 +158,9 @@ class FederationTournament(models.Model):
     def get_public_bracket_path(self):
         """Return public bracket path."""
         self.ensure_one()
-        return f"/competitions/{self.edition_id.public_slug}/format?division_id={self.id}"
+        return (
+            f"/competitions/{self.edition_id.public_slug}/format?division_id={self.id}"
+        )
 
     def get_public_feed_path(self):
         """Return public feed path."""
