@@ -6,3 +6,5 @@ from . import test_club_referee_duty
 from . import test_tour_club_referee_duty
 from . import test_reimbursement
 from . import test_competition_officiating_contract
+
+from . import test_auto_club_duty_assignment

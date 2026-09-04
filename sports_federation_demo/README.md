@@ -64,3 +64,8 @@ labels, error semantics, status text, responsive tables, and action wrapping.
 ## Verified operator menu guide
 
 Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md) during training and acceptance. Addon names are not always visible as menus.
+
+
+## Full competition lifecycle browser tour
+
+The `full_competition_lifecycle` browser tour follows the maintained operator handoffs from Competition Overview through registration, format, calendar, scheduling, independent review, match-day control, officiating assignment, standings, and the canonical public competition index. It opens actions by XML ID so navigation remains stable when menu sections are collapsed or role-filtered.

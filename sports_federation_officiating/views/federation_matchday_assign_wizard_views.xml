@@ -7,9 +7,14 @@
         <sheet>
           <div class="alert alert-info" role="status">Assignments are created only for fixture-backed matches in the current live publication.</div>
           <group>
-            <group string="Published match day"><field name="matchday_id"/><field name="assignment_type"/><field name="role"/></group>
-            <group string="Responsible official"><field name="referee_id" invisible="assignment_type != 'referee'" required="assignment_type == 'referee'"/><field name="club_id" invisible="assignment_type != 'club'" required="assignment_type == 'club'"/><field name="open_duties" invisible="assignment_type != 'club'"/></group>
+            <group string="Published match day"><field name="matchday_id"/><field name="assignment_type"/><field name="role" invisible="assignment_type == 'auto_club'"/></group>
+            <group string="Responsible official"><field name="referee_id" invisible="assignment_type != 'referee'" required="assignment_type == 'referee'"/><field name="club_id" invisible="assignment_type != 'club'" required="assignment_type == 'club'"/><field name="open_duties" invisible="assignment_type == 'referee'"/></group>
           </group>
+          <group string="Automatic club-duty policy" invisible="assignment_type != 'auto_club'">
+            <group><field name="officials_per_match"/><field name="preserve_existing_assignments"/></group>
+            <group><field name="avoid_clubs_playing_same_slot"/><field name="allow_playing_club_fallback" invisible="not avoid_clubs_playing_same_slot"/></group>
+          </group>
+          <div class="alert alert-warning" role="alert" invisible="assignment_type != 'auto_club'">The same selected club supplies all requested roles for a match. Clubs with any team playing in the slot are avoided where possible.</div>
           <group string="Preview" col="6"><field name="matches_total"/><field name="matches_to_assign"/><field name="matches_skipped"/></group>
         </sheet>
         <footer><button name="action_apply" type="object" string="Assign" class="btn-primary"/><button string="Cancel" special="cancel"/></footer>

@@ -20,6 +20,9 @@ class TestReleasePilotReadiness(TransactionCase):
         "sports_federation_scheduling.action_schedule_planner_competition": "federation.schedule",
         "sports_federation_schedule_approval.action_schedule_review_queue": "federation.schedule.review",
         "sports_federation_matchday.action_matchday_control": "federation.matchday",
+        "sports_federation_officiating.action_matchday_assign_official_wizard": (
+            "federation.matchday.assign.official.wizard"
+        ),
         "sports_federation_standings.action_federation_standing": "federation.standing",
     }
 
@@ -64,6 +67,26 @@ class TestReleasePilotReadiness(TransactionCase):
             normalized_source = source.lower()
             for token in forbidden_architecture_tokens:
                 self.assertNotIn(token, normalized_source)
+
+
+    def test_full_lifecycle_tour_covers_officiating_and_publication_handoffs(self):
+        path = (
+            Path(__file__).resolve().parents[1]
+            / "static/tests/tours/full_competition_lifecycle_tour.js"
+        )
+        source = path.read_text(encoding="utf-8")
+        for xmlid in (
+            "sports_federation_registration.action_registration_desk",
+            "sports_federation_format.action_format_studio",
+            "sports_federation_calendar.action_calendar_planner",
+            "sports_federation_scheduling.action_schedule_planner_competition",
+            "sports_federation_schedule_approval.action_schedule_review_queue",
+            "sports_federation_matchday.action_matchday_control",
+            "sports_federation_officiating.action_matchday_assign_official_wizard",
+            "sports_federation_standings.action_federation_standing",
+        ):
+            self.assertIn(xmlid, source)
+        self.assertIn('window.location.assign("/competitions")', source)
 
     def test_keyboard_setup_tour_uses_keyboard_activation_and_focus_assertions(self):
         path = (

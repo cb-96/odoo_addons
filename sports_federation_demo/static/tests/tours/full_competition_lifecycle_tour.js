@@ -62,6 +62,19 @@ tour.add("full_competition_lifecycle", {
         ),
         assertBackendView("Published match days are available"),
         openAction(
+            "sports_federation_officiating.action_matchday_assign_official_wizard",
+            "Open match-day officiating assignment"
+        ),
+        {
+            content: "The match-day officiating wizard is available",
+            trigger: '.o_dialog .o_form_view .o_field_widget[name="assignment_type"]',
+        },
+        {
+            content: "Close the officiating wizard",
+            trigger: ".o_dialog footer .btn-secondary",
+            run: "click",
+        },
+        openAction(
             "sports_federation_standings.action_federation_standing",
             "Open official standings"
         ),
