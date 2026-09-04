@@ -59,3 +59,8 @@ Complete the normal path without a mouse:
 The `keyboard_competition_setup` browser tour qualifies the canonical backend
 journey mechanically. Portal template accessibility and mobile tests qualify
 labels, error semantics, status text, responsive tables, and action wrapping.
+
+
+## Verified operator menu guide
+
+Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md) during training and acceptance. Addon names are not always visible as menus.

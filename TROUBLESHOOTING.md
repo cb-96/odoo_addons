@@ -387,3 +387,12 @@ If none of the above applies:
    reproduce the issue.
 4. Open a bug report in the project tracker with the log excerpt, module
    version (`__manifest__.py` `version` field), and reproduction steps.
+
+
+## RC install exits with only gettext warnings
+
+The gettext warning is not the failing test. Odoo output is stored in `odoo-rc.log`; exit code 1 means installation or tests failed. The runner prints the decisive log tail. Also inspect the `odoo-rc-logs` artifact. Reproduce with:
+
+```bash
+ODOO_LOGFILE="$PWD/odoo-rc.log" scripts/ci/run_rc_validation.sh install
+```

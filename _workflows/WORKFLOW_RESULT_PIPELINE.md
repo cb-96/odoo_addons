@@ -21,6 +21,10 @@ data-entry errors and disputed scores from corrupting competition tables.
 | `sports_federation_public_site` | Publishing approved results publicly |
 | `mail` | Chatter audit trail on matches |
 
+## Verified UI navigation
+
+Backend users open **Federation → Planning → Advanced Records → Matches**. Club representatives use **My Account → Results**. Standings are under **Federation → Publication → Standings**. Result Control adds buttons to the match form; it does not add a separate Results menu.
+
 ## Step-by-Step Flow
 
 ### 1. Score Entry
@@ -42,7 +46,7 @@ At this point the result is entered but **not yet official**.
 1. Click **Submit Result** on the match form.
 2. `result_state` transitions from `draft` → `submitted`.
 3. `result_submitted_by_id` and `result_submitted_on` are recorded automatically.
-4. The result is now in the verification queue.
+4. The submitted result remains on the match record and is ready for users in the Result Verifier group.
 5. A todo activity is created for each user in the Result Verifier group.
 
 ### 3. Result Verification

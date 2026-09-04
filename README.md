@@ -162,3 +162,8 @@ Module list (high level)
 - `sports_federation_venues` — venues, playing areas, and round-level venue scheduling
 - `sports_federation_finance_bridge` — finance event helpers
 - `sports_federation_public_site` / `sports_federation_portal` — public pages and portal flows
+
+
+## Operator workflow
+
+Use [`docs/COMPETITION_UI_WORKFLOW.md`](docs/COMPETITION_UI_WORKFLOW.md) for verified backend and portal paths.

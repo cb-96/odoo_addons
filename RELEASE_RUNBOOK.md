@@ -593,3 +593,13 @@ backup checksum, rollback owner, rollback trigger, and evidence inventory.
 Archive the generated `artifacts/release/migration/` directory with the candidate
 logs. A release cannot proceed when the invariant comparison or operator
 acceptance evidence is not `passed`.
+
+
+## Operator documentation qualification
+
+The RC static lane validates essential paths in [`docs/COMPETITION_UI_WORKFLOW.md`](docs/COMPETITION_UI_WORKFLOW.md) against menu XML.
+
+
+## RC lane failure visibility
+
+Odoo lanes write to `odoo-rc.log`. On a non-zero exit the runner prints an error summary and the final 200 lines. gettext `Empty msgid` warnings alone do not explain exit code 1; use the first test failure or module-load traceback in the logfile.

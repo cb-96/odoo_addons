@@ -1,5 +1,7 @@
 # Competition Engine Product Roadmap
 
+> **UI terminology:** the actual backend menu is **Federation → Competition Workflow**. See [`COMPETITION_UI_WORKFLOW.md`](COMPETITION_UI_WORKFLOW.md).
+
 Owner: Federation Competition Operations
 Last updated: 2026-09-03
 Review cadence: Every release

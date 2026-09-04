@@ -53,3 +53,8 @@ scripts/ci/run_rc_validation.sh focus
 ```
 
 The pilot must use distinct registration, format, calendar, schedule-planning, schedule-approval, and match-day operators. Planning and approval must not be collapsed into the administrator account. The browser tour remains the navigation smoke test; owning addon tests remain authoritative for state transitions and negative workflow decisions.
+
+
+## UI navigation
+
+Use [`COMPETITION_UI_WORKFLOW.md`](COMPETITION_UI_WORKFLOW.md) for verified backend and portal menu paths, state actions, and recovery procedures.

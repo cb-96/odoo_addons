@@ -23,7 +23,6 @@ below.
 - [Route inventory](../ROUTE_INVENTORY.md)
 - [Module ownership](../MODULE_OWNERS.yaml)
 - [Architecture decisions](../adr/README.md)
-- [OpenAPI contracts](../openapi/integration_v1.yaml)
 
 ## Workflows
 
@@ -46,3 +45,9 @@ roadmap or a standalone review snapshot for routine changes.
 - [Foundation source-truth contract](workflow_source_truth.md)
 
 - [Delivery roadmap](DELIVERY_ROADMAP.md): executable post-stabilization milestones and exit criteria.
+
+- [Competition UI workflow](COMPETITION_UI_WORKFLOW.md)
+- [Release candidate roadmap](RELEASE_CANDIDATE_ROADMAP.md)
+- [Competition engine roadmap](COMPETITION_ENGINE_ROADMAP.md)
+- [Competition operations QoL roadmap](COMPETITION_OPERATIONS_QOL_ROADMAP.md)
+- [Release pilot scenario](RELEASE_PILOT_SCENARIO.md)

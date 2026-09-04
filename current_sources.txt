@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 894
+# FILE-COUNT: 904
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -549,9 +549,9 @@ jobs:
 
 ====================================================================================================
 FILE: .gitignore
-SIZE: 371
-CONTENT-LENGTH: 371
-SHA256: 07c621c7ff06dbcacfc748a10b38e39021614b18cd5131219aa0e087cf35183a
+SIZE: 405
+CONTENT-LENGTH: 405
+SHA256: b75647608710355edecad0421821c77d7f57e5d567408dda6852d50037263852
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -577,6 +577,7 @@ source_collector.py
 ci/.env
 ci/odoo-ci.generated.conf
 ci/odoo-ci.generated.conf.*
+ci/odoo-ci.generated.runtime.conf
 
 # CI logs (keep .gitkeep, ignore run output)
 ci/logs/
@@ -2147,9 +2148,9 @@ Module list (high level)
 
 ====================================================================================================
 FILE: RELEASE_RUNBOOK.md
-SIZE: 23470
-CONTENT-LENGTH: 23462
-SHA256: 5d0c4dfad2f356c40df9803362d10e8842267e8b1d1cafc078ae6bd3fec1524f
+SIZE: 24329
+CONTENT-LENGTH: 24321
+SHA256: ec60a4938d296ea1d85b5aaa5e86e632cb722ddae537cd42f378b24716155cc3
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -2157,9 +2158,9 @@ GIT-STATE: tracked
 
 # Release Runbook
 
-Last updated: 2026-09-02
+Last updated: 2026-09-03
 Owner: Federation Platform Team
-Last reviewed: 2026-09-02
+Last reviewed: 2026-09-03
 Review cadence: Every release
 Release train: 2026.08
 
@@ -2248,6 +2249,29 @@ Exit code: 0; 116 tests run, 116 passed, 0 failed, 0 errors; 30 post-tests
 Rollback is the standard backup restore procedure in this runbook. Do not
 restore the deleted V1 controller or broaden portal publication access as a
 rollback workaround.
+
+### Release-candidate readiness review
+
+The release-candidate readiness contracts cover role-separated access,
+workflow recovery actions, portal usability surfaces, performance profile
+metadata, and the required release evidence files. Run the static lane before
+starting database qualification:
+
+```bash
+scripts/ci/run_rc_validation.sh static
+```
+
+The complete candidate sequence is:
+
+```bash
+scripts/ci/run_release_candidate.sh --backup-dir /path/to/approved-backup
+```
+
+The script performs the product-readiness and usability contract checks,
+release-baseline lanes, and (when an approved backup is supplied) the migration
+rehearsal. Record the candidate SHA, lane results, database names, and any
+rollback observations with the release ticket. Browser lanes require a Chrome
+executable; a candidate is not accepted when those lanes are silently skipped.
 
 If the release changes addon responsibility boundaries or adds a new
 `sports_federation_*` module, update `MODULE_OWNERS.yaml` in the same release
@@ -9166,6 +9190,74 @@ if errors:
 print("Phases 3-5 contract passed.")
 
 ====================================================================================================
+FILE: ci/check_competition_ui_workflow.py
+SIZE: 2478
+CONTENT-LENGTH: 2478
+SHA256: 9d7f689368e20e5c2022a3f680abb34970cbab32e4cb9ca4e8366da5a3c54554
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0755
+GIT-STATE: untracked
+====================================================================================================
+
+#!/usr/bin/env python3
+from pathlib import Path
+import sys
+from lxml import etree
+ROOT=Path(__file__).resolve().parents[1]
+GUIDE=ROOT/"docs/COMPETITION_UI_WORKFLOW.md"
+PATHS=(
+("Federation","Setup","Seasons"),
+("Federation","Setup","Competition Setup","Competition Templates"),
+("Federation","Setup","Competition Setup","Season Competitions"),
+("Federation","Competition Workflow","Create Competition"),
+("Federation","Competition Workflow","Competition Overview"),
+("Federation","Competition Workflow","Registration Desk"),
+("Federation","Competition Workflow","Format Studio"),
+("Federation","Competition Workflow","Calendar Planner"),
+("Federation","Competition Workflow","Schedule Planner"),
+("Federation","Competition Workflow","Schedule Review Queue"),
+("Federation","Competition Workflow","Match-Day Control"),
+("Federation","Planning","Advanced Records","Matches"),
+("Federation","Publication","Approved Schedules"),
+("Federation","Publication","Schedule Publications"),
+("Federation","Publication","Standings"),
+("Federation","Administration","Reporting","Operational Health"),
+("Federation","Administration","Operational Job Health"),
+)
+def index():
+ records={}
+ for path in ROOT.glob("sports_federation_*/views/*.xml"):
+  try:tree=etree.parse(str(path))
+  except etree.XMLSyntaxError:continue
+  module=path.parts[-3]
+  for node in tree.xpath("//menuitem"):
+   rid=node.get("id");xmlid=rid if "." in rid else f"{module}.{rid}"
+   parent=node.get("parent","");parent=parent if not parent or "." in parent else f"{module}.{parent}"
+   records[xmlid]={"name":node.get("name",""),"parent":parent}
+ return records
+def exists(records,labels):
+ for xid,record in records.items():
+  if record["name"]!=labels[-1]:continue
+  names=[record["name"]];parent=record["parent"]
+  while parent in records:
+   record=records[parent];names.append(record["name"]);parent=record["parent"]
+  if tuple(reversed(names))==labels:return True
+ return False
+def main():
+ records=index();guide=GUIDE.read_text();errors=[]
+ for labels in PATHS:
+  rendered=" > ".join(labels)
+  if not exists(records,labels):errors.append(f"menu path missing: {rendered}")
+  if rendered not in guide:errors.append(f"guide path missing: {rendered}")
+ if errors:
+  print("Competition UI workflow contract failed:", file=sys.stderr)
+  for error in errors:
+   print(f"- {error}", file=sys.stderr)
+  return 1
+ print("Competition UI workflow menu paths passed.");return 0
+if __name__=="__main__":raise SystemExit(main())
+
+====================================================================================================
 FILE: ci/check_constraint_index_contracts.py
 SIZE: 3823
 CONTENT-LENGTH: 3823
@@ -9288,9 +9380,9 @@ if __name__ == "__main__":
 
 ====================================================================================================
 FILE: ci/check_delivery_language.py
-SIZE: 1182
-CONTENT-LENGTH: 1182
-SHA256: 8cb33d2dd278c1fa26e0a7a65ecd9d6c64e8b93c65e4e4e51688bd3edaaafefe
+SIZE: 1210
+CONTENT-LENGTH: 1210
+SHA256: 550ab250bfb586ad2b5c2063a934330ec12f7a3043aac13515d736755fb9b951
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -9308,19 +9400,26 @@ errors = []
 for p in ROOT.rglob("*"):
     relative = p.relative_to(ROOT)
     if (
-        p.is_file()
-        and ".git" not in p.parts
-        and "migrations" not in p.parts
-        and (version.search(str(relative)) or delivery.search(str(relative)))
+        not p.is_file()
+        or ".git" in p.parts
+        or "__pycache__" in p.parts
+        or "migrations" in p.parts
+        or p.suffix == ".pyc"
     ):
+        continue
+    if version.search(str(relative)) or delivery.search(str(relative)):
         errors.append(f"{relative}: obsolete delivery language in path")
-    if (
-        p.is_file()
-        and ".git" not in p.parts
-        and "migrations" not in p.parts
-        and p.suffix
-        in {".py", ".xml", ".md", ".json", ".yaml", ".yml", ".sh", ".js", ".scss"}
-    ):
+    if p.suffix in {
+        ".py",
+        ".xml",
+        ".md",
+        ".json",
+        ".yaml",
+        ".yml",
+        ".sh",
+        ".js",
+        ".scss",
+    }:
         for n, line in enumerate(p.read_text().splitlines(), 1):
             if version.search(line) or delivery.search(line):
                 errors.append(f"{p.relative_to(ROOT)}:{n}: {line.strip()}")
@@ -9655,9 +9754,9 @@ print(f"HTTP route ownership passed for {len(owners)} literal routes.")
 
 ====================================================================================================
 FILE: ci/check_legacy_engine_removed.py
-SIZE: 1732
-CONTENT-LENGTH: 1732
-SHA256: db2e54de043ef925530b106a5b72f260e045756e4b5d6020c9a66d1b329d5cf7
+SIZE: 1780
+CONTENT-LENGTH: 1780
+SHA256: 6e77e04b69477508a8315ac2b292244a81c2b53339e1b1a50d3aea40d8ada834
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -9700,7 +9799,8 @@ SUFFIXES = {
     ".txt",
 }
 errors = []
-if (ROOT / "sports_federation_competition_engine").exists():
+legacy_addon = ROOT / "sports_federation_competition_engine"
+if (legacy_addon / "__manifest__.py").exists():
     errors.append("legacy addon directory still exists")
 files = list(SCAN_FILES)
 for base in SCAN_ROOTS:
@@ -11146,6 +11246,178 @@ if errors:
         print(f"- {error}")
     sys.exit(1)
 print("Publication integrity contract passed.")
+
+====================================================================================================
+FILE: ci/check_rc_product_readiness.py
+SIZE: 4143
+CONTENT-LENGTH: 4143
+SHA256: fc7cf604ba07ce4397deba78581b51657d4ed11f825dea8abb89117a5a1b881f
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Validate the product-facing release-candidate qualification contracts."""
+
+from __future__ import annotations
+
+import ast
+import csv
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def load_json(relative):
+    return json.loads((ROOT / relative).read_text(encoding="utf-8"))
+
+
+def acl_rows():
+    rows = []
+    for path in ROOT.glob("sports_federation_*/security/ir.model.access.csv"):
+        with path.open(encoding="utf-8", newline="") as handle:
+            rows.extend(
+                dict(row, _path=str(path.relative_to(ROOT)))
+                for row in csv.DictReader(handle)
+            )
+    return rows
+
+
+def main():
+    errors = []
+    role_matrix = load_json("ci/rc_role_matrix.json")
+    recovery = load_json("ci/rc_recovery_contract.json")
+    profiles = load_json("ci/rc_performance_profiles.json")
+    if (
+        role_matrix.get("schema_version") != 1
+        or recovery.get("schema_version") != 1
+        or profiles.get("schema_version") != 1
+    ):
+        errors.append("all RC contracts must use schema_version 1")
+
+    rows = acl_rows()
+    for group, contract in role_matrix["roles"].items():
+        group_rows = [row for row in rows if row.get("group_id:id") == group]
+        for model in contract.get("can_read", []):
+            model_ref = "model_" + model.replace(".", "_")
+            if not any(
+                row.get("model_id:id", "").split(".")[-1] == model_ref
+                and row.get("perm_read") == "1"
+                for row in group_rows
+            ):
+                errors.append(f"{group} lacks declared read access to {model}")
+        for key, permission in (
+            ("must_not_write", "perm_write"),
+            ("must_not_create", "perm_create"),
+        ):
+            for model in contract.get(key, []):
+                model_ref = "model_" + model.replace(".", "_")
+                if any(
+                    row.get("model_id:id", "").split(".")[-1] == model_ref
+                    and row.get(permission) == "1"
+                    for row in group_rows
+                ):
+                    errors.append(f"{group} unexpectedly has {permission} on {model}")
+
+    for name, contract in recovery["workflows"].items():
+        path = ROOT / contract["source"]
+        if not path.is_file():
+            errors.append(f"{name}: missing source {contract['source']}")
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        methods = {
+            node.name
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+        for action in contract["actions"]:
+            if action not in methods:
+                errors.append(f"{name}: missing recovery action {action}")
+
+    expected_profiles = {"small", "medium", "large"}
+    if set(profiles.get("profiles", {})) != expected_profiles:
+        errors.append("performance profiles must define small, medium, and large")
+    previous = 0
+    for name in ("small", "medium", "large"):
+        clubs = profiles.get("profiles", {}).get(name, {}).get("clubs", 0)
+        if not isinstance(clubs, int) or clubs <= previous:
+            errors.append("performance profile club counts must increase")
+        previous = clubs
+
+    required = (
+        "sports_federation_demo/tests/test_operator_role_acceptance.py",
+        "sports_federation_demo/tests/test_browser_competition_lifecycle.py",
+        "sports_federation_demo/tests/test_demo_data_pack.py",
+        "docs/RELEASE_PILOT_SCENARIO.md",
+        "scripts/ci/run_release_baseline.sh",
+        "scripts/ci/run_migration_rehearsal.sh",
+    )
+    for relative in required:
+        if not (ROOT / relative).is_file():
+            errors.append(f"missing RC evidence surface: {relative}")
+
+    if errors:
+        print("RC product readiness failed:", file=sys.stderr)
+        for error in errors:
+            print(f"- {error}", file=sys.stderr)
+        return 1
+    print("RC product readiness contracts passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+====================================================================================================
+FILE: ci/check_rc_usability.py
+SIZE: 989
+CONTENT-LENGTH: 989
+SHA256: 12a06e98bd019395f21158286697eb2bebe4b5b56378a5d502df2eb1742972cf
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env python3
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def main():
+    errors = []
+    portal = (
+        (ROOT / "sports_federation_portal/views/portal_templates.xml")
+        .read_text()
+        .lower()
+    )
+    for text in ("no players found", "no teams found", "no action items"):
+        if text not in portal:
+            errors.append(f"missing empty state: {text}")
+    quick = (
+        ROOT / "sports_federation_portal/static/src/js/portal_quick_actions.js"
+    ).read_text()
+    for text in (
+        "Copy direct link",
+        "What happens next?",
+        "Recent items",
+        "MAX_RECENT = 8",
+    ):
+        if text not in quick:
+            errors.append(f"missing quick action: {text}")
+    if errors:
+        print("RC usability failed:\n- " + "\n- ".join(errors), file=sys.stderr)
+        return 1
+    print("RC usability contracts passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
 ====================================================================================================
 FILE: ci/check_registration_contract.py
@@ -12820,29 +13092,6 @@ services:
     command: ["--no-http", "--stop-after-init", "--test-enable", "-d", "test_rosters_legacy", "-i", "sports_federation_rosters"]
 
 ====================================================================================================
-FILE: ci/odoo-ci.generated.runtime.conf
-SIZE: 235
-CONTENT-LENGTH: 235
-SHA256: 8d0d5585645e8a7dc072359043327a964a002a3a60b693c9fc78053ec1ff8371
-GIT-MODE: 100644
-FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
-====================================================================================================
-
-[options]
-db_host = ci-db
-db_port = 5432
-db_user = odoo
-db_password = change_me
-
-addons_path = /usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
-data_dir = /var/lib/odoo
-
-list_db = False
-without_demo = True
-log_level = info
-
-====================================================================================================
 FILE: ci/parse_ci_logs.py
 SIZE: 5048
 CONTENT-LENGTH: 5048
@@ -13085,6 +13334,123 @@ fi
 for run_dir in "${run_dirs[@]:KEEP_RUNS}"; do
   rm -rf "$LOG_DIR/$run_dir"
 done
+
+====================================================================================================
+FILE: ci/rc_performance_profiles.json
+SIZE: 355
+CONTENT-LENGTH: 355
+SHA256: be41a83416b42e45ca870221bea8c9672c74c22ce98dc87d8509d6b57b562061
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+{
+  "schema_version": 1,
+  "profiles": {
+    "small": {"clubs": 10, "teams_per_club": 2, "matches": 180},
+    "medium": {"clubs": 100, "teams_per_club": 3, "matches": 2500},
+    "large": {"clubs": 500, "teams_per_club": 4, "matches": 10000}
+  },
+  "qualified_surfaces": ["standings", "portal_task_inbox", "operational_dashboard", "cross_module_search"]
+}
+
+====================================================================================================
+FILE: ci/rc_recovery_contract.json
+SIZE: 1251
+CONTENT-LENGTH: 1251
+SHA256: 808270e6878e451a6e8277c91e701b561735d41ea31bb441d5cac8e55c4bbf84
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+{
+  "schema_version": 1,
+  "workflows": {
+    "competition_entry": {
+      "model": "federation.competition.entry",
+      "source": "sports_federation_registration/models/registration.py",
+      "actions": [
+        "action_submit",
+        "action_return",
+        "action_reject",
+        "action_withdraw"
+      ]
+    },
+    "schedule_review": {
+      "model": "federation.schedule.review",
+      "source": "sports_federation_schedule_approval/models/workflow_actions.py",
+      "actions": [
+        "action_withdraw_submission",
+        "action_request_changes",
+        "action_approve_schedule"
+      ]
+    },
+    "publication_replacement": {
+      "model": "federation.schedule",
+      "source": "sports_federation_scheduling/models/schedule_integrity.py",
+      "actions": [
+        "action_create_revision"
+      ]
+    },
+    "operational_job": {
+      "model": "federation.operation.job",
+      "source": "sports_federation_base/models/operation_job.py",
+      "actions": [
+        "action_retry",
+        "action_open_source"
+      ]
+    },
+    "standing_correction": {
+      "model": "federation.standing",
+      "source": "sports_federation_standings/models/standing.py",
+      "actions": [
+        "action_recompute"
+      ]
+    }
+  }
+}
+
+====================================================================================================
+FILE: ci/rc_role_matrix.json
+SIZE: 1267
+CONTENT-LENGTH: 1267
+SHA256: 0fa6c90b79f5b1550582b8edb939e009d15b03080db12a3768fec17ecdd307a8
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+{
+  "schema_version": 1,
+  "roles": {
+    "sports_federation_base.group_federation_manager": {
+      "can_read": ["federation.operation.job", "federation.retention.evidence", "federation.operation.task"],
+      "must_not_create": ["federation.retention.evidence"]
+    },
+    "sports_federation_registration.group_registration_manager": {
+      "can_read": ["federation.registration.window", "federation.competition.entry"],
+      "must_not_write": ["federation.schedule.review"]
+    },
+    "sports_federation_scheduling.group_schedule_planner": {
+      "can_read": ["federation.schedule"],
+      "must_not_write": ["federation.schedule.publication"]
+    },
+    "sports_federation_schedule_approval.group_schedule_approver": {
+      "can_read": ["federation.schedule.review"],
+      "must_not_create": ["federation.schedule.assignment"]
+    },
+    "sports_federation_matchday.group_matchday_manager": {
+      "can_read": ["federation.matchday.session"],
+      "must_not_write": ["federation.schedule.publication"]
+    },
+    "sports_federation_portal.group_federation_portal_club": {
+      "can_read": ["federation.operation.task"],
+      "must_not_write": ["federation.schedule.review", "federation.schedule.publication", "federation.retention.evidence"]
+    }
+  }
+}
 
 ====================================================================================================
 FILE: ci/release_invariants.json
@@ -14671,6 +15037,28 @@ def test_minimum_count_mode_allows_growth_but_not_loss():
     )
 
 ====================================================================================================
+FILE: ci/test_rc_product_readiness.py
+SIZE: 335
+CONTENT-LENGTH: 335
+SHA256: e14c3f76a7e83b0db6cbe928b67c5c603f84cefa1c84b7f791c9fc0851f519e6
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+import importlib.util
+from pathlib import Path
+
+PATH = Path(__file__).with_name("check_rc_product_readiness.py")
+SPEC = importlib.util.spec_from_file_location("rc_readiness", PATH)
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+
+
+def test_rc_product_readiness_contracts():
+    assert MODULE.main() == 0
+
+====================================================================================================
 FILE: ci/verify_release.sh
 SIZE: 324
 CONTENT-LENGTH: 324
@@ -14892,6 +15280,309 @@ Reduce clicks, ambiguity, recovery time, and support requests without adding a p
 ## Exit criteria
 
 Users can identify the next action and owner, reach the source in one step, retry failed jobs safely, process supported bulk work, review authoritative history, find records without knowing module boundaries, and work from urgency-based queues.
+
+====================================================================================================
+FILE: docs/COMPETITION_UI_WORKFLOW.md
+SIZE: 11089
+CONTENT-LENGTH: 10699
+SHA256: cd08e472281fa27aa4999aa4f0206a44e569cde6e1abcb981f0b34229033f40a
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: untracked
+====================================================================================================
+
+# Competition Workflow in the User Interface
+
+Owner: Federation Competition Operations
+Last verified against menu XML: 2026-09-04
+
+## Purpose
+
+This guide replaces conceptual module names with the menus that actually exist in the **Federation** application. A menu can be hidden if the current user lacks the required role or record access.
+
+## Actual backend menu map
+
+```text
+Federation
+├── Setup
+│   ├── Core Records
+│   │   ├── Clubs
+│   │   └── Teams
+│   ├── Seasons
+│   ├── Season Registrations
+│   └── Competition Setup
+│       ├── Competition Templates
+│       ├── Season Competitions
+│       └── Rules & Policies
+├── Competition Workflow
+│   ├── Create Competition
+│   ├── Competition Overview
+│   ├── Registration Desk
+│   ├── Format Studio
+│   ├── Format Templates
+│   ├── Calendar Planner
+│   ├── Schedule Planner
+│   ├── Schedule Review Queue
+│   ├── Match-Day Control
+│   └── Technical Records
+├── Planning
+│   ├── Operational Action Queue
+│   └── Advanced Records
+│       ├── Divisions & Tournaments
+│       ├── Matches
+│       └── Tournament Structure
+├── Match Day
+│   ├── Match Sheets
+│   ├── Venues
+│   ├── Officiating
+│   └── Discipline
+├── Publication
+│   ├── Standings
+│   ├── Approved Schedules
+│   └── Schedule Publications
+└── Administration
+    ├── Reporting
+    │   └── Operational Health
+    ├── Retention and Recovery
+    ├── Retention Evidence
+    └── Operational Job Health
+```
+
+There is no backend menu named **Competitions**, **Registrations**, **Scheduling**, **Schedule Approval**, **Results**, or **Competition Engine**. Those are concepts or addon names, not current navigation labels.
+
+## Actual club portal links
+
+```text
+My Account
+├── Overview                 /my/competitions
+├── Action items             /my/action-items
+├── My teams                 /my/teams
+├── Season registrations     /my/season-registrations
+├── Match day                /my/match-day
+├── Officials                /my/referee-duties
+└── Results                  /my/results
+```
+
+## Complete workflow and recovery
+
+### 1. Prepare reusable setup
+
+Use:
+
+```text
+Federation > Setup > Seasons
+Federation > Setup > Competition Setup > Competition Templates
+Federation > Setup > Competition Setup > Rules & Policies > Rule Sets & Policies
+Federation > Setup > Core Records > Clubs
+Federation > Setup > Core Records > Teams
+```
+
+Create the season, reusable competition definition, rule set, clubs, and teams. Points, tie-break, eligibility, and qualification components are below **Rules & Policies > Advanced Components**.
+
+**Recovery:** Edit unused records. Archive records that already have history. Do not delete referenced seasons, competitions, clubs, teams, or rule sets merely to restart a workflow.
+
+### 2. Create the season competition
+
+Preferred menu:
+
+```text
+Federation > Competition Workflow > Create Competition
+```
+
+The wizard selects the setup template, competition template, season, dates, optional rule set, registration dates, divisions, and responsibilities. It creates the season competition, divisions, registration windows, and role assignments, then opens the season competition.
+
+Inspect the records through:
+
+```text
+Federation > Setup > Competition Setup > Season Competitions
+Federation > Planning > Advanced Records > Divisions & Tournaments
+Federation > Competition Workflow > Competition Overview
+```
+
+**Recovery:** Correct newly created records before clubs submit. There is no generic **Undo Competition Wizard** button. If downstream entries, fixtures, schedules, results, or publications exist, preserve the original records and create controlled replacements.
+
+### 3. Open registration and accept entries
+
+Backend:
+
+```text
+Federation > Competition Workflow > Registration Desk
+```
+
+Club portal:
+
+```text
+My Account > Season registrations
+```
+
+Use **Open Registration** on a draft registration window. Clubs prepare and submit entries. Managers review them in the Registration Desk.
+
+**Recovery:** Use **Close Registration** to stop submissions. A submitted entry can be withdrawn by the club or returned by the manager with a reason. A returned entry can be corrected and resubmitted. Rejection remains historical evidence.
+
+### 4. Finalize participants
+
+Menu:
+
+```text
+Federation > Competition Workflow > Registration Desk
+```
+
+Close the registration window and press **Finalize Participants**. The finalized participant set feeds the format structure.
+
+**Recovery:** Correct entries before finalization. If a finalized set is wrong and nothing depends on it, create a corrected set through the registration workflow. If fixtures or schedules exist, create a successor structure or schedule revision instead of mutating published history.
+
+### 5. Configure and generate the format
+
+Menus:
+
+```text
+Federation > Competition Workflow > Format Templates
+Federation > Competition Workflow > Format Studio
+```
+
+**Format Templates** is manager-only. In **Format Studio**, select the season competition, division, finalized participant set, and format settings. Use **Check Feasibility**, then **Generate Fixtures**. For multi-stage structures use **Validate Stage Graph**. Once accepted, use **Freeze Structure**.
+
+**Recovery:** Before freeze, correct and regenerate. Once operational matches or frozen stage snapshots exist, create a new structure version. The current UI has no generic structure-unfreeze command.
+
+### 6. Prepare and progress stages
+
+There is no standalone **Stage Progression** menu. Stage controls are on the structure opened from:
+
+```text
+Federation > Competition Workflow > Format Studio
+```
+
+Available stage actions are **Prepare**, **Start**, and **Freeze & Progress**.
+
+**Recovery:** Correct a stage before starting it. Before progression, correct and recompute standings. Frozen snapshot lines are immutable; after progression use a corrected successor structure rather than editing evidence.
+
+### 7. Plan calendar capacity
+
+Menu:
+
+```text
+Federation > Competition Workflow > Calendar Planner
+```
+
+Create match days, slot windows, and capacity, then use **Mark Capacity Ready**. Venue setup and constraints are under:
+
+```text
+Federation > Match Day > Venues
+```
+
+**Recovery:** Edit draft calendar records. If a schedule already uses the calendar, make the deliberate calendar correction and refresh the working schedule. Stale assignments are flagged, not silently deleted.
+
+### 8. Build the working schedule
+
+Menu:
+
+```text
+Federation > Competition Workflow > Schedule Planner
+```
+
+Use **Refresh Calendar Fixtures**. Assign dates, times, venues, and courts manually, or use **Auto-schedule**, **Preview**, and **Apply Auto-schedule**. Review fairness warnings.
+
+**Recovery:** Draft and change-requested schedules remain editable. A preview does not change the schedule until applied. Refresh fixtures, move assignments, or regenerate while mutable.
+
+### 9. Submit and review the schedule
+
+Planner menu:
+
+```text
+Federation > Competition Workflow > Schedule Planner
+```
+
+Use **Submit for Review**. Approver menu:
+
+```text
+Federation > Competition Workflow > Schedule Review Queue
+```
+
+The review exposes **Withdraw Submission**, **Request Changes**, and **Approve Schedule** according to state and role.
+
+**Recovery:** Withdraw a pending submission to return it to editing. Request changes to return it to the planner. If an approval is mistaken, do not publish; correct it through a new review cycle while preserving separation of duties.
+
+### 10. Publish the schedule
+
+Use **Publish Schedule** on an approved review. The two real publication menus are:
+
+```text
+Federation > Publication > Approved Schedules
+Federation > Publication > Schedule Publications
+```
+
+**Recovery:** Live publications are immutable. Open the published schedule under **Federation > Competition Workflow > Schedule Planner**, use **Amend Schedule**, enter a reason, and press **Create Amendment**. The replacement follows submit, review, approve, and publish again. The old publication becomes superseded. There is no in-place **Unpublish** button.
+
+### 11. Operate match day
+
+Menu:
+
+```text
+Federation > Competition Workflow > Match-Day Control
+```
+
+Use **Open Match Day** when ready. During operations use **Update Court**, **Report Incident**, or **Operational Schedule Change**. Finish with **Close Match Day**. Supporting records are under:
+
+```text
+Federation > Match Day > Match Sheets
+Federation > Competition Workflow > Technical Records > Incidents
+Federation > Competition Workflow > Technical Records > Operational Deviations
+```
+
+**Recovery:** Resolve incident and deviation records with **Resolve**. Operational changes are recorded rather than silently altering the approved publication. Correct the planning baseline through a schedule amendment.
+
+### 12. Submit and approve results
+
+Backend menu:
+
+```text
+Federation > Planning > Advanced Records > Matches
+```
+
+Result Control extends the match form; there is no separate backend **Results** menu. The form provides **Submit Result**, **Verify Result**, **Approve Result**, **Raise Dispute / Request Exception**, **Correct Result**, and **Reset to Draft**.
+
+Club portal:
+
+```text
+My Account > Results
+```
+
+**Recovery:** Reset an incorrect in-progress result to draft. Raise a dispute for governed review. Correct contested or approved results through **Correct Result**. Never silently edit an approved score.
+
+### 13. Recompute and freeze standings
+
+Menu:
+
+```text
+Federation > Publication > Standings
+```
+
+Use **Recompute** or **Queue Recompute**, inspect lines and tie-break notes, and then use **Freeze**.
+
+**Recovery:** Recompute while unfrozen. For a frozen standing, use **Unfreeze**, correct the source result or rule, use **Force Recompute**, and freeze again. Failed asynchronous work appears under the nested **Recompute Queue**.
+
+### 14. Monitor exceptions
+
+Menus:
+
+```text
+Federation > Planning > Operational Action Queue
+Federation > Administration > Reporting > Operational Health
+Federation > Administration > Operational Job Health
+```
+
+Use source links to correct business records in their owning workflow. Retry only retryable jobs.
+
+## Required terminology in operator documentation
+
+- Use **Federation > Competition Workflow**, not “Competition Engine”.
+- Use **Registration Desk**, not “Registration Windows” as a menu.
+- Use **Schedule Planner**, not “Scheduling > Schedules”.
+- Use **Schedule Review Queue**, not “Schedule Approval > Reviews”.
+- Use **Publication > Schedule Publications**, not “Schedule Approval > Publications”.
+- Use **Planning > Advanced Records > Matches**, not “Results > Match Results”.
+- Use **Publication > Standings**, not “Standings > Standings”.
+- Use **Format Studio** for stage progression; there is no standalone progression menu.
 
 ====================================================================================================
 FILE: docs/DELIVERY_ROADMAP.md
@@ -15219,13 +15910,54 @@ roadmap or a standalone review snapshot for routine changes.
 - [Delivery roadmap](DELIVERY_ROADMAP.md): executable post-stabilization milestones and exit criteria.
 
 ====================================================================================================
-FILE: docs/RELEASE_PILOT_SCENARIO.md
-SIZE: 2446
-CONTENT-LENGTH: 2446
-SHA256: 480e87923b00194fbdefb81db0fd76d963668e73ca0a732514011408421d6092
+FILE: docs/RELEASE_CANDIDATE_ROADMAP.md
+SIZE: 1306
+CONTENT-LENGTH: 1306
+SHA256: 5a2979288bf82d61575de0d9242df520284a13cf14e2f199399f960ff993d6fb
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
+====================================================================================================
+
+# Release Candidate Roadmap
+
+Owner: Federation Platform Release Owner
+Last updated: 2026-09-03
+Review cadence: Every candidate
+
+## Scope freeze
+
+Status: **Active**
+
+Only release blockers, security or integrity defects, accessibility regressions, and evidence gaps may change the committed candidate.
+
+## Required qualification
+
+- versioned role and prohibited-permission matrix;
+- recovery inventory for registration, schedule review, publication replacement, job retry, and standings correction;
+- certified demo federation with clubs, teams, rosters, played matches, results, and standings;
+- integrated lifecycle, keyboard, portal, public-site, and release-focus acceptance tours;
+- useful empty states and prevention of raw workflow values in user-facing templates;
+- small, medium, and large performance profiles for 10, 100, and 500 clubs;
+- clean install, full addon upgrade, full suite, and migration rehearsal against an approved backup;
+- copy-link, bounded recent-items, and contextual next-action portal shortcuts.
+
+## Candidate execution
+
+```bash
+scripts/ci/run_release_candidate.sh --backup-dir /approved/backup/directory
+```
+
+Approval requires all lanes to pass on the exact committed SHA, no unresolved release blocker, complete baseline and migration evidence, and release-owner sign-off.
+
+====================================================================================================
+FILE: docs/RELEASE_PILOT_SCENARIO.md
+SIZE: 2613
+CONTENT-LENGTH: 2613
+SHA256: ce8864d3e61be962f21126be5ea277001dc11c7dd951ccfc88fb93e664769fa0
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: modified
 ====================================================================================================
 
 # Deterministic Release Pilot Scenario
@@ -15283,6 +16015,11 @@ scripts/ci/run_rc_validation.sh focus
 ```
 
 The pilot must use distinct registration, format, calendar, schedule-planning, schedule-approval, and match-day operators. Planning and approval must not be collapsed into the administrator account. The browser tour remains the navigation smoke test; owning addon tests remain authoritative for state transitions and negative workflow decisions.
+
+
+## UI navigation
+
+Use [`COMPETITION_UI_WORKFLOW.md`](COMPETITION_UI_WORKFLOW.md) for verified backend and portal menu paths, state actions, and recovery procedures.
 
 ====================================================================================================
 FILE: docs/competition_engine_ownership.md
@@ -16414,12 +17151,12 @@ echo "Migration rehearsal passed. Evidence: $evidence_dir"
 
 ====================================================================================================
 FILE: scripts/ci/run_rc_validation.sh
-SIZE: 6514
-CONTENT-LENGTH: 6514
-SHA256: ac5aa996c1579b62fd657001b9b2c05ceb08212a04d458cf21936cf1b07f6ed6
+SIZE: 6948
+CONTENT-LENGTH: 6948
+SHA256: 828e6a34b3c5396688348f5b60784de13ee612fa5e57b0d366a30e4bf6860593
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 #!/usr/bin/env bash
@@ -16455,7 +17192,16 @@ require_odoo() {
 }
 
 static_checks() {
-  python3 -m compileall -q sports_federation_*
+  python3 - <<'PY'
+from pathlib import Path
+import tokenize
+
+for addon in sorted(Path('.').glob('sports_federation_*')):
+    for path in sorted(addon.rglob('*.py')):
+        with tokenize.open(path) as source_file:
+            compile(source_file.read(), str(path), 'exec', dont_inherit=True)
+print('Python syntax check passed without writing bytecode')
+PY
   python3 - <<'PY'
 from pathlib import Path
 from xml.etree import ElementTree
@@ -16484,8 +17230,11 @@ PY
   python3 ci/check_public_competition_contract.py
   python3 ci/check_doc_freshness.py
   python3 ci/check_delivery_language.py
+  python3 ci/check_competition_ui_workflow.py
   python3 ci/check_release_qualification.py
   python3 ci/check_release_focus_contract.py
+  python3 ci/check_rc_product_readiness.py
+  python3 ci/check_rc_usability.py
   python3 ci/check_retention_visibility_contract.py
   python3 ci/check_migration_rehearsal_contract.py
   if command -v node >/dev/null 2>&1; then
@@ -16650,6 +17399,26 @@ PY
 
 echo "[Release baseline] Qualification passed."
 echo "[Release baseline] Evidence: $evidence_dir"
+
+====================================================================================================
+FILE: scripts/ci/run_release_candidate.sh
+SIZE: 533
+CONTENT-LENGTH: 533
+SHA256: 9122aea67165540b5d4dc46002f1c8ecad9c8f5423578c9102de15e184483b36
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"; cd "$root"
+backup=""
+while (($#)); do case "$1" in --backup-dir) backup="${2:-}"; shift 2;; *) echo "Usage: $0 [--backup-dir PATH]" >&2; exit 2;; esac; done
+python3 ci/check_rc_product_readiness.py
+python3 ci/check_rc_usability.py
+scripts/ci/run_release_baseline.sh
+if [[ -n "$backup" ]]; then scripts/ci/run_migration_rehearsal.sh --backup-dir "$backup"; else echo "[RC] Migration rehearsal skipped: no approved backup supplied."; fi
 
 ====================================================================================================
 FILE: source_collector.py
@@ -26822,12 +27591,12 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_demo/README.md
-SIZE: 2969
-CONTENT-LENGTH: 2969
-SHA256: c135482f0b4d180a6b56d126cc1cb96d95e7e81cce8c339291b086ff9f5e09da
+SIZE: 3157
+CONTENT-LENGTH: 3157
+SHA256: c099561a7d167f930f043dddfbf63f54b108d9698883bd0ba9f140dcf6ae8a59
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 # sports_federation_demo
@@ -26891,6 +27660,11 @@ Complete the normal path without a mouse:
 The `keyboard_competition_setup` browser tour qualifies the canonical backend
 journey mechanically. Portal template accessibility and mobile tests qualify
 labels, error semantics, status text, responsive tables, and action wrapping.
+
+
+## Verified operator menu guide
+
+Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md) during training and acceptance. Addon names are not always visible as menus.
 
 ====================================================================================================
 FILE: sports_federation_demo/__init__.py
@@ -36064,15 +36838,13 @@ class FederationCompetitionSimulator(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_format/services/dynamic_pairing.py
-SIZE: 2758
-CONTENT-LENGTH: 2758
-SHA256: 0cddaa1bb8b1b34fbd052b9ba4c88e39dcfd4b32f1d7fa206519cff6280852d6
+SIZE: 2721
+CONTENT-LENGTH: 2721
+SHA256: a21658120fc5acd538d5f79e1f8e481e7d502ead3042f22f593f249610ee7920
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
-
-from collections import defaultdict
 
 from odoo import _, api, models
 from odoo.exceptions import ValidationError
@@ -55648,9 +56420,9 @@ from . import controllers
 
 ====================================================================================================
 FILE: sports_federation_portal/__manifest__.py
-SIZE: 2638
-CONTENT-LENGTH: 2638
-SHA256: 7add221b8e98484c6070c08218dd242a91d814bfbe26d6ee31ded8282eb8b8cb
+SIZE: 2716
+CONTENT-LENGTH: 2716
+SHA256: 399d2cdb8ddefb02524743222ae1437e3464d0cdff04164d3e8cda870ee5cce7
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -55719,6 +56491,7 @@ on top of the federation base modules.
             "sports_federation_portal/static/src/scss/federation_portal.scss",
             "sports_federation_portal/static/src/js/qol_draft_guard.js",
             "sports_federation_portal/static/src/js/accessibility_recovery.js",
+            "sports_federation_portal/static/src/js/portal_quick_actions.js",
         ],
     },
     "demo": [],
@@ -62273,15 +63046,15 @@ class FederationPlayerLicense(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_portal/models/qol_search.py
-SIZE: 2117
-CONTENT-LENGTH: 2117
-SHA256: 5fba7a87b5cde5e360f37614098ff9a79b68753f6aeebe7c8dc4155f35e8d718
+SIZE: 2114
+CONTENT-LENGTH: 2114
+SHA256: 97ff87adb986a9f3a94685de49da2fd64c42bf2928997117dd90ddb275918c9c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
-from odoo import _, api, models
+from odoo import api, models
 
 
 class FederationQolSearch(models.AbstractModel):
@@ -62799,6 +63572,25 @@ document.addEventListener("portal:accessibility-error", (event) => {
 });
 
 export { recoverAccessibility, recoverError, prepareModal };
+
+====================================================================================================
+FILE: sports_federation_portal/static/src/js/portal_quick_actions.js
+SIZE: 1766
+CONTENT-LENGTH: 1766
+SHA256: 54fe526c1aa7ca38294e2f1bc8a8e1f1dbe22485ef79dbf0e05f441da62715bf
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+/** @odoo-module **/
+const STORAGE_KEY = "sf_recent_portal_items";
+const MAX_RECENT = 8;
+function loadRecent(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");}catch{return [];}}
+function remember(){if(!location.pathname.startsWith("/my/"))return;const title=document.querySelector("main h1,main h2")?.textContent?.trim()||document.title;const current={title,url:location.pathname+location.search};localStorage.setItem(STORAGE_KEY,JSON.stringify([current,...loadRecent().filter(x=>x.url!==current.url)].slice(0,MAX_RECENT)));}
+function render(){const heading=document.querySelector("main h1,main h2");if(!heading)return;const box=document.createElement("div");box.className="d-flex flex-wrap gap-2 mb-3";const copy=document.createElement("button");copy.type="button";copy.className="btn btn-sm btn-outline-secondary";copy.textContent="Copy direct link";copy.onclick=async()=>{await navigator.clipboard.writeText(location.href);copy.textContent="Link copied";};const help=document.createElement("a");help.href="/my/action-items";help.className="btn btn-sm btn-outline-secondary";help.textContent="What happens next?";box.append(copy,help);const recent=loadRecent().slice(1);if(recent.length){const details=document.createElement("details"),summary=document.createElement("summary"),list=document.createElement("div");summary.textContent="Recent items";summary.className="btn btn-sm btn-outline-secondary";for(const item of recent){const link=document.createElement("a");link.href=item.url;link.textContent=item.title;link.className="d-block py-1";list.append(link);}details.append(summary,list);box.append(details);}heading.after(box);}
+document.addEventListener("DOMContentLoaded",()=>{remember();render();});
+export { loadRecent, remember, render };
 
 ====================================================================================================
 FILE: sports_federation_portal/static/src/js/qol_draft_guard.js
@@ -69694,9 +70486,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_portal/views/portal_templates.xml
-SIZE: 54867
-CONTENT-LENGTH: 54839
-SHA256: be430bd45d54fbcaddd8bf0c9c81256b493100f9c50ecfdca32609308029da19
+SIZE: 55005
+CONTENT-LENGTH: 54977
+SHA256: e4ae26cf628b9d5242d831a6e25b31e3dbadab84061ecb2fe3d3ba9f0d953aaf
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -69815,7 +70607,7 @@ GIT-STATE: tracked
         <nav class="d-flex gap-2 flex-wrap mb-4" aria-label="Inbox filters"><a t-attf-class="btn btn-sm #{'btn-primary' if active_scope == 'my' else 'btn-outline-primary'}" href="/my/action-items?scope=my">My actions</a><a t-attf-class="btn btn-sm #{'btn-primary' if active_scope == 'club' else 'btn-outline-primary'}" href="/my/action-items?scope=club">All club actions</a><a class="btn btn-sm btn-outline-secondary" href="/my/action-items?scope=club&amp;status=recent">Completed recently</a><t t-foreach="task_type_labels.items()" t-as="kind"><a class="btn btn-sm btn-outline-secondary" t-attf-href="/my/action-items?scope=#{active_scope}&amp;task_type=#{kind[0]}"><t t-esc="kind[1]"/></a></t></nav>
         <t t-foreach="[('now','Needs action now'),('soon','Due soon'),('waiting','Waiting for someone else'),('recent','Completed recently')]" t-as="bucket"><section t-if="buckets.get(bucket[0])" class="mb-4"><h3 class="h5"><t t-esc="bucket[1]"/></h3><div class="vstack gap-3"><article t-foreach="buckets[bucket[0]]" t-as="task" class="card"><div class="card-body"><div class="d-flex justify-content-between gap-3 flex-wrap"><div><div class="d-flex gap-2 flex-wrap"><strong><t t-esc="task.name"/></strong><span t-if="task.blocking" class="badge text-bg-danger">Blocking</span><span t-if="task.is_overdue" class="badge text-bg-warning">Overdue</span></div><p class="text-muted small mb-1"><t t-esc="task.blocking_reason"/></p><div class="small"><strong>Next:</strong> <t t-esc="task.next_step"/><t t-if="task.deadline"> · <t t-esc="task.deadline" t-options="{'widget':'datetime'}"/></t></div><div class="small text-muted" t-if="task.assigned_user_id">Owner: <t t-esc="task.assigned_user_id.name"/></div></div><a t-if="task.action_url" t-att-href="task.action_url" class="btn btn-primary align-self-start">Open</a></div><form t-if="task.state != 'done' and representatives" action="/my/action-items/assign" method="POST" class="d-flex gap-2 flex-wrap mt-3"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><input type="hidden" name="task_id" t-att-value="task.id"/><label t-attf-for="assignee_#{task.id}" class="visually-hidden">Assign action</label><select t-attf-id="assignee_#{task.id}" name="user_id" class="form-select form-select-sm w-auto"><t t-foreach="representatives" t-as="rep"><option t-att-value="rep.effective_user_id.id" t-att-selected="task.assigned_user_id == rep.effective_user_id"><t t-esc="rep.effective_user_id.name"/> · <t t-esc="rep.operational_role or rep.role_type_id.name"/></option></t></select><button class="btn btn-sm btn-outline-secondary">Assign</button></form></div></article></div></section></t>
         <div t-if="not tasks" class="text-center py-5"><i class="fa fa-check-circle fa-3x text-success"/><h3>All clear</h3><p class="text-muted">There are no actions in this view.</p></div>
-      </div></t>
+      <div t-if="not tasks" class="alert alert-success" role="status"><strong>No action items.</strong> Your club is currently up to date.</div></div></t>
     </template>
     <template id="portal_milestones" name="Club Milestones"><t t-call="portal.portal_layout"><div class="container py-4"><div class="d-flex justify-content-between mb-4"><div><h2>Milestones</h2><p class="text-muted">Authoritative deadlines from registrations, rosters, officials and results.</p></div><a href="/my/action-items" class="btn btn-outline-secondary">Work inbox</a></div><t t-foreach="groups.items()" t-as="group"><section class="mb-4"><h3 class="h5"><t t-esc="group[0]"/></h3><div class="list-group"><a t-foreach="group[1]" t-as="task" t-att-href="task.action_url or '/my/action-items'" class="list-group-item list-group-item-action d-flex justify-content-between"><span><strong><t t-esc="task.name"/></strong><br/><small><t t-esc="task.next_step"/></small></span><time><t t-esc="task.deadline" t-options="{'widget':'datetime'}"/></time></a></div></section></t><div t-if="not groups" class="alert alert-success">No upcoming deadlines.</div></div></t></template>
 
@@ -103230,9 +104022,9 @@ class FederationScheduleSubmitWizard(models.TransientModel):
 
 ====================================================================================================
 FILE: sports_federation_standings/README.md
-SIZE: 5027
-CONTENT-LENGTH: 5027
-SHA256: fac9e6593f4665d79b936eb12082894d8ee14db0fedb13c468f646ae81dda197
+SIZE: 5171
+CONTENT-LENGTH: 5171
+SHA256: 940003737303dce07d7d81f5fb376b0d268ff5e20c874edb30722fc3065cc59c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -103256,6 +104048,8 @@ scoring and tie resolution.
 Dependencies
 ------------
 
+- ``sports_federation_base``: Shared federation models, groups, and correlation
+   utilities imported directly by the standings implementation.
 - ``sports_federation_tournament``: Tournaments, stages, groups, and matches.
 - ``sports_federation_rules``: Rule sets for scoring and tie-breaks.
 - ``mail``: Chatter integration.
@@ -103371,9 +104165,9 @@ from . import models
 
 ====================================================================================================
 FILE: sports_federation_standings/__manifest__.py
-SIZE: 837
-CONTENT-LENGTH: 837
-SHA256: e40ac57b926bff24fac33da9940ad2d0bb02aa88e90567b61cb2b82ef1486939
+SIZE: 871
+CONTENT-LENGTH: 871
+SHA256: 172b2fb23698855a9bad382c40242356f8ab69cd447d48b0d54f8c75cfb9a48f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -103392,6 +104186,7 @@ GIT-STATE: tracked
     "website": "",
     "license": "LGPL-3",
     "depends": [
+        "sports_federation_base",
         "sports_federation_tournament",
         "sports_federation_rules",
         "mail",

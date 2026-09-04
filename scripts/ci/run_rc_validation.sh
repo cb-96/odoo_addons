@@ -23,6 +23,24 @@ common=(
   --logfile="${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
 )
 
+print_odoo_failure() {
+  local exit_code="$1" logfile="${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
+  echo "ERROR: Odoo RC lane '$lane' failed with exit code $exit_code." >&2
+  if [[ -f "$logfile" ]]; then
+    echo "--- Odoo failure summary ---" >&2
+    grep -E "(^|[[:space:]])(ERROR|CRITICAL)[[:space:]]|FAIL:|ERROR:|[0-9]+ failed|[0-9]+ error" "$logfile" | tail -n 120 >&2 || true
+    echo "--- Last 200 Odoo log lines ---" >&2
+    tail -n 200 "$logfile" >&2 || true
+  fi
+  return "$exit_code"
+}
+
+run_odoo() {
+  local logfile="${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
+  : > "$logfile"
+  if "$@"; then return 0; else local rc=$?; print_odoo_failure "$rc"; return "$rc"; fi
+}
+
 require_odoo() {
   if [[ ! -x "$odoo_bin" ]]; then
     echo "ERROR: ODOO_BIN is not executable: $odoo_bin" >&2
@@ -69,6 +87,7 @@ PY
   python3 ci/check_public_competition_contract.py
   python3 ci/check_doc_freshness.py
   python3 ci/check_delivery_language.py
+  python3 ci/check_competition_ui_workflow.py
   python3 ci/check_release_qualification.py
   python3 ci/check_release_focus_contract.py
   python3 ci/check_rc_product_readiness.py
@@ -85,7 +104,7 @@ PY
 run_tags() {
   local tags="$1"
   require_odoo
-  "${common[@]}" -u "$modules" --test-enable --test-tags "$tags"
+  run_odoo "${common[@]}" -u "$modules" --test-enable --test-tags "$tags"
 }
 
 assert_modules_installed() {
@@ -111,7 +130,7 @@ run_upgrade() {
   assert_modules_installed "$upgrade_db_name"
   local upgrade_common=("${common[@]}")
   upgrade_common[2]="$upgrade_db_name"
-  "${upgrade_common[@]}" -u "$modules"
+  run_odoo "${upgrade_common[@]}" -u "$modules"
 }
 
 case "$lane" in
@@ -119,7 +138,7 @@ case "$lane" in
   static) static_checks ;;
   install)
     require_odoo
-    "${common[@]}" -i "$modules" --test-enable --test-tags 'standard'
+    run_odoo "${common[@]}" -i "$modules" --test-enable --test-tags 'standard'
     ;;
   upgrade) run_upgrade ;;
   core) run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications' ;;
@@ -136,7 +155,7 @@ case "$lane" in
     python3 ci/check_release_workspace.py
     static_checks
     require_odoo
-    "${common[@]}" -i "$modules" --test-enable --test-tags 'standard'
+    run_odoo "${common[@]}" -i "$modules" --test-enable --test-tags 'standard'
     run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications'
     run_upgrade
     run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile'
