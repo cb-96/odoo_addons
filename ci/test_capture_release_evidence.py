@@ -12,5 +12,5 @@ def test_sha256(tmp_path):
     path.write_bytes(b"release-evidence")
     assert (
         module.sha256(path)
-        == "c614426d3275f5c86e8926536ed0c24fc37d8044ea5dafc3f6be80e51657f6a7"
+        == "86d2013e196c2988bd1058ee04da96a95ff8dc094d511295329b207e74eb88b6"
     )

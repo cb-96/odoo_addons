@@ -1,59 +1,40 @@
-# Documentation Consolidation Review
+# Documentation Review
 
-Review date: 2026-08-20
-Reviewed source: attached source bundle plus eight separately attached repository-level Markdown files
+Review date: 2026-09-04
+Reviewed source: commit `035b5167f6e42c0fcaabe9c73c097f6c63167400`
+Owner: Federation Platform Team
 
-## Outcome
+## Scope
 
-- 21 Markdown files reviewed
-- 15 retained and updated
-- 6 recommended for deletion
-- no new standalone policy files introduced
+The second pass reviewed all repository Markdown, all 26 addon manifests,
+backend menu XML, portal routes, release scripts, CI documentation contracts,
+controller routes, workflow descriptions, OpenAPI references, and addon README
+coverage.
 
-## Deleted as redundant
+## Corrections
 
-- `sports_federation_notifications/ROADMAP_RC.md`
-- `sports_federation_portal/ROADMAP_RC.md`
-- `sports_federation_portal/PORTAL_OWNERSHIP_COVERAGE.md`
-- `sports_federation_portal/PORTAL_OWNERSHIP_TEST_MATRIX.md`
-- `sports_federation_result_control/ROADMAP_RC.md`
-- `sports_federation_rules/ROADMAP_RC.md`
+- Added the canonical competition UI and recovery guide.
+- Corrected obsolete menu terminology across workflows and ownership docs.
+- Added menu-to-documentation drift validation.
+- Restored integration and public-feed OpenAPI contracts, examples, and error
+  documentation required by code and CI.
+- Added missing Calendar and Competition Core READMEs.
+- Replaced implementation-era roadmap priority labels with durable headings.
+- Corrected delivery statuses and the release documentation index.
+- Added RC logfile diagnostics and corrected a deterministic SHA test fixture.
 
-### Rationale
+## Enforced checks
 
-The four `ROADMAP_RC.md` files were tiny release snapshots whose remaining bullets are either implemented invariants or broader repository roadmap concerns. Keeping them creates stale, ownerless parallel roadmaps.
-
-The two portal ownership snapshots duplicate each other, the portal README, ADR-0001, and the live tests. Static coverage dashboards become inaccurate whenever tests move. The durable ownership rules are now in the portal README and ADR; test files remain the authoritative coverage map.
-
-## Retained repository-level documents
-
-- `ROADMAP.md`: one current product and engineering roadmap
-- `ROUTE_INVENTORY.md`: human-readable critical route ownership
-- `INTEGRATION_CONTRACTS.md`: partner and public compatibility policy
-- `DATA_RETENTION_POLICY.md`: retention windows and cleanup contract
-- `adr/*`: accepted durable architecture decisions
-
-## Important corrections
-
-- Added missing roadmap freshness metadata.
-- Replaced the 100-item roadmap backlog with current priorities and explicit statuses.
-- Marked the competition ownership decomposition as complete for the current release.
-- Added workflow simplification as the primary product priority.
-- Removed the unverified `/web/login` ownership row.
-- Added the tournament-operations JSON-RPC load and action routes.
-- Updated ADR-0001 to describe `federation.portal.privilege` rather than direct `with_user().sudo()` use.
-- Consolidated module documentation and removed release-candidate mini-roadmaps.
-
-## Apply and verify
-
-Review the patch, then run:
-
-```bash
-git apply --check documentation_consolidation_2026-08-20.patch
-git apply documentation_consolidation_2026-08-20.patch
-python3 ci/check_doc_freshness.py
-python3 ci/check_markdown_links.py
-bash ci/run_repo_lint.sh --strict
+```text
+ci/check_markdown_links.py
+ci/check_doc_freshness.py
+ci/check_delivery_language.py
+ci/check_competition_ui_workflow.py
+ci/check_openapi_contracts.py
 ```
 
-The patch was generated from the supplied snapshot. If the branch has moved, apply individual files from the ZIP or regenerate the patch from the current branch.
+## Evidence still required
+
+Release baseline execution and migration rehearsal remain pending until they run
+against a clean committed candidate and an approved production-like backup.
+That is release evidence still to collect, not unresolved documentation debt.

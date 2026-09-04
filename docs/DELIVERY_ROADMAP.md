@@ -175,7 +175,7 @@ is safe.
 
 ## Retention Evidence and Recovery Visibility
 
-Status: **Partially implemented**
+Status: **Implemented**
 
 ### Objective
 
