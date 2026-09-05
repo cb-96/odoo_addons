@@ -22,8 +22,9 @@
         <span t-if="row['slot']"><t t-esc="row['slot'].court_id.display_name"/></span>
         <span t-if="row['status'] != 'as_published'" class="sf-match-status"><t t-esc="row['status'].replace('_', ' ').title()"/></span>
       </div>
-      <div class="sf-team-line"><strong><t t-esc="row['match'].home_team_id.display_name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].home_score"/></span></div>
-      <div class="sf-team-line"><strong><t t-esc="row['match'].away_team_id.display_name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].away_score"/></span></div>
+      <div t-if="row['division_label']" class="small text-primary fw-semibold mb-1"><t t-esc="row['division_label']"/></div>
+      <div class="sf-team-line"><strong><t t-esc="row['match'].home_team_id.name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].home_score"/></span></div>
+      <div class="sf-team-line"><strong><t t-esc="row['match'].away_team_id.name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].away_score"/></span></div>
     </article>
   </template>
 

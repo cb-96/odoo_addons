@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from odoo import fields, models
+from odoo import _, fields, models
 
 
 class PublicScheduleQueries(models.AbstractModel):
@@ -59,6 +59,7 @@ class PublicScheduleQueries(models.AbstractModel):
                     "slot": slot,
                     "start_local": local_start,
                     "end_local": local_end,
+                    "division_label": self._division_label(match),
                     "status": match.operational_status or "as_published",
                 }
             )
@@ -90,6 +91,22 @@ class PublicScheduleQueries(models.AbstractModel):
             "grid": grid,
             "by_time": list(by_time.items()),
         }
+
+    def _division_label(self, match):
+        fixture = match.logical_fixture_id
+        division = fixture.division_id if fixture else False
+        if not division:
+            return False
+        label = division.name or division.display_name
+        gender_labels = {
+            "male": _("Men"),
+            "female": _("Women"),
+            "mixed": _("Mixed"),
+        }
+        gender = gender_labels.get(division.gender)
+        if gender and gender.lower() not in (label or "").lower():
+            return _("%(division)s · %(gender)s", division=label, gender=gender)
+        return label
 
     def edition_matchdays(self, edition):
         return (

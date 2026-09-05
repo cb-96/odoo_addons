@@ -155,3 +155,22 @@ class TestPublicSiteTemplateAccessibility(TransactionCase):
         self.assertNotIn("logical_fixture_id.stage_id.name", content)
         self.assertIn("row['status'] != 'as_published'", content)
 
+
+    def test_public_match_card_shows_division_once(self):
+        templates = etree.parse(
+            str(
+                Path(__file__).resolve().parents[1]
+                / "views"
+                / "website_competition_templates.xml"
+            )
+        ).getroot()
+        match_card = templates.xpath(
+            ".//template[@id='public_competition_match_card']"
+        )[0]
+        content = etree.tostring(match_card, encoding="unicode")
+
+        self.assertEqual(content.count("row['division_label']"), 2)
+        self.assertIn("home_team_id.name", content)
+        self.assertIn("away_team_id.name", content)
+        self.assertNotIn("home_team_id.display_name", content)
+        self.assertNotIn("away_team_id.display_name", content)

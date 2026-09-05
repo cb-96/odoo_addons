@@ -22391,9 +22391,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_calendar/README.md
-SIZE: 1388
-CONTENT-LENGTH: 1388
-SHA256: a32815554e7817214441ed9735ce243391472cc0ae44d03e64a4d44d078d4d07
+SIZE: 1723
+CONTENT-LENGTH: 1720
+SHA256: b2cebcc9f379b7252e6e56303ee343d50686f1bd97c00f1ac0feef1fa2485f9b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -22413,6 +22413,13 @@ Open a draft or capacity-ready match day in **Calendar Planner** and select **Ge
 The total slot duration is the complete playing-area occupancy and must include normal play, possible overtime, post-match clearance, and setup for the next match. There is no separate hidden buffer that could make the published times misleading.
 
 The preview reports playable slots, explicit noon-break rows, and candidates rejected by active venue or playing-area constraint windows. Start, end, and pause times are interpreted in the user timezone and stored as the corresponding UTC instants. Generation preserves those planned times when it creates the rows, including explicit break rows; it does not rebase generated rows onto a playing area's existing timeline. Generation creates only slots that finish inside the requested game-day window. Venue-wide constraints affect every selected playing area; area-specific constraints affect only that area. Existing slots are never overwritten unless the operator explicitly enables replacement. Slot generation is unavailable once scheduling has started.
+## User-facing slot labels
+
+Schedule slots are displayed as their local start and end time plus court, for
+example `09:00–09:40 · Court 1`. The same label is used by the backend schedule
+assignment picker and by portal/public match-day views, so internal model names
+such as `federation.schedule.slot,42` are never shown to users.
+
 
 ====================================================================================================
 FILE: sports_federation_calendar/__init__.py
@@ -22433,7 +22440,7 @@ from . import wizards
 FILE: sports_federation_calendar/__manifest__.py
 SIZE: 636
 CONTENT-LENGTH: 636
-SHA256: 30c8992c612353f02a01d064ac45a9978ab36ad430752a7c4a8ac91b5838efe2
+SHA256: 896a70f69b6985033b08c7e8432d4832334ee0900b7f6303f4e976ef8df68047
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -22441,7 +22448,7 @@ GIT-STATE: tracked
 
 {
     "name": "Competition Calendar",
-    "version": "19.0.1.7.0",
+    "version": "19.0.1.7.1",
     "category": "Sports",
     "summary": "Physical match days, allocations, court availability and slots",
     "author": "Sports Federation",
@@ -22474,9 +22481,9 @@ from . import matchday
 
 ====================================================================================================
 FILE: sports_federation_calendar/models/matchday.py
-SIZE: 17049
-CONTENT-LENGTH: 17049
-SHA256: 04a6fe81fb859290bbe3ac2257e3cf7d23c36ea34fdc111345e09e7803d29d14
+SIZE: 17935
+CONTENT-LENGTH: 17932
+SHA256: 29545f395651518c6e92ca2be11e6c97d341d02590943dc329a9fa90e7bad262
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -22642,6 +22649,27 @@ class FederationScheduleSlot(models.Model):
         default=True,
         help="When enabled, saved slots continue from the latest slot on the selected court and inherit its duration.",
     )
+
+    @api.depends("start_datetime", "end_datetime", "court_id")
+    @api.depends_context("tz")
+    def _compute_display_name(self):
+        """Show the user-facing local slot window instead of a technical model name."""
+        for slot in self:
+            if not slot.start_datetime or not slot.end_datetime:
+                slot.display_name = _("Unscheduled slot")
+                continue
+            start = fields.Datetime.context_timestamp(slot, slot.start_datetime)
+            end = fields.Datetime.context_timestamp(slot, slot.end_datetime)
+            window = f"{start:%H:%M}–{end:%H:%M}"
+            slot.display_name = (
+                _(
+                    "%(window)s · %(court)s",
+                    window=window,
+                    court=slot.court_id.display_name,
+                )
+                if slot.court_id
+                else window
+            )
 
     @api.model
     def default_get(self, field_list):
@@ -23294,9 +23322,9 @@ class TestMatchdaySlotGenerationWizard(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_calendar/tests/test_slot_timeline.py
-SIZE: 9724
-CONTENT-LENGTH: 9724
-SHA256: 2428efdf4e5cfad481bf59220c66d5e5a373e6cec0da36ef276d5caad78f190a
+SIZE: 10204
+CONTENT-LENGTH: 10201
+SHA256: 26c430a2eb0f4853f46b5b97377118f994a186b0f1434327e56110bf842ff9f7
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -23388,6 +23416,19 @@ class TestCalendarSlotTimeline(TransactionCase):
         self.assertEqual(slots[0].start_datetime, self._utc(9))
         self.assertEqual(slots[1].start_datetime, self._utc(9))
         self.assertEqual(slots[2].start_datetime, self._utc(9))
+
+    def test_slot_display_name_uses_local_time_window_and_court(self):
+        slot = self.Slot.create(
+            {
+                "matchday_id": self.matchday.id,
+                "court_id": self.court_1.id,
+                "start_datetime": self._utc(9),
+                "end_datetime": self._utc(9, 40),
+            }
+        )
+
+        self.assertEqual(slot.display_name, "09:00–09:40 · Court 1")
+        self.assertNotIn("federation.schedule.slot", slot.display_name)
 
     def test_each_court_inherits_its_own_latest_duration(self):
         self.Slot.create(
@@ -72680,9 +72721,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_public_site/README.md
-SIZE: 10146
-CONTENT-LENGTH: 10146
-SHA256: 86b7af12b77711f782d9dbb3302c245d6d0a9664013232e94e7fd0c30a22d6b7
+SIZE: 10559
+CONTENT-LENGTH: 10559
+SHA256: 20224111ca5eb5f9f0ede27e085867cc1ba987080963998672aa564bc6aa884c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -72859,6 +72900,15 @@ Route orchestration lives in `public_competitions.py`. Framework response, canon
 
 The `19.0.3.0.0` pre-migration repairs the stored selector of the competition-hub editorial extension before Odoo reloads its parent template. This prevents databases upgraded from the former route namespace from failing registry initialization while the canonical `/competitions` templates are loaded. Fresh installations already use the canonical selector and require no special action.
 
+## Public schedule presentation
+
+Public game-day schedules render stored UTC slot datetimes in the federation
+company timezone before grouping and formatting them. Match cards focus on the
+court and participating teams. Internal publication labels, stage names, and
+round numbers are hidden for normal published matches; exceptional live statuses
+such as delayed, moved, postponed, or cancelled remain visible.
+
+
 ====================================================================================================
 FILE: sports_federation_public_site/__init__.py
 SIZE: 104
@@ -72878,7 +72928,7 @@ from . import services
 FILE: sports_federation_public_site/__manifest__.py
 SIZE: 1990
 CONTENT-LENGTH: 1990
-SHA256: 9c30e131b57b3726b2688f700dff4262b1bc887a34422e18e445fd8f40f825ba
+SHA256: 68bd61727aaba1817768c53a4205b094163e8c74effae81eb4648475dc5e265c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -72886,7 +72936,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Public Site",
-    "version": "19.0.3.0.0",
+    "version": "19.0.3.0.1",
     "category": "Sports",
     "summary": "Public competition, match-day, standings and bracket experience",
     "description": "Public website pages for tournament coverage, standings, results, schedules, and federation events.",
@@ -76928,9 +76978,9 @@ class PublicFormatQueries(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_public_site/services/public_schedule_queries.py
-SIZE: 3078
-CONTENT-LENGTH: 3078
-SHA256: 8ae486a998b5c16259b3a5f279202f09cf3a8cf191d5ca1fba8b07f9c6b217a9
+SIZE: 3652
+CONTENT-LENGTH: 3652
+SHA256: cc45908b312274b84f11481a787699a4331a5e6f686012f70310843c9b41dd4a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -76972,21 +77022,37 @@ class PublicScheduleQueries(models.AbstractModel):
                 lambda m: (m.operational_slot_id or m.published_slot_id).court_id.id
                 == court_id
             )
+        public_timezone = (
+            self.env.company.partner_id.tz or self.env.user.tz or "UTC"
+        )
+        localized = self.with_context(tz=public_timezone)
         rows = []
         for match in matches:
             slot = match.operational_slot_id or match.published_slot_id
             if not slot and match.operational_status not in ("postponed", "cancelled"):
                 continue
+            local_start = (
+                fields.Datetime.context_timestamp(localized, slot.start_datetime)
+                if slot
+                else False
+            )
+            local_end = (
+                fields.Datetime.context_timestamp(localized, slot.end_datetime)
+                if slot
+                else False
+            )
             rows.append(
                 {
                     "match": match,
                     "slot": slot,
+                    "start_local": local_start,
+                    "end_local": local_end,
                     "status": match.operational_status or "as_published",
                 }
             )
         rows.sort(
             key=lambda row: (
-                (row["slot"].start_datetime if row["slot"] else fields.Datetime.now()),
+                (row["start_local"] if row["slot"] else fields.Datetime.now()),
                 row["slot"].court_id.id if row["slot"] else 0,
                 row["match"].id,
             )
@@ -76995,15 +77061,15 @@ class PublicScheduleQueries(models.AbstractModel):
             {row["slot"].court_id for row in rows if row["slot"]},
             key=lambda c: (c.name or "", c.id),
         )
-        times = sorted({row["slot"].start_datetime for row in rows if row["slot"]})
+        times = sorted({row["start_local"] for row in rows if row["slot"]})
         grid = {
-            (row["slot"].start_datetime, row["slot"].court_id.id): row
+            (row["start_local"], row["slot"].court_id.id): row
             for row in rows
             if row["slot"]
         }
         by_time = defaultdict(list)
         for row in rows:
-            by_time[row["slot"].start_datetime if row["slot"] else False].append(row)
+            by_time[row["start_local"] if row["slot"] else False].append(row)
         return {
             "publication": publication,
             "matches": rows,
@@ -79184,9 +79250,9 @@ class TestPublicSite(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_template_accessibility.py
-SIZE: 5945
-CONTENT-LENGTH: 5945
-SHA256: f65aa7b89ea15acc9201b31cdf687930ab1cb32f89f29f47aeb7492048b96e3d
+SIZE: 6590
+CONTENT-LENGTH: 6590
+SHA256: 9ced91d68f94cc085708a52f615e85df042daaf678a473ae70ffc0b3b843b2ee
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -79332,6 +79398,23 @@ class TestPublicSiteTemplateAccessibility(TransactionCase):
                     template_text,
                     f"{file_key} should not render raw internal state values.",
                 )
+    def test_public_gameday_hides_internal_schedule_metadata(self):
+        templates = etree.parse(
+            str(
+                Path(__file__).resolve().parents[1]
+                / "views"
+                / "website_competition_templates.xml"
+            )
+        ).getroot()
+        match_card = templates.xpath(
+            ".//template[@id='public_competition_match_card']"
+        )[0]
+        content = etree.tostring(match_card, encoding="unicode")
+
+        self.assertNotIn("Round ", content)
+        self.assertNotIn("logical_fixture_id.stage_id.name", content)
+        self.assertIn("row['status'] != 'as_published'", content)
+
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_tour_publication.py
@@ -80185,9 +80268,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_public_site/views/website_competition_templates.xml
-SIZE: 16045
-CONTENT-LENGTH: 16034
-SHA256: 0c8313b9c70fbc1e015b05d1828773ff2243268c43e8f79c5b8cf11a8de344bb
+SIZE: 15825
+CONTENT-LENGTH: 15816
+SHA256: 0c77ff35f2a8453dba84726032c3c645357a13e31ff25ab5ed9f792c834e3212
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -80215,11 +80298,10 @@ GIT-STATE: tracked
     <article class="sf-match-card" t-att-data-match-id="row['match'].id">
       <div class="d-flex justify-content-between gap-2 small text-muted mb-1">
         <span t-if="row['slot']"><t t-esc="row['slot'].court_id.display_name"/></span>
-        <span class="sf-match-status"><t t-esc="row['status'].replace('_', ' ').title()"/></span>
+        <span t-if="row['status'] != 'as_published'" class="sf-match-status"><t t-esc="row['status'].replace('_', ' ').title()"/></span>
       </div>
       <div class="sf-team-line"><strong><t t-esc="row['match'].home_team_id.display_name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].home_score"/></span></div>
       <div class="sf-team-line"><strong><t t-esc="row['match'].away_team_id.display_name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].away_score"/></span></div>
-      <small class="text-muted" t-if="row['match'].logical_fixture_id"><t t-esc="row['match'].logical_fixture_id.stage_id.name"/> · Round <t t-esc="row['match'].logical_fixture_id.round_number"/></small>
     </article>
   </template>
 
@@ -80285,7 +80367,7 @@ GIT-STATE: tracked
 
   <template id="public_competition_gameday" name="current gameday board">
     <t t-call="website.layout"><main class="container-fluid px-lg-5 py-4 sf-live-board" t-att-data-status-url="'/competitions/%s/gamedays/%s/status.json' % (edition.public_slug, matchday.id)">
-      <header class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4"><div><a t-att-href="'/competitions/%s/schedule' % edition.public_slug">← Schedule</a><h1 class="mt-2"><t t-esc="matchday.name"/></h1><p class="text-muted"><t t-esc="matchday.date"/> · <t t-esc="matchday.venue_id.display_name"/> · Live publication v<t t-esc="publication.version"/></p></div><div class="d-flex gap-2 align-items-start"><button type="button" class="btn btn-outline-primary sf-jump-now">Jump to now</button><a class="btn btn-outline-secondary" t-att-href="'/competitions/%s/gamedays/%s?display=1' % (edition.public_slug, matchday.id)">Display mode</a></div></header>
+      <header class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4"><div><a t-att-href="'/competitions/%s/schedule' % edition.public_slug">← Schedule</a><h1 class="mt-2"><t t-esc="matchday.name"/></h1><p class="text-muted"><t t-esc="matchday.date"/> · <t t-esc="matchday.venue_id.display_name"/></p></div><div class="d-flex gap-2 align-items-start"><button type="button" class="btn btn-outline-primary sf-jump-now">Jump to now</button><a class="btn btn-outline-secondary" t-att-href="'/competitions/%s/gamedays/%s?display=1' % (edition.public_slug, matchday.id)">Display mode</a></div></header>
       <form class="row g-2 mb-3"><div class="col-md-5"><select name="team_id" class="form-select" aria-label="Filter by team"><option value="">All teams</option><option t-foreach="edition.tournament_ids.mapped('participant_ids').mapped('team_id')" t-as="team" t-att-value="team.id" t-att-selected="team_id == team.id"><t t-esc="team.display_name"/></option></select></div><div class="col-md-5"><select name="court_id" class="form-select" aria-label="Filter by court"><option value="">All courts</option><option t-foreach="courts" t-as="court" t-att-value="court.id" t-att-selected="court_id == court.id"><t t-esc="court.display_name"/></option></select></div><div class="col-md-2"><button class="btn btn-primary w-100">Filter</button></div></form>
       <div class="d-none d-lg-block table-responsive sf-gameday-grid-wrap" t-if="times and courts"><table class="table sf-gameday-grid"><caption class="visually-hidden">Matches by time and court</caption><thead><tr><th class="sf-time-column">Time</th><th t-foreach="courts" t-as="court"><t t-esc="court.display_name"/></th></tr></thead><tbody><tr t-foreach="times" t-as="time"><th class="sf-time-column" scope="row"><t t-esc="time.strftime('%H:%M')"/></th><td t-foreach="courts" t-as="court"><t t-set="row" t-value="grid.get((time, court.id))"/><t t-if="row" t-call="sports_federation_public_site.public_competition_match_card"/></td></tr></tbody></table></div>
       <div class="d-lg-none sf-mobile-agenda" t-if="by_time"><section class="mb-4" t-foreach="by_time" t-as="time_rows"><h2 class="h5 sticky-top bg-white py-2"><t t-esc="time_rows[0].strftime('%H:%M') if time_rows[0] else 'Unscheduled'"/></h2><div class="mb-2" t-foreach="time_rows[1]" t-as="row"><t t-call="sports_federation_public_site.public_competition_match_card"/></div></section></div>
@@ -102854,9 +102936,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_scheduling/README.md
-SIZE: 2304
-CONTENT-LENGTH: 2304
-SHA256: 606c7b3ca9a94f0591fa259dc89a47f3b7b370567d99fba2ebd264464ab09fd4
+SIZE: 2871
+CONTENT-LENGTH: 2871
+SHA256: 01a61a812eeb85aef16c2a4468df9e02429b7f4c71152a09e06f997ff9a92a93
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -102902,6 +102984,17 @@ A working schedule covers the complete physical match day, not only the division
 
 Publication validates the current match-day fixture pool again. If allocations change after review, publication stops and requires a refreshed, complete schedule and a new review instead of silently publishing an incomplete game day.
 
+## Club-aware automatic scheduling
+
+Automatic scheduling treats simultaneous matches involving different teams of
+the same club as the first fairness priority. It detects any overlapping slot
+windows, not only slots with identical boundaries. After deterministic greedy
+construction, a bounded pairwise-swap improvement pass repairs avoidable club
+clashes while preserving all hard constraints and pinned manual or operational
+assignments. Remaining club clashes therefore indicate constrained capacity or
+pinned assignments rather than an avoidable greedy choice.
+
+
 ====================================================================================================
 FILE: sports_federation_scheduling/__init__.py
 SIZE: 66
@@ -102920,7 +103013,7 @@ from . import wizards
 FILE: sports_federation_scheduling/__manifest__.py
 SIZE: 664
 CONTENT-LENGTH: 664
-SHA256: 1a6fda9a4733d8e33fdf937d7e6c0a7daca25a1419942e45ac5fa656e2c40260
+SHA256: fa3b1f4584280ab609d0ede71560239a22425cc463539cf3048554deaaecac68
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -102928,7 +103021,7 @@ GIT-STATE: tracked
 
 {
     "name": "Competition Scheduling",
-    "version": "19.0.3.3.3",
+    "version": "19.0.3.3.4",
     "category": "Sports",
     "summary": "Working schedules, assignments, validation and deterministic proposals",
     "author": "Sports Federation",
@@ -103547,9 +103640,9 @@ class FederationDeterministicSolver(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_scheduling/services/fairness_solver.py
-SIZE: 6944
-CONTENT-LENGTH: 6944
-SHA256: 488476847ad740c0da933ee1d42ffd03c67a93dc51519f9c228456b93cfeac65
+SIZE: 9878
+CONTENT-LENGTH: 9878
+SHA256: 70931e0df6f61a3f6644ce65d35a7de7de1d0536a076d1e651d7138a16f729ee
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -103601,8 +103694,7 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
                 if validation["errors"]:
                     continue
                 report = self.evaluate(schedule, candidate, cfg)
-                key = (
-                    report["weighted_score"],
+                key = self._quality_key(report) + (
                     slot.start_datetime,
                     slot.court_id.id,
                     slot.id,
@@ -103614,6 +103706,14 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
                 assignment_map[fixture.id] = slot.id
                 proposed.append({"fixture_id": fixture.id, "slot_id": slot.id})
                 available -= slot
+        assignment_map = self._improve_by_slot_swaps(
+            schedule, assignment_map, retained, cfg
+        )
+        proposed = [
+            {"fixture_id": fixture.id, "slot_id": assignment_map[fixture.id]}
+            for fixture in fixtures
+            if fixture.id in assignment_map
+        ]
         final_validation = self.env["federation.schedule.validator"].validate_map(
             schedule, assignment_map
         )
@@ -103625,13 +103725,64 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
         }
 
     @api.model
+    def _quality_key(self, report):
+        """Prefer fewer club clashes before comparing the weighted objective."""
+        return (
+            report["metrics"]["same_club_simultaneous_pairs"],
+            report["weighted_score"],
+        )
+
+    @api.model
+    def _windows_overlap(self, first_start, first_end, second_start, second_end):
+        return first_start < second_end and second_start < first_end
+
+    @api.model
+    def _improve_by_slot_swaps(self, schedule, assignment_map, retained, cfg):
+        """Deterministically escape greedy local choices with pairwise swaps.
+
+        Retained manual/operational assignments remain pinned. Each accepted swap
+        must satisfy all hard validation rules and improve the lexicographic
+        objective, where avoiding same-club overlap has first priority.
+        """
+        result = dict(assignment_map)
+        fixed_fixture_ids = set(retained.mapped("fixture_id").ids)
+        movable = sorted(set(result) - fixed_fixture_ids)
+        validator = self.env["federation.schedule.validator"]
+        current_report = self.evaluate(schedule, result, cfg)
+        current_key = self._quality_key(current_report)
+        max_passes = min(10, max(1, len(movable)))
+        for _pass in range(max_passes):
+            best = None
+            for index, first_id in enumerate(movable):
+                for second_id in movable[index + 1 :]:
+                    candidate = dict(result)
+                    candidate[first_id], candidate[second_id] = (
+                        candidate[second_id],
+                        candidate[first_id],
+                    )
+                    if validator.validate_map(schedule, candidate)["errors"]:
+                        continue
+                    report = self.evaluate(schedule, candidate, cfg)
+                    key = self._quality_key(report) + (first_id, second_id)
+                    if key[:2] >= current_key:
+                        continue
+                    if best is None or key < best[0]:
+                        best = (key, candidate, report)
+            if not best:
+                break
+            result = best[1]
+            current_report = best[2]
+            current_key = self._quality_key(current_report)
+        return result
+
+    @api.model
     def evaluate(self, schedule, assignment_map, cfg):
         fixture_by_id = {
             f.id: f for f in schedule.matchday_id.allocation_ids.mapped("fixture_ids")
         }
         slot_by_id = {s.id: s for s in schedule.matchday_id.slot_ids}
         team_events = defaultdict(list)
-        simultaneous_clubs = defaultdict(list)
+        club_events = defaultdict(list)
         for fixture_id, slot_id in assignment_map.items():
             fixture, slot = fixture_by_id.get(fixture_id), slot_by_id.get(slot_id)
             if not fixture or not slot:
@@ -103644,9 +103795,14 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
                 )
                 club = getattr(team, "club_id", False)
                 if club:
-                    simultaneous_clubs[
-                        (slot.start_datetime, slot.end_datetime, club.id)
-                    ].append(team.id)
+                    club_events[club.id].append(
+                        (
+                            slot.start_datetime,
+                            slot.end_datetime,
+                            fixture.id,
+                            team.id,
+                        )
+                    )
         metrics = {
             "same_club_simultaneous_pairs": 0,
             "rest_shortfall_minutes": 0,
@@ -103654,9 +103810,13 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
             "time_balance_spread": 0,
             "same_court_repeats": 0,
         }
-        for teams in simultaneous_clubs.values():
-            distinct = len(set(teams))
-            metrics["same_club_simultaneous_pairs"] += distinct * (distinct - 1) // 2
+        for events in club_events.values():
+            for index, first in enumerate(events):
+                for second in events[index + 1 :]:
+                    if first[2] == second[2] or first[3] == second[3]:
+                        continue
+                    if self._windows_overlap(first[0], first[1], second[0], second[1]):
+                        metrics["same_club_simultaneous_pairs"] += 1
         starts = []
         for events in team_events.values():
             events.sort()
@@ -104173,13 +104333,15 @@ from . import test_schedule_amendment
 
 ====================================================================================================
 FILE: sports_federation_scheduling/tests/test_fairness_solver.py
-SIZE: 2459
-CONTENT-LENGTH: 2459
-SHA256: e4a594d0c26002725494434bc668454ef2f3020564bba24d7d7e068a8e78e597
+SIZE: 3656
+CONTENT-LENGTH: 3656
+SHA256: 769eb3fe8d830510cc0c4cc85f8dd27ca2d35381a3f08524290d58c651fb178a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
+
+from datetime import datetime
 
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
@@ -104247,6 +104409,40 @@ class TestFairnessSolver(TransactionCase):
         self.assertEqual(first, second)
         self.assertEqual(metrics, self.metrics)
         self.assertEqual(cfg, self.cfg)
+
+    def test_club_conflicts_are_lexicographically_prioritized(self):
+        lower_weighted_score_with_conflict = {
+            "weighted_score": 10,
+            "metrics": {"same_club_simultaneous_pairs": 1},
+        }
+        higher_weighted_score_without_conflict = {
+            "weighted_score": 100,
+            "metrics": {"same_club_simultaneous_pairs": 0},
+        }
+
+        self.assertLess(
+            self.solver._quality_key(higher_weighted_score_without_conflict),
+            self.solver._quality_key(lower_weighted_score_with_conflict),
+        )
+
+    def test_same_club_overlap_uses_real_windows(self):
+        self.assertTrue(
+            self.solver._windows_overlap(
+                datetime(2026, 9, 5, 8, 30),
+                datetime(2026, 9, 5, 9, 10),
+                datetime(2026, 9, 5, 8, 50),
+                datetime(2026, 9, 5, 9, 30),
+            )
+        )
+        self.assertFalse(
+            self.solver._windows_overlap(
+                datetime(2026, 9, 5, 8, 30),
+                datetime(2026, 9, 5, 9, 10),
+                datetime(2026, 9, 5, 9, 10),
+                datetime(2026, 9, 5, 9, 50),
+            )
+        )
+
 
 ====================================================================================================
 FILE: sports_federation_scheduling/tests/test_schedule_amendment.py

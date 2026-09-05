@@ -177,3 +177,6 @@ court and participating teams. Internal publication labels, stage names, and
 round numbers are hidden for normal published matches; exceptional live statuses
 such as delayed, moved, postponed, or cancelled remain visible.
 
+Public match cards show the division and gender once at match level. Team rows
+use the plain team name without repeating the gender suffix for both participants.
+
