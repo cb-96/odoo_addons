@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 907
+# FILE-COUNT: 914
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -586,9 +586,9 @@ _logs/
 
 ====================================================================================================
 FILE: COMPETITION_ENGINE.md
-SIZE: 2960
-CONTENT-LENGTH: 2958
-SHA256: 8a6134bdc49a652926415bc8b5dbe090ef4e20e65477ff8d33289a25394ae680
+SIZE: 2979
+CONTENT-LENGTH: 2975
+SHA256: 1579f9731b1fd1b0ad6bb73c770c338c02ec99ef469ed936dfbc26caecd26d47
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -596,7 +596,7 @@ GIT-STATE: tracked
 
 # Competition Engine
 
-> **UI navigation:** operators use **Federation → Competition Workflow**. See [`docs/COMPETITION_UI_WORKFLOW.md`](docs/COMPETITION_UI_WORKFLOW.md).
+> **UI navigation:** operators use **Federation → Competitions → Competition Operations**. See [`docs/COMPETITION_UI_WORKFLOW.md`](docs/COMPETITION_UI_WORKFLOW.md).
 
 This implementation provides role-owned capabilities and explicit handovers for competition planning and operations.
 
@@ -1958,9 +1958,9 @@ modules:
 
 ====================================================================================================
 FILE: README.md
-SIZE: 7008
-CONTENT-LENGTH: 6988
-SHA256: 4f00be3844536d6c00c4046fd731e4a7f06737ba7f2306d76560beda232f84ea
+SIZE: 7070
+CONTENT-LENGTH: 7050
+SHA256: d88f97b5db070909e9cffccb3a279e9e5993b3686f68f2c4b39164213abf7f6e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -1988,6 +1988,7 @@ Quick links
 - High-level context: `CONTEXT.md`
 - Technical notes: `TECHNICAL_NOTE.md`
 - Documentation map: `docs/README.md`
+- Backend navigation: `docs/FEDERATION_BACKEND_NAVIGATION.md`
 - Architecture decisions: `adr/README.md`
 - Route inventory: `ROUTE_INVENTORY.md`
 - Release runbook: `RELEASE_RUNBOOK.md`
@@ -5947,9 +5948,9 @@ consistent operator model:
 
 ====================================================================================================
 FILE: _workflows/WORKFLOW_MATCH_DAY_OPERATIONS.md
-SIZE: 17020
-CONTENT-LENGTH: 16934
-SHA256: 8242285f402cf1955060d4ba2d2dd00243ad194979a44991c9bc59196cd4fbcf
+SIZE: 17397
+CONTENT-LENGTH: 17311
+SHA256: 6eb29f846060e540a36d6a94de296c44d0ecbbb7a00268b63122beb8f0353686
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -6080,6 +6081,12 @@ Portal workspace note:
 9. The scheduled notification scan creates federation-manager activities for overdue confirmations and staffing shortages.
 10. SQL constraint prevents duplicate (match, referee, role) combinations.
 11. The rule set's `referee_required_count` indicates how many officials are needed.
+
+For automatic club-duty allocation, a club is considered to be playing during
+the target match whenever one of its teams is assigned to a published match
+whose time window overlaps the target window, even when the matches use
+different courts. The allocator therefore prefers an eligible club outside
+the whole concurrent set, not merely outside the target match's two clubs.
 
 ### 4. Venue Confirmation
 
@@ -6743,9 +6750,9 @@ Player:  active → suspended → active (reinstatement)
 
 ====================================================================================================
 FILE: _workflows/WORKFLOW_PUBLIC_PUBLICATION.md
-SIZE: 8542
-CONTENT-LENGTH: 8522
-SHA256: 1a8662806085c5bcf8a856c94c463ed1b03bf17c4adf66988938d184821bb86e
+SIZE: 8806
+CONTENT-LENGTH: 8786
+SHA256: b1a92334ad96309aa5d855506f769f15e6ffef94d81abf8a365fce3de89f43ac
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -6948,6 +6955,11 @@ Public pages are read-only snapshots. Controllers resolve tournament, season,
 and team records through publication- and visibility-scoped queries before
 redirects, rendering, or feed and registration reads.
 
+Registration validation feedback returns to the same division-specific form,
+including when the URL already carries a `division_id` selector. Capacity,
+eligibility, and CSRF validation errors therefore remain actionable instead of
+redirecting to a malformed URL.
+
 ## Related Workflows
 
 - [Tournament Lifecycle](WORKFLOW_TOURNAMENT_LIFECYCLE.md) — tournament setup and closure
@@ -6956,9 +6968,9 @@ redirects, rendering, or feed and registration reads.
 
 ====================================================================================================
 FILE: _workflows/WORKFLOW_RESULT_PIPELINE.md
-SIZE: 7517
-CONTENT-LENGTH: 7471
-SHA256: d68963c10b29e838e16de19d71464cb41d5c1fdd6b639ec9744bebbadf0375fd
+SIZE: 7516
+CONTENT-LENGTH: 7470
+SHA256: 18d8133caabdcc13757e8ad230922b5fa8d637dcded552b4393684f72900f260
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -6989,7 +7001,7 @@ data-entry errors and disputed scores from corrupting competition tables.
 
 ## Verified UI navigation
 
-Backend users open **Federation → Planning → Advanced Records → Matches**. Club representatives use **My Account → Results**. Standings are under **Federation → Publication → Standings**. Result Control adds buttons to the match form; it does not add a separate Results menu.
+Backend users open **Federation → Planning → Advanced Records → Matches**. Club representatives use **My Account → Results**. Standings are under **Federation → Publishing → Standings**. Result Control adds buttons to the match form; it does not add a separate Results menu.
 
 ## Step-by-Step Flow
 
@@ -7713,9 +7725,9 @@ When a result is contested after standings have been computed:
 
 ====================================================================================================
 FILE: _workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md
-SIZE: 13371
-CONTENT-LENGTH: 13307
-SHA256: 11d7ca4871c052911bf5c52d833dbc3299f598440aa57e75114da763d970048b
+SIZE: 13409
+CONTENT-LENGTH: 13341
+SHA256: db337c482bba8d3ea106048fd681d349e5f12e1202d1a6f5c3580296a21af355
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -7770,7 +7782,7 @@ Blocking vs warning-only model:
 
 ## Verified UI navigation
 
-Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md). The main journey is under **Federation → Competition Workflow**; addon names below describe ownership, not menu labels.
+Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md). The main journey is under **Federation → Competitions → Competition Operations**; addon names below describe ownership, not menu labels.
 
 ## Step-by-Step Flow
 
@@ -7939,7 +7951,7 @@ including byes and future-round wiring for non-power-of-two participant counts.
    scaffold common stage/group/progression combinations (for recurring
    tournaments). Use `action_apply()` from the template to create stages and
    progression rules for a tournament in a single step.
-5. Generate the next stage in **Federation → Competition Workflow → Format Studio**, then assign it in **Schedule Planner**.
+5. Generate the next stage in **Federation → Competitions → Competition Operations → Format Studio**, then assign it in **Schedule Planner**.
 6. Typical workflow: freeze the round-robin standing, auto-advance the top-ranked
    teams into the knockout stage through a `federation.stage.progression` rule,
    then schedule those knockout matches onto the planned knockout rounds.
@@ -9122,9 +9134,9 @@ print("Phases 3-5 contract passed.")
 
 ====================================================================================================
 FILE: ci/check_competition_ui_workflow.py
-SIZE: 2954
-CONTENT-LENGTH: 2954
-SHA256: 8f990157e20901b443229b3edb1799a86ef9649975a872cd295d688ac468506d
+SIZE: 4957
+CONTENT-LENGTH: 4957
+SHA256: 1ff251e5ba5ae63f9f11289d7b2249a64f338988b73aa0bfa0f2cd41638c5c33
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
 GIT-STATE: tracked
@@ -9133,29 +9145,60 @@ GIT-STATE: tracked
 #!/usr/bin/env python3
 from pathlib import Path
 import sys
+
 from lxml import etree
 
 ROOT = Path(__file__).resolve().parents[1]
-GUIDE = ROOT / "docs/COMPETITION_UI_WORKFLOW.md"
-PATHS = (
-    ("Federation", "Setup", "Seasons"),
-    ("Federation", "Setup", "Competition Setup", "Competition Templates"),
-    ("Federation", "Setup", "Competition Setup", "Season Competitions"),
-    ("Federation", "Competition Workflow", "Create Competition"),
-    ("Federation", "Competition Workflow", "Competition Overview"),
-    ("Federation", "Competition Workflow", "Registration Desk"),
-    ("Federation", "Competition Workflow", "Format Studio"),
-    ("Federation", "Competition Workflow", "Calendar Planner"),
-    ("Federation", "Competition Workflow", "Schedule Planner"),
-    ("Federation", "Competition Workflow", "Schedule Review Queue"),
-    ("Federation", "Competition Workflow", "Match-Day Control"),
-    ("Federation", "Planning", "Advanced Records", "Matches"),
-    ("Federation", "Publication", "Approved Schedules"),
-    ("Federation", "Publication", "Schedule Publications"),
-    ("Federation", "Publication", "Standings"),
-    ("Federation", "Administration", "Reporting", "Operational Health"),
-    ("Federation", "Administration", "Operational Job Health"),
+NAVIGATION = ROOT / "docs/FEDERATION_BACKEND_NAVIGATION.md"
+WORKFLOW = ROOT / "docs/COMPETITION_UI_WORKFLOW.md"
+ROOT_MENU = "sports_federation_base.menu_federation_root"
+TOP_LEVEL = (
+    "Competitions",
+    "Clubs & People",
+    "Match Operations",
+    "Publishing",
+    "Finance & Assurance",
+    "Insights",
+    "Administration",
 )
+REQUIRED_PATHS = (
+    ("Federation", "Competitions", "Seasons"),
+    ("Federation", "Competitions", "Season Competitions"),
+    ("Federation", "Competitions", "Competition Operations", "Create Competition"),
+    ("Federation", "Competitions", "Competition Operations", "Competition Overview"),
+    ("Federation", "Competitions", "Competition Operations", "Registration Desk"),
+    ("Federation", "Competitions", "Competition Operations", "Format Studio"),
+    ("Federation", "Competitions", "Competition Operations", "Calendar Planner"),
+    ("Federation", "Competitions", "Competition Operations", "Schedule Planner"),
+    ("Federation", "Competitions", "Competition Operations", "Schedule Review Queue"),
+    ("Federation", "Clubs & People", "Club Directory", "Clubs"),
+    ("Federation", "Clubs & People", "Club Directory", "Teams"),
+    ("Federation", "Match Operations", "Match-Day Control"),
+    ("Federation", "Match Operations", "Matches"),
+    ("Federation", "Match Operations", "Match Sheets"),
+    ("Federation", "Publishing", "Approved Schedules"),
+    ("Federation", "Publishing", "Schedule Publications"),
+    ("Federation", "Publishing", "Standings"),
+    ("Federation", "Finance & Assurance", "Finance"),
+    ("Federation", "Finance & Assurance", "Compliance"),
+    ("Federation", "Finance & Assurance", "Governance"),
+    (
+        "Federation",
+        "Insights",
+        "Reports & Insights",
+        "Overview & Readiness",
+        "Operational Health",
+    ),
+    ("Federation", "Administration", "Action Queue"),
+    ("Federation", "Administration", "System Health", "Operational Job Health"),
+)
+FORBIDDEN_TOP_LEVEL = {
+    "Setup",
+    "Planning",
+    "Competition Workflow",
+    "Match Day",
+    "Publication",
+}
 
 
 def index():
@@ -9163,25 +9206,31 @@ def index():
     for path in ROOT.glob("sports_federation_*/views/*.xml"):
         try:
             tree = etree.parse(str(path))
-        except etree.XMLSyntaxError:
-            continue
+        except etree.XMLSyntaxError as exc:
+            raise RuntimeError(f"cannot parse {path}: {exc}") from exc
         module = path.parts[-3]
-        for node in tree.xpath("//menuitem"):
+        for node in tree.xpath("//menuitem[@id]"):
             rid = node.get("id")
             xmlid = rid if "." in rid else f"{module}.{rid}"
             parent = node.get("parent", "")
             parent = parent if not parent or "." in parent else f"{module}.{parent}"
-            records[xmlid] = {"name": node.get("name", ""), "parent": parent}
+            records[xmlid] = {
+                "name": node.get("name", ""),
+                "parent": parent,
+                "sequence": int(node.get("sequence", "10")),
+            }
     return records
 
 
-def exists(records, labels):
-    for xid, record in records.items():
+def path_exists(records, labels):
+    for record in records.values():
         if record["name"] != labels[-1]:
             continue
         names = [record["name"]]
         parent = record["parent"]
-        while parent in records:
+        visited = set()
+        while parent in records and parent not in visited:
+            visited.add(parent)
             record = records[parent]
             names.append(record["name"])
             parent = record["parent"]
@@ -9192,20 +9241,40 @@ def exists(records, labels):
 
 def main():
     records = index()
-    guide = GUIDE.read_text()
+    navigation = NAVIGATION.read_text(encoding="utf-8")
+    workflow = WORKFLOW.read_text(encoding="utf-8")
     errors = []
-    for labels in PATHS:
+
+    top_level = tuple(
+        record["name"]
+        for record in sorted(
+            (record for record in records.values() if record["parent"] == ROOT_MENU),
+            key=lambda record: (record["sequence"], record["name"]),
+        )
+    )
+    if top_level != TOP_LEVEL:
+        errors.append(f"root work areas are {top_level!r}, expected {TOP_LEVEL!r}")
+    stale = FORBIDDEN_TOP_LEVEL.intersection(top_level)
+    if stale:
+        errors.append("obsolete root categories remain: " + ", ".join(sorted(stale)))
+
+    for labels in REQUIRED_PATHS:
         rendered = " > ".join(labels)
-        if not exists(records, labels):
+        if not path_exists(records, labels):
             errors.append(f"menu path missing: {rendered}")
-        if rendered not in guide:
-            errors.append(f"guide path missing: {rendered}")
+        if rendered not in navigation and rendered not in workflow:
+            errors.append(f"documented path missing: {rendered}")
+
+    for label in TOP_LEVEL:
+        if f"**{label}**" not in navigation:
+            errors.append(f"navigation purpose is undocumented: {label}")
+
     if errors:
-        print("Competition UI workflow contract failed:", file=sys.stderr)
+        print("Federation backend navigation contract failed:", file=sys.stderr)
         for error in errors:
             print(f"- {error}", file=sys.stderr)
         return 1
-    print("Competition UI workflow menu paths passed.")
+    print("Federation backend navigation structure passed.")
     return 0
 
 
@@ -15197,9 +15266,9 @@ print(f"Size: {OUTPUT.stat().st_size / 1024 / 1024:.2f} MB")
 
 ====================================================================================================
 FILE: docs/COMPETITION_ENGINE_ROADMAP.md
-SIZE: 1191
-CONTENT-LENGTH: 1189
-SHA256: 179811da31e4ac1f069730607f918a3f68b304c8ef4080278c3e630384616890
+SIZE: 1210
+CONTENT-LENGTH: 1206
+SHA256: 9f6e158f5ba7debc2755d5dbf942ec0381aca6014b2343c86a4e9629ca9cfc4f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -15207,7 +15276,7 @@ GIT-STATE: tracked
 
 # Competition Engine Product Roadmap
 
-> **UI terminology:** the actual backend menu is **Federation → Competition Workflow**. See [`COMPETITION_UI_WORKFLOW.md`](COMPETITION_UI_WORKFLOW.md).
+> **UI terminology:** the actual backend menu is **Federation → Competitions → Competition Operations**. See [`COMPETITION_UI_WORKFLOW.md`](COMPETITION_UI_WORKFLOW.md).
 
 Owner: Federation Competition Operations
 Last updated: 2026-09-03
@@ -15264,9 +15333,9 @@ Users can identify the next action and owner, reach the source in one step, retr
 
 ====================================================================================================
 FILE: docs/COMPETITION_UI_WORKFLOW.md
-SIZE: 11089
-CONTENT-LENGTH: 10699
-SHA256: cd08e472281fa27aa4999aa4f0206a44e569cde6e1abcb981f0b34229033f40a
+SIZE: 10114
+CONTENT-LENGTH: 10044
+SHA256: c7e101fd6ceb3c0149026bd55276bc0257028d9f6bed18f2a0525607e2d7b957
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -15283,53 +15352,7 @@ This guide replaces conceptual module names with the menus that actually exist i
 
 ## Actual backend menu map
 
-```text
-Federation
-├── Setup
-│   ├── Core Records
-│   │   ├── Clubs
-│   │   └── Teams
-│   ├── Seasons
-│   ├── Season Registrations
-│   └── Competition Setup
-│       ├── Competition Templates
-│       ├── Season Competitions
-│       └── Rules & Policies
-├── Competition Workflow
-│   ├── Create Competition
-│   ├── Competition Overview
-│   ├── Registration Desk
-│   ├── Format Studio
-│   ├── Format Templates
-│   ├── Calendar Planner
-│   ├── Schedule Planner
-│   ├── Schedule Review Queue
-│   ├── Match-Day Control
-│   └── Technical Records
-├── Planning
-│   ├── Operational Action Queue
-│   └── Advanced Records
-│       ├── Divisions & Tournaments
-│       ├── Matches
-│       └── Tournament Structure
-├── Match Day
-│   ├── Match Sheets
-│   ├── Venues
-│   ├── Officiating
-│   └── Discipline
-├── Publication
-│   ├── Standings
-│   ├── Approved Schedules
-│   └── Schedule Publications
-└── Administration
-    ├── Reporting
-    │   └── Operational Health
-    ├── Retention and Recovery
-    ├── Retention Evidence
-    └── Operational Job Health
-```
-
-There is no backend menu named **Competitions**, **Registrations**, **Scheduling**, **Schedule Approval**, **Results**, or **Competition Engine**. Those are concepts or addon names, not current navigation labels.
+The canonical backend structure is maintained in [`FEDERATION_BACKEND_NAVIGATION.md`](FEDERATION_BACKEND_NAVIGATION.md). The competition journey lives under **Federation > Competitions > Competition Operations**; supporting records are placed under the business area that owns them.
 
 ## Actual club portal links
 
@@ -15351,11 +15374,11 @@ My Account
 Use:
 
 ```text
-Federation > Setup > Seasons
-Federation > Setup > Competition Setup > Competition Templates
-Federation > Setup > Competition Setup > Rules & Policies > Rule Sets & Policies
-Federation > Setup > Core Records > Clubs
-Federation > Setup > Core Records > Teams
+Federation > Competitions > Seasons
+Federation > Competitions > Competition Templates
+Federation > Competitions > Rules & Policies > Rule Sets & Policies
+Federation > Clubs & People > Club Directory > Clubs
+Federation > Clubs & People > Club Directory > Teams
 ```
 
 Create the season, reusable competition definition, rule set, clubs, and teams. Points, tie-break, eligibility, and qualification components are below **Rules & Policies > Advanced Components**.
@@ -15367,7 +15390,7 @@ Create the season, reusable competition definition, rule set, clubs, and teams. 
 Preferred menu:
 
 ```text
-Federation > Competition Workflow > Create Competition
+Federation > Competitions > Competition Operations > Create Competition
 ```
 
 The wizard selects the setup template, competition template, season, dates, optional rule set, registration dates, divisions, and responsibilities. It creates the season competition, divisions, registration windows, and role assignments, then opens the season competition.
@@ -15375,9 +15398,9 @@ The wizard selects the setup template, competition template, season, dates, opti
 Inspect the records through:
 
 ```text
-Federation > Setup > Competition Setup > Season Competitions
-Federation > Planning > Advanced Records > Divisions & Tournaments
-Federation > Competition Workflow > Competition Overview
+Federation > Competitions > Season Competitions
+Federation > Competitions > Competition Records > Structure & Fixtures > Divisions & Tournaments
+Federation > Competitions > Competition Operations > Competition Overview
 ```
 
 **Recovery:** Correct newly created records before clubs submit. There is no generic **Undo Competition Wizard** button. If downstream entries, fixtures, schedules, results, or publications exist, preserve the original records and create controlled replacements.
@@ -15387,7 +15410,7 @@ Federation > Competition Workflow > Competition Overview
 Backend:
 
 ```text
-Federation > Competition Workflow > Registration Desk
+Federation > Competitions > Competition Operations > Registration Desk
 ```
 
 Club portal:
@@ -15405,7 +15428,7 @@ Use **Open Registration** on a draft registration window. Clubs prepare and subm
 Menu:
 
 ```text
-Federation > Competition Workflow > Registration Desk
+Federation > Competitions > Competition Operations > Registration Desk
 ```
 
 Close the registration window and press **Finalize Participants**. The finalized participant set feeds the format structure.
@@ -15417,8 +15440,8 @@ Close the registration window and press **Finalize Participants**. The finalized
 Menus:
 
 ```text
-Federation > Competition Workflow > Format Templates
-Federation > Competition Workflow > Format Studio
+Federation > Competitions > Competition Operations > Format Templates
+Federation > Competitions > Competition Operations > Format Studio
 ```
 
 **Format Templates** is manager-only. In **Format Studio**, select the season competition, division, finalized participant set, and format settings. Use **Check Feasibility**, then **Generate Fixtures**. For multi-stage structures use **Validate Stage Graph**. Once accepted, use **Freeze Structure**.
@@ -15430,7 +15453,7 @@ Federation > Competition Workflow > Format Studio
 There is no standalone **Stage Progression** menu. Stage controls are on the structure opened from:
 
 ```text
-Federation > Competition Workflow > Format Studio
+Federation > Competitions > Competition Operations > Format Studio
 ```
 
 Available stage actions are **Prepare**, **Start**, and **Freeze & Progress**.
@@ -15442,13 +15465,13 @@ Available stage actions are **Prepare**, **Start**, and **Freeze & Progress**.
 Menu:
 
 ```text
-Federation > Competition Workflow > Calendar Planner
+Federation > Competitions > Competition Operations > Calendar Planner
 ```
 
 Create match days, slot windows, and capacity, then use **Mark Capacity Ready**. Venue setup and constraints are under:
 
 ```text
-Federation > Match Day > Venues
+Federation > Match Operations > Venues
 ```
 
 **Recovery:** Edit draft calendar records. If a schedule already uses the calendar, make the deliberate calendar correction and refresh the working schedule. Stale assignments are flagged, not silently deleted.
@@ -15458,7 +15481,7 @@ Federation > Match Day > Venues
 Menu:
 
 ```text
-Federation > Competition Workflow > Schedule Planner
+Federation > Competitions > Competition Operations > Schedule Planner
 ```
 
 Use **Refresh Calendar Fixtures**. Assign dates, times, venues, and courts manually, or use **Auto-schedule**, **Preview**, and **Apply Auto-schedule**. Review fairness warnings.
@@ -15470,13 +15493,13 @@ Use **Refresh Calendar Fixtures**. Assign dates, times, venues, and courts manua
 Planner menu:
 
 ```text
-Federation > Competition Workflow > Schedule Planner
+Federation > Competitions > Competition Operations > Schedule Planner
 ```
 
 Use **Submit for Review**. Approver menu:
 
 ```text
-Federation > Competition Workflow > Schedule Review Queue
+Federation > Competitions > Competition Operations > Schedule Review Queue
 ```
 
 The review exposes **Withdraw Submission**, **Request Changes**, and **Approve Schedule** according to state and role.
@@ -15488,26 +15511,26 @@ The review exposes **Withdraw Submission**, **Request Changes**, and **Approve S
 Use **Publish Schedule** on an approved review. The two real publication menus are:
 
 ```text
-Federation > Publication > Approved Schedules
-Federation > Publication > Schedule Publications
+Federation > Publishing > Approved Schedules
+Federation > Publishing > Schedule Publications
 ```
 
-**Recovery:** Live publications are immutable. Open the published schedule under **Federation > Competition Workflow > Schedule Planner**, use **Amend Schedule**, enter a reason, and press **Create Amendment**. The replacement follows submit, review, approve, and publish again. The old publication becomes superseded. There is no in-place **Unpublish** button.
+**Recovery:** Live publications are immutable. Open the published schedule under **Federation > Competitions > Competition Operations > Schedule Planner**, use **Amend Schedule**, enter a reason, and press **Create Amendment**. The replacement follows submit, review, approve, and publish again. The old publication becomes superseded. There is no in-place **Unpublish** button.
 
 ### 11. Operate match day
 
 Menu:
 
 ```text
-Federation > Competition Workflow > Match-Day Control
+Federation > Competitions > Competition Operations > Match-Day Control
 ```
 
 Use **Open Match Day** when ready. During operations use **Update Court**, **Report Incident**, or **Operational Schedule Change**. Finish with **Close Match Day**. Supporting records are under:
 
 ```text
-Federation > Match Day > Match Sheets
-Federation > Competition Workflow > Technical Records > Incidents
-Federation > Competition Workflow > Technical Records > Operational Deviations
+Federation > Match Operations > Match Sheets
+Federation > Competitions > Competition Operations > Technical Records > Incidents
+Federation > Competitions > Competition Operations > Technical Records > Operational Deviations
 ```
 
 **Recovery:** Resolve incident and deviation records with **Resolve**. Operational changes are recorded rather than silently altering the approved publication. Correct the planning baseline through a schedule amendment.
@@ -15517,7 +15540,7 @@ Federation > Competition Workflow > Technical Records > Operational Deviations
 Backend menu:
 
 ```text
-Federation > Planning > Advanced Records > Matches
+Federation > Match Operations > Matches
 ```
 
 Result Control extends the match form; there is no separate backend **Results** menu. The form provides **Submit Result**, **Verify Result**, **Approve Result**, **Raise Dispute / Request Exception**, **Correct Result**, and **Reset to Draft**.
@@ -15535,7 +15558,7 @@ My Account > Results
 Menu:
 
 ```text
-Federation > Publication > Standings
+Federation > Publishing > Standings
 ```
 
 Use **Recompute** or **Queue Recompute**, inspect lines and tie-break notes, and then use **Freeze**.
@@ -15547,22 +15570,22 @@ Use **Recompute** or **Queue Recompute**, inspect lines and tie-break notes, and
 Menus:
 
 ```text
-Federation > Planning > Operational Action Queue
-Federation > Administration > Reporting > Operational Health
-Federation > Administration > Operational Job Health
+Federation > Administration > Action Queue
+Federation > Insights > Reports & Insights > Overview & Readiness > Operational Health
+Federation > Administration > System Health > Operational Job Health
 ```
 
 Use source links to correct business records in their owning workflow. Retry only retryable jobs.
 
 ## Required terminology in operator documentation
 
-- Use **Federation > Competition Workflow**, not “Competition Engine”.
+- Use **Federation > Competitions > Competition Operations**, not “Competition Engine”.
 - Use **Registration Desk**, not “Registration Windows” as a menu.
 - Use **Schedule Planner**, not “Scheduling > Schedules”.
 - Use **Schedule Review Queue**, not “Schedule Approval > Reviews”.
-- Use **Publication > Schedule Publications**, not “Schedule Approval > Publications”.
-- Use **Planning > Advanced Records > Matches**, not “Results > Match Results”.
-- Use **Publication > Standings**, not “Standings > Standings”.
+- Use **Publishing > Schedule Publications**, not “Schedule Approval > Publications”.
+- Use **Match Operations > Matches**, not “Results > Match Results”.
+- Use **Publishing > Standings**, not “Standings > Standings”.
 - Use **Format Studio** for stage progression; there is no standalone progression menu.
 
 ====================================================================================================
@@ -15832,6 +15855,150 @@ immutability, and release validation must not be weakened to accommodate
 implementation drift.
 
 ====================================================================================================
+FILE: docs/FEDERATION_BACKEND_NAVIGATION.md
+SIZE: 6328
+CONTENT-LENGTH: 5950
+SHA256: d66f0da00639858690fb9a75efe35c48b6b0de9a2fc90e564a33ab99ec76127e
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+# Federation Backend Navigation
+
+Owner: Federation Platform Team
+Last verified against menu XML: 2026-09-04
+Review cadence: Every release
+
+## Goal
+
+The Federation backend is organized around operator intent, not addon names or implementation layers. A user should be able to decide where to go from the business task they are performing. The root navigation therefore has seven stable work areas:
+
+1. **Competitions**: define, create, register, structure, schedule, and review competitions.
+2. **Clubs & People**: maintain clubs, teams, players, licenses, representatives, and season registrations.
+3. **Match Operations**: run match days and manage fixtures, match sheets, venues, officials, and discipline.
+4. **Publishing**: expose approved schedules, standings, and editorial content.
+5. **Finance & Assurance**: manage finance, compliance, and governed exceptions.
+6. **Insights**: review readiness, performance, assurance signals, trends, and scheduled reports.
+7. **Administration**: process operational tasks, integrations, notifications, retention, and technical job health.
+
+## Design rules
+
+- Root tabs represent durable business responsibilities. They must not mirror addon names.
+- A record has one primary navigation home. Cross-links on forms may provide shortcuts, but duplicate root entries are avoided.
+- Daily workflow entries precede configuration and technical records.
+- Technical and audit records remain available, but are grouped at the end of their owning area.
+- Manager-only items stay role-gated. Reparenting a menu must not broaden its groups or model access.
+- Empty compatibility categories are not retained. Existing XML IDs are reused where practical so upgrades move menus instead of creating duplicates.
+- New menus must fit one of the seven work areas. Adding another root tab requires an update to this document and the navigation contract check.
+
+## Intended menu map
+
+```text
+Federation
+├── Competitions
+│   ├── Seasons
+│   ├── Season Competitions
+│   ├── Competition Operations
+│   │   ├── Create Competition
+│   │   ├── Competition Overview
+│   │   ├── Registration Desk
+│   │   ├── Format Studio
+│   │   ├── Calendar Planner
+│   │   ├── Schedule Planner
+│   │   ├── Schedule Review Queue
+│   │   └── Audit & Technical Records
+│   ├── Competition Templates
+│   ├── Format Templates
+│   ├── Rules & Policies
+│   └── Competition Records
+├── Clubs & People
+│   ├── Club Directory
+│   ├── Players & Licensing
+│   ├── Representatives & Access
+│   └── Season Registrations
+├── Match Operations
+│   ├── Match-Day Control
+│   ├── Matches
+│   ├── Match Sheets
+│   ├── Officiating
+│   ├── Venues
+│   └── Discipline
+├── Publishing
+│   ├── Approved Schedules
+│   ├── Schedule Publications
+│   ├── Standings
+│   └── Public Editorial
+├── Finance & Assurance
+│   ├── Finance
+│   ├── Compliance
+│   └── Governance
+├── Insights
+│   └── Reports & Insights
+│       ├── Overview & Readiness
+│       ├── Performance
+│       ├── Assurance & Exceptions
+│       └── Automation & History
+└── Administration
+    ├── Action Queue
+    ├── Notification Centre
+    ├── Imports & Integrations
+    └── System Health
+```
+
+Menus hidden by security groups are omitted for users who do not own that responsibility. The structure, labels, and ordering remain the same for every role.
+
+## Canonical path contracts
+
+The following operator paths are release contracts and are checked against the XML menu tree:
+
+```text
+Federation > Competitions > Seasons
+Federation > Competitions > Season Competitions
+Federation > Competitions > Competition Operations > Create Competition
+Federation > Competitions > Competition Operations > Competition Overview
+Federation > Competitions > Competition Operations > Registration Desk
+Federation > Competitions > Competition Operations > Format Studio
+Federation > Competitions > Competition Operations > Calendar Planner
+Federation > Competitions > Competition Operations > Schedule Planner
+Federation > Competitions > Competition Operations > Schedule Review Queue
+Federation > Clubs & People > Club Directory > Clubs
+Federation > Clubs & People > Club Directory > Teams
+Federation > Match Operations > Match-Day Control
+Federation > Match Operations > Matches
+Federation > Match Operations > Match Sheets
+Federation > Publishing > Approved Schedules
+Federation > Publishing > Schedule Publications
+Federation > Publishing > Standings
+Federation > Finance & Assurance > Finance
+Federation > Finance & Assurance > Compliance
+Federation > Finance & Assurance > Governance
+Federation > Insights > Reports & Insights > Overview & Readiness > Operational Health
+Federation > Administration > Action Queue
+Federation > Administration > System Health > Operational Job Health
+```
+
+## Ownership guidance
+
+- Competition lifecycle records belong under **Competitions**, even when implemented by separate registration, format, calendar, or scheduling addons.
+- Live execution records belong under **Match Operations**. Match-Day Control is intentionally not duplicated under Competitions.
+- Approved output and public visibility controls belong under **Publishing**.
+- Compliance and governance are assurance activities, not system administration.
+- Reports are separated from operational administration to prevent the Administration tab becoming a miscellaneous catch-all.
+- Imports, delivery logs, retention evidence, and background-job recovery remain under **Administration** because they support the platform rather than one business workflow.
+
+## Change checklist
+
+When adding or moving a backend menu:
+
+1. Select its primary operator intent and owning work area.
+2. Place daily actions before configuration and technical records.
+3. Preserve security groups and action access.
+4. Update `docs/COMPETITION_UI_WORKFLOW.md` if the competition journey changes.
+5. Update `ci/check_competition_ui_workflow.py` when a required path or root work area changes.
+6. Run the menu contract check and the affected addon tests.
+
+====================================================================================================
 FILE: docs/PUBLIC_COMPETITION_API.md
 SIZE: 640
 CONTENT-LENGTH: 640
@@ -15863,9 +16030,9 @@ representatives use **My Account > Data API** or `/my/data-api` for live example
 
 ====================================================================================================
 FILE: docs/README.md
-SIZE: 2062
-CONTENT-LENGTH: 2062
-SHA256: 51d04f10db9ba7eb03690c645993e49cb9f8bdae1ecb434ad7c53cc907408150
+SIZE: 2212
+CONTENT-LENGTH: 2212
+SHA256: 27ddebdeb40253707be531fbef3ba0ce527965ee3ea769610062b18d738504e4
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -15926,6 +16093,8 @@ roadmap or a standalone review snapshot for routine changes.
 - [Release pilot scenario](RELEASE_PILOT_SCENARIO.md)
 
 - [Public competition API](PUBLIC_COMPETITION_API.md)
+
+- [`FEDERATION_BACKEND_NAVIGATION.md`](FEDERATION_BACKEND_NAVIGATION.md): canonical backend work areas, menu ownership, and navigation change rules.
 
 ====================================================================================================
 FILE: docs/RELEASE_CANDIDATE_ROADMAP.md
@@ -16460,9 +16629,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: docs/registration_ownership.md
-SIZE: 533
-CONTENT-LENGTH: 525
-SHA256: a4188a5c4d4a205dbd4003dcb3b9473ed02baa1ee120c6e479b49521133285b1
+SIZE: 552
+CONTENT-LENGTH: 542
+SHA256: dd532ec22146916904a89a3c60e98d0623bd7cc153e9347023ac16f98b177823
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -16477,7 +16646,7 @@ club ownership, eligibility, duplicate-entry and capacity rules.
 
 The portal 19.0.5.0.0 migration drops the test-only V1 tournament-registration
 table. Take a verified backup before upgrading. Federation staff review entries
-through **Federation → Competition Workflow → Registration Desk**.
+through **Federation → Competitions → Competition Operations → Registration Desk**.
 
 ====================================================================================================
 FILE: docs/release/COMPETITION_ACCEPTANCE.md
@@ -22029,9 +22198,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_base/views/menu_items.xml
-SIZE: 2124
-CONTENT-LENGTH: 2124
-SHA256: f61e38e59fcecbda57daf878ac61e32f744352848de8884334c92a7340c552f3
+SIZE: 2718
+CONTENT-LENGTH: 2718
+SHA256: 42c8b9adcccdbeb170ce296d20f1c7821754e75ec026bb54a18366cbd2030640
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -22046,32 +22215,47 @@ GIT-STATE: tracked
               sequence="100"/>
 
     <menuitem id="menu_federation_setup"
-              name="Setup"
+              name="Clubs &amp; People"
+              parent="menu_federation_root"
+              sequence="20"/>
+
+    <menuitem id="menu_federation_competitions"
+              name="Competitions"
               parent="menu_federation_root"
               sequence="10"/>
 
     <menuitem id="menu_federation_planning"
-              name="Planning"
-              parent="menu_federation_root"
-              sequence="20"/>
+              name="Competition Records"
+              parent="menu_federation_competitions"
+              sequence="80"/>
 
     <menuitem id="menu_federation_match_day"
-              name="Match Day"
+              name="Match Operations"
               parent="menu_federation_root"
               sequence="30"/>
 
     <menuitem id="menu_federation_publication"
-              name="Publication"
+              name="Publishing"
               parent="menu_federation_root"
               sequence="40"/>
+
+    <menuitem id="menu_federation_business"
+              name="Finance &amp; Assurance"
+              parent="menu_federation_root"
+              sequence="50"/>
+
+    <menuitem id="menu_federation_insights"
+              name="Insights"
+              parent="menu_federation_root"
+              sequence="60"/>
 
     <menuitem id="menu_federation_administration"
               name="Administration"
               parent="menu_federation_root"
-              sequence="50"/>
+              sequence="70"/>
 
     <menuitem id="menu_federation_master_data"
-              name="Core Records"
+              name="Club Directory"
               parent="menu_federation_setup"
               sequence="10"/>
 
@@ -22089,27 +22273,28 @@ GIT-STATE: tracked
 
     <menuitem id="menu_federation_season"
               name="Seasons"
-              parent="menu_federation_setup"
+              parent="menu_federation_competitions"
               action="federation_season_action"
-              sequence="20"/>
+              sequence="10"/>
 
     <menuitem id="menu_federation_registration"
               name="Season Registrations"
               parent="menu_federation_setup"
               action="federation_season_registration_action"
               sequence="30"/>
-    <menuitem id="menu_federation_competitions"
-              name="Competition Setup"
-              parent="menu_federation_setup"
-              sequence="40"/>
+    <menuitem id="menu_federation_system_health"
+              name="System Health"
+              parent="menu_federation_administration"
+              sequence="90"
+              groups="sports_federation_base.group_federation_manager"/>
 
 </odoo>
 
 ====================================================================================================
 FILE: sports_federation_base/views/operation_job_views.xml
-SIZE: 2849
-CONTENT-LENGTH: 2849
-SHA256: 18684de19d4b59aab5d258d948b53739c1c1d61c167aff327913e930cd5aa7a9
+SIZE: 2848
+CONTENT-LENGTH: 2848
+SHA256: 220af97d5049afb5fdb25a55d4d815cadb87dfff3e778790975197013b5c09b0
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -22137,7 +22322,7 @@ GIT-STATE: tracked
     <field name="arch" type="xml"><form><header><button name="action_retry" type="object" string="Retry" class="btn-primary" invisible="state not in ('retry','operator_action')"/><button name="action_open_source" type="object" string="Open Source"/><field name="state" widget="statusbar"/></header><sheet><group><field name="name"/><field name="source_model"/><field name="source_res_id"/><field name="correlation_id"/><field name="priority"/></group><group><field name="attempt_count"/><field name="max_attempts"/><field name="requested_on"/><field name="started_on"/><field name="completed_on"/><field name="next_retry_on"/><field name="operator_action_on"/></group><group><field name="failure_category"/><field name="last_error"/></group></sheet></form></field>
   </record>
   <record id="action_federation_operation_job" model="ir.actions.act_window"><field name="name">Operational Job Health</field><field name="res_model">federation.operation.job</field><field name="view_mode">list,form</field><field name="search_view_id" ref="view_federation_operation_job_search"/></record>
-  <menuitem id="menu_federation_operation_job" name="Operational Job Health" parent="sports_federation_base.menu_federation_administration" action="action_federation_operation_job" sequence="90" groups="sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_federation_operation_job" name="Operational Job Health" parent="sports_federation_base.menu_federation_system_health" action="action_federation_operation_job" sequence="30" groups="sports_federation_base.group_federation_manager"/>
 </odoo>
 
 ====================================================================================================
@@ -22185,9 +22370,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_base/views/retention_evidence_views.xml
-SIZE: 3431
-CONTENT-LENGTH: 3431
-SHA256: 13fa7c089807f044bd22a94b3c869cb9b11ed32fc1ca0258e72c8d6307a81337
+SIZE: 3429
+CONTENT-LENGTH: 3429
+SHA256: f11cbdd6298c359b17ac346d9972bcb52e4fb3d6963bcf3d59bdedf5531e3c15
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -22200,15 +22385,40 @@ GIT-STATE: tracked
   <record id="view_federation_retention_evidence_list" model="ir.ui.view"><field name="name">federation.retention.evidence.list</field><field name="model">federation.retention.evidence</field><field name="arch" type="xml"><list decoration-danger="status == 'failed'" decoration-warning="skipped_count or failure_count"><field name="policy"/><field name="status" widget="badge"/><field name="completed_on"/><field name="duration_seconds"/><field name="candidate_count"/><field name="deleted_count"/><field name="skipped_count"/><field name="attachment_count"/><field name="failure_count"/><field name="dry_run"/><field name="correlation_id"/></list></field></record>
   <record id="view_federation_retention_evidence_search" model="ir.ui.view"><field name="name">federation.retention.evidence.search</field><field name="model">federation.retention.evidence</field><field name="arch" type="xml"><search><field name="policy"/><field name="correlation_id"/><filter name="failed" string="Failed" domain="[('status','=','failed')]"/><filter name="exceptions" string="Skipped or Failed Records" domain="['|',('skipped_count','>',0),('failure_count','>',0)]"/></search></field></record>
   <record id="action_federation_retention_evidence" model="ir.actions.act_window"><field name="name">Retention Evidence</field><field name="res_model">federation.retention.evidence</field><field name="view_mode">list,form</field><field name="search_view_id" ref="view_federation_retention_evidence_search"/></record>
-  <menuitem id="menu_federation_retention_policy" name="Retention and Recovery" parent="sports_federation_base.menu_federation_administration" action="action_federation_retention_policy" sequence="80" groups="sports_federation_base.group_federation_manager"/>
-  <menuitem id="menu_federation_retention_evidence" name="Retention Evidence" parent="sports_federation_base.menu_federation_administration" action="action_federation_retention_evidence" sequence="81" groups="sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_federation_retention_policy" name="Retention and Recovery" parent="sports_federation_base.menu_federation_system_health" action="action_federation_retention_policy" sequence="10" groups="sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_federation_retention_evidence" name="Retention Evidence" parent="sports_federation_base.menu_federation_system_health" action="action_federation_retention_evidence" sequence="20" groups="sports_federation_base.group_federation_manager"/>
 </odoo>
 
 ====================================================================================================
+FILE: sports_federation_calendar/README.md
+SIZE: 1388
+CONTENT-LENGTH: 1388
+SHA256: a32815554e7817214441ed9735ce243391472cc0ae44d03e64a4d44d078d4d07
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+
+## Match-day slot generation
+
+Open a draft or capacity-ready match day in **Calendar Planner** and select **Generate Match Slots**. The wizard requests:
+
+- the active venue playing areas to use;
+- the local game-day start and end time;
+- one total slot duration per match;
+- whether a noon pause begins at 12:00 and its duration;
+- whether an existing slot plan may be replaced.
+
+The total slot duration is the complete playing-area occupancy and must include normal play, possible overtime, post-match clearance, and setup for the next match. There is no separate hidden buffer that could make the published times misleading.
+
+The preview reports playable slots, explicit noon-break rows, and candidates rejected by active venue or playing-area constraint windows. Start, end, and pause times are interpreted in the user timezone and stored as the corresponding UTC instants. Generation preserves those planned times when it creates the rows, including explicit break rows; it does not rebase generated rows onto a playing area's existing timeline. Generation creates only slots that finish inside the requested game-day window. Venue-wide constraints affect every selected playing area; area-specific constraints affect only that area. Existing slots are never overwritten unless the operator explicitly enables replacement. Slot generation is unavailable once scheduling has started.
+
+====================================================================================================
 FILE: sports_federation_calendar/__init__.py
-SIZE: 44
-CONTENT-LENGTH: 44
-SHA256: 88b20932acb13c6696e006185ff31f7eaccfd4a8e5748fd8aedc94bdc90e01b7
+SIZE: 67
+CONTENT-LENGTH: 67
+SHA256: 8355b70d79ec440d5b04d7c6e766bc8bf14a85a87c9e8880cdc05574ad216a97
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -22217,11 +22427,13 @@ GIT-STATE: tracked
 from . import models
 from . import services
 
+from . import wizards
+
 ====================================================================================================
 FILE: sports_federation_calendar/__manifest__.py
-SIZE: 584
-CONTENT-LENGTH: 584
-SHA256: 1da9ffb8a4f6bc2f6057dc1c6c66a02986bb94793384b3b7f117a0c9fce435da
+SIZE: 636
+CONTENT-LENGTH: 636
+SHA256: 30c8992c612353f02a01d064ac45a9978ab36ad430752a7c4a8ac91b5838efe2
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -22229,7 +22441,7 @@ GIT-STATE: tracked
 
 {
     "name": "Competition Calendar",
-    "version": "19.0.1.6.1",
+    "version": "19.0.1.7.0",
     "category": "Sports",
     "summary": "Physical match days, allocations, court availability and slots",
     "author": "Sports Federation",
@@ -22240,6 +22452,7 @@ GIT-STATE: tracked
         "security/ir.model.access.csv",
         "views/calendar_views.xml",
         "views/slot_defaults_views.xml",
+        "wizards/slot_generation_wizard_views.xml",
         "views/menu.xml",
     ],
     "installable": True,
@@ -22261,9 +22474,9 @@ from . import matchday
 
 ====================================================================================================
 FILE: sports_federation_calendar/models/matchday.py
-SIZE: 16528
-CONTENT-LENGTH: 16528
-SHA256: 570c92e1a49ff944edd2b72331318854e7c9069c204e5f7424426fa44aa39bd1
+SIZE: 17049
+CONTENT-LENGTH: 17049
+SHA256: 04a6fe81fb859290bbe3ac2257e3cf7d23c36ea34fdc111345e09e7803d29d14
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -22338,6 +22551,20 @@ class FederationMatchday(models.Model):
                 r.slot_ids.filtered(lambda s: s.state == "available")
             )
             r.spare_capacity = r.playable_slot_count - r.fixture_count
+
+    def action_open_slot_generator(self):
+        self.ensure_one()
+        if self.state not in ("draft", "capacity_ready"):
+            raise ValidationError(
+                _("Match-day slots can only be generated before scheduling starts.")
+            )
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_calendar.action_matchday_slot_generation_wizard"
+        )
+        action["context"] = {
+            "default_matchday_id": self.id,
+        }
+        return action
 
     def action_capacity_ready(self):
         for r in self:
@@ -22660,9 +22887,9 @@ class FederationScheduleSlot(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_calendar/security/ir.model.access.csv
-SIZE: 656
-CONTENT-LENGTH: 656
-SHA256: 7c3b1c1f1166c362aec92bc66e4c2ca9fb88a0deaf1cfa8b4de8df9ad9a7d688
+SIZE: 879
+CONTENT-LENGTH: 879
+SHA256: 964d9c807ed194748aa5b967d58477c8456b783110a9a84994ad2c2a6ffeef07
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -22672,6 +22899,7 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_federation_matchday_group_calendar_planner,federation_matchday.group_calendar_planner,model_federation_matchday,sports_federation_calendar.group_calendar_planner,1,1,1,1
 access_federation_matchday_allocation_group_calendar_planner,federation_matchday_allocation.group_calendar_planner,model_federation_matchday_allocation,sports_federation_calendar.group_calendar_planner,1,1,1,1
 access_federation_schedule_slot_group_calendar_planner,federation_schedule_slot.group_calendar_planner,model_federation_schedule_slot,sports_federation_calendar.group_calendar_planner,1,1,1,1
+access_matchday_slot_generation_wizard_calendar_planner,federation.matchday.slot.generation.wizard.calendar.planner,model_federation_matchday_slot_generation_wizard,sports_federation_calendar.group_calendar_planner,1,1,1,1
 
 ====================================================================================================
 FILE: sports_federation_calendar/security/security.xml
@@ -22711,15 +22939,18 @@ from . import slot_generator
 
 ====================================================================================================
 FILE: sports_federation_calendar/services/slot_generator.py
-SIZE: 1702
-CONTENT-LENGTH: 1702
-SHA256: 9908fbab7d9b5f0790f42f2ecc4713b73faf6407c85e854877a477a947a25aa8
+SIZE: 6883
+CONTENT-LENGTH: 6883
+SHA256: b300f60c20b00d6b252ea010546b6aefa56a8dc96d88b6499b33a8713bc5ea08
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
+
+import pytz
+
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
@@ -22729,51 +22960,337 @@ class FederationSlotGenerator(models.AbstractModel):
     _description = "Match-Day Slot Generator"
 
     @api.model
-    def generate(
-        self, matchday, courts, start_time, end_time, duration_minutes, buffer_minutes=0
+    def _local_datetime(self, matchday, hour_value):
+        hour = int(hour_value)
+        minute = round((hour_value - hour) * 60)
+        if minute == 60:
+            hour += 1
+            minute = 0
+        day = fields.Date.to_date(matchday.date)
+        if hour == 24:
+            local_value = datetime.combine(day + timedelta(days=1), time.min)
+        else:
+            local_value = datetime.combine(day, time(hour=hour, minute=minute))
+        timezone = pytz.timezone(self.env.user.tz or "UTC")
+        return timezone.localize(local_value).astimezone(pytz.UTC).replace(tzinfo=None)
+
+    @staticmethod
+    def _overlaps(start_a, end_a, start_b, end_b):
+        return start_a < end_b and start_b < end_a
+
+    @api.model
+    def _blackout_constraints(self, matchday, court, start, end):
+        return matchday.venue_id.blackout_window_ids.filtered(
+            lambda constraint: constraint.active
+            and (not constraint.playing_area_id or constraint.playing_area_id == court)
+            and self._overlaps(
+                start,
+                end,
+                fields.Datetime.to_datetime(constraint.date_start),
+                fields.Datetime.to_datetime(constraint.date_end),
+            )
+        )
+
+    @api.model
+    def plan(
+        self,
+        matchday,
+        courts,
+        start_hour,
+        end_hour,
+        duration_minutes,
+        noon_pause=False,
+        noon_pause_minutes=60,
     ):
         matchday.ensure_one()
         if matchday.state not in ("draft", "capacity_ready"):
             raise ValidationError(
                 _("Slots can only be regenerated before scheduling starts.")
             )
-        start = datetime.combine(
-            fields.Date.to_date(matchday.date),
-            datetime.strptime(start_time, "%H:%M").time(),
-        )
-        end = datetime.combine(
-            fields.Date.to_date(matchday.date),
-            datetime.strptime(end_time, "%H:%M").time(),
-        )
-        if end <= start or duration_minutes <= 0:
+        if not courts:
+            raise ValidationError(_("Select at least one playing area."))
+        if courts.filtered(lambda court: court.venue_id != matchday.venue_id):
+            raise ValidationError(
+                _("Every selected playing area must belong to the match-day venue.")
+            )
+        if end_hour <= start_hour or duration_minutes <= 0:
             raise ValidationError(_("Provide a valid positive slot window."))
-        matchday.slot_ids.unlink()
-        vals = []
-        for court in courts:
+        if noon_pause and noon_pause_minutes <= 0:
+            raise ValidationError(_("Noon pause duration must be positive."))
+
+        start = self._local_datetime(matchday, start_hour)
+        end = self._local_datetime(matchday, end_hour)
+        pause_start = self._local_datetime(matchday, 12.0) if noon_pause else False
+        pause_end = (
+            pause_start + timedelta(minutes=noon_pause_minutes)
+            if pause_start
+            else False
+        )
+        available = []
+        breaks = []
+        blocked = 0
+        duration = timedelta(minutes=duration_minutes)
+
+        for court in courts.sorted(lambda item: item.id):
+            if pause_start and start < pause_end and pause_start < end:
+                breaks.append(
+                    {
+                        "matchday_id": matchday.id,
+                        "court_id": court.id,
+                        "start_datetime": max(start, pause_start),
+                        "end_datetime": min(end, pause_end),
+                        "state": "break",
+                        "note": _("Noon pause"),
+                    }
+                )
             pointer = start
-            while pointer + timedelta(minutes=duration_minutes) <= end:
-                vals.append(
+            while pointer + duration <= end:
+                candidate_end = pointer + duration
+                if pause_start and pointer < pause_end and pause_start < candidate_end:
+                    pointer = pause_end
+                    continue
+                constraints = self._blackout_constraints(
+                    matchday, court, pointer, candidate_end
+                )
+                if constraints:
+                    blocked += 1
+                    pointer = max(
+                        candidate_end,
+                        max(
+                            fields.Datetime.to_datetime(item.date_end)
+                            for item in constraints
+                        ),
+                    )
+                    continue
+                available.append(
                     {
                         "matchday_id": matchday.id,
                         "court_id": court.id,
                         "start_datetime": pointer,
-                        "end_datetime": pointer + timedelta(minutes=duration_minutes),
+                        "end_datetime": candidate_end,
+                        "state": "available",
                     }
                 )
-                pointer += timedelta(minutes=duration_minutes + max(buffer_minutes, 0))
-        return self.env["federation.schedule.slot"].create(vals)
+                pointer = candidate_end
+        return {
+            "available": available,
+            "breaks": breaks,
+            "blocked_count": blocked,
+        }
+
+    @api.model
+    def generate_plan(
+        self,
+        matchday,
+        courts,
+        start_hour,
+        end_hour,
+        duration_minutes,
+        noon_pause=False,
+        noon_pause_minutes=60,
+        replace_existing=False,
+    ):
+        matchday.ensure_one()
+        if matchday.slot_ids and not replace_existing:
+            raise ValidationError(
+                _("Existing slots must be explicitly replaced before generation.")
+            )
+        plan = self.plan(
+            matchday,
+            courts,
+            start_hour,
+            end_hour,
+            duration_minutes,
+            noon_pause=noon_pause,
+            noon_pause_minutes=noon_pause_minutes,
+        )
+        if not plan["available"]:
+            raise ValidationError(
+                _("The selected window produces no playable fixture slots.")
+            )
+        if replace_existing:
+            matchday.slot_ids.unlink()
+        matchday.write(
+            {
+                "default_day_start_hour": start_hour,
+                "default_slot_duration_minutes": duration_minutes,
+            }
+        )
+        generated_values = [
+            dict(values, continue_court_timeline=False)
+            for values in plan["available"] + plan["breaks"]
+        ]
+        return self.env["federation.schedule.slot"].create(generated_values)
+
+    @api.model
+    def generate(
+        self,
+        matchday,
+        courts,
+        start_time,
+        end_time,
+        duration_minutes,
+        buffer_minutes=0,
+    ):
+        """Compatibility entry point for callers using HH:MM strings."""
+        start = datetime.strptime(start_time, "%H:%M").time()
+        end = datetime.strptime(end_time, "%H:%M").time()
+        start_hour = start.hour + start.minute / 60
+        end_hour = end.hour + end.minute / 60
+        return self.generate_plan(
+            matchday,
+            courts,
+            start_hour,
+            end_hour,
+            duration_minutes + max(buffer_minutes, 0),
+            replace_existing=True,
+        )
 
 ====================================================================================================
 FILE: sports_federation_calendar/tests/__init__.py
-SIZE: 33
-CONTENT-LENGTH: 33
-SHA256: a6dfaf81cdf82816e8e2ea753b9b23f5b0546bcf3dbb355440bee9c121177b9f
+SIZE: 76
+CONTENT-LENGTH: 76
+SHA256: 801d98e57886a79cd83998b70d01df18753788f0835e9572002af488127856ee
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
 from . import test_slot_timeline
+
+from . import test_slot_generation_wizard
+
+====================================================================================================
+FILE: sports_federation_calendar/tests/test_slot_generation_wizard.py
+SIZE: 4474
+CONTENT-LENGTH: 4474
+SHA256: ddf820be4c7bcdb301a55ae934f8779d0e9031be1e943e4bae6dbc40587b3d58
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from datetime import datetime
+
+from odoo.exceptions import ValidationError
+from odoo.tests import tagged
+from odoo.tests.common import TransactionCase
+
+
+@tagged("post_install", "-at_install", "sf_calendar_slot_generation")
+class TestMatchdaySlotGenerationWizard(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.env.user.tz = "Europe/Brussels"
+        season = cls.env["federation.season"].create(
+            {
+                "name": "Generator Season",
+                "date_start": "2026-09-01",
+                "date_end": "2027-06-30",
+            }
+        )
+        competition = cls.env["federation.competition"].create(
+            {"name": "Generator Competition", "competition_type": "league"}
+        )
+        edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Generator Edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+            }
+        )
+        cls.venue = cls.env["federation.venue"].create({"name": "Generator Venue"})
+        cls.courts = cls.env["federation.playing.area"].create(
+            [
+                {"name": "Generator Court 1", "venue_id": cls.venue.id},
+                {"name": "Generator Court 2", "venue_id": cls.venue.id},
+            ]
+        )
+        cls.matchday = cls.env["federation.matchday"].create(
+            {
+                "name": "Generator Match Day",
+                "edition_id": edition.id,
+                "date": "2026-10-03",
+                "venue_id": cls.venue.id,
+            }
+        )
+        cls.env["federation.venue.blackout"].create(
+            [
+                {
+                    "venue_id": cls.venue.id,
+                    "playing_area_id": cls.courts[0].id,
+                    "date_start": "2026-10-03 08:00:00",
+                    "date_end": "2026-10-03 09:00:00",
+                    "closure_type": "maintenance",
+                },
+                {
+                    "venue_id": cls.venue.id,
+                    "date_start": "2026-10-03 13:00:00",
+                    "date_end": "2026-10-03 14:00:00",
+                    "closure_type": "blackout",
+                },
+            ]
+        )
+
+    def _wizard(self, **overrides):
+        values = {
+            "matchday_id": self.matchday.id,
+            "court_ids": [(6, 0, self.courts.ids)],
+            "start_hour": 9.0,
+            "end_hour": 17.0,
+            "slot_duration_minutes": 60,
+            "noon_pause": True,
+            "noon_pause_minutes": 60,
+        }
+        values.update(overrides)
+        return self.env["federation.matchday.slot.generation.wizard"].create(values)
+
+    def test_preview_respects_noon_pause_and_venue_constraints(self):
+        wizard = self._wizard()
+
+        self.assertEqual(wizard.generated_slot_count, 11)
+        self.assertEqual(wizard.pause_slot_count, 2)
+        self.assertEqual(wizard.blocked_slot_count, 3)
+
+    def test_generation_uses_local_time_and_creates_visible_pause(self):
+        wizard = self._wizard()
+        wizard.action_generate()
+
+        available = self.matchday.slot_ids.filtered(
+            lambda slot: slot.state == "available"
+        )
+        breaks = self.matchday.slot_ids.filtered(lambda slot: slot.state == "break")
+        self.assertEqual(len(available), 11)
+        self.assertEqual(len(breaks), 2)
+        self.assertEqual(
+            min(available.mapped("start_datetime")),
+            datetime(2026, 10, 3, 7, 0),
+        )
+        self.assertTrue(all(slot.note == "Noon pause" for slot in breaks))
+        self.assertFalse(
+            available.filtered(
+                lambda slot: datetime(2026, 10, 3, 10, 0) < slot.end_datetime
+                and slot.start_datetime < datetime(2026, 10, 3, 11, 0)
+            )
+        )
+
+    def test_existing_slots_require_explicit_replacement(self):
+        self._wizard().action_generate()
+        with self.assertRaises(ValidationError):
+            self._wizard().action_generate()
+
+        self._wizard(replace_existing_slots=True, end_hour=15.0).action_generate()
+        self.assertEqual(
+            self.matchday.default_slot_duration_minutes,
+            60,
+        )
+        self.assertTrue(self.matchday.slot_ids)
+
+    def test_generation_is_blocked_after_scheduling_starts(self):
+        self.matchday.state = "scheduled"
+        with self.assertRaises(ValidationError):
+            self._wizard().action_generate()
 
 ====================================================================================================
 FILE: sports_federation_calendar/tests/test_slot_timeline.py
@@ -23054,9 +23571,9 @@ class TestCalendarSlotTimeline(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_calendar/views/calendar_views.xml
-SIZE: 2517
-CONTENT-LENGTH: 2517
-SHA256: a9eaea360d370b2e34910ee4d1737b684729be1b7b5b044a90d106d631d200e2
+SIZE: 2679
+CONTENT-LENGTH: 2679
+SHA256: 7295af671a135546eeca685b3bf335495a3b0c5cae0270b3595b877f2115877f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -23064,7 +23581,7 @@ GIT-STATE: tracked
 
 <odoo>
  <record id="matchday_list" model="ir.ui.view"><field name="name">federation.matchday.list</field><field name="model">federation.matchday</field><field name="arch" type="xml"><list decoration-success="state in ('scheduled','closed')" decoration-warning="spare_capacity &lt; 0"><field name="date"/><field name="name"/><field name="edition_id"/><field name="venue_id"/><field name="fixture_count"/><field name="playable_slot_count"/><field name="spare_capacity"/><field name="state" widget="badge"/></list></field></record>
- <record id="matchday_form" model="ir.ui.view"><field name="name">federation.matchday.form</field><field name="model">federation.matchday</field><field name="arch" type="xml"><form><header><button name="action_capacity_ready" type="object" string="Mark Capacity Ready" class="btn-primary" invisible="state != 'draft'"/><field name="state" widget="statusbar" statusbar_visible="draft,capacity_ready,scheduled,open,closed"/></header><sheet><div class="oe_button_box" name="button_box"/><group><field name="name"/><field name="edition_id"/><field name="date"/><field name="venue_id"/></group><group string="Capacity" col="6"><field name="fixture_count"/><field name="playable_slot_count"/><field name="spare_capacity"/></group><notebook><page string="Round Allocations"><field name="allocation_ids"><list editable="bottom"><field name="structure_id" domain="[('edition_id','=',parent.edition_id),('state','=','frozen')]"/><field name="stage_id" domain="[('structure_id','=',structure_id)]"/><field name="round_number"/><field name="manual_fixture_ids" widget="many2many_tags"/><field name="fixture_ids" widget="many2many_tags" readonly="1"/></list></field></page><page string="Physical Slots"><field name="slot_ids"><list editable="bottom"><field name="court_id"/><field name="start_datetime"/><field name="end_datetime"/><field name="state"/><field name="note"/></list></field></page></notebook></sheet><chatter/></form></field></record>
+ <record id="matchday_form" model="ir.ui.view"><field name="name">federation.matchday.form</field><field name="model">federation.matchday</field><field name="arch" type="xml"><form><header><button name="action_open_slot_generator" type="object" string="Generate Match Slots" class="btn-secondary" invisible="state not in ('draft', 'capacity_ready')"/><button name="action_capacity_ready" type="object" string="Mark Capacity Ready" class="btn-primary" invisible="state != 'draft'"/><field name="state" widget="statusbar" statusbar_visible="draft,capacity_ready,scheduled,open,closed"/></header><sheet><div class="oe_button_box" name="button_box"/><group><field name="name"/><field name="edition_id"/><field name="date"/><field name="venue_id"/></group><group string="Capacity" col="6"><field name="fixture_count"/><field name="playable_slot_count"/><field name="spare_capacity"/></group><notebook><page string="Round Allocations"><field name="allocation_ids"><list editable="bottom"><field name="structure_id" domain="[('edition_id','=',parent.edition_id),('state','=','frozen')]"/><field name="stage_id" domain="[('structure_id','=',structure_id)]"/><field name="round_number"/><field name="manual_fixture_ids" widget="many2many_tags"/><field name="fixture_ids" widget="many2many_tags" readonly="1"/></list></field></page><page string="Physical Slots"><field name="slot_ids"><list editable="bottom"><field name="court_id"/><field name="start_datetime"/><field name="end_datetime"/><field name="state"/><field name="note"/></list></field></page></notebook></sheet><chatter/></form></field></record>
  <record id="action_calendar_planner" model="ir.actions.act_window"><field name="name">Calendar Planner</field><field name="res_model">federation.matchday</field><field name="view_mode">calendar,list,form</field></record>
  <record id="matchday_calendar" model="ir.ui.view"><field name="name">federation.matchday.calendar</field><field name="model">federation.matchday</field><field name="arch" type="xml"><calendar date_start="date" color="venue_id"><field name="name"/><field name="venue_id"/><field name="state"/></calendar></field></record>
 </odoo>
@@ -23107,6 +23624,242 @@ GIT-STATE: tracked
         <attribute name="context">{'default_matchday_id': id}</attribute>
       </xpath>
     </field>
+  </record>
+</odoo>
+
+====================================================================================================
+FILE: sports_federation_calendar/wizards/__init__.py
+SIZE: 37
+CONTENT-LENGTH: 37
+SHA256: db28348d0ac0c86076b7cb87131215cf616d6a0d40bbed078c4a7d91a2fb0dd1
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from . import slot_generation_wizard
+
+====================================================================================================
+FILE: sports_federation_calendar/wizards/slot_generation_wizard.py
+SIZE: 5601
+CONTENT-LENGTH: 5601
+SHA256: bfd10332cda99f9bd9ee7a632fd9c067cd827d5b3c4f1a5c01624c9a1d180ba7
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationMatchdaySlotGenerationWizard(models.TransientModel):
+    _name = "federation.matchday.slot.generation.wizard"
+    _description = "Generate Match-Day Fixture Slots"
+
+    matchday_id = fields.Many2one(
+        "federation.matchday",
+        required=True,
+        readonly=True,
+    )
+    venue_id = fields.Many2one(related="matchday_id.venue_id", readonly=True)
+    court_ids = fields.Many2many(
+        "federation.playing.area",
+        relation="federation_matchday_wizard_playing_area_rel",
+        string="Playing Areas",
+        required=True,
+        domain="[('venue_id', '=', venue_id), ('active', '=', True)]",
+    )
+    start_hour = fields.Float(
+        string="Game-Day Start",
+        required=True,
+        default=9.0,
+        help="First possible match start in the venue's local game-day window.",
+    )
+    end_hour = fields.Float(
+        string="Game-Day End",
+        required=True,
+        default=18.0,
+        help="Every generated slot must finish by this time.",
+    )
+    slot_duration_minutes = fields.Integer(
+        string="Total Slot Duration",
+        required=True,
+        default=60,
+        help=(
+            "Total court occupancy per match. Include regulation play, possible "
+            "overtime, post-match clearance, and setup for the next game."
+        ),
+    )
+    noon_pause = fields.Boolean(string="Pause at Noon", default=False)
+    noon_pause_minutes = fields.Integer(
+        string="Noon Pause Duration",
+        default=60,
+        help="Pause beginning at 12:00 local game-day time.",
+    )
+    replace_existing_slots = fields.Boolean(
+        string="Replace Existing Slots",
+        default=False,
+        help="Delete existing draft/capacity slots before generating the new plan.",
+    )
+    generated_slot_count = fields.Integer(compute="_compute_preview")
+    blocked_slot_count = fields.Integer(compute="_compute_preview")
+    pause_slot_count = fields.Integer(compute="_compute_preview")
+
+    @api.model
+    def default_get(self, field_names):
+        values = super().default_get(field_names)
+        matchday = self.env["federation.matchday"].browse(
+            self.env.context.get("default_matchday_id")
+        )
+        if matchday:
+            values.update(
+                {
+                    "matchday_id": matchday.id,
+                    "court_ids": [
+                        (
+                            6,
+                            0,
+                            matchday.venue_id.playing_area_ids.filtered("active").ids,
+                        )
+                    ],
+                    "start_hour": matchday.default_day_start_hour,
+                    "slot_duration_minutes": matchday.default_slot_duration_minutes,
+                }
+            )
+        return values
+
+    @api.depends(
+        "matchday_id",
+        "court_ids",
+        "start_hour",
+        "end_hour",
+        "slot_duration_minutes",
+        "noon_pause",
+        "noon_pause_minutes",
+    )
+    def _compute_preview(self):
+        generator = self.env["federation.slot.generator"]
+        for wizard in self:
+            wizard.generated_slot_count = 0
+            wizard.blocked_slot_count = 0
+            wizard.pause_slot_count = 0
+            if not wizard.matchday_id or not wizard.court_ids:
+                continue
+            try:
+                plan = generator.plan(
+                    wizard.matchday_id,
+                    wizard.court_ids,
+                    wizard.start_hour,
+                    wizard.end_hour,
+                    wizard.slot_duration_minutes,
+                    noon_pause=wizard.noon_pause,
+                    noon_pause_minutes=wizard.noon_pause_minutes,
+                )
+            except ValidationError:
+                continue
+            wizard.generated_slot_count = len(plan["available"])
+            wizard.blocked_slot_count = plan["blocked_count"]
+            wizard.pause_slot_count = len(plan["breaks"])
+
+    @api.constrains(
+        "start_hour",
+        "end_hour",
+        "slot_duration_minutes",
+        "noon_pause_minutes",
+    )
+    def _check_generation_parameters(self):
+        for wizard in self:
+            if not 0 <= wizard.start_hour < 24 or not 0 < wizard.end_hour <= 24:
+                raise ValidationError(_("Start and end must be valid times of day."))
+            if wizard.end_hour <= wizard.start_hour:
+                raise ValidationError(_("Game-day end must be after game-day start."))
+            if wizard.slot_duration_minutes <= 0:
+                raise ValidationError(_("Total slot duration must be positive."))
+            if wizard.noon_pause and wizard.noon_pause_minutes <= 0:
+                raise ValidationError(_("Noon pause duration must be positive."))
+
+    def action_generate(self):
+        self.ensure_one()
+        if self.matchday_id.slot_ids and not self.replace_existing_slots:
+            raise ValidationError(
+                _(
+                    "Existing slots are present. Enable Replace Existing Slots "
+                    "to continue."
+                )
+            )
+        self.env["federation.slot.generator"].generate_plan(
+            self.matchday_id,
+            self.court_ids,
+            self.start_hour,
+            self.end_hour,
+            self.slot_duration_minutes,
+            noon_pause=self.noon_pause,
+            noon_pause_minutes=self.noon_pause_minutes,
+            replace_existing=self.replace_existing_slots,
+        )
+        return {"type": "ir.actions.client", "tag": "reload"}
+
+====================================================================================================
+FILE: sports_federation_calendar/wizards/slot_generation_wizard_views.xml
+SIZE: 2402
+CONTENT-LENGTH: 2402
+SHA256: de37c070bb8b8baa2f150c380a19609f96102fd5b59f15a9edf9239896b8dec6
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+<odoo>
+  <record id="matchday_slot_generation_wizard_form" model="ir.ui.view">
+    <field name="name">federation.matchday.slot.generation.wizard.form</field>
+    <field name="model">federation.matchday.slot.generation.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Generate Match-Day Slots">
+        <sheet>
+          <div class="alert alert-info" role="status">
+            Total slot duration must already include possible overtime, clearance, and setup for the next match. Venue and playing-area constraint windows are excluded automatically.
+          </div>
+          <group>
+            <group string="Game Day">
+              <field name="matchday_id"/>
+              <field name="venue_id"/>
+              <field name="court_ids" widget="many2many_tags" options="{'no_create': True}"/>
+            </group>
+            <group string="Time Window">
+              <field name="start_hour" widget="float_time"/>
+              <field name="end_hour" widget="float_time"/>
+              <field name="slot_duration_minutes"/>
+            </group>
+          </group>
+          <group string="Noon Pause">
+            <field name="noon_pause"/>
+            <field name="noon_pause_minutes" invisible="not noon_pause" required="noon_pause"/>
+          </group>
+          <group string="Generation">
+            <field name="replace_existing_slots"/>
+          </group>
+          <group string="Preview" col="6">
+            <field name="generated_slot_count" readonly="1"/>
+            <field name="pause_slot_count" readonly="1"/>
+            <field name="blocked_slot_count" readonly="1"/>
+          </group>
+          <div class="alert alert-warning" role="alert" invisible="not blocked_slot_count">
+            Some candidate slots overlap venue availability constraints and will not be created.
+          </div>
+        </sheet>
+        <footer>
+          <button name="action_generate" type="object" string="Generate Slots" class="btn-primary"/>
+          <button string="Cancel" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+  <record id="action_matchday_slot_generation_wizard" model="ir.actions.act_window">
+    <field name="name">Generate Match-Day Slots</field>
+    <field name="res_model">federation.matchday.slot.generation.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
   </record>
 </odoo>
 
@@ -23636,15 +24389,15 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_competition_core/services/__init__.py
-SIZE: 1
-CONTENT-LENGTH: 1
-SHA256: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+SIZE: 30
+CONTENT-LENGTH: 30
+SHA256: fd4d47743e46bf515dd9623cc195b996b04864d2f5edb1384770f4712894bf8a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
-
+"""Service package marker."""
 
 ====================================================================================================
 FILE: sports_federation_competition_core/tests/__init__.py
@@ -23760,18 +24513,18 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_competition_core/views/menu.xml
-SIZE: 1006
-CONTENT-LENGTH: 1006
-SHA256: 3b872ffb34c72799f50687e213d87b2fc2edd503579b462799e1c6919e159fb3
+SIZE: 1028
+CONTENT-LENGTH: 1028
+SHA256: 684f1281fd7a3f07fa2f1acb847e60d4226abd34aba24f42485098055c894ff4
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
 <odoo>
-  <menuitem id="menu_competition_engine_competition_root" name="Competition Workflow" parent="sports_federation_base.menu_federation_root" sequence="25"/>
+  <menuitem id="menu_competition_engine_competition_root" name="Competition Operations" parent="sports_federation_base.menu_federation_competitions" sequence="20"/>
   <menuitem id="menu_competition_overview_competition" name="Competition Overview" parent="menu_competition_engine_competition_root" action="action_competition_overview" sequence="10"/>
-  <menuitem id="menu_competition_engine_competition_technical" name="Technical Records" parent="menu_competition_engine_competition_root" sequence="90" groups="sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_competition_engine_competition_technical" name="Audit &amp; Technical Records" parent="menu_competition_engine_competition_root" sequence="90" groups="sports_federation_base.group_federation_manager"/>
   <record id="action_competition_roles_competition" model="ir.actions.act_window"><field name="name">Role Assignments</field><field name="res_model">federation.competition.role.assignment</field><field name="view_mode">list,form</field></record>
   <menuitem id="menu_competition_roles_competition" name="Role Assignments" parent="menu_competition_engine_competition_technical" action="action_competition_roles_competition" sequence="10"/>
 </odoo>
@@ -27132,9 +27885,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_compliance/views/menu_views.xml
-SIZE: 1505
-CONTENT-LENGTH: 1505
-SHA256: b8ba9bebce53c6542e3a072490af7529044cb5d521231b82f80826d614fb4f92
+SIZE: 1499
+CONTENT-LENGTH: 1499
+SHA256: c235531b289a204ce09b566df4447584ae16216252da748bd6dc175864bd85d3
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -27149,7 +27902,7 @@ GIT-STATE: tracked
     <!-- Compliance Submenu -->
     <menuitem id="menu_federation_compliance"
               name="Compliance"
-              parent="sports_federation_base.menu_federation_administration"
+              parent="sports_federation_base.menu_federation_business"
               sequence="20"
               groups="sports_federation_base.group_federation_user,sports_federation_base.group_federation_manager"/>
 
@@ -27468,9 +28221,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_demo/README.md
-SIZE: 3157
-CONTENT-LENGTH: 3157
-SHA256: c099561a7d167f930f043dddfbf63f54b108d9698883bd0ba9f140dcf6ae8a59
+SIZE: 3593
+CONTENT-LENGTH: 3593
+SHA256: 2b590c16839a05f711603808ad4c92d71377ea0e097ecbc4cac9967a89afc4f6
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -27543,17 +28296,22 @@ labels, error semantics, status text, responsive tables, and action wrapping.
 
 Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md) during training and acceptance. Addon names are not always visible as menus.
 
+
+## Full competition lifecycle browser tour
+
+The `full_competition_lifecycle` browser tour follows the maintained operator handoffs from Competition Overview through registration, format, calendar, scheduling, independent review, match-day control, officiating assignment, standings, and the canonical public competition index. It opens actions by XML ID so navigation remains stable when menu sections are collapsed or role-filtered.
+
 ====================================================================================================
 FILE: sports_federation_demo/__init__.py
-SIZE: 1
-CONTENT-LENGTH: 1
-SHA256: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+SIZE: 27
+CONTENT-LENGTH: 27
+SHA256: f10f672c7724e86c2375fa8af5bf01789f5838163ae46d5250a381c79f3559a2
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
-
+"""Demo package marker."""
 
 ====================================================================================================
 FILE: sports_federation_demo/__manifest__.py
@@ -29013,9 +29771,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_demo/static/tests/tours/full_competition_lifecycle_tour.js
-SIZE: 3047
-CONTENT-LENGTH: 3047
-SHA256: 7ab28ad6d9be5017e497812ef358ebd9a7636bd2cc1c5f70b0a66954399552ba
+SIZE: 3548
+CONTENT-LENGTH: 3548
+SHA256: c019523d5b6d18f819da9c4b1f409994f86a13da5a42d2c31ffb4e44db2a85d7
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -29084,6 +29842,19 @@ tour.add("full_competition_lifecycle", {
             "Open match-day control"
         ),
         assertBackendView("Published match days are available"),
+        openAction(
+            "sports_federation_officiating.action_matchday_assign_official_wizard",
+            "Open match-day officiating assignment"
+        ),
+        {
+            content: "The match-day officiating wizard is available",
+            trigger: '.o_dialog .o_form_view .o_field_widget[name="assignment_type"]',
+        },
+        {
+            content: "Close the officiating wizard",
+            trigger: ".o_dialog footer .btn-secondary",
+            run: "click",
+        },
         openAction(
             "sports_federation_standings.action_federation_standing",
             "Open official standings"
@@ -29566,9 +30337,9 @@ class TestOperatorRoleAcceptance(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_demo/tests/test_release_pilot_readiness.py
-SIZE: 4238
-CONTENT-LENGTH: 4238
-SHA256: b797bb62907b4f9787e444e7ebb405f4ed9273368f2c53d98dc4a07137c5b02f
+SIZE: 5394
+CONTENT-LENGTH: 5394
+SHA256: 53896e2aaf95a5e8d0755e432b0aaabacd03ad88dc9db835561f18885d9e55e7
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -29596,6 +30367,9 @@ class TestReleasePilotReadiness(TransactionCase):
         "sports_federation_scheduling.action_schedule_planner_competition": "federation.schedule",
         "sports_federation_schedule_approval.action_schedule_review_queue": "federation.schedule.review",
         "sports_federation_matchday.action_matchday_control": "federation.matchday",
+        "sports_federation_officiating.action_matchday_assign_official_wizard": (
+            "federation.matchday.assign.official.wizard"
+        ),
         "sports_federation_standings.action_federation_standing": "federation.standing",
     }
 
@@ -29640,6 +30414,25 @@ class TestReleasePilotReadiness(TransactionCase):
             normalized_source = source.lower()
             for token in forbidden_architecture_tokens:
                 self.assertNotIn(token, normalized_source)
+
+    def test_full_lifecycle_tour_covers_officiating_and_publication_handoffs(self):
+        path = (
+            Path(__file__).resolve().parents[1]
+            / "static/tests/tours/full_competition_lifecycle_tour.js"
+        )
+        source = path.read_text(encoding="utf-8")
+        for xmlid in (
+            "sports_federation_registration.action_registration_desk",
+            "sports_federation_format.action_format_studio",
+            "sports_federation_calendar.action_calendar_planner",
+            "sports_federation_scheduling.action_schedule_planner_competition",
+            "sports_federation_schedule_approval.action_schedule_review_queue",
+            "sports_federation_matchday.action_matchday_control",
+            "sports_federation_officiating.action_matchday_assign_official_wizard",
+            "sports_federation_standings.action_federation_standing",
+        ):
+            self.assertIn(xmlid, source)
+        self.assertIn('window.location.assign("/competitions")', source)
 
     def test_keyboard_setup_tour_uses_keyboard_activation_and_focus_assertions(self):
         path = (
@@ -35622,9 +36415,9 @@ records.action_batch_create_invoices()
 
 ====================================================================================================
 FILE: sports_federation_finance_bridge/views/menu_views.xml
-SIZE: 1195
-CONTENT-LENGTH: 1195
-SHA256: a3f6bcd1c716875ae3e1fdd173f00154a2204eb953f484381c90e5d65cab0ed2
+SIZE: 1189
+CONTENT-LENGTH: 1189
+SHA256: c8f03ceec9a9a8b8f79bee5cdb47dc3778eb59a193b4ea6a1f296cebe6a15cf6
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -35636,8 +36429,8 @@ GIT-STATE: tracked
     <!-- Finance submenu -->
     <menuitem id="menu_federation_finance"
               name="Finance"
-              parent="sports_federation_base.menu_federation_administration"
-              sequence="40"/>
+              parent="sports_federation_base.menu_federation_business"
+              sequence="10"/>
 
     <!-- Fee Types -->
     <menuitem id="menu_federation_fee_type"
@@ -38060,15 +38853,15 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_format/views/menu.xml
-SIZE: 462
-CONTENT-LENGTH: 462
-SHA256: c3ad2c367edd80896e7f5f969aaaf0ff4790e24cd5d253ed467f1ac71a4af581
+SIZE: 438
+CONTENT-LENGTH: 438
+SHA256: 85b0353543754745d4a112276be447596cb1dd07ebe7a7454adac566146e710a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
-<odoo><menuitem id="menu_format_studio" name="Format Studio" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_format_studio" sequence="30"/><menuitem id="menu_format_templates" name="Format Templates" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_competition_format_template" sequence="30" groups="sports_federation_base.group_federation_manager"/>
+<odoo><menuitem id="menu_format_studio" name="Format Studio" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_format_studio" sequence="30"/><menuitem id="menu_format_templates" name="Format Templates" parent="sports_federation_base.menu_federation_competitions" action="action_competition_format_template" sequence="35" groups="sports_federation_base.group_federation_manager"/>
 </odoo>
 
 ====================================================================================================
@@ -39209,9 +40002,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_governance/views/menu_views.xml
-SIZE: 763
-CONTENT-LENGTH: 763
-SHA256: 566c6d3a1d1f7839310a37d43f6e95a77da172277763e5101f5284e7badd2708
+SIZE: 757
+CONTENT-LENGTH: 757
+SHA256: 1cda49b7026f9d713c6c63ffa1061447115285fdcdb00d17601a13ed42b4c078
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -39223,8 +40016,8 @@ GIT-STATE: tracked
     <!-- Governance submenu -->
     <menuitem id="menu_federation_governance"
               name="Governance"
-              parent="sports_federation_base.menu_federation_administration"
-              sequence="50"/>
+              parent="sports_federation_base.menu_federation_business"
+              sequence="30"/>
 
     <!-- Override Requests -->
     <menuitem id="menu_federation_override_request"
@@ -47951,16 +48744,16 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_matchday/views/menu.xml
-SIZE: 733
-CONTENT-LENGTH: 733
-SHA256: ce041fb1a3e881a60f84ae4eb632ff37eb60c5a3243d93fc20ef1db92a14a690
+SIZE: 705
+CONTENT-LENGTH: 705
+SHA256: 500bdd882b83b58210110763330914cabe785bfde51cb5e1ddd174377631edca
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
 <odoo>
-  <menuitem id="menu_matchday_control" name="Match-Day Control" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_matchday_control" sequence="70" groups="sports_federation_matchday.group_matchday_manager,sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_matchday_control" name="Match-Day Control" parent="sports_federation_base.menu_federation_match_day" action="action_matchday_control" sequence="5" groups="sports_federation_matchday.group_matchday_manager,sports_federation_base.group_federation_manager"/>
   <menuitem id="menu_matchday_incidents" name="Incidents" parent="sports_federation_competition_core.menu_competition_engine_competition_technical" action="action_matchday_incidents" sequence="60"/>
   <menuitem id="menu_matchday_deviations" name="Operational Deviations" parent="sports_federation_competition_core.menu_competition_engine_competition_technical" action="action_matchday_deviations" sequence="61"/>
 </odoo>
@@ -50591,9 +51384,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_officiating/README.md
-SIZE: 1493
-CONTENT-LENGTH: 1491
-SHA256: 6eb196acc73e5122dfc7ead4015515230b6b8956a5a68bdc5238a91d5e8ef457
+SIZE: 2626
+CONTENT-LENGTH: 2620
+SHA256: c4a24f6ae77f112e96fdb9f4327c2f3364a48540661df4d4231b677a08ae7fb9
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -50635,6 +51428,15 @@ Official assignments and club-supplied duties belong to fixture-backed
 operational matches. Use **Officiating → Plan Match-Day Officials** to assign a
 federation referee or generate club duties for every applicable match in the
 current live publication. The removed round wizard must not be reintroduced.
+
+
+## Automatic club-duty allocation
+
+From **Match Operations → Officiating → Plan Match-Day Officials**, select **Auto-assign Club Duties** for a published match day. The default policy requests four roles per match and assigns all missing roles for that match to one participating club.
+
+The allocator is deterministic and balances the accumulated duty count across eligible clubs. It excludes the two clubs playing the target match. By default it also prefers clubs that have no team playing during the target match window; matches on different courts are treated as concurrent when their published time windows overlap. A configurable fallback can use the least-loaded conflicted club when no non-playing club exists. Disable that fallback when the competition requires a strict non-playing-team rule.
+
+**Preserve existing assignments** is enabled by default. Existing active federation or volunteer referee assignments and existing club duties satisfy their role and are never overwritten. The wizard creates only the missing roles. Duties can be opened immediately for club nomination, or left in draft for operator review.
 
 ====================================================================================================
 FILE: sports_federation_officiating/__init__.py
@@ -52018,9 +52820,9 @@ access_matchday_assign_official_wizard_manager,federation.matchday.assign.offici
 
 ====================================================================================================
 FILE: sports_federation_officiating/tests/__init__.py
-SIZE: 305
-CONTENT-LENGTH: 305
-SHA256: c323c304a48b61be8a3a9d57da449e17168a9fb556b44cf77562e05cb97bf067
+SIZE: 351
+CONTENT-LENGTH: 351
+SHA256: b2e06e1b4a87f3e7e4e669d16e670b734481271afeb033d7cdd6ebda538cd6a0
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -52034,6 +52836,257 @@ from . import test_club_referee_duty
 from . import test_tour_club_referee_duty
 from . import test_reimbursement
 from . import test_competition_officiating_contract
+
+from . import test_auto_club_duty_assignment
+
+====================================================================================================
+FILE: sports_federation_officiating/tests/test_auto_club_duty_assignment.py
+SIZE: 9161
+CONTENT-LENGTH: 9161
+SHA256: 6ed5b2c916421a281dfe39ec035e6d1cea930358719a0c793ff2b4a1c6a79abb
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo.tests import tagged
+from odoo.tests.common import TransactionCase
+
+
+@tagged("post_install", "-at_install", "sf_auto_club_duties")
+class TestAutoClubDutyAssignment(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        season = cls.env["federation.season"].create(
+            {
+                "name": "Duty Season",
+                "date_start": "2026-01-01",
+                "date_end": "2026-12-31",
+            }
+        )
+        competition = cls.env["federation.competition"].create(
+            {"name": "Duty Competition", "competition_type": "league"}
+        )
+        cls.edition = cls.env["federation.competition.edition"].create(
+            {
+                "name": "Duty Edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+            }
+        )
+        division = cls.env["federation.tournament"].create(
+            {
+                "name": "Duty Division",
+                "edition_id": cls.edition.id,
+                "competition_id": competition.id,
+                "season_id": season.id,
+                "date_start": "2026-06-01",
+            }
+        )
+        participant_set = cls.env["federation.participant.set"].create(
+            {
+                "name": "Duty Participants",
+                "edition_id": cls.edition.id,
+                "division_id": division.id,
+                "state": "finalized",
+            }
+        )
+        structure = cls.env["federation.competition.structure"].create(
+            {
+                "name": "Duty Structure",
+                "edition_id": cls.edition.id,
+                "division_id": division.id,
+                "participant_set_id": participant_set.id,
+                "format_type": "custom",
+            }
+        )
+        stage = cls.env["federation.structure.stage"].create(
+            {"name": "Duty Stage", "structure_id": structure.id, "stage_type": "league"}
+        )
+        clubs = cls.env["federation.club"].create(
+            [{"name": f"Duty Club {code}", "code": f"DUTY-{code}"} for code in "ABCDE"]
+        )
+        teams = cls.env["federation.team"].create(
+            [
+                {
+                    "name": f"Duty Team {code}",
+                    "code": f"DUTY-T-{code}",
+                    "club_id": club.id,
+                }
+                for code, club in zip("ABCDE", clubs)
+            ]
+        )
+        fixtures = cls.env["federation.fixture"].create(
+            [
+                {
+                    "structure_id": structure.id,
+                    "stage_id": stage.id,
+                    "round_number": 1,
+                    "home_team_id": teams[0].id,
+                    "away_team_id": teams[1].id,
+                    "state": "ready",
+                },
+                {
+                    "structure_id": structure.id,
+                    "stage_id": stage.id,
+                    "round_number": 1,
+                    "home_team_id": teams[2].id,
+                    "away_team_id": teams[3].id,
+                    "state": "ready",
+                },
+                {
+                    "structure_id": structure.id,
+                    "stage_id": stage.id,
+                    "round_number": 1,
+                    "home_team_id": teams[4].id,
+                    "away_team_id": teams[0].id,
+                    "state": "ready",
+                },
+            ]
+        )
+        venue = cls.env["federation.venue"].create({"name": "Duty Venue"})
+        cls.matchday = cls.env["federation.matchday"].create(
+            {
+                "name": "Duty Day",
+                "edition_id": cls.edition.id,
+                "date": "2026-06-20",
+                "venue_id": venue.id,
+            }
+        )
+        courts = cls.env["federation.playing.area"].create(
+            [
+                {"name": "Duty Court 1", "venue_id": venue.id},
+                {"name": "Duty Court 2", "venue_id": venue.id},
+            ]
+        )
+        slots = cls.env["federation.schedule.slot"].create(
+            [
+                {
+                    "matchday_id": cls.matchday.id,
+                    "court_id": courts[0].id,
+                    "start_datetime": "2026-06-20 10:00:00",
+                    "end_datetime": "2026-06-20 11:00:00",
+                },
+                {
+                    "matchday_id": cls.matchday.id,
+                    "court_id": courts[1].id,
+                    "start_datetime": "2026-06-20 10:00:00",
+                    "end_datetime": "2026-06-20 11:00:00",
+                },
+                {
+                    "matchday_id": cls.matchday.id,
+                    "court_id": courts[0].id,
+                    "start_datetime": "2026-06-20 12:00:00",
+                    "end_datetime": "2026-06-20 13:00:00",
+                },
+            ]
+        )
+        schedule = cls.env["federation.schedule"].create(
+            {
+                "name": "Duty Schedule",
+                "edition_id": cls.edition.id,
+                "structure_id": structure.id,
+                "matchday_id": cls.matchday.id,
+            }
+        )
+        assignments = cls.env["federation.schedule.assignment"].create(
+            [
+                {
+                    "schedule_id": schedule.id,
+                    "fixture_id": fixture.id,
+                    "slot_id": slot.id,
+                }
+                for fixture, slot in zip(fixtures, slots)
+            ]
+        )
+        cls.env["federation.fixture.materializer"].sudo().materialize(fixtures)
+        snapshot = cls.env["federation.schedule.approval.commands"]._snapshot(schedule)
+        review = (
+            cls.env["federation.schedule.review"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "submitted_revision": schedule.revision,
+                    "state": "pending",
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": cls.env[
+                        "federation.schedule.approval.commands"
+                    ]._digest(snapshot),
+                    "submitted_by_id": cls.env.user.id,
+                }
+            )
+        )
+        publication = (
+            cls.env["federation.schedule.publication"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "version": 1,
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": cls.env[
+                        "federation.schedule.approval.commands"
+                    ]._digest(snapshot),
+                    "source_revision": schedule.revision,
+                    "review_id": review.id,
+                }
+            )
+        )
+        cls.matches = fixtures.mapped("operational_match_id")
+        for assignment in assignments:
+            assignment.fixture_id.operational_match_id.sudo().write(
+                {
+                    "published_slot_id": assignment.slot_id.id,
+                    "schedule_publication_id": publication.id,
+                    "date_scheduled": assignment.slot_id.start_datetime,
+                }
+            )
+        cls.matchday.sudo().write({"current_publication_id": publication.id})
+        cls.clubs = clubs
+
+    def test_prefers_non_playing_club_and_creates_four_roles(self):
+        volunteer = self.env["federation.referee"].create({"name": "Volunteer Head"})
+        self.env["federation.match.referee"].create(
+            {"match_id": self.matches[0].id, "referee_id": volunteer.id, "role": "head"}
+        )
+        wizard = self.env["federation.matchday.assign.official.wizard"].create(
+            {
+                "matchday_id": self.matchday.id,
+                "assignment_type": "auto_club",
+                "officials_per_match": 4,
+                "preserve_existing_assignments": True,
+                "avoid_clubs_playing_same_slot": True,
+                "allow_playing_club_fallback": True,
+            }
+        )
+        wizard.action_apply()
+        duties = self.env["federation.match.club.referee.duty"].search(
+            [("match_id", "=", self.matches[0].id)]
+        )
+        self.assertEqual(
+            set(duties.mapped("role")),
+            {"assistant_1", "assistant_2", "fourth"},
+        )
+        self.assertEqual(duties.mapped("club_id"), self.clubs[4])
+        self.assertTrue(all(duty.state == "open" for duty in duties))
+
+    def test_configuration_can_require_a_non_playing_club(self):
+        wizard = self.env["federation.matchday.assign.official.wizard"].create(
+            {
+                "matchday_id": self.matchday.id,
+                "assignment_type": "auto_club",
+                "officials_per_match": 2,
+                "avoid_clubs_playing_same_slot": True,
+                "allow_playing_club_fallback": False,
+            }
+        )
+        wizard.action_apply()
+        first_match_duties = self.env["federation.match.club.referee.duty"].search(
+            [("match_id", "=", self.matches[0].id)]
+        )
+        self.assertEqual(first_match_duties.mapped("club_id"), self.clubs[4])
 
 ====================================================================================================
 FILE: sports_federation_officiating/tests/test_club_referee_duty.py
@@ -54388,9 +55441,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_officiating/views/federation_matchday_assign_wizard_views.xml
-SIZE: 1634
-CONTENT-LENGTH: 1634
-SHA256: 68417e7c97277eb30c4d0233e515fe8dd8af5258cf61676eb330bdfa962a6479
+SIZE: 2304
+CONTENT-LENGTH: 2304
+SHA256: 000dda5d33342d3c8641482bc4b2aaf91c4b8b96a326e534d00aa6f90c8b485f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -54405,9 +55458,14 @@ GIT-STATE: tracked
         <sheet>
           <div class="alert alert-info" role="status">Assignments are created only for fixture-backed matches in the current live publication.</div>
           <group>
-            <group string="Published match day"><field name="matchday_id"/><field name="assignment_type"/><field name="role"/></group>
-            <group string="Responsible official"><field name="referee_id" invisible="assignment_type != 'referee'" required="assignment_type == 'referee'"/><field name="club_id" invisible="assignment_type != 'club'" required="assignment_type == 'club'"/><field name="open_duties" invisible="assignment_type != 'club'"/></group>
+            <group string="Published match day"><field name="matchday_id"/><field name="assignment_type"/><field name="role" invisible="assignment_type == 'auto_club'"/></group>
+            <group string="Responsible official"><field name="referee_id" invisible="assignment_type != 'referee'" required="assignment_type == 'referee'"/><field name="club_id" invisible="assignment_type != 'club'" required="assignment_type == 'club'"/><field name="open_duties" invisible="assignment_type == 'referee'"/></group>
           </group>
+          <group string="Automatic club-duty policy" invisible="assignment_type != 'auto_club'">
+            <group><field name="officials_per_match"/><field name="preserve_existing_assignments"/></group>
+            <group><field name="avoid_clubs_playing_same_slot"/><field name="allow_playing_club_fallback" invisible="not avoid_clubs_playing_same_slot"/></group>
+          </group>
+          <div class="alert alert-warning" role="alert" invisible="assignment_type != 'auto_club'">The same selected club supplies all requested roles for a match. Clubs with any team playing in the slot are avoided where possible.</div>
           <group string="Preview" col="6"><field name="matches_total"/><field name="matches_to_assign"/><field name="matches_skipped"/></group>
         </sheet>
         <footer><button name="action_apply" type="object" string="Assign" class="btn-primary"/><button string="Cancel" special="cancel"/></footer>
@@ -54906,9 +55964,9 @@ from . import federation_matchday_assign_wizard
 
 ====================================================================================================
 FILE: sports_federation_officiating/wizards/federation_matchday_assign_wizard.py
-SIZE: 5390
-CONTENT-LENGTH: 5390
-SHA256: d9737ebf04fed790f40096000f0c26c3aa87406e8ae3bafec4a361497abadf9e
+SIZE: 12030
+CONTENT-LENGTH: 12030
+SHA256: 64511ee93fbf94810d3146c3c4a800a9354dee42e186d7464ed5188717488b2b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -54936,7 +55994,11 @@ class FederationMatchdayAssignOfficialWizard(models.TransientModel):
         domain="[('current_publication_id.state','=','live')]",
     )
     assignment_type = fields.Selection(
-        [("referee", "Federation Referee"), ("club", "Club Duty")],
+        [
+            ("referee", "Federation Referee"),
+            ("club", "One Club Duty"),
+            ("auto_club", "Auto-assign Club Duties"),
+        ],
         required=True,
         default="referee",
     )
@@ -54946,6 +56008,23 @@ class FederationMatchdayAssignOfficialWizard(models.TransientModel):
     open_duties = fields.Boolean(
         default=True,
         help="Immediately open generated club duties for nomination.",
+    )
+    officials_per_match = fields.Integer(
+        default=4,
+        required=True,
+        help="Number of club-supplied officials requested for each match.",
+    )
+    avoid_clubs_playing_same_slot = fields.Boolean(
+        default=True,
+        help="Prefer a club that has no team playing during the match slot.",
+    )
+    allow_playing_club_fallback = fields.Boolean(
+        default=True,
+        help="Allow the least-conflicted club when every eligible club is playing.",
+    )
+    preserve_existing_assignments = fields.Boolean(
+        default=True,
+        help="Keep existing federation/volunteer referee assignments and club duties.",
     )
     matches_total = fields.Integer(compute="_compute_preview")
     matches_to_assign = fields.Integer(compute="_compute_preview")
@@ -54965,7 +56044,15 @@ class FederationMatchdayAssignOfficialWizard(models.TransientModel):
             order="date_scheduled,id",
         )
 
-    @api.depends("matchday_id", "assignment_type", "role", "referee_id", "club_id")
+    @api.depends(
+        "matchday_id",
+        "assignment_type",
+        "role",
+        "referee_id",
+        "club_id",
+        "officials_per_match",
+        "preserve_existing_assignments",
+    )
     def _compute_preview(self):
         for wizard in self:
             if not wizard.matchday_id or not wizard.role:
@@ -54973,6 +56060,13 @@ class FederationMatchdayAssignOfficialWizard(models.TransientModel):
                 wizard.matches_skipped = 0
                 continue
             matches = wizard._published_matches()
+            if wizard.assignment_type == "auto_club":
+                roles = wizard._auto_roles()
+                covered = wizard._covered_match_ids(matches, roles)
+                wizard.matches_total = len(matches)
+                wizard.matches_skipped = len(covered)
+                wizard.matches_to_assign = len(matches) - len(covered)
+                continue
             if wizard.assignment_type == "referee":
                 existing = self.env["federation.match.referee"].search(
                     [
@@ -54994,6 +56088,140 @@ class FederationMatchdayAssignOfficialWizard(models.TransientModel):
             wizard.matches_skipped = skipped
             wizard.matches_to_assign = len(matches) - skipped
 
+    def _auto_roles(self):
+        self.ensure_one()
+        if not 1 <= self.officials_per_match <= len(ROLE_SELECTION):
+            raise ValidationError(
+                _("Officials per match must be between 1 and %s.") % len(ROLE_SELECTION)
+            )
+        return [role for role, _label in ROLE_SELECTION[: self.officials_per_match]]
+
+    def _existing_roles(self, matches):
+        referee_roles = self.env["federation.match.referee"].search(
+            [
+                ("match_id", "in", matches.ids),
+                ("state", "!=", "cancelled"),
+            ]
+        )
+        duty_roles = self.env["federation.match.club.referee.duty"].search(
+            [("match_id", "in", matches.ids), ("state", "!=", "rejected")]
+        )
+        result = {}
+        for assignment in referee_roles:
+            result.setdefault(assignment.match_id.id, set()).add(assignment.role)
+        for duty in duty_roles:
+            result.setdefault(duty.match_id.id, set()).add(duty.role)
+        return result
+
+    def _covered_match_ids(self, matches, roles):
+        if not self.preserve_existing_assignments:
+            return set()
+        existing = self._existing_roles(matches)
+        return {
+            match.id
+            for match in matches
+            if all(role in existing.get(match.id, set()) for role in roles)
+        }
+
+    @staticmethod
+    def _match_club_ids(match):
+        fixture = match.logical_fixture_id
+        return {
+            club.id
+            for club in (fixture.home_team_id.club_id, fixture.away_team_id.club_id)
+            if club
+        }
+
+    @staticmethod
+    def _slot_windows_overlap(first_slot, second_slot):
+        return bool(
+            first_slot
+            and second_slot
+            and first_slot.start_datetime < second_slot.end_datetime
+            and second_slot.start_datetime < first_slot.end_datetime
+        )
+
+    def _auto_assign_club_duties(self, matches):
+        roles = self._auto_roles()
+        existing_roles = self._existing_roles(matches)
+        candidate_clubs = matches.mapped("logical_fixture_id.home_team_id.club_id")
+        candidate_clubs |= matches.mapped("logical_fixture_id.away_team_id.club_id")
+        if not candidate_clubs:
+            raise ValidationError(_("No participating clubs are available for duties."))
+        load = {club.id: 0 for club in candidate_clubs}
+        existing_duties = self.env["federation.match.club.referee.duty"].search(
+            [("match_id", "in", matches.ids), ("state", "!=", "rejected")]
+        )
+        for duty in existing_duties:
+            load[duty.club_id.id] = load.get(duty.club_id.id, 0) + 1
+        values = []
+        for match in matches.sorted(lambda item: (item.date_scheduled, item.id)):
+            missing_roles = [
+                role
+                for role in roles
+                if not (
+                    self.preserve_existing_assignments
+                    and role in existing_roles.get(match.id, set())
+                )
+            ]
+            if not missing_roles:
+                continue
+            slot = match.published_slot_id or match.operational_slot_id
+            simultaneous = matches.filtered(
+                lambda other: (
+                    other.id != match.id
+                    and slot
+                    and self._slot_windows_overlap(
+                        slot,
+                        other.published_slot_id or other.operational_slot_id,
+                    )
+                )
+            )
+            playing_clubs = set().union(
+                *(self._match_club_ids(other) for other in simultaneous | match)
+            )
+            opponents = self._match_club_ids(match)
+            eligible = candidate_clubs.filtered(lambda club: club.id not in opponents)
+            preferred = eligible.filtered(lambda club: club.id not in playing_clubs)
+            pool = (
+                preferred
+                if self.avoid_clubs_playing_same_slot and preferred
+                else eligible
+            )
+            if (
+                self.avoid_clubs_playing_same_slot
+                and not preferred
+                and not self.allow_playing_club_fallback
+            ):
+                raise ValidationError(
+                    _("No non-playing club is available for %s.") % match.display_name
+                )
+            if not pool:
+                raise ValidationError(
+                    _("No other participating club can cover %s.") % match.display_name
+                )
+            club = min(
+                pool,
+                key=lambda candidate: (
+                    candidate.id in playing_clubs,
+                    load.get(candidate.id, 0),
+                    candidate.id,
+                ),
+            )
+            for role in missing_roles:
+                values.append(
+                    {
+                        "match_id": match.id,
+                        "club_id": club.id,
+                        "role": role,
+                    }
+                )
+                load[club.id] = load.get(club.id, 0) + 1
+        duties = self.env["federation.match.club.referee.duty"].create(values)
+        if self.open_duties:
+            duties.action_open()
+        return duties
+
     def action_apply(self):
         self.ensure_one()
         matches = self._published_matches()
@@ -55001,6 +56229,9 @@ class FederationMatchdayAssignOfficialWizard(models.TransientModel):
             raise ValidationError(
                 _("The live publication contains no assignable matches.")
             )
+        if self.assignment_type == "auto_club":
+            self._auto_assign_club_duties(matches)
+            return {"type": "ir.actions.act_window_close"}
         if self.assignment_type == "referee" and not self.referee_id:
             raise ValidationError(_("Select a federation referee."))
         if self.assignment_type == "club" and not self.club_id:
@@ -56147,9 +57378,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_people/views/menu_items.xml
-SIZE: 800
-CONTENT-LENGTH: 800
-SHA256: 7d3fa87d254d4e9341c22dd9b5cb0c756d598c546f97d74755c4f8484195eee0
+SIZE: 817
+CONTENT-LENGTH: 817
+SHA256: f5a04d8164b9208815c3927bc5916c487d2332f32f34802f56cab7a3970a0c5a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -56159,9 +57390,9 @@ GIT-STATE: tracked
 <odoo>
 
     <menuitem id="menu_federation_people"
-              name="People"
+              name="Players &amp; Licensing"
               parent="sports_federation_base.menu_federation_setup"
-              sequence="50"/>
+              sequence="20"/>
 
     <menuitem id="menu_federation_player"
               name="Players"
@@ -56304,7 +57535,7 @@ from . import controllers
 FILE: sports_federation_portal/__manifest__.py
 SIZE: 2804
 CONTENT-LENGTH: 2804
-SHA256: 3b6056500f679c13c0c45ebcd5a4091a40bcbe9315857bc2ba0ec4e992d4f8ef
+SHA256: 5ea86b253cb1ceac6340ebe3db26d67a8e9c278c14ce160bf6a52768b9c1cb81
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -56367,8 +57598,8 @@ on top of the federation base modules.
         "views/portal_result_templates.xml",
         "views/portal_referee_duty_templates.xml",
         "views/operation_task_views.xml",
-        "views/menu_items.xml",
         "views/website_menus.xml",
+        "views/menu_items.xml",
     ],
     "assets": {
         "web.assets_frontend": [
@@ -56723,7 +57954,7 @@ class FederationPortalcurrent(FederationPortalBase):
 FILE: sports_federation_portal/controllers/data_api.py
 SIZE: 853
 CONTENT-LENGTH: 853
-SHA256: fb3f40167618e7c15c92dd18cd2346f5919192ffcff81ce7df01ba745a82458e
+SHA256: e35dc282980429a516319151a3a1fd2142889282e0514885ab7ca900159a0814
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -56742,9 +57973,9 @@ class FederationDataApiPortal(FederationPortalBase):
             return request.redirect("/my")
 
         base_url = request.httprequest.url_root.rstrip("/")
-        editions = request.env[
-            "federation.public.competition.queries"
-        ].list_editions(archived=False)
+        editions = request.env["federation.public.competition.queries"].list_editions(
+            archived=False
+        )
         return request.render(
             "sports_federation_portal.portal_data_api_tutorial",
             {
@@ -68539,9 +69770,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_portal/views/menu_items.xml
-SIZE: 955
-CONTENT-LENGTH: 955
-SHA256: 985251ef5725c5c7c0ea3c2308176d8a4a1f39677cf0ac2241effdf6bb28103a
+SIZE: 947
+CONTENT-LENGTH: 947
+SHA256: 8b620f860dcc1d30a93ed394a4ac5bcf90ac4894e504c444c7e2271b3a1ca133
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -68553,22 +69784,22 @@ GIT-STATE: tracked
     <!-- Add menu items under Federation journey menus -->
     <menuitem id="menu_federation_club_role_type"
               name="Club Role Types"
-              parent="sports_federation_base.menu_federation_administration"
+              parent="sports_federation_portal.menu_federation_portal_root"
               action="action_federation_club_role_type"
               sequence="30"/>
 
     <menuitem id="menu_federation_club_representative"
               name="Club Representatives"
-              parent="sports_federation_base.menu_federation_administration"
+              parent="sports_federation_portal.menu_federation_portal_root"
               action="action_federation_club_representative"
-              sequence="40"/>
+              sequence="20"/>
 
     <menuitem id="menu_federation_operation_task"
-              name="Operational Action Queue"
-              parent="sports_federation_base.menu_federation_planning"
+              name="Action Queue"
+              parent="sports_federation_base.menu_federation_administration"
               action="action_federation_operation_task"
               groups="sports_federation_base.group_federation_manager"
-              sequence="20"/>
+              sequence="10"/>
 
 </odoo>
 
@@ -71418,9 +72649,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_portal/views/website_menus.xml
-SIZE: 742
-CONTENT-LENGTH: 742
-SHA256: 46a379ee45afe0e481f52893313f7f1a74864257a50da41d8ada54f29d928d43
+SIZE: 749
+CONTENT-LENGTH: 749
+SHA256: 298c87ff8abceaa58e5ddf07c6fba0712a7772c76ea0a0a0c7683d1be7b9f1cb
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -71435,23 +72666,23 @@ GIT-STATE: tracked
 
     <!-- Backend menu for portal module -->
     <menuitem id="menu_federation_portal_root"
-              name="Clubs &amp; People"
-              parent="sports_federation_base.menu_federation_root"
-              sequence="50"/>
+              name="Representatives &amp; Access"
+              parent="sports_federation_base.menu_federation_setup"
+              sequence="30"/>
 
     <menuitem id="menu_federation_club_representative_portal"
-              name="Representatives &amp; Access"
+              name="Representative Workspace"
               parent="menu_federation_portal_root"
               action="action_federation_club_representative_portal"
-              sequence="20"/>
+              sequence="10"/>
 
 </odoo>
 
 ====================================================================================================
 FILE: sports_federation_public_site/README.md
-SIZE: 9985
-CONTENT-LENGTH: 9985
-SHA256: 8554edeb303f783288fd939fb762b27693a009ae6f7ed9b3fb93b191d7a6833d
+SIZE: 10146
+CONTENT-LENGTH: 10146
+SHA256: 86b7af12b77711f782d9dbb3302c245d6d0a9664013232e94e7fd0c30a22d6b7
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -71600,7 +72831,8 @@ Canonical follow and discovery routes:
 12. Season discovery and editorial planning: published seasons aggregate featured tournaments, recent tournaments, and live editorial items with publication windows.
 13. Automatic menu cleanup: module installs and upgrades normalize stale `/competitions` website menus into the Tournaments submenu and remove leftover duplicates.
 14. Shared privileged-write boundary: website registration POST routes validate HTTP input and then reuse the same tournament registration helper as the portal layer.
-15. Publication handoff guidance: tournament and standings Website tabs now explain whether visibility is blocked by tournament publication, missing standings, unpublished standings, or disabled standings toggles, with direct links back to standings when operators need to act there.
+15. Registration feedback redirects preserve the division selector query parameter, so capacity and validation messages return to the correct registration form.
+16. Publication handoff guidance: tournament and standings Website tabs now explain whether visibility is blocked by tournament publication, missing standings, unpublished standings, or disabled standings toggles, with direct links back to standings when operators need to act there.
 
 ## Publication guards
 
@@ -71860,9 +73092,9 @@ class TournamentHubFilterMixin:
 
 ====================================================================================================
 FILE: sports_federation_public_site/controllers/_public_request.py
-SIZE: 3514
-CONTENT-LENGTH: 3514
-SHA256: cfa5d117e40159b89023fe44a0147913a9c56afd8af9d2aae0dfbb40aa58adc5
+SIZE: 3572
+CONTENT-LENGTH: 3572
+SHA256: 5e11b0acd1b9f65d1f44a573a6c6142d37932f1febabebf9ef0fcbb6f80ca406
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -71938,7 +73170,8 @@ class PublicRequestInfrastructureMixin:
         return ClubRep.sudo()._get_clubs_for_user(user=request.env.user)
 
     def _redirect_with_error(self, path, message):
-        return request.redirect(f"{path}?error={quote_plus(message)}")
+        separator = "&" if "?" in path else "?"
+        return request.redirect(f"{path}{separator}error={quote_plus(message)}")
 
     def _get_rate_limit_subject(self):
         headers = getattr(request.httprequest, "headers", {}) or {}
@@ -72432,15 +73665,13 @@ class PublicCompetitionController(PublicRequestInfrastructureMixin, http.Control
 
 ====================================================================================================
 FILE: sports_federation_public_site/controllers/public_competitions.py
-SIZE: 12429
-CONTENT-LENGTH: 12429
-SHA256: 2255afe9bd91b6e4a4f8df0717431f9a1fec6ad786ef2311ec7c65b64dbd60fe
+SIZE: 12416
+CONTENT-LENGTH: 12416
+SHA256: 65caa3517c9da504cd69375ca73fd27d5ce0c0b84d14f18abd659ba68172470f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
-
-import json
 
 from odoo import http
 from odoo.addons.sports_federation_base.request_security import (
@@ -73025,16 +74256,15 @@ def migrate(cr, version):
 
 ====================================================================================================
 FILE: sports_federation_public_site/migrations/19.0.3.0.0/pre-migrate.py
-SIZE: 1009
-CONTENT-LENGTH: 1009
-SHA256: 0d55730668ceee9854d620863dbef47d02572a0ac7af120b9f4f66aec34a3ac9
+SIZE: 1008
+CONTENT-LENGTH: 1008
+SHA256: c9713e04e5f0a7dc2394873145816a3456c7e7dc829afc55010cc54280a513f2
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
 import logging
-
 
 _logger = logging.getLogger(__name__)
 
@@ -76171,9 +77401,9 @@ class TestClubPublicPages(HttpCase):
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_http_smoke.py
-SIZE: 12313
-CONTENT-LENGTH: 12313
-SHA256: 1b233cfbba676cc7a8eecbe0e51f6a0b9e8f8293803686eedb7d3f5a55eb65da
+SIZE: 12214
+CONTENT-LENGTH: 12214
+SHA256: 4ca1c1e732afca8ea9fbc281048aedd1c111a76723e036795a5fc7c09813ad1c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -76183,9 +77413,6 @@ import re
 import unittest
 
 from odoo import SUPERUSER_ID, api
-from odoo.addons.sports_federation_base.tests.route_inventory import (
-    load_route_inventory,
-)
 from odoo.tests.common import HttpCase, tagged
 
 
@@ -78266,7 +79493,7 @@ GIT-STATE: tracked
 FILE: sports_federation_public_site/views/editorial_views.xml
 SIZE: 5147
 CONTENT-LENGTH: 5147
-SHA256: 7fb2bc75da726f6926ee5ae6c7dfe8091759937320b626b71425ea6082902f62
+SHA256: feba30eadfacf51203e896d46fb8f98eb18f5bd412c3a1720db9c79b1747e666
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -78368,7 +79595,7 @@ GIT-STATE: tracked
               name="Public Editorial"
               parent="sports_federation_base.menu_federation_publication"
               action="action_federation_public_editorial_items"
-              sequence="20"
+              sequence="40"
               groups="sports_federation_base.group_federation_manager"/>
 
 </odoo>
@@ -81068,15 +82295,15 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_registration/services/__init__.py
-SIZE: 1
-CONTENT-LENGTH: 1
-SHA256: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+SIZE: 30
+CONTENT-LENGTH: 30
+SHA256: fd4d47743e46bf515dd9623cc195b996b04864d2f5edb1384770f4712894bf8a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
-
+"""Service package marker."""
 
 ====================================================================================================
 FILE: sports_federation_registration/tests/__init__.py
@@ -88251,9 +89478,9 @@ class TestYearFourReporting(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_reporting/views/menu_views.xml
-SIZE: 5872
-CONTENT-LENGTH: 5872
-SHA256: 9d72d359f1f5fa5acd88fe44824a76378707c4a989b74c169c8ec8c2bd0eb165
+SIZE: 6834
+CONTENT-LENGTH: 6834
+SHA256: e576429bd3bfdca8df6003c090d0ea6654a9bf2ae6393b7d2f48c07015db497c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -88264,144 +89491,165 @@ GIT-STATE: tracked
 
     <!-- Reporting submenu -->
     <menuitem id="menu_federation_reporting"
-              name="Reporting"
-              parent="sports_federation_base.menu_federation_administration"
-              sequence="60"/>
+              name="Reports &amp; Insights"
+              parent="sports_federation_base.menu_federation_insights"
+              sequence="10"/>
+
+    <menuitem id="menu_federation_reporting_overview"
+              name="Overview &amp; Readiness"
+              parent="menu_federation_reporting"
+              sequence="10"/>
+
+    <menuitem id="menu_federation_reporting_performance"
+              name="Performance"
+              parent="menu_federation_reporting"
+              sequence="20"/>
+
+    <menuitem id="menu_federation_reporting_assurance"
+              name="Assurance &amp; Exceptions"
+              parent="menu_federation_reporting"
+              sequence="30"/>
+
+    <menuitem id="menu_federation_reporting_automation"
+              name="Automation &amp; History"
+              parent="menu_federation_reporting"
+              sequence="40"/>
+
 
     <menuitem id="menu_federation_report_operator_checklist"
               name="Operator Checklist"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_overview"
               action="action_federation_report_operator_checklist"
               sequence="2"/>
 
     <menuitem id="menu_federation_report_portal_audit"
               name="Portal Audit"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_portal_audit"
               sequence="3"/>
 
     <menuitem id="menu_federation_report_token_rotation_audit"
               name="Token Rotation Audit"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_token_rotation_audit"
               sequence="4"/>
 
     <!-- Participation Report -->
     <menuitem id="menu_federation_report_operational"
               name="Operational KPIs"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_operational"
               sequence="5"/>
 
     <menuitem id="menu_federation_report_season_portfolio"
               name="Season Portfolio"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_season_portfolio"
               sequence="7"/>
 
     <menuitem id="menu_federation_report_participation"
               name="Participation"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_participation"
               sequence="10"/>
 
     <menuitem id="menu_federation_report_club_performance"
               name="Club Performance"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_club_performance"
               sequence="12"/>
 
     <menuitem id="menu_federation_report_standing_reconciliation"
               name="Standings Reconciliation"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_standing_reconciliation"
               sequence="15"/>
 
     <!-- Officiating Report -->
     <menuitem id="menu_federation_report_officiating"
               name="Officiating"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_officiating"
               sequence="20"/>
 
     <!-- Compliance Report -->
     <menuitem id="menu_federation_report_compliance"
               name="Compliance"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_compliance"
               sequence="30"/>
 
     <!-- Club Compliance Summary -->
     <menuitem id="menu_federation_report_club_compliance_summary"
               name="Club Compliance Summary"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_club_compliance_summary"
               sequence="32"/>
 
     <!-- Referee Coverage KPI -->
     <menuitem id="menu_federation_report_officiating_coverage"
               name="Referee Coverage"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_officiating_coverage"
               sequence="22"/>
 
     <!-- Finance Report -->
     <menuitem id="menu_federation_report_finance"
               name="Finance"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_performance"
               action="action_federation_report_finance"
               sequence="40"/>
 
     <menuitem id="menu_federation_report_finance_reconciliation"
               name="Finance Reconciliation"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_finance_reconciliation"
               sequence="45"/>
 
     <menuitem id="menu_federation_report_notification_exception"
               name="Notification Exceptions"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_notification_exception"
               sequence="50"/>
 
     <menuitem id="menu_federation_report_finance_exception"
               name="Finance Exceptions"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_finance_exception"
               sequence="55"/>
 
     <menuitem id="menu_federation_report_workflow_exception"
               name="Workflow Exceptions"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_workflow_exception"
               sequence="60"/>
 
     <menuitem id="menu_federation_report_compliance_remediation"
               name="Compliance Remediation"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_assurance"
               action="action_federation_report_compliance_remediation"
               sequence="62"/>
 
     <menuitem id="menu_federation_report_season_checklist"
               name="Season Checklists"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_overview"
               action="action_federation_report_season_checklist"
               sequence="65"/>
 
     <menuitem id="menu_federation_report_snapshot"
               name="Trend Snapshots"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_automation"
               action="action_federation_report_snapshot"
               sequence="70"/>
 
     <menuitem id="menu_federation_report_schedule"
               name="Report Schedules"
-              parent="menu_federation_reporting"
+              parent="menu_federation_reporting_automation"
               action="action_federation_report_schedule"
               groups="sports_federation_base.group_federation_manager"
               sequence="90"/>
 
-    <menuitem id="menu_federation_operational_dashboard" name="Operational Health" parent="menu_federation_reporting" action="action_server_federation_operational_dashboard" groups="sports_federation_base.group_federation_manager" sequence="1"/>
+    <menuitem id="menu_federation_operational_dashboard" name="Operational Health" parent="menu_federation_reporting_overview" action="action_server_federation_operational_dashboard" groups="sports_federation_base.group_federation_manager" sequence="1"/>
 
 </odoo>
 
@@ -99789,9 +101037,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/README.md
-SIZE: 2688
-CONTENT-LENGTH: 2688
-SHA256: a382a6f3b9416754bd3aa224e7a4f30b780d2c2380d7eb3ef09257d91f2c45d5
+SIZE: 3231
+CONTENT-LENGTH: 3231
+SHA256: faf496085aa52559da986e3f70bf9e58588aea7c2c2e5b761a31300c46b0aa88
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -99849,6 +101097,11 @@ versioned and replaced per match day, not per edition. Publication confirmation
 locks the match day and verifies the expected current publication before
 allocating the next version. Replacements require a dedicated reason that is
 separate from the review note.
+
+
+## Expanded match-day publication guard
+
+Immediately before replacing a live publication, the approval service validates the approved schedule against every fixture currently allocated to the physical match day. A division or fixture added after review invalidates that review for publication purposes. The planner must refresh the schedule, assign the newly exposed fixtures, and submit the complete replacement for review again. This guarantees that Match-Day Control and public publishing consume one complete multi-division publication.
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/__init__.py
@@ -100379,9 +101632,9 @@ from . import approval_commands
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/services/approval_commands.py
-SIZE: 12429
-CONTENT-LENGTH: 12429
-SHA256: e01a0b9397f223c0671f1c58be6fa37d93ade747bf4a51fd3bebb4d6bf1e1683
+SIZE: 13046
+CONTENT-LENGTH: 13046
+SHA256: 650de5c95555cca4435cb15ec0c823e06fcab53f20ee063a5296eaf334a3f170
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -100578,6 +101831,21 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             raise ValidationError(
                 _("Close live match-day operations before replacing publication.")
             )
+        validation = self.env["federation.schedule.validator"].validate_map(
+            schedule,
+            {
+                assignment.fixture_id.id: assignment.slot_id.id
+                for assignment in schedule.assignment_ids
+            },
+        )
+        if not validation["valid"]:
+            raise ValidationError(
+                _(
+                    "The match-day fixture plan changed after review. Return the "
+                    "schedule to planning, assign every current fixture, and review "
+                    "the complete replacement before publishing."
+                )
+            )
         review = self.env["federation.schedule.review"].search(
             [
                 ("schedule_id", "=", schedule.id),
@@ -100700,9 +101968,9 @@ from . import test_review_permissions
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/tests/test_publication_integrity.py
-SIZE: 11762
-CONTENT-LENGTH: 11762
-SHA256: bc3ddcf677151be91a4b003715df431a07d90f84f563bc6342490b5b2594713f
+SIZE: 12951
+CONTENT-LENGTH: 12951
+SHA256: a7f23df8f95bbcb224da869aaccda46be148446c13a3fafd4200b4b2800b9e49
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -100898,6 +102166,37 @@ class TestPhase511Integrity(TransactionCase):
             )
         )
         return schedule, review
+
+    def test_publication_rejects_fixture_added_after_review(self):
+        schedule, review = self._valid_schedule_review(
+            self.days[0], "expanded-after-review"
+        )
+        fixture = schedule.assignment_ids.fixture_id
+        self.env["federation.fixture"].create(
+            {
+                "structure_id": fixture.structure_id.id,
+                "stage_id": fixture.stage_id.id,
+                "round_number": fixture.round_number,
+                "home_team_id": fixture.home_team_id.id,
+                "away_team_id": fixture.away_team_id.id,
+                "state": "ready",
+            }
+        )
+        self.env["federation.competition.role.assignment"].sudo().create(
+            {
+                "edition_id": self.edition.id,
+                "role": "schedule_approver",
+                "user_id": self.env.user.id,
+            }
+        )
+
+        with self.assertRaisesRegex(
+            ValidationError, "fixture plan changed after review"
+        ):
+            self.env["federation.schedule.approval.commands"].publish(schedule.id)
+
+        self.assertFalse(self.days[0].current_publication_id)
+        self.assertEqual(review.state, "pending")
 
     def test_review_decision_fields_reject_direct_writes(self):
         schedule, review = self._schedule_review(self.days[0], "guard")
@@ -101435,7 +102734,7 @@ GIT-STATE: tracked
 FILE: sports_federation_schedule_approval/views/menu.xml
 SIZE: 967
 CONTENT-LENGTH: 967
-SHA256: 9b89abdf6254f0b29cc6d46cc2cb8849f3d3a1cd3361b7c13b030bd0ff29ceab
+SHA256: 6b795d6548cc8f12062b1599095775cbf1a9fac68dde3e8be67b5d8c5442c664
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -101443,8 +102742,8 @@ GIT-STATE: tracked
 
 <odoo>
   <menuitem id="menu_schedule_review_queue" name="Schedule Review Queue" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="action_schedule_review_queue" sequence="60" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager"/>
-  <menuitem id="menu_approved_schedule_queue" name="Approved Schedules" parent="sports_federation_base.menu_federation_publication" action="action_approved_schedule_queue" sequence="20" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager"/>
-  <menuitem id="menu_schedule_publication_history" name="Schedule Publications" parent="sports_federation_base.menu_federation_publication" action="action_schedule_publication_history" sequence="30" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_approved_schedule_queue" name="Approved Schedules" parent="sports_federation_base.menu_federation_publication" action="action_approved_schedule_queue" sequence="10" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_schedule_publication_history" name="Schedule Publications" parent="sports_federation_base.menu_federation_publication" action="action_schedule_publication_history" sequence="20" groups="sports_federation_schedule_approval.group_schedule_approver,sports_federation_base.group_federation_manager"/>
 </odoo>
 
 ====================================================================================================
@@ -101555,9 +102854,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_scheduling/README.md
-SIZE: 1604
-CONTENT-LENGTH: 1604
-SHA256: 52436ebc15b89f27e992ec99b10ba0f7d3d08a384d1365041ee3c6ff6501897b
+SIZE: 2304
+CONTENT-LENGTH: 2304
+SHA256: 606c7b3ca9a94f0591fa259dc89a47f3b7b370567d99fba2ebd264464ab09fd4
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -101595,6 +102894,13 @@ handoff and retained history.
 ## Reversible planning
 
 Draft and change-requested schedules refresh the current calendar fixture pool. Late fixtures appear as unassigned work; stale assignments are flagged and never silently deleted. Pending submissions can be withdrawn, while published corrections use governed replacement revisions.
+
+
+## Multi-division match days
+
+A working schedule covers the complete physical match day, not only the division structure that originally opened the planner. If another division is allocated to the same match day during a governed revision, **Refresh Calendar Fixtures** exposes those fixtures as unassigned work and auto-scheduling includes them in its proposal. Submission remains blocked until every non-bye fixture from every match-day allocation is assigned.
+
+Publication validates the current match-day fixture pool again. If allocations change after review, publication stops and requires a refreshed, complete schedule and a new review instead of silently publishing an incomplete game day.
 
 ====================================================================================================
 FILE: sports_federation_scheduling/__init__.py
@@ -102241,9 +103547,9 @@ class FederationDeterministicSolver(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_scheduling/services/fairness_solver.py
-SIZE: 6888
-CONTENT-LENGTH: 6888
-SHA256: 82badbd98252565c5dacb9ad193ff54a8be1e838fb8cedc5c5a4185b035b92e9
+SIZE: 6944
+CONTENT-LENGTH: 6944
+SHA256: 488476847ad740c0da933ee1d42ffd03c67a93dc51519f9c228456b93cfeac65
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -102273,11 +103579,10 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
             lambda a: not replace_automatic or a.method != "automatic"
         )
         assignment_map = {a.fixture_id.id: a.slot_id.id for a in retained}
+        # A physical match day may combine several division structures. The
+        # schedule's structure is its creation context, not a boundary for the
+        # fixture pool that must be planned and published.
         allocated = schedule.matchday_id.allocation_ids.mapped("fixture_ids")
-        if schedule.structure_id:
-            allocated = allocated.filtered(
-                lambda f: f.structure_id == schedule.structure_id
-            )
         fixtures = allocated.filtered(lambda f: f.id not in assignment_map).sorted(
             lambda f: (f.round_number, f.sequence, f.id)
         )
@@ -102945,9 +104250,9 @@ class TestFairnessSolver(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_scheduling/tests/test_schedule_amendment.py
-SIZE: 7034
-CONTENT-LENGTH: 7034
-SHA256: 2a2a40a66f5de73b0686a388fe493ca5160ab348879f0827476f1497663ba6a9
+SIZE: 10979
+CONTENT-LENGTH: 10979
+SHA256: 99502287f815465ebb90d1f8390cd584920ed0d70fe0766ea9200ee0478ab011
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -103112,6 +104417,111 @@ class TestScheduleAmendment(TransactionCase):
         with self.assertRaises(ValidationError):
             self.schedule.action_create_revision("Unsafe live change")
 
+    def _add_second_division_fixture(self):
+        division = self.env["federation.tournament"].create(
+            {
+                "name": "Additional Division",
+                "edition_id": self.edition.id,
+                "competition_id": self.edition.competition_id.id,
+                "season_id": self.edition.season_id.id,
+                "date_start": "2026-10-01",
+            }
+        )
+        participants = self.env["federation.participant.set"].create(
+            {
+                "name": "Additional Division Participants",
+                "edition_id": self.edition.id,
+                "division_id": division.id,
+                "state": "finalized",
+            }
+        )
+        structure = self.env["federation.competition.structure"].create(
+            {
+                "name": "Additional Division Structure",
+                "edition_id": self.edition.id,
+                "division_id": division.id,
+                "participant_set_id": participants.id,
+                "format_type": "custom",
+                "state": "frozen",
+            }
+        )
+        stage = self.env["federation.structure.stage"].create(
+            {
+                "name": "Additional Division League",
+                "structure_id": structure.id,
+                "stage_type": "league",
+            }
+        )
+        clubs = self.env["federation.club"].create(
+            [{"name": "Additional Home Club"}, {"name": "Additional Away Club"}]
+        )
+        teams = self.env["federation.team"].create(
+            [
+                {"name": "Additional Home", "club_id": clubs[0].id},
+                {"name": "Additional Away", "club_id": clubs[1].id},
+            ]
+        )
+        fixture = self.env["federation.fixture"].create(
+            {
+                "structure_id": structure.id,
+                "stage_id": stage.id,
+                "round_number": 1,
+                "home_team_id": teams[0].id,
+                "away_team_id": teams[1].id,
+                "state": "ready",
+            }
+        )
+        self.env["federation.matchday.allocation"].create(
+            {
+                "matchday_id": self.matchday.id,
+                "structure_id": structure.id,
+                "stage_id": stage.id,
+                "round_number": 1,
+            }
+        )
+        return fixture
+
+    def test_revision_and_auto_planner_include_new_division_fixture(self):
+        replacement = self.schedule.action_create_revision(
+            "Add another division to the match day"
+        )
+        original_clubs = self.env["federation.club"].create(
+            [{"name": "Original Home Club"}, {"name": "Original Away Club"}]
+        )
+        original_teams = self.env["federation.team"].create(
+            [
+                {"name": "Original Home", "club_id": original_clubs[0].id},
+                {"name": "Original Away", "club_id": original_clubs[1].id},
+            ]
+        )
+        self.fixture.write(
+            {
+                "home_team_id": original_teams[0].id,
+                "away_team_id": original_teams[1].id,
+                "state": "ready",
+            }
+        )
+        fixture = self._add_second_division_fixture()
+        court = self.schedule.assignment_ids.slot_id.court_id
+        self.env["federation.schedule.slot"].create(
+            {
+                "matchday_id": self.matchday.id,
+                "court_id": court.id,
+                "start_datetime": "2026-10-10 11:00:00",
+                "end_datetime": "2026-10-10 12:00:00",
+            }
+        )
+
+        replacement.invalidate_recordset()
+        proposal = self.env["federation.schedule.fairness.solver"].propose(replacement)
+
+        self.assertIn(fixture, replacement.available_fixture_ids)
+        self.assertIn(fixture, replacement.unassigned_fixture_ids)
+        self.assertIn(
+            fixture.id,
+            [assignment["fixture_id"] for assignment in proposal["assignments"]],
+        )
+
     def test_late_fixture_can_be_added_to_revision_and_removed_again(self):
         replacement = self.schedule.action_create_revision("Late fixture added")
         late_fixture = self.env["federation.fixture"].create(
@@ -103216,9 +104626,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_scheduling/views/scheduling_views.xml
-SIZE: 6754
-CONTENT-LENGTH: 6754
-SHA256: 367ba988bf9778e177e202c8c5ef89465a6ebc7212a333027da1f45f18f1fb5c
+SIZE: 6782
+CONTENT-LENGTH: 6782
+SHA256: 3409ca14ca443fac7294a6d557a4e2b6ec6ce22a86aa791287c10b79b1ada752
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -103377,7 +104787,7 @@ GIT-STATE: tracked
           <group string="Fixture Readiness"><field name="available_fixture_count" readonly="1"/><field name="unassigned_fixture_count" readonly="1"/><field name="stale_assignment_count" readonly="1"/></group>
           <div class="alert alert-warning" role="alert" invisible="not stale_assignment_count">Assignments outside the current calendar plan are retained for explicit correction and are never deleted automatically.</div>
           <notebook>
-            <page string="Calendar Fixtures" name="calendar_fixtures"><field name="available_fixture_ids" readonly="1"><list><field name="name"/><field name="stage_id"/><field name="round_number"/></list></field></page>
+            <page string="Calendar Fixtures" name="calendar_fixtures"><field name="available_fixture_ids" readonly="1"><list><field name="name"/><field name="structure_id"/><field name="stage_id"/><field name="round_number"/></list></field></page>
             <page string="Assignments" name="assignments">
               <field name="assignment_ids">
                 <list editable="bottom">
@@ -106506,7 +107916,7 @@ class TestTourStandings(TransactionCase):
 FILE: sports_federation_standings/views/menu_views.xml
 SIZE: 594
 CONTENT-LENGTH: 594
-SHA256: 5588a91eb31962324711cb4b73416b82b2a73864ffa83251ce94a295fbcf0908
+SHA256: 47b6347a4f841ac81d44ea0f64086def7564cc3221bfc1c64d383b9049fd5b2d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -106518,7 +107928,7 @@ GIT-STATE: tracked
               name="Standings"
               parent="sports_federation_base.menu_federation_publication"
               action="action_federation_standing"
-              sequence="10"/>
+              sequence="30"/>
 
     <menuitem id="menu_federation_standing_recompute_jobs"
               name="Recompute Queue"
@@ -111882,9 +113292,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_tournament/views/menu_items.xml
-SIZE: 1815
-CONTENT-LENGTH: 1815
-SHA256: 06998f63cab380ff0f1fc5bcce04d07eb08f7ea38f68c0105645eb862ce13440
+SIZE: 1845
+CONTENT-LENGTH: 1845
+SHA256: 25b19b55eadee06aa846da98177c16b90650301a3606c96dbd840af9fd32d294
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -111897,18 +113307,18 @@ GIT-STATE: tracked
               name="Competition Templates"
               parent="sports_federation_base.menu_federation_competitions"
               action="federation_competition_action"
-              sequence="10"/>
+              sequence="30"/>
 
     <menuitem id="menu_federation_competition_edition"
               name="Season Competitions"
               parent="sports_federation_base.menu_federation_competitions"
               action="federation_competition_edition_action"
-              sequence="20"/>
+              sequence="15"/>
 
     <menuitem id="menu_federation_tournament"
-              name="Advanced Records"
+              name="Structure &amp; Fixtures"
               parent="sports_federation_base.menu_federation_planning"
-              sequence="90"/>
+              sequence="10"/>
 
     <menuitem id="menu_federation_tournament_config"
               name="Tournament Structure"
@@ -111929,9 +113339,9 @@ GIT-STATE: tracked
 
     <menuitem id="menu_federation_matches"
               name="Matches"
-              parent="menu_federation_tournament"
+              parent="sports_federation_base.menu_federation_match_day"
               action="federation_match_action"
-              sequence="30"/>
+              sequence="10"/>
 
     <menuitem id="menu_federation_tournament_list"
               name="Divisions &amp; Tournaments"

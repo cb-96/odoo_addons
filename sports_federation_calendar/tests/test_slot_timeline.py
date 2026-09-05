@@ -85,6 +85,19 @@ class TestCalendarSlotTimeline(TransactionCase):
         self.assertEqual(slots[1].start_datetime, self._utc(9))
         self.assertEqual(slots[2].start_datetime, self._utc(9))
 
+    def test_slot_display_name_uses_local_time_window_and_court(self):
+        slot = self.Slot.create(
+            {
+                "matchday_id": self.matchday.id,
+                "court_id": self.court_1.id,
+                "start_datetime": self._utc(9),
+                "end_datetime": self._utc(9, 40),
+            }
+        )
+
+        self.assertEqual(slot.display_name, "09:00–09:40 · Court 1")
+        self.assertNotIn("federation.schedule.slot", slot.display_name)
+
     def test_each_court_inherits_its_own_latest_duration(self):
         self.Slot.create(
             {

@@ -159,6 +159,27 @@ class FederationScheduleSlot(models.Model):
         help="When enabled, saved slots continue from the latest slot on the selected court and inherit its duration.",
     )
 
+    @api.depends("start_datetime", "end_datetime", "court_id")
+    @api.depends_context("tz")
+    def _compute_display_name(self):
+        """Show the user-facing local slot window instead of a technical model name."""
+        for slot in self:
+            if not slot.start_datetime or not slot.end_datetime:
+                slot.display_name = _("Unscheduled slot")
+                continue
+            start = fields.Datetime.context_timestamp(slot, slot.start_datetime)
+            end = fields.Datetime.context_timestamp(slot, slot.end_datetime)
+            window = f"{start:%H:%M}–{end:%H:%M}"
+            slot.display_name = (
+                _(
+                    "%(window)s · %(court)s",
+                    window=window,
+                    court=slot.court_id.display_name,
+                )
+                if slot.court_id
+                else window
+            )
+
     @api.model
     def default_get(self, field_list):
         values = super().default_get(field_list)
