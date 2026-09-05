@@ -37,3 +37,14 @@ Draft and change-requested schedules refresh the current calendar fixture pool. 
 A working schedule covers the complete physical match day, not only the division structure that originally opened the planner. If another division is allocated to the same match day during a governed revision, **Refresh Calendar Fixtures** exposes those fixtures as unassigned work and auto-scheduling includes them in its proposal. Submission remains blocked until every non-bye fixture from every match-day allocation is assigned.
 
 Publication validates the current match-day fixture pool again. If allocations change after review, publication stops and requires a refreshed, complete schedule and a new review instead of silently publishing an incomplete game day.
+
+## Club-aware automatic scheduling
+
+Automatic scheduling treats simultaneous matches involving different teams of
+the same club as the first fairness priority. It detects any overlapping slot
+windows, not only slots with identical boundaries. After deterministic greedy
+construction, a bounded pairwise-swap improvement pass repairs avoidable club
+clashes while preserving all hard constraints and pinned manual or operational
+assignments. Remaining club clashes therefore indicate constrained capacity or
+pinned assignments rather than an avoidable greedy choice.
+

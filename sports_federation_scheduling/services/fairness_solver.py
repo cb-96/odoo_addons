@@ -44,8 +44,7 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
                 if validation["errors"]:
                     continue
                 report = self.evaluate(schedule, candidate, cfg)
-                key = (
-                    report["weighted_score"],
+                key = self._quality_key(report) + (
                     slot.start_datetime,
                     slot.court_id.id,
                     slot.id,
@@ -57,6 +56,14 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
                 assignment_map[fixture.id] = slot.id
                 proposed.append({"fixture_id": fixture.id, "slot_id": slot.id})
                 available -= slot
+        assignment_map = self._improve_by_slot_swaps(
+            schedule, assignment_map, retained, cfg
+        )
+        proposed = [
+            {"fixture_id": fixture.id, "slot_id": assignment_map[fixture.id]}
+            for fixture in fixtures
+            if fixture.id in assignment_map
+        ]
         final_validation = self.env["federation.schedule.validator"].validate_map(
             schedule, assignment_map
         )
@@ -68,13 +75,64 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
         }
 
     @api.model
+    def _quality_key(self, report):
+        """Prefer fewer club clashes before comparing the weighted objective."""
+        return (
+            report["metrics"]["same_club_simultaneous_pairs"],
+            report["weighted_score"],
+        )
+
+    @api.model
+    def _windows_overlap(self, first_start, first_end, second_start, second_end):
+        return first_start < second_end and second_start < first_end
+
+    @api.model
+    def _improve_by_slot_swaps(self, schedule, assignment_map, retained, cfg):
+        """Deterministically escape greedy local choices with pairwise swaps.
+
+        Retained manual/operational assignments remain pinned. Each accepted swap
+        must satisfy all hard validation rules and improve the lexicographic
+        objective, where avoiding same-club overlap has first priority.
+        """
+        result = dict(assignment_map)
+        fixed_fixture_ids = set(retained.mapped("fixture_id").ids)
+        movable = sorted(set(result) - fixed_fixture_ids)
+        validator = self.env["federation.schedule.validator"]
+        current_report = self.evaluate(schedule, result, cfg)
+        current_key = self._quality_key(current_report)
+        max_passes = min(10, max(1, len(movable)))
+        for _pass in range(max_passes):
+            best = None
+            for index, first_id in enumerate(movable):
+                for second_id in movable[index + 1 :]:
+                    candidate = dict(result)
+                    candidate[first_id], candidate[second_id] = (
+                        candidate[second_id],
+                        candidate[first_id],
+                    )
+                    if validator.validate_map(schedule, candidate)["errors"]:
+                        continue
+                    report = self.evaluate(schedule, candidate, cfg)
+                    key = self._quality_key(report) + (first_id, second_id)
+                    if key[:2] >= current_key:
+                        continue
+                    if best is None or key < best[0]:
+                        best = (key, candidate, report)
+            if not best:
+                break
+            result = best[1]
+            current_report = best[2]
+            current_key = self._quality_key(current_report)
+        return result
+
+    @api.model
     def evaluate(self, schedule, assignment_map, cfg):
         fixture_by_id = {
             f.id: f for f in schedule.matchday_id.allocation_ids.mapped("fixture_ids")
         }
         slot_by_id = {s.id: s for s in schedule.matchday_id.slot_ids}
         team_events = defaultdict(list)
-        simultaneous_clubs = defaultdict(list)
+        club_events = defaultdict(list)
         for fixture_id, slot_id in assignment_map.items():
             fixture, slot = fixture_by_id.get(fixture_id), slot_by_id.get(slot_id)
             if not fixture or not slot:
@@ -87,9 +145,14 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
                 )
                 club = getattr(team, "club_id", False)
                 if club:
-                    simultaneous_clubs[
-                        (slot.start_datetime, slot.end_datetime, club.id)
-                    ].append(team.id)
+                    club_events[club.id].append(
+                        (
+                            slot.start_datetime,
+                            slot.end_datetime,
+                            fixture.id,
+                            team.id,
+                        )
+                    )
         metrics = {
             "same_club_simultaneous_pairs": 0,
             "rest_shortfall_minutes": 0,
@@ -97,9 +160,13 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
             "time_balance_spread": 0,
             "same_court_repeats": 0,
         }
-        for teams in simultaneous_clubs.values():
-            distinct = len(set(teams))
-            metrics["same_club_simultaneous_pairs"] += distinct * (distinct - 1) // 2
+        for events in club_events.values():
+            for index, first in enumerate(events):
+                for second in events[index + 1 :]:
+                    if first[2] == second[2] or first[3] == second[3]:
+                        continue
+                    if self._windows_overlap(first[0], first[1], second[0], second[1]):
+                        metrics["same_club_simultaneous_pairs"] += 1
         starts = []
         for events in team_events.values():
             events.sort()

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -64,3 +66,37 @@ class TestFairnessSolver(TransactionCase):
         self.assertEqual(first, second)
         self.assertEqual(metrics, self.metrics)
         self.assertEqual(cfg, self.cfg)
+
+    def test_club_conflicts_are_lexicographically_prioritized(self):
+        lower_weighted_score_with_conflict = {
+            "weighted_score": 10,
+            "metrics": {"same_club_simultaneous_pairs": 1},
+        }
+        higher_weighted_score_without_conflict = {
+            "weighted_score": 100,
+            "metrics": {"same_club_simultaneous_pairs": 0},
+        }
+
+        self.assertLess(
+            self.solver._quality_key(higher_weighted_score_without_conflict),
+            self.solver._quality_key(lower_weighted_score_with_conflict),
+        )
+
+    def test_same_club_overlap_uses_real_windows(self):
+        self.assertTrue(
+            self.solver._windows_overlap(
+                datetime(2026, 9, 5, 8, 30),
+                datetime(2026, 9, 5, 9, 10),
+                datetime(2026, 9, 5, 8, 50),
+                datetime(2026, 9, 5, 9, 30),
+            )
+        )
+        self.assertFalse(
+            self.solver._windows_overlap(
+                datetime(2026, 9, 5, 8, 30),
+                datetime(2026, 9, 5, 9, 10),
+                datetime(2026, 9, 5, 9, 10),
+                datetime(2026, 9, 5, 9, 50),
+            )
+        )
+
