@@ -71,6 +71,7 @@ class TestAutoClubDutyAssignment(TransactionCase):
                 {
                     "structure_id": structure.id,
                     "stage_id": stage.id,
+                    "round_number": 1,
                     "home_team_id": teams[0].id,
                     "away_team_id": teams[1].id,
                     "state": "ready",
@@ -78,6 +79,7 @@ class TestAutoClubDutyAssignment(TransactionCase):
                 {
                     "structure_id": structure.id,
                     "stage_id": stage.id,
+                    "round_number": 1,
                     "home_team_id": teams[2].id,
                     "away_team_id": teams[3].id,
                     "state": "ready",
@@ -85,6 +87,7 @@ class TestAutoClubDutyAssignment(TransactionCase):
                 {
                     "structure_id": structure.id,
                     "stage_id": stage.id,
+                    "round_number": 1,
                     "home_team_id": teams[4].id,
                     "away_team_id": teams[0].id,
                     "state": "ready",
@@ -148,29 +151,37 @@ class TestAutoClubDutyAssignment(TransactionCase):
         )
         cls.env["federation.fixture.materializer"].sudo().materialize(fixtures)
         snapshot = cls.env["federation.schedule.approval.commands"]._snapshot(schedule)
-        review = cls.env["federation.schedule.review"].sudo().create(
-            {
-                "schedule_id": schedule.id,
-                "submitted_revision": schedule.revision,
-                "state": "pending",
-                "assignment_snapshot": snapshot,
-                "snapshot_digest": cls.env[
-                    "federation.schedule.approval.commands"
-                ]._digest(snapshot),
-                "submitted_by_id": cls.env.user.id,
-            }
+        review = (
+            cls.env["federation.schedule.review"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "submitted_revision": schedule.revision,
+                    "state": "pending",
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": cls.env[
+                        "federation.schedule.approval.commands"
+                    ]._digest(snapshot),
+                    "submitted_by_id": cls.env.user.id,
+                }
+            )
         )
-        publication = cls.env["federation.schedule.publication"].sudo().create(
-            {
-                "schedule_id": schedule.id,
-                "version": 1,
-                "assignment_snapshot": snapshot,
-                "snapshot_digest": cls.env[
-                    "federation.schedule.approval.commands"
-                ]._digest(snapshot),
-                "source_revision": schedule.revision,
-                "review_id": review.id,
-            }
+        publication = (
+            cls.env["federation.schedule.publication"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "version": 1,
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": cls.env[
+                        "federation.schedule.approval.commands"
+                    ]._digest(snapshot),
+                    "source_revision": schedule.revision,
+                    "review_id": review.id,
+                }
+            )
         )
         cls.matches = fixtures.mapped("operational_match_id")
         for assignment in assignments:

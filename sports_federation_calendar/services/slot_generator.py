@@ -30,13 +30,10 @@ class FederationSlotGenerator(models.AbstractModel):
         return start_a < end_b and start_b < end_a
 
     @api.model
-    def _constraints(self, matchday, court, start, end):
+    def _blackout_constraints(self, matchday, court, start, end):
         return matchday.venue_id.blackout_window_ids.filtered(
             lambda constraint: constraint.active
-            and (
-                not constraint.playing_area_id
-                or constraint.playing_area_id == court
-            )
+            and (not constraint.playing_area_id or constraint.playing_area_id == court)
             and self._overlaps(
                 start,
                 end,
@@ -100,12 +97,10 @@ class FederationSlotGenerator(models.AbstractModel):
             pointer = start
             while pointer + duration <= end:
                 candidate_end = pointer + duration
-                if pause_start and self._overlaps(
-                    pointer, candidate_end, pause_start, pause_end
-                ):
+                if pause_start and pointer < pause_end and pause_start < candidate_end:
                     pointer = pause_end
                     continue
-                constraints = self._constraints(
+                constraints = self._blackout_constraints(
                     matchday, court, pointer, candidate_end
                 )
                 if constraints:
@@ -172,9 +167,11 @@ class FederationSlotGenerator(models.AbstractModel):
                 "default_slot_duration_minutes": duration_minutes,
             }
         )
-        return self.env["federation.schedule.slot"].create(
-            plan["available"] + plan["breaks"]
-        )
+        generated_values = [
+            dict(values, continue_court_timeline=False)
+            for values in plan["available"] + plan["breaks"]
+        ]
+        return self.env["federation.schedule.slot"].create(generated_values)
 
     @api.model
     def generate(

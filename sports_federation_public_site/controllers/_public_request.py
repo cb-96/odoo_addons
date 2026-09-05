@@ -68,7 +68,8 @@ class PublicRequestInfrastructureMixin:
         return ClubRep.sudo()._get_clubs_for_user(user=request.env.user)
 
     def _redirect_with_error(self, path, message):
-        return request.redirect(f"{path}?error={quote_plus(message)}")
+        separator = "&" if "?" in path else "?"
+        return request.redirect(f"{path}{separator}error={quote_plus(message)}")
 
     def _get_rate_limit_subject(self):
         headers = getattr(request.httprequest, "headers", {}) or {}

@@ -28,9 +28,7 @@ class TestMatchdaySlotGenerationWizard(TransactionCase):
                 "season_id": season.id,
             }
         )
-        cls.venue = cls.env["federation.venue"].create(
-            {"name": "Generator Venue"}
-        )
+        cls.venue = cls.env["federation.venue"].create({"name": "Generator Venue"})
         cls.courts = cls.env["federation.playing.area"].create(
             [
                 {"name": "Generator Court 1", "venue_id": cls.venue.id},
@@ -74,9 +72,7 @@ class TestMatchdaySlotGenerationWizard(TransactionCase):
             "noon_pause_minutes": 60,
         }
         values.update(overrides)
-        return self.env["federation.matchday.slot.generation.wizard"].create(
-            values
-        )
+        return self.env["federation.matchday.slot.generation.wizard"].create(values)
 
     def test_preview_respects_noon_pause_and_venue_constraints(self):
         wizard = self._wizard()
@@ -102,8 +98,7 @@ class TestMatchdaySlotGenerationWizard(TransactionCase):
         self.assertTrue(all(slot.note == "Noon pause" for slot in breaks))
         self.assertFalse(
             available.filtered(
-                lambda slot: datetime(2026, 10, 3, 10, 0)
-                < slot.end_datetime
+                lambda slot: datetime(2026, 10, 3, 10, 0) < slot.end_datetime
                 and slot.start_datetime < datetime(2026, 10, 3, 11, 0)
             )
         )

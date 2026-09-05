@@ -55,8 +55,8 @@ on top of the federation base modules.
         "views/portal_result_templates.xml",
         "views/portal_referee_duty_templates.xml",
         "views/operation_task_views.xml",
-        "views/menu_items.xml",
         "views/website_menus.xml",
+        "views/menu_items.xml",
     ],
     "assets": {
         "web.assets_frontend": [

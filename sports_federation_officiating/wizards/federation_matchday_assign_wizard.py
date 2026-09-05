@@ -114,13 +114,11 @@ class FederationMatchdayAssignOfficialWizard(models.TransientModel):
             wizard.matches_skipped = skipped
             wizard.matches_to_assign = len(matches) - skipped
 
-
     def _auto_roles(self):
         self.ensure_one()
         if not 1 <= self.officials_per_match <= len(ROLE_SELECTION):
             raise ValidationError(
-                _("Officials per match must be between 1 and %s.")
-                % len(ROLE_SELECTION)
+                _("Officials per match must be between 1 and %s.") % len(ROLE_SELECTION)
             )
         return [role for role, _label in ROLE_SELECTION[: self.officials_per_match]]
 
@@ -160,6 +158,15 @@ class FederationMatchdayAssignOfficialWizard(models.TransientModel):
             if club
         }
 
+    @staticmethod
+    def _slot_windows_overlap(first_slot, second_slot):
+        return bool(
+            first_slot
+            and second_slot
+            and first_slot.start_datetime < second_slot.end_datetime
+            and second_slot.start_datetime < first_slot.end_datetime
+        )
+
     def _auto_assign_club_duties(self, matches):
         roles = self._auto_roles()
         existing_roles = self._existing_roles(matches)
@@ -187,8 +194,14 @@ class FederationMatchdayAssignOfficialWizard(models.TransientModel):
                 continue
             slot = match.published_slot_id or match.operational_slot_id
             simultaneous = matches.filtered(
-                lambda other: other.id != match.id
-                and (other.published_slot_id or other.operational_slot_id) == slot
+                lambda other: (
+                    other.id != match.id
+                    and slot
+                    and self._slot_windows_overlap(
+                        slot,
+                        other.published_slot_id or other.operational_slot_id,
+                    )
+                )
             )
             playing_clubs = set().union(
                 *(self._match_club_ids(other) for other in simultaneous | match)

@@ -195,6 +195,11 @@ Public pages are read-only snapshots. Controllers resolve tournament, season,
 and team records through publication- and visibility-scoped queries before
 redirects, rendering, or feed and registration reads.
 
+Registration validation feedback returns to the same division-specific form,
+including when the URL already carries a `division_id` selector. Capacity,
+eligibility, and CSRF validation errors therefore remain actionable instead of
+redirecting to a malformed URL.
+
 ## Related Workflows
 
 - [Tournament Lifecycle](WORKFLOW_TOURNAMENT_LIFECYCLE.md) — tournament setup and closure

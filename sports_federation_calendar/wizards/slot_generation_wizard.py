@@ -1,5 +1,3 @@
-from datetime import datetime, time, timedelta
-
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
@@ -16,6 +14,7 @@ class FederationMatchdaySlotGenerationWizard(models.TransientModel):
     venue_id = fields.Many2one(related="matchday_id.venue_id", readonly=True)
     court_ids = fields.Many2many(
         "federation.playing.area",
+        relation="federation_matchday_wizard_playing_area_rel",
         string="Playing Areas",
         required=True,
         domain="[('venue_id', '=', venue_id), ('active', '=', True)]",

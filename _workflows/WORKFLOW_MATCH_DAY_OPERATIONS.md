@@ -124,6 +124,12 @@ Portal workspace note:
 10. SQL constraint prevents duplicate (match, referee, role) combinations.
 11. The rule set's `referee_required_count` indicates how many officials are needed.
 
+For automatic club-duty allocation, a club is considered to be playing during
+the target match whenever one of its teams is assigned to a published match
+whose time window overlaps the target window, even when the matches use
+different courts. The allocator therefore prefers an eligible club outside
+the whole concurrent set, not merely outside the target match's two clubs.
+
 ### 4. Venue Confirmation
 
 **Actor**: Federation administrator

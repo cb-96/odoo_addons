@@ -68,7 +68,6 @@ class TestReleasePilotReadiness(TransactionCase):
             for token in forbidden_architecture_tokens:
                 self.assertNotIn(token, normalized_source)
 
-
     def test_full_lifecycle_tour_covers_officiating_and_publication_handoffs(self):
         path = (
             Path(__file__).resolve().parents[1]

@@ -11,6 +11,11 @@
               parent="menu_federation_root"
               sequence="20"/>
 
+    <menuitem id="menu_federation_competitions"
+              name="Competitions"
+              parent="menu_federation_root"
+              sequence="10"/>
+
     <menuitem id="menu_federation_planning"
               name="Competition Records"
               parent="menu_federation_competitions"
@@ -69,11 +74,6 @@
               parent="menu_federation_setup"
               action="federation_season_registration_action"
               sequence="30"/>
-    <menuitem id="menu_federation_competitions"
-              name="Competitions"
-              parent="menu_federation_root"
-              sequence="10"/>
-
     <menuitem id="menu_federation_system_health"
               name="System Health"
               parent="menu_federation_administration"
