@@ -72721,9 +72721,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_public_site/README.md
-SIZE: 10559
-CONTENT-LENGTH: 10559
-SHA256: 20224111ca5eb5f9f0ede27e085867cc1ba987080963998672aa564bc6aa884c
+SIZE: 10722
+CONTENT-LENGTH: 10722
+SHA256: 81295f1424df9664161ab091e4b0abecd1ca60ea324bacdaa21692e0d992ecab
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -72908,6 +72908,9 @@ court and participating teams. Internal publication labels, stage names, and
 round numbers are hidden for normal published matches; exceptional live statuses
 such as delayed, moved, postponed, or cancelled remain visible.
 
+Public match cards show the division and gender once at match level. Team rows
+use the plain team name without repeating the gender suffix for both participants.
+
 
 ====================================================================================================
 FILE: sports_federation_public_site/__init__.py
@@ -72928,7 +72931,7 @@ from . import services
 FILE: sports_federation_public_site/__manifest__.py
 SIZE: 1990
 CONTENT-LENGTH: 1990
-SHA256: 68bd61727aaba1817768c53a4205b094163e8c74effae81eb4648475dc5e265c
+SHA256: 66c81968a429aa2f8a17f3f1e2e9c7a278d90b93d1f27ec0be1d51a08957a877
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -72936,7 +72939,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Public Site",
-    "version": "19.0.3.0.1",
+    "version": "19.0.3.0.2",
     "category": "Sports",
     "summary": "Public competition, match-day, standings and bracket experience",
     "description": "Public website pages for tournament coverage, standings, results, schedules, and federation events.",
@@ -76978,9 +76981,9 @@ class PublicFormatQueries(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_public_site/services/public_schedule_queries.py
-SIZE: 3652
-CONTENT-LENGTH: 3652
-SHA256: cc45908b312274b84f11481a787699a4331a5e6f686012f70310843c9b41dd4a
+SIZE: 4325
+CONTENT-LENGTH: 4324
+SHA256: bdbb5c7280949275c967008227d1cee739fc22da0806a6194b18a73b7e103de1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -76988,7 +76991,7 @@ GIT-STATE: tracked
 
 from collections import defaultdict
 
-from odoo import fields, models
+from odoo import _, fields, models
 
 
 class PublicScheduleQueries(models.AbstractModel):
@@ -77047,6 +77050,7 @@ class PublicScheduleQueries(models.AbstractModel):
                     "slot": slot,
                     "start_local": local_start,
                     "end_local": local_end,
+                    "division_label": self._division_label(match),
                     "status": match.operational_status or "as_published",
                 }
             )
@@ -77078,6 +77082,22 @@ class PublicScheduleQueries(models.AbstractModel):
             "grid": grid,
             "by_time": list(by_time.items()),
         }
+
+    def _division_label(self, match):
+        fixture = match.logical_fixture_id
+        division = fixture.division_id if fixture else False
+        if not division:
+            return False
+        label = division.name or division.display_name
+        gender_labels = {
+            "male": _("Men"),
+            "female": _("Women"),
+            "mixed": _("Mixed"),
+        }
+        gender = gender_labels.get(division.gender)
+        if gender and gender.lower() not in (label or "").lower():
+            return _("%(division)s · %(gender)s", division=label, gender=gender)
+        return label
 
     def edition_matchdays(self, edition):
         return (
@@ -79250,9 +79270,9 @@ class TestPublicSite(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_template_accessibility.py
-SIZE: 6590
-CONTENT-LENGTH: 6590
-SHA256: 9ced91d68f94cc085708a52f615e85df042daaf678a473ae70ffc0b3b843b2ee
+SIZE: 7343
+CONTENT-LENGTH: 7343
+SHA256: db0b6f5dc7c058ff6fec74f57cafee702299d6e088eec81de2fa124e34bec27a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -79415,6 +79435,25 @@ class TestPublicSiteTemplateAccessibility(TransactionCase):
         self.assertNotIn("logical_fixture_id.stage_id.name", content)
         self.assertIn("row['status'] != 'as_published'", content)
 
+
+    def test_public_match_card_shows_division_once(self):
+        templates = etree.parse(
+            str(
+                Path(__file__).resolve().parents[1]
+                / "views"
+                / "website_competition_templates.xml"
+            )
+        ).getroot()
+        match_card = templates.xpath(
+            ".//template[@id='public_competition_match_card']"
+        )[0]
+        content = etree.tostring(match_card, encoding="unicode")
+
+        self.assertEqual(content.count("row['division_label']"), 2)
+        self.assertIn("home_team_id.name", content)
+        self.assertIn("away_team_id.name", content)
+        self.assertNotIn("home_team_id.display_name", content)
+        self.assertNotIn("away_team_id.display_name", content)
 
 ====================================================================================================
 FILE: sports_federation_public_site/tests/test_tour_publication.py
@@ -80268,9 +80307,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_public_site/views/website_competition_templates.xml
-SIZE: 15825
-CONTENT-LENGTH: 15816
-SHA256: 0c77ff35f2a8453dba84726032c3c645357a13e31ff25ab5ed9f792c834e3212
+SIZE: 15934
+CONTENT-LENGTH: 15925
+SHA256: 98336afb98489ed9e45499fdc3785c9c3e1e78af6a31a1074dbf0d5393cd5b5c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -80300,8 +80339,9 @@ GIT-STATE: tracked
         <span t-if="row['slot']"><t t-esc="row['slot'].court_id.display_name"/></span>
         <span t-if="row['status'] != 'as_published'" class="sf-match-status"><t t-esc="row['status'].replace('_', ' ').title()"/></span>
       </div>
-      <div class="sf-team-line"><strong><t t-esc="row['match'].home_team_id.display_name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].home_score"/></span></div>
-      <div class="sf-team-line"><strong><t t-esc="row['match'].away_team_id.display_name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].away_score"/></span></div>
+      <div t-if="row['division_label']" class="small text-primary fw-semibold mb-1"><t t-esc="row['division_label']"/></div>
+      <div class="sf-team-line"><strong><t t-esc="row['match'].home_team_id.name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].home_score"/></span></div>
+      <div class="sf-team-line"><strong><t t-esc="row['match'].away_team_id.name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].away_score"/></span></div>
     </article>
   </template>
 

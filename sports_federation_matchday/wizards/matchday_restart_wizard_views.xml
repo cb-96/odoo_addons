@@ -1,0 +1,24 @@
+<odoo>
+  <record id="matchday_restart_wizard_form" model="ir.ui.view">
+    <field name="name">federation.matchday.restart.wizard.form</field>
+    <field name="model">federation.matchday.restart.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Restart Match Day from Scratch">
+        <div class="alert alert-danger" role="alert">
+          This permanently removes the unpublished schedule, assignments, slots,
+          and round allocations. A new empty match day with the same date, venue,
+          and slot defaults is created immediately.
+        </div>
+        <group>
+          <field name="matchday_id"/>
+          <field name="reason" placeholder="Explain why planning must restart..."/>
+          <field name="confirmation"/>
+        </group>
+        <footer>
+          <button name="action_restart" type="object" string="Delete Planning and Restart" class="btn-danger"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

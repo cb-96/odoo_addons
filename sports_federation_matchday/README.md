@@ -25,3 +25,13 @@ python ci/check_publication_integrity_contract.py
 bash ci/run_tests.sh --module sports_federation_schedule_approval
 bash ci/run_tests.sh --module sports_federation_matchday
 ```
+
+## Restarting unpublished planning
+
+Match-day managers can use **Restart from Scratch** before any schedule review or
+publication evidence exists. The action requires a reason and explicit destructive
+confirmation, removes mutable schedules and the old match day, then creates and
+opens a clean replacement with the same edition, date, venue, and slot defaults.
+Published, reviewed, open, and closed match days remain protected and must use the
+normal revision or operational correction workflows.
+

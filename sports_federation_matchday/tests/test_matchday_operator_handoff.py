@@ -54,16 +54,18 @@ class TestMatchdayOperatorHandoff(TransactionCase):
                 "format_type": "custom",
             }
         )
-        venue = cls.env["federation.venue"].create({"name": "Operations Venue"})
+        cls.venue = cls.env["federation.venue"].create(
+            {"name": "Operations Venue"}
+        )
         cls.court = cls.env["federation.playing.area"].create(
-            {"name": "Court 1", "venue_id": venue.id}
+            {"name": "Court 1", "venue_id": cls.venue.id}
         )
         cls.matchday = cls.env["federation.matchday"].create(
             {
                 "name": "Operations Day",
                 "edition_id": cls.edition.id,
                 "date": "2026-10-03",
-                "venue_id": venue.id,
+                "venue_id": cls.venue.id,
                 "state": "scheduled",
             }
         )
@@ -178,3 +180,40 @@ class TestMatchdayOperatorHandoff(TransactionCase):
             self.env["federation.matchday.commands"].record_schedule_deviation(
                 self.matchday.id, self.match.id, "postpone", "Weather"
             )
+    def test_restart_from_scratch_rejects_published_matchday(self):
+        with self.assertRaisesRegex(ValidationError, "publication history"):
+            self.matchday._assert_restartable_from_scratch()
+
+    def test_restart_from_scratch_creates_clean_replacement(self):
+        original = self.env["federation.matchday"].create(
+            {
+                "name": "Mistaken Day",
+                "edition_id": self.edition.id,
+                "date": "2026-10-10",
+                "venue_id": self.venue.id,
+                "default_day_start_hour": 8.5,
+                "default_slot_duration_minutes": 45,
+            }
+        )
+        original_id = original.id
+        wizard = self.env["federation.matchday.restart.wizard"].create(
+            {
+                "matchday_id": original.id,
+                "reason": "Wrong divisions and capacity",
+                "confirmation": True,
+            }
+        )
+
+        action = wizard.action_restart()
+        replacement = self.env["federation.matchday"].browse(action["res_id"])
+
+        self.assertFalse(self.env["federation.matchday"].browse(original_id).exists())
+        self.assertEqual(replacement.name, "Mistaken Day")
+        self.assertEqual(replacement.state, "draft")
+        self.assertEqual(replacement.date.isoformat(), "2026-10-10")
+        self.assertEqual(replacement.venue_id, self.venue)
+        self.assertEqual(replacement.default_day_start_hour, 8.5)
+        self.assertEqual(replacement.default_slot_duration_minutes, 45)
+        self.assertFalse(replacement.allocation_ids)
+        self.assertFalse(replacement.slot_ids)
+
