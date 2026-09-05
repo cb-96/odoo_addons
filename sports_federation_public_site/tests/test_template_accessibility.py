@@ -138,3 +138,20 @@ class TestPublicSiteTemplateAccessibility(TransactionCase):
                     template_text,
                     f"{file_key} should not render raw internal state values.",
                 )
+    def test_public_gameday_hides_internal_schedule_metadata(self):
+        templates = etree.parse(
+            str(
+                Path(__file__).resolve().parents[1]
+                / "views"
+                / "website_competition_templates.xml"
+            )
+        ).getroot()
+        match_card = templates.xpath(
+            ".//template[@id='public_competition_match_card']"
+        )[0]
+        content = etree.tostring(match_card, encoding="unicode")
+
+        self.assertNotIn("Round ", content)
+        self.assertNotIn("logical_fixture_id.stage_id.name", content)
+        self.assertIn("row['status'] != 'as_published'", content)
+

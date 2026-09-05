@@ -34,21 +34,37 @@ class PublicScheduleQueries(models.AbstractModel):
                 lambda m: (m.operational_slot_id or m.published_slot_id).court_id.id
                 == court_id
             )
+        public_timezone = (
+            self.env.company.partner_id.tz or self.env.user.tz or "UTC"
+        )
+        localized = self.with_context(tz=public_timezone)
         rows = []
         for match in matches:
             slot = match.operational_slot_id or match.published_slot_id
             if not slot and match.operational_status not in ("postponed", "cancelled"):
                 continue
+            local_start = (
+                fields.Datetime.context_timestamp(localized, slot.start_datetime)
+                if slot
+                else False
+            )
+            local_end = (
+                fields.Datetime.context_timestamp(localized, slot.end_datetime)
+                if slot
+                else False
+            )
             rows.append(
                 {
                     "match": match,
                     "slot": slot,
+                    "start_local": local_start,
+                    "end_local": local_end,
                     "status": match.operational_status or "as_published",
                 }
             )
         rows.sort(
             key=lambda row: (
-                (row["slot"].start_datetime if row["slot"] else fields.Datetime.now()),
+                (row["start_local"] if row["slot"] else fields.Datetime.now()),
                 row["slot"].court_id.id if row["slot"] else 0,
                 row["match"].id,
             )
@@ -57,15 +73,15 @@ class PublicScheduleQueries(models.AbstractModel):
             {row["slot"].court_id for row in rows if row["slot"]},
             key=lambda c: (c.name or "", c.id),
         )
-        times = sorted({row["slot"].start_datetime for row in rows if row["slot"]})
+        times = sorted({row["start_local"] for row in rows if row["slot"]})
         grid = {
-            (row["slot"].start_datetime, row["slot"].court_id.id): row
+            (row["start_local"], row["slot"].court_id.id): row
             for row in rows
             if row["slot"]
         }
         by_time = defaultdict(list)
         for row in rows:
-            by_time[row["slot"].start_datetime if row["slot"] else False].append(row)
+            by_time[row["start_local"] if row["slot"] else False].append(row)
         return {
             "publication": publication,
             "matches": rows,
