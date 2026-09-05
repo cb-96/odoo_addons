@@ -99,4 +99,3 @@ class TestFairnessSolver(TransactionCase):
                 datetime(2026, 9, 5, 9, 50),
             )
         )
-

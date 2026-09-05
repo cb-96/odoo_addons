@@ -34,9 +34,7 @@ class PublicScheduleQueries(models.AbstractModel):
                 lambda m: (m.operational_slot_id or m.published_slot_id).court_id.id
                 == court_id
             )
-        public_timezone = (
-            self.env.company.partner_id.tz or self.env.user.tz or "UTC"
-        )
+        public_timezone = self.env.company.partner_id.tz or self.env.user.tz or "UTC"
         localized = self.with_context(tz=public_timezone)
         rows = []
         for match in matches:

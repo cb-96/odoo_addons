@@ -54,9 +54,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
                 "format_type": "custom",
             }
         )
-        cls.venue = cls.env["federation.venue"].create(
-            {"name": "Operations Venue"}
-        )
+        cls.venue = cls.env["federation.venue"].create({"name": "Operations Venue"})
         cls.court = cls.env["federation.playing.area"].create(
             {"name": "Court 1", "venue_id": cls.venue.id}
         )
@@ -180,6 +178,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
             self.env["federation.matchday.commands"].record_schedule_deviation(
                 self.matchday.id, self.match.id, "postpone", "Weather"
             )
+
     def test_restart_from_scratch_rejects_published_matchday(self):
         with self.assertRaisesRegex(ValidationError, "publication history"):
             self.matchday._assert_restartable_from_scratch()
@@ -216,4 +215,3 @@ class TestMatchdayOperatorHandoff(TransactionCase):
         self.assertEqual(replacement.default_slot_duration_minutes, 45)
         self.assertFalse(replacement.allocation_ids)
         self.assertFalse(replacement.slot_ids)
-

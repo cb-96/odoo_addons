@@ -11,8 +11,10 @@ class FederationMatchdayRestart(models.Model):
             raise ValidationError(
                 _("Open or closed match days cannot be restarted from scratch.")
             )
-        publications = self.env["federation.schedule.publication"].search_count(
-            [("matchday_id", "=", self.id)]
+        publications = (
+            self.env["federation.schedule.publication"]
+            .sudo()
+            .search_count([("matchday_id", "=", self.id)])
         )
         if publications or self.current_publication_id:
             raise ValidationError(
@@ -21,10 +23,13 @@ class FederationMatchdayRestart(models.Model):
                     "schedule revision instead of deleting audit evidence."
                 )
             )
-        schedules = self.env["federation.schedule"].search(
-            [("matchday_id", "=", self.id)]
+        schedules = (
+            self.env["federation.schedule"]
+            .sudo()
+            .with_context(active_test=False)
+            .search([("matchday_id", "=", self.id)])
         )
-        reviews = self.env["federation.schedule.review"].search_count(
+        reviews = self.env["federation.schedule.review"].sudo().search_count(
             [("schedule_id", "in", schedules.ids)]
         )
         if reviews:
@@ -45,6 +50,18 @@ class FederationMatchdayRestart(models.Model):
                 )
             )
         return True
+
+    def _delete_restartable_schedules(self):
+        """Remove every mutable schedule, including records hidden by rules."""
+        self.ensure_one()
+        self._assert_restartable_from_scratch()
+        schedules = (
+            self.env["federation.schedule"]
+            .sudo()
+            .with_context(active_test=False)
+            .search([("matchday_id", "=", self.id)])
+        )
+        schedules.unlink()
 
     def action_open_restart_from_scratch(self):
         self.ensure_one()

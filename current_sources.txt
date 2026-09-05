@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 914
+# FILE-COUNT: 917
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -47631,9 +47631,9 @@ def delivery_uses_validation_feedback(state):
 
 ====================================================================================================
 FILE: sports_federation_matchday/README.md
-SIZE: 1078
-CONTENT-LENGTH: 1078
-SHA256: 1462a9554bb027b724fa49ab6739da97a4472728ad4f89dadf863167fd4eb4f9
+SIZE: 1578
+CONTENT-LENGTH: 1578
+SHA256: f166f0e2ae00212fa453367d64b44d77a3f88b5fbb11c51913f67b31f3f1fbcd
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -47667,6 +47667,16 @@ bash ci/run_tests.sh --module sports_federation_schedule_approval
 bash ci/run_tests.sh --module sports_federation_matchday
 ```
 
+## Restarting unpublished planning
+
+Match-day managers can use **Restart from Scratch** before any schedule review or
+publication evidence exists. The action requires a reason and explicit destructive
+confirmation, removes mutable schedules and the old match day, then creates and
+opens a clean replacement with the same edition, date, venue, and slot defaults.
+Published, reviewed, open, and closed match days remain protected and must use the
+normal revision or operational correction workflows.
+
+
 ====================================================================================================
 FILE: sports_federation_matchday/__init__.py
 SIZE: 67
@@ -47684,9 +47694,9 @@ from . import wizards
 
 ====================================================================================================
 FILE: sports_federation_matchday/__manifest__.py
-SIZE: 571
-CONTENT-LENGTH: 571
-SHA256: dd1d5782eb34788473177a5e3cd96a0a5503c13ecd4722be5bbb7b499098facf
+SIZE: 624
+CONTENT-LENGTH: 624
+SHA256: 9fe9523b479baf8b0ed23f38088c8b71a4e122ff3b527f04438b102ff1a5b128
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -47694,7 +47704,7 @@ GIT-STATE: tracked
 
 {
     "name": "Match-Day Operations",
-    "version": "19.0.2.1.0",
+    "version": "19.0.2.2.0",
     "category": "Sports",
     "summary": "Live court control, delays and operational incidents",
     "author": "Sports Federation",
@@ -47705,6 +47715,7 @@ GIT-STATE: tracked
         "security/ir.model.access.csv",
         "views/matchday_views.xml",
         "wizards/matchday_operation_wizard_views.xml",
+        "wizards/matchday_restart_wizard_views.xml",
         "views/menu.xml",
     ],
     "installable": True,
@@ -47734,9 +47745,9 @@ def migrate(cr, version):
 
 ====================================================================================================
 FILE: sports_federation_matchday/models/__init__.py
-SIZE: 99
-CONTENT-LENGTH: 99
-SHA256: c9dfb51d8fb9a99a70706f12f312d59537e31a5a664a6a8bc1418bcbb34564c7
+SIZE: 131
+CONTENT-LENGTH: 131
+SHA256: 68d5fcd0bbd56c3f2cee6f07ca6fa43e8e6dc1d76e8df450ef18cb79477c00c8
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -47746,6 +47757,8 @@ from . import matchday_operation
 from . import matchday_session
 
 from . import operational_control
+
+from . import matchday_restart
 
 ====================================================================================================
 FILE: sports_federation_matchday/models/matchday_operation.py
@@ -47812,6 +47825,82 @@ class FederationMatchdayCourtStatus(models.Model):
     _unique = models.Constraint(
         "unique(matchday_id,court_id)", "A court has one status per match day."
     )
+
+====================================================================================================
+FILE: sports_federation_matchday/models/matchday_restart.py
+SIZE: 2455
+CONTENT-LENGTH: 2455
+SHA256: 8f845f032d1c0fad71c6c01092b0f934dff3b6039fd9d5ce0b858e438af10ce7
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo import _, models
+from odoo.exceptions import ValidationError
+
+
+class FederationMatchdayRestart(models.Model):
+    _inherit = "federation.matchday"
+
+    def _assert_restartable_from_scratch(self):
+        self.ensure_one()
+        if self.state in ("open", "closed"):
+            raise ValidationError(
+                _("Open or closed match days cannot be restarted from scratch.")
+            )
+        publications = self.env["federation.schedule.publication"].search_count(
+            [("matchday_id", "=", self.id)]
+        )
+        if publications or self.current_publication_id:
+            raise ValidationError(
+                _(
+                    "This match day has publication history. Create a governed "
+                    "schedule revision instead of deleting audit evidence."
+                )
+            )
+        schedules = self.env["federation.schedule"].search(
+            [("matchday_id", "=", self.id)]
+        )
+        reviews = self.env["federation.schedule.review"].search_count(
+            [("schedule_id", "in", schedules.ids)]
+        )
+        if reviews:
+            raise ValidationError(
+                _(
+                    "This match day has schedule-review history. Withdraw or "
+                    "revise the schedule; submitted review evidence cannot be deleted."
+                )
+            )
+        immutable = schedules.filtered(
+            lambda schedule: schedule.state not in ("draft", "changes_requested")
+        )
+        if immutable:
+            raise ValidationError(
+                _(
+                    "Only draft or change-requested schedules can be discarded. "
+                    "Return the schedule to an editable state first."
+                )
+            )
+        return True
+
+    def action_open_restart_from_scratch(self):
+        self.ensure_one()
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "matchday_manager", "competition_director"
+        )
+        self._assert_restartable_from_scratch()
+        wizard = self.env["federation.matchday.restart.wizard"].create(
+            {"matchday_id": self.id}
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Restart Match Day from Scratch"),
+            "res_model": "federation.matchday.restart.wizard",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "target": "new",
+        }
 
 ====================================================================================================
 FILE: sports_federation_matchday/models/matchday_session.py
@@ -48149,9 +48238,9 @@ class FederationMatchdayIncidentActions(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_matchday/security/ir.model.access.csv
-SIZE: 2548
-CONTENT-LENGTH: 2548
-SHA256: a5e58831f4cf272d397e736e0c0b164f71bd74123bd1dbb1ce8dc1b1a956e728
+SIZE: 2718
+CONTENT-LENGTH: 2718
+SHA256: d3ff6894d69e67ade5d0203e8dad427c65cbb9714446c693f19add3e57339972
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -48171,6 +48260,7 @@ access_matchday_close_wizard_federation_manager,matchday.close.wizard.federation
 access_matchday_incident_wizard_federation_manager,matchday.incident.wizard.federation.manager,model_federation_matchday_incident_wizard,sports_federation_base.group_federation_manager,1,1,1,1
 access_matchday_deviation_wizard_federation_manager,matchday.deviation.wizard.federation.manager,model_federation_matchday_deviation_wizard,sports_federation_base.group_federation_manager,1,1,1,1
 access_matchday_court_status_wizard_federation_manager,matchday.court.status.wizard.federation.manager,model_federation_matchday_court_status_wizard,sports_federation_base.group_federation_manager,1,1,1,1
+access_matchday_restart_wizard_manager,matchday.restart.wizard.manager,model_federation_matchday_restart_wizard,sports_federation_matchday.group_matchday_manager,1,1,1,1
 
 ====================================================================================================
 FILE: sports_federation_matchday/security/security.xml
@@ -48529,12 +48619,12 @@ from . import test_matchday_operator_handoff
 
 ====================================================================================================
 FILE: sports_federation_matchday/tests/test_matchday_operator_handoff.py
-SIZE: 6825
-CONTENT-LENGTH: 6825
-SHA256: ed19a2b4ff964dc75c1545104fa57c6dcf0aa2b6b3547cf58bb51d369d39e335
+SIZE: 8448
+CONTENT-LENGTH: 8448
+SHA256: ba7bf37bfe567edf707be45f2e3674c8ba9b5287347ec0d6dc5b17c4fb090ec1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import hashlib
@@ -48593,16 +48683,16 @@ class TestMatchdayOperatorHandoff(TransactionCase):
                 "format_type": "custom",
             }
         )
-        venue = cls.env["federation.venue"].create({"name": "Operations Venue"})
+        cls.venue = cls.env["federation.venue"].create({"name": "Operations Venue"})
         cls.court = cls.env["federation.playing.area"].create(
-            {"name": "Court 1", "venue_id": venue.id}
+            {"name": "Court 1", "venue_id": cls.venue.id}
         )
         cls.matchday = cls.env["federation.matchday"].create(
             {
                 "name": "Operations Day",
                 "edition_id": cls.edition.id,
                 "date": "2026-10-03",
-                "venue_id": venue.id,
+                "venue_id": cls.venue.id,
                 "state": "scheduled",
             }
         )
@@ -48718,11 +48808,48 @@ class TestMatchdayOperatorHandoff(TransactionCase):
                 self.matchday.id, self.match.id, "postpone", "Weather"
             )
 
+    def test_restart_from_scratch_rejects_published_matchday(self):
+        with self.assertRaisesRegex(ValidationError, "publication history"):
+            self.matchday._assert_restartable_from_scratch()
+
+    def test_restart_from_scratch_creates_clean_replacement(self):
+        original = self.env["federation.matchday"].create(
+            {
+                "name": "Mistaken Day",
+                "edition_id": self.edition.id,
+                "date": "2026-10-10",
+                "venue_id": self.venue.id,
+                "default_day_start_hour": 8.5,
+                "default_slot_duration_minutes": 45,
+            }
+        )
+        original_id = original.id
+        wizard = self.env["federation.matchday.restart.wizard"].create(
+            {
+                "matchday_id": original.id,
+                "reason": "Wrong divisions and capacity",
+                "confirmation": True,
+            }
+        )
+
+        action = wizard.action_restart()
+        replacement = self.env["federation.matchday"].browse(action["res_id"])
+
+        self.assertFalse(self.env["federation.matchday"].browse(original_id).exists())
+        self.assertEqual(replacement.name, "Mistaken Day")
+        self.assertEqual(replacement.state, "draft")
+        self.assertEqual(replacement.date.isoformat(), "2026-10-10")
+        self.assertEqual(replacement.venue_id, self.venue)
+        self.assertEqual(replacement.default_day_start_hour, 8.5)
+        self.assertEqual(replacement.default_slot_duration_minutes, 45)
+        self.assertFalse(replacement.allocation_ids)
+        self.assertFalse(replacement.slot_ids)
+
 ====================================================================================================
 FILE: sports_federation_matchday/views/matchday_views.xml
-SIZE: 6029
-CONTENT-LENGTH: 6029
-SHA256: 6b8042e1b510c023e36cc93aa0153c4aaa478097b896c9be17077234dbb92650
+SIZE: 6193
+CONTENT-LENGTH: 6193
+SHA256: deb8d95284c2f6f91d1c525bc9ecdac3c66e568ff99d8b3426e1477bafb52966
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -48741,6 +48868,7 @@ GIT-STATE: tracked
     <field name="name">federation.matchday.form.operations</field><field name="model">federation.matchday</field><field name="inherit_id" ref="sports_federation_calendar.matchday_form"/>
     <field name="arch" type="xml">
       <xpath expr="//header" position="inside">
+        <button name="action_open_restart_from_scratch" type="object" string="Restart from Scratch" class="btn-secondary" invisible="state in ('open', 'closed')"/>
         <button name="action_open_matchday_operations" type="object" string="Open Match Day" class="btn-primary" invisible="readiness_state != 'ready'" confirm="Open live operations against the current immutable publication?"/>
         <button name="action_open_court_status_wizard" type="object" string="Update Court" invisible="state != 'open'"/>
         <button name="action_open_incident_wizard" type="object" string="Report Incident" invisible="state != 'open'"/>
@@ -48801,15 +48929,17 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_matchday/wizards/__init__.py
-SIZE: 41
-CONTENT-LENGTH: 41
-SHA256: 437dec2c222b76f17e90efb316f6127b4ad4acde81dc378d5cecf2a806f609aa
+SIZE: 80
+CONTENT-LENGTH: 80
+SHA256: b84df7b71c60945e17fc82b6c857ea3ef639d1f756e07d18b7168b0f06aeae6d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
 ====================================================================================================
 
 from . import matchday_operation_wizards
+
+from . import matchday_restart_wizard
 
 ====================================================================================================
 FILE: sports_federation_matchday/wizards/matchday_operation_wizard_views.xml
@@ -48970,6 +49100,111 @@ class FederationMatchdayCourtStatusWizard(models.TransientModel):
             note=self.note,
         )
         return {"type": "ir.actions.act_window_close"}
+
+====================================================================================================
+FILE: sports_federation_matchday/wizards/matchday_restart_wizard.py
+SIZE: 2062
+CONTENT-LENGTH: 2062
+SHA256: 8ca3a13eadf26881c7591e4e82bb5f5880f8b8a3cc9483c5805eab2993ad97f0
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+from odoo import _, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationMatchdayRestartWizard(models.TransientModel):
+    _name = "federation.matchday.restart.wizard"
+    _description = "Restart Match Day Planning from Scratch"
+
+    matchday_id = fields.Many2one(
+        "federation.matchday", required=True, readonly=True, ondelete="cascade"
+    )
+    reason = fields.Text(required=True)
+    confirmation = fields.Boolean(
+        string=(
+            "I understand that the current unpublished planning data will be deleted"
+        ),
+        required=True,
+    )
+
+    def action_restart(self):
+        self.ensure_one()
+        if not self.confirmation:
+            raise ValidationError(
+                _("Confirm the destructive restart before continuing.")
+            )
+        matchday = self.matchday_id.exists()
+        if not matchday:
+            raise ValidationError(_("The match day no longer exists."))
+        matchday._assert_restartable_from_scratch()
+
+        replacement = self.env["federation.matchday"].create(
+            {
+                "name": matchday.name,
+                "edition_id": matchday.edition_id.id,
+                "date": matchday.date,
+                "venue_id": matchday.venue_id.id,
+                "default_day_start_hour": matchday.default_day_start_hour,
+                "default_slot_duration_minutes": matchday.default_slot_duration_minutes,
+            }
+        )
+        schedules = self.env["federation.schedule"].search(
+            [("matchday_id", "=", matchday.id)]
+        )
+        schedules.unlink()
+        matchday.unlink()
+        replacement.message_post(
+            body=_(
+                "Planning restarted from scratch. Reason: %(reason)s",
+                reason=self.reason,
+            )
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Match Day"),
+            "res_model": "federation.matchday",
+            "res_id": replacement.id,
+            "view_mode": "form",
+            "target": "current",
+        }
+
+====================================================================================================
+FILE: sports_federation_matchday/wizards/matchday_restart_wizard_views.xml
+SIZE: 1044
+CONTENT-LENGTH: 1044
+SHA256: 2e6f3fc111b48a39f5a7435da7a52bf73ce44db511491663430c8ae45118a51c
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+<odoo>
+  <record id="matchday_restart_wizard_form" model="ir.ui.view">
+    <field name="name">federation.matchday.restart.wizard.form</field>
+    <field name="model">federation.matchday.restart.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Restart Match Day from Scratch">
+        <div class="alert alert-danger" role="alert">
+          This permanently removes the unpublished schedule, assignments, slots,
+          and round allocations. A new empty match day with the same date, venue,
+          and slot defaults is created immediately.
+        </div>
+        <group>
+          <field name="matchday_id"/>
+          <field name="reason" placeholder="Explain why planning must restart..."/>
+          <field name="confirmation"/>
+        </group>
+        <footer>
+          <button name="action_restart" type="object" string="Delete Planning and Restart" class="btn-danger"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>
 
 ====================================================================================================
 FILE: sports_federation_notifications/README.md
@@ -76981,12 +77216,12 @@ class PublicFormatQueries(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_public_site/services/public_schedule_queries.py
-SIZE: 4325
-CONTENT-LENGTH: 4324
-SHA256: bdbb5c7280949275c967008227d1cee739fc22da0806a6194b18a73b7e103de1
+SIZE: 4301
+CONTENT-LENGTH: 4300
+SHA256: edca9cd79549491f93940eca503785e878966616ce9d7c93bdc42e5ce6a420c9
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from collections import defaultdict
@@ -77025,9 +77260,7 @@ class PublicScheduleQueries(models.AbstractModel):
                 lambda m: (m.operational_slot_id or m.published_slot_id).court_id.id
                 == court_id
             )
-        public_timezone = (
-            self.env.company.partner_id.tz or self.env.user.tz or "UTC"
-        )
+        public_timezone = self.env.company.partner_id.tz or self.env.user.tz or "UTC"
         localized = self.with_context(tz=public_timezone)
         rows = []
         for match in matches:
@@ -79272,10 +79505,10 @@ class TestPublicSite(TransactionCase):
 FILE: sports_federation_public_site/tests/test_template_accessibility.py
 SIZE: 7343
 CONTENT-LENGTH: 7343
-SHA256: db0b6f5dc7c058ff6fec74f57cafee702299d6e088eec81de2fa124e34bec27a
+SHA256: f01769b00ce6c4f4a23a66a38813d2b19223a625cd927ed5c8b7f94100ce918a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from pathlib import Path
@@ -79418,6 +79651,7 @@ class TestPublicSiteTemplateAccessibility(TransactionCase):
                     template_text,
                     f"{file_key} should not render raw internal state values.",
                 )
+
     def test_public_gameday_hides_internal_schedule_metadata(self):
         templates = etree.parse(
             str(
@@ -79434,7 +79668,6 @@ class TestPublicSiteTemplateAccessibility(TransactionCase):
         self.assertNotIn("Round ", content)
         self.assertNotIn("logical_fixture_id.stage_id.name", content)
         self.assertIn("row['status'] != 'as_published'", content)
-
 
     def test_public_match_card_shows_division_once(self):
         templates = etree.parse(
@@ -104373,12 +104606,12 @@ from . import test_schedule_amendment
 
 ====================================================================================================
 FILE: sports_federation_scheduling/tests/test_fairness_solver.py
-SIZE: 3656
-CONTENT-LENGTH: 3656
-SHA256: 769eb3fe8d830510cc0c4cc85f8dd27ca2d35381a3f08524290d58c651fb178a
+SIZE: 3655
+CONTENT-LENGTH: 3655
+SHA256: bd92515ce2481c695844a98a98d9d2c9dea8092441375ee283be4c2680d15f3f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from datetime import datetime
@@ -104482,7 +104715,6 @@ class TestFairnessSolver(TransactionCase):
                 datetime(2026, 9, 5, 9, 50),
             )
         )
-
 
 ====================================================================================================
 FILE: sports_federation_scheduling/tests/test_schedule_amendment.py

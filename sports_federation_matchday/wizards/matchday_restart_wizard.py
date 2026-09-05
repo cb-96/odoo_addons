@@ -38,10 +38,7 @@ class FederationMatchdayRestartWizard(models.TransientModel):
                 "default_slot_duration_minutes": matchday.default_slot_duration_minutes,
             }
         )
-        schedules = self.env["federation.schedule"].search(
-            [("matchday_id", "=", matchday.id)]
-        )
-        schedules.unlink()
+        matchday._delete_restartable_schedules()
         matchday.unlink()
         replacement.message_post(
             body=_(
