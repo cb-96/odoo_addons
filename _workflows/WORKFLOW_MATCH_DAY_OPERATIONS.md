@@ -27,6 +27,12 @@ Primary surfaces by phase:
 Direct queues and record pages exist as shortcuts, but they should not be
 treated as equal-weight starting points for club representatives.
 
+Draft match days may be deleted during preparation. Any draft or
+change-requested working schedules are removed with the match day so the
+restrictive schedule foreign key cannot leave an unusable planning record.
+Match days with review or publication history, or with live operations, remain
+protected and must use schedule revision or operational correction workflows.
+
 ## Operational Control Layer
 
 The portal action-items page (`/my/action-items`) is a compact control layer

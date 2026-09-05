@@ -27,6 +27,7 @@ class FederationMatchdayRestartWizard(models.TransientModel):
         if not matchday:
             raise ValidationError(_("The match day no longer exists."))
         matchday._assert_restartable_from_scratch()
+        reason = self.reason
 
         replacement = self.env["federation.matchday"].create(
             {
@@ -43,7 +44,7 @@ class FederationMatchdayRestartWizard(models.TransientModel):
         replacement.message_post(
             body=_(
                 "Planning restarted from scratch. Reason: %(reason)s",
-                reason=self.reason,
+                reason=reason,
             )
         )
         return {

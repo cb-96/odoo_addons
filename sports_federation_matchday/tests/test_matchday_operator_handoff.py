@@ -45,7 +45,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
                 "state": "finalized",
             }
         )
-        structure = cls.env["federation.competition.structure"].create(
+        cls.structure = cls.env["federation.competition.structure"].create(
             {
                 "name": "Operations Structure",
                 "edition_id": cls.edition.id,
@@ -87,7 +87,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
             {
                 "name": "Operations Schedule",
                 "edition_id": cls.edition.id,
-                "structure_id": structure.id,
+                "structure_id": cls.structure.id,
                 "matchday_id": cls.matchday.id,
                 "state": "published",
             }
@@ -182,6 +182,42 @@ class TestMatchdayOperatorHandoff(TransactionCase):
     def test_restart_from_scratch_rejects_published_matchday(self):
         with self.assertRaisesRegex(ValidationError, "publication history"):
             self.matchday._assert_restartable_from_scratch()
+
+    def test_unlink_draft_matchday_removes_mutable_schedule(self):
+        matchday = self.env["federation.matchday"].create(
+            {
+                "name": "Discardable Day",
+                "edition_id": self.edition.id,
+                "date": "2026-10-17",
+                "venue_id": self.venue.id,
+            }
+        )
+        schedule = self.env["federation.schedule"].create(
+            {
+                "name": "Discardable Schedule",
+                "edition_id": self.edition.id,
+                "structure_id": self.structure.id,
+                "matchday_id": matchday.id,
+                "state": "draft",
+            }
+        )
+        matchday_id = matchday.id
+        schedule_id = schedule.id
+
+        matchday.unlink()
+
+        self.assertFalse(self.env["federation.matchday"].browse(matchday_id).exists())
+        self.assertFalse(self.env["federation.schedule"].browse(schedule_id).exists())
+
+    def test_unlink_published_matchday_preserves_schedule_history(self):
+        with self.assertRaisesRegex(ValidationError, "publication history"):
+            self.matchday.unlink()
+        self.assertTrue(self.matchday.exists())
+        self.assertTrue(
+            self.env["federation.schedule"].search_count(
+                [("matchday_id", "=", self.matchday.id)]
+            )
+        )
 
     def test_restart_from_scratch_creates_clean_replacement(self):
         original = self.env["federation.matchday"].create(

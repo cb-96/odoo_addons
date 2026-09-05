@@ -29,8 +29,10 @@ class FederationMatchdayRestart(models.Model):
             .with_context(active_test=False)
             .search([("matchday_id", "=", self.id)])
         )
-        reviews = self.env["federation.schedule.review"].sudo().search_count(
-            [("schedule_id", "in", schedules.ids)]
+        reviews = (
+            self.env["federation.schedule.review"]
+            .sudo()
+            .search_count([("schedule_id", "in", schedules.ids)])
         )
         if reviews:
             raise ValidationError(
@@ -62,6 +64,18 @@ class FederationMatchdayRestart(models.Model):
             .search([("matchday_id", "=", self.id)])
         )
         schedules.unlink()
+
+    def unlink(self):
+        """Delete draft match days together with their mutable schedules.
+
+        ``federation.schedule.matchday_id`` deliberately uses a restrictive
+        foreign key so published schedule history cannot be orphaned. Draft
+        schedules are disposable planning data, however, and should not make
+        an otherwise deletable draft match day impossible to remove.
+        """
+        for matchday in self:
+            matchday._delete_restartable_schedules()
+        return super().unlink()
 
     def action_open_restart_from_scratch(self):
         self.ensure_one()

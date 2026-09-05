@@ -32,6 +32,7 @@ Match-day managers can use **Restart from Scratch** before any schedule review o
 publication evidence exists. The action requires a reason and explicit destructive
 confirmation, removes mutable schedules and the old match day, then creates and
 opens a clean replacement with the same edition, date, venue, and slot defaults.
-Published, reviewed, open, and closed match days remain protected and must use the
-normal revision or operational correction workflows.
+Direct deletion of a draft match day also removes its draft or change-requested
+working schedules first. Published, reviewed, open, and closed match days remain
+protected and must use the normal revision or operational correction workflows.
 
