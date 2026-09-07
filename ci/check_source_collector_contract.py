@@ -23,6 +23,10 @@ else:
         "validate_internal_dependencies": "internal dependency validation",
         'Path("ci/logs")': "generated CI log exclusion",
         "collect_repository_root_files": "root document discovery",
+        "latest_artifact_directories": "latest artifact selection",
+        "collect_latest_artifacts": "artifact bundle discovery",
+        '".log"': "runtime log support",
+        "LATEST ARTIFACT DIRECTORIES": "artifact selection metadata",
     }
     for token, purpose in required_tokens.items():
         if token not in text:

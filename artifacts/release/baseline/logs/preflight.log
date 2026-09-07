@@ -1,0 +1,17 @@
+[Release baseline] Running RC lane: preflight
+Release workspace contains tracked changes:
+ M .github/workflows/release-candidate.yml
+ M README.md
+ M RELEASE_RUNBOOK.md
+ M TESTING_GUIDE.md
+ M ci/capture_migration_invariants.py
+ M ci/check_competition_ui_workflow.py
+ M ci/check_delivery_language.py
+ M ci/check_migration_rehearsal_contract.py
+ M ci/check_release_qualification.py
+ M docs/DELIVERY_ROADMAP.md
+ M docs/REPOSITORY_BASELINE.md
+ M scripts/ci/run_migration_rehearsal.sh
+ M scripts/ci/run_rc_validation.sh
+ M scripts/ci/run_release_baseline.sh
+

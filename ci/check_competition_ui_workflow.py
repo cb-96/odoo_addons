@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import sys
-
-from lxml import etree
+from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[1]
 NAVIGATION = ROOT / "docs/FEDERATION_BACKEND_NAVIGATION.md"
@@ -61,11 +60,13 @@ def index():
     records = {}
     for path in ROOT.glob("sports_federation_*/views/*.xml"):
         try:
-            tree = etree.parse(str(path))
-        except etree.XMLSyntaxError as exc:
+            tree = ElementTree.parse(path)
+        except ElementTree.ParseError as exc:
             raise RuntimeError(f"cannot parse {path}: {exc}") from exc
         module = path.parts[-3]
-        for node in tree.xpath("//menuitem[@id]"):
+        for node in tree.iter("menuitem"):
+            if not node.get("id"):
+                continue
             rid = node.get("id")
             xmlid = rid if "." in rid else f"{module}.{rid}"
             parent = node.get("parent", "")

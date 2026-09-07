@@ -1,0 +1,41 @@
+[Release baseline] Running RC lane: static
+Python syntax check passed without writing bytecode
+XML parse check passed
+Legacy competition engine is absent from runtime, CI and active documentation.
+[sudo-guard] OK - 39 privileged calls are documented and guarded.
+Portal ownership contract passed.
+Officiating and legacy-match contract passed.
+Registration ownership contract passed.
+ACL CSV integrity passed for 251 access records.
+Source collector contract passed.
+Addon integrity check passed for 26 addons.
+Odoo test discovery contract passed.
+[workflow-contracts] OK (3 contract(s) validated)
+Fixture ownership contract passed.
+Rules contract passed.
+Phases 3-5 contract passed.
+Schedule handoff contract passed.
+Schedule amendment contract passed.
+Publication integrity contract passed.
+Public competition contract passed.
+Documentation freshness metadata is present for tracked docs:
+ - ROADMAP.md
+ - TECHNICAL_NOTE.md
+ - CONTEXT.md
+ - INTEGRATION_CONTRACTS.md
+ - ROUTE_INVENTORY.md
+ - STATE_AND_OWNERSHIP_MATRIX.md
+ - RELEASE_RUNBOOK.md
+ - DATA_RETENTION_POLICY.md
+ - adr/README.md
+ - adr/0001-portal-trust-boundaries.md
+ - adr/0002-reporting-sql-views.md
+ - adr/0003-public-route-ownership.md
+Delivery language check passed.
+Federation backend navigation structure passed.
+Release qualification contract passed.
+Release-focus contract passed.
+RC product readiness contracts passed.
+RC usability contracts passed.
+Retention visibility contract passed.
+Migration rehearsal contract passed.

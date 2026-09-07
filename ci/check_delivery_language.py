@@ -14,7 +14,9 @@ for p in ROOT.rglob("*"):
         or ".git" in p.parts
         or "__pycache__" in p.parts
         or "migrations" in p.parts
+        or "artifacts" in p.parts
         or p.suffix == ".pyc"
+        or p.suffix == ".patch"
     ):
         continue
     if version.search(str(relative)) or delivery.search(str(relative)):

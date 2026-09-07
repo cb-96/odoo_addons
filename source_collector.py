@@ -18,8 +18,10 @@ staged and unstaged diffs.
 
 The collector deliberately avoids keyword-based filtering. Every relevant text
 source file from the discovered addons and configured repository engineering
-directories is included. Manifest data and explicit asset references are
-validated before any output file is replaced.
+directories is included. Generated artifacts are handled separately: for each
+top-level directory under ``artifacts/``, only its newest child run directory
+is bundled. Manifest data and explicit asset references are validated before
+any output file is replaced.
 """
 
 from __future__ import annotations
@@ -37,6 +39,7 @@ ROOT = Path.cwd().resolve()
 SOURCE_OUT = ROOT / "current_sources.txt"
 JSONL_OUT = ROOT / "current_sources.jsonl.txt"
 META_OUT = ROOT / "current_git_metadata.txt"
+ARTIFACT_ROOT = ROOT / "artifacts"
 
 BUNDLE_FORMAT = "sports-federation-source-bundle"
 BUNDLE_FORMAT_VERSION = 3
@@ -57,6 +60,7 @@ TEXT_EXTENSIONS = {
     ".ini",
     ".js",
     ".json",
+    ".log",
     ".md",
     ".po",
     ".pot",
@@ -269,6 +273,44 @@ def collect_repository_root_files() -> set[Path]:
     }
 
 
+def latest_artifact_directories() -> list[Path]:
+    """Return the newest artifact run directory for each artifact category."""
+    if not ARTIFACT_ROOT.is_dir():
+        return []
+
+    selected: list[Path] = []
+    for category in sorted(
+        (path for path in ARTIFACT_ROOT.iterdir() if path.is_dir()),
+        key=lambda path: path.name,
+    ):
+        runs = [path for path in category.iterdir() if path.is_dir()]
+        if runs:
+            selected.append(
+                max(runs, key=lambda path: (path.stat().st_mtime, path.name))
+            )
+    return selected
+
+
+def collect_latest_artifacts() -> set[Path]:
+    """Collect direct category files and files from the newest run per category."""
+    files: set[Path] = set()
+    if not ARTIFACT_ROOT.is_dir():
+        return files
+
+    for category in ARTIFACT_ROOT.iterdir():
+        if not category.is_dir():
+            continue
+        files.update(
+            repository_relative(path)
+            for path in category.iterdir()
+            if is_supported_text_file(path)
+        )
+
+    for directory in latest_artifact_directories():
+        files.update(collect_directory(directory))
+    return files
+
+
 def parse_manifest(module: str) -> dict:
     manifest_path = ROOT / module / "__manifest__.py"
     if not manifest_path.is_file():
@@ -325,6 +367,8 @@ def collect_files(existing_modules: Iterable[str]) -> list[Path]:
 
     for directory in REPOSITORY_DIRECTORIES:
         files.update(collect_directory(ROOT / directory))
+
+    files.update(collect_latest_artifacts())
 
     return sorted(files, key=lambda path: path.as_posix())
 
@@ -761,6 +805,7 @@ def build_metadata(
     tracked: set[str],
     modified: set[str],
     untracked: set[str],
+    artifact_directories: list[Path],
 ) -> str:
     sections: list[str] = [
         "=== BUNDLE FORMAT ===\n"
@@ -829,6 +874,15 @@ def build_metadata(
             ]
         )
     )
+    sections.append(
+        "=== LATEST ARTIFACT DIRECTORIES ===\n"
+        + (
+            "\n".join(
+                path.relative_to(ROOT).as_posix() for path in artifact_directories
+            )
+            or "(none)"
+        )
+    )
 
     inventory = []
     for record in records:
@@ -874,6 +928,7 @@ def main() -> None:
     validate_internal_dependencies(existing_modules)
 
     files = collect_files(existing_modules)
+    artifact_directories = latest_artifact_directories()
     validate_collection_contract(files)
     summaries = validate_manifest_references(existing_modules, set(files))
 
@@ -903,6 +958,7 @@ def main() -> None:
         tracked,
         modified,
         untracked,
+        artifact_directories,
     )
     write_metadata(metadata)
 

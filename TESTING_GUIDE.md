@@ -428,7 +428,18 @@ scripts/ci/run_release_baseline.sh
 
 This wraps the authoritative RC lanes and records lane evidence under
 `artifacts/release/baseline/`. A lane failure records failed evidence before the
-script exits. Do not use this wrapper to hide or bypass individual RC failures.
+script exits. Odoo is executed from the pinned `odoo:19` image through
+`ci/docker-compose.ci.yaml`; a single retained Compose project carries the
+fresh-install database through the focused lanes and the separate upgrade
+database through the same-version upgrade lane. The runner removes that
+project on exit while preserving the evidence directory. To clean an
+interrupted run manually, use:
+
+```bash
+RC_COMPOSE_PROJECT=sf_rc_<project> scripts/ci/run_rc_validation.sh cleanup
+```
+
+Do not use this wrapper to hide or bypass individual RC failures.
 
 
 ## Migration and rollback qualification

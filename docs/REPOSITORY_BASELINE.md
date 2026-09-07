@@ -33,6 +33,12 @@ lanes. The inventory provides deterministic review lists for:
 The inventory does not approve these surfaces. Security and architecture owners
 must review changes to them in the candidate diff.
 
+All Odoo release lanes run inside the pinned `odoo:19` Docker image with the
+canonical Compose file `ci/docker-compose.ci.yaml`. The baseline retains one
+isolated Compose project while it runs the fresh-install, focused, and upgrade
+lanes, then removes the project after evidence capture. No host `odoo-bin`
+checkout is required.
+
 
 ## Evidence completeness
 

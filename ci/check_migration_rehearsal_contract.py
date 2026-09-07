@@ -15,6 +15,9 @@ REQUIRED = {
     "scripts/ci/run_migration_rehearsal.sh": (
         "restore_backup_drill.sh",
         "run_rc_validation.sh acceptance",
+        "--compose-file",
+        "--db-service ci-db",
+        "MIGRATION_COMPOSE_FILE",
         "rollback-owner",
         "rollback-trigger",
         "invariant-comparison.json",

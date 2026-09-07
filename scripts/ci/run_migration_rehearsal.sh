@@ -28,6 +28,12 @@ evidence_dir="${MIGRATION_EVIDENCE_DIR:-$repo_root/artifacts/release/migration}"
 rollback_owner="${ROLLBACK_OWNER:-}"
 rollback_trigger="${ROLLBACK_TRIGGER:-}"
 restore_flags=()
+rc_compose_file="${RC_COMPOSE_FILE:-$repo_root/ci/docker-compose.ci.yaml}"
+rc_compose_project="${RC_COMPOSE_PROJECT:-sf_rc_migration_$(date +%s)_$$}"
+rc_config_path="${RC_ODOO_CONFIG_PATH:-${TMPDIR:-/tmp}/${rc_compose_project}.conf}"
+ci_postgres_user="${CI_POSTGRES_USER:-odoo}"
+ci_postgres_password="${CI_POSTGRES_PASSWORD:-odoo}"
+ci_postgres_db="${CI_POSTGRES_DB:-postgres}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -47,12 +53,45 @@ done
 [[ -n "$backup_dir" ]] || { echo "--backup-dir is required" >&2; exit 2; }
 [[ -n "$rollback_owner" ]] || { echo "--rollback-owner is required" >&2; exit 2; }
 [[ -n "$rollback_trigger" ]] || { echo "--rollback-trigger is required" >&2; exit 2; }
-command -v psql >/dev/null 2>&1 || { echo "psql is required" >&2; exit 2; }
+command -v docker >/dev/null 2>&1 || { echo "docker is required" >&2; exit 2; }
 mkdir -p "$evidence_dir"
 
 backup_dir="$(cd "$backup_dir" && pwd)"
 dump_file="$(find "$backup_dir" -maxdepth 1 -type f -name '*.dump' -print -quit)"
 [[ -n "$dump_file" ]] || { echo "No PostgreSQL dump found in $backup_dir" >&2; exit 2; }
+
+cat > "$rc_config_path" <<EOF
+[options]
+db_host = ci-db
+db_port = 5432
+db_user = $ci_postgres_user
+db_password = $ci_postgres_password
+addons_path = /usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
+data_dir = /var/lib/odoo
+list_db = False
+http_interface = 127.0.0.1
+without_demo = True
+EOF
+chmod 0644 "$rc_config_path"
+export CI_POSTGRES_USER="$ci_postgres_user"
+export CI_POSTGRES_PASSWORD="$ci_postgres_password"
+export CI_POSTGRES_DB="$ci_postgres_db"
+export CI_ODOO_DB_HOST=ci-db
+export CI_ODOO_DB_PORT=5432
+export CI_ODOO_CONFIG_PATH="$rc_config_path"
+export RC_COMPOSE_FILE="$rc_compose_file"
+export RC_COMPOSE_PROJECT="$rc_compose_project"
+export RC_COMPOSE_RETAIN=1
+export MIGRATION_COMPOSE_FILE="$rc_compose_file"
+export MIGRATION_COMPOSE_PROJECT="$rc_compose_project"
+export MIGRATION_DB_SERVICE=ci-db
+export MIGRATION_DB_USER="$ci_postgres_user"
+
+cleanup_rc_compose() {
+  RC_COMPOSE_RETAIN=1 scripts/ci/run_rc_validation.sh cleanup >/dev/null 2>&1 || true
+  rm -f "$rc_config_path"
+}
+trap cleanup_rc_compose EXIT
 
 restore_database() {
   local database="$1"
@@ -60,6 +99,10 @@ restore_database() {
   ci/restore_backup_drill.sh \
     --backup-dir "$backup_dir" \
     --target-db "$database" \
+    --compose-file "$rc_compose_file" \
+    --project-name "$rc_compose_project" \
+    --db-service ci-db \
+    --db-user "$ci_postgres_user" \
     --report-file "$report" \
     "${restore_flags[@]}"
 }

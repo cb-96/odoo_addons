@@ -1,0 +1,35 @@
+{
+  "branch": "main",
+  "command": "scripts/ci/run_rc_validation.sh focus",
+  "commit": "88a1b03280bd8d35a7db48750c5c9ba292b4e844",
+  "database": "sf_rc_validation",
+  "duration_seconds": 24.0,
+  "exit_code": 0,
+  "failure_classification": null,
+  "finished_at": "2026-09-07T20:29:58Z",
+  "lane": "focus",
+  "log": {
+    "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/focus.log",
+    "sha256": "d57ea229df776320732d542ae9154ed4294ffa405b9857832aa1cf278dd8a7d3",
+    "size_bytes": 473
+  },
+  "recorded_at": "2026-09-07T20:29:59.041622+00:00",
+  "runner": {
+    "github_job": null,
+    "github_run_attempt": null,
+    "github_run_id": null,
+    "host": "odoo-dev",
+    "platform": "Linux-6.14.11-4-pve-x86_64-with"
+  },
+  "schema_version": 2,
+  "skip_reason": null,
+  "started_at": "2026-09-07T20:29:34Z",
+  "status": "passed",
+  "tools": {
+    "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
+    "docker_compose": "Docker Compose version v2.40.3",
+    "git": "git version 2.52.0",
+    "postgres_client": null,
+    "python": "3.12.13"
+  }
+}

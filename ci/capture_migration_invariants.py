@@ -16,23 +16,50 @@ DEFAULT_CONTRACT = ROOT / "ci/release_invariants.json"
 
 
 def run_sql(database: str, sql: str) -> int:
-    command = [
-        "psql",
-        "--host",
-        os.environ.get("PGHOST", "127.0.0.1"),
-        "--port",
-        os.environ.get("PGPORT", "5432"),
-        "--username",
-        os.environ.get("PGUSER", "odoo"),
-        "--dbname",
-        database,
-        "--tuples-only",
-        "--no-align",
-        "--set",
-        "ON_ERROR_STOP=1",
-        "--command",
-        sql,
-    ]
+    compose_file = os.environ.get("MIGRATION_COMPOSE_FILE")
+    compose_project = os.environ.get("MIGRATION_COMPOSE_PROJECT")
+    db_service = os.environ.get("MIGRATION_DB_SERVICE", "ci-db")
+    db_user = os.environ.get("MIGRATION_DB_USER", os.environ.get("PGUSER", "odoo"))
+    if compose_file:
+        command = ["docker", "compose"]
+        if compose_project:
+            command.extend(["-p", compose_project])
+        command.extend(
+            [
+                "-f",
+                compose_file,
+                "exec",
+                "-T",
+                db_service,
+                "psql",
+                "--username",
+                db_user,
+                "--dbname",
+                database,
+            ]
+        )
+    else:
+        command = [
+            "psql",
+            "--host",
+            os.environ.get("PGHOST", "127.0.0.1"),
+            "--port",
+            os.environ.get("PGPORT", "5432"),
+            "--username",
+            db_user,
+            "--dbname",
+            database,
+        ]
+    command.extend(
+        [
+            "--tuples-only",
+            "--no-align",
+            "--set",
+            "ON_ERROR_STOP=1",
+            "--command",
+            sql,
+        ]
+    )
     result = subprocess.run(
         command,
         check=False,

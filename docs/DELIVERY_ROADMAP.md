@@ -48,7 +48,9 @@ The script executes:
 
 Evidence is written under `artifacts/release/baseline/` by default. Override this
 with `RELEASE_BASELINE_EVIDENCE_DIR` when CI provides a dedicated artifact
-directory.
+directory. Odoo lanes use the canonical `odoo:19` Docker Compose runtime, with
+one isolated Compose project retained across the install, upgrade, and focused
+lanes before cleanup.
 
 ### Exit criteria
 

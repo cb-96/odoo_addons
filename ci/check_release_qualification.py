@@ -25,10 +25,15 @@ evidence_finalizer = (ROOT / "ci/finalize_release_evidence.py").read_text(
 checks = {
     "RC upgrade lane": "upgrade)" in rc_script,
     "RC public lane": "public)" in rc_script,
+    "RC uses Docker Compose": "docker compose" in rc_script,
+    "RC container cleanup lane": "cleanup)" in rc_script,
     "upgrade database isolation": "UPGRADE_DB_NAME" in rc_script,
     "upgrade precondition": "assert_modules_installed" in rc_script,
     "workflow upgrade execution": "run_rc_validation.sh upgrade" in workflow,
     "workflow public execution": "run_rc_validation.sh public" in workflow,
+    "workflow uses Compose RC runtime": "RC_COMPOSE_PROJECT" in workflow,
+    "workflow cleans Compose RC runtime": "run_rc_validation.sh cleanup" in workflow,
+    "workflow does not require host Odoo": "ODOO_BIN" not in workflow,
     "baseline records every required lane": all(
         f"  {lane}\n" in baseline_script
         for lane in (

@@ -115,6 +115,16 @@ rehearsal. Record the candidate SHA, lane results, database names, and any
 rollback observations with the release ticket. Browser lanes require a Chrome
 executable; a candidate is not accepted when those lanes are silently skipped.
 
+The release-candidate Odoo lanes run in the repository's `odoo:19` Docker
+Compose runtime; a host Odoo checkout and `odoo-bin` are not required. The
+baseline retains one isolated Compose project across its fresh-install,
+focused, and same-version upgrade lanes, then removes it after evidence is
+captured. If an interrupted run leaves the project behind, clean it with:
+
+```bash
+RC_COMPOSE_PROJECT=sf_rc_<project> scripts/ci/run_rc_validation.sh cleanup
+```
+
 If the release changes addon responsibility boundaries or adds a new
 `sports_federation_*` module, update `MODULE_OWNERS.yaml` in the same release
 branch and rerun the registry check before cutting the release.

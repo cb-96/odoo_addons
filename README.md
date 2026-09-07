@@ -33,6 +33,13 @@ Quick links
 - Workflows: `_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md`
 - Contributor guide: `CONTRIBUTING.md`
 
+Source review bundle:
+- Run `python3 source_collector.py` from this directory to regenerate the
+  current source, JSONL, and Git metadata bundles.
+- Generated artifacts under `artifacts/` are included by category, but only
+  the newest run directory in each category is collected. Runtime `.log`
+  files are included as text so release evidence remains reviewable.
+
 **Architecture overview**
 
 High-level architecture (graph):
@@ -122,9 +129,14 @@ bash ci/prune_ci_logs.sh 30
 ```
 
 Notes and tips
-- `requirements.txt` pins repository-local tooling only. The Odoo runtime used by CI comes from the `odoo:19` Docker image declared in `ci/docker-compose.ci.yaml`.
+- `requirements.txt` pins repository-local tooling only. The Odoo runtime used
+  by module tests and release-candidate validation comes from the `odoo:19`
+  Docker image declared in `ci/docker-compose.ci.yaml`.
 - Keep local runtime credentials in `ci/.env`; do not commit that file. The checked-in `ci/.env.example` is the safe template.
-- This repository does not ship `odoo-bin`. If you use a separate local Odoo checkout, point its `addons_path` at this repository and run tests from that checkout.
+- This repository does not ship `odoo-bin`; release validation does not require
+  a host Odoo checkout. If you use a separate local Odoo checkout for
+  development, point its `addons_path` at this repository and run tests from
+  that checkout.
 - Use the module manifest `__manifest__.py` `data` entries to register new
   views/security/data files. If you add or change models, update
   `security/ir.model.access.csv` and include migration notes in the docs.

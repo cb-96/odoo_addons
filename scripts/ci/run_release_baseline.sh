@@ -6,6 +6,9 @@ cd "$repo_root"
 
 evidence_dir="${RELEASE_BASELINE_EVIDENCE_DIR:-$repo_root/artifacts/release/baseline}"
 database="${DB_NAME:-sf_rc_validation}"
+upgrade_database="${UPGRADE_DB_NAME:-sf_rc_upgrade}"
+export RC_COMPOSE_PROJECT="${RC_COMPOSE_PROJECT:-sf_rc_baseline_$(date +%s)_$$}"
+export RC_COMPOSE_RETAIN=1
 required_lanes=(
   preflight
   static
@@ -21,6 +24,11 @@ required_lanes=(
 )
 mkdir -p "$evidence_dir/logs"
 rm -f "$evidence_dir"/lane-*.json "$evidence_dir/summary.json"
+
+cleanup_rc_compose() {
+  RC_COMPOSE_RETAIN=1 scripts/ci/run_rc_validation.sh cleanup >/dev/null 2>&1 || true
+}
+trap cleanup_rc_compose EXIT
 
 python3 ci/capture_codebase_inventory.py \
   --output "$evidence_dir/codebase-inventory.json"
@@ -44,6 +52,10 @@ record_lane() {
   local finished_at="$5"
   local duration="$6"
   local log_file="$7"
+  local lane_database="$database"
+  if [[ "$lane" == "upgrade" ]]; then
+    lane_database="$upgrade_database"
+  fi
   local command="scripts/ci/run_rc_validation.sh $lane"
   local args=(
     --lane "$lane"
@@ -53,7 +65,7 @@ record_lane() {
     --started-at "$started_at"
     --finished-at "$finished_at"
     --duration-seconds "$duration"
-    --database "$database"
+    --database "$lane_database"
     --log "$log_file"
     --output "$evidence_dir/lane-$lane.json"
   )
@@ -61,6 +73,14 @@ record_lane() {
     args+=(--failure-classification "$(failure_classification_for "$lane")")
   fi
   python3 ci/capture_release_evidence.py "${args[@]}"
+}
+
+prepare_upgrade_database() {
+  local log_file="$evidence_dir/logs/upgrade-install.log"
+  echo "[Release baseline] Preparing upgrade database: $upgrade_database" | tee "$log_file"
+  DB_NAME="$upgrade_database" \
+    ODOO_LOGFILE="$log_file" \
+    scripts/ci/run_rc_validation.sh install 2>&1 | tee -a "$log_file"
 }
 
 run_lane() {
@@ -96,6 +116,12 @@ run_lane() {
 # stopping at the first defect. Each failure is explicit and SHA-bound.
 overall_status=0
 for lane in "${required_lanes[@]}"; do
+  if [[ "$lane" == "upgrade" ]]; then
+    if ! prepare_upgrade_database; then
+      echo "[Release baseline] Upgrade database preparation failed." >&2
+      overall_status=1
+    fi
+  fi
   run_lane "$lane"
   lane_status=$?
   if (( lane_status != 0 )); then

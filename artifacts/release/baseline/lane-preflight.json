@@ -1,0 +1,35 @@
+{
+  "branch": "main",
+  "command": "scripts/ci/run_rc_validation.sh preflight",
+  "commit": "88a1b03280bd8d35a7db48750c5c9ba292b4e844",
+  "database": "sf_rc_validation",
+  "duration_seconds": 0.0,
+  "exit_code": 1,
+  "failure_classification": "unclassified",
+  "finished_at": "2026-09-07T20:09:39Z",
+  "lane": "preflight",
+  "log": {
+    "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/preflight.log",
+    "sha256": "275da6e5a48ea0c30034113758a8250c400daa179f728b667994584aa37891ac",
+    "size_bytes": 553
+  },
+  "recorded_at": "2026-09-07T20:09:39.282669+00:00",
+  "runner": {
+    "github_job": null,
+    "github_run_attempt": null,
+    "github_run_id": null,
+    "host": "odoo-dev",
+    "platform": "Linux-6.14.11-4-pve-x86_64-with"
+  },
+  "schema_version": 2,
+  "skip_reason": null,
+  "started_at": "2026-09-07T20:09:39Z",
+  "status": "failed",
+  "tools": {
+    "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
+    "docker_compose": "Docker Compose version v2.40.3",
+    "git": "git version 2.52.0",
+    "postgres_client": null,
+    "python": "3.12.13"
+  }
+}
