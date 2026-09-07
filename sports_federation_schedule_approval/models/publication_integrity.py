@@ -4,6 +4,10 @@ import json
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
+from odoo.addons.sports_federation_base.destructive_tokens import (
+    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
+)
+
 _REVIEW_DECISION_TOKEN = object()
 _REVIEW_WITHDRAWAL_TOKEN = object()
 
@@ -81,6 +85,11 @@ class FederationScheduleReviewIntegrity(models.Model):
         )
 
     def unlink(self):
+        if (
+            self.env.context.get("matchday_destructive_delete_token")
+            is MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ):
+            return super().unlink()
         raise ValidationError("Schedule reviews are retained as audit evidence.")
 
 
@@ -90,7 +99,7 @@ class FederationSchedulePublicationIntegrity(models.Model):
     snapshot_digest = fields.Char(required=True, readonly=True, index=True)
     source_revision = fields.Integer(required=True, readonly=True)
     review_id = fields.Many2one(
-        "federation.schedule.review", required=True, readonly=True, ondelete="restrict"
+        "federation.schedule.review", required=True, readonly=True, ondelete="cascade"
     )
 
     def init(self):
@@ -114,6 +123,11 @@ class FederationSchedulePublicationIntegrity(models.Model):
         return super().write(vals)
 
     def unlink(self):
+        if (
+            self.env.context.get("matchday_destructive_delete_token")
+            is MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ):
+            return super().unlink()
         raise ValidationError("Published schedules are retained as audit evidence.")
 
 

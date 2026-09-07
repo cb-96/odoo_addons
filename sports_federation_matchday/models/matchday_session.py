@@ -1,6 +1,10 @@
 from odoo import fields, models
 from odoo.exceptions import ValidationError
 
+from odoo.addons.sports_federation_base.destructive_tokens import (
+    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
+)
+
 
 class FederationMatchdaySession(models.Model):
     _name = "federation.matchday.session"
@@ -38,6 +42,11 @@ class FederationMatchdaySession(models.Model):
     close_note = fields.Text(readonly=True)
 
     def unlink(self):
+        if (
+            self.env.context.get("matchday_destructive_delete_token")
+            is MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ):
+            return super().unlink()
         raise ValidationError("Match-day sessions are retained as audit evidence.")
 
 

@@ -36,3 +36,13 @@ Direct deletion of a draft match day also removes its draft or change-requested
 working schedules first. Published, reviewed, open, and closed match days remain
 protected and must use the normal revision or operational correction workflows.
 
+## Deleting closed test data
+
+Federation managers and match-day managers can use **Delete Match Day** on a
+closed match day. The confirmation wizard shows the number of schedules,
+publications, execution sessions, deviations, and matches affected. Confirming
+the deletion permanently removes the match-day planning and execution evidence;
+linked match records remain in the competition but are detached from the deleted
+publication and calendar slots. The action requires a reason and displays a
+final confirmation popup before deletion.
+

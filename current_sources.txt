@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 917
+# FILE-COUNT: 920
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -5948,12 +5948,12 @@ consistent operator model:
 
 ====================================================================================================
 FILE: _workflows/WORKFLOW_MATCH_DAY_OPERATIONS.md
-SIZE: 17397
-CONTENT-LENGTH: 17311
-SHA256: 6eb29f846060e540a36d6a94de296c44d0ecbbb7a00268b63122beb8f0353686
+SIZE: 18234
+CONTENT-LENGTH: 18148
+SHA256: bd26f686686fcbf0c3dcff414ee1ff3bccb885fd519183f599ec083e8adc31ae
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 # Workflow: Match Day Operations
@@ -5984,6 +5984,19 @@ Primary surfaces by phase:
 
 Direct queues and record pages exist as shortcuts, but they should not be
 treated as equal-weight starting points for club representatives.
+
+Draft match days may be deleted during preparation. Any draft or
+change-requested working schedules are removed with the match day so the
+restrictive schedule foreign key cannot leave an unusable planning record.
+Match days with review or publication history, or with live operations, remain
+protected and must use schedule revision or operational correction workflows.
+
+For test cleanup or an explicitly authorized destructive correction, a closed
+match day exposes **Delete Match Day** to federation and match-day managers. The
+wizard reports the affected schedule, publication, session, deviation, and
+match counts before requiring a reason and showing a final confirmation popup.
+It removes the match-day execution and publication evidence, while retaining
+competition match records detached from the deleted publication and slots.
 
 ## Operational Control Layer
 
@@ -18623,6 +18636,20 @@ GIT-STATE: tracked
   <record id="retention_policy_integration_deliveries" model="federation.retention.policy"><field name="name">Integration Deliveries</field><field name="code">integration_deliveries</field><field name="source_model">federation.integration.delivery</field><field name="expected_interval_hours">24</field></record>
   <record id="retention_policy_generated_report_files" model="federation.retention.policy"><field name="name">Generated Report Files</field><field name="code">generated_report_files</field><field name="source_model">federation.report.schedule</field><field name="expected_interval_hours">24</field></record>
 </odoo>
+
+====================================================================================================
+FILE: sports_federation_base/destructive_tokens.py
+SIZE: 112
+CONTENT-LENGTH: 112
+SHA256: 42fef4645b3cffb17931c4c64fa306763999f21662aa9f79a1b4e414752fbbee
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: untracked
+====================================================================================================
+
+"""Process-local tokens for destructive cross-addon workflows."""
+
+MATCHDAY_DESTRUCTIVE_DELETE_TOKEN = object()
 
 ====================================================================================================
 FILE: sports_federation_base/exceptions.py
@@ -47631,12 +47658,12 @@ def delivery_uses_validation_feedback(state):
 
 ====================================================================================================
 FILE: sports_federation_matchday/README.md
-SIZE: 1578
-CONTENT-LENGTH: 1578
-SHA256: f166f0e2ae00212fa453367d64b44d77a3f88b5fbb11c51913f67b31f3f1fbcd
+SIZE: 2222
+CONTENT-LENGTH: 2222
+SHA256: 58a7c9ce66c0053b6ffb9c8f4f6aea58fdef8df040d9e470f0e479bfaf237c31
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 # Match-Day Operations
@@ -47673,8 +47700,19 @@ Match-day managers can use **Restart from Scratch** before any schedule review o
 publication evidence exists. The action requires a reason and explicit destructive
 confirmation, removes mutable schedules and the old match day, then creates and
 opens a clean replacement with the same edition, date, venue, and slot defaults.
-Published, reviewed, open, and closed match days remain protected and must use the
-normal revision or operational correction workflows.
+Direct deletion of a draft match day also removes its draft or change-requested
+working schedules first. Published, reviewed, open, and closed match days remain
+protected and must use the normal revision or operational correction workflows.
+
+## Deleting closed test data
+
+Federation managers and match-day managers can use **Delete Match Day** on a
+closed match day. The confirmation wizard shows the number of schedules,
+publications, execution sessions, deviations, and matches affected. Confirming
+the deletion permanently removes the match-day planning and execution evidence;
+linked match records remain in the competition but are detached from the deleted
+publication and calendar slots. The action requires a reason and displays a
+final confirmation popup before deletion.
 
 
 ====================================================================================================
@@ -47694,12 +47732,12 @@ from . import wizards
 
 ====================================================================================================
 FILE: sports_federation_matchday/__manifest__.py
-SIZE: 624
-CONTENT-LENGTH: 624
-SHA256: 9fe9523b479baf8b0ed23f38088c8b71a4e122ff3b527f04438b102ff1a5b128
+SIZE: 702
+CONTENT-LENGTH: 702
+SHA256: 1792f320f1686800b78ec241f55a4de95e863aac5adf4f7234470273d1e20bff
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 {
@@ -47709,13 +47747,14 @@ GIT-STATE: tracked
     "summary": "Live court control, delays and operational incidents",
     "author": "Sports Federation",
     "license": "LGPL-3",
-    "depends": ["sports_federation_schedule_approval"],
+    "depends": ["sports_federation_base", "sports_federation_schedule_approval"],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
         "views/matchday_views.xml",
         "wizards/matchday_operation_wizard_views.xml",
         "wizards/matchday_restart_wizard_views.xml",
+        "wizards/matchday_delete_wizard_views.xml",
         "views/menu.xml",
     ],
     "installable": True,
@@ -47828,16 +47867,20 @@ class FederationMatchdayCourtStatus(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_matchday/models/matchday_restart.py
-SIZE: 2455
-CONTENT-LENGTH: 2455
-SHA256: 8f845f032d1c0fad71c6c01092b0f934dff3b6039fd9d5ce0b858e438af10ce7
+SIZE: 9232
+CONTENT-LENGTH: 9232
+SHA256: 16da0388b802043af027079b94e29818c97a5939e884d466021cb7c1ad10cfab
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from odoo import _, models
 from odoo.exceptions import ValidationError
+
+from odoo.addons.sports_federation_base.destructive_tokens import (
+    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
+)
 
 
 class FederationMatchdayRestart(models.Model):
@@ -47849,8 +47892,10 @@ class FederationMatchdayRestart(models.Model):
             raise ValidationError(
                 _("Open or closed match days cannot be restarted from scratch.")
             )
-        publications = self.env["federation.schedule.publication"].search_count(
-            [("matchday_id", "=", self.id)]
+        publications = (
+            self.env["federation.schedule.publication"]
+            .sudo()
+            .search_count([("matchday_id", "=", self.id)])
         )
         if publications or self.current_publication_id:
             raise ValidationError(
@@ -47859,11 +47904,16 @@ class FederationMatchdayRestart(models.Model):
                     "schedule revision instead of deleting audit evidence."
                 )
             )
-        schedules = self.env["federation.schedule"].search(
-            [("matchday_id", "=", self.id)]
+        schedules = (
+            self.env["federation.schedule"]
+            .sudo()
+            .with_context(active_test=False)
+            .search([("matchday_id", "=", self.id)])
         )
-        reviews = self.env["federation.schedule.review"].search_count(
-            [("schedule_id", "in", schedules.ids)]
+        reviews = (
+            self.env["federation.schedule.review"]
+            .sudo()
+            .search_count([("schedule_id", "in", schedules.ids)])
         )
         if reviews:
             raise ValidationError(
@@ -47883,6 +47933,183 @@ class FederationMatchdayRestart(models.Model):
                 )
             )
         return True
+
+    def _delete_restartable_schedules(self):
+        """Remove every mutable schedule, including records hidden by rules."""
+        self.ensure_one()
+        self._assert_restartable_from_scratch()
+        schedules = (
+            self.env["federation.schedule"]
+            .sudo()
+            .with_context(active_test=False)
+            .search([("matchday_id", "=", self.id)])
+        )
+        schedules.unlink()
+
+    def _closed_delete_impact(self):
+        self.ensure_one()
+        Schedule = (
+            self.env["federation.schedule"].sudo().with_context(active_test=False)
+        )
+        schedules = Schedule.search([("matchday_id", "=", self.id)])
+        publications = (
+            self.env["federation.schedule.publication"]
+            .sudo()
+            .search([("schedule_id", "in", schedules.ids)])
+        )
+        sessions = (
+            self.env["federation.matchday.session"]
+            .sudo()
+            .search([("matchday_id", "=", self.id)])
+        )
+        deviations = (
+            self.env["federation.matchday.deviation"]
+            .sudo()
+            .search([("matchday_id", "=", self.id)])
+        )
+        slots = (
+            self.env["federation.schedule.slot"]
+            .sudo()
+            .search([("matchday_id", "=", self.id)])
+        )
+        matches = (
+            self.env["federation.match"]
+            .sudo()
+            .search(
+                [
+                    "|",
+                    "|",
+                    ("schedule_publication_id", "in", publications.ids),
+                    ("published_slot_id", "in", slots.ids),
+                    ("operational_slot_id", "in", slots.ids),
+                ]
+            )
+        )
+        return {
+            "schedule_count": len(schedules),
+            "publication_count": len(publications),
+            "session_count": len(sessions),
+            "deviation_count": len(deviations),
+            "match_count": len(matches),
+        }
+
+    def _delete_closed_matchday_data(self):
+        """Remove closed-day data only after explicit destructive confirmation."""
+        self.ensure_one()
+        if self.state != "closed":
+            raise ValidationError(_("Only closed match days can use this action."))
+        if (
+            self.env.context.get("matchday_destructive_delete_token")
+            is not MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ):
+            raise ValidationError(
+                _(
+                    "Closed match days contain execution and publication history. "
+                    "Use Delete Match Day and confirm the impact before removing it."
+                )
+            )
+
+        Schedule = (
+            self.env["federation.schedule"].sudo().with_context(active_test=False)
+        )
+        schedules = Schedule.search([("matchday_id", "=", self.id)])
+        reviews = (
+            self.env["federation.schedule.review"]
+            .sudo()
+            .search([("schedule_id", "in", schedules.ids)])
+        )
+        publications = (
+            self.env["federation.schedule.publication"]
+            .sudo()
+            .search([("schedule_id", "in", schedules.ids)])
+        )
+        slots = (
+            self.env["federation.schedule.slot"]
+            .sudo()
+            .search([("matchday_id", "=", self.id)])
+        )
+        matches = (
+            self.env["federation.match"]
+            .sudo()
+            .search(
+                [
+                    "|",
+                    "|",
+                    ("schedule_publication_id", "in", publications.ids),
+                    ("published_slot_id", "in", slots.ids),
+                    ("operational_slot_id", "in", slots.ids),
+                ]
+            )
+        )
+
+        self.sudo().write({"current_publication_id": False})
+        matches.write(
+            {
+                "schedule_publication_id": False,
+                "published_slot_id": False,
+                "operational_slot_id": False,
+            }
+        )
+        self.env["federation.matchday.deviation"].sudo().with_context(
+            matchday_destructive_delete_token=MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ).search([("matchday_id", "=", self.id)]).unlink()
+        self.env["federation.matchday.session"].sudo().with_context(
+            matchday_destructive_delete_token=MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ).search([("matchday_id", "=", self.id)]).unlink()
+        reviews.with_context(
+            matchday_destructive_delete_token=MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ).unlink()
+        publications.with_context(
+            matchday_destructive_delete_token=MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ).unlink()
+
+        related_schedules = Schedule.search(
+            [
+                "|",
+                ("supersedes_id", "in", schedules.ids),
+                ("superseded_by_id", "in", schedules.ids),
+            ]
+        )
+        (schedules | related_schedules).write(
+            {"supersedes_id": False, "superseded_by_id": False}
+        )
+        schedules.with_context(
+            matchday_destructive_delete_token=MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ).unlink()
+
+    def unlink(self):
+        """Delete draft match days together with their mutable schedules.
+
+        ``federation.schedule.matchday_id`` deliberately uses a restrictive
+        foreign key so published schedule history cannot be orphaned. Draft
+        schedules are disposable planning data, however, and should not make
+        an otherwise deletable draft match day impossible to remove.
+        """
+        for matchday in self:
+            if matchday.state == "closed":
+                matchday._delete_closed_matchday_data()
+            else:
+                matchday._delete_restartable_schedules()
+        return super().unlink()
+
+    def action_open_closed_delete(self):
+        self.ensure_one()
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "matchday_manager", "competition_director"
+        )
+        if self.state != "closed":
+            raise ValidationError(_("Only closed match days can be deleted here."))
+        wizard = self.env["federation.matchday.delete.wizard"].create(
+            {"matchday_id": self.id}
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Delete Closed Match Day"),
+            "res_model": "federation.matchday.delete.wizard",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "target": "new",
+        }
 
     def action_open_restart_from_scratch(self):
         self.ensure_one()
@@ -47904,16 +48131,20 @@ class FederationMatchdayRestart(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_matchday/models/matchday_session.py
-SIZE: 1920
-CONTENT-LENGTH: 1920
-SHA256: 0f587615ee3742f5bbe13342fecd85a65ead89044224097c016e53c19c1a42da
+SIZE: 2209
+CONTENT-LENGTH: 2209
+SHA256: 1872e335a7df15e6442f57140a3cd41c9aeef188f2d3b436a16985ee54e59eab
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from odoo import fields, models
 from odoo.exceptions import ValidationError
+
+from odoo.addons.sports_federation_base.destructive_tokens import (
+    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
+)
 
 
 class FederationMatchdaySession(models.Model):
@@ -47952,6 +48183,11 @@ class FederationMatchdaySession(models.Model):
     close_note = fields.Text(readonly=True)
 
     def unlink(self):
+        if (
+            self.env.context.get("matchday_destructive_delete_token")
+            is MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ):
+            return super().unlink()
         raise ValidationError("Match-day sessions are retained as audit evidence.")
 
 
@@ -47974,16 +48210,20 @@ class FederationMatchdaySessionLink(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_matchday/models/operational_control.py
-SIZE: 8959
-CONTENT-LENGTH: 8959
-SHA256: a34f0e263d933d122ea314e5989ae7a3521dfe282c50ee5713f63ecaecc45848
+SIZE: 9248
+CONTENT-LENGTH: 9248
+SHA256: e6a2ef6b0222d61a655617a6f9c4345a99db12c5d2d948f17ce5c6590e35628a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from odoo import _, fields, models
 from odoo.exceptions import ValidationError
+
+from odoo.addons.sports_federation_base.destructive_tokens import (
+    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
+)
 
 
 class FederationMatchOperationalState(models.Model):
@@ -48082,6 +48322,11 @@ class FederationMatchdayDeviation(models.Model):
         raise ValidationError(_("Operational deviation evidence is immutable."))
 
     def unlink(self):
+        if (
+            self.env.context.get("matchday_destructive_delete_token")
+            is MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ):
+            return super().unlink()
         raise ValidationError(
             _("Operational deviation evidence is retained for audit.")
         )
@@ -48238,12 +48483,12 @@ class FederationMatchdayIncidentActions(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_matchday/security/ir.model.access.csv
-SIZE: 2718
-CONTENT-LENGTH: 2718
-SHA256: d3ff6894d69e67ade5d0203e8dad427c65cbb9714446c693f19add3e57339972
+SIZE: 3072
+CONTENT-LENGTH: 3072
+SHA256: bd933f9a3421411e86603824c84746e9b30f2f44958d91d848a8687e6fce3d98
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
@@ -48261,6 +48506,8 @@ access_matchday_incident_wizard_federation_manager,matchday.incident.wizard.fede
 access_matchday_deviation_wizard_federation_manager,matchday.deviation.wizard.federation.manager,model_federation_matchday_deviation_wizard,sports_federation_base.group_federation_manager,1,1,1,1
 access_matchday_court_status_wizard_federation_manager,matchday.court.status.wizard.federation.manager,model_federation_matchday_court_status_wizard,sports_federation_base.group_federation_manager,1,1,1,1
 access_matchday_restart_wizard_manager,matchday.restart.wizard.manager,model_federation_matchday_restart_wizard,sports_federation_matchday.group_matchday_manager,1,1,1,1
+access_matchday_delete_wizard_manager,matchday.delete.wizard.manager,model_federation_matchday_delete_wizard,sports_federation_matchday.group_matchday_manager,1,1,1,1
+access_matchday_delete_wizard_federation_manager,matchday.delete.wizard.federation.manager,model_federation_matchday_delete_wizard,sports_federation_base.group_federation_manager,1,1,1,1
 
 ====================================================================================================
 FILE: sports_federation_matchday/security/security.xml
@@ -48619,9 +48866,9 @@ from . import test_matchday_operator_handoff
 
 ====================================================================================================
 FILE: sports_federation_matchday/tests/test_matchday_operator_handoff.py
-SIZE: 8448
-CONTENT-LENGTH: 8448
-SHA256: ba7bf37bfe567edf707be45f2e3674c8ba9b5287347ec0d6dc5b17c4fb090ec1
+SIZE: 11946
+CONTENT-LENGTH: 11946
+SHA256: e309c779fa5b97a6096a02276a0fe2e634c3aef3a48fdb809ff4ea1986d4bea5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: modified
@@ -48674,7 +48921,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
                 "state": "finalized",
             }
         )
-        structure = cls.env["federation.competition.structure"].create(
+        cls.structure = cls.env["federation.competition.structure"].create(
             {
                 "name": "Operations Structure",
                 "edition_id": cls.edition.id,
@@ -48712,11 +48959,11 @@ class TestMatchdayOperatorHandoff(TransactionCase):
                 },
             ]
         )
-        schedule = cls.env["federation.schedule"].create(
+        cls.schedule = cls.env["federation.schedule"].create(
             {
                 "name": "Operations Schedule",
                 "edition_id": cls.edition.id,
-                "structure_id": structure.id,
+                "structure_id": cls.structure.id,
                 "matchday_id": cls.matchday.id,
                 "state": "published",
             }
@@ -48730,7 +48977,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
             .sudo()
             .create(
                 {
-                    "schedule_id": schedule.id,
+                    "schedule_id": cls.schedule.id,
                     "submitted_revision": 0,
                     "state": "pending",
                     "assignment_snapshot": snapshot,
@@ -48745,7 +48992,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
             .sudo()
             .create(
                 {
-                    "schedule_id": schedule.id,
+                    "schedule_id": cls.schedule.id,
                     "version": 1,
                     "assignment_snapshot": snapshot,
                     "snapshot_digest": digest,
@@ -48812,6 +49059,99 @@ class TestMatchdayOperatorHandoff(TransactionCase):
         with self.assertRaisesRegex(ValidationError, "publication history"):
             self.matchday._assert_restartable_from_scratch()
 
+    def test_unlink_draft_matchday_removes_mutable_schedule(self):
+        matchday = self.env["federation.matchday"].create(
+            {
+                "name": "Discardable Day",
+                "edition_id": self.edition.id,
+                "date": "2026-10-17",
+                "venue_id": self.venue.id,
+            }
+        )
+        schedule = self.env["federation.schedule"].create(
+            {
+                "name": "Discardable Schedule",
+                "edition_id": self.edition.id,
+                "structure_id": self.structure.id,
+                "matchday_id": matchday.id,
+                "state": "draft",
+            }
+        )
+        matchday_id = matchday.id
+        schedule_id = schedule.id
+
+        matchday.unlink()
+
+        self.assertFalse(self.env["federation.matchday"].browse(matchday_id).exists())
+        self.assertFalse(self.env["federation.schedule"].browse(schedule_id).exists())
+
+    def test_unlink_published_matchday_preserves_schedule_history(self):
+        with self.assertRaisesRegex(ValidationError, "publication history"):
+            self.matchday.unlink()
+        self.assertTrue(self.matchday.exists())
+        self.assertTrue(
+            self.env["federation.schedule"].search_count(
+                [("matchday_id", "=", self.matchday.id)]
+            )
+        )
+
+    def test_closed_delete_action_opens_before_reason_is_entered(self):
+        self.matchday.sudo().write({"state": "closed"})
+
+        action = self.matchday.action_open_closed_delete()
+        wizard = self.env["federation.matchday.delete.wizard"].browse(action["res_id"])
+
+        self.assertTrue(wizard.exists())
+        self.assertFalse(
+            self.env["federation.matchday.delete.wizard"].fields_get()["reason"][
+                "required"
+            ]
+        )
+        with self.assertRaisesRegex(ValidationError, "Enter a reason"):
+            wizard.action_delete()
+
+    def test_closed_matchday_delete_wizard_removes_impact_data(self):
+        session = (
+            self.env["federation.matchday.session"]
+            .sudo()
+            .create(
+                {
+                    "matchday_id": self.matchday.id,
+                    "publication_id": self.publication.id,
+                    "publication_digest": self.publication.snapshot_digest,
+                    "state": "closed",
+                    "closed_at": "2026-10-03 18:00:00",
+                    "closed_by_id": self.env.user.id,
+                    "close_note": "Test cleanup",
+                }
+            )
+        )
+        self.matchday.sudo().write({"state": "closed"})
+        wizard = self.env["federation.matchday.delete.wizard"].create(
+            {
+                "matchday_id": self.matchday.id,
+                "reason": "Remove test match day",
+            }
+        )
+
+        self.assertIn("schedule(s)", wizard.impact_summary)
+        wizard.action_delete()
+
+        self.assertFalse(self.matchday.exists())
+        self.assertFalse(
+            self.env["federation.schedule"].browse(self.schedule.id).exists()
+        )
+        self.assertFalse(
+            self.env["federation.schedule.publication"]
+            .browse(self.publication.id)
+            .exists()
+        )
+        self.assertFalse(session.exists())
+        self.assertTrue(self.match.exists())
+        self.assertFalse(self.match.schedule_publication_id)
+        self.assertFalse(self.match.published_slot_id)
+        self.assertFalse(self.match.operational_slot_id)
+
     def test_restart_from_scratch_creates_clean_replacement(self):
         original = self.env["federation.matchday"].create(
             {
@@ -48847,12 +49187,12 @@ class TestMatchdayOperatorHandoff(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_matchday/views/matchday_views.xml
-SIZE: 6193
-CONTENT-LENGTH: 6193
-SHA256: deb8d95284c2f6f91d1c525bc9ecdac3c66e568ff99d8b3426e1477bafb52966
+SIZE: 6418
+CONTENT-LENGTH: 6418
+SHA256: 9408fa150c8f7d1fd2b0711c6d1053b446412b306d5bc0c48407a4cccb39ff67
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 <odoo>
@@ -48869,6 +49209,7 @@ GIT-STATE: tracked
     <field name="arch" type="xml">
       <xpath expr="//header" position="inside">
         <button name="action_open_restart_from_scratch" type="object" string="Restart from Scratch" class="btn-secondary" invisible="state in ('open', 'closed')"/>
+        <button name="action_open_closed_delete" type="object" string="Delete Match Day" class="btn-danger" invisible="state != 'closed'" confirm="Open the impact summary before permanently deleting this closed match day?"/>
         <button name="action_open_matchday_operations" type="object" string="Open Match Day" class="btn-primary" invisible="readiness_state != 'ready'" confirm="Open live operations against the current immutable publication?"/>
         <button name="action_open_court_status_wizard" type="object" string="Update Court" invisible="state != 'open'"/>
         <button name="action_open_incident_wizard" type="object" string="Report Incident" invisible="state != 'open'"/>
@@ -48929,17 +49270,125 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_matchday/wizards/__init__.py
-SIZE: 80
-CONTENT-LENGTH: 80
-SHA256: b84df7b71c60945e17fc82b6c857ea3ef639d1f756e07d18b7168b0f06aeae6d
+SIZE: 117
+CONTENT-LENGTH: 117
+SHA256: 09c8d5da170530a4ff5adf1c4b5dd350193ca6b165250efd6b1155a850651244
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from . import matchday_operation_wizards
 
 from . import matchday_restart_wizard
+from . import matchday_delete_wizard
+
+====================================================================================================
+FILE: sports_federation_matchday/wizards/matchday_delete_wizard.py
+SIZE: 2606
+CONTENT-LENGTH: 2606
+SHA256: d5153f4cd12ecda83284f3c7f9b94e4789d7e0fa8a7b5e9bb04e352b8c1c86bc
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: untracked
+====================================================================================================
+
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
+
+from odoo.addons.sports_federation_base.destructive_tokens import (
+    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
+)
+
+
+class FederationMatchdayDeleteWizard(models.TransientModel):
+    _name = "federation.matchday.delete.wizard"
+    _description = "Delete Closed Match Day"
+
+    matchday_id = fields.Many2one(
+        "federation.matchday", required=True, readonly=True, ondelete="cascade"
+    )
+    impact_summary = fields.Text(compute="_compute_impact_summary")
+    reason = fields.Text(string="Reason")
+
+    @api.depends("matchday_id")
+    def _compute_impact_summary(self):
+        for wizard in self:
+            if not wizard.matchday_id:
+                wizard.impact_summary = False
+                continue
+            impact = wizard.matchday_id._closed_delete_impact()
+            wizard.impact_summary = _(
+                "This will permanently delete the match day and its working "
+                "schedule data: %(schedules)s schedule(s), %(publications)s "
+                "publication(s), %(sessions)s execution session(s), and "
+                "%(deviations)s operational deviation(s). %(matches)s match(es) "
+                "will be detached from the deleted publication and calendar "
+                "slots, but the match records will remain in the competition.",
+                schedules=impact["schedule_count"],
+                publications=impact["publication_count"],
+                sessions=impact["session_count"],
+                deviations=impact["deviation_count"],
+                matches=impact["match_count"],
+            )
+
+    def action_delete(self):
+        self.ensure_one()
+        reason = (self.reason or "").strip()
+        if not reason:
+            raise ValidationError(
+                _("Enter a reason before permanently deleting the match day.")
+            )
+        matchday = self.matchday_id.exists()
+        if not matchday:
+            raise ValidationError(_("The match day no longer exists."))
+        if matchday.state != "closed":
+            raise ValidationError(
+                _("This action is only available for closed match days.")
+            )
+        self.env["federation.competition.role.assignment"].assert_role(
+            matchday.edition_id, "matchday_manager", "competition_director"
+        )
+        matchday.with_context(
+            matchday_destructive_delete_token=MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
+            matchday_delete_reason=reason,
+        ).unlink()
+        return {
+            "type": "ir.actions.act_window_close",
+        }
+
+====================================================================================================
+FILE: sports_federation_matchday/wizards/matchday_delete_wizard_views.xml
+SIZE: 991
+CONTENT-LENGTH: 991
+SHA256: b4fbe83a44a4003268525e8ca3af917f0313e7b94b7339ba4d04b5f912dca368
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: untracked
+====================================================================================================
+
+<odoo>
+  <record id="matchday_delete_wizard_form" model="ir.ui.view">
+    <field name="name">federation.matchday.delete.wizard.form</field>
+    <field name="model">federation.matchday.delete.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Delete Closed Match Day">
+        <div class="alert alert-danger" role="alert">
+          <strong>This is permanent.</strong>
+          <field name="impact_summary" nolabel="1" readonly="1"/>
+        </div>
+        <group>
+          <field name="matchday_id"/>
+          <field name="reason" placeholder="Explain why this test or match day is being removed..."/>
+        </group>
+        <footer>
+          <button name="action_delete" type="object" string="Delete Match Day" class="btn-danger" confirm="This permanently deletes the closed match day and its execution history. Continue?"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>
 
 ====================================================================================================
 FILE: sports_federation_matchday/wizards/matchday_operation_wizard_views.xml
@@ -49103,9 +49552,9 @@ class FederationMatchdayCourtStatusWizard(models.TransientModel):
 
 ====================================================================================================
 FILE: sports_federation_matchday/wizards/matchday_restart_wizard.py
-SIZE: 2062
-CONTENT-LENGTH: 2062
-SHA256: 8ca3a13eadf26881c7591e4e82bb5f5880f8b8a3cc9483c5805eab2993ad97f0
+SIZE: 1990
+CONTENT-LENGTH: 1990
+SHA256: 47c442ac3aa094785e858b6ce6a337b7e2391319c76612ba7d0944dd520427fd
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -49140,6 +49589,7 @@ class FederationMatchdayRestartWizard(models.TransientModel):
         if not matchday:
             raise ValidationError(_("The match day no longer exists."))
         matchday._assert_restartable_from_scratch()
+        reason = self.reason
 
         replacement = self.env["federation.matchday"].create(
             {
@@ -49151,15 +49601,12 @@ class FederationMatchdayRestartWizard(models.TransientModel):
                 "default_slot_duration_minutes": matchday.default_slot_duration_minutes,
             }
         )
-        schedules = self.env["federation.schedule"].search(
-            [("matchday_id", "=", matchday.id)]
-        )
-        schedules.unlink()
+        matchday._delete_restartable_schedules()
         matchday.unlink()
         replacement.message_post(
             body=_(
                 "Planning restarted from scratch. Reason: %(reason)s",
-                reason=self.reason,
+                reason=reason,
             )
         )
         return {
@@ -77221,7 +77668,7 @@ CONTENT-LENGTH: 4300
 SHA256: edca9cd79549491f93940eca503785e878966616ce9d7c93bdc42e5ce6a420c9
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from collections import defaultdict
@@ -79508,7 +79955,7 @@ CONTENT-LENGTH: 7343
 SHA256: f01769b00ce6c4f4a23a66a38813d2b19223a625cd927ed5c8b7f94100ce918a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from pathlib import Path
@@ -101475,12 +101922,12 @@ from . import wizards
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/__manifest__.py
-SIZE: 571
-CONTENT-LENGTH: 571
-SHA256: 4c6770988266fbf5de0a8915bf9b5aae2be83df621f137bc6ede438d4f45d04c
+SIZE: 597
+CONTENT-LENGTH: 597
+SHA256: e5c4d743a1d813553a4ec9bdd2f1378de5e95b1d9c7b0cd067f7a2020e1737f3
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 {
@@ -101490,7 +101937,7 @@ GIT-STATE: tracked
     "summary": "Independent review, approval and immutable publication snapshots",
     "author": "Sports Federation",
     "license": "LGPL-3",
-    "depends": ["sports_federation_scheduling"],
+    "depends": ["sports_federation_base", "sports_federation_scheduling"],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
@@ -101610,12 +102057,12 @@ class FederationSchedulePublication(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/models/publication_integrity.py
-SIZE: 5373
-CONTENT-LENGTH: 5373
-SHA256: 1c888c258df2ba4dd49db1a78f83c2be8145e0f7bd66c88785a63bd9bdc2e6f2
+SIZE: 5840
+CONTENT-LENGTH: 5840
+SHA256: 233f41a49ec7a773c470739f77f7a148d3f63bdf0c4d58ff99948c09ddaaf077
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import hashlib
@@ -101623,6 +102070,10 @@ import json
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+
+from odoo.addons.sports_federation_base.destructive_tokens import (
+    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
+)
 
 _REVIEW_DECISION_TOKEN = object()
 _REVIEW_WITHDRAWAL_TOKEN = object()
@@ -101701,6 +102152,11 @@ class FederationScheduleReviewIntegrity(models.Model):
         )
 
     def unlink(self):
+        if (
+            self.env.context.get("matchday_destructive_delete_token")
+            is MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ):
+            return super().unlink()
         raise ValidationError("Schedule reviews are retained as audit evidence.")
 
 
@@ -101710,7 +102166,7 @@ class FederationSchedulePublicationIntegrity(models.Model):
     snapshot_digest = fields.Char(required=True, readonly=True, index=True)
     source_revision = fields.Integer(required=True, readonly=True)
     review_id = fields.Many2one(
-        "federation.schedule.review", required=True, readonly=True, ondelete="restrict"
+        "federation.schedule.review", required=True, readonly=True, ondelete="cascade"
     )
 
     def init(self):
@@ -101734,6 +102190,11 @@ class FederationSchedulePublicationIntegrity(models.Model):
         return super().write(vals)
 
     def unlink(self):
+        if (
+            self.env.context.get("matchday_destructive_delete_token")
+            is MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ):
+            return super().unlink()
         raise ValidationError("Published schedules are retained as audit evidence.")
 
 
@@ -103284,12 +103745,12 @@ from . import wizards
 
 ====================================================================================================
 FILE: sports_federation_scheduling/__manifest__.py
-SIZE: 664
-CONTENT-LENGTH: 664
-SHA256: fa3b1f4584280ab609d0ede71560239a22425cc463539cf3048554deaaecac68
+SIZE: 690
+CONTENT-LENGTH: 690
+SHA256: c54df00e7637a9f8bd95c2fc8b85c718b01ca45a0349631ac3b2ae4bbe1fe974
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 {
@@ -103299,7 +103760,7 @@ GIT-STATE: tracked
     "summary": "Working schedules, assignments, validation and deterministic proposals",
     "author": "Sports Federation",
     "license": "LGPL-3",
-    "depends": ["sports_federation_calendar"],
+    "depends": ["sports_federation_base", "sports_federation_calendar"],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
@@ -103675,16 +104136,20 @@ class FederationScheduleChange(models.Model):
 
 ====================================================================================================
 FILE: sports_federation_scheduling/models/schedule_integrity.py
-SIZE: 4198
-CONTENT-LENGTH: 4198
-SHA256: 053adc8088d367265677c9f3a85b44d89f87528beb476d6bac57d61a067ab93b
+SIZE: 4487
+CONTENT-LENGTH: 4487
+SHA256: a6517763a1965623a68b3b4aaa8b22d7b908a95d4d1f438eb32ad9673ad87811
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from odoo import _, api, models
 from odoo.exceptions import ValidationError
+
+from odoo.addons.sports_federation_base.destructive_tokens import (
+    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
+)
 
 
 class FederationScheduleIntegrity(models.Model):
@@ -103778,6 +104243,11 @@ class FederationScheduleIntegrity(models.Model):
         return super().write(vals)
 
     def unlink(self):
+        if (
+            self.env.context.get("matchday_destructive_delete_token")
+            is MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ):
+            return super().unlink()
         self.assert_mutable()
         return super().unlink()
 
@@ -104611,7 +105081,7 @@ CONTENT-LENGTH: 3655
 SHA256: bd92515ce2481c695844a98a98d9d2c9dea8092441375ee283be4c2680d15f3f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from datetime import datetime

@@ -104,7 +104,7 @@ jobs:
       - name: Verify source collector completeness
         run: python ci/check_source_collector_contract.py
 
-      - name: Check P0-P3 release-focus qualification
+      - name: Check release-focus qualification
         run: python ci/check_release_focus_contract.py
 
       - name: Verify addon manifests, dependencies, imports and ACLs

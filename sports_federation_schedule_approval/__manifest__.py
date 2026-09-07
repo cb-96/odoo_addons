@@ -5,7 +5,7 @@
     "summary": "Independent review, approval and immutable publication snapshots",
     "author": "Sports Federation",
     "license": "LGPL-3",
-    "depends": ["sports_federation_scheduling"],
+    "depends": ["sports_federation_base", "sports_federation_scheduling"],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",

@@ -1,0 +1,22 @@
+<odoo>
+  <record id="matchday_delete_wizard_form" model="ir.ui.view">
+    <field name="name">federation.matchday.delete.wizard.form</field>
+    <field name="model">federation.matchday.delete.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Delete Closed Match Day">
+        <div class="alert alert-danger" role="alert">
+          <strong>This is permanent.</strong>
+          <field name="impact_summary" nolabel="1" readonly="1"/>
+        </div>
+        <group>
+          <field name="matchday_id"/>
+          <field name="reason" placeholder="Explain why this test or match day is being removed..."/>
+        </group>
+        <footer>
+          <button name="action_delete" type="object" string="Delete Match Day" class="btn-danger" confirm="This permanently deletes the closed match day and its execution history. Continue?"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

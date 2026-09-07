@@ -33,7 +33,7 @@ publication. Submission creates its pending review atomically when the approval
 addon is installed; there is no operator-visible intermediate state that
 requires a separate "start review" action.
 
-## Phases 5.1.1 to 5.3: publication and live operations
+## Publication and live operations
 
 Schedule review decisions are command-only: ACLs are read-only and the review
 model rejects direct decision-field writes. Live publications are scoped and

@@ -83,7 +83,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
                 },
             ]
         )
-        schedule = cls.env["federation.schedule"].create(
+        cls.schedule = cls.env["federation.schedule"].create(
             {
                 "name": "Operations Schedule",
                 "edition_id": cls.edition.id,
@@ -101,7 +101,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
             .sudo()
             .create(
                 {
-                    "schedule_id": schedule.id,
+                    "schedule_id": cls.schedule.id,
                     "submitted_revision": 0,
                     "state": "pending",
                     "assignment_snapshot": snapshot,
@@ -116,7 +116,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
             .sudo()
             .create(
                 {
-                    "schedule_id": schedule.id,
+                    "schedule_id": cls.schedule.id,
                     "version": 1,
                     "assignment_snapshot": snapshot,
                     "snapshot_digest": digest,
@@ -218,6 +218,63 @@ class TestMatchdayOperatorHandoff(TransactionCase):
                 [("matchday_id", "=", self.matchday.id)]
             )
         )
+
+    def test_closed_delete_action_opens_before_reason_is_entered(self):
+        self.matchday.sudo().write({"state": "closed"})
+
+        action = self.matchday.action_open_closed_delete()
+        wizard = self.env["federation.matchday.delete.wizard"].browse(action["res_id"])
+
+        self.assertTrue(wizard.exists())
+        self.assertFalse(
+            self.env["federation.matchday.delete.wizard"].fields_get()["reason"][
+                "required"
+            ]
+        )
+        with self.assertRaisesRegex(ValidationError, "Enter a reason"):
+            wizard.action_delete()
+
+    def test_closed_matchday_delete_wizard_removes_impact_data(self):
+        session = (
+            self.env["federation.matchday.session"]
+            .sudo()
+            .create(
+                {
+                    "matchday_id": self.matchday.id,
+                    "publication_id": self.publication.id,
+                    "publication_digest": self.publication.snapshot_digest,
+                    "state": "closed",
+                    "closed_at": "2026-10-03 18:00:00",
+                    "closed_by_id": self.env.user.id,
+                    "close_note": "Test cleanup",
+                }
+            )
+        )
+        self.matchday.sudo().write({"state": "closed"})
+        wizard = self.env["federation.matchday.delete.wizard"].create(
+            {
+                "matchday_id": self.matchday.id,
+                "reason": "Remove test match day",
+            }
+        )
+
+        self.assertIn("schedule(s)", wizard.impact_summary)
+        wizard.action_delete()
+
+        self.assertFalse(self.matchday.exists())
+        self.assertFalse(
+            self.env["federation.schedule"].browse(self.schedule.id).exists()
+        )
+        self.assertFalse(
+            self.env["federation.schedule.publication"]
+            .browse(self.publication.id)
+            .exists()
+        )
+        self.assertFalse(session.exists())
+        self.assertTrue(self.match.exists())
+        self.assertFalse(self.match.schedule_publication_id)
+        self.assertFalse(self.match.published_slot_id)
+        self.assertFalse(self.match.operational_slot_id)
 
     def test_restart_from_scratch_creates_clean_replacement(self):
         original = self.env["federation.matchday"].create(

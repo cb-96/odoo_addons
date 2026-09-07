@@ -8,6 +8,9 @@ evidence_dir="${RELEASE_BASELINE_EVIDENCE_DIR:-$repo_root/artifacts/release/base
 database="${DB_NAME:-sf_rc_validation}"
 mkdir -p "$evidence_dir"
 
+python3 ci/capture_codebase_inventory.py \
+  --output "$evidence_dir/codebase-inventory.json"
+
 record_lane() {
   local lane="$1"
   local status="$2"

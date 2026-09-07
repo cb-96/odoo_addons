@@ -5,7 +5,7 @@
     "summary": "Working schedules, assignments, validation and deterministic proposals",
     "author": "Sports Federation",
     "license": "LGPL-3",
-    "depends": ["sports_federation_calendar"],
+    "depends": ["sports_federation_base", "sports_federation_calendar"],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",

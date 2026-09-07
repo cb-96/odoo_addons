@@ -1,6 +1,10 @@
 from odoo import _, api, models
 from odoo.exceptions import ValidationError
 
+from odoo.addons.sports_federation_base.destructive_tokens import (
+    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
+)
+
 
 class FederationScheduleIntegrity(models.Model):
     _inherit = "federation.schedule"
@@ -93,6 +97,11 @@ class FederationScheduleIntegrity(models.Model):
         return super().write(vals)
 
     def unlink(self):
+        if (
+            self.env.context.get("matchday_destructive_delete_token")
+            is MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+        ):
+            return super().unlink()
         self.assert_mutable()
         return super().unlink()
 

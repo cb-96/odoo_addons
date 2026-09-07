@@ -12,6 +12,7 @@
     <field name="arch" type="xml">
       <xpath expr="//header" position="inside">
         <button name="action_open_restart_from_scratch" type="object" string="Restart from Scratch" class="btn-secondary" invisible="state in ('open', 'closed')"/>
+        <button name="action_open_closed_delete" type="object" string="Delete Match Day" class="btn-danger" invisible="state != 'closed'" confirm="Open the impact summary before permanently deleting this closed match day?"/>
         <button name="action_open_matchday_operations" type="object" string="Open Match Day" class="btn-primary" invisible="readiness_state != 'ready'" confirm="Open live operations against the current immutable publication?"/>
         <button name="action_open_court_status_wizard" type="object" string="Update Court" invisible="state != 'open'"/>
         <button name="action_open_incident_wizard" type="object" string="Report Incident" invisible="state != 'open'"/>

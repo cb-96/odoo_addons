@@ -57,7 +57,7 @@ Import contracts:
 
 ## Public Contracts
 
-## Tournament Feed
+## Competition Feed
 
 - Canonical route: `/api/v1/competitions/<edition-slug>`
 - Compatibility routes:
@@ -74,7 +74,7 @@ Import contracts:
   - additive nested fields are allowed in v1 when they do not alter existing
     semantics
 
-## Tournament Schedule Calendar
+## Competition Schedule Calendar
 
 - Canonical route: `/competitions/<edition-slug>/divisions/<division-slug>/schedule.ics`
 - Compatibility route: `/competitions/<edition-slug>/divisions/<division-slug>/schedule.ics`
@@ -292,9 +292,8 @@ passes without a removal decision, extend it here with the reason.
 - Slug-based public routes are canonical.
 - Numeric public routes remain compatibility shims and should not be used for
   new integrations.
-- Legacy competition-named public feed routes remain compatibility aliases for
-  the tournament feed and are considered deprecated in favor of the canonical
-  tournament path.
+- The `/api/v1/competitions` routes are canonical. Any numeric-ID aliases remain
+  deprecated compatibility surfaces and must not be used for new integrations.
 - Older CSV shapes should remain available for one supported release cycle once
   a replacement contract is published.
 - Removals must be announced by updating this file, relevant READMEs, and the

@@ -33,6 +33,13 @@ restrictive schedule foreign key cannot leave an unusable planning record.
 Match days with review or publication history, or with live operations, remain
 protected and must use schedule revision or operational correction workflows.
 
+For test cleanup or an explicitly authorized destructive correction, a closed
+match day exposes **Delete Match Day** to federation and match-day managers. The
+wizard reports the affected schedule, publication, session, deviation, and
+match counts before requiring a reason and showing a final confirmation popup.
+It removes the match-day execution and publication evidence, while retaining
+competition match records detached from the deleted publication and slots.
+
 ## Operational Control Layer
 
 The portal action-items page (`/my/action-items`) is a compact control layer
