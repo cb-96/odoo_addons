@@ -28,3 +28,23 @@ Portal writes use explicit, model-owned privilege boundaries:
 - Cross-club and team-scoped access can be regression-tested consistently.
 - New portal features must reuse the privilege service or add a reviewed model-owned equivalent.
 - Raw elevated controller writes are treated as security defects.
+
+
+## Privileged mutation enforcement
+
+Controllers may perform elevated reads only under the documented route and
+ownership rules. They must not invoke `sudo().create()`, `sudo().write()`,
+`sudo().unlink()`, or an elevated `action_*()` method directly. Mutations cross
+an owning command service or `federation.portal.privilege`, which repeats the
+scope assertion and records the audit event.
+
+`ci/check_privileged_mutation_boundaries.py` enforces this repository-wide for
+federation controllers. `ci/check_portal_sudo_guard.py` separately maintains the
+reviewed inventory of portal elevated reads.
+
+Destructive cross-addon deletion uses a process-local object identity and the
+shared context-key constant from
+`sports_federation_base.destructive_tokens`. Only the explicitly reviewed
+match-day, scheduling, and publication integrity modules may import that token.
+`ci/check_destructive_token_contract.py` rejects new consumers and raw copies of
+the context-key string.

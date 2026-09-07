@@ -148,8 +148,13 @@ class FederationClubRefereeDutyPortal(FederationPortalBase):
             )
 
         try:
-            # noguard: duty ownership was asserted before validating the nomination
-            duty.with_user(request.env.user).sudo().action_nominate(player_id)
+            request.env["federation.portal.privilege"].portal_call(
+                duty,
+                "action_nominate",
+                player_id,
+                scope_domain=self._duty_portal_domain(user=request.env.user),
+                user=request.env.user,
+            )
         except (ValidationError, AccessError) as exc:
             return self._redirect_with_query(
                 f"/my/referee-duties/{duty_id}",

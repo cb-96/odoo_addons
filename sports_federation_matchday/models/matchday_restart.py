@@ -2,6 +2,7 @@ from odoo import _, models
 from odoo.exceptions import ValidationError
 
 from odoo.addons.sports_federation_base.destructive_tokens import (
+    MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY,
     MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
 )
 
@@ -122,7 +123,7 @@ class FederationMatchdayRestart(models.Model):
         if self.state != "closed":
             raise ValidationError(_("Only closed match days can use this action."))
         if (
-            self.env.context.get("matchday_destructive_delete_token")
+            self.env.context.get(MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY)
             is not MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
         ):
             raise ValidationError(
@@ -174,16 +175,28 @@ class FederationMatchdayRestart(models.Model):
             }
         )
         self.env["federation.matchday.deviation"].sudo().with_context(
-            matchday_destructive_delete_token=MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+            **{
+                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY:
+                    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+            }
         ).search([("matchday_id", "=", self.id)]).unlink()
         self.env["federation.matchday.session"].sudo().with_context(
-            matchday_destructive_delete_token=MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+            **{
+                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY:
+                    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+            }
         ).search([("matchday_id", "=", self.id)]).unlink()
         reviews.with_context(
-            matchday_destructive_delete_token=MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+            **{
+                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY:
+                    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+            }
         ).unlink()
         publications.with_context(
-            matchday_destructive_delete_token=MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+            **{
+                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY:
+                    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+            }
         ).unlink()
 
         related_schedules = Schedule.search(
@@ -197,7 +210,10 @@ class FederationMatchdayRestart(models.Model):
             {"supersedes_id": False, "superseded_by_id": False}
         )
         schedules.with_context(
-            matchday_destructive_delete_token=MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+            **{
+                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY:
+                    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+            }
         ).unlink()
 
     def unlink(self):

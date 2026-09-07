@@ -38,3 +38,11 @@ Settings include the optional external attachment scanner command and timeout. P
 ## Tests
 
 The module includes attachment-policy, scanner, route-inventory, and shared infrastructure tests. Run the repository strict lint and the base module test suite after changing shared contracts.
+
+
+## Audit evidence protection
+
+Audit evidence is append-only operational history. Normal system and federation
+manager ACLs do not grant unlink access. Controllers must route elevated
+mutations through an owning command or the portal privilege boundary; static
+release checks reject direct controller `sudo()` mutations.

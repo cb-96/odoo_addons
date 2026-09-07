@@ -31,3 +31,11 @@ Coverage includes lifecycle transitions, immutability, duty separation, contest/
 ## Removed document
 
 `ROADMAP_RC.md` is deleted. Approved-result immutability is an implemented invariant and belongs in this README and its regression tests, not a permanent mini-roadmap.
+
+
+## Audit evidence protection
+
+Audit evidence is append-only operational history. Normal system and federation
+manager ACLs do not grant unlink access. Controllers must route elevated
+mutations through an owning command or the portal privilege boundary; static
+release checks reject direct controller `sudo()` mutations.

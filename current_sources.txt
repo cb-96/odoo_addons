@@ -436,7 +436,7 @@ CONTENT-LENGTH: 2566
 SHA256: 40a53706ec1ae5ad53236c1cf20aa5d98f72f6da9baf1773cb6311965f777f5f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 name: Release candidate validation
@@ -1947,7 +1947,7 @@ CONTENT-LENGTH: 7609
 SHA256: 13395c31dd836725795b3ac26ccdb0f3e74e0067df50151b08ae031e5d14fa02
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # Sports Federation — Odoo Addons (Odoo 19)
@@ -2141,7 +2141,7 @@ CONTENT-LENGTH: 25274
 SHA256: 401031e04ad3ef65887032771fa91e703ee3e0caa8adb99fbc53209907760fce
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # Release Runbook
@@ -3795,7 +3795,7 @@ CONTENT-LENGTH: 17049
 SHA256: 2c23ac295569262ec89ea8c406f5936f14feb4c75b19663f63f6c0eeba6c4747
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # Testing Guide
@@ -8304,7 +8304,7 @@ CONTENT-LENGTH: 530191
 SHA256: 81410841e8fac980878436f1a575e5278753b5e1b83ec3dcbad14195ac6e6bc0
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -24010,7 +24010,7 @@ CONTENT-LENGTH: 1108
 SHA256: d24cc2c9cc65f910105f788c9b018846f84e3842e3761dbecf58fb2926a34dfb
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -24056,7 +24056,7 @@ CONTENT-LENGTH: 1090
 SHA256: af32833a8d22abd3f8851b683056bcd37f06dd75ff06518b881893e985362d2e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -24102,7 +24102,7 @@ CONTENT-LENGTH: 1093
 SHA256: a7c0b0c53fd89598f7f88d0cebb223e9a278a4f129997c3a838f79efaa2f7d4c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -24148,7 +24148,7 @@ CONTENT-LENGTH: 1090
 SHA256: 27ccf25b375990a43fbe83939c6a189c33f0886affd2f5365defd5181e0065b9
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -24194,7 +24194,7 @@ CONTENT-LENGTH: 1112
 SHA256: 03ad2f033c0769517be611fba967c4cb9d78ea84ac1b86ef3fac9641b4d68a8c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -24240,7 +24240,7 @@ CONTENT-LENGTH: 1111
 SHA256: 6ce32b4a64179af6bf99be53e652402bde39a56a5c82e46ce9bc7778bfc1da1a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -24286,7 +24286,7 @@ CONTENT-LENGTH: 1096
 SHA256: 2a36959290f9bea33e51739e08638d42d8f439c9b539d167919e1060d5c08444
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -24332,7 +24332,7 @@ CONTENT-LENGTH: 1114
 SHA256: bef7d8224568b39512df1c00d32ad1fb7d734339b5379661fd63560cb872dff1
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -24378,7 +24378,7 @@ CONTENT-LENGTH: 1096
 SHA256: b3e381cf089c9ba4cc1b8b48b6c6108350c8f81bd6ea3d01d1787c9b75c93bc2
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -24424,7 +24424,7 @@ CONTENT-LENGTH: 1096
 SHA256: bd2863642d5bb91ec3f38b8282b9b58e66c4d838d613b4416972185ce2e93114
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -24470,7 +24470,7 @@ CONTENT-LENGTH: 1096
 SHA256: cce14647aafaf5597b576977e70bdc0c591d5db26137ae45a189e07a31660926
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -24516,7 +24516,7 @@ CONTENT-LENGTH: 478
 SHA256: 506677923acb03a6b322220e586bdc12911ed741b8fc8767730df0244e468bfa
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 [Release baseline] Running RC lane: acceptance
@@ -24533,7 +24533,7 @@ CONTENT-LENGTH: 473
 SHA256: 6685868b5769257d947f093c2920ec936ad48ed91e1a63e5ab73a1ce6d17707d
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 [Release baseline] Running RC lane: core
@@ -24550,7 +24550,7 @@ CONTENT-LENGTH: 473
 SHA256: d57ea229df776320732d542ae9154ed4294ffa405b9857832aa1cf278dd8a7d3
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 [Release baseline] Running RC lane: focus
@@ -24567,7 +24567,7 @@ CONTENT-LENGTH: 476
 SHA256: 6bd4a224309ba9ab12f45f6d5de8ef1689434fc6f4e39fa354ecacd2c988405e
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 [Release baseline] Running RC lane: full
@@ -24584,7 +24584,7 @@ CONTENT-LENGTH: 40814
 SHA256: 26ed2f670ec09239e8de8e565aca6d983057d0188b48691b571fe1b37d8bcc2b
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 [Release baseline] Running RC lane: install
@@ -24849,7 +24849,7 @@ CONTENT-LENGTH: 543
 SHA256: 0c6c9c16d31519af4cdea85679675ea125953e0f0372f81ac3980d012dd61f0f
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 [Release baseline] Running RC lane: performance
@@ -24867,7 +24867,7 @@ CONTENT-LENGTH: 475
 SHA256: 45d1184fa1d7646703e2bab4379f7b8de3a8d3e4fc853499247256422777c809
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 [Release baseline] Running RC lane: portal
@@ -24884,7 +24884,7 @@ CONTENT-LENGTH: 553
 SHA256: 275da6e5a48ea0c30034113758a8250c400daa179f728b667994584aa37891ac
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 [Release baseline] Running RC lane: preflight
@@ -24912,7 +24912,7 @@ CONTENT-LENGTH: 474
 SHA256: b37a3b39527832d8ae778e8b2409f33123f0564b31ce90f7428eeaa94bcc6622
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 [Release baseline] Running RC lane: public
@@ -24929,7 +24929,7 @@ CONTENT-LENGTH: 1496
 SHA256: 4bf4886c9d1b59334e37b04024775e282256e87bd2aeda47c8259058f3c2c653
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 [Release baseline] Running RC lane: static
@@ -24981,7 +24981,7 @@ CONTENT-LENGTH: 1374325
 SHA256: dd5c134457ac9722805ed1a54ba717dcbdae3c02bc6cd481e5ecc6ecdc9f79d4
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
  Container sf_rc_baseline_1788811778_60780-ci-db-1  Running
@@ -34433,7 +34433,7 @@ CONTENT-LENGTH: 404
 SHA256: 468c33ea697a68b6afbefbe3eae00be82f720ecde30b37b4c3797075709ab944
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 [Release baseline] Running RC lane: upgrade
@@ -34451,7 +34451,7 @@ CONTENT-LENGTH: 14371
 SHA256: 931c3cdf1099f1978e9560b0c7124ff3a06199615d1d33109c7fef9584765f17
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -35321,7 +35321,7 @@ CONTENT-LENGTH: 4860
 SHA256: 9d1cebeddbedc0d755b626082e830e7addd58f81f13f461c3d1ad041b08c2c4b
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -36048,7 +36048,7 @@ CONTENT-LENGTH: 5022
 SHA256: 1179dc8dae170373138f1e4e734fe5f26d6d6923b78d07891d06d90de4632e29
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -36319,7 +36319,7 @@ CONTENT-LENGTH: 1276
 SHA256: e52c1e4cf34c0b8fb954084fbdc8d9c612638782b5bf2b103f16606692773771
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -36858,7 +36858,7 @@ CONTENT-LENGTH: 1674
 SHA256: 04321d5518a01218795b3d931076b64762e35a573cda33b83d6f0a254ecd0602
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -38534,7 +38534,7 @@ CONTENT-LENGTH: 3245
 SHA256: 821521926550ecb54ee57d3bbff07a31407e2b8b6bd8232b8cc8fc4926ca7045
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -39026,7 +39026,7 @@ CONTENT-LENGTH: 1655
 SHA256: 04ece6add095c120cd717cc25337f5b847a8cb70c4297f2c079f56cafeace920
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3
@@ -42886,7 +42886,7 @@ CONTENT-LENGTH: 8844
 SHA256: 1053fd8f828416610a920c3d2be382ecf0ef629101291854b6107994f9199e6a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # Delivery Roadmap
@@ -43508,7 +43508,7 @@ CONTENT-LENGTH: 3383
 SHA256: e702b264898113475799903860280f506a0a4923fe5a093aed3767c079ed1753
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # Repository Baseline
@@ -44360,7 +44360,7 @@ CONTENT-LENGTH: 289915
 SHA256: 432327fa63be1ae1795bded0e4c4a2d883b33ae63b3b567b821db1b813e70cbb
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
  Container sf_rc_baseline_1788811778_60780-ci-db-1  Running
@@ -46190,7 +46190,7 @@ CONTENT-LENGTH: 6518
 SHA256: 427310e67466ef5d081ae4c4e8c6ef5665f970c94cbcc568643c07a7bea2a052
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env bash
@@ -46383,7 +46383,7 @@ CONTENT-LENGTH: 10595
 SHA256: b86e2e6c04d212f9c8843518c10ab99db6ecbf206dbf8b10fbd0d85aa54fa7e7
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env bash
@@ -46662,7 +46662,7 @@ CONTENT-LENGTH: 4107
 SHA256: 0dda877abda19c34dacb589e52681a328b313ad954dfc040a8856deb280cdfb5
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env bash
@@ -46845,7 +46845,7 @@ CONTENT-LENGTH: 29880
 SHA256: b114df8c5e1ced3d5db4a08f8bdb7eb72de837e927c050f5186830a55b6732ba
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 #!/usr/bin/env python3

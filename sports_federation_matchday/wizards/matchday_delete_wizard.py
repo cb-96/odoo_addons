@@ -2,6 +2,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 from odoo.addons.sports_federation_base.destructive_tokens import (
+    MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY,
     MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
 )
 
@@ -55,7 +56,10 @@ class FederationMatchdayDeleteWizard(models.TransientModel):
             matchday.edition_id, "matchday_manager", "competition_director"
         )
         matchday.with_context(
-            matchday_destructive_delete_token=MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
+            **{
+                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY:
+                    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+            },
             matchday_delete_reason=reason,
         ).unlink()
         return {

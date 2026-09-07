@@ -5,6 +5,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 from odoo.addons.sports_federation_base.destructive_tokens import (
+    MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY,
     MATCHDAY_DESTRUCTIVE_DELETE_TOKEN,
 )
 
@@ -86,7 +87,7 @@ class FederationScheduleReviewIntegrity(models.Model):
 
     def unlink(self):
         if (
-            self.env.context.get("matchday_destructive_delete_token")
+            self.env.context.get(MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY)
             is MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
         ):
             return super().unlink()
@@ -124,7 +125,7 @@ class FederationSchedulePublicationIntegrity(models.Model):
 
     def unlink(self):
         if (
-            self.env.context.get("matchday_destructive_delete_token")
+            self.env.context.get(MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY)
             is MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
         ):
             return super().unlink()

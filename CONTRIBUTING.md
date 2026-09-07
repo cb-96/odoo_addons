@@ -73,6 +73,8 @@ python3 ci/check_openapi_contracts.py
 python3 ci/check_release_train.py
 python3 ci/check_explain_snapshots.py
 python3 ci/check_ci_hygiene.py
+python3 ci/check_privileged_mutation_boundaries.py
+python3 ci/check_destructive_token_contract.py
 python3 ci/check_workflow_state_contracts.py
 python3 ci/check_module_dependency_drift.py
 bash ci/prune_ci_logs.sh 30

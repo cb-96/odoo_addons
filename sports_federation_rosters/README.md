@@ -214,3 +214,11 @@ Key Behaviours
    rather than being treated as a separate participant-only concern.
 - **State locking**: approved match sheets can be locked once match-day
    operations are complete.
+
+
+## Audit evidence protection
+
+Audit evidence is append-only operational history. Normal system and federation
+manager ACLs do not grant unlink access. Controllers must route elevated
+mutations through an owning command or the portal privilege boundary; static
+release checks reject direct controller `sudo()` mutations.
