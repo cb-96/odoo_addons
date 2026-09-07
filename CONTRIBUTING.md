@@ -51,6 +51,13 @@ that the candidate can be reproduced from its commit:
 scripts/ci/run_rc_validation.sh preflight
 ```
 
+To produce complete SHA-bound validation evidence, including logs and a strict
+summary manifest, run:
+
+```bash
+scripts/ci/run_release_baseline.sh
+```
+
 Run the normal development checks afterward:
 
 ```bash

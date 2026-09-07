@@ -33,6 +33,43 @@ lanes. The inventory provides deterministic review lists for:
 The inventory does not approve these surfaces. Security and architecture owners
 must review changes to them in the candidate diff.
 
+
+## Evidence completeness
+
+The baseline runs every required lane and records one `lane-<name>.json` file and
+one immutable log digest per lane. Required lanes are:
+
+- preflight;
+- static validation;
+- fresh install;
+- same-version upgrade;
+- competition core;
+- portal;
+- public site;
+- performance;
+- operator acceptance;
+- release focus;
+- full standard suite.
+
+A lane record contains the candidate SHA, exact command, start and finish time,
+duration, exit code, tool versions, runner identity, database name, and log hash.
+Failed lanes require a failure classification. The runner initially records
+`unclassified` unless the operator supplies a lane-specific environment value,
+for example:
+
+```bash
+export RELEASE_FAILURE_CLASSIFICATION_UPGRADE=migration_defect
+```
+
+Allowed classifications are defined by `ci/capture_release_evidence.py`. An
+unclassified failure remains a failed qualification and must be triaged before
+release approval.
+
+`ci/finalize_release_evidence.py` rejects missing, duplicate, skipped, malformed,
+or cross-commit lane evidence. A release summary passes only when every required
+lane is present for the current commit and every lane passed. Inventory JSON is
+supporting evidence and is deliberately excluded from lane status calculation.
+
 ## Review bundles
 
 Generate `current_sources.txt`, `current_sources.jsonl.txt`, and

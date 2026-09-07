@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 920
+# FILE-COUNT: 923
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -77,9 +77,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: .github/workflows/ci.yml
-SIZE: 13379
-CONTENT-LENGTH: 13379
-SHA256: c8cae818b461e039986ee488e17b54c7f7a5845afd86e2888750e86b7d6fece5
+SIZE: 13373
+CONTENT-LENGTH: 13373
+SHA256: 0e81530e975e20f6e97123ef18c51c44a23cc11edac09e8e224616bf509e84e4
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -191,7 +191,7 @@ jobs:
       - name: Verify source collector completeness
         run: python ci/check_source_collector_contract.py
 
-      - name: Check P0-P3 release-focus qualification
+      - name: Check release-focus qualification
         run: python ci/check_release_focus_contract.py
 
       - name: Verify addon manifests, dependencies, imports and ACLs
@@ -586,9 +586,9 @@ _logs/
 
 ====================================================================================================
 FILE: COMPETITION_ENGINE.md
-SIZE: 2979
-CONTENT-LENGTH: 2975
-SHA256: 1579f9731b1fd1b0ad6bb73c770c338c02ec99ef469ed936dfbc26caecd26d47
+SIZE: 2958
+CONTENT-LENGTH: 2954
+SHA256: e25bb13f93bfaf1538a3220027de527dd56dae3cb96a5dc6068c181ef262cd47
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -629,7 +629,7 @@ publication. Submission creates its pending review atomically when the approval
 addon is installed; there is no operator-visible intermediate state that
 requires a separate "start review" action.
 
-## Phases 5.1.1 to 5.3: publication and live operations
+## Publication and live operations
 
 Schedule review decisions are command-only: ACLs are read-only and the review
 model rejects direct decision-field writes. Live publications are scoped and
@@ -1478,9 +1478,9 @@ That is release evidence still to collect, not unresolved documentation debt.
 
 ====================================================================================================
 FILE: INTEGRATION_CONTRACTS.md
-SIZE: 13639
-CONTENT-LENGTH: 13639
-SHA256: 685106690a1ea0777bedc6a79a53d7cc4f15f0e4db6ce0b2090585a9741109b1
+SIZE: 13625
+CONTENT-LENGTH: 13625
+SHA256: 00bf53d3652e3d2ee641f4a0222760a8f396d6808524c26eb7d592358b19b536
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -1545,7 +1545,7 @@ Import contracts:
 
 ## Public Contracts
 
-## Tournament Feed
+## Competition Feed
 
 - Canonical route: `/api/v1/competitions/<edition-slug>`
 - Compatibility routes:
@@ -1562,7 +1562,7 @@ Import contracts:
   - additive nested fields are allowed in v1 when they do not alter existing
     semantics
 
-## Tournament Schedule Calendar
+## Competition Schedule Calendar
 
 - Canonical route: `/competitions/<edition-slug>/divisions/<division-slug>/schedule.ics`
 - Compatibility route: `/competitions/<edition-slug>/divisions/<division-slug>/schedule.ics`
@@ -1780,9 +1780,8 @@ passes without a removal decision, extend it here with the reason.
 - Slug-based public routes are canonical.
 - Numeric public routes remain compatibility shims and should not be used for
   new integrations.
-- Legacy competition-named public feed routes remain compatibility aliases for
-  the tournament feed and are considered deprecated in favor of the canonical
-  tournament path.
+- The `/api/v1/competitions` routes are canonical. Any numeric-ID aliases remain
+  deprecated compatibility surfaces and must not be used for new integrations.
 - Older CSV shapes should remain available for one supported release cycle once
   a replacement contract is published.
 - Removals must be announced by updating this file, relevant READMEs, and the
@@ -1958,9 +1957,9 @@ modules:
 
 ====================================================================================================
 FILE: README.md
-SIZE: 7070
-CONTENT-LENGTH: 7050
-SHA256: d88f97b5db070909e9cffccb3a279e9e5993b3686f68f2c4b39164213abf7f6e
+SIZE: 7136
+CONTENT-LENGTH: 7116
+SHA256: 7ddfd895eb664f4e7e8fb6079a20d2ba7e1f26a840b92483c651461c5b33263a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -1992,6 +1991,7 @@ Quick links
 - Architecture decisions: `adr/README.md`
 - Route inventory: `ROUTE_INVENTORY.md`
 - Release runbook: `RELEASE_RUNBOOK.md`
+- Reproducible repository baseline: `docs/REPOSITORY_BASELINE.md`
 - Data retention policy: `DATA_RETENTION_POLICY.md`
 - Module owners: `MODULE_OWNERS.yaml`
 - Demo data pack: `sports_federation_demo/README.md`
@@ -5953,7 +5953,7 @@ CONTENT-LENGTH: 18148
 SHA256: bd26f686686fcbf0c3dcff414ee1ff3bccb885fd519183f599ec083e8adc31ae
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # Workflow: Match Day Operations
@@ -8349,6 +8349,186 @@ for k in keys:
 PY
 
 echo "[CI] apply_env_to_ir_config.sh completed" >&2
+
+====================================================================================================
+FILE: ci/capture_codebase_inventory.py
+SIZE: 6401
+CONTENT-LENGTH: 6401
+SHA256: bc04a9bfe001efafb7ab218ed13003171fa9992cff07343032f74d54cb97dcc9
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Create a deterministic inventory of security and architecture hotspots.
+
+The inventory is evidence, not a policy gate. It gives reviewers one stable list
+of addons, routes, elevated calls, raw SQL, scheduled jobs, migrations, and large
+Python files for the exact candidate being qualified.
+"""
+
+from __future__ import annotations
+
+import argparse
+import ast
+import hashlib
+import json
+import re
+import subprocess
+from pathlib import Path
+
+DEFAULT_LARGE_FILE_LINES = 500
+ROUTE_RE = re.compile(r"@(?:http\.)?route\s*\(")
+SUDO_RE = re.compile(r"\.sudo\s*\(")
+SQL_RE = re.compile(r"(?:\.execute\s*\(|\b(?:SELECT|INSERT|UPDATE|DELETE|ALTER|CREATE|DROP)\b)", re.I)
+CRON_RE = re.compile(r"<record\b[^>]*\bmodel=[\"']ir\.cron[\"']", re.I)
+MODEL_NAME_RE = re.compile(r"^\s*_(?:name|inherit)\s*=\s*[\"']([^\"']+)[\"']", re.M)
+
+
+def git(repo: Path, *args: str) -> str:
+    result = subprocess.run(
+        ["git", *args], cwd=repo, check=True, text=True, capture_output=True
+    )
+    return result.stdout.strip()
+
+
+def discover_addons(repo: Path) -> list[Path]:
+    return sorted(
+        path.parent
+        for path in repo.glob("sports_federation_*/__manifest__.py")
+        if path.is_file()
+    )
+
+
+def parse_manifest(path: Path) -> dict:
+    try:
+        value = ast.literal_eval(path.read_text(encoding="utf-8"))
+    except (SyntaxError, ValueError) as exc:
+        raise SystemExit(f"Invalid manifest {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise SystemExit(f"Manifest is not a dictionary: {path}")
+    return value
+
+
+def location(repo: Path, path: Path, lineno: int, text: str = "") -> dict:
+    item = {"path": path.relative_to(repo).as_posix(), "line": lineno}
+    if text:
+        item["text"] = text.strip()[:240]
+    return item
+
+
+def scan_python(repo: Path, path: Path, large_file_lines: int, result: dict) -> None:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    lines = text.splitlines()
+    if len(lines) >= large_file_lines:
+        result["large_python_files"].append(
+            {**location(repo, path, 1), "lines": len(lines)}
+        )
+    for lineno, line in enumerate(lines, 1):
+        if SUDO_RE.search(line):
+            result["sudo_calls"].append(location(repo, path, lineno, line))
+        if SQL_RE.search(line) and not line.lstrip().startswith("#"):
+            result["raw_sql_candidates"].append(location(repo, path, lineno, line))
+        if ROUTE_RE.search(line):
+            block = " ".join(lines[lineno - 1 : min(lineno + 9, len(lines))])
+            result["routes"].append(
+                {
+                    **location(repo, path, lineno, line),
+                    "auth": _keyword(block, "auth"),
+                    "csrf": _keyword(block, "csrf"),
+                    "methods": _keyword(block, "methods"),
+                }
+            )
+    for model in MODEL_NAME_RE.findall(text):
+        result["model_declarations"].append(
+            {"path": path.relative_to(repo).as_posix(), "model": model}
+        )
+
+
+def _keyword(block: str, name: str):
+    match = re.search(rf"\b{name}\s*=\s*([^,\)]+)", block)
+    return match.group(1).strip() if match else None
+
+
+def build_inventory(repo: Path, large_file_lines: int) -> dict:
+    addons = discover_addons(repo)
+    result = {
+        "schema_version": 1,
+        "commit": git(repo, "rev-parse", "HEAD"),
+        "addons": [],
+        "routes": [],
+        "sudo_calls": [],
+        "raw_sql_candidates": [],
+        "scheduled_jobs": [],
+        "migrations": [],
+        "model_declarations": [],
+        "large_python_files": [],
+    }
+    for addon in addons:
+        manifest = parse_manifest(addon / "__manifest__.py")
+        result["addons"].append(
+            {
+                "name": addon.name,
+                "version": manifest.get("version"),
+                "depends": sorted(manifest.get("depends", [])),
+                "installable": bool(manifest.get("installable", True)),
+            }
+        )
+    roots = addons + [repo / "ci", repo / "scripts"]
+    files = sorted(
+        {path for root in roots if root.exists() for path in root.rglob("*") if path.is_file()}
+    )
+    for path in files:
+        rel = path.relative_to(repo).as_posix()
+        if path.suffix == ".py":
+            scan_python(repo, path, large_file_lines, result)
+        elif path.suffix == ".xml":
+            text = path.read_text(encoding="utf-8", errors="replace")
+            for match in CRON_RE.finditer(text):
+                result["scheduled_jobs"].append(
+                    location(repo, path, text.count("\n", 0, match.start()) + 1)
+                )
+        if "/migrations/" in f"/{rel}" and path.suffix in {".py", ".sql"}:
+            result["migrations"].append(rel)
+    for key in (
+        "routes", "sudo_calls", "raw_sql_candidates", "scheduled_jobs",
+        "model_declarations", "large_python_files",
+    ):
+        result[key] = sorted(result[key], key=lambda item: (item["path"], item.get("line", 0), item.get("model", "")))
+    result["migrations"].sort()
+    canonical = json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
+    result["inventory_sha256"] = hashlib.sha256(canonical).hexdigest()
+    result["counts"] = {
+        "addons": len(result["addons"]),
+        "routes": len(result["routes"]),
+        "sudo_calls": len(result["sudo_calls"]),
+        "raw_sql_candidates": len(result["raw_sql_candidates"]),
+        "scheduled_jobs": len(result["scheduled_jobs"]),
+        "migrations": len(result["migrations"]),
+        "model_declarations": len(result["model_declarations"]),
+        "large_python_files": len(result["large_python_files"]),
+    }
+    return result
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--repo", type=Path, default=Path.cwd())
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--large-file-lines", type=int, default=DEFAULT_LARGE_FILE_LINES)
+    args = parser.parse_args()
+    repo = args.repo.resolve()
+    inventory = build_inventory(repo, args.large_file_lines)
+    output = args.output if args.output.is_absolute() else repo / args.output
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(inventory, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(output)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
 ====================================================================================================
 FILE: ci/capture_explain_snapshots.py
@@ -14976,6 +15156,77 @@ for error in errors:
 sys.exit(1 if errors else 0)
 
 ====================================================================================================
+FILE: ci/test_capture_codebase_inventory.py
+SIZE: 2595
+CONTENT-LENGTH: 2595
+SHA256: 6a07ede64916d3d073d87a79dfd8240a640f26c01f75a11262b331d3939171ab
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+import importlib.util
+import json
+import subprocess
+import tempfile
+import unittest
+from pathlib import Path
+
+MODULE_PATH = Path(__file__).with_name("capture_codebase_inventory.py")
+SPEC = importlib.util.spec_from_file_location("capture_codebase_inventory", MODULE_PATH)
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+
+
+class TestCodebaseInventory(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.repo = Path(self.temp.name)
+        subprocess.run(["git", "init", "-q"], cwd=self.repo, check=True)
+        subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=self.repo, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=self.repo, check=True)
+        addon = self.repo / "sports_federation_sample"
+        (addon / "controllers").mkdir(parents=True)
+        (addon / "data").mkdir()
+        (addon / "__manifest__.py").write_text(
+            "{'version': '19.0.1.0.0', 'depends': ['base'], 'installable': True}\n"
+        )
+        (addon / "controllers" / "main.py").write_text(
+            "from odoo import http\n"
+            "class C(http.Controller):\n"
+            "    @http.route('/sample', auth='public', csrf=False, methods=['POST'])\n"
+            "    def sample(self):\n"
+            "        self.env['x'].sudo().search([])\n"
+        )
+        (addon / "data" / "cron.xml").write_text(
+            '<odoo><record id="cron_sample" model="ir.cron"/></odoo>\n'
+        )
+        subprocess.run(["git", "add", "."], cwd=self.repo, check=True)
+        subprocess.run(["git", "commit", "-qm", "fixture"], cwd=self.repo, check=True)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def test_inventory_is_deterministic_and_finds_security_surfaces(self):
+        first = MODULE.build_inventory(self.repo, large_file_lines=1)
+        second = MODULE.build_inventory(self.repo, large_file_lines=1)
+        self.assertEqual(first, second)
+        self.assertEqual(first["counts"]["addons"], 1)
+        self.assertEqual(first["counts"]["routes"], 1)
+        self.assertEqual(first["counts"]["sudo_calls"], 1)
+        self.assertEqual(first["counts"]["scheduled_jobs"], 1)
+        self.assertEqual(first["routes"][0]["auth"], "'public'")
+        self.assertEqual(first["routes"][0]["csrf"], "False")
+
+    def test_serialized_inventory_round_trips(self):
+        payload = MODULE.build_inventory(self.repo, large_file_lines=100)
+        self.assertEqual(json.loads(json.dumps(payload)), payload)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+====================================================================================================
 FILE: ci/test_capture_release_evidence.py
 SIZE: 502
 CONTENT-LENGTH: 502
@@ -16222,6 +16473,69 @@ The pilot must use distinct registration, format, calendar, schedule-planning, s
 Use [`COMPETITION_UI_WORKFLOW.md`](COMPETITION_UI_WORKFLOW.md) for verified backend and portal menu paths, state actions, and recovery procedures.
 
 ====================================================================================================
+FILE: docs/REPOSITORY_BASELINE.md
+SIZE: 1784
+CONTENT-LENGTH: 1784
+SHA256: 0dc732be9cc3aa5b73ea7c5749c80b2710963f15ec539ecdd2d318bd8abc3221
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+# Repository Baseline
+
+Owner: Federation Platform Team
+
+Review cadence: Every release candidate
+
+A release candidate is reproducible only when it is built and qualified from one
+clean Git commit. Generated review bundles, runtime configuration, logs, and
+release evidence are outputs and must not be mixed with product changes.
+
+## Required baseline
+
+Before structural, security, migration, or release work:
+
+1. Resolve or intentionally discard every tracked worktree change.
+2. Commit every source file required by the candidate.
+3. Record the exact commit SHA and supported Odoo, Python, and PostgreSQL versions.
+4. Run `scripts/ci/run_release_baseline.sh` from that commit.
+5. Preserve the generated evidence outside the tracked source tree.
+
+The baseline runner captures `codebase-inventory.json` before executing release
+lanes. The inventory provides deterministic review lists for:
+
+- addons and dependencies;
+- HTTP routes and declared authentication/CSRF settings;
+- calls using `sudo()`;
+- raw-SQL candidates;
+- scheduled jobs;
+- migrations;
+- Odoo model declarations;
+- large Python files that require maintainability review.
+
+The inventory does not approve these surfaces. Security and architecture owners
+must review changes to them in the candidate diff.
+
+## Review bundles
+
+Generate `current_sources.txt`, `current_sources.jsonl.txt`, and
+`current_git_metadata.txt` with:
+
+```bash
+python3 source_collector.py
+```
+
+These files are review artifacts. Do not commit them and do not use their
+regeneration as evidence of a product change.
+
+## Failure policy
+
+A failing validation lane remains failed until its root cause is classified and
+corrected. Do not weaken a valid test, skip a migration rehearsal, or update an
+evidence status manually to obtain a passing candidate.
+
+====================================================================================================
 FILE: docs/competition_engine_ownership.md
 SIZE: 1325
 CONTENT-LENGTH: 1325
@@ -17372,9 +17686,9 @@ esac
 
 ====================================================================================================
 FILE: scripts/ci/run_release_baseline.sh
-SIZE: 1993
-CONTENT-LENGTH: 1993
-SHA256: 21d3f40ff47e594897356b4865c2241cc1b5662e9040d0fd716c3776021df232
+SIZE: 2088
+CONTENT-LENGTH: 2088
+SHA256: 37276217c75e44cf64273d62188319039a10b0d39849941ed104fc0333fb3d16
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
 GIT-STATE: tracked
@@ -17389,6 +17703,9 @@ cd "$repo_root"
 evidence_dir="${RELEASE_BASELINE_EVIDENCE_DIR:-$repo_root/artifacts/release/baseline}"
 database="${DB_NAME:-sf_rc_validation}"
 mkdir -p "$evidence_dir"
+
+python3 ci/capture_codebase_inventory.py \
+  --output "$evidence_dir/codebase-inventory.json"
 
 record_lane() {
   local lane="$1"
@@ -18644,7 +18961,7 @@ CONTENT-LENGTH: 112
 SHA256: 42fef4645b3cffb17931c4c64fa306763999f21662aa9f79a1b4e414752fbbee
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 """Process-local tokens for destructive cross-addon workflows."""
@@ -47663,7 +47980,7 @@ CONTENT-LENGTH: 2222
 SHA256: 58a7c9ce66c0053b6ffb9c8f4f6aea58fdef8df040d9e470f0e479bfaf237c31
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 # Match-Day Operations
@@ -47737,7 +48054,7 @@ CONTENT-LENGTH: 702
 SHA256: 1792f320f1686800b78ec241f55a4de95e863aac5adf4f7234470273d1e20bff
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -47872,7 +48189,7 @@ CONTENT-LENGTH: 9232
 SHA256: 16da0388b802043af027079b94e29818c97a5939e884d466021cb7c1ad10cfab
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from odoo import _, models
@@ -48136,7 +48453,7 @@ CONTENT-LENGTH: 2209
 SHA256: 1872e335a7df15e6442f57140a3cd41c9aeef188f2d3b436a16985ee54e59eab
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from odoo import fields, models
@@ -48215,7 +48532,7 @@ CONTENT-LENGTH: 9248
 SHA256: e6a2ef6b0222d61a655617a6f9c4345a99db12c5d2d948f17ce5c6590e35628a
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from odoo import _, fields, models
@@ -48488,7 +48805,7 @@ CONTENT-LENGTH: 3072
 SHA256: bd933f9a3421411e86603824c84746e9b30f2f44958d91d848a8687e6fce3d98
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
@@ -48871,7 +49188,7 @@ CONTENT-LENGTH: 11946
 SHA256: e309c779fa5b97a6096a02276a0fe2e634c3aef3a48fdb809ff4ea1986d4bea5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 import hashlib
@@ -49192,7 +49509,7 @@ CONTENT-LENGTH: 6418
 SHA256: 9408fa150c8f7d1fd2b0711c6d1053b446412b306d5bc0c48407a4cccb39ff67
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 <odoo>
@@ -49275,7 +49592,7 @@ CONTENT-LENGTH: 117
 SHA256: 09c8d5da170530a4ff5adf1c4b5dd350193ca6b165250efd6b1155a850651244
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from . import matchday_operation_wizards
@@ -49290,7 +49607,7 @@ CONTENT-LENGTH: 2606
 SHA256: d5153f4cd12ecda83284f3c7f9b94e4789d7e0fa8a7b5e9bb04e352b8c1c86bc
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 from odoo import _, api, fields, models
@@ -49364,7 +49681,7 @@ CONTENT-LENGTH: 991
 SHA256: b4fbe83a44a4003268525e8ca3af917f0313e7b94b7339ba4d04b5f912dca368
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: untracked
+GIT-STATE: tracked
 ====================================================================================================
 
 <odoo>
@@ -101927,7 +102244,7 @@ CONTENT-LENGTH: 597
 SHA256: e5c4d743a1d813553a4ec9bdd2f1378de5e95b1d9c7b0cd067f7a2020e1737f3
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -102062,7 +102379,7 @@ CONTENT-LENGTH: 5840
 SHA256: 233f41a49ec7a773c470739f77f7a148d3f63bdf0c4d58ff99948c09ddaaf077
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 import hashlib
@@ -103750,7 +104067,7 @@ CONTENT-LENGTH: 690
 SHA256: c54df00e7637a9f8bd95c2fc8b85c718b01ca45a0349631ac3b2ae4bbe1fe974
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 {
@@ -104141,7 +104458,7 @@ CONTENT-LENGTH: 4487
 SHA256: a6517763a1965623a68b3b4aaa8b22d7b908a95d4d1f438eb32ad9673ad87811
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: modified
+GIT-STATE: tracked
 ====================================================================================================
 
 from odoo import _, api, models

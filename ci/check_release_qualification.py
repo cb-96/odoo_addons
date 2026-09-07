@@ -15,6 +15,12 @@ acceptance = (ROOT / "docs/release/COMPETITION_ACCEPTANCE.md").read_text(
 stabilization_plan = (ROOT / "docs/release/POST_CUTOVER_PHASES.md").read_text(
     encoding="utf-8"
 )
+baseline_script = (ROOT / "scripts/ci/run_release_baseline.sh").read_text(
+    encoding="utf-8"
+)
+evidence_finalizer = (ROOT / "ci/finalize_release_evidence.py").read_text(
+    encoding="utf-8"
+)
 
 checks = {
     "RC upgrade lane": "upgrade)" in rc_script,
@@ -23,6 +29,29 @@ checks = {
     "upgrade precondition": "assert_modules_installed" in rc_script,
     "workflow upgrade execution": "run_rc_validation.sh upgrade" in workflow,
     "workflow public execution": "run_rc_validation.sh public" in workflow,
+    "baseline records every required lane": all(
+        f"  {lane}\n" in baseline_script
+        for lane in (
+            "preflight",
+            "static",
+            "install",
+            "upgrade",
+            "core",
+            "portal",
+            "public",
+            "performance",
+            "acceptance",
+            "focus",
+            "full",
+        )
+    ),
+    "baseline captures lane logs": '--log "$log_file"' in baseline_script,
+    "baseline uses strict evidence finalizer": (
+        "finalize_release_evidence.py" in baseline_script
+        and "missing_lanes" in evidence_finalizer
+        and "commit_mismatches" in evidence_finalizer
+        and "skipped_lanes" in evidence_finalizer
+    ),
     "acceptance candidate evidence": "candidate commit" in acceptance.lower(),
     "single competition namespace evidence": "/competitions"
     in (ROOT / "ROUTE_INVENTORY.md").read_text(encoding="utf-8"),
