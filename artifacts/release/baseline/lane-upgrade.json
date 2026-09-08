@@ -1,19 +1,19 @@
 {
   "branch": "main",
   "command": "scripts/ci/run_rc_validation.sh upgrade",
-  "commit": "88a1b03280bd8d35a7db48750c5c9ba292b4e844",
+  "commit": "bc5432ae9c6a7c0054411c45a964df5fe3c99849",
   "database": "sf_rc_upgrade",
-  "duration_seconds": 26.0,
+  "duration_seconds": 22.0,
   "exit_code": 0,
   "failure_classification": null,
-  "finished_at": "2026-09-07T20:27:11Z",
+  "finished_at": "2026-09-07T21:33:02Z",
   "lane": "upgrade",
   "log": {
     "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/upgrade.log",
-    "sha256": "468c33ea697a68b6afbefbe3eae00be82f720ecde30b37b4c3797075709ab944",
+    "sha256": "a425c6f90064a5177988e06a6ca3ae562cfada364207d15e4d1283ae5e09fec9",
     "size_bytes": 404
   },
-  "recorded_at": "2026-09-07T20:27:11.499805+00:00",
+  "recorded_at": "2026-09-07T21:33:02.825674+00:00",
   "runner": {
     "github_job": null,
     "github_run_attempt": null,
@@ -23,7 +23,7 @@
   },
   "schema_version": 2,
   "skip_reason": null,
-  "started_at": "2026-09-07T20:26:45Z",
+  "started_at": "2026-09-07T21:32:40Z",
   "status": "passed",
   "tools": {
     "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",

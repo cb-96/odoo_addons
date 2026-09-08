@@ -1,6 +1,6 @@
 from odoo import http
 from odoo.addons.portal.controllers.portal import pager as portal_pager
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
 
 from .portal_helpers import FederationPortalBase
@@ -133,8 +133,10 @@ class FederationResultPortal(FederationPortalBase):
             )
 
         try:
-            match.action_approve_result()
-        except ValidationError as exc:
+            request.env["federation.result.commands"].approve_portal_result(
+                match.id, request.env.user
+            )
+        except (AccessError, ValidationError) as exc:
             return self._redirect_with_query(
                 f"/my/results/{match_id}",
                 error=str(exc.args[0]) if exc.args else "Approval failed.",
@@ -180,9 +182,10 @@ class FederationResultPortal(FederationPortalBase):
             )
 
         try:
-            match.write({"result_contest_reason": reason})
-            match.action_contest_result()
-        except ValidationError as exc:
+            request.env["federation.result.commands"].contest_portal_result(
+                match.id, reason, request.env.user
+            )
+        except (AccessError, ValidationError) as exc:
             return self._redirect_with_query(
                 f"/my/results/{match_id}",
                 error=str(exc.args[0]) if exc.args else "Contest failed.",

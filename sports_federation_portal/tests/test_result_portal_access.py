@@ -2,12 +2,12 @@
 
 These tests verify the business logic the portal controller relies on:
 - Domain scoping keeps each club's results private
-- action_approve_result() succeeds via sudo() for verified results
+- portal result commands authorize verified results inside club scope
 - action_contest_result() requires a non-empty reason
 - Wrong-state transitions raise ValidationError
 """
 
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase
 
 _VISIBLE_RESULT_STATES = ("submitted", "verified", "approved", "contested")
@@ -253,7 +253,9 @@ class TestResultPortalAccess(TransactionCase):
                 "result_verified_by_id": False,
             }
         )
-        self.match_ab.sudo().action_approve_result()
+        self.env["federation.result.commands"].approve_portal_result(
+            self.match_ab.id, self.user_a
+        )
         self.assertEqual(self.match_ab.result_state, "approved")
         self.assertTrue(self.match_ab.include_in_official_standings)
 
@@ -277,7 +279,11 @@ class TestResultPortalAccess(TransactionCase):
                 "result_contest_reason": "Score recorded incorrectly.",
             }
         )
-        self.match_ab.sudo().action_contest_result()
+        self.env["federation.result.commands"].contest_portal_result(
+            self.match_ab.id,
+            self.match_ab.result_contest_reason,
+            self.user_a,
+        )
         self.assertEqual(self.match_ab.result_state, "contested")
         self.assertFalse(self.match_ab.include_in_official_standings)
 
@@ -289,7 +295,11 @@ class TestResultPortalAccess(TransactionCase):
                 "result_contest_reason": "Wrong team listed as home.",
             }
         )
-        self.match_ab.sudo().action_contest_result()
+        self.env["federation.result.commands"].contest_portal_result(
+            self.match_ab.id,
+            self.match_ab.result_contest_reason,
+            self.user_a,
+        )
         self.assertEqual(self.match_ab.result_state, "contested")
 
     def test_contest_draft_result_raises(self):
@@ -302,6 +312,37 @@ class TestResultPortalAccess(TransactionCase):
         )
         with self.assertRaises(ValidationError):
             self.match_ab.sudo().action_contest_result()
+
+
+    def test_result_command_rejects_unrelated_club_actor(self):
+        club = self.env["federation.club"].create(
+            {"name": "Result Command Unrelated", "code": "RCU"}
+        )
+        user = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Result Command Unrelated",
+                    "login": "result.command.unrelated@example.com",
+                    "email": "result.command.unrelated@example.com",
+                    "group_ids": [(6, 0, [self.portal_group.id])],
+                }
+            )
+        )
+        self.env["federation.club.representative"].create(
+            {
+                "club_id": club.id,
+                "partner_id": user.partner_id.id,
+                "user_id": user.id,
+                "role_type_id": self.role_type.id,
+            }
+        )
+        self.match_ab.write({"result_state": "verified"})
+        with self.assertRaises(AccessError):
+            self.env["federation.result.commands"].approve_portal_result(
+                self.match_ab.id, user
+            )
 
     # ------------------------------------------------------------------
     # No portal scope

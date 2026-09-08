@@ -52,16 +52,52 @@ def enclosing_function(tree: ast.AST, node: ast.AST) -> str:
     return "<module>"
 
 
+
+def assigned_names(node: ast.Assign | ast.AnnAssign) -> set[str]:
+    targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+    return {
+        target.id
+        for target in targets
+        if isinstance(target, ast.Name)
+    }
+
+
+def elevated_names(function: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
+    names = set()
+    for node in ast.walk(function):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+        if contains_sudo(node.value):
+            names.update(assigned_names(node))
+    return names
+
+
+def receiver_name(call: ast.Call) -> str | None:
+    value = call.func.value if isinstance(call.func, ast.Attribute) else None
+    return value.id if isinstance(value, ast.Name) else None
+
+
 def find_violations(root: Path = ROOT) -> list[str]:
     violations = []
     for path in controller_files(root):
         source = path.read_text(encoding="utf-8")
         tree = ast.parse(source, filename=str(path))
+        function_elevation = {
+            function.name: elevated_names(function)
+            for function in ast.walk(tree)
+            if isinstance(function, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
             operation = mutation_name(node)
-            if not operation or not contains_sudo(node.func.value):
+            function_name = enclosing_function(tree, node)
+            elevated_receiver = receiver_name(node) in function_elevation.get(
+                function_name, set()
+            )
+            if not operation or not (
+                contains_sudo(node.func.value) or elevated_receiver
+            ):
                 continue
             # The privilege boundary itself performs the audited elevation. A
             # controller may invoke it but may not reproduce its internals.
@@ -72,7 +108,7 @@ def find_violations(root: Path = ROOT) -> list[str]:
                 continue
             violations.append(
                 f"{path.relative_to(root).as_posix()}:{node.lineno} "
-                f"{enclosing_function(tree, node)} uses sudo().{operation}()"
+                f"{function_name} mutates an elevated record with {operation}()"
             )
     return sorted(violations)
 

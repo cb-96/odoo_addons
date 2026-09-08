@@ -39,3 +39,13 @@ Audit evidence is append-only operational history. Normal system and federation
 manager ACLs do not grant unlink access. Controllers must route elevated
 mutations through an owning command or the portal privilege boundary; static
 release checks reject direct controller `sudo()` mutations.
+
+
+## Privileged result commands
+
+Portal approval and contest actions use `federation.result.commands`. The
+service resolves the match inside the authenticated actor's current club scope,
+then applies a process-local command token for the elevated domain transition.
+Raw `sudo()` is not authorization and no longer bypasses result role checks.
+Backend submit, verify, approve, contest, correction, and reset actions keep
+their existing group and separation-of-duty rules.

@@ -48,3 +48,10 @@ shared context-key constant from
 match-day, scheduling, and publication integrity modules may import that token.
 `ci/check_destructive_token_contract.py` rejects new consumers and raw copies of
 the context-key string.
+
+
+Result approval and contesting are owned by
+`federation.result.commands`. The command re-resolves the target within the
+actor's current club scope and is the only portal path allowed to supply the
+process-local result-transition token. Superuser mode by itself never satisfies
+a result role check.

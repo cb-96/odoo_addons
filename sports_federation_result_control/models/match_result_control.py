@@ -1,6 +1,8 @@
 from odoo import fields, models
 from odoo.exceptions import ValidationError
 
+from ..services.result_commands import is_result_command_context
+
 
 class FederationMatchResultControl(models.Model):
     _inherit = "federation.match"
@@ -81,11 +83,11 @@ class FederationMatchResultControl(models.Model):
     def _check_result_group(self, group_xmlid, error_message):
         """Validate result group.
 
-        Superuser (env.su) bypasses the group guard so that portal controllers
-        and other trusted callers can invoke result actions via sudo() without
-        requiring the superuser account to hold every federation role.
+        Superuser elevation bypasses the group guard only when the owning result
+        command service supplied its process-local authorization token. Raw
+        ``sudo()`` is not a result-workflow authorization boundary.
         """
-        if self.env.su:
+        if self.env.su and is_result_command_context(self.env):
             return
         if not self.env.user.has_group(group_xmlid):
             raise ValidationError(error_message)

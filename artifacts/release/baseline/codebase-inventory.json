@@ -8,7 +8,7 @@
       ],
       "installable": true,
       "name": "sports_federation_base",
-      "version": "19.0.1.2.2"
+      "version": "19.0.1.2.3"
     },
     {
       "depends": [
@@ -255,7 +255,7 @@
       ],
       "installable": true,
       "name": "sports_federation_result_control",
-      "version": "19.0.1.2.0"
+      "version": "19.0.1.2.1"
     },
     {
       "depends": [
@@ -267,7 +267,7 @@
       ],
       "installable": true,
       "name": "sports_federation_rosters",
-      "version": "19.0.1.5.0"
+      "version": "19.0.1.5.1"
     },
     {
       "depends": [
@@ -325,18 +325,18 @@
       "version": "19.0.1.1.0"
     }
   ],
-  "commit": "88a1b03280bd8d35a7db48750c5c9ba292b4e844",
+  "commit": "bc5432ae9c6a7c0054411c45a964df5fe3c99849",
   "counts": {
     "addons": 26,
     "large_python_files": 19,
     "migrations": 29,
     "model_declarations": 270,
-    "raw_sql_candidates": 2321,
+    "raw_sql_candidates": 2324,
     "routes": 97,
     "scheduled_jobs": 10,
     "sudo_calls": 343
   },
-  "inventory_sha256": "7fba2aee22faa72b7cd3fd02d9a40677e5dd418c2dff3fcf1350dc94ad5cf056",
+  "inventory_sha256": "2e6154897adde93d3740615e87f29f02a15ae9df704f7007d08d742033f11e16",
   "large_python_files": [
     {
       "line": 1,
@@ -1589,9 +1589,19 @@
       "text": "digest.update(chunk)"
     },
     {
+      "line": 2,
+      "path": "ci/check_audit_acl_integrity.py",
+      "text": "\"\"\"Ensure ordinary access groups cannot delete immutable audit evidence.\"\"\""
+    },
+    {
       "line": 22,
       "path": "ci/check_competition_ui_workflow.py",
       "text": "(\"Federation\", \"Competitions\", \"Competition Operations\", \"Create Competition\"),"
+    },
+    {
+      "line": 34,
+      "path": "ci/check_destructive_token_contract.py",
+      "text": "names.update(alias.name for alias in node.names)"
     },
     {
       "line": 13,
@@ -1607,6 +1617,11 @@
       "line": 115,
       "path": "ci/check_migration_review.py",
       "text": "f\"update {ROLLBACK_NOTES_FILE} with rollback notes for this migration\""
+    },
+    {
+      "line": 16,
+      "path": "ci/check_privileged_mutation_boundaries.py",
+      "text": "MUTATING_METHODS = {\"create\", \"write\", \"unlink\"}"
     },
     {
       "line": 14,
@@ -4144,42 +4159,42 @@
       "text": "UPDATE federation_match"
     },
     {
-      "line": 26,
+      "line": 27,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": "\"This match day has publication history. Create a governed \""
     },
     {
-      "line": 131,
+      "line": 132,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": "\"Use Delete Match Day and confirm the impact before removing it.\""
     },
     {
-      "line": 204,
+      "line": 220,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": "\"\"\"Delete draft match days together with their mutable schedules."
     },
     {
-      "line": 225,
+      "line": 241,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": "wizard = self.env[\"federation.matchday.delete.wizard\"].create("
     },
     {
-      "line": 230,
+      "line": 246,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": "\"name\": _(\"Delete Closed Match Day\"),"
     },
     {
-      "line": 231,
+      "line": 247,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": "\"res_model\": \"federation.matchday.delete.wizard\","
     },
     {
-      "line": 243,
+      "line": 259,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": "wizard = self.env[\"federation.matchday.restart.wizard\"].create("
     },
     {
-      "line": 237,
+      "line": 238,
       "path": "sports_federation_matchday/models/operational_control.py",
       "text": "\"name\": _(\"Update Court Status\"),"
     },
@@ -4329,17 +4344,17 @@
       "text": "wizard = self.env[\"federation.matchday.restart.wizard\"].create("
     },
     {
-      "line": 10,
+      "line": 11,
       "path": "sports_federation_matchday/wizards/matchday_delete_wizard.py",
       "text": "_name = \"federation.matchday.delete.wizard\""
     },
     {
-      "line": 11,
+      "line": 12,
       "path": "sports_federation_matchday/wizards/matchday_delete_wizard.py",
       "text": "_description = \"Delete Closed Match Day\""
     },
     {
-      "line": 27,
+      "line": 28,
       "path": "sports_federation_matchday/wizards/matchday_delete_wizard.py",
       "text": "\"This will permanently delete the match day and its working \""
     },
@@ -11129,17 +11144,17 @@
       "text": "CREATE UNIQUE INDEX IF NOT EXISTS"
     },
     {
-      "line": 64,
+      "line": 65,
       "path": "sports_federation_schedule_approval/models/publication_integrity.py",
       "text": "raise ValidationError(_(\"Select a valid review decision.\"))"
     },
     {
-      "line": 106,
+      "line": 107,
       "path": "sports_federation_schedule_approval/models/publication_integrity.py",
       "text": "self.env.cr.execute(\"\"\""
     },
     {
-      "line": 107,
+      "line": 108,
       "path": "sports_federation_schedule_approval/models/publication_integrity.py",
       "text": "CREATE UNIQUE INDEX IF NOT EXISTS"
     },
@@ -11404,27 +11419,27 @@
       "text": "wizard = self.env[\"federation.schedule.submit.wizard\"].create("
     },
     {
-      "line": 47,
+      "line": 48,
       "path": "sports_federation_scheduling/models/schedule_integrity.py",
       "text": "self.env.cr.execute("
     },
     {
-      "line": 48,
+      "line": 49,
       "path": "sports_federation_scheduling/models/schedule_integrity.py",
       "text": "\"SELECT id FROM federation_schedule WHERE id = %s FOR UPDATE\","
     },
     {
-      "line": 72,
+      "line": 73,
       "path": "sports_federation_scheduling/models/schedule_integrity.py",
       "text": "self.env[\"federation.schedule.assignment\"].create("
     },
     {
-      "line": 113,
+      "line": 114,
       "path": "sports_federation_scheduling/models/schedule_integrity.py",
       "text": "def create(self, vals_list):"
     },
     {
-      "line": 117,
+      "line": 118,
       "path": "sports_federation_scheduling/models/schedule_integrity.py",
       "text": "return super().create(vals_list)"
     },
@@ -13982,6 +13997,11 @@
       "text": "\"        self.env['x'].sudo().search([])\\n\""
     },
     {
+      "line": 31,
+      "path": "ci/test_security_boundaries.py",
+      "text": "\"    request.env['sample.model'].sudo().write({'name': 'unsafe'})\\n\","
+    },
+    {
       "line": 89,
       "path": "sports_federation_base/models/attachment_policy.py",
       "text": "params = self.env[\"ir.config_parameter\"].sudo()"
@@ -14342,92 +14362,92 @@
       "text": "self.env[\"ir.config_parameter\"].sudo().set_param("
     },
     {
-      "line": 20,
+      "line": 21,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": ".sudo()"
     },
     {
-      "line": 32,
+      "line": 33,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": ".sudo()"
     },
     {
-      "line": 38,
+      "line": 39,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": ".sudo()"
     },
     {
-      "line": 66,
+      "line": 67,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": ".sudo()"
     },
     {
-      "line": 75,
+      "line": 76,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": "self.env[\"federation.schedule\"].sudo().with_context(active_test=False)"
     },
     {
-      "line": 80,
+      "line": 81,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": ".sudo()"
     },
     {
-      "line": 85,
+      "line": 86,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": ".sudo()"
     },
     {
-      "line": 90,
+      "line": 91,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": ".sudo()"
     },
     {
-      "line": 95,
+      "line": 96,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": ".sudo()"
     },
     {
-      "line": 100,
+      "line": 101,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": ".sudo()"
     },
     {
-      "line": 136,
+      "line": 137,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": "self.env[\"federation.schedule\"].sudo().with_context(active_test=False)"
     },
     {
-      "line": 141,
+      "line": 142,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": ".sudo()"
     },
     {
-      "line": 146,
+      "line": 147,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": ".sudo()"
     },
     {
-      "line": 151,
+      "line": 152,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": ".sudo()"
     },
     {
-      "line": 156,
+      "line": 157,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": ".sudo()"
     },
     {
-      "line": 168,
+      "line": 169,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": "self.sudo().write({\"current_publication_id\": False})"
     },
     {
-      "line": 176,
+      "line": 177,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": "self.env[\"federation.matchday.deviation\"].sudo().with_context("
     },
     {
-      "line": 179,
+      "line": 183,
       "path": "sports_federation_matchday/models/matchday_restart.py",
       "text": "self.env[\"federation.matchday.session\"].sudo().with_context("
     },
@@ -14770,11 +14790,6 @@
       "line": 125,
       "path": "sports_federation_portal/controllers/referee_duty_portal.py",
       "text": "duty = request.env[\"federation.match.club.referee.duty\"].sudo().browse(duty_id)"
-    },
-    {
-      "line": 152,
-      "path": "sports_federation_portal/controllers/referee_duty_portal.py",
-      "text": "duty.with_user(request.env.user).sudo().action_nominate(player_id)"
     },
     {
       "line": 52,
@@ -15572,7 +15587,7 @@
       "text": "return self.sudo().create("
     },
     {
-      "line": 76,
+      "line": 77,
       "path": "sports_federation_schedule_approval/models/publication_integrity.py",
       "text": "self.sudo()"
     },

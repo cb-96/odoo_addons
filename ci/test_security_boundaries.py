@@ -32,7 +32,7 @@ def test_direct_elevated_controller_mutation_is_rejected(tmp_path):
     )
     violations = privileged.find_violations(tmp_path)
     assert len(violations) == 1
-    assert "sudo().write()" in violations[0]
+    assert "elevated record with write()" in violations[0]
 
 
 def test_privilege_service_call_is_allowed(tmp_path):
@@ -64,3 +64,16 @@ def test_audit_acl_checker_rejects_unlink_permissions(tmp_path):
 
 def test_repository_audit_acls_deny_unlink():
     assert audit_acl.find_violations(ROOT) == []
+
+
+def test_privileged_command_contracts_are_complete():
+    commands = load("check_privileged_command_contracts")
+    assert commands.find_violations(ROOT) == []
+
+
+def test_result_portal_uses_owned_command_service():
+    path = ROOT / "sports_federation_portal/controllers/result_portal.py"
+    source = path.read_text()
+    assert 'request.env["federation.result.commands"]' in source
+    assert "match.action_approve_result()" not in source
+    assert "match.action_contest_result()" not in source

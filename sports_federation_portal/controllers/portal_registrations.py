@@ -157,8 +157,13 @@ class FederationRegistrationPortal(FederationPortalBase):
             )
 
         try:
-            registration.action_cancel()
-        except ValidationError as error:
+            request.env["federation.portal.privilege"].portal_call(
+                registration,
+                "action_cancel",
+                scope_domain=[("club_id", "in", clubs.ids)],
+                user=request.env.user,
+            )
+        except (AccessError, ValidationError) as error:
             return self._redirect_with_query(
                 "/my/season-registrations",
                 error=str(error),

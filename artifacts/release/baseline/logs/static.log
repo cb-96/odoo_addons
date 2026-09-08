@@ -2,7 +2,10 @@
 Python syntax check passed without writing bytecode
 XML parse check passed
 Legacy competition engine is absent from runtime, CI and active documentation.
-[sudo-guard] OK - 39 privileged calls are documented and guarded.
+[sudo-guard] OK - 38 privileged calls are documented and guarded.
+Privileged mutation boundary check passed.
+Destructive token contract passed.
+Audit ACL integrity check passed.
 Portal ownership contract passed.
 Officiating and legacy-match contract passed.
 Registration ownership contract passed.

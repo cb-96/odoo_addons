@@ -51,6 +51,7 @@ release_qualification_exit=0
 privileged_mutation_exit=0
 destructive_token_exit=0
 audit_acl_exit=0
+privileged_commands_exit=0
 
 echo "[lint] Running Black across the repository"
 black --check --exclude '/(\.git|__pycache__|\.venv|ci/logs)/' . || black_exit=$?
@@ -81,6 +82,9 @@ python3 ci/check_destructive_token_contract.py || destructive_token_exit=$?
 
 echo "[lint] Validating immutable audit ACLs"
 python3 ci/check_audit_acl_integrity.py || audit_acl_exit=$?
+
+echo "[lint] Validating privileged command contracts"
+python3 ci/check_privileged_command_contracts.py || privileged_commands_exit=$?
 
 echo "[lint] Validating release qualification"
 python3 ci/check_release_qualification.py || release_qualification_exit=$?
@@ -121,15 +125,16 @@ echo "  HTTP route ownership exit code: $http_route_ownership_exit"
 echo "  Privileged mutation exit code: $privileged_mutation_exit"
 echo "  Destructive token exit code: $destructive_token_exit"
 echo "  Audit ACL exit code: $audit_acl_exit"
+echo "  Privileged commands exit code: $privileged_commands_exit"
 echo "  Release qualification exit code: $release_qualification_exit"
 echo "  Migration review exit code: $migration_review_exit"
 echo "  Dependency drift report exit code: $dependency_drift_exit"
 
-if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $privileged_mutation_exit -ne 0 || $destructive_token_exit -ne 0 || $audit_acl_exit -ne 0 || $release_qualification_exit -ne 0 || $migration_review_exit -ne 0 ) ]]; then
+if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $privileged_mutation_exit -ne 0 || $destructive_token_exit -ne 0 || $audit_acl_exit -ne 0 || $privileged_commands_exit -ne 0 || $release_qualification_exit -ne 0 || $migration_review_exit -ne 0 ) ]]; then
     exit 1
 fi
 
-if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $privileged_mutation_exit -ne 0 || $destructive_token_exit -ne 0 || $audit_acl_exit -ne 0 || $release_qualification_exit -ne 0 || $migration_review_exit -ne 0 ]]; then
+if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $privileged_mutation_exit -ne 0 || $destructive_token_exit -ne 0 || $audit_acl_exit -ne 0 || $privileged_commands_exit -ne 0 || $release_qualification_exit -ne 0 || $migration_review_exit -ne 0 ]]; then
     echo "[lint] Repository-wide report found issues."
 else
     echo "[lint] Repository-wide report is clean."

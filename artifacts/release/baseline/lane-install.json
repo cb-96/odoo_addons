@@ -1,19 +1,19 @@
 {
   "branch": "main",
   "command": "scripts/ci/run_rc_validation.sh install",
-  "commit": "88a1b03280bd8d35a7db48750c5c9ba292b4e844",
+  "commit": "bc5432ae9c6a7c0054411c45a964df5fe3c99849",
   "database": "sf_rc_validation",
-  "duration_seconds": 516.0,
+  "duration_seconds": 518.0,
   "exit_code": 1,
   "failure_classification": "unclassified",
-  "finished_at": "2026-09-07T20:18:19Z",
+  "finished_at": "2026-09-07T21:24:10Z",
   "lane": "install",
   "log": {
     "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/install.log",
-    "sha256": "26ed2f670ec09239e8de8e565aca6d983057d0188b48691b571fe1b37d8bcc2b",
+    "sha256": "ea4ec1411d5883314279ae1b49198d18aebf71183ad7dc46dc27530b20833dc2",
     "size_bytes": 40814
   },
-  "recorded_at": "2026-09-07T20:18:19.971332+00:00",
+  "recorded_at": "2026-09-07T21:24:10.997507+00:00",
   "runner": {
     "github_job": null,
     "github_run_attempt": null,
@@ -23,7 +23,7 @@
   },
   "schema_version": 2,
   "skip_reason": null,
-  "started_at": "2026-09-07T20:09:43Z",
+  "started_at": "2026-09-07T21:15:32Z",
   "status": "failed",
   "tools": {
     "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",

@@ -92,3 +92,13 @@ mobile table and action wrapping.
 ## Club competition data tutorial
 
 Club representatives use **My Account > Data API** (`/my/data-api`) for live URLs, curl and JavaScript examples, privacy rules, and caching guidance.
+
+
+## Owned portal command boundaries
+
+Result approval and contesting call `federation.result.commands`, which
+re-resolves the target inside the authenticated representative's current club
+scope before applying an elevated transition. Season-registration cancellation
+uses `federation.portal.privilege.portal_call` with an explicit club domain.
+Controllers may keep publication-gated or ownership-scoped elevated reads, but
+must not mutate records that originated from those reads directly.
