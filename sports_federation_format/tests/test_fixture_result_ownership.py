@@ -8,6 +8,20 @@ class TestFixtureResultOwnership(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        approver_group = cls.env.ref(
+            "sports_federation_result_control.group_result_approver"
+        )
+        cls.result_approver = (
+            cls.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Fixture Ownership Result Approver",
+                    "login": "fixture.ownership.approver@example.com",
+                    "group_ids": [(6, 0, [approver_group.id])],
+                }
+            )
+        )
         club = cls.env["federation.club"].create({"name": "Ownership Club"})
         cls.teams = cls.env["federation.team"].create(
             [
@@ -126,7 +140,7 @@ class TestFixtureResultOwnership(TransactionCase):
         fixture = stage.stage_fixture_ids[0]
         match = fixture.operational_match_id.sudo()
         match.write({"home_score": 2, "away_score": 1, "result_state": "verified"})
-        match.action_approve_result()
+        match.with_user(self.result_approver).action_approve_result()
         self.assertEqual(fixture.state, "completed")
         self.assertEqual(fixture.result_state, "approved")
         self.assertEqual(fixture.home_score, 2)

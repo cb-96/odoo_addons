@@ -8,7 +8,7 @@
       ],
       "installable": true,
       "name": "sports_federation_base",
-      "version": "19.0.1.2.3"
+      "version": "19.0.1.3.0"
     },
     {
       "depends": [
@@ -134,7 +134,7 @@
       ],
       "installable": true,
       "name": "sports_federation_matchday",
-      "version": "19.0.2.2.0"
+      "version": "19.0.2.3.0"
     },
     {
       "depends": [
@@ -193,7 +193,7 @@
       ],
       "installable": true,
       "name": "sports_federation_portal",
-      "version": "19.0.7.0.0"
+      "version": "19.0.7.1.0"
     },
     {
       "depends": [
@@ -246,7 +246,7 @@
       ],
       "installable": true,
       "name": "sports_federation_reporting",
-      "version": "19.0.1.4.0"
+      "version": "19.0.1.4.1"
     },
     {
       "depends": [
@@ -255,7 +255,7 @@
       ],
       "installable": true,
       "name": "sports_federation_result_control",
-      "version": "19.0.1.2.1"
+      "version": "19.0.1.4.0"
     },
     {
       "depends": [
@@ -284,7 +284,7 @@
       ],
       "installable": true,
       "name": "sports_federation_schedule_approval",
-      "version": "19.0.2.3.1"
+      "version": "19.0.2.4.0"
     },
     {
       "depends": [
@@ -325,18 +325,18 @@
       "version": "19.0.1.1.0"
     }
   ],
-  "commit": "bc5432ae9c6a7c0054411c45a964df5fe3c99849",
+  "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
   "counts": {
     "addons": 26,
     "large_python_files": 19,
     "migrations": 29,
-    "model_declarations": 270,
-    "raw_sql_candidates": 2324,
+    "model_declarations": 272,
+    "raw_sql_candidates": 2348,
     "routes": 97,
     "scheduled_jobs": 10,
-    "sudo_calls": 343
+    "sudo_calls": 351
   },
-  "inventory_sha256": "2e6154897adde93d3740615e87f29f02a15ae9df704f7007d08d742033f11e16",
+  "inventory_sha256": "7e337b964f9f6d3c2cffbb1c40b257cc8b61c4b0cfcf58caafae1bff60b6ce4a",
   "large_python_files": [
     {
       "line": 1,
@@ -517,6 +517,10 @@
     {
       "model": "federation.retention.policy",
       "path": "sports_federation_base/models/retention_evidence.py"
+    },
+    {
+      "model": "federation.workflow.transition",
+      "path": "sports_federation_base/models/workflow_transition.py"
     },
     {
       "model": "federation.matchday",
@@ -1295,6 +1299,10 @@
       "path": "sports_federation_result_control/models/match_result_control.py"
     },
     {
+      "model": "federation.result.commands",
+      "path": "sports_federation_result_control/services/result_commands.py"
+    },
+    {
       "model": "federation.match",
       "path": "sports_federation_rosters/models/federation_match_inherit.py"
     },
@@ -1624,6 +1632,11 @@
       "text": "MUTATING_METHODS = {\"create\", \"write\", \"unlink\"}"
     },
     {
+      "line": 71,
+      "path": "ci/check_privileged_mutation_boundaries.py",
+      "text": "names.update(assigned_names(node))"
+    },
+    {
       "line": 14,
       "path": "ci/check_publication_integrity_contract.py",
       "text": "\"FOR UPDATE\","
@@ -1689,17 +1702,17 @@
       "text": "environment.update("
     },
     {
-      "line": 66,
+      "line": 67,
       "path": "sports_federation_base/models/audit_event.py",
       "text": "values.update("
     },
     {
-      "line": 73,
+      "line": 74,
       "path": "sports_federation_base/models/audit_event.py",
       "text": "return self.sudo().create(values)"
     },
     {
-      "line": 87,
+      "line": 88,
       "path": "sports_federation_base/models/audit_event.py",
       "text": "\"\"\"Create one audit row per target record.\"\"\""
     },
@@ -4199,147 +4212,197 @@
       "text": "\"name\": _(\"Update Court Status\"),"
     },
     {
-      "line": 47,
+      "line": 52,
       "path": "sports_federation_matchday/services/matchday_commands.py",
       "text": ".create("
     },
     {
-      "line": 56,
+      "line": 61,
       "path": "sports_federation_matchday/services/matchday_commands.py",
       "text": "self.env[\"federation.matchday.court.status\"].sudo().create("
     },
     {
-      "line": 74,
+      "line": 65,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": "result = transition.execute("
+    },
+    {
+      "line": 72,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": "transition.execute("
+    },
+    {
+      "line": 84,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": "result.update({\"session_id\": session.id, \"publication_id\": publication.id})"
+    },
+    {
+      "line": 99,
       "path": "sports_federation_matchday/services/matchday_commands.py",
       "text": ".create("
     },
     {
-      "line": 166,
+      "line": 147,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": "result = self.env[\"federation.workflow.transition\"].execute("
+    },
+    {
+      "line": 180,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": "result = self.env[\"federation.workflow.transition\"].execute("
+    },
+    {
+      "line": 253,
       "path": "sports_federation_matchday/services/matchday_commands.py",
       "text": "raise ValidationError(_(\"Select an available slot on this match day.\"))"
     },
     {
-      "line": 213,
+      "line": 297,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": "result = self.env[\"federation.workflow.transition\"].execute("
+    },
+    {
+      "line": 311,
       "path": "sports_federation_matchday/services/matchday_commands.py",
       "text": ".create("
     },
     {
-      "line": 228,
+      "line": 326,
       "path": "sports_federation_matchday/services/matchday_commands.py",
-      "text": "self.env[\"federation.matchday.incident\"].sudo().create("
+      "text": "incident = self.env[\"federation.matchday.incident\"].sudo().create("
     },
     {
-      "line": 14,
+      "line": 349,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": "result.update("
+    },
+    {
+      "line": 389,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": "session_result = transition.execute("
+    },
+    {
+      "line": 403,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": "result = transition.execute("
+    },
+    {
+      "line": 422,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": "result.update("
+    },
+    {
+      "line": 15,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "season = cls.env[\"federation.season\"].create("
     },
     {
-      "line": 21,
+      "line": 22,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "competition = cls.env[\"federation.competition\"].create("
     },
     {
-      "line": 24,
+      "line": 25,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "cls.edition = cls.env[\"federation.competition.edition\"].create("
     },
     {
-      "line": 31,
+      "line": 32,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "cls.division = cls.env[\"federation.tournament\"].create("
     },
     {
-      "line": 40,
+      "line": 41,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "participants = cls.env[\"federation.participant.set\"].create("
     },
     {
-      "line": 48,
+      "line": 49,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "cls.structure = cls.env[\"federation.competition.structure\"].create("
     },
     {
-      "line": 57,
+      "line": 58,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "cls.venue = cls.env[\"federation.venue\"].create({\"name\": \"Operations Venue\"})"
     },
     {
-      "line": 58,
+      "line": 59,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "cls.court = cls.env[\"federation.playing.area\"].create("
     },
     {
-      "line": 61,
+      "line": 62,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "cls.matchday = cls.env[\"federation.matchday\"].create("
     },
     {
-      "line": 70,
+      "line": 71,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "cls.slots = cls.env[\"federation.schedule.slot\"].create("
     },
     {
-      "line": 86,
+      "line": 87,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "cls.schedule = cls.env[\"federation.schedule\"].create("
     },
     {
-      "line": 102,
+      "line": 103,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": ".create("
     },
     {
-      "line": 117,
+      "line": 118,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": ".create("
     },
     {
-      "line": 129,
+      "line": 130,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "cls.match = cls.env[\"federation.match\"].create("
     },
     {
-      "line": 144,
+      "line": 145,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "cls.env[\"federation.competition.role.assignment\"].create("
     },
     {
-      "line": 187,
+      "line": 195,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "matchday = self.env[\"federation.matchday\"].create("
     },
     {
-      "line": 195,
+      "line": 203,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "schedule = self.env[\"federation.schedule\"].create("
     },
     {
-      "line": 226,
+      "line": 234,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "wizard = self.env[\"federation.matchday.delete.wizard\"].browse(action[\"res_id\"])"
     },
     {
-      "line": 230,
+      "line": 238,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "self.env[\"federation.matchday.delete.wizard\"].fields_get()[\"reason\"]["
     },
     {
-      "line": 241,
+      "line": 249,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": ".create("
     },
     {
-      "line": 254,
+      "line": 262,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "wizard = self.env[\"federation.matchday.delete.wizard\"].create("
     },
     {
-      "line": 280,
+      "line": 288,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "original = self.env[\"federation.matchday\"].create("
     },
     {
-      "line": 291,
+      "line": 299,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "wizard = self.env[\"federation.matchday.restart.wizard\"].create("
     },
@@ -6939,7 +7002,22 @@
       "text": "self.env[\"federation.club.representative\"].create("
     },
     {
-      "line": 316,
+      "line": 318,
+      "path": "sports_federation_portal/tests/test_result_portal_access.py",
+      "text": "club = self.env[\"federation.club\"].create("
+    },
+    {
+      "line": 324,
+      "path": "sports_federation_portal/tests/test_result_portal_access.py",
+      "text": ".create("
+    },
+    {
+      "line": 333,
+      "path": "sports_federation_portal/tests/test_result_portal_access.py",
+      "text": "self.env[\"federation.club.representative\"].create("
+    },
+    {
+      "line": 357,
       "path": "sports_federation_portal/tests/test_result_portal_access.py",
       "text": ".create("
     },
@@ -8049,22 +8127,22 @@
       "text": "dashboard = self.create(self._snapshot_values())"
     },
     {
-      "line": 33,
+      "line": 34,
       "path": "sports_federation_reporting/models/report_audit_event.py",
       "text": "\"\"\"Create the SQL view that exposes audit events to reporting actions.\"\"\""
     },
     {
-      "line": 35,
+      "line": 36,
       "path": "sports_federation_reporting/models/report_audit_event.py",
       "text": "self.env.cr.execute(\"\"\""
     },
     {
-      "line": 36,
+      "line": 37,
       "path": "sports_federation_reporting/models/report_audit_event.py",
       "text": "CREATE VIEW federation_report_audit_event AS ("
     },
     {
-      "line": 37,
+      "line": 38,
       "path": "sports_federation_reporting/models/report_audit_event.py",
       "text": "SELECT"
     },
@@ -9189,97 +9267,102 @@
       "text": "return self.sudo().create("
     },
     {
-      "line": 70,
+      "line": 72,
       "path": "sports_federation_result_control/models/match_result_control.py",
       "text": "\"\"\"Update records with module-specific side effects.\"\"\""
     },
     {
-      "line": 117,
+      "line": 119,
       "path": "sports_federation_result_control/models/match_result_control.py",
       "text": "action.update("
     },
     {
-      "line": 176,
+      "line": 164,
+      "path": "sports_federation_result_control/models/match_result_control.py",
+      "text": "result = transition.execute("
+    },
+    {
+      "line": 218,
       "path": "sports_federation_result_control/models/match_result_control.py",
       "text": "self.env.cr.execute("
     },
     {
-      "line": 177,
+      "line": 219,
       "path": "sports_federation_result_control/models/match_result_control.py",
       "text": "\"SELECT id FROM federation_match WHERE id = ANY(%s) FOR UPDATE\","
     },
     {
-      "line": 12,
+      "line": 14,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": "cls.club_home = cls.env[\"federation.club\"].create("
     },
     {
-      "line": 18,
+      "line": 20,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": "cls.club_away = cls.env[\"federation.club\"].create("
     },
     {
-      "line": 24,
+      "line": 26,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": "cls.team_home = cls.env[\"federation.team\"].create("
     },
     {
-      "line": 30,
+      "line": 32,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": "cls.team_away = cls.env[\"federation.team\"].create("
     },
     {
-      "line": 36,
+      "line": 38,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": "cls.season = cls.env[\"federation.season\"].create("
     },
     {
-      "line": 44,
+      "line": 46,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": "cls.rule_set = cls.env[\"federation.rule.set\"].create("
     },
     {
-      "line": 53,
+      "line": 55,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": "cls.tournament = cls.env[\"federation.tournament\"].create("
     },
     {
-      "line": 61,
+      "line": 63,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": "cls.participant_home = cls.env[\"federation.tournament.participant\"].create("
     },
     {
-      "line": 67,
+      "line": 69,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": "cls.participant_away = cls.env[\"federation.tournament.participant\"].create("
     },
     {
-      "line": 75,
+      "line": 77,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": "Standing.create("
     },
     {
-      "line": 96,
+      "line": 98,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": ".create("
     },
     {
-      "line": 108,
+      "line": 110,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": ".create("
     },
     {
-      "line": 120,
+      "line": 122,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": ".create("
     },
     {
-      "line": 132,
+      "line": 134,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": ".create("
     },
     {
-      "line": 151,
+      "line": 153,
       "path": "sports_federation_result_control/tests/test_result_control.py",
       "text": "cls.match = cls.env[\"federation.match\"].create("
     },
@@ -11169,24 +11252,69 @@
       "text": ".create("
     },
     {
-      "line": 232,
+      "line": 127,
+      "path": "sports_federation_schedule_approval/services/approval_commands.py",
+      "text": "result = transition.execute("
+    },
+    {
+      "line": 138,
+      "path": "sports_federation_schedule_approval/services/approval_commands.py",
+      "text": "transition.execute("
+    },
+    {
+      "line": 153,
+      "path": "sports_federation_schedule_approval/services/approval_commands.py",
+      "text": "result = transition.execute("
+    },
+    {
+      "line": 168,
+      "path": "sports_federation_schedule_approval/services/approval_commands.py",
+      "text": "transition.execute("
+    },
+    {
+      "line": 190,
+      "path": "sports_federation_schedule_approval/services/approval_commands.py",
+      "text": "transition.execute("
+    },
+    {
+      "line": 206,
+      "path": "sports_federation_schedule_approval/services/approval_commands.py",
+      "text": "transition.execute("
+    },
+    {
+      "line": 279,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "self.env.cr.execute("
     },
     {
-      "line": 233,
+      "line": 280,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "\"SELECT id FROM federation_matchday WHERE id=%s FOR UPDATE\","
     },
     {
-      "line": 267,
+      "line": 312,
+      "path": "sports_federation_schedule_approval/services/approval_commands.py",
+      "text": "transition.execute("
+    },
+    {
+      "line": 324,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": ".create("
     },
     {
-      "line": 291,
+      "line": 348,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "match_values.update("
+    },
+    {
+      "line": 355,
+      "path": "sports_federation_schedule_approval/services/approval_commands.py",
+      "text": "transition.execute("
+    },
+    {
+      "line": 363,
+      "path": "sports_federation_schedule_approval/services/approval_commands.py",
+      "text": "transition.execute("
     },
     {
       "line": 14,
@@ -13589,7 +13717,7 @@
     {
       "auth": "\"user\"",
       "csrf": "True",
-      "line": 148,
+      "line": 150,
       "methods": "[\"POST\"]",
       "path": "sports_federation_portal/controllers/result_portal.py",
       "text": "@http.route("
@@ -13992,6 +14120,51 @@
   "schema_version": 1,
   "sudo_calls": [
     {
+      "line": 66,
+      "path": "ci/check_matchday_transition_contract.py",
+      "text": "'matchday.sudo().state = \"open\"',"
+    },
+    {
+      "line": 67,
+      "path": "ci/check_matchday_transition_contract.py",
+      "text": "'matchday.sudo().state = \"closed\"',"
+    },
+    {
+      "line": 68,
+      "path": "ci/check_matchday_transition_contract.py",
+      "text": "'session.sudo().write(',"
+    },
+    {
+      "line": 69,
+      "path": "ci/check_matchday_transition_contract.py",
+      "text": "'status.sudo().write(',"
+    },
+    {
+      "line": 70,
+      "path": "ci/check_matchday_transition_contract.py",
+      "text": "'incident.sudo().write(',"
+    },
+    {
+      "line": 71,
+      "path": "ci/check_matchday_transition_contract.py",
+      "text": "'match.sudo().write(values)',"
+    },
+    {
+      "line": 51,
+      "path": "ci/check_workflow_transition_foundation.py",
+      "text": "'review.schedule_id.sudo().state = \"approved\"',"
+    },
+    {
+      "line": 52,
+      "path": "ci/check_workflow_transition_foundation.py",
+      "text": "'review.schedule_id.sudo().state = \"changes_requested\"',"
+    },
+    {
+      "line": 53,
+      "path": "ci/check_workflow_transition_foundation.py",
+      "text": "'live.sudo().write({\"state\": \"superseded\"})',"
+    },
+    {
       "line": 32,
       "path": "ci/test_capture_codebase_inventory.py",
       "text": "\"        self.env['x'].sudo().search([])\\n\""
@@ -14017,17 +14190,17 @@
       "text": ".sudo()"
     },
     {
-      "line": 64,
+      "line": 65,
       "path": "sports_federation_base/models/audit_event.py",
       "text": "target = target.sudo().exists()[:1]"
     },
     {
-      "line": 73,
+      "line": 74,
       "path": "sports_federation_base/models/audit_event.py",
       "text": "return self.sudo().create(values)"
     },
     {
-      "line": 88,
+      "line": 89,
       "path": "sports_federation_base/models/audit_event.py",
       "text": "records = records.sudo().exists()"
     },
@@ -14452,97 +14625,97 @@
       "text": "self.env[\"federation.matchday.session\"].sudo().with_context("
     },
     {
-      "line": 46,
+      "line": 51,
       "path": "sports_federation_matchday/services/matchday_commands.py",
       "text": ".sudo()"
     },
     {
-      "line": 56,
+      "line": 61,
       "path": "sports_federation_matchday/services/matchday_commands.py",
       "text": "self.env[\"federation.matchday.court.status\"].sudo().create("
     },
     {
-      "line": 59,
+      "line": 66,
       "path": "sports_federation_matchday/services/matchday_commands.py",
-      "text": "matchday.sudo().state = \"open\""
+      "text": "matchday.sudo(),"
     },
     {
-      "line": 73,
-      "path": "sports_federation_matchday/services/matchday_commands.py",
-      "text": ".sudo()"
-    },
-    {
-      "line": 97,
-      "path": "sports_federation_matchday/services/matchday_commands.py",
-      "text": "status.sudo().write("
-    },
-    {
-      "line": 119,
-      "path": "sports_federation_matchday/services/matchday_commands.py",
-      "text": "incident.sudo().write("
-    },
-    {
-      "line": 209,
-      "path": "sports_federation_matchday/services/matchday_commands.py",
-      "text": "match.sudo().write(values)"
-    },
-    {
-      "line": 212,
+      "line": 98,
       "path": "sports_federation_matchday/services/matchday_commands.py",
       "text": ".sudo()"
     },
     {
-      "line": 228,
+      "line": 148,
       "path": "sports_federation_matchday/services/matchday_commands.py",
-      "text": "self.env[\"federation.matchday.incident\"].sudo().create("
+      "text": "status.sudo(),"
     },
     {
-      "line": 277,
+      "line": 181,
       "path": "sports_federation_matchday/services/matchday_commands.py",
-      "text": "session.sudo().write("
+      "text": "incident.sudo(),"
     },
     {
-      "line": 285,
+      "line": 298,
       "path": "sports_federation_matchday/services/matchday_commands.py",
-      "text": "matchday.sudo().state = \"closed\""
+      "text": "match.sudo(),"
     },
     {
-      "line": 101,
+      "line": 310,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": ".sudo()"
+    },
+    {
+      "line": 326,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": "incident = self.env[\"federation.matchday.incident\"].sudo().create("
+    },
+    {
+      "line": 390,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": "session.sudo(),"
+    },
+    {
+      "line": 404,
+      "path": "sports_federation_matchday/services/matchday_commands.py",
+      "text": "matchday.sudo(),"
+    },
+    {
+      "line": 102,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": ".sudo()"
     },
     {
-      "line": 116,
+      "line": 117,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": ".sudo()"
     },
     {
-      "line": 128,
+      "line": 129,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "cls.matchday.sudo().write({\"current_publication_id\": cls.publication.id})"
     },
     {
-      "line": 136,
+      "line": 137,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "cls.match.sudo().write("
     },
     {
-      "line": 174,
+      "line": 182,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "deviation.sudo().write({\"reason\": \"Changed\"})"
     },
     {
-      "line": 223,
+      "line": 231,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "self.matchday.sudo().write({\"state\": \"closed\"})"
     },
     {
-      "line": 240,
+      "line": 248,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": ".sudo()"
     },
     {
-      "line": 253,
+      "line": 261,
       "path": "sports_federation_matchday/tests/test_matchday_operator_handoff.py",
       "text": "self.matchday.sudo().write({\"state\": \"closed\"})"
     },
@@ -14807,7 +14980,7 @@
       "text": "match = request.env[\"federation.match\"].sudo().browse(match_id)"
     },
     {
-      "line": 158,
+      "line": 160,
       "path": "sports_federation_portal/controllers/result_portal.py",
       "text": "match = request.env[\"federation.match\"].sudo().browse(match_id)"
     },
@@ -15117,27 +15290,12 @@
       "text": "self.match_ab.sudo().action_approve_result()"
     },
     {
-      "line": 256,
-      "path": "sports_federation_portal/tests/test_result_portal_access.py",
-      "text": "self.match_ab.sudo().action_approve_result()"
-    },
-    {
-      "line": 270,
+      "line": 272,
       "path": "sports_federation_portal/tests/test_result_portal_access.py",
       "text": "self.match_ab.sudo().action_contest_result()"
     },
     {
-      "line": 280,
-      "path": "sports_federation_portal/tests/test_result_portal_access.py",
-      "text": "self.match_ab.sudo().action_contest_result()"
-    },
-    {
-      "line": 292,
-      "path": "sports_federation_portal/tests/test_result_portal_access.py",
-      "text": "self.match_ab.sudo().action_contest_result()"
-    },
-    {
-      "line": 304,
+      "line": 314,
       "path": "sports_federation_portal/tests/test_result_portal_access.py",
       "text": "self.match_ab.sudo().action_contest_result()"
     },
@@ -15587,6 +15745,16 @@
       "text": "return self.sudo().create("
     },
     {
+      "line": 41,
+      "path": "sports_federation_result_control/services/result_commands.py",
+      "text": ".sudo()"
+    },
+    {
+      "line": 50,
+      "path": "sports_federation_result_control/services/result_commands.py",
+      "text": "return match.with_user(actor).sudo().with_context("
+    },
+    {
       "line": 77,
       "path": "sports_federation_schedule_approval/models/publication_integrity.py",
       "text": "self.sudo()"
@@ -15612,54 +15780,54 @@
       "text": "schedule = review.schedule_id.sudo()"
     },
     {
-      "line": 127,
+      "line": 139,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
-      "text": "review.schedule_id.sudo().write({\"state\": \"changes_requested\"})"
+      "text": "review.schedule_id.sudo(),"
     },
     {
-      "line": 143,
+      "line": 169,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
-      "text": "review.schedule_id.sudo().state = \"changes_requested\""
+      "text": "review.schedule_id.sudo(),"
     },
     {
-      "line": 149,
+      "line": 180,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "schedule = review.schedule_id.sudo()"
     },
     {
-      "line": 166,
+      "line": 207,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
-      "text": "review.schedule_id.sudo().state = \"approved\""
+      "text": "review.schedule_id.sudo(),"
     },
     {
-      "line": 185,
+      "line": 232,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "schedule = schedule.sudo()"
     },
     {
-      "line": 263,
+      "line": 313,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
-      "text": "live.sudo().write({\"state\": \"superseded\"})"
+      "text": "live.sudo(),"
     },
     {
-      "line": 266,
+      "line": 323,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": ".sudo()"
     },
     {
-      "line": 297,
+      "line": 354,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "match.sudo().write(match_values)"
     },
     {
-      "line": 298,
+      "line": 356,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
-      "text": "schedule.sudo().state = \"published\""
+      "text": "schedule.sudo(),"
     },
     {
-      "line": 299,
+      "line": 364,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
-      "text": "schedule.matchday_id.sudo().write("
+      "text": "schedule.matchday_id.sudo(),"
     },
     {
       "line": 100,

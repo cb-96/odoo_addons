@@ -6,6 +6,10 @@ Legacy competition engine is absent from runtime, CI and active documentation.
 Privileged mutation boundary check passed.
 Destructive token contract passed.
 Audit ACL integrity check passed.
+Privileged command contract passed.
+Workflow transition foundation check passed.
+Match-day transition contract passed.
+Result transition contract passed.
 Portal ownership contract passed.
 Officiating and legacy-match contract passed.
 Registration ownership contract passed.

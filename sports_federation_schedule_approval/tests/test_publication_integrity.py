@@ -275,11 +275,23 @@ class TestPhase511Integrity(TransactionCase):
                     {**vals, "version": 2}
                 )
 
+    def test_approval_rejects_non_review_schedule_without_finalizing_review(self):
+        schedule, review = self._valid_schedule_review(
+            self.days[0], "invalid-approval-source"
+        )
+        self.assertEqual(schedule.state, "approved")
+        with self.assertRaises(ValidationError):
+            self.env["federation.schedule.approval.commands"].approve(review.id)
+        self.assertEqual(review.state, "pending")
+        self.assertFalse(review.reviewer_id)
+        self.assertFalse(review.reviewed_at)
+
     def test_schedule_approver_can_review_without_calendar_model_access(self):
         approver_group = self.env.ref(
             "sports_federation_schedule_approval.group_schedule_approver"
         )
         schedule, review = self._valid_schedule_review(self.days[0], "approver")
+        schedule.sudo().state = "ready_for_review"
         approver = (
             self.env["res.users"]
             .with_context(no_reset_password=True)
