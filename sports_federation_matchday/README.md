@@ -46,3 +46,16 @@ linked match records remain in the competition but are detached from the deleted
 publication and calendar slots. The action requires a reason and displays a
 final confirmation popup before deletion.
 
+
+
+## Transactional operational commands
+
+Match-day opening, court status changes, incident resolution, operational match
+deviations, session closure, and match-day closure use the shared workflow
+transition service. Every public command runs inside a database savepoint and
+returns a structured result containing the affected record IDs, actor, and
+resulting state. Forced closure requires a reason. Published schedule evidence
+remains immutable and deviations alter operational fields only.
+
+Transition failures roll back sessions, court statuses, operational match
+changes, incidents, and audit rows as one unit.

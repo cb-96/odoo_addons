@@ -25,6 +25,11 @@ class FederationMatchdayCommands(models.AbstractModel):
 
     @api.model
     def open_matchday(self, matchday_id):
+        with self.env.cr.savepoint():
+            return self._open_matchday(matchday_id)
+
+    @api.model
+    def _open_matchday(self, matchday_id):
         matchday = self._resolve(matchday_id)
         publication = matchday.current_publication_id
         if (
@@ -56,19 +61,39 @@ class FederationMatchdayCommands(models.AbstractModel):
             self.env["federation.matchday.court.status"].sudo().create(
                 {"matchday_id": matchday.id, "court_id": court.id}
             )
-        matchday.sudo().state = "open"
+        transition = self.env["federation.workflow.transition"]
+        result = transition.execute(
+            matchday.sudo(),
+            "open",
+            {"scheduled"},
+            event_type="matchday_opened",
+            description=_("Published match day opened for live operations."),
+        )
+        transition.execute(
+            session,
+            "open",
+            {"open"},
+            event_type="matchday_session_opened",
+            description=_("Match-day execution session opened."),
+        )
         self.env["federation.competition.event"].emit(
             matchday,
             "matchday_opened",
             {"session_id": session.id, "publication_id": publication.id},
         )
-        return session
+        result.update({"session_id": session.id, "publication_id": publication.id})
+        return result
 
     @api.model
     def report_incident(self, matchday_id, incident_type, description):
+        with self.env.cr.savepoint():
+            return self._report_incident(matchday_id, incident_type, description)
+
+    @api.model
+    def _report_incident(self, matchday_id, incident_type, description):
         matchday = self._resolve(matchday_id)
         self._require_open(matchday)
-        return (
+        incident = (
             self.env["federation.matchday.incident"]
             .sudo()
             .create(
@@ -79,9 +104,34 @@ class FederationMatchdayCommands(models.AbstractModel):
                 }
             )
         )
+        self.env["federation.audit.event"].log_record_events(
+            event_family="workflow_transition",
+            event_type="matchday_incident_reported",
+            description=_("Match-day incident reported."),
+            records=incident,
+            actor=self.env.user,
+            action_name="report_incident",
+            changed_fields=("incident_type", "description"),
+        )
+        return {
+            "record_model": incident._name,
+            "record_ids": incident.ids,
+            "current_state": "unresolved",
+            "actor_id": self.env.user.id,
+            "incident_id": incident.id,
+        }
 
     @api.model
     def set_court_status(
+        self, matchday_id, court_id, state, delay_minutes=0, note=False
+    ):
+        with self.env.cr.savepoint():
+            return self._set_court_status(
+                matchday_id, court_id, state, delay_minutes, note
+            )
+
+    @api.model
+    def _set_court_status(
         self, matchday_id, court_id, state, delay_minutes=0, note=False
     ):
         matchday = self._resolve(matchday_id)
@@ -94,12 +144,17 @@ class FederationMatchdayCommands(models.AbstractModel):
             raise ValidationError(_("The court is outside this match day."))
         if state not in ("available", "delayed", "unavailable"):
             raise ValidationError(_("Invalid court status."))
-        status.sudo().write(
-            {
-                "state": state,
+        result = self.env["federation.workflow.transition"].execute(
+            status.sudo(),
+            state,
+            {"available", "delayed", "unavailable"},
+            values={
                 "delay_minutes": max(0, int(delay_minutes or 0)),
                 "note": note,
-            }
+            },
+            reason=note,
+            event_type="matchday_court_status_changed",
+            description=_("Match-day court status changed."),
         )
         if state != "available":
             self.report_incident(
@@ -107,26 +162,58 @@ class FederationMatchdayCommands(models.AbstractModel):
                 "court_unavailable" if state == "unavailable" else "delay",
                 note or _("Court status changed."),
             )
-        return status
+        result["court_status_id"] = status.id
+        return result
 
     @api.model
     def resolve_incident(self, incident_id):
+        with self.env.cr.savepoint():
+            return self._resolve_incident(incident_id)
+
+    @api.model
+    def _resolve_incident(self, incident_id):
         incident = (
             self.env["federation.matchday.incident"].browse(int(incident_id)).exists()
         )
         matchday = self._resolve(incident.matchday_id.id)
         self._require_open(matchday)
-        incident.sudo().write(
-            {
-                "resolved": True,
+        result = self.env["federation.workflow.transition"].execute(
+            incident.sudo(),
+            True,
+            {False},
+            state_field="resolved",
+            values={
                 "resolved_at": fields.Datetime.now(),
                 "resolved_by_id": self.env.user.id,
-            }
+            },
+            event_type="matchday_incident_resolved",
+            description=_("Match-day incident resolved."),
         )
-        return True
+        result["incident_id"] = incident.id
+        return result
 
     @api.model
     def record_schedule_deviation(
+        self,
+        matchday_id,
+        match_id,
+        deviation_type,
+        reason,
+        new_slot_id=False,
+        delay_minutes=0,
+    ):
+        with self.env.cr.savepoint():
+            return self._record_schedule_deviation(
+                matchday_id,
+                match_id,
+                deviation_type,
+                reason,
+                new_slot_id,
+                delay_minutes,
+            )
+
+    @api.model
+    def _record_schedule_deviation(
         self,
         matchday_id,
         match_id,
@@ -206,7 +293,18 @@ class FederationMatchdayCommands(models.AbstractModel):
                 "date_scheduled": False,
                 "state": "cancelled",
             }
-        match.sudo().write(values)
+        operational_status = values.pop("operational_status")
+        result = self.env["federation.workflow.transition"].execute(
+            match.sudo(),
+            operational_status,
+            {"as_published", "moved", "delayed", "postponed", "cancelled"},
+            values=values,
+            state_field="operational_status",
+            reason=reason,
+            reason_required=True,
+            event_type="matchday_match_deviated",
+            description=_("Operational match schedule changed."),
+        )
         deviation = (
             self.env["federation.matchday.deviation"]
             .sudo()
@@ -225,7 +323,7 @@ class FederationMatchdayCommands(models.AbstractModel):
                 }
             )
         )
-        self.env["federation.matchday.incident"].sudo().create(
+        incident = self.env["federation.matchday.incident"].sudo().create(
             {
                 "matchday_id": matchday.id,
                 "incident_type": "schedule_change",
@@ -248,10 +346,22 @@ class FederationMatchdayCommands(models.AbstractModel):
                 "new_slot_id": new_slot.id if new_slot else False,
             },
         )
-        return deviation
+        result.update(
+            {
+                "deviation_id": deviation.id,
+                "match_id": match.id,
+                "incident_id": incident.id,
+            }
+        )
+        return result
 
     @api.model
     def close_matchday(self, matchday_id, close_note=False, force=False):
+        with self.env.cr.savepoint():
+            return self._close_matchday(matchday_id, close_note, force)
+
+    @api.model
+    def _close_matchday(self, matchday_id, close_note=False, force=False):
         matchday = self._resolve(matchday_id)
         self._require_open(matchday)
         unresolved = self.env["federation.matchday.incident"].search(
@@ -266,7 +376,8 @@ class FederationMatchdayCommands(models.AbstractModel):
         if (unresolved or unfinished) and not force:
             raise ValidationError(
                 _(
-                    "Resolve incidents and complete or cancel every published match before closing."
+                    "Resolve incidents and complete or cancel every published "
+                    "match before closing."
                 )
             )
         if force and not (close_note or "").strip():
@@ -274,15 +385,30 @@ class FederationMatchdayCommands(models.AbstractModel):
                 _("A close reason is required when overriding match-day blockers.")
             )
         session = matchday.active_session_id
-        session.sudo().write(
-            {
-                "state": "closed",
+        transition = self.env["federation.workflow.transition"]
+        session_result = transition.execute(
+            session.sudo(),
+            "closed",
+            {"open"},
+            values={
                 "closed_at": fields.Datetime.now(),
                 "closed_by_id": self.env.user.id,
                 "close_note": close_note,
-            }
+            },
+            reason=close_note,
+            reason_required=bool(force),
+            event_type="matchday_session_closed",
+            description=_("Match-day execution session closed."),
         )
-        matchday.sudo().state = "closed"
+        result = transition.execute(
+            matchday.sudo(),
+            "closed",
+            {"open"},
+            reason=close_note,
+            reason_required=bool(force),
+            event_type="matchday_closed",
+            description=_("Match-day operations closed."),
+        )
         self.env["federation.competition.event"].emit(
             matchday,
             "matchday_closed",
@@ -293,4 +419,13 @@ class FederationMatchdayCommands(models.AbstractModel):
                 "unresolved_incident_ids": unresolved.ids,
             },
         )
-        return True
+        result.update(
+            {
+                "session_id": session.id,
+                "session_result": session_result,
+                "forced": bool(force),
+                "unfinished_match_ids": unfinished.ids,
+                "unresolved_incident_ids": unresolved.ids,
+            }
+        )
+        return result

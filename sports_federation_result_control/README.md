@@ -49,3 +49,13 @@ then applies a process-local command token for the elevated domain transition.
 Raw `sudo()` is not authorization and no longer bypasses result role checks.
 Backend submit, verify, approve, contest, correction, and reset actions keep
 their existing group and separation-of-duty rules.
+
+
+## Transactional result lifecycle
+
+Submission, verification, approval, contesting, correction, and reset use the
+shared workflow transition foundation. Every action locks the match row, runs
+in a database savepoint, returns a structured command result, preserves the
+result-specific audit trail, and emits a common workflow-transition audit event.
+Separation of duties is expressed as forbidden actor fields for verification
+and approval.

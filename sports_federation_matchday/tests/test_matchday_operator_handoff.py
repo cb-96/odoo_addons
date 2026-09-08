@@ -1,5 +1,6 @@
 import hashlib
 import json
+from unittest.mock import patch
 
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
@@ -150,21 +151,28 @@ class TestMatchdayOperatorHandoff(TransactionCase):
         )
 
     def test_open_uses_exact_live_publication(self):
-        session = self.env["federation.matchday.commands"].open_matchday(
+        result = self.env["federation.matchday.commands"].open_matchday(
             self.matchday.id
+        )
+        session = self.env["federation.matchday.session"].browse(
+            result["session_id"]
         )
         self.assertEqual(session.publication_id, self.publication)
         self.assertEqual(session.publication_digest, self.publication.snapshot_digest)
+        self.assertEqual(result["current_state"], "open")
         self.assertEqual(self.matchday.state, "open")
 
     def test_operational_move_preserves_published_slot(self):
         self.env["federation.matchday.commands"].open_matchday(self.matchday.id)
-        deviation = self.env["federation.matchday.commands"].record_schedule_deviation(
+        result = self.env["federation.matchday.commands"].record_schedule_deviation(
             self.matchday.id,
             self.match.id,
             "move",
             "Court turnaround",
             new_slot_id=self.slots[1].id,
+        )
+        deviation = self.env["federation.matchday.deviation"].browse(
+            result["deviation_id"]
         )
         self.assertEqual(self.match.published_slot_id, self.slots[0])
         self.assertEqual(self.match.operational_slot_id, self.slots[1])
@@ -308,3 +316,52 @@ class TestMatchdayOperatorHandoff(TransactionCase):
         self.assertEqual(replacement.default_slot_duration_minutes, 45)
         self.assertFalse(replacement.allocation_ids)
         self.assertFalse(replacement.slot_ids)
+
+    def test_open_failure_rolls_back_session_and_court_statuses(self):
+        transition = self.env["federation.workflow.transition"]
+        with patch.object(
+            type(transition),
+            "execute",
+            side_effect=RuntimeError("injected transition failure"),
+        ), self.assertRaises(RuntimeError):
+            self.env["federation.matchday.commands"].open_matchday(
+                self.matchday.id
+            )
+        self.assertEqual(self.matchday.state, "scheduled")
+        self.assertFalse(
+            self.env["federation.matchday.session"].search(
+                [("matchday_id", "=", self.matchday.id)]
+            )
+        )
+        self.assertFalse(
+            self.env["federation.matchday.court.status"].search(
+                [("matchday_id", "=", self.matchday.id)]
+            )
+        )
+
+    def test_open_and_deviation_emit_transition_audit(self):
+        open_result = self.env["federation.matchday.commands"].open_matchday(
+            self.matchday.id
+        )
+        self.env["federation.matchday.commands"].record_schedule_deviation(
+            self.matchday.id,
+            self.match.id,
+            "move",
+            "Audit move",
+            new_slot_id=self.slots[1].id,
+        )
+        events = self.env["federation.audit.event"].search(
+            [
+                ("event_family", "=", "workflow_transition"),
+                (
+                    "event_type",
+                    "in",
+                    ["matchday_opened", "matchday_match_deviated"],
+                ),
+            ]
+        )
+        self.assertEqual(
+            set(events.mapped("event_type")),
+            {"matchday_opened", "matchday_match_deviated"},
+        )
+        self.assertTrue(open_result["session_id"])

@@ -54,25 +54,28 @@ class FederationResultCommands(models.AbstractModel):
     @api.model
     def approve_portal_result(self, match_id, actor):
         """Approve one verified result inside the actor's current club scope."""
-        match = self._authorized_match(match_id, actor)
-        if match.result_state != "verified":
-            raise ValidationError(_("Only verified results can be approved."))
-        command_match = self._command_match(match, actor)
-        command_match.action_approve_result()
-        return command_match
+        with self.env.cr.savepoint():
+            match = self._authorized_match(match_id, actor)
+            if match.result_state != "verified":
+                raise ValidationError(_("Only verified results can be approved."))
+            command_match = self._command_match(match, actor)
+            return command_match.action_approve_result()
 
     @api.model
     def contest_portal_result(self, match_id, reason, actor):
         """Contest one visible result with an audited, scoped command."""
-        reason = (reason or "").strip()
-        if not reason:
-            raise ValidationError(_("A contest reason is required."))
-        match = self._authorized_match(match_id, actor)
-        if match.result_state not in ("submitted", "verified", "approved"):
-            raise ValidationError(
-                _("Only submitted, verified, or approved results can be contested.")
-            )
-        command_match = self._command_match(match, actor)
-        command_match.write({"result_contest_reason": reason})
-        command_match.action_contest_result()
-        return command_match
+        with self.env.cr.savepoint():
+            reason = (reason or "").strip()
+            if not reason:
+                raise ValidationError(_("A contest reason is required."))
+            match = self._authorized_match(match_id, actor)
+            if match.result_state not in ("submitted", "verified", "approved"):
+                raise ValidationError(
+                    _(
+                        "Only submitted, verified, or approved results can be "
+                        "contested."
+                    )
+                )
+            command_match = self._command_match(match, actor)
+            command_match.write({"result_contest_reason": reason})
+            return command_match.action_contest_result()

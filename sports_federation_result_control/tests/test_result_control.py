@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from odoo.exceptions import ValidationError
 from odoo.tests import TransactionCase
 
@@ -343,3 +345,53 @@ class TestResultControl(TransactionCase):
         self.assertEqual(contest_entry.reason, "Score disputed")
         self.assertTrue(correction_entry)
         self.assertEqual(correction_entry.reason, "Score corrected after review")
+
+    def test_result_actions_return_structured_command_results(self):
+        submitted = self.match.with_user(self.submitter_user).action_submit_result()
+        self.assertEqual(submitted["current_state"], "submitted")
+        self.assertEqual(submitted["record_ids"], self.match.ids)
+        verified = self.match.with_user(self.verifier_user).action_verify_result()
+        self.assertEqual(verified["current_state"], "verified")
+        approved = self.match.with_user(self.approver_user).action_approve_result()
+        self.assertEqual(approved["current_state"], "approved")
+        self.assertEqual(approved["actor_id"], self.approver_user.id)
+
+    def test_transition_failure_rolls_back_result_submission(self):
+        transition = self.env["federation.workflow.transition"]
+        with patch.object(
+            type(transition),
+            "execute",
+            side_effect=RuntimeError("injected result transition failure"),
+        ), self.assertRaises(RuntimeError):
+            self.match.with_user(self.submitter_user).action_submit_result()
+        self.assertEqual(self.match.result_state, "draft")
+        self.assertFalse(self.match.result_submitted_by_id)
+        self.assertFalse(self.match.result_audit_ids)
+
+    def test_workflow_transition_audit_covers_complete_result_lifecycle(self):
+        self.match.with_user(self.submitter_user).action_submit_result()
+        self.match.with_user(self.verifier_user).action_verify_result()
+        self.match.with_user(self.approver_user).action_approve_result()
+        self.match.result_contest_reason = "Lifecycle audit contest"
+        self.match.action_contest_result()
+        self.match.result_correction_reason = "Lifecycle audit correction"
+        self.match.action_correct_result()
+        self.match.with_user(self.approver_user).action_reset_result_to_draft()
+        events = self.env["federation.audit.event"].search(
+            [
+                ("event_family", "=", "workflow_transition"),
+                ("target_model", "=", "federation.match"),
+                ("target_res_id", "=", self.match.id),
+            ]
+        )
+        self.assertEqual(
+            set(events.mapped("event_type")),
+            {
+                "submitted",
+                "verified",
+                "approved",
+                "contested",
+                "corrected",
+                "reset",
+            },
+        )

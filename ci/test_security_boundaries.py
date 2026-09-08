@@ -82,3 +82,11 @@ def test_result_portal_uses_owned_command_service():
 def test_workflow_transition_foundation_is_wired():
     transitions = load("check_workflow_transition_foundation")
     assert transitions.find_violations(ROOT) == []
+
+def test_matchday_transition_contract_is_complete():
+    contract = load("check_matchday_transition_contract")
+    assert contract.find_violations(ROOT) == []
+
+def test_result_transition_contract_is_complete():
+    contract = load("check_result_transition_contract")
+    assert contract.find_violations(ROOT) == []

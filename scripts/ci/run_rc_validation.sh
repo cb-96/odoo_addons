@@ -170,6 +170,8 @@ PY
   python3 ci/check_audit_acl_integrity.py
   python3 ci/check_privileged_command_contracts.py
   python3 ci/check_workflow_transition_foundation.py
+  python3 ci/check_matchday_transition_contract.py
+  python3 ci/check_result_transition_contract.py
   python3 ci/check_portal_competition_ownership.py
   python3 ci/check_officiating_contract.py
   python3 ci/check_registration_contract.py

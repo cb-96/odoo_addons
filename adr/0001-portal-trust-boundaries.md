@@ -63,3 +63,18 @@ Owned command services may delegate common state-transition mechanics to
 `federation.workflow.transition`. The helper is not an HTTP or RPC boundary and
 controllers must not call it directly. Eligibility and object scope remain in
 the owning command service.
+
+
+## Match-day command transactions
+
+Controllers and wizards call `federation.matchday.commands`; they do not mutate
+operational records directly. Public command methods establish a savepoint,
+validate competition roles, and delegate transition mechanics to
+`federation.workflow.transition`.
+
+
+## Result workflow transactions
+
+Result controllers call the scoped result command service. Backend actions and
+portal commands establish savepoints, lock the match row, and delegate common
+state and audit mechanics to `federation.workflow.transition`.

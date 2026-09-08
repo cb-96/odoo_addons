@@ -144,34 +144,74 @@ class FederationMatchResultControl(models.Model):
             )
         return True
 
+    def _result_transition(
+        self,
+        target_state,
+        allowed_from,
+        values=None,
+        reason=False,
+        reason_required=False,
+        forbidden_actor_fields=None,
+        event_type=False,
+        description=False,
+    ):
+        """Apply shared mechanics while preserving the result-specific audit."""
+        results = []
+        transition = self.env["federation.workflow.transition"]
+        for record in self:
+            previous_state = record.result_state
+            transition_reason = reason(record) if callable(reason) else reason
+            result = transition.execute(
+                record,
+                target_state,
+                allowed_from,
+                values=values(record) if callable(values) else values,
+                state_field="result_state",
+                reason=transition_reason,
+                reason_required=reason_required,
+                forbidden_actor_fields=forbidden_actor_fields,
+                event_type=event_type,
+                description=description,
+            )
+            record._log_result_audit(
+                event_type,
+                description,
+                previous_state,
+                target_state,
+                reason=transition_reason,
+            )
+            results.append(result)
+        return {
+            "record_model": self._name,
+            "record_ids": self.ids,
+            "current_state": target_state,
+            "actor_id": self.env.user.id,
+            "results": results,
+        }
+
     def action_submit_result(self):
-        """Submit the match result for verification."""
-        for rec in self:
-            if rec.result_state not in ("draft", "corrected"):
-                raise ValidationError(
-                    "Only draft or corrected results can be submitted."
-                )
-            from_state = rec.result_state
-            rec.write(
-                {
-                    "result_state": "submitted",
+        """Submit the match result for verification atomically."""
+        with self.env.cr.savepoint():
+            self._lock_result_transition()
+            result = self._result_transition(
+                "submitted",
+                {"draft", "corrected"},
+                values=lambda record: {
                     "result_submitted_by_id": self.env.user.id,
                     "result_submitted_on": fields.Datetime.now(),
                     "result_verified_by_id": False,
                     "result_verified_on": False,
                     "result_approved_by_id": False,
                     "result_approved_on": False,
-                }
+                },
+                event_type="submitted",
+                description="Result submitted for verification.",
             )
-            rec._log_result_audit(
-                "submitted",
-                "Result submitted for verification.",
-                from_state,
-                "submitted",
-            )
-            Dispatcher = rec.env.get("federation.notification.dispatcher")
-            if Dispatcher is not None:
-                Dispatcher.send_result_submitted(rec)
+            for record in self:
+                dispatcher = record.env.get("federation.notification.dispatcher")
+                if dispatcher is not None:
+                    dispatcher.send_result_submitted(record)
+            return result
 
     def _lock_result_transition(self):
         if self.ids:
@@ -189,156 +229,118 @@ class FederationMatchResultControl(models.Model):
             )
 
     def action_verify_result(self):
-        """Verify the submitted result."""
-        self._check_result_group(
-            "sports_federation_result_control.group_result_validator",
-            "Only result validators can verify submitted results.",
-        )
-        self._lock_result_transition()
-        for rec in self:
-            if rec.result_state != "submitted":
-                raise ValidationError("Only submitted results can be verified.")
-            if rec.result_submitted_by_id == self.env.user:
-                raise ValidationError(
-                    "Separation of duties violation: the submitting user cannot verify the same result."
-                )
-            from_state = rec.result_state
-            rec.write(
-                {
-                    "result_state": "verified",
+        """Verify submitted results atomically with separation of duties."""
+        with self.env.cr.savepoint():
+            self._check_result_group(
+                "sports_federation_result_control.group_result_validator",
+                "Only result validators can verify submitted results.",
+            )
+            self._lock_result_transition()
+            return self._result_transition(
+                "verified",
+                {"submitted"},
+                values=lambda record: {
                     "result_verified_by_id": self.env.user.id,
                     "result_verified_on": fields.Datetime.now(),
-                }
-            )
-            rec._log_result_audit(
-                "verified",
-                "Result verified.",
-                from_state,
-                "verified",
+                },
+                forbidden_actor_fields=("result_submitted_by_id",),
+                event_type="verified",
+                description="Result verified.",
             )
 
     def action_approve_result(self):
-        """Approve the verified result and include in official standings."""
-        self._check_result_group(
-            "sports_federation_result_control.group_result_approver",
-            "Only result approvers can approve verified results.",
-        )
-        self._lock_result_transition()
-        for rec in self:
-            if rec.result_state != "verified":
-                raise ValidationError("Only verified results can be approved.")
-            if rec.result_submitted_by_id == self.env.user:
-                raise ValidationError(
-                    "Separation of duties violation: the submitting user cannot approve the same result."
-                )
-            if rec.result_verified_by_id == self.env.user:
-                raise ValidationError(
-                    "Separation of duties violation: the verifying user cannot approve the same result."
-                )
-            from_state = rec.result_state
-            rec.write(
-                {
-                    "result_state": "approved",
+        """Approve verified results atomically and recompute standings."""
+        with self.env.cr.savepoint():
+            self._check_result_group(
+                "sports_federation_result_control.group_result_approver",
+                "Only result approvers can approve verified results.",
+            )
+            self._lock_result_transition()
+            result = self._result_transition(
+                "approved",
+                {"verified"},
+                values=lambda record: {
                     "result_approved_by_id": self.env.user.id,
                     "result_approved_on": fields.Datetime.now(),
                     "include_in_official_standings": True,
-                }
+                },
+                forbidden_actor_fields=(
+                    "result_submitted_by_id",
+                    "result_verified_by_id",
+                ),
+                event_type="approved",
+                description="Result approved and included in official standings.",
             )
-            rec._log_result_audit(
-                "approved",
-                "Result approved and included in official standings.",
-                from_state,
-                "approved",
-            )
-            Dispatcher = rec.env.get("federation.notification.dispatcher")
-            if Dispatcher is not None:
-                Dispatcher.send_result_approved(rec)
-        self._recompute_related_standings()
+            for record in self:
+                dispatcher = record.env.get("federation.notification.dispatcher")
+                if dispatcher is not None:
+                    dispatcher.send_result_approved(record)
+            self._recompute_related_standings()
+            return result
 
     def action_contest_result(self):
-        """Contest a result (from submitted, verified, or approved)."""
-        self._lock_result_transition()
-        for rec in self:
-            if rec.result_state not in ("submitted", "verified", "approved"):
-                raise ValidationError(
-                    "Only submitted, verified, or approved results can be contested."
-                )
-            if not rec.result_contest_reason:
-                raise ValidationError(
-                    "A contest reason is required before moving a result to contested."
-                )
-            from_state = rec.result_state
-            rec.write(
-                {
-                    "result_state": "contested",
-                    "include_in_official_standings": False,
-                }
-            )
-            rec._log_result_audit(
+        """Contest submitted, verified, or approved results atomically."""
+        with self.env.cr.savepoint():
+            self._lock_result_transition()
+            result = self._result_transition(
                 "contested",
-                "Result contested.",
-                from_state,
-                "contested",
-                reason=rec.result_contest_reason,
+                {"submitted", "verified", "approved"},
+                values={"include_in_official_standings": False},
+                reason=lambda record: record.result_contest_reason,
+                reason_required=True,
+                event_type="contested",
+                description="Result contested.",
             )
-            Dispatcher = rec.env.get("federation.notification.dispatcher")
-            if Dispatcher is not None:
-                Dispatcher.send_result_contested(rec)
-        self._recompute_related_standings()
+            for record in self:
+                dispatcher = record.env.get("federation.notification.dispatcher")
+                if dispatcher is not None:
+                    dispatcher.send_result_contested(record)
+            self._recompute_related_standings()
+            return result
 
     def action_raise_dispute_request_exception(self):
-        """Unified operator entrypoint for dispute/exception requests on results."""
+        """Unified operator entrypoint for result disputes."""
         return self.action_contest_result()
 
     def action_correct_result(self):
-        """Correct a contested or approved result."""
-        for rec in self:
-            if rec.result_state not in ("contested", "approved"):
-                raise ValidationError(
-                    "Only contested or approved results can be corrected."
-                )
-            if not rec.result_correction_reason:
-                raise ValidationError(
-                    "A correction reason is required before moving a result to corrected."
-                )
-            from_state = rec.result_state
-            rec.write(
-                {
-                    "result_state": "corrected",
-                    "include_in_official_standings": False,
-                }
-            )
-            rec._log_result_audit(
+        """Correct contested or approved results atomically."""
+        with self.env.cr.savepoint():
+            self._lock_result_transition()
+            result = self._result_transition(
                 "corrected",
-                "Result corrected and removed from official standings until resubmitted.",
-                from_state,
-                "corrected",
-                reason=rec.result_correction_reason,
+                {"contested", "approved"},
+                values={"include_in_official_standings": False},
+                reason=lambda record: record.result_correction_reason,
+                reason_required=True,
+                event_type="corrected",
+                description=(
+                    "Result corrected and removed from official standings until "
+                    "resubmitted."
+                ),
             )
-        self._recompute_related_standings()
+            self._recompute_related_standings()
+            return result
 
     def action_reset_result_to_draft(self):
-        """Reset the result to draft (approvers only)."""
-        self._check_result_group(
-            "sports_federation_result_control.group_result_approver",
-            "Only result approvers can reset results to draft.",
-        )
-        for rec in self:
-            from_state = rec.result_state
-            rec.write(
-                {
-                    "result_state": "draft",
+        """Reset controlled results to draft atomically."""
+        with self.env.cr.savepoint():
+            self._check_result_group(
+                "sports_federation_result_control.group_result_approver",
+                "Only result approvers can reset results to draft.",
+            )
+            self._lock_result_transition()
+            result = self._result_transition(
+                "draft",
+                {"submitted", "verified", "approved", "contested", "corrected"},
+                values={
                     "include_in_official_standings": False,
                     "result_verified_by_id": False,
                     "result_verified_on": False,
                     "result_approved_by_id": False,
                     "result_approved_on": False,
-                }
+                },
+                event_type="reset",
+                description="Result reset to draft.",
             )
-            rec._log_result_audit(
-                "reset",
-                "Result reset to draft.",
-                from_state,
-                "draft",
-            )
-        self._recompute_related_standings()
+            self._recompute_related_standings()
+            return result

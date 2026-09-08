@@ -3,7 +3,7 @@
 # FORMAT: sports-federation-source-bundle
 # FORMAT-VERSION: 3
 # SEPARATOR-LENGTH: 100
-# FILE-COUNT: 957
+# FILE-COUNT: 960
 
 ====================================================================================================
 FILE: .github/copilot-instructions.md
@@ -8138,12 +8138,12 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: adr/0001-portal-trust-boundaries.md
-SIZE: 2897
-CONTENT-LENGTH: 2897
-SHA256: c652b372a9d8c91207905932fc5c5d482b95fd7ba8d5b0773bc856d61075477f
+SIZE: 3484
+CONTENT-LENGTH: 3484
+SHA256: c4e91c382b2a5ba488e8f7d7cb833e510afe7347b3da01b53ee841d692f1fed5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 # ADR-0001: Portal Trust Boundaries
@@ -8203,6 +8203,22 @@ Result approval and contesting are owned by
 actor's current club scope and is the only portal path allowed to supply the
 process-local result-transition token. Superuser mode by itself never satisfies
 a result role check.
+
+
+## Workflow transition mechanics
+
+Owned command services may delegate common state-transition mechanics to
+`federation.workflow.transition`. The helper is not an HTTP or RPC boundary and
+controllers must not call it directly. Eligibility and object scope remain in
+the owning command service.
+
+
+## Match-day command transactions
+
+Controllers and wizards call `federation.matchday.commands`; they do not mutate
+operational records directly. Public command methods establish a savepoint,
+validate competition roles, and delegate transition mechanics to
+`federation.workflow.transition`.
 
 ====================================================================================================
 FILE: adr/0002-reporting-sql-views.md
@@ -37049,6 +37065,107 @@ if __name__ == "__main__":
     sys.exit(main())
 
 ====================================================================================================
+FILE: ci/check_matchday_transition_contract.py
+SIZE: 3046
+CONTENT-LENGTH: 3046
+SHA256: ed8d32348a03455b5d94e1409c91dcd656106563d7f0582b8ca370b055d7483d
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0755
+GIT-STATE: untracked
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Protect transactional match-day command and transition boundaries."""
+
+from __future__ import annotations
+
+import ast
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+COMMANDS = ROOT / "sports_federation_matchday/services/matchday_commands.py"
+FOUNDATION = ROOT / "sports_federation_base/models/workflow_transition.py"
+PUBLIC_COMMANDS = {
+    "open_matchday",
+    "report_incident",
+    "set_court_status",
+    "resolve_incident",
+    "record_schedule_deviation",
+    "close_matchday",
+}
+REQUIRED_EVENTS = {
+    "matchday_opened",
+    "matchday_session_opened",
+    "matchday_incident_reported",
+    "matchday_court_status_changed",
+    "matchday_incident_resolved",
+    "matchday_match_deviated",
+    "matchday_session_closed",
+    "matchday_closed",
+}
+
+
+def class_methods(path: Path) -> dict[str, ast.FunctionDef]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == "FederationMatchdayCommands":
+            return {
+                child.name: child
+                for child in node.body
+                if isinstance(child, ast.FunctionDef)
+            }
+    return {}
+
+
+def find_violations(root: Path = ROOT) -> list[str]:
+    commands = root / COMMANDS.relative_to(ROOT)
+    foundation = root / FOUNDATION.relative_to(ROOT)
+    if not foundation.is_file():
+        return ["shared workflow transition foundation is missing"]
+    if not commands.is_file():
+        return ["match-day command service is missing"]
+    source = commands.read_text(encoding="utf-8")
+    methods = class_methods(commands)
+    violations = []
+    missing = sorted(PUBLIC_COMMANDS - set(methods))
+    if missing:
+        violations.append(f"match-day command methods are missing: {missing}")
+    for name in sorted(PUBLIC_COMMANDS & set(methods)):
+        fragment = ast.get_source_segment(source, methods[name]) or ""
+        if "savepoint()" not in fragment:
+            violations.append(f"{name} is not transactionally savepoint-bound")
+    missing_events = sorted(event for event in REQUIRED_EVENTS if event not in source)
+    if missing_events:
+        violations.append(f"match-day transition events are missing: {missing_events}")
+    for direct in (
+        'matchday.sudo().state = "open"',
+        'matchday.sudo().state = "closed"',
+        'session.sudo().write(',
+        'status.sudo().write(',
+        'incident.sudo().write(',
+        'match.sudo().write(values)',
+    ):
+        if direct in source:
+            violations.append(f"direct operational mutation remains: {direct}")
+    return violations
+
+
+def main() -> int:
+    violations = find_violations()
+    if violations:
+        print("Match-day transition contract failed:", file=sys.stderr)
+        for violation in violations:
+            print(f"- {violation}", file=sys.stderr)
+        return 1
+    print("Match-day transition contract passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+====================================================================================================
 FILE: ci/check_migration_rehearsal_contract.py
 SIZE: 1674
 CONTENT-LENGTH: 1674
@@ -39835,6 +39952,91 @@ if __name__ == "__main__":
     sys.exit(main())
 
 ====================================================================================================
+FILE: ci/check_workflow_transition_foundation.py
+SIZE: 2450
+CONTENT-LENGTH: 2450
+SHA256: e8ba9265d3d32bf060bd3b8dd15355e50a416cd1a561bd26fd87aaecec3d0986
+GIT-MODE: 100755
+FILESYSTEM-MODE: 0755
+GIT-STATE: tracked
+====================================================================================================
+
+#!/usr/bin/env python3
+"""Protect the shared workflow transition and its initial adopters."""
+
+from __future__ import annotations
+
+import ast
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+FOUNDATION = ROOT / "sports_federation_base/models/workflow_transition.py"
+APPROVAL_COMMANDS = (
+    ROOT
+    / "sports_federation_schedule_approval/services/approval_commands.py"
+)
+REQUIRED_ARGUMENTS = {
+    "target_state",
+    "allowed_from",
+    "reason_required",
+    "expected_revision",
+    "forbidden_actor_fields",
+    "writer",
+    "event_type",
+}
+
+
+def execute_arguments(path: Path) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == "execute":
+            return {argument.arg for argument in node.args.args}
+    return set()
+
+
+def find_violations(root: Path = ROOT) -> list[str]:
+    violations = []
+    foundation = root / FOUNDATION.relative_to(ROOT)
+    approval = root / APPROVAL_COMMANDS.relative_to(ROOT)
+    if not foundation.is_file():
+        return ["shared workflow transition service is missing"]
+    missing = REQUIRED_ARGUMENTS - execute_arguments(foundation)
+    if missing:
+        violations.append(f"workflow transition execute() is missing {sorted(missing)}")
+    if approval.is_file():
+        source = approval.read_text(encoding="utf-8")
+        if source.count('self.env["federation.workflow.transition"]') < 3:
+            violations.append(
+                "schedule approval decisions are not using the transition foundation"
+            )
+        for direct_write in (
+            'review.schedule_id.sudo().state = "approved"',
+            'review.schedule_id.sudo().state = "changes_requested"',
+            'live.sudo().write({"state": "superseded"})',
+        ):
+            if direct_write in source:
+                violations.append(
+                    f"schedule approval retains direct state mutation: {direct_write}"
+                )
+    return violations
+
+
+def main() -> int:
+    violations = find_violations()
+    if violations:
+        print("Workflow transition foundation check failed:", file=sys.stderr)
+        for violation in violations:
+            print(f"- {violation}", file=sys.stderr)
+        return 1
+    print("Workflow transition foundation check passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+====================================================================================================
 FILE: ci/compare_migration_invariants.py
 SIZE: 3185
 CONTENT-LENGTH: 3185
@@ -41579,12 +41781,12 @@ exec "$ODOO_BIN" --database "$ODOO_DATABASE" --addons-path "$ODOO_ADDONS_PATH"  
 
 ====================================================================================================
 FILE: ci/run_repo_lint.sh
-SIZE: 5233
-CONTENT-LENGTH: 5233
-SHA256: 6f6a06d6c57324cd9c2aaeb297ccb9c7ceb7550f1a03e2cb0f52c05f5dc5a27a
+SIZE: 5836
+CONTENT-LENGTH: 5836
+SHA256: 241af652def2f3fa75400ed0e097b11d3c7fc38008065005713593a8e7f98fdf
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 #!/usr/bin/env bash
@@ -41641,6 +41843,8 @@ privileged_mutation_exit=0
 destructive_token_exit=0
 audit_acl_exit=0
 privileged_commands_exit=0
+workflow_transition_exit=0
+matchday_transition_exit=0
 
 echo "[lint] Running Black across the repository"
 black --check --exclude '/(\.git|__pycache__|\.venv|ci/logs)/' . || black_exit=$?
@@ -41674,6 +41878,12 @@ python3 ci/check_audit_acl_integrity.py || audit_acl_exit=$?
 
 echo "[lint] Validating privileged command contracts"
 python3 ci/check_privileged_command_contracts.py || privileged_commands_exit=$?
+
+echo "[lint] Validating workflow transition foundation"
+python3 ci/check_workflow_transition_foundation.py || workflow_transition_exit=$?
+
+echo "[lint] Validating match-day transition contracts"
+python3 ci/check_matchday_transition_contract.py || matchday_transition_exit=$?
 
 echo "[lint] Validating release qualification"
 python3 ci/check_release_qualification.py || release_qualification_exit=$?
@@ -41715,15 +41925,17 @@ echo "  Privileged mutation exit code: $privileged_mutation_exit"
 echo "  Destructive token exit code: $destructive_token_exit"
 echo "  Audit ACL exit code: $audit_acl_exit"
 echo "  Privileged commands exit code: $privileged_commands_exit"
+echo "  Workflow transition exit code: $workflow_transition_exit"
+echo "  Match-day transition exit code: $matchday_transition_exit"
 echo "  Release qualification exit code: $release_qualification_exit"
 echo "  Migration review exit code: $migration_review_exit"
 echo "  Dependency drift report exit code: $dependency_drift_exit"
 
-if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $privileged_mutation_exit -ne 0 || $destructive_token_exit -ne 0 || $audit_acl_exit -ne 0 || $privileged_commands_exit -ne 0 || $release_qualification_exit -ne 0 || $migration_review_exit -ne 0 ) ]]; then
+if [[ "$mode" == "strict" && ( $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $privileged_mutation_exit -ne 0 || $destructive_token_exit -ne 0 || $audit_acl_exit -ne 0 || $privileged_commands_exit -ne 0 || $workflow_transition_exit -ne 0 || $matchday_transition_exit -ne 0 || $release_qualification_exit -ne 0 || $migration_review_exit -ne 0 ) ]]; then
     exit 1
 fi
 
-if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $privileged_mutation_exit -ne 0 || $destructive_token_exit -ne 0 || $audit_acl_exit -ne 0 || $privileged_commands_exit -ne 0 || $release_qualification_exit -ne 0 || $migration_review_exit -ne 0 ]]; then
+if [[ $black_exit -ne 0 || $flake8_exit -ne 0 || $ci_hygiene_exit -ne 0 || $workflow_contracts_exit -ne 0 || $constraint_index_contracts_exit -ne 0 || $openapi_contracts_exit -ne 0 || $http_route_ownership_exit -ne 0 || $privileged_mutation_exit -ne 0 || $destructive_token_exit -ne 0 || $audit_acl_exit -ne 0 || $privileged_commands_exit -ne 0 || $workflow_transition_exit -ne 0 || $matchday_transition_exit -ne 0 || $release_qualification_exit -ne 0 || $migration_review_exit -ne 0 ]]; then
     echo "[lint] Repository-wide report found issues."
 else
     echo "[lint] Repository-wide report is clean."
@@ -42855,12 +43067,12 @@ def test_rc_product_readiness_contracts():
 
 ====================================================================================================
 FILE: ci/test_security_boundaries.py
-SIZE: 2651
-CONTENT-LENGTH: 2651
-SHA256: f8e21e7f0219d99ac7ddf98e9353ef49b0720f553c92fddfd9a22a893fee4fec
+SIZE: 2979
+CONTENT-LENGTH: 2979
+SHA256: b9c82627c02b6e0c586475b0d0bb3aaca3d12d398f5869242f15ee55bf7ca6f0
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import importlib.util
@@ -42942,6 +43154,15 @@ def test_result_portal_uses_owned_command_service():
     assert 'request.env["federation.result.commands"]' in source
     assert "match.action_approve_result()" not in source
     assert "match.action_contest_result()" not in source
+
+
+def test_workflow_transition_foundation_is_wired():
+    transitions = load("check_workflow_transition_foundation")
+    assert transitions.find_violations(ROOT) == []
+
+def test_matchday_transition_contract_is_complete():
+    contract = load("check_matchday_transition_contract")
+    assert contract.find_violations(ROOT) == []
 
 ====================================================================================================
 FILE: ci/verify_release.sh
@@ -46918,12 +47139,12 @@ echo "Migration rehearsal passed. Evidence: $evidence_dir"
 
 ====================================================================================================
 FILE: scripts/ci/run_rc_validation.sh
-SIZE: 10790
-CONTENT-LENGTH: 10790
-SHA256: abe68ed1fdd6166a618f5c1b480e84a87938c6ba425166bc0cb30eb4fa086afc
+SIZE: 10894
+CONTENT-LENGTH: 10894
+SHA256: 58f684f9c9e8ecf0b7da78cf5db7757f74abe668cd1453c822ac30702abf7136
 GIT-MODE: 100755
 FILESYSTEM-MODE: 0755
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 #!/usr/bin/env bash
@@ -47097,6 +47318,8 @@ PY
   python3 ci/check_destructive_token_contract.py
   python3 ci/check_audit_acl_integrity.py
   python3 ci/check_privileged_command_contracts.py
+  python3 ci/check_workflow_transition_foundation.py
+  python3 ci/check_matchday_transition_contract.py
   python3 ci/check_portal_competition_ownership.py
   python3 ci/check_officiating_contract.py
   python3 ci/check_registration_contract.py
@@ -48378,9 +48601,9 @@ if __name__ == "__main__":
 
 ====================================================================================================
 FILE: sports_federation_base/README.md
-SIZE: 2159
-CONTENT-LENGTH: 2159
-SHA256: 8c869ab00ce9a5458f81a1afb5ed3685d71044082787875937af74c9cf489b64
+SIZE: 2676
+CONTENT-LENGTH: 2676
+SHA256: 92506535a2c4ceae6f14bd30559a3ba587dc0480b4bc59e6127fecd04331ba69
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -48435,6 +48658,18 @@ manager ACLs do not grant unlink access. Controllers must route elevated
 mutations through an owning command or the portal privilege boundary; static
 release checks reject direct controller `sudo()` mutations.
 
+
+## Workflow transition foundation
+
+High-risk workflow commands use `federation.workflow.transition` for shared
+transition mechanics. Domain services remain responsible for eligibility and
+business validation. The foundation standardizes allowed source states,
+mandatory reasons, optimistic revisions, separation of duties, protected
+writers, structured results, and transition audit events.
+
+Do not route unrelated field updates through this helper or replace
+domain-specific validation with generic configuration.
+
 ====================================================================================================
 FILE: sports_federation_base/__init__.py
 SIZE: 21
@@ -48451,7 +48686,7 @@ from . import models
 FILE: sports_federation_base/__manifest__.py
 SIZE: 986
 CONTENT-LENGTH: 986
-SHA256: 64e70967264fbc45cd10b2e5451188a1095e2e1ed179cfedbcc144f7936c2960
+SHA256: daed8f96f67d253eb1b4f8bff837dddc98e4841e042f10d9f30ec4d8520f5bc5
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -48459,7 +48694,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Base",
-    "version": "19.0.1.2.3",
+    "version": "19.0.1.3.0",
     "category": "Sports",
     "summary": "Base module for federation clubs, teams, seasons, and registrations",
     "author": "Sports Federation",
@@ -48696,9 +48931,9 @@ def migrate(cr, version):
 
 ====================================================================================================
 FILE: sports_federation_base/models/__init__.py
-SIZE: 427
-CONTENT-LENGTH: 427
-SHA256: 7f24467520f18fbfb7408ea69b1fbba2084da9361800ea33e50b32acfc75838f
+SIZE: 461
+CONTENT-LENGTH: 461
+SHA256: cbba50530ae9bdf70deab7f7a1cae7f2d6dcdb8ec6db8ffb3730aaeab9460554
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -48719,6 +48954,7 @@ from . import operational_health
 from . import retention_evidence
 
 from . import operation_job
+from . import workflow_transition
 
 ====================================================================================================
 FILE: sports_federation_base/models/attachment_policy.py
@@ -49004,9 +49240,9 @@ class FederationAttachmentScanService(models.AbstractModel):
 
 ====================================================================================================
 FILE: sports_federation_base/models/audit_event.py
-SIZE: 3579
-CONTENT-LENGTH: 3579
-SHA256: cf85bc5ab87d384f22bf1ad17bee2fd3ad3110f6676f014e5a12dd3850817d95
+SIZE: 3635
+CONTENT-LENGTH: 3635
+SHA256: 2e210c0a0d0ef3b973b970b27a862b38a56ea2f5b5da6ef6fee6433eb6bf8336
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -49023,6 +49259,7 @@ class FederationAuditEvent(models.Model):
     EVENT_FAMILY_SELECTION = [
         ("portal_privilege", "Portal Privilege"),
         ("integration_token", "Integration Token"),
+        ("workflow_transition", "Workflow Transition"),
     ]
 
     event_family = fields.Selection(
@@ -50463,6 +50700,112 @@ class FederationRetentionEvidence(models.Model):
                 "correlation_id": correlation_id,
             }
         )
+
+====================================================================================================
+FILE: sports_federation_base/models/workflow_transition.py
+SIZE: 3610
+CONTENT-LENGTH: 3610
+SHA256: 0d637f98b73cdcc8445ff2c24b74ad9aef704de94e25cfe4bb97dbcc8b8357a4
+GIT-MODE: 100644
+FILESYSTEM-MODE: 0644
+GIT-STATE: tracked
+====================================================================================================
+
+"""Shared, deliberately narrow workflow transition foundation."""
+
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
+
+
+class FederationWorkflowTransition(models.AbstractModel):
+    _name = "federation.workflow.transition"
+    _description = "Federation Workflow Transition"
+
+    @api.model
+    def execute(
+        self,
+        records,
+        target_state,
+        allowed_from,
+        values=None,
+        state_field="state",
+        reason=False,
+        reason_required=False,
+        expected_revision=None,
+        revision_field="revision",
+        forbidden_actor_fields=None,
+        writer=None,
+        event_type=False,
+        description=False,
+    ):
+        """Validate and apply one explicit transition to a recordset.
+
+        Domain services retain responsibility for eligibility. This helper owns
+        the mechanics shared by workflows: source-state checks, mandatory
+        reasons, optimistic revision checks, separation-of-duty predicates,
+        actor/timestamp values supplied by the caller, writes, and audit output.
+        """
+        records = records.exists()
+        if not records:
+            raise ValidationError(_("The workflow record no longer exists."))
+        allowed_from = set(allowed_from)
+        invalid = records.filtered(
+            lambda record: record[state_field] not in allowed_from
+        )
+        if invalid:
+            raise ValidationError(
+                _(
+                    "The transition to %(target)s is not allowed from %(states)s.",
+                    target=target_state,
+                    states=", ".join(sorted(set(invalid.mapped(state_field)))),
+                )
+            )
+        reason = (reason or "").strip()
+        if reason_required and not reason:
+            raise ValidationError(_("A reason is required for this transition."))
+        if expected_revision is not None:
+            stale = records.filtered(
+                lambda record: record[revision_field] != int(expected_revision)
+            )
+            if stale:
+                raise ValidationError(
+                    _("The record changed in another session. Refresh and retry.")
+                )
+        forbidden_actor_fields = tuple(forbidden_actor_fields or ())
+        actor = self.env.user
+        for field_name in forbidden_actor_fields:
+            if records.filtered(lambda record: record[field_name] == actor):
+                raise ValidationError(
+                    _("Separation of duties prevents this transition.")
+                )
+
+        previous_states = {record.id: record[state_field] for record in records}
+        transition_values = dict(values or {})
+        transition_values[state_field] = target_state
+        if writer:
+            writer(transition_values)
+        else:
+            records.write(transition_values)
+
+        if event_type:
+            self.env["federation.audit.event"].log_record_events(
+                event_family="workflow_transition",
+                event_type=event_type,
+                description=description or _("Workflow transition completed."),
+                records=records,
+                actor=actor,
+                action_name=event_type,
+                changed_fields=transition_values.keys(),
+                event_on=fields.Datetime.now(),
+            )
+        return {
+            "record_model": records._name,
+            "record_ids": records.ids,
+            "previous_states": previous_states,
+            "current_state": target_state,
+            "actor_id": actor.id,
+            "reason": reason or False,
+        }
 
 ====================================================================================================
 FILE: sports_federation_base/request_security.py
@@ -77631,12 +77974,12 @@ def delivery_uses_validation_feedback(state):
 
 ====================================================================================================
 FILE: sports_federation_matchday/README.md
-SIZE: 2222
-CONTENT-LENGTH: 2222
-SHA256: 58a7c9ce66c0053b6ffb9c8f4f6aea58fdef8df040d9e470f0e479bfaf237c31
+SIZE: 2837
+CONTENT-LENGTH: 2837
+SHA256: 235fd541df3b077c4cce593311c179e194a7b1cec95660d1455230d2d014a024
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 # Match-Day Operations
@@ -77688,6 +78031,19 @@ publication and calendar slots. The action requires a reason and displays a
 final confirmation popup before deletion.
 
 
+
+## Transactional operational commands
+
+Match-day opening, court status changes, incident resolution, operational match
+deviations, session closure, and match-day closure use the shared workflow
+transition service. Every public command runs inside a database savepoint and
+returns a structured result containing the affected record IDs, actor, and
+resulting state. Forced closure requires a reason. Published schedule evidence
+remains immutable and deviations alter operational fields only.
+
+Transition failures roll back sessions, court statuses, operational match
+changes, incidents, and audit rows as one unit.
+
 ====================================================================================================
 FILE: sports_federation_matchday/__init__.py
 SIZE: 67
@@ -77707,15 +78063,15 @@ from . import wizards
 FILE: sports_federation_matchday/__manifest__.py
 SIZE: 702
 CONTENT-LENGTH: 702
-SHA256: 1792f320f1686800b78ec241f55a4de95e863aac5adf4f7234470273d1e20bff
+SHA256: 0b31e539026c9b2268181539dfb1009044c7bf3ee5c575400af365f8b20b78eb
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 {
     "name": "Match-Day Operations",
-    "version": "19.0.2.2.0",
+    "version": "19.0.2.3.0",
     "category": "Sports",
     "summary": "Live court control, delays and operational incidents",
     "author": "Sports Federation",
@@ -78538,12 +78894,12 @@ from . import matchday_commands
 
 ====================================================================================================
 FILE: sports_federation_matchday/services/matchday_commands.py
-SIZE: 11051
-CONTENT-LENGTH: 11051
-SHA256: 6c5a508f863b20d7a2eeebcbb220995366d1bbe410e5ab8b3104c8590f6e37c1
+SIZE: 15895
+CONTENT-LENGTH: 15895
+SHA256: f5a25d86c61e6a016e9fe0b61cf1827c81f61330a74f5d9fc11a7faf37da59fe
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 from datetime import timedelta
@@ -78573,6 +78929,11 @@ class FederationMatchdayCommands(models.AbstractModel):
 
     @api.model
     def open_matchday(self, matchday_id):
+        with self.env.cr.savepoint():
+            return self._open_matchday(matchday_id)
+
+    @api.model
+    def _open_matchday(self, matchday_id):
         matchday = self._resolve(matchday_id)
         publication = matchday.current_publication_id
         if (
@@ -78604,19 +78965,39 @@ class FederationMatchdayCommands(models.AbstractModel):
             self.env["federation.matchday.court.status"].sudo().create(
                 {"matchday_id": matchday.id, "court_id": court.id}
             )
-        matchday.sudo().state = "open"
+        transition = self.env["federation.workflow.transition"]
+        result = transition.execute(
+            matchday.sudo(),
+            "open",
+            {"scheduled"},
+            event_type="matchday_opened",
+            description=_("Published match day opened for live operations."),
+        )
+        transition.execute(
+            session,
+            "open",
+            {"open"},
+            event_type="matchday_session_opened",
+            description=_("Match-day execution session opened."),
+        )
         self.env["federation.competition.event"].emit(
             matchday,
             "matchday_opened",
             {"session_id": session.id, "publication_id": publication.id},
         )
-        return session
+        result.update({"session_id": session.id, "publication_id": publication.id})
+        return result
 
     @api.model
     def report_incident(self, matchday_id, incident_type, description):
+        with self.env.cr.savepoint():
+            return self._report_incident(matchday_id, incident_type, description)
+
+    @api.model
+    def _report_incident(self, matchday_id, incident_type, description):
         matchday = self._resolve(matchday_id)
         self._require_open(matchday)
-        return (
+        incident = (
             self.env["federation.matchday.incident"]
             .sudo()
             .create(
@@ -78627,9 +79008,34 @@ class FederationMatchdayCommands(models.AbstractModel):
                 }
             )
         )
+        self.env["federation.audit.event"].log_record_events(
+            event_family="workflow_transition",
+            event_type="matchday_incident_reported",
+            description=_("Match-day incident reported."),
+            records=incident,
+            actor=self.env.user,
+            action_name="report_incident",
+            changed_fields=("incident_type", "description"),
+        )
+        return {
+            "record_model": incident._name,
+            "record_ids": incident.ids,
+            "current_state": "unresolved",
+            "actor_id": self.env.user.id,
+            "incident_id": incident.id,
+        }
 
     @api.model
     def set_court_status(
+        self, matchday_id, court_id, state, delay_minutes=0, note=False
+    ):
+        with self.env.cr.savepoint():
+            return self._set_court_status(
+                matchday_id, court_id, state, delay_minutes, note
+            )
+
+    @api.model
+    def _set_court_status(
         self, matchday_id, court_id, state, delay_minutes=0, note=False
     ):
         matchday = self._resolve(matchday_id)
@@ -78642,12 +79048,17 @@ class FederationMatchdayCommands(models.AbstractModel):
             raise ValidationError(_("The court is outside this match day."))
         if state not in ("available", "delayed", "unavailable"):
             raise ValidationError(_("Invalid court status."))
-        status.sudo().write(
-            {
-                "state": state,
+        result = self.env["federation.workflow.transition"].execute(
+            status.sudo(),
+            state,
+            {"available", "delayed", "unavailable"},
+            values={
                 "delay_minutes": max(0, int(delay_minutes or 0)),
                 "note": note,
-            }
+            },
+            reason=note,
+            event_type="matchday_court_status_changed",
+            description=_("Match-day court status changed."),
         )
         if state != "available":
             self.report_incident(
@@ -78655,26 +79066,58 @@ class FederationMatchdayCommands(models.AbstractModel):
                 "court_unavailable" if state == "unavailable" else "delay",
                 note or _("Court status changed."),
             )
-        return status
+        result["court_status_id"] = status.id
+        return result
 
     @api.model
     def resolve_incident(self, incident_id):
+        with self.env.cr.savepoint():
+            return self._resolve_incident(incident_id)
+
+    @api.model
+    def _resolve_incident(self, incident_id):
         incident = (
             self.env["federation.matchday.incident"].browse(int(incident_id)).exists()
         )
         matchday = self._resolve(incident.matchday_id.id)
         self._require_open(matchday)
-        incident.sudo().write(
-            {
-                "resolved": True,
+        result = self.env["federation.workflow.transition"].execute(
+            incident.sudo(),
+            True,
+            {False},
+            state_field="resolved",
+            values={
                 "resolved_at": fields.Datetime.now(),
                 "resolved_by_id": self.env.user.id,
-            }
+            },
+            event_type="matchday_incident_resolved",
+            description=_("Match-day incident resolved."),
         )
-        return True
+        result["incident_id"] = incident.id
+        return result
 
     @api.model
     def record_schedule_deviation(
+        self,
+        matchday_id,
+        match_id,
+        deviation_type,
+        reason,
+        new_slot_id=False,
+        delay_minutes=0,
+    ):
+        with self.env.cr.savepoint():
+            return self._record_schedule_deviation(
+                matchday_id,
+                match_id,
+                deviation_type,
+                reason,
+                new_slot_id,
+                delay_minutes,
+            )
+
+    @api.model
+    def _record_schedule_deviation(
         self,
         matchday_id,
         match_id,
@@ -78754,7 +79197,18 @@ class FederationMatchdayCommands(models.AbstractModel):
                 "date_scheduled": False,
                 "state": "cancelled",
             }
-        match.sudo().write(values)
+        operational_status = values.pop("operational_status")
+        result = self.env["federation.workflow.transition"].execute(
+            match.sudo(),
+            operational_status,
+            {"as_published", "moved", "delayed", "postponed", "cancelled"},
+            values=values,
+            state_field="operational_status",
+            reason=reason,
+            reason_required=True,
+            event_type="matchday_match_deviated",
+            description=_("Operational match schedule changed."),
+        )
         deviation = (
             self.env["federation.matchday.deviation"]
             .sudo()
@@ -78773,7 +79227,7 @@ class FederationMatchdayCommands(models.AbstractModel):
                 }
             )
         )
-        self.env["federation.matchday.incident"].sudo().create(
+        incident = self.env["federation.matchday.incident"].sudo().create(
             {
                 "matchday_id": matchday.id,
                 "incident_type": "schedule_change",
@@ -78796,10 +79250,22 @@ class FederationMatchdayCommands(models.AbstractModel):
                 "new_slot_id": new_slot.id if new_slot else False,
             },
         )
-        return deviation
+        result.update(
+            {
+                "deviation_id": deviation.id,
+                "match_id": match.id,
+                "incident_id": incident.id,
+            }
+        )
+        return result
 
     @api.model
     def close_matchday(self, matchday_id, close_note=False, force=False):
+        with self.env.cr.savepoint():
+            return self._close_matchday(matchday_id, close_note, force)
+
+    @api.model
+    def _close_matchday(self, matchday_id, close_note=False, force=False):
         matchday = self._resolve(matchday_id)
         self._require_open(matchday)
         unresolved = self.env["federation.matchday.incident"].search(
@@ -78814,7 +79280,8 @@ class FederationMatchdayCommands(models.AbstractModel):
         if (unresolved or unfinished) and not force:
             raise ValidationError(
                 _(
-                    "Resolve incidents and complete or cancel every published match before closing."
+                    "Resolve incidents and complete or cancel every published "
+                    "match before closing."
                 )
             )
         if force and not (close_note or "").strip():
@@ -78822,15 +79289,30 @@ class FederationMatchdayCommands(models.AbstractModel):
                 _("A close reason is required when overriding match-day blockers.")
             )
         session = matchday.active_session_id
-        session.sudo().write(
-            {
-                "state": "closed",
+        transition = self.env["federation.workflow.transition"]
+        session_result = transition.execute(
+            session.sudo(),
+            "closed",
+            {"open"},
+            values={
                 "closed_at": fields.Datetime.now(),
                 "closed_by_id": self.env.user.id,
                 "close_note": close_note,
-            }
+            },
+            reason=close_note,
+            reason_required=bool(force),
+            event_type="matchday_session_closed",
+            description=_("Match-day execution session closed."),
         )
-        matchday.sudo().state = "closed"
+        result = transition.execute(
+            matchday.sudo(),
+            "closed",
+            {"open"},
+            reason=close_note,
+            reason_required=bool(force),
+            event_type="matchday_closed",
+            description=_("Match-day operations closed."),
+        )
         self.env["federation.competition.event"].emit(
             matchday,
             "matchday_closed",
@@ -78841,7 +79323,16 @@ class FederationMatchdayCommands(models.AbstractModel):
                 "unresolved_incident_ids": unresolved.ids,
             },
         )
-        return True
+        result.update(
+            {
+                "session_id": session.id,
+                "session_result": session_result,
+                "forced": bool(force),
+                "unfinished_match_ids": unfinished.ids,
+                "unresolved_incident_ids": unresolved.ids,
+            }
+        )
+        return result
 
 ====================================================================================================
 FILE: sports_federation_matchday/tests/__init__.py
@@ -78857,16 +79348,17 @@ from . import test_matchday_operator_handoff
 
 ====================================================================================================
 FILE: sports_federation_matchday/tests/test_matchday_operator_handoff.py
-SIZE: 11946
-CONTENT-LENGTH: 11946
-SHA256: e309c779fa5b97a6096a02276a0fe2e634c3aef3a48fdb809ff4ea1986d4bea5
+SIZE: 14026
+CONTENT-LENGTH: 14026
+SHA256: 68e23e8cbbb4af7c512a0f0c6d34fabbf298bbbb309ad1e373ab01e74d31371c
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
-GIT-STATE: tracked
+GIT-STATE: modified
 ====================================================================================================
 
 import hashlib
 import json
+from unittest.mock import patch
 
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
@@ -79017,21 +79509,28 @@ class TestMatchdayOperatorHandoff(TransactionCase):
         )
 
     def test_open_uses_exact_live_publication(self):
-        session = self.env["federation.matchday.commands"].open_matchday(
+        result = self.env["federation.matchday.commands"].open_matchday(
             self.matchday.id
+        )
+        session = self.env["federation.matchday.session"].browse(
+            result["session_id"]
         )
         self.assertEqual(session.publication_id, self.publication)
         self.assertEqual(session.publication_digest, self.publication.snapshot_digest)
+        self.assertEqual(result["current_state"], "open")
         self.assertEqual(self.matchday.state, "open")
 
     def test_operational_move_preserves_published_slot(self):
         self.env["federation.matchday.commands"].open_matchday(self.matchday.id)
-        deviation = self.env["federation.matchday.commands"].record_schedule_deviation(
+        result = self.env["federation.matchday.commands"].record_schedule_deviation(
             self.matchday.id,
             self.match.id,
             "move",
             "Court turnaround",
             new_slot_id=self.slots[1].id,
+        )
+        deviation = self.env["federation.matchday.deviation"].browse(
+            result["deviation_id"]
         )
         self.assertEqual(self.match.published_slot_id, self.slots[0])
         self.assertEqual(self.match.operational_slot_id, self.slots[1])
@@ -79175,6 +79674,55 @@ class TestMatchdayOperatorHandoff(TransactionCase):
         self.assertEqual(replacement.default_slot_duration_minutes, 45)
         self.assertFalse(replacement.allocation_ids)
         self.assertFalse(replacement.slot_ids)
+
+    def test_open_failure_rolls_back_session_and_court_statuses(self):
+        transition = self.env["federation.workflow.transition"]
+        with patch.object(
+            type(transition),
+            "execute",
+            side_effect=RuntimeError("injected transition failure"),
+        ), self.assertRaises(RuntimeError):
+            self.env["federation.matchday.commands"].open_matchday(
+                self.matchday.id
+            )
+        self.assertEqual(self.matchday.state, "scheduled")
+        self.assertFalse(
+            self.env["federation.matchday.session"].search(
+                [("matchday_id", "=", self.matchday.id)]
+            )
+        )
+        self.assertFalse(
+            self.env["federation.matchday.court.status"].search(
+                [("matchday_id", "=", self.matchday.id)]
+            )
+        )
+
+    def test_open_and_deviation_emit_transition_audit(self):
+        open_result = self.env["federation.matchday.commands"].open_matchday(
+            self.matchday.id
+        )
+        self.env["federation.matchday.commands"].record_schedule_deviation(
+            self.matchday.id,
+            self.match.id,
+            "move",
+            "Audit move",
+            new_slot_id=self.slots[1].id,
+        )
+        events = self.env["federation.audit.event"].search(
+            [
+                ("event_family", "=", "workflow_transition"),
+                (
+                    "event_type",
+                    "in",
+                    ["matchday_opened", "matchday_match_deviated"],
+                ),
+            ]
+        )
+        self.assertEqual(
+            set(events.mapped("event_type")),
+            {"matchday_opened", "matchday_match_deviated"},
+        )
+        self.assertTrue(open_result["session_id"])
 
 ====================================================================================================
 FILE: sports_federation_matchday/views/matchday_views.xml
@@ -113902,7 +114450,7 @@ from . import controllers
 FILE: sports_federation_reporting/__manifest__.py
 SIZE: 1916
 CONTENT-LENGTH: 1916
-SHA256: 2c15830b8013c2979460f66016ffa183ae17e8e817b88f596324fa5b06fb7d67
+SHA256: d87eb3dae563e97c8d4ae5108b197f5b3c6b5acbe541e136346697aa58ab6522
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -113910,7 +114458,7 @@ GIT-STATE: tracked
 
 {
     "name": "Sports Federation Reporting",
-    "version": "19.0.1.4.0",
+    "version": "19.0.1.4.1",
     "category": "Sports",
     "summary": "Reporting models for federation data",
     "description": "Reporting models and dashboards for participation, officiating, compliance, and finance.",
@@ -114657,9 +115205,9 @@ class FederationOperationalDashboard(models.TransientModel):
 
 ====================================================================================================
 FILE: sports_federation_reporting/models/report_audit_event.py
-SIZE: 2257
-CONTENT-LENGTH: 2257
-SHA256: cee563e7102f8a128fad24df2557ee719ac5d5d8d06ae7c2f462e14c33ff4e0e
+SIZE: 2313
+CONTENT-LENGTH: 2313
+SHA256: b5c675777dc748759b34b96597d319cb4ef8a8d9976bdf5bc4e2484d852f35db
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -114677,6 +115225,7 @@ class FederationReportAuditEvent(models.Model):
     EVENT_FAMILY_SELECTION = [
         ("portal_privilege", "Portal Privilege"),
         ("integration_token", "Integration Token"),
+        ("workflow_transition", "Workflow Transition"),
     ]
 
     audit_event_id = fields.Many2one(
@@ -132028,9 +132577,9 @@ GIT-STATE: tracked
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/README.md
-SIZE: 3231
-CONTENT-LENGTH: 3231
-SHA256: faf496085aa52559da986e3f70bf9e58588aea7c2c2e5b761a31300c46b0aa88
+SIZE: 3661
+CONTENT-LENGTH: 3661
+SHA256: 76db67e7a98aa9eb2568e9d4748e84852304a05ec4eb48ea20fd3c06ba68ef40
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -132094,6 +132643,15 @@ separate from the review note.
 
 Immediately before replacing a live publication, the approval service validates the approved schedule against every fixture currently allocated to the physical match day. A division or fixture added after review invalidates that review for publication purposes. The planner must refresh the schedule, assign the newly exposed fixtures, and submit the complete replacement for review again. This guarantees that Match-Day Control and public publishing consume one complete multi-division publication.
 
+
+## Shared transition mechanics
+
+Review withdrawal, requested changes, approval, publication replacement, and
+publication handoff use `federation.workflow.transition`. Review decision fields
+remain protected by their private writer tokens. The shared service owns state,
+reason, revision, separation-of-duty, command-result, and audit mechanics while
+`federation.schedule.approval.commands` retains schedule-specific validation.
+
 ====================================================================================================
 FILE: sports_federation_schedule_approval/__init__.py
 SIZE: 67
@@ -132113,7 +132671,7 @@ from . import wizards
 FILE: sports_federation_schedule_approval/__manifest__.py
 SIZE: 597
 CONTENT-LENGTH: 597
-SHA256: e5c4d743a1d813553a4ec9bdd2f1378de5e95b1d9c7b0cd067f7a2020e1737f3
+SHA256: 5ff45778b9d55628236089ea1fc2994031dba9b2c39191300a9818935c379438
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -132121,7 +132679,7 @@ GIT-STATE: tracked
 
 {
     "name": "Schedule Approval",
-    "version": "19.0.2.3.1",
+    "version": "19.0.2.4.0",
     "category": "Sports",
     "summary": "Independent review, approval and immutable publication snapshots",
     "author": "Sports Federation",
@@ -132638,9 +133196,9 @@ from . import approval_commands
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/services/approval_commands.py
-SIZE: 13046
-CONTENT-LENGTH: 13046
-SHA256: 650de5c95555cca4435cb15ec0c823e06fcab53f20ee063a5296eaf334a3f170
+SIZE: 15781
+CONTENT-LENGTH: 15781
+SHA256: 5ed2bc584b71e7b363f0239607114b12ba15ef4042336db181a1c62246b4fbf3
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -132771,25 +133329,56 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             raise ValidationError(
                 _("Only the submitting planner can withdraw this review.")
             )
-        review._write_withdrawal(reason)
-        review.schedule_id.sudo().write({"state": "changes_requested"})
-        return True
+        transition = self.env["federation.workflow.transition"]
+        result = transition.execute(
+            review,
+            "withdrawn",
+            {"pending"},
+            values={"review_note": reason},
+            reason=reason,
+            reason_required=True,
+            writer=lambda values: review._write_withdrawal(values["review_note"]),
+            event_type="schedule_review_withdrawn",
+            description=_("Schedule review withdrawn by the submitting planner."),
+        )
+        transition.execute(
+            review.schedule_id.sudo(),
+            "changes_requested",
+            {"ready_for_review"},
+            event_type="schedule_changes_requested",
+            description=_("Schedule returned to planning after review withdrawal."),
+        )
+        return result
 
     @api.model
     def request_changes(self, review_id, note):
         if not (note or "").strip():
             raise ValidationError(_("Explain the requested schedule changes."))
         review = self._resolve_pending(review_id)
-        review._write_decision(
-            {
-                "state": "changes_requested",
+        transition = self.env["federation.workflow.transition"]
+        result = transition.execute(
+            review,
+            "changes_requested",
+            {"pending"},
+            values={
                 "reviewer_id": self.env.user.id,
                 "review_note": note,
                 "reviewed_at": fields.Datetime.now(),
-            }
+            },
+            reason=note,
+            reason_required=True,
+            writer=review._write_decision,
+            event_type="schedule_review_changes_requested",
+            description=_("Schedule changes requested by the assigned reviewer."),
         )
-        review.schedule_id.sudo().state = "changes_requested"
-        return True
+        transition.execute(
+            review.schedule_id.sudo(),
+            "changes_requested",
+            {"ready_for_review"},
+            event_type="schedule_changes_requested",
+            description=_("Schedule returned to planning after independent review."),
+        )
+        return result
 
     @api.model
     def approve(self, review_id, note=False):
@@ -132803,15 +133392,31 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             raise ValidationError(
                 _("The schedule no longer satisfies publication constraints.")
             )
-        review._write_decision(
-            {
-                "state": "approved",
+        transition = self.env["federation.workflow.transition"]
+        transition.execute(
+            review,
+            "approved",
+            {"pending"},
+            values={
                 "reviewer_id": self.env.user.id,
                 "review_note": note,
                 "reviewed_at": fields.Datetime.now(),
-            }
+            },
+            expected_revision=schedule.revision,
+            revision_field="submitted_revision",
+            forbidden_actor_fields=("submitted_by_id",),
+            writer=review._write_decision,
+            event_type="schedule_review_approved",
+            description=_("Schedule approved by the assigned independent reviewer."),
         )
-        review.schedule_id.sudo().state = "approved"
+        transition.execute(
+            review.schedule_id.sudo(),
+            "approved",
+            {"ready_for_review"},
+            expected_revision=review.submitted_revision,
+            event_type="schedule_approved",
+            description=_("Schedule entered the approved state."),
+        )
         self.env["federation.competition.event"].emit(
             schedule,
             "schedule_approved",
@@ -132908,7 +133513,17 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             )
             + 1
         )
-        live.sudo().write({"state": "superseded"})
+        transition = self.env["federation.workflow.transition"]
+        if live:
+            transition.execute(
+                live.sudo(),
+                "superseded",
+                {"live"},
+                reason=reason,
+                reason_required=True,
+                event_type="schedule_publication_superseded",
+                description=_("Live schedule publication superseded."),
+            )
         publication = (
             self.env["federation.schedule.publication"]
             .sudo()
@@ -132943,9 +133558,21 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
                     }
                 )
             match.sudo().write(match_values)
-        schedule.sudo().state = "published"
-        schedule.matchday_id.sudo().write(
-            {"state": "scheduled", "current_publication_id": publication.id}
+        transition.execute(
+            schedule.sudo(),
+            "published",
+            {"approved"},
+            expected_revision=review.submitted_revision,
+            event_type="schedule_published",
+            description=_("Approved schedule published."),
+        )
+        transition.execute(
+            schedule.matchday_id.sudo(),
+            "scheduled",
+            {"draft", "scheduled"},
+            values={"current_publication_id": publication.id},
+            event_type="matchday_schedule_published",
+            description=_("Match day linked to the live publication."),
         )
         self.env["federation.competition.event"].emit(
             schedule,
@@ -133327,9 +133954,9 @@ class TestPhase511Integrity(TransactionCase):
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/tests/test_review_permissions.py
-SIZE: 7372
-CONTENT-LENGTH: 7372
-SHA256: acba561999c9d99cc9d8adc13966569b39dd43e73970cbbb23371f736394ad78
+SIZE: 7983
+CONTENT-LENGTH: 7983
+SHA256: 51bcda1fb406dc6016679176da97719833a63d1b12ecfabe47610b48c0b85d89
 GIT-MODE: 100644
 FILESYSTEM-MODE: 0644
 GIT-STATE: tracked
@@ -133473,6 +134100,14 @@ class TestScheduleReviewPermissions(TransactionCase):
         self.assertEqual(self.review.reviewer_id, self.approver)
         self.assertTrue(self.review.reviewed_at)
         self.assertEqual(self.schedule.state, "changes_requested")
+        event = self.env["federation.audit.event"].search(
+            [
+                ("event_type", "=", "schedule_review_changes_requested"),
+                ("target_res_id", "=", self.review.id),
+            ],
+            limit=1,
+        )
+        self.assertEqual(event.actor_user_id, self.approver)
 
     def test_approver_cannot_alter_immutable_evidence_afterward(self):
         self._request_changes()
@@ -133521,6 +134156,14 @@ class TestScheduleReviewPermissions(TransactionCase):
         ).withdraw(self.review.id, "Calendar planning added another fixture.")
         self.assertEqual(self.review.state, "withdrawn")
         self.assertEqual(self.schedule.state, "changes_requested")
+        event = self.env["federation.audit.event"].search(
+            [
+                ("event_type", "=", "schedule_review_withdrawn"),
+                ("target_res_id", "=", self.review.id),
+            ],
+            limit=1,
+        )
+        self.assertEqual(event.actor_user_id, self.planner)
 
 ====================================================================================================
 FILE: sports_federation_schedule_approval/tests/test_schedule_handoff.py
