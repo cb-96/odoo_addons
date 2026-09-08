@@ -55,3 +55,12 @@ separate from the review note.
 ## Expanded match-day publication guard
 
 Immediately before replacing a live publication, the approval service validates the approved schedule against every fixture currently allocated to the physical match day. A division or fixture added after review invalidates that review for publication purposes. The planner must refresh the schedule, assign the newly exposed fixtures, and submit the complete replacement for review again. This guarantees that Match-Day Control and public publishing consume one complete multi-division publication.
+
+
+## Shared transition mechanics
+
+Review withdrawal, requested changes, approval, publication replacement, and
+publication handoff use `federation.workflow.transition`. Review decision fields
+remain protected by their private writer tokens. The shared service owns state,
+reason, revision, separation-of-duty, command-result, and audit mechanics while
+`federation.schedule.approval.commands` retains schedule-specific validation.

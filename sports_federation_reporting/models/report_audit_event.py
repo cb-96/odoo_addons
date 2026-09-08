@@ -10,6 +10,7 @@ class FederationReportAuditEvent(models.Model):
     EVENT_FAMILY_SELECTION = [
         ("portal_privilege", "Portal Privilege"),
         ("integration_token", "Integration Token"),
+        ("workflow_transition", "Workflow Transition"),
     ]
 
     audit_event_id = fields.Many2one(

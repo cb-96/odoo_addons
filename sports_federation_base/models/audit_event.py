@@ -9,6 +9,7 @@ class FederationAuditEvent(models.Model):
     EVENT_FAMILY_SELECTION = [
         ("portal_privilege", "Portal Privilege"),
         ("integration_token", "Integration Token"),
+        ("workflow_transition", "Workflow Transition"),
     ]
 
     event_family = fields.Selection(

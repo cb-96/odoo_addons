@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Base",
-    "version": "19.0.1.2.3",
+    "version": "19.0.1.3.0",
     "category": "Sports",
     "summary": "Base module for federation clubs, teams, seasons, and registrations",
     "author": "Sports Federation",

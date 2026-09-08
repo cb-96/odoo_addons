@@ -55,3 +55,11 @@ Result approval and contesting are owned by
 actor's current club scope and is the only portal path allowed to supply the
 process-local result-transition token. Superuser mode by itself never satisfies
 a result role check.
+
+
+## Workflow transition mechanics
+
+Owned command services may delegate common state-transition mechanics to
+`federation.workflow.transition`. The helper is not an HTTP or RPC boundary and
+controllers must not call it directly. Eligibility and object scope remain in
+the owning command service.

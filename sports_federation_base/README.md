@@ -46,3 +46,15 @@ Audit evidence is append-only operational history. Normal system and federation
 manager ACLs do not grant unlink access. Controllers must route elevated
 mutations through an owning command or the portal privilege boundary; static
 release checks reject direct controller `sudo()` mutations.
+
+
+## Workflow transition foundation
+
+High-risk workflow commands use `federation.workflow.transition` for shared
+transition mechanics. Domain services remain responsible for eligibility and
+business validation. The foundation standardizes allowed source states,
+mandatory reasons, optimistic revisions, separation of duties, protected
+writers, structured results, and transition audit events.
+
+Do not route unrelated field updates through this helper or replace
+domain-specific validation with generic configuration.

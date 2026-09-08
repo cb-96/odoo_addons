@@ -77,3 +77,8 @@ def test_result_portal_uses_owned_command_service():
     assert 'request.env["federation.result.commands"]' in source
     assert "match.action_approve_result()" not in source
     assert "match.action_contest_result()" not in source
+
+
+def test_workflow_transition_foundation_is_wired():
+    transitions = load("check_workflow_transition_foundation")
+    assert transitions.find_violations(ROOT) == []

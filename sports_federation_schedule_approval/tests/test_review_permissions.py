@@ -136,6 +136,14 @@ class TestScheduleReviewPermissions(TransactionCase):
         self.assertEqual(self.review.reviewer_id, self.approver)
         self.assertTrue(self.review.reviewed_at)
         self.assertEqual(self.schedule.state, "changes_requested")
+        event = self.env["federation.audit.event"].search(
+            [
+                ("event_type", "=", "schedule_review_changes_requested"),
+                ("target_res_id", "=", self.review.id),
+            ],
+            limit=1,
+        )
+        self.assertEqual(event.actor_user_id, self.approver)
 
     def test_approver_cannot_alter_immutable_evidence_afterward(self):
         self._request_changes()
@@ -184,3 +192,11 @@ class TestScheduleReviewPermissions(TransactionCase):
         ).withdraw(self.review.id, "Calendar planning added another fixture.")
         self.assertEqual(self.review.state, "withdrawn")
         self.assertEqual(self.schedule.state, "changes_requested")
+        event = self.env["federation.audit.event"].search(
+            [
+                ("event_type", "=", "schedule_review_withdrawn"),
+                ("target_res_id", "=", self.review.id),
+            ],
+            limit=1,
+        )
+        self.assertEqual(event.actor_user_id, self.planner)

@@ -123,25 +123,56 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             raise ValidationError(
                 _("Only the submitting planner can withdraw this review.")
             )
-        review._write_withdrawal(reason)
-        review.schedule_id.sudo().write({"state": "changes_requested"})
-        return True
+        transition = self.env["federation.workflow.transition"]
+        result = transition.execute(
+            review,
+            "withdrawn",
+            {"pending"},
+            values={"review_note": reason},
+            reason=reason,
+            reason_required=True,
+            writer=lambda values: review._write_withdrawal(values["review_note"]),
+            event_type="schedule_review_withdrawn",
+            description=_("Schedule review withdrawn by the submitting planner."),
+        )
+        transition.execute(
+            review.schedule_id.sudo(),
+            "changes_requested",
+            {"ready_for_review"},
+            event_type="schedule_changes_requested",
+            description=_("Schedule returned to planning after review withdrawal."),
+        )
+        return result
 
     @api.model
     def request_changes(self, review_id, note):
         if not (note or "").strip():
             raise ValidationError(_("Explain the requested schedule changes."))
         review = self._resolve_pending(review_id)
-        review._write_decision(
-            {
-                "state": "changes_requested",
+        transition = self.env["federation.workflow.transition"]
+        result = transition.execute(
+            review,
+            "changes_requested",
+            {"pending"},
+            values={
                 "reviewer_id": self.env.user.id,
                 "review_note": note,
                 "reviewed_at": fields.Datetime.now(),
-            }
+            },
+            reason=note,
+            reason_required=True,
+            writer=review._write_decision,
+            event_type="schedule_review_changes_requested",
+            description=_("Schedule changes requested by the assigned reviewer."),
         )
-        review.schedule_id.sudo().state = "changes_requested"
-        return True
+        transition.execute(
+            review.schedule_id.sudo(),
+            "changes_requested",
+            {"ready_for_review"},
+            event_type="schedule_changes_requested",
+            description=_("Schedule returned to planning after independent review."),
+        )
+        return result
 
     @api.model
     def approve(self, review_id, note=False):
@@ -155,15 +186,31 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             raise ValidationError(
                 _("The schedule no longer satisfies publication constraints.")
             )
-        review._write_decision(
-            {
-                "state": "approved",
+        transition = self.env["federation.workflow.transition"]
+        transition.execute(
+            review,
+            "approved",
+            {"pending"},
+            values={
                 "reviewer_id": self.env.user.id,
                 "review_note": note,
                 "reviewed_at": fields.Datetime.now(),
-            }
+            },
+            expected_revision=schedule.revision,
+            revision_field="submitted_revision",
+            forbidden_actor_fields=("submitted_by_id",),
+            writer=review._write_decision,
+            event_type="schedule_review_approved",
+            description=_("Schedule approved by the assigned independent reviewer."),
         )
-        review.schedule_id.sudo().state = "approved"
+        transition.execute(
+            review.schedule_id.sudo(),
+            "approved",
+            {"ready_for_review"},
+            expected_revision=review.submitted_revision,
+            event_type="schedule_approved",
+            description=_("Schedule entered the approved state."),
+        )
         self.env["federation.competition.event"].emit(
             schedule,
             "schedule_approved",
@@ -260,7 +307,17 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             )
             + 1
         )
-        live.sudo().write({"state": "superseded"})
+        transition = self.env["federation.workflow.transition"]
+        if live:
+            transition.execute(
+                live.sudo(),
+                "superseded",
+                {"live"},
+                reason=reason,
+                reason_required=True,
+                event_type="schedule_publication_superseded",
+                description=_("Live schedule publication superseded."),
+            )
         publication = (
             self.env["federation.schedule.publication"]
             .sudo()
@@ -295,9 +352,21 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
                     }
                 )
             match.sudo().write(match_values)
-        schedule.sudo().state = "published"
-        schedule.matchday_id.sudo().write(
-            {"state": "scheduled", "current_publication_id": publication.id}
+        transition.execute(
+            schedule.sudo(),
+            "published",
+            {"approved"},
+            expected_revision=review.submitted_revision,
+            event_type="schedule_published",
+            description=_("Approved schedule published."),
+        )
+        transition.execute(
+            schedule.matchday_id.sudo(),
+            "scheduled",
+            {"draft", "scheduled"},
+            values={"current_publication_id": publication.id},
+            event_type="matchday_schedule_published",
+            description=_("Match day linked to the live publication."),
         )
         self.env["federation.competition.event"].emit(
             schedule,
