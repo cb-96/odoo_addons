@@ -180,6 +180,7 @@ PY
   python3 ci/check_access_csv_integrity.py
   python3 ci/check_source_collector_contract.py
   python3 ci/check_browser_test_runtime.py
+  python3 ci/check_release_baseline_evidence.py
   python3 ci/check_addon_integrity.py
   python3 ci/check_test_discovery.py
   python3 ci/check_workflow_state_contracts.py

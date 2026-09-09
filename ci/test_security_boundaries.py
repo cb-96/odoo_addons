@@ -94,3 +94,20 @@ def test_result_transition_contract_is_complete():
 def test_browser_test_runtime_is_locked():
     runtime = load("check_browser_test_runtime")
     assert runtime.find_violations(ROOT) == []
+
+def test_release_baseline_evidence_is_isolated():
+    contract = load("check_release_baseline_evidence")
+    assert contract.find_violations(ROOT) == []
+
+
+def test_release_failure_classification_is_actionable():
+    classifier = load("classify_release_failure")
+    assert classifier.classify(
+        "Release workspace contains tracked changes", "preflight"
+    ) == "unsupported_configuration"
+    assert classifier.classify(
+        "ValidationError: workflow rejected", "full"
+    ) == "product_defect"
+    assert classifier.classify(
+        "websocket-client module is not installed", "acceptance"
+    ) == "unsupported_configuration"

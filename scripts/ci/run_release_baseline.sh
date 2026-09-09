@@ -4,7 +4,16 @@ set -uo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
-evidence_dir="${RELEASE_BASELINE_EVIDENCE_DIR:-$repo_root/artifacts/release/baseline}"
+candidate_sha="$(git rev-parse HEAD)"
+default_evidence_dir="${TMPDIR:-/tmp}/sports-federation-release-baseline/$candidate_sha"
+evidence_dir="${RELEASE_BASELINE_EVIDENCE_DIR:-$default_evidence_dir}"
+evidence_dir="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$evidence_dir")"
+case "$evidence_dir/" in
+  "$repo_root"/*)
+    echo "Evidence directory must be outside the repository: $evidence_dir" >&2
+    exit 2
+    ;;
+esac
 database="${DB_NAME:-sf_rc_validation}"
 upgrade_database="${UPGRADE_DB_NAME:-sf_rc_upgrade}"
 export RC_COMPOSE_PROJECT="${RC_COMPOSE_PROJECT:-sf_rc_baseline_$(date +%s)_$$}"
@@ -39,9 +48,14 @@ utc_now() {
 
 failure_classification_for() {
   local lane="$1"
+  local log_file="$2"
   local variable="RELEASE_FAILURE_CLASSIFICATION_${lane^^}"
   variable="${variable//-/_}"
-  printf '%s' "${!variable:-unclassified}"
+  if [[ -n "${!variable:-}" ]]; then
+    printf '%s' "${!variable}"
+    return
+  fi
+  python3 ci/classify_release_failure.py --lane "$lane" --log "$log_file"
 }
 
 record_lane() {
@@ -70,7 +84,7 @@ record_lane() {
     --output "$evidence_dir/lane-$lane.json"
   )
   if [[ "$status" == "failed" ]]; then
-    args+=(--failure-classification "$(failure_classification_for "$lane")")
+    args+=(--failure-classification "$(failure_classification_for "$lane" "$log_file")")
   fi
   python3 ci/capture_release_evidence.py "${args[@]}"
 }
