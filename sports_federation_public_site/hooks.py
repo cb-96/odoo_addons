@@ -1,3 +1,8 @@
 def post_init_hook(env):
-    """Run the module post-init hook."""
-    env["website"]._cleanup_default_public_site_content()
+    """Leave stock website records intact during module installation.
+
+    Federation navigation is installed through module XML. Destructive cleanup
+    remains available as an explicit operator action, but running it globally
+    during installation contaminates Odoo website tests and unrelated websites.
+    """
+    return True

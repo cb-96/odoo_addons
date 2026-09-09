@@ -2,9 +2,15 @@ FROM odoo:19
 
 USER root
 
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends chromium \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/chromium /usr/local/bin/chromium-browser
+
 COPY requirements-odoo-ci.txt /tmp/sports-federation-odoo-ci-requirements.txt
 RUN python3 -m pip install \
     --break-system-packages \
     --no-cache-dir \
     -r /tmp/sports-federation-odoo-ci-requirements.txt \
-    && python3 -c "import websocket; assert websocket.__version__ == '1.8.0'"
+    && python3 -c "import websocket; assert websocket.__version__ == '1.8.0'" \
+    && chromium --version

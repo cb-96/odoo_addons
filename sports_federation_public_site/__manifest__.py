@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Public Site",
-    "version": "19.0.3.0.2",
+    "version": "19.0.3.0.3",
     "category": "Sports",
     "summary": "Public competition, match-day, standings and bracket experience",
     "description": "Public website pages for tournament coverage, standings, results, schedules, and federation events.",

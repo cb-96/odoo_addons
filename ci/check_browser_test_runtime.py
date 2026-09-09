@@ -36,6 +36,8 @@ def find_violations(root: Path = ROOT) -> list[str]:
             )
         if "import websocket" not in source:
             violations.append("the Odoo CI image does not verify websocket-client")
+        if "chromium" not in source:
+            violations.append("the Odoo CI image does not install Chromium")
     if not compose.is_file():
         violations.append("the CI Compose file is missing")
     else:

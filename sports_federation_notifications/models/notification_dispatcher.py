@@ -248,12 +248,13 @@ class FederationNotificationDispatcher(models.AbstractModel):
         )
 
     def send_result_approved(self, match):
-        """Handle send result approved."""
+        """Notify recipients after the owning workflow authorized approval."""
+        notification_match = match.sudo()
         emails = [
-            match.home_team_id.email,
-            match.home_team_id.club_id.email,
-            match.away_team_id.email,
-            match.away_team_id.club_id.email,
+            notification_match.home_team_id.email,
+            notification_match.home_team_id.club_id.email,
+            notification_match.away_team_id.email,
+            notification_match.away_team_id.club_id.email,
         ]
         return self._send_email_or_log(
             match,

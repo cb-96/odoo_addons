@@ -1,6 +1,6 @@
 {
     "name": "Schedule Approval",
-    "version": "19.0.2.4.1",
+    "version": "19.0.2.4.2",
     "category": "Sports",
     "summary": "Independent review, approval and immutable publication snapshots",
     "author": "Sports Federation",

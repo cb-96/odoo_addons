@@ -372,7 +372,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         transition.execute(
             schedule.matchday_id.sudo(),
             "scheduled",
-            {"draft", "scheduled"},
+            {"draft", "capacity_ready", "scheduled"},
             values={"current_publication_id": publication.id},
             event_type="matchday_schedule_published",
             description=_("Match day linked to the live publication."),
