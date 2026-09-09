@@ -10,6 +10,7 @@
             <field name="review_count" widget="statinfo" string="Reviews"/>
           </button>
         </div>
+        <!-- Technical field retained for view modifiers and domains. -->
         <field name="current_review_id" invisible="1"/>
       </xpath>
     </field>

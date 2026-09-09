@@ -284,7 +284,7 @@
       ],
       "installable": true,
       "name": "sports_federation_schedule_approval",
-      "version": "19.0.2.4.0"
+      "version": "19.0.2.4.1"
     },
     {
       "depends": [
@@ -325,18 +325,18 @@
       "version": "19.0.1.1.0"
     }
   ],
-  "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
+  "commit": "9bdd55d9fe241aa74d91a7080a55cbe061a45d41",
   "counts": {
     "addons": 26,
     "large_python_files": 19,
     "migrations": 29,
     "model_declarations": 272,
-    "raw_sql_candidates": 2348,
+    "raw_sql_candidates": 2349,
     "routes": 97,
     "scheduled_jobs": 10,
-    "sudo_calls": 351
+    "sudo_calls": 352
   },
-  "inventory_sha256": "7e337b964f9f6d3c2cffbb1c40b257cc8b61c4b0cfcf58caafae1bff60b6ce4a",
+  "inventory_sha256": "3ce07b3766c17cf7989acb6976e8c3ac70a251bf87f7d56b8611d8565183d7b1",
   "large_python_files": [
     {
       "line": 1,
@@ -3547,57 +3547,62 @@
       "text": "self.env[\"federation.stage.participant\"].create("
     },
     {
-      "line": 11,
+      "line": 17,
+      "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
+      "text": ".create("
+    },
+    {
+      "line": 25,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "club = cls.env[\"federation.club\"].create({\"name\": \"Ownership Club\"})"
     },
     {
-      "line": 12,
+      "line": 26,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "cls.teams = cls.env[\"federation.team\"].create("
     },
     {
-      "line": 19,
+      "line": 33,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "season = cls.env[\"federation.season\"].create("
     },
     {
-      "line": 26,
+      "line": 40,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "competition = cls.env[\"federation.competition\"].create("
     },
     {
-      "line": 29,
+      "line": 43,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "edition = cls.env[\"federation.competition.edition\"].create("
     },
     {
-      "line": 36,
+      "line": 50,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "cls.division = cls.env[\"federation.tournament\"].create("
     },
     {
-      "line": 45,
+      "line": 59,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "participant_set = cls.env[\"federation.participant.set\"].create("
     },
     {
-      "line": 53,
+      "line": 67,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "cls.env[\"federation.participant.set.line\"].create("
     },
     {
-      "line": 63,
+      "line": 77,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "cls.structure = cls.env[\"federation.competition.structure\"].create("
     },
     {
-      "line": 74,
+      "line": 88,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "return self.env[\"federation.structure.stage\"].create("
     },
     {
-      "line": 103,
+      "line": 117,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "fixture = self.env[\"federation.fixture\"].create("
     },
@@ -11272,47 +11277,47 @@
       "text": "transition.execute("
     },
     {
-      "line": 190,
+      "line": 199,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "transition.execute("
     },
     {
-      "line": 206,
+      "line": 215,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "transition.execute("
     },
     {
-      "line": 279,
+      "line": 288,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "self.env.cr.execute("
     },
     {
-      "line": 280,
+      "line": 289,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "\"SELECT id FROM federation_matchday WHERE id=%s FOR UPDATE\","
     },
     {
-      "line": 312,
+      "line": 321,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "transition.execute("
     },
     {
-      "line": 324,
+      "line": 333,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": ".create("
     },
     {
-      "line": 348,
+      "line": 357,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "match_values.update("
     },
     {
-      "line": 355,
+      "line": 364,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "transition.execute("
     },
     {
-      "line": 363,
+      "line": 372,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "transition.execute("
     },
@@ -11447,17 +11452,17 @@
       "text": "self.env[\"federation.schedule.publication\"].sudo().create("
     },
     {
-      "line": 286,
+      "line": 298,
       "path": "sports_federation_schedule_approval/tests/test_publication_integrity.py",
       "text": ".create("
     },
     {
-      "line": 295,
+      "line": 307,
       "path": "sports_federation_schedule_approval/tests/test_publication_integrity.py",
       "text": "self.env[\"federation.competition.role.assignment\"].sudo().create("
     },
     {
-      "line": 329,
+      "line": 341,
       "path": "sports_federation_schedule_approval/tests/test_publication_integrity.py",
       "text": ".create("
     },
@@ -14385,17 +14390,17 @@
       "text": "FeeType = self.env[\"federation.fee.type\"].sudo()"
     },
     {
-      "line": 127,
+      "line": 141,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "match = fixture.operational_match_id.sudo()"
     },
     {
-      "line": 140,
+      "line": 154,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "fixture.operational_match_id.sudo().write("
     },
     {
-      "line": 150,
+      "line": 164,
       "path": "sports_federation_format/tests/test_fixture_result_ownership.py",
       "text": "match = stage.stage_fixture_ids[0].operational_match_id.sudo()"
     },
@@ -15790,42 +15795,42 @@
       "text": "review.schedule_id.sudo(),"
     },
     {
-      "line": 180,
+      "line": 185,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "schedule = review.schedule_id.sudo()"
     },
     {
-      "line": 207,
+      "line": 216,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "review.schedule_id.sudo(),"
     },
     {
-      "line": 232,
+      "line": 241,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "schedule = schedule.sudo()"
     },
     {
-      "line": 313,
+      "line": 322,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "live.sudo(),"
     },
     {
-      "line": 323,
+      "line": 332,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": ".sudo()"
     },
     {
-      "line": 354,
+      "line": 363,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "match.sudo().write(match_values)"
     },
     {
-      "line": 356,
+      "line": 365,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "schedule.sudo(),"
     },
     {
-      "line": 364,
+      "line": 373,
       "path": "sports_federation_schedule_approval/services/approval_commands.py",
       "text": "schedule.matchday_id.sudo(),"
     },
@@ -15865,7 +15870,12 @@
       "text": "self.env[\"federation.schedule.publication\"].sudo().create("
     },
     {
-      "line": 295,
+      "line": 294,
+      "path": "sports_federation_schedule_approval/tests/test_publication_integrity.py",
+      "text": "schedule.sudo().state = \"ready_for_review\""
+    },
+    {
+      "line": 307,
       "path": "sports_federation_schedule_approval/tests/test_publication_integrity.py",
       "text": "self.env[\"federation.competition.role.assignment\"].sudo().create("
     },

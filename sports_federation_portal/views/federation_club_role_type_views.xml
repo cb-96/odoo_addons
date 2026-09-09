@@ -22,6 +22,7 @@
                     <group>
                         <group string="Configuration">
                             <field name="sequence"/>
+                            <!-- Technical field retained for view modifiers and domains. -->
                             <field name="active" invisible="1"/>
                             <field name="is_primary"/>
                         </group>
@@ -51,6 +52,7 @@
                 <field name="is_competition_contact"/>
                 <field name="is_finance_contact"/>
                 <field name="is_safeguarding_contact"/>
+                <!-- Technical field retained for view modifiers and domains. -->
                 <field name="active" invisible="1"/>
             </list>
         </field>

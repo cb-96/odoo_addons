@@ -46,6 +46,7 @@
                             <field name="state"/>
                             <field name="assignment_ready" optional="hide"/>
                             <field name="confirmation_deadline" optional="show"/>
+                            <!-- Technical field retained for view modifiers and domains. -->
                             <field name="is_confirmation_overdue" column_invisible="1"/>
                             </list>
                         </field>
@@ -59,6 +60,7 @@
                             <field name="state"/>
                             <field name="nominated_player_id" optional="show"/>
                             <field name="nomination_deadline" optional="show"/>
+                            <!-- Technical field retained for view modifiers and domains. -->
                             <field name="is_deadline_overdue" column_invisible="1"/>
                             </list>
                         </field>

@@ -161,6 +161,7 @@ class FederationMatchdayOperatorActions(models.Model):
         Deviation = self.env["federation.matchday.deviation"]
         for day in self:
             publication = day.current_publication_id
+            persisted_id = day._origin.id
             matches = (
                 Match.search([("schedule_publication_id", "=", publication.id)])
                 if publication
@@ -170,13 +171,28 @@ class FederationMatchdayOperatorActions(models.Model):
             day.unfinished_match_count = len(
                 matches.filtered(lambda m: m.state not in ("done", "cancelled"))
             )
-            day.unresolved_incident_count = Incident.search_count(
-                [("matchday_id", "=", day.id), ("resolved", "=", False)]
+            day.unresolved_incident_count = (
+                Incident.search_count(
+                    [("matchday_id", "=", persisted_id), ("resolved", "=", False)]
+                )
+                if persisted_id
+                else 0
             )
-            day.unavailable_court_count = Status.search_count(
-                [("matchday_id", "=", day.id), ("state", "=", "unavailable")]
+            day.unavailable_court_count = (
+                Status.search_count(
+                    [
+                        ("matchday_id", "=", persisted_id),
+                        ("state", "=", "unavailable"),
+                    ]
+                )
+                if persisted_id
+                else 0
             )
-            day.deviation_count = Deviation.search_count([("matchday_id", "=", day.id)])
+            day.deviation_count = (
+                Deviation.search_count([("matchday_id", "=", persisted_id)])
+                if persisted_id
+                else 0
+            )
             if day.state == "open":
                 day.readiness_state = "open"
                 day.readiness_message = _(

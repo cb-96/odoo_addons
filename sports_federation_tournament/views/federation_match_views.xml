@@ -36,6 +36,7 @@
                         <group string="Schedule">
                             <field name="scheduled_date" readonly="1"/>
                             <field name="scheduled_time" widget="float_time"/>
+                            <!-- Technical field retained for view modifiers and domains. -->
                             <field name="date_scheduled" invisible="1"/>
                         </group>
                     </group>
@@ -113,6 +114,7 @@
                 <field name="stage_id"/>
                 <field name="group_id"/>
                 <field name="home_team_id" string="Team" filter_domain="['|', ('home_team_id', '=', self), ('away_team_id', '=', self)]"/>
+                <!-- Technical field retained for view modifiers and domains. -->
                 <field name="away_team_id" invisible="1"/>
                 <filter name="today" string="Today"
                         domain="[('scheduled_date', '=', context_today().strftime('%Y-%m-%d'))]"/>

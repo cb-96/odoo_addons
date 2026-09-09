@@ -30,7 +30,9 @@
                     <group>
                         <group>
                             <field name="match_id"/>
+                            <!-- Technical field retained for view modifiers and domains. -->
                             <field name="match_team_ids" invisible="1"/>
+                            <!-- Technical field retained for view modifiers and domains. -->
                             <field name="roster_player_ids" invisible="1"/>
                             <field name="team_id" domain="[('id', 'in', match_team_ids)]"/>
                             <field name="roster_id" domain="[('team_id', '=', team_id)]"/>
@@ -46,7 +48,9 @@
                         </group>
                     </group>
                     <group>
+                        <!-- Technical field retained for view modifiers and domains. -->
                         <field name="ready_for_submission" invisible="1" readonly="1"/>
+                        <!-- Technical field retained for view modifiers and domains. -->
                         <field name="readiness_feedback" invisible="1" readonly="1"/>
                     </group>
                     <!-- Readiness status badge -->

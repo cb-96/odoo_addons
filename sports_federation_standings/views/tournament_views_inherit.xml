@@ -11,7 +11,9 @@
                 </button>
             </xpath>
             <xpath expr="//field[@name='match_count']" position="after">
+                <!-- Technical field retained for view modifiers and domains. -->
                 <field name="standing_ids" invisible="1"/>
+                <!-- Technical field retained for view modifiers and domains. -->
                 <field name="standing_count" invisible="1"/>
             </xpath>
         </field>

@@ -64,6 +64,14 @@ class FederationMatchdaySessionLink(models.Model):
     def _compute_active_session(self):
         Session = self.env["federation.matchday.session"]
         for record in self:
-            record.active_session_id = Session.search(
-                [("matchday_id", "=", record.id), ("state", "=", "open")], limit=1
+            record.active_session_id = (
+                Session.search(
+                    [
+                        ("matchday_id", "=", record._origin.id),
+                        ("state", "=", "open"),
+                    ],
+                    limit=1,
+                )
+                if record._origin.id
+                else False
             )

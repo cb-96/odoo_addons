@@ -52,6 +52,7 @@
                     <group>
                         <group string="General">
                             <field name="founded_date"/>
+                            <!-- Technical field retained for view modifiers and domains. -->
                             <field name="active" invisible="1"/>
                         </group>
                     </group>

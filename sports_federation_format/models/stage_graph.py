@@ -221,7 +221,8 @@ class FederationStageStandingSnapshot(models.Model):
     def write(self, vals):
         raise ValidationError("Frozen standings are immutable.")
 
-    def unlink(self):
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_during_module_uninstall(self):
         raise ValidationError("Frozen standings are immutable.")
 
 
@@ -249,5 +250,6 @@ class FederationStageStandingLine(models.Model):
     def write(self, vals):
         raise ValidationError("Frozen standing lines are immutable.")
 
-    def unlink(self):
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_during_module_uninstall(self):
         raise ValidationError("Frozen standing lines are immutable.")

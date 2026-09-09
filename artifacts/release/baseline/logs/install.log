@@ -1,256 +1,256 @@
 [Release baseline] Running RC lane: install
- Network sf_rc_baseline_1788903398_111339_default  Creating
- Network sf_rc_baseline_1788903398_111339_default  Created
- Container sf_rc_baseline_1788903398_111339-ci-db-1  Creating
- Container sf_rc_baseline_1788903398_111339-ci-db-1  Created
- Container sf_rc_baseline_1788903398_111339-ci-db-1  Starting
- Container sf_rc_baseline_1788903398_111339-ci-db-1  Started
- Container sf_rc_baseline_1788903398_111339-ci-db-1  Waiting
- Container sf_rc_baseline_1788903398_111339-ci-db-1  Healthy
+ Network sf_rc_baseline_1788907953_128949_default  Creating
+ Network sf_rc_baseline_1788907953_128949_default  Created
+ Container sf_rc_baseline_1788907953_128949-ci-db-1  Creating
+ Container sf_rc_baseline_1788907953_128949-ci-db-1  Created
+ Container sf_rc_baseline_1788907953_128949-ci-db-1  Starting
+ Container sf_rc_baseline_1788907953_128949-ci-db-1  Started
+ Container sf_rc_baseline_1788907953_128949-ci-db-1  Waiting
+ Container sf_rc_baseline_1788907953_128949-ci-db-1  Healthy
 CREATE DATABASE
- Container sf_rc_baseline_1788903398_111339-ci-db-1  Running
- Container sf_rc_baseline_1788903398_111339-ci-db-1  Waiting
- Container sf_rc_baseline_1788903398_111339-ci-db-1  Healthy
+ Container sf_rc_baseline_1788907953_128949-ci-db-1  Running
+ Container sf_rc_baseline_1788907953_128949-ci-db-1  Waiting
+ Container sf_rc_baseline_1788907953_128949-ci-db-1  Healthy
 ERROR: Odoo RC lane 'install' failed with exit code 1.
 --- Odoo failure summary ---
-2026-09-08 21:38:30,343 31 INFO sf_rc_validation odoo.addons.mail.models.fetchmail: Fetched 1 email(s) on imap server test server; 1 succeeded, 0 failed. 
-2026-09-08 21:38:51,659 31 ERROR sf_rc_validation odoo.addons.sports_federation_base.models.attachment_scan_service: Attachment scanner command is unavailable: /usr/local/bin/fake-attachment-scan 
-2026-09-08 21:38:59,379 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_player_license" ("club_id", "create_date", "create_uid", "expiry_date", "issue_date", "name", "player_id", "season_id", "state", "write_date", "write_uid") VALUES (11, \'2026-09-08T21:38:59.300612\'::timestamp, 1, \'2025-06-30\'::date, \'2024-09-01\'::date, \'LIC-DUP-002\', 9, 10, \'draft\', \'2026-09-08T21:38:59.300612\'::timestamp, 1) RETURNING "id"'
+2026-09-08 22:54:16,015 31 INFO sf_rc_validation odoo.addons.mail.models.fetchmail: Fetched 1 email(s) on imap server test server; 1 succeeded, 0 failed. 
+2026-09-08 22:54:37,402 31 ERROR sf_rc_validation odoo.addons.sports_federation_base.models.attachment_scan_service: Attachment scanner command is unavailable: /usr/local/bin/fake-attachment-scan 
+2026-09-08 22:54:45,149 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_player_license" ("club_id", "create_date", "create_uid", "expiry_date", "issue_date", "name", "player_id", "season_id", "state", "write_date", "write_uid") VALUES (11, \'2026-09-08T22:54:45.070712\'::timestamp, 1, \'2025-06-30\'::date, \'2024-09-01\'::date, \'LIC-DUP-002\', 9, 10, \'draft\', \'2026-09-08T22:54:45.070712\'::timestamp, 1) RETURNING "id"'
 ERROR: duplicate key value violates unique constraint "federation_player_license_player_season_unique"
-2026-09-08 21:39:15,503 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_match_sheet_line" ("create_date", "create_uid", "is_captain", "is_starter", "is_substitute", "match_sheet_id", "player_id", "write_date", "write_uid") VALUES (\'2026-09-08T21:39:15.259776\'::timestamp, 1, false, false, false, 9, 11, \'2026-09-08T21:39:15.259776\'::timestamp, 1) RETURNING "id"'
+2026-09-08 22:55:01,292 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_match_sheet_line" ("create_date", "create_uid", "is_captain", "is_starter", "is_substitute", "match_sheet_id", "player_id", "write_date", "write_uid") VALUES (\'2026-09-08T22:55:01.042895\'::timestamp, 1, false, false, false, 9, 11, \'2026-09-08T22:55:01.042895\'::timestamp, 1) RETURNING "id"'
 ERROR: duplicate key value violates unique constraint "federation_match_sheet_line_unique_match_sheet_player"
-2026-09-08 21:39:15,678 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_match_sheet" ("create_date", "create_uid", "match_id", "name", "side", "state", "team_id", "write_date", "write_uid") VALUES (\'2026-09-08T21:39:15.259776\'::timestamp, 1, 32, \'Duplicate Home Sheet\', \'home\', \'draft\', 42, \'2026-09-08T21:39:15.259776\'::timestamp, 1) RETURNING "id"'
+2026-09-08 22:55:01,468 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_match_sheet" ("create_date", "create_uid", "match_id", "name", "side", "state", "team_id", "write_date", "write_uid") VALUES (\'2026-09-08T22:55:01.042895\'::timestamp, 1, 32, \'Duplicate Home Sheet\', \'home\', \'draft\', 42, \'2026-09-08T22:55:01.042895\'::timestamp, 1) RETURNING "id"'
 ERROR: duplicate key value violates unique constraint "federation_match_sheet_unique_match_team_side"
-2026-09-08 21:39:16,979 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_team_roster_line" ("create_date", "create_uid", "date_from", "is_captain", "is_vice_captain", "player_id", "roster_id", "status", "write_date", "write_uid") VALUES (\'2026-09-08T21:39:16.601818\'::timestamp, 1, \'2024-01-01\'::date, false, false, 19, 47, \'active\', \'2026-09-08T21:39:16.601818\'::timestamp, 1) RETURNING "id"'
+2026-09-08 22:55:02,787 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_team_roster_line" ("create_date", "create_uid", "date_from", "is_captain", "is_vice_captain", "player_id", "roster_id", "status", "write_date", "write_uid") VALUES (\'2026-09-08T22:55:02.405670\'::timestamp, 1, \'2024-01-01\'::date, false, false, 19, 47, \'active\', \'2026-09-08T22:55:02.405670\'::timestamp, 1) RETURNING "id"'
 ERROR: duplicate key value violates unique constraint "federation_team_roster_line_unique_roster_player_date_from"
-2026-09-08 21:39:17,809 31 ERROR sf_rc_validation odoo.addons.sports_federation_standings.models.standing_recompute_job: Standing recompute job failed: job=1 standing=1 correlation_id=dead-letter-1 
-2026-09-08 21:39:17,868 31 ERROR sf_rc_validation odoo.addons.sports_federation_standings.models.standing_recompute_job: Standing recompute job failed: job=3 standing=3 correlation_id=corr-q-3 
-2026-09-08 21:39:18,321 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_standing_line" ("create_date", "create_uid", "drawn", "eliminated", "lost", "participant_id", "played", "points", "qualified", "score_against", "score_for", "standing_id", "won", "write_date", "write_uid") VALUES (\'2026-09-08T21:39:17.984531\'::timestamp, 1, 0, false, 0, 18, 0, 0, false, 0, 0, 12, 0, \'2026-09-08T21:39:17.984531\'::timestamp, 1) RETURNING "id"'
+2026-09-08 22:55:03,629 31 ERROR sf_rc_validation odoo.addons.sports_federation_standings.models.standing_recompute_job: Standing recompute job failed: job=1 standing=1 correlation_id=dead-letter-1 
+2026-09-08 22:55:03,691 31 ERROR sf_rc_validation odoo.addons.sports_federation_standings.models.standing_recompute_job: Standing recompute job failed: job=3 standing=3 correlation_id=corr-q-3 
+2026-09-08 22:55:04,166 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_standing_line" ("create_date", "create_uid", "drawn", "eliminated", "lost", "participant_id", "played", "points", "qualified", "score_against", "score_for", "standing_id", "won", "write_date", "write_uid") VALUES (\'2026-09-08T22:55:03.812138\'::timestamp, 1, 0, false, 0, 18, 0, 0, false, 0, 0, 12, 0, \'2026-09-08T22:55:03.812138\'::timestamp, 1) RETURNING "id"'
 ERROR: duplicate key value violates unique constraint "federation_standing_line_unique_standing_participant"
-2026-09-08 21:39:23,099 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_playing_area" ("active", "create_date", "create_uid", "name", "surface_type", "venue_id", "write_date", "write_uid") VALUES (true, \'2026-09-08T21:39:23.044221\'::timestamp, 1, \'Main Field\', \'indoor\', 3, \'2026-09-08T21:39:23.044221\'::timestamp, 1) RETURNING "id"'
+2026-09-08 22:55:08,935 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_playing_area" ("active", "create_date", "create_uid", "name", "surface_type", "venue_id", "write_date", "write_uid") VALUES (true, \'2026-09-08T22:55:08.879437\'::timestamp, 1, \'Main Field\', \'indoor\', 3, \'2026-09-08T22:55:08.879437\'::timestamp, 1) RETURNING "id"'
 ERROR: duplicate key value violates unique constraint "federation_playing_area_unique_venue_name"
-2026-09-08 21:39:46,835 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_match_club_referee_duty" ("club_id", "create_date", "create_uid", "match_id", "role", "state", "write_date", "write_uid") VALUES (55, \'2026-09-08T21:39:46.721413\'::timestamp, 1, 284, \'table\', \'draft\', \'2026-09-08T21:39:46.721413\'::timestamp, 1) RETURNING "id"'
+2026-09-08 22:55:32,773 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_match_club_referee_duty" ("club_id", "create_date", "create_uid", "match_id", "role", "state", "write_date", "write_uid") VALUES (55, \'2026-09-08T22:55:32.659688\'::timestamp, 1, 284, \'table\', \'draft\', \'2026-09-08T22:55:32.659688\'::timestamp, 1) RETURNING "id"'
 ERROR: duplicate key value violates unique constraint "federation_match_club_referee_duty_club_duty_unique"
-2026-09-08 21:39:47,374 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_referee_certification" ("active", "create_date", "create_uid", "issue_date", "level", "name", "referee_id", "write_date", "write_uid") VALUES (true, \'2026-09-08T21:39:47.328990\'::timestamp, 1, \'2024-05-01\'::date, \'national\', \'CERT-003-DUP\', 8, \'2026-09-08T21:39:47.328990\'::timestamp, 1) RETURNING "id"'
+2026-09-08 22:55:33,319 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_referee_certification" ("active", "create_date", "create_uid", "issue_date", "level", "name", "referee_id", "write_date", "write_uid") VALUES (true, \'2026-09-08T22:55:33.274535\'::timestamp, 1, \'2024-05-01\'::date, \'national\', \'CERT-003-DUP\', 8, \'2026-09-08T22:55:33.274535\'::timestamp, 1) RETURNING "id"'
 ERROR: duplicate key value violates unique constraint "federation_referee_certification_referee_level_date_unique"
-2026-09-08 21:39:47,792 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_match_referee" ("assigned_on", "create_date", "create_uid", "match_id", "referee_id", "role", "state", "write_date", "write_uid") VALUES (\'2026-09-08T21:39:47\'::timestamp, \'2026-09-08T21:39:47.479790\'::timestamp, 1, 286, 9, \'head\', \'draft\', \'2026-09-08T21:39:47.479790\'::timestamp, 1) RETURNING "id"'
+2026-09-08 22:55:33,733 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_match_referee" ("assigned_on", "create_date", "create_uid", "match_id", "referee_id", "role", "state", "write_date", "write_uid") VALUES (\'2026-09-08T22:55:33\'::timestamp, \'2026-09-08T22:55:33.426144\'::timestamp, 1, 286, 9, \'head\', \'draft\', \'2026-09-08T22:55:33.426144\'::timestamp, 1) RETURNING "id"'
 ERROR: duplicate key value violates unique constraint "federation_match_referee_match_referee_role_unique"
-2026-09-08 21:39:48,635 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_match_club_referee_duty" ("club_id", "create_date", "create_uid", "match_id", "role", "state", "write_date", "write_uid") VALUES (60, \'2026-09-08T21:39:48.380590\'::timestamp, 1, 288, \'table\', \'draft\', \'2026-09-08T21:39:48.380590\'::timestamp, 1) RETURNING "id"'
+2026-09-08 22:55:34,576 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_match_club_referee_duty" ("club_id", "create_date", "create_uid", "match_id", "role", "state", "write_date", "write_uid") VALUES (60, \'2026-09-08T22:55:34.325333\'::timestamp, 1, 288, \'table\', \'draft\', \'2026-09-08T22:55:34.325333\'::timestamp, 1) RETURNING "id"'
 ERROR: duplicate key value violates unique constraint "federation_match_club_referee_duty_club_duty_unique"
-2026-09-08 21:39:51,685 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_tournament" ("active", "code", "create_date", "create_uid", "date_end", "date_start", "name", "public_featured", "public_slug", "show_public_results", "show_public_standings", "state", "tournament_type", "website_published", "write_date", "write_uid") VALUES (true, \'OTHER-TT\', \'2026-09-08T21:39:51.571973\'::timestamp, 1, \'2024-02-28\'::date, \'2024-02-01\'::date, \'Other Tournament\', false, \'shared-slug\', true, true, \'draft\', \'single_day\', false, \'2026-09-08T21:39:51.571973\'::timestamp, 1) RETURNING "id"'
+2026-09-08 22:55:37,603 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_tournament" ("active", "code", "create_date", "create_uid", "date_end", "date_start", "name", "public_featured", "public_slug", "show_public_results", "show_public_standings", "state", "tournament_type", "website_published", "write_date", "write_uid") VALUES (true, \'OTHER-TT\', \'2026-09-08T22:55:37.488344\'::timestamp, 1, \'2024-02-28\'::date, \'2024-02-01\'::date, \'Other Tournament\', false, \'shared-slug\', true, true, \'draft\', \'single_day\', false, \'2026-09-08T22:55:37.488344\'::timestamp, 1) RETURNING "id"'
 ERROR: duplicate key value violates unique constraint "federation_tournament_public_slug_unique"
-2026-09-08 21:40:05,851 31 ERROR sf_rc_validation odoo.addons.sports_federation_notifications.models.notification_service: Notification email delivery failed for Test Email (correlation_id=a5a288b6e6d2) 
-2026-09-08 21:40:08,071 31 ERROR sf_rc_validation odoo.addons.sports_federation_reporting.models.report_schedule: Scheduled report generation failed for Broken Workflow Export (workflow_exceptions) 
-2026-09-08 21:40:08,593 31 ERROR sf_rc_validation odoo.addons.sports_federation_reporting.models.report_schedule: Scheduled report generation failed for Bad Schedule (operational) 
-2026-09-08 21:40:44,278 31 ERROR sf_rc_validation odoo.addons.base.tests.test_overrides: ERROR: TestOverrides.test_unlink
-2026-09-08 21:41:41,601 31 ERROR sf_rc_validation odoo.addons.base.tests.test_views: Please indicate why the always invisible fields are present in the view, or remove the field tag.
-2026-09-08 21:44:26,949 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_competition_role_assignment" ("active", "create_date", "create_uid", "edition_id", "role", "user_id", "write_date", "write_uid") VALUES (true, \'2026-09-08T21:44:26.918782\'::timestamp, 1, 12, \'schedule_planner\', 1, \'2026-09-08T21:44:26.918782\'::timestamp, 1) RETURNING "id"'
+2026-09-08 22:55:51,865 31 ERROR sf_rc_validation odoo.addons.sports_federation_notifications.models.notification_service: Notification email delivery failed for Test Email (correlation_id=4b5ab54e5ecf) 
+2026-09-08 22:55:54,043 31 ERROR sf_rc_validation odoo.addons.sports_federation_reporting.models.report_schedule: Scheduled report generation failed for Broken Workflow Export (workflow_exceptions) 
+2026-09-08 22:55:54,549 31 ERROR sf_rc_validation odoo.addons.sports_federation_reporting.models.report_schedule: Scheduled report generation failed for Bad Schedule (operational) 
+2026-09-08 22:56:24,390 31 ERROR sf_rc_validation odoo.addons.base.tests.test_overrides: ERROR: TestOverrides.test_unlink
+2026-09-08 22:57:20,316 31 ERROR sf_rc_validation odoo.addons.base.tests.test_views: Please indicate why the always invisible fields are present in the view, or remove the field tag.
+2026-09-08 23:00:05,338 31 ERROR sf_rc_validation odoo.sql_db: bad query: b'INSERT INTO "federation_competition_role_assignment" ("active", "create_date", "create_uid", "edition_id", "role", "user_id", "write_date", "write_uid") VALUES (true, \'2026-09-08T23:00:05.306489\'::timestamp, 1, 12, \'schedule_planner\', 1, \'2026-09-08T23:00:05.306489\'::timestamp, 1) RETURNING "id"'
 ERROR: duplicate key value violates unique constraint "federation_competition_role_assignment_unique_role_user"
-2026-09-08 21:44:56,467 31 ERROR sf_rc_validation odoo.addons.website.tests.test_page: FAIL: WithContext.test_06_homepage_url
-2026-09-08 21:45:04,708 31 ERROR sf_rc_validation odoo.addons.website.tests.test_ui: ERROR: TestUi.test_website_edit_menus_delete_parent
-2026-09-08 21:45:19,065 31 ERROR sf_rc_validation odoo.addons.sports_federation_format.tests.test_fixture_result_ownership: ERROR: TestFixtureResultOwnership.test_fixture_result_is_read_only_and_match_approval_completes_fixture
-2026-09-08 21:45:20,695 31 ERROR sf_rc_validation odoo.sql_db: bad query: b' UPDATE "federation_schedule_publication"\n                    SET "edition_id" = "__tmp"."edition_id"::int4, "matchday_id" = "__tmp"."matchday_id"::int4, "write_date" = "__tmp"."write_date"::timestamp, "write_uid" = "__tmp"."write_uid"::int4\n                    FROM (VALUES (5, 18, 5, \'2026-09-08T21:45:20.617508\'::timestamp, 1)) AS "__tmp"("id", "edition_id", "matchday_id", "write_date", "write_uid")\n                    WHERE "federation_schedule_publication"."id" = "__tmp"."id"\n                '
+2026-09-08 23:00:36,195 31 ERROR sf_rc_validation odoo.addons.website.tests.test_page: FAIL: WithContext.test_06_homepage_url
+2026-09-08 23:00:44,484 31 ERROR sf_rc_validation odoo.addons.website.tests.test_ui: ERROR: TestUi.test_website_edit_menus_delete_parent
+2026-09-08 23:00:58,830 31 ERROR sf_rc_validation odoo.addons.sports_federation_format.tests.test_fixture_result_ownership: ERROR: TestFixtureResultOwnership.test_fixture_result_is_read_only_and_match_approval_completes_fixture
+2026-09-08 23:01:00,540 31 ERROR sf_rc_validation odoo.sql_db: bad query: b' UPDATE "federation_schedule_publication"\n                    SET "edition_id" = "__tmp"."edition_id"::int4, "matchday_id" = "__tmp"."matchday_id"::int4, "write_date" = "__tmp"."write_date"::timestamp, "write_uid" = "__tmp"."write_uid"::int4\n                    FROM (VALUES (5, 18, 5, \'2026-09-08T23:01:00.415144\'::timestamp, 1)) AS "__tmp"("id", "edition_id", "matchday_id", "write_date", "write_uid")\n                    WHERE "federation_schedule_publication"."id" = "__tmp"."id"\n                '
 ERROR: duplicate key value violates unique constraint "federation_schedule_publication_one_live_matchday"
-2026-09-08 21:45:20,877 31 ERROR sf_rc_validation odoo.addons.sports_federation_schedule_approval.tests.test_publication_integrity: ERROR: TestPhase511Integrity.test_schedule_approver_can_review_without_calendar_model_access
-2026-09-08 21:45:36,244 31 ERROR sf_rc_validation odoo.tests.result: 1 failed, 4 error(s) of 3131 tests when loading database 'sf_rc_validation' 
+2026-09-08 23:01:00,805 31 ERROR sf_rc_validation odoo.addons.sports_federation_schedule_approval.tests.test_publication_integrity: ERROR: TestPhase511Integrity.test_schedule_approver_can_review_without_calendar_model_access
+2026-09-08 23:01:16,289 31 ERROR sf_rc_validation odoo.tests.result: 1 failed, 4 error(s) of 3132 tests when loading database 'sf_rc_validation' 
 --- Last 200 Odoo log lines ---
-2026-09-08 21:45:29,995 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:29] "GET /my/players HTTP/1.1" 200 - 89 0.032 0.342
-2026-09-08 21:45:30,057 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:30] "GET /my/players/new HTTP/1.1" 200 - 26 0.016 0.044
-2026-09-08 21:45:30,085 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:30] "POST /my/players/new HTTP/1.1" 303 - 32 0.009 0.016
-2026-09-08 21:45:30,104 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:30] "GET /my/players?success=Player+added+successfully HTTP/1.1" 200 - 12 0.003 0.014
-2026-09-08 21:45:30,105 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_my_players_list_renders_with_existing_players ... 
-2026-09-08 21:45:30,123 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.team.smoke@example.com from n/a 
-2026-09-08 21:45:30,128 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:30,511 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:30] "GET /my/players HTTP/1.1" 200 - 97 0.034 0.350
-2026-09-08 21:45:30,531 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:30] "GET /my/players?state=active HTTP/1.1" 200 - 12 0.003 0.015
-2026-09-08 21:45:30,532 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_my_teams_empty_state_and_create_flow ... 
-2026-09-08 21:45:30,537 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.team.smoke@example.com from n/a 
-2026-09-08 21:45:30,543 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:30,917 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:30] "GET /my/teams HTTP/1.1" 200 - 96 0.034 0.342
-2026-09-08 21:45:30,975 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:30] "GET /my/teams/new HTTP/1.1" 200 - 27 0.015 0.042
-2026-09-08 21:45:30,993 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:30] "POST /my/teams/new HTTP/1.1" 303 - 22 0.006 0.009
-2026-09-08 21:45:31,013 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:31] "GET /my/teams?success=Team+created+successfully HTTP/1.1" 200 - 12 0.004 0.015
-2026-09-08 21:45:31,014 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_officiating_response_flow_renders_success ... 
-2026-09-08 21:45:31,019 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.official.smoke@example.com from n/a 
-2026-09-08 21:45:31,025 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:31,420 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:31] "GET /my/referee-assignments HTTP/1.1" 200 - 108 0.037 0.359
-2026-09-08 21:45:31,497 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:31] "GET /my/referee-assignments/62 HTTP/1.1" 200 - 38 0.017 0.057
-2026-09-08 21:45:31,517 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:31] "POST /my/referee-assignments/62/respond HTTP/1.1" 303 - 30 0.008 0.010
-2026-09-08 21:45:31,542 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:31] "GET /my/referee-assignments/62?success=Assignment+confirmed. HTTP/1.1" 200 - 22 0.006 0.018
-2026-09-08 21:45:31,543 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_portal_error_hint_displayed_on_validation_error ... 
-2026-09-08 21:45:31,689 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.season.smoke@example.com from n/a 
-2026-09-08 21:45:31,694 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:32,082 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:32] "GET /my/rosters?error=Some+error&error_hint=Ensure+the+registration+is+confirmed+and+a+roster+has+not+already+been+created+for+this+team. HTTP/1.1" 200 - 106 0.035 0.355
-2026-09-08 21:45:32,084 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_roster_routes_hide_foreign_rosters_and_lines ... 
-2026-09-08 21:45:32,225 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.team.smoke@example.com from n/a 
-2026-09-08 21:45:32,230 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:32,594 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:32] "GET /my/rosters/129 HTTP/1.1" 403 - 90 0.032 0.334
-2026-09-08 21:45:32,599 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.season.smoke@example.com from n/a 
-2026-09-08 21:45:32,625 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:32] "GET /my/rosters/129/lines/61/edit HTTP/1.1" 403 - 20 0.006 0.017
-2026-09-08 21:45:32,627 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_roster_workspace_and_match_day_routes_render_successfully ... 
-2026-09-08 21:45:32,762 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.season.smoke@example.com from n/a 
-2026-09-08 21:45:32,767 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:33,279 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:33] "GET /my/rosters HTTP/1.1" 200 - 106 0.036 0.478
-2026-09-08 21:45:33,299 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:33] "POST /my/rosters/create/41 HTTP/1.1" 303 - 28 0.007 0.011
-2026-09-08 21:45:33,396 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:33] "GET /my/rosters/133?success=Roster+ready+for+editing+in+the+portal. HTTP/1.1" 200 - 39 0.017 0.077
-2026-09-08 21:45:33,457 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:33] "GET /my/match-sheets HTTP/1.1" 200 - 32 0.017 0.043
-2026-09-08 21:45:33,572 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:33] "GET /my/match-sheets/711 HTTP/1.1" 200 - 48 0.020 0.093
-2026-09-08 21:45:33,589 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:33] "POST /my/match-sheets/711/prep HTTP/1.1" 303 - 23 0.006 0.009
-2026-09-08 21:45:33,619 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:33] "GET /my/match-sheets/711?success=Match-day+preparation+saved. HTTP/1.1" 200 - 30 0.008 0.021
-2026-09-08 21:45:33,682 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:33] "GET /my/match-day HTTP/1.1" 200 - 33 0.016 0.044
-2026-09-08 21:45:33,684 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_route_inventory_lists_smoke_covered_portal_routes ... 
-2026-09-08 21:45:33,684 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_season_registration_submit_flow_renders_success ... 
-2026-09-08 21:45:33,689 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.season.smoke@example.com from n/a 
-2026-09-08 21:45:33,695 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:34,085 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:34] "GET /my/season-registrations HTTP/1.1" 200 - 97 0.034 0.357
-2026-09-08 21:45:34,148 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:34] "GET /my/season-registration/new HTTP/1.1" 200 - 30 0.015 0.047
-2026-09-08 21:45:34,174 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:34] "POST /my/season-registration/new HTTP/1.1" 303 - 38 0.010 0.014
-2026-09-08 21:45:34,195 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:34] "GET /my/season-registrations?success=Season+registration+submitted HTTP/1.1" 200 - 15 0.004 0.015
-2026-09-08 21:45:34,202 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
-2026-09-08 21:45:34,205 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_accessible_error_recovery_and_modal_focus_asset_is_registered ... 
-2026-09-08 21:45:34,206 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_core_portal_feedback_uses_alert_roles ... 
-2026-09-08 21:45:34,207 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_core_portal_forms_have_explicit_labels ... 
-2026-09-08 21:45:34,208 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_core_portal_tables_have_captions_and_header_scope ... 
-2026-09-08 21:45:34,210 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_data_api_tutorial_explains_privacy_and_examples ... 
-2026-09-08 21:45:34,210 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_operational_portal_feedback_uses_alert_roles ... 
-2026-09-08 21:45:34,212 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_operational_portal_forms_have_explicit_labels ... 
-2026-09-08 21:45:34,214 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_operational_portal_tables_have_captions_and_header_scope ... 
-2026-09-08 21:45:34,216 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_portal_styles_expose_non_color_keyboard_focus ... 
-2026-09-08 21:45:34,217 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_portal_templates_use_human_state_labels ... 
-2026-09-08 21:45:34,224 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
-2026-09-08 21:45:34,226 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_core_portal_no_table_fixed_width ... 
-2026-09-08 21:45:34,227 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_core_portal_wide_tables_wrapped ... 
-2026-09-08 21:45:34,228 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_officiating_portal_action_groups_wrap ... 
-2026-09-08 21:45:34,229 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_officiating_portal_wide_tables_wrapped ... 
-2026-09-08 21:45:34,229 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_roster_portal_action_groups_wrap ... 
-2026-09-08 21:45:34,230 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_roster_portal_no_table_fixed_width ... 
-2026-09-08 21:45:34,231 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_roster_portal_wide_tables_wrapped ... 
-2026-09-08 21:45:34,232 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_workspace_portal_wide_tables_wrapped ... 
-2026-09-08 21:45:34,238 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
-2026-09-08 21:45:34,322 31 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_http_smoke: Starting TestComplianceHttpSmoke.test_compliance_detail_route_supports_dotted_target_models ... 
-2026-09-08 21:45:34,339 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:compliance.smoke@example.com from n/a 
-2026-09-08 21:45:34,344 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:34,738 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:34] "GET /my/compliance HTTP/1.1" 200 - 108 0.039 0.357
-2026-09-08 21:45:34,826 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:34] "GET /my/compliance/12/federation.club/145 HTTP/1.1" 200 - 44 0.020 0.066
-2026-09-08 21:45:34,829 31 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_http_smoke: Starting TestComplianceHttpSmoke.test_compliance_submit_route_handles_stale_csrf ... 
-2026-09-08 21:45:34,841 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:compliance.smoke@example.com from n/a 
-2026-09-08 21:45:34,847 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:34,885 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:34] "POST /my/compliance/12/federation.club/145/submit HTTP/1.1" 303 - 20 0.006 0.034
-2026-09-08 21:45:35,256 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:35] "GET /my/compliance/12/federation.club/145?error=Your+session+expired.+Refresh+the+page+and+try+again. HTTP/1.1" 200 - 93 0.034 0.334
-2026-09-08 21:45:35,257 31 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_http_smoke: Starting TestComplianceHttpSmoke.test_route_inventory_lists_smoke_covered_compliance_routes ... 
-2026-09-08 21:45:35,263 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
-2026-09-08 21:45:35,291 31 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge: Starting TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle ... 
-2026-09-08 21:45:35,295 31 WARNING sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: websocket-client module is not installed 
-2026-09-08 21:45:35,295 31 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge: skipped TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle : websocket-client module is not installed 
-2026-09-08 21:45:35,300 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
-2026-09-08 21:45:35,301 31 INFO sf_rc_validation odoo.addons.sports_federation_notifications.tests.test_notification_post_install: Starting TestNotificationPostInstall.test_cron_jobs_loaded ... 
-2026-09-08 21:45:35,302 31 INFO sf_rc_validation odoo.addons.sports_federation_notifications.tests.test_notification_post_install: Starting TestNotificationPostInstall.test_mail_templates_loaded ... 
-2026-09-08 21:45:35,311 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
-2026-09-08 21:45:35,355 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle: Starting TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour ... 
-2026-09-08 21:45:35,357 31 WARNING sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: websocket-client module is not installed 
-2026-09-08 21:45:35,357 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle: skipped TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour : websocket-client module is not installed 
-2026-09-08 21:45:35,358 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle: Starting TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour ... 
-2026-09-08 21:45:35,359 31 WARNING sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: websocket-client module is not installed 
-2026-09-08 21:45:35,359 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle: skipped TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour : websocket-client module is not installed 
-2026-09-08 21:45:35,364 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
-2026-09-08 21:45:35,777 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_operator_role_acceptance: Starting TestOperatorRoleAcceptance.test_each_phase_owner_has_read_acl_for_owned_workspace ... 
-2026-09-08 21:45:35,796 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_operator_role_acceptance: Starting TestOperatorRoleAcceptance.test_planner_and_approver_are_distinct_operators ... 
-2026-09-08 21:45:35,804 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 6 checked, 6 removed 
-2026-09-08 21:45:35,805 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_full_lifecycle_tour_covers_officiating_and_publication_handoffs ... 
-2026-09-08 21:45:35,806 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_keyboard_setup_tour_uses_keyboard_activation_and_focus_assertions ... 
-2026-09-08 21:45:35,806 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_release_pilot_actions_target_the_canonical_models ... 
-2026-09-08 21:45:35,814 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_release_pilot_browser_assets_are_present ... 
-2026-09-08 21:45:35,814 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_release_pilot_security_roles_are_installed ... 
-2026-09-08 21:45:35,822 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
-2026-09-08 21:45:35,902 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_finance_event_export_route_returns_csv ... 
-2026-09-08 21:45:35,907 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:admin from n/a 
-2026-09-08 21:45:35,912 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:35,953 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:35] "GET /reporting/export/finance/events HTTP/1.1" 200 - 23 0.006 0.036
-2026-09-08 21:45:35,954 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_finance_export_route_returns_csv ... 
-2026-09-08 21:45:35,960 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:admin from n/a 
-2026-09-08 21:45:35,965 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:36,003 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:36] "GET /reporting/export/finance HTTP/1.1" 200 - 19 0.005 0.034
-2026-09-08 21:45:36,004 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_integration_contracts_route_returns_structured_401 ... 
-2026-09-08 21:45:36,007 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:36,038 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:36] "GET /integration/v1/contracts HTTP/1.1" 401 - 14 0.003 0.029
-2026-09-08 21:45:36,040 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_integration_finance_events_route_returns_structured_401 ... 
-2026-09-08 21:45:36,043 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:36,075 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:36] "GET /integration/v1/outbound/finance/events HTTP/1.1" 401 - 14 0.003 0.031
-2026-09-08 21:45:36,076 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_integration_inbound_delivery_route_returns_structured_401 ... 
-2026-09-08 21:45:36,079 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:36,110 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:36] "POST /integration/v1/inbound/clubs_csv/deliveries HTTP/1.1" 401 - 14 0.003 0.030
-2026-09-08 21:45:36,112 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_participation_export_route_returns_csv ... 
-2026-09-08 21:45:36,118 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:admin from n/a 
-2026-09-08 21:45:36,123 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:36,165 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:36] "GET /reporting/export/participation/113 HTTP/1.1" 200 - 26 0.007 0.036
-2026-09-08 21:45:36,168 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_route_inventory_lists_smoke_covered_integration_routes ... 
-2026-09-08 21:45:36,169 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_route_inventory_lists_smoke_covered_reporting_routes ... 
-2026-09-08 21:45:36,170 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_standings_export_route_returns_csv ... 
-2026-09-08 21:45:36,175 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:admin from n/a 
-2026-09-08 21:45:36,182 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
-2026-09-08 21:45:36,227 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 21:45:36] "GET /reporting/export/standings/112 HTTP/1.1" 200 - 27 0.007 0.039
-2026-09-08 21:45:36,233 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
-2026-09-08 21:45:36,234 31 INFO sf_rc_validation odoo.service.server: 1100 post-tests in 320.24s, 156289 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: api_doc: 12 tests 3.03s 730 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: auth_passkey: 10 tests 1.69s 922 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: auth_passkey_portal: 6 tests 0.23s 308 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: auth_signup: 10 tests 1.18s 1372 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: auth_totp: 9 tests 0.28s 324 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: auth_totp_mail: 13 tests 2.14s 1988 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: auth_totp_portal: 3 tests 0.08s 97 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: base: 1663 tests 121.90s 40973 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: base_import_module: 30 tests 1.87s 1504 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: base_setup: 8 tests 0.77s 773 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: bus: 33 tests 6.89s 493 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: digest: 14 tests 4.17s 3520 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: google_gmail: 3 tests 0.10s 9 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: html_builder: 3 tests 0.04s 12 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: html_editor: 60 tests 0.68s 603 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: http_routing: 3 tests 0.03s 32 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: iap: 3 tests 0.11s 108 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: mail: 422 tests 89.83s 102191 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: microsoft_outlook: 4 tests 0.07s 31 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: partner_autocomplete: 4 tests 0.25s 219 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: phone_validation: 22 tests 0.14s 40 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: portal: 42 tests 5.60s 5471 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: privacy_lookup: 9 tests 0.41s 513 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: resource: 18 tests 0.41s 445 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: rpc: 25 tests 7.26s 1230 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: sms: 13 tests 2.36s 3736 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: snailmail: 5 tests 0.34s 351 queries 
-2026-09-08 21:45:36,242 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_base: 63 tests 1.12s 952 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_calendar: 15 tests 0.20s 344 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_competition_core: 5 tests 0.04s 58 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_compliance: 37 tests 2.09s 1599 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_demo: 22 tests 0.63s 799 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_discipline: 23 tests 0.67s 617 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_finance_bridge: 69 tests 2.86s 2406 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_format: 24 tests 1.66s 1785 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_governance: 24 tests 0.43s 427 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_import_tools: 71 tests 6.42s 1428 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_matchday: 13 tests 0.40s 633 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_notifications: 25 tests 1.50s 1573 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_officiating: 118 tests 4.71s 3664 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_people: 35 tests 0.60s 488 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_portal: 158 tests 11.09s 7554 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_public_site: 95 tests 7.90s 2992 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_registration: 5 tests 0.20s 137 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_reporting: 90 tests 8.69s 2119 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_result_control: 27 tests 1.77s 2670 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_rosters: 78 tests 2.53s 2805 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_rules: 20 tests 0.24s 192 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_schedule_approval: 21 tests 1.04s 1314 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_scheduling: 16 tests 0.23s 338 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_standings: 48 tests 4.74s 4952 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_tournament: 86 tests 1.76s 1742 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_venues: 13 tests 0.39s 265 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: utm: 20 tests 0.72s 1014 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: web: 179 tests 70.84s 8725 queries 
-2026-09-08 21:45:36,243 31 INFO sf_rc_validation odoo.tests.stats: web_tour: 8 tests 0.08s 105 queries 
-2026-09-08 21:45:36,244 31 INFO sf_rc_validation odoo.tests.stats: website: 450 tests 63.95s 31772 queries 
-2026-09-08 21:45:36,244 31 ERROR sf_rc_validation odoo.tests.result: 1 failed, 4 error(s) of 3131 tests when loading database 'sf_rc_validation' 
-2026-09-08 21:45:36,244 31 INFO sf_rc_validation odoo.service.server: Initiating shutdown 
-2026-09-08 21:45:36,244 31 INFO sf_rc_validation odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
-2026-09-08 21:45:36,683 31 INFO sf_rc_validation odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 4 connections  
-2026-09-08 21:45:36,683 31 INFO sf_rc_validation odoo.sql_db: ConnectionPool(read-only;used=0/count=0/max=64): Closed 1 connections  
+2026-09-08 23:01:09,967 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:09] "GET /my/players HTTP/1.1" 200 - 89 0.032 0.347
+2026-09-08 23:01:10,029 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:10] "GET /my/players/new HTTP/1.1" 200 - 26 0.016 0.044
+2026-09-08 23:01:10,058 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:10] "POST /my/players/new HTTP/1.1" 303 - 32 0.010 0.017
+2026-09-08 23:01:10,079 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:10] "GET /my/players?success=Player+added+successfully HTTP/1.1" 200 - 12 0.004 0.016
+2026-09-08 23:01:10,081 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_my_players_list_renders_with_existing_players ... 
+2026-09-08 23:01:10,102 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.team.smoke@example.com from n/a 
+2026-09-08 23:01:10,107 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:10,521 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:10] "GET /my/players HTTP/1.1" 200 - 97 0.038 0.377
+2026-09-08 23:01:10,543 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:10] "GET /my/players?state=active HTTP/1.1" 200 - 12 0.004 0.016
+2026-09-08 23:01:10,544 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_my_teams_empty_state_and_create_flow ... 
+2026-09-08 23:01:10,550 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.team.smoke@example.com from n/a 
+2026-09-08 23:01:10,556 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:10,933 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:10] "GET /my/teams HTTP/1.1" 200 - 96 0.034 0.344
+2026-09-08 23:01:10,991 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:10] "GET /my/teams/new HTTP/1.1" 200 - 27 0.015 0.042
+2026-09-08 23:01:11,009 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:11] "POST /my/teams/new HTTP/1.1" 303 - 22 0.006 0.010
+2026-09-08 23:01:11,028 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:11] "GET /my/teams?success=Team+created+successfully HTTP/1.1" 200 - 12 0.003 0.014
+2026-09-08 23:01:11,030 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_officiating_response_flow_renders_success ... 
+2026-09-08 23:01:11,035 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.official.smoke@example.com from n/a 
+2026-09-08 23:01:11,041 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:11,434 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:11] "GET /my/referee-assignments HTTP/1.1" 200 - 108 0.037 0.358
+2026-09-08 23:01:11,511 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:11] "GET /my/referee-assignments/62 HTTP/1.1" 200 - 38 0.018 0.058
+2026-09-08 23:01:11,532 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:11] "POST /my/referee-assignments/62/respond HTTP/1.1" 303 - 30 0.008 0.011
+2026-09-08 23:01:11,557 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:11] "GET /my/referee-assignments/62?success=Assignment+confirmed. HTTP/1.1" 200 - 22 0.005 0.018
+2026-09-08 23:01:11,558 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_portal_error_hint_displayed_on_validation_error ... 
+2026-09-08 23:01:11,705 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.season.smoke@example.com from n/a 
+2026-09-08 23:01:11,710 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:12,105 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:12] "GET /my/rosters?error=Some+error&error_hint=Ensure+the+registration+is+confirmed+and+a+roster+has+not+already+been+created+for+this+team. HTTP/1.1" 200 - 106 0.035 0.362
+2026-09-08 23:01:12,107 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_roster_routes_hide_foreign_rosters_and_lines ... 
+2026-09-08 23:01:12,252 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.team.smoke@example.com from n/a 
+2026-09-08 23:01:12,258 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:12,630 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:12] "GET /my/rosters/129 HTTP/1.1" 403 - 90 0.033 0.342
+2026-09-08 23:01:12,635 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.season.smoke@example.com from n/a 
+2026-09-08 23:01:12,660 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:12] "GET /my/rosters/129/lines/61/edit HTTP/1.1" 403 - 20 0.006 0.016
+2026-09-08 23:01:12,662 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_roster_workspace_and_match_day_routes_render_successfully ... 
+2026-09-08 23:01:12,795 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.season.smoke@example.com from n/a 
+2026-09-08 23:01:12,800 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:13,307 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:13] "GET /my/rosters HTTP/1.1" 200 - 106 0.037 0.471
+2026-09-08 23:01:13,327 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:13] "POST /my/rosters/create/41 HTTP/1.1" 303 - 28 0.007 0.011
+2026-09-08 23:01:13,424 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:13] "GET /my/rosters/133?success=Roster+ready+for+editing+in+the+portal. HTTP/1.1" 200 - 39 0.017 0.078
+2026-09-08 23:01:13,485 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:13] "GET /my/match-sheets HTTP/1.1" 200 - 32 0.016 0.043
+2026-09-08 23:01:13,600 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:13] "GET /my/match-sheets/713 HTTP/1.1" 200 - 48 0.020 0.094
+2026-09-08 23:01:13,618 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:13] "POST /my/match-sheets/713/prep HTTP/1.1" 303 - 23 0.006 0.009
+2026-09-08 23:01:13,649 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:13] "GET /my/match-sheets/713?success=Match-day+preparation+saved. HTTP/1.1" 200 - 30 0.008 0.022
+2026-09-08 23:01:13,712 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:13] "GET /my/match-day HTTP/1.1" 200 - 33 0.016 0.045
+2026-09-08 23:01:13,714 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_route_inventory_lists_smoke_covered_portal_routes ... 
+2026-09-08 23:01:13,715 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_http_smoke: Starting TestPortalWorkflowHttpSmoke.test_season_registration_submit_flow_renders_success ... 
+2026-09-08 23:01:13,720 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:portal.season.smoke@example.com from n/a 
+2026-09-08 23:01:13,726 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:14,120 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:14] "GET /my/season-registrations HTTP/1.1" 200 - 97 0.035 0.361
+2026-09-08 23:01:14,186 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:14] "GET /my/season-registration/new HTTP/1.1" 200 - 30 0.016 0.048
+2026-09-08 23:01:14,211 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:14] "POST /my/season-registration/new HTTP/1.1" 303 - 38 0.010 0.014
+2026-09-08 23:01:14,232 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:14] "GET /my/season-registrations?success=Season+registration+submitted HTTP/1.1" 200 - 15 0.004 0.015
+2026-09-08 23:01:14,239 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-09-08 23:01:14,242 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_accessible_error_recovery_and_modal_focus_asset_is_registered ... 
+2026-09-08 23:01:14,243 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_core_portal_feedback_uses_alert_roles ... 
+2026-09-08 23:01:14,244 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_core_portal_forms_have_explicit_labels ... 
+2026-09-08 23:01:14,245 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_core_portal_tables_have_captions_and_header_scope ... 
+2026-09-08 23:01:14,246 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_data_api_tutorial_explains_privacy_and_examples ... 
+2026-09-08 23:01:14,247 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_operational_portal_feedback_uses_alert_roles ... 
+2026-09-08 23:01:14,249 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_operational_portal_forms_have_explicit_labels ... 
+2026-09-08 23:01:14,250 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_operational_portal_tables_have_captions_and_header_scope ... 
+2026-09-08 23:01:14,252 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_portal_styles_expose_non_color_keyboard_focus ... 
+2026-09-08 23:01:14,253 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_accessibility: Starting TestPortalTemplateAccessibility.test_portal_templates_use_human_state_labels ... 
+2026-09-08 23:01:14,259 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-09-08 23:01:14,262 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_core_portal_no_table_fixed_width ... 
+2026-09-08 23:01:14,263 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_core_portal_wide_tables_wrapped ... 
+2026-09-08 23:01:14,264 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_officiating_portal_action_groups_wrap ... 
+2026-09-08 23:01:14,264 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_officiating_portal_wide_tables_wrapped ... 
+2026-09-08 23:01:14,265 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_roster_portal_action_groups_wrap ... 
+2026-09-08 23:01:14,266 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_roster_portal_no_table_fixed_width ... 
+2026-09-08 23:01:14,267 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_roster_portal_wide_tables_wrapped ... 
+2026-09-08 23:01:14,268 31 INFO sf_rc_validation odoo.addons.sports_federation_portal.tests.test_template_mobile: Starting TestPortalTemplateMobile.test_workspace_portal_wide_tables_wrapped ... 
+2026-09-08 23:01:14,274 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-09-08 23:01:14,362 31 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_http_smoke: Starting TestComplianceHttpSmoke.test_compliance_detail_route_supports_dotted_target_models ... 
+2026-09-08 23:01:14,379 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:compliance.smoke@example.com from n/a 
+2026-09-08 23:01:14,383 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:14,776 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:14] "GET /my/compliance HTTP/1.1" 200 - 107 0.039 0.355
+2026-09-08 23:01:14,864 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:14] "GET /my/compliance/12/federation.club/146 HTTP/1.1" 200 - 44 0.020 0.066
+2026-09-08 23:01:14,867 31 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_http_smoke: Starting TestComplianceHttpSmoke.test_compliance_submit_route_handles_stale_csrf ... 
+2026-09-08 23:01:14,882 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:compliance.smoke@example.com from n/a 
+2026-09-08 23:01:14,889 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:14,930 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:14] "POST /my/compliance/12/federation.club/146/submit HTTP/1.1" 303 - 20 0.004 0.039
+2026-09-08 23:01:15,303 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:15] "GET /my/compliance/12/federation.club/146?error=Your+session+expired.+Refresh+the+page+and+try+again. HTTP/1.1" 200 - 93 0.034 0.336
+2026-09-08 23:01:15,305 31 INFO sf_rc_validation odoo.addons.sports_federation_compliance.tests.test_http_smoke: Starting TestComplianceHttpSmoke.test_route_inventory_lists_smoke_covered_compliance_routes ... 
+2026-09-08 23:01:15,311 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-09-08 23:01:15,339 31 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge: Starting TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle ... 
+2026-09-08 23:01:15,342 31 WARNING sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge.TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle: websocket-client module is not installed 
+2026-09-08 23:01:15,343 31 INFO sf_rc_validation odoo.addons.sports_federation_finance_bridge.tests.test_browser_finance_bridge: skipped TestBrowserFinanceBridge.test_finance_bridge_browser_lifecycle : websocket-client module is not installed 
+2026-09-08 23:01:15,348 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-09-08 23:01:15,349 31 INFO sf_rc_validation odoo.addons.sports_federation_notifications.tests.test_notification_post_install: Starting TestNotificationPostInstall.test_cron_jobs_loaded ... 
+2026-09-08 23:01:15,350 31 INFO sf_rc_validation odoo.addons.sports_federation_notifications.tests.test_notification_post_install: Starting TestNotificationPostInstall.test_mail_templates_loaded ... 
+2026-09-08 23:01:15,359 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-09-08 23:01:15,402 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle: Starting TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour ... 
+2026-09-08 23:01:15,405 31 WARNING sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour: websocket-client module is not installed 
+2026-09-08 23:01:15,405 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle: skipped TestBrowserCompetitionLifecycle.test_full_competition_lifecycle_browser_tour : websocket-client module is not installed 
+2026-09-08 23:01:15,405 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle: Starting TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour ... 
+2026-09-08 23:01:15,406 31 WARNING sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle.TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour: websocket-client module is not installed 
+2026-09-08 23:01:15,406 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_browser_competition_lifecycle: skipped TestBrowserCompetitionLifecycle.test_keyboard_competition_setup_browser_tour : websocket-client module is not installed 
+2026-09-08 23:01:15,411 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-09-08 23:01:15,824 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_operator_role_acceptance: Starting TestOperatorRoleAcceptance.test_each_phase_owner_has_read_acl_for_owned_workspace ... 
+2026-09-08 23:01:15,844 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_operator_role_acceptance: Starting TestOperatorRoleAcceptance.test_planner_and_approver_are_distinct_operators ... 
+2026-09-08 23:01:15,852 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 6 checked, 6 removed 
+2026-09-08 23:01:15,852 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_full_lifecycle_tour_covers_officiating_and_publication_handoffs ... 
+2026-09-08 23:01:15,853 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_keyboard_setup_tour_uses_keyboard_activation_and_focus_assertions ... 
+2026-09-08 23:01:15,854 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_release_pilot_actions_target_the_canonical_models ... 
+2026-09-08 23:01:15,861 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_release_pilot_browser_assets_are_present ... 
+2026-09-08 23:01:15,862 31 INFO sf_rc_validation odoo.addons.sports_federation_demo.tests.test_release_pilot_readiness: Starting TestReleasePilotReadiness.test_release_pilot_security_roles_are_installed ... 
+2026-09-08 23:01:15,869 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-09-08 23:01:15,949 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_finance_event_export_route_returns_csv ... 
+2026-09-08 23:01:15,955 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:admin from n/a 
+2026-09-08 23:01:15,959 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:16,001 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:16] "GET /reporting/export/finance/events HTTP/1.1" 200 - 23 0.007 0.036
+2026-09-08 23:01:16,002 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_finance_export_route_returns_csv ... 
+2026-09-08 23:01:16,007 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:admin from n/a 
+2026-09-08 23:01:16,013 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:16,051 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:16] "GET /reporting/export/finance HTTP/1.1" 200 - 19 0.005 0.034
+2026-09-08 23:01:16,052 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_integration_contracts_route_returns_structured_401 ... 
+2026-09-08 23:01:16,055 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:16,086 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:16] "GET /integration/v1/contracts HTTP/1.1" 401 - 14 0.003 0.029
+2026-09-08 23:01:16,087 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_integration_finance_events_route_returns_structured_401 ... 
+2026-09-08 23:01:16,089 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:16,123 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:16] "GET /integration/v1/outbound/finance/events HTTP/1.1" 401 - 14 0.003 0.031
+2026-09-08 23:01:16,124 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_integration_inbound_delivery_route_returns_structured_401 ... 
+2026-09-08 23:01:16,126 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:16,158 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:16] "POST /integration/v1/inbound/clubs_csv/deliveries HTTP/1.1" 401 - 14 0.003 0.030
+2026-09-08 23:01:16,159 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_participation_export_route_returns_csv ... 
+2026-09-08 23:01:16,165 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:admin from n/a 
+2026-09-08 23:01:16,171 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:16,213 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:16] "GET /reporting/export/participation/113 HTTP/1.1" 200 - 26 0.007 0.036
+2026-09-08 23:01:16,215 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_route_inventory_lists_smoke_covered_integration_routes ... 
+2026-09-08 23:01:16,215 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_route_inventory_lists_smoke_covered_reporting_routes ... 
+2026-09-08 23:01:16,216 31 INFO sf_rc_validation odoo.addons.sports_federation_reporting.tests.test_http_smoke: Starting TestReportingHttpSmoke.test_standings_export_route_returns_csv ... 
+2026-09-08 23:01:16,222 31 INFO sf_rc_validation odoo.addons.base.models.res_users: Login successful for login:admin from n/a 
+2026-09-08 23:01:16,228 31 INFO sf_rc_validation odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-09-08 23:01:16,273 31 INFO sf_rc_validation werkzeug: 127.0.0.1 - - [08/Sep/2026 23:01:16] "GET /reporting/export/standings/112 HTTP/1.1" 200 - 27 0.008 0.039
+2026-09-08 23:01:16,279 31 INFO sf_rc_validation odoo.addons.base.models.ir_attachment: filestore gc 0 checked, 0 removed 
+2026-09-08 23:01:16,279 31 INFO sf_rc_validation odoo.service.server: 1101 post-tests in 319.95s, 156589 queries 
+2026-09-08 23:01:16,287 31 INFO sf_rc_validation odoo.tests.stats: api_doc: 12 tests 3.01s 730 queries 
+2026-09-08 23:01:16,287 31 INFO sf_rc_validation odoo.tests.stats: auth_passkey: 10 tests 1.71s 922 queries 
+2026-09-08 23:01:16,287 31 INFO sf_rc_validation odoo.tests.stats: auth_passkey_portal: 6 tests 0.23s 308 queries 
+2026-09-08 23:01:16,287 31 INFO sf_rc_validation odoo.tests.stats: auth_signup: 10 tests 1.20s 1372 queries 
+2026-09-08 23:01:16,287 31 INFO sf_rc_validation odoo.tests.stats: auth_totp: 9 tests 0.29s 324 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: auth_totp_mail: 13 tests 2.02s 1988 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: auth_totp_portal: 3 tests 0.08s 97 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: base: 1663 tests 115.33s 40973 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: base_import_module: 30 tests 1.90s 1504 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: base_setup: 8 tests 0.76s 773 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: bus: 33 tests 6.82s 493 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: digest: 14 tests 4.15s 3514 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: google_gmail: 3 tests 0.09s 9 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: html_builder: 3 tests 0.04s 12 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: html_editor: 60 tests 0.69s 603 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: http_routing: 3 tests 0.03s 32 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: iap: 3 tests 0.11s 108 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: mail: 422 tests 90.39s 102191 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: microsoft_outlook: 4 tests 0.07s 31 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: partner_autocomplete: 4 tests 0.25s 219 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: phone_validation: 22 tests 0.14s 40 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: portal: 42 tests 5.82s 5471 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: privacy_lookup: 9 tests 0.41s 513 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: resource: 18 tests 0.42s 445 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: rpc: 25 tests 7.28s 1230 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: sms: 13 tests 2.43s 3736 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: snailmail: 5 tests 0.32s 351 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_base: 63 tests 1.12s 952 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_calendar: 15 tests 0.19s 344 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_competition_core: 5 tests 0.04s 58 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_compliance: 37 tests 2.08s 1598 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_demo: 22 tests 0.63s 799 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_discipline: 23 tests 0.68s 617 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_finance_bridge: 69 tests 2.89s 2406 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_format: 24 tests 1.77s 1875 queries 
+2026-09-08 23:01:16,288 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_governance: 24 tests 0.40s 427 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_import_tools: 71 tests 6.40s 1428 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_matchday: 13 tests 0.40s 633 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_notifications: 25 tests 1.51s 1573 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_officiating: 118 tests 4.68s 3664 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_people: 35 tests 0.59s 488 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_portal: 158 tests 11.15s 7554 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_public_site: 95 tests 7.97s 2992 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_registration: 5 tests 0.20s 137 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_reporting: 90 tests 3.02s 2119 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_result_control: 27 tests 1.82s 2670 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_rosters: 78 tests 2.57s 2805 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_rules: 20 tests 0.24s 192 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_schedule_approval: 22 tests 1.17s 1525 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_scheduling: 16 tests 0.23s 338 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_standings: 48 tests 4.77s 4952 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_tournament: 86 tests 1.83s 1742 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: sports_federation_venues: 13 tests 0.37s 265 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: utm: 20 tests 0.72s 1014 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: web: 179 tests 69.80s 8726 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: web_tour: 8 tests 0.08s 105 queries 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.tests.stats: website: 450 tests 65.28s 31772 queries 
+2026-09-08 23:01:16,289 31 ERROR sf_rc_validation odoo.tests.result: 1 failed, 4 error(s) of 3132 tests when loading database 'sf_rc_validation' 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.service.server: Initiating shutdown 
+2026-09-08 23:01:16,289 31 INFO sf_rc_validation odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-09-08 23:01:16,729 31 INFO sf_rc_validation odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 4 connections  
+2026-09-08 23:01:16,729 31 INFO sf_rc_validation odoo.sql_db: ConnectionPool(read-only;used=0/count=0/max=64): Closed 1 connections  
 

@@ -62,6 +62,7 @@
                 <field name="club_id"/>
                 <field name="role"/>
                 <field name="nomination_deadline" optional="show"/>
+                <!-- Technical field retained for view modifiers and domains. -->
                 <field name="is_deadline_overdue" optional="show" invisible="1"/>
                 <field name="nominated_player_id" optional="show"/>
                 <field name="state"/>

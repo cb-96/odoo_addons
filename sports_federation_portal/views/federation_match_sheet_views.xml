@@ -24,6 +24,7 @@
 
             <!-- Invisible relay: team's club, used by coach/manager domains below -->
             <field name="side" position="before">
+                <!-- Technical field retained for view modifiers and domains. -->
                 <field name="team_club_id" invisible="1"/>
             </field>
 

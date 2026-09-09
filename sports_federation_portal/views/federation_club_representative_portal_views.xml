@@ -13,6 +13,7 @@
                 <field name="role"/>
                 <field name="is_primary"/>
                 <field name="role_type_id" optional="show"/>
+                <!-- Technical field retained for view modifiers and domains. -->
                 <field name="active" invisible="1"/>
             </list>
         </field>

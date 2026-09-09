@@ -22,7 +22,9 @@
                     <group>
                         <group string="Tournament">
                             <field name="tournament_id"/>
+                            <!-- Technical field retained for view modifiers and domains. -->
                             <field name="eligible_team_ids" invisible="1"/>
+                            <!-- Technical field retained for view modifiers and domains. -->
                             <field name="available_team_ids" invisible="1"/>
                             <field name="team_id" domain="[('id', 'in', available_team_ids)]"/>
                             <field name="excluded_team_feedback_html"

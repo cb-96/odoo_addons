@@ -19,7 +19,9 @@
         <field name="inherit_id" ref="sports_federation_base.view_federation_team_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="after">
+                <!-- Technical field retained for view modifiers and domains. -->
                 <field name="roster_ids" invisible="1"/>
+                <!-- Technical field retained for view modifiers and domains. -->
                 <field name="roster_count" invisible="1"/>
             </xpath>
         </field>

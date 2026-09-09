@@ -12,7 +12,9 @@
             <field name="schedule_id"/>
             <field name="matchday_id"/>
             <field name="current_publication_id" invisible="not replacement_required"/>
+            <!-- Technical field retained for view modifiers and domains. -->
             <field name="replacement_required" invisible="1"/>
+            <!-- Technical field retained for view modifiers and domains. -->
             <field name="expected_publication_id" invisible="1"/>
           </group>
           <group string="Publication decision">

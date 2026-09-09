@@ -14,6 +14,7 @@
                 <field name="valid_from"/>
                 <field name="valid_to"/>
                 <field name="line_count"/>
+                <!-- Technical field retained for view modifiers and domains. -->
                 <field name="active" invisible="1"/>
             </list>
         </field>
@@ -62,11 +63,15 @@
                     </group>
                     <group>
                         <group>
+                            <!-- Technical field retained for view modifiers and domains. -->
                             <field name="ready_for_activation" invisible="1" readonly="1"/>
+                            <!-- Technical field retained for view modifiers and domains. -->
                             <field name="readiness_feedback" invisible="1" readonly="1"/>
                         </group>
                         <group>
+                            <!-- Technical field retained for view modifiers and domains. -->
                             <field name="match_day_locked" invisible="1" readonly="1"/>
+                            <!-- Technical field retained for view modifiers and domains. -->
                             <field name="match_day_lock_feedback" invisible="1" readonly="1"/>
                         </group>
                     </group>

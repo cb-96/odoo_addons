@@ -1,6 +1,6 @@
 [Release baseline] Running RC lane: portal
- Container sf_rc_baseline_1788903398_111339-ci-db-1  Running
- Container sf_rc_baseline_1788903398_111339-ci-db-1  Waiting
- Container sf_rc_baseline_1788903398_111339-ci-db-1  Healthy
-2026-09-08 21:55:41,669 31 INFO sf_rc_validation odoo.service.server: 33 post-tests in 7.20s, 2988 queries 
-2026-09-08 21:55:41,669 31 INFO sf_rc_validation odoo.tests.result: 0 failed, 0 error(s) of 122 tests when loading database 'sf_rc_validation' 
+ Container sf_rc_baseline_1788907953_128949-ci-db-1  Running
+ Container sf_rc_baseline_1788907953_128949-ci-db-1  Waiting
+ Container sf_rc_baseline_1788907953_128949-ci-db-1  Healthy
+2026-09-08 23:11:12,056 31 INFO sf_rc_validation odoo.service.server: 33 post-tests in 7.20s, 2988 queries 
+2026-09-08 23:11:12,057 31 INFO sf_rc_validation odoo.tests.result: 0 failed, 0 error(s) of 122 tests when loading database 'sf_rc_validation' 

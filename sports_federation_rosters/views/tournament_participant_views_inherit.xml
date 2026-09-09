@@ -6,8 +6,11 @@
         <field name="inherit_id" ref="sports_federation_tournament.view_federation_tournament_participant_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='registration_date']" position="after">
+                <!-- Technical field retained for view modifiers and domains. -->
                 <field name="ready_for_confirmation" readonly="1" invisible="1"/>
+                <!-- Technical field retained for view modifiers and domains. -->
                 <field name="confirmation_blocking" readonly="1" invisible="1"/>
+                <!-- Technical field retained for view modifiers and domains. -->
                 <field name="confirmation_warning" readonly="1" invisible="1"/>
                 <field name="roster_deadline_date" readonly="1"/>
                 <field name="readiness_roster_id" readonly="1"/>

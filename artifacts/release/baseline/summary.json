@@ -1,5 +1,5 @@
 {
-  "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
+  "commit": "9bdd55d9fe241aa74d91a7080a55cbe061a45d41",
   "commit_mismatches": [],
   "complete": true,
   "failed_lanes": [
@@ -12,19 +12,19 @@
     {
       "branch": "main",
       "command": "scripts/ci/run_rc_validation.sh acceptance",
-      "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
+      "commit": "9bdd55d9fe241aa74d91a7080a55cbe061a45d41",
       "database": "sf_rc_validation",
-      "duration_seconds": 27.0,
+      "duration_seconds": 25.0,
       "exit_code": 0,
       "failure_classification": null,
-      "finished_at": "2026-09-08T21:57:04Z",
+      "finished_at": "2026-09-08T23:12:36Z",
       "lane": "acceptance",
       "log": {
         "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/acceptance.log",
-        "sha256": "0be7bd69e08a3c8c3d308a1068f0ddf9c89978aa1858635db62ea6859a193853",
+        "sha256": "5e6a1af5c18366f1168d60db2e24bc738a7a4686527dffc83aa3277c986c7758",
         "size_bytes": 481
       },
-      "recorded_at": "2026-09-08T21:57:04.862874+00:00",
+      "recorded_at": "2026-09-08T23:12:36.391012+00:00",
       "runner": {
         "github_job": null,
         "github_run_attempt": null,
@@ -34,7 +34,7 @@
       },
       "schema_version": 2,
       "skip_reason": null,
-      "started_at": "2026-09-08T21:56:37Z",
+      "started_at": "2026-09-08T23:12:11Z",
       "status": "passed",
       "tools": {
         "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
@@ -47,19 +47,19 @@
     {
       "branch": "main",
       "command": "scripts/ci/run_rc_validation.sh core",
-      "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
+      "commit": "9bdd55d9fe241aa74d91a7080a55cbe061a45d41",
       "database": "sf_rc_validation",
-      "duration_seconds": 35.0,
+      "duration_seconds": 29.0,
       "exit_code": 0,
       "failure_classification": null,
-      "finished_at": "2026-09-08T21:55:10Z",
+      "finished_at": "2026-09-08T23:10:43Z",
       "lane": "core",
       "log": {
         "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/core.log",
-        "sha256": "a8bfe39e0291a50a920e39785a3963e2375724fdd9c398d16da501154d32c715",
+        "sha256": "823e5b65a32bdafaceebef1d5686146510497362283173a6c0f9ca98b8c7c65d",
         "size_bytes": 476
       },
-      "recorded_at": "2026-09-08T21:55:10.290833+00:00",
+      "recorded_at": "2026-09-08T23:10:43.320452+00:00",
       "runner": {
         "github_job": null,
         "github_run_attempt": null,
@@ -69,7 +69,7 @@
       },
       "schema_version": 2,
       "skip_reason": null,
-      "started_at": "2026-09-08T21:54:35Z",
+      "started_at": "2026-09-08T23:10:14Z",
       "status": "passed",
       "tools": {
         "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
@@ -82,19 +82,19 @@
     {
       "branch": "main",
       "command": "scripts/ci/run_rc_validation.sh focus",
-      "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
+      "commit": "9bdd55d9fe241aa74d91a7080a55cbe061a45d41",
       "database": "sf_rc_validation",
-      "duration_seconds": 31.0,
+      "duration_seconds": 24.0,
       "exit_code": 0,
       "failure_classification": null,
-      "finished_at": "2026-09-08T21:57:35Z",
+      "finished_at": "2026-09-08T23:13:00Z",
       "lane": "focus",
       "log": {
         "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/focus.log",
-        "sha256": "616c45e33ecfd281d42304fc0ce4cbf42f92fe8772343d0184e279ba0f97b817",
+        "sha256": "ce76297a9ed8992277724eaed344487c2ed19abd7c8e9e65daa843998e49a353",
         "size_bytes": 476
       },
-      "recorded_at": "2026-09-08T21:57:35.815519+00:00",
+      "recorded_at": "2026-09-08T23:13:00.886480+00:00",
       "runner": {
         "github_job": null,
         "github_run_attempt": null,
@@ -104,7 +104,7 @@
       },
       "schema_version": 2,
       "skip_reason": null,
-      "started_at": "2026-09-08T21:57:04Z",
+      "started_at": "2026-09-08T23:12:36Z",
       "status": "passed",
       "tools": {
         "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
@@ -117,19 +117,19 @@
     {
       "branch": "main",
       "command": "scripts/ci/run_rc_validation.sh full",
-      "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
+      "commit": "9bdd55d9fe241aa74d91a7080a55cbe061a45d41",
       "database": "sf_rc_validation",
-      "duration_seconds": 79.0,
+      "duration_seconds": 87.0,
       "exit_code": 1,
       "failure_classification": "unclassified",
-      "finished_at": "2026-09-08T21:58:54Z",
+      "finished_at": "2026-09-08T23:14:27Z",
       "lane": "full",
       "log": {
         "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/full.log",
-        "sha256": "00fc4a287e9fe8d6940e4a2df9db1e383687bab69b051a86fb3595daf54bd03a",
+        "sha256": "4907bebdc3a41d85902a167d2fe9ee213f6e33d0b320f6bd8104b1b53c0b5ffd",
         "size_bytes": 41611
       },
-      "recorded_at": "2026-09-08T21:58:54.151083+00:00",
+      "recorded_at": "2026-09-08T23:14:28.049380+00:00",
       "runner": {
         "github_job": null,
         "github_run_attempt": null,
@@ -139,7 +139,7 @@
       },
       "schema_version": 2,
       "skip_reason": null,
-      "started_at": "2026-09-08T21:57:35Z",
+      "started_at": "2026-09-08T23:13:00Z",
       "status": "failed",
       "tools": {
         "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
@@ -152,19 +152,19 @@
     {
       "branch": "main",
       "command": "scripts/ci/run_rc_validation.sh install",
-      "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
+      "commit": "9bdd55d9fe241aa74d91a7080a55cbe061a45d41",
       "database": "sf_rc_validation",
-      "duration_seconds": 534.0,
+      "duration_seconds": 520.0,
       "exit_code": 1,
       "failure_classification": "unclassified",
-      "finished_at": "2026-09-08T21:45:40Z",
+      "finished_at": "2026-09-08T23:01:20Z",
       "lane": "install",
       "log": {
         "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/install.log",
-        "sha256": "cac6a384e0a3b09a06446f1245a9bce72f3166c6cf35178f2a8c6492426d706b",
+        "sha256": "c110771c2cacf8d029cc5a39d0a286880d6d5cd0a0f4600f3a032ddc1a2648b2",
         "size_bytes": 41278
       },
-      "recorded_at": "2026-09-08T21:45:40.159772+00:00",
+      "recorded_at": "2026-09-08T23:01:20.448465+00:00",
       "runner": {
         "github_job": null,
         "github_run_attempt": null,
@@ -174,7 +174,7 @@
       },
       "schema_version": 2,
       "skip_reason": null,
-      "started_at": "2026-09-08T21:36:46Z",
+      "started_at": "2026-09-08T22:52:40Z",
       "status": "failed",
       "tools": {
         "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
@@ -187,19 +187,19 @@
     {
       "branch": "main",
       "command": "scripts/ci/run_rc_validation.sh performance",
-      "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
+      "commit": "9bdd55d9fe241aa74d91a7080a55cbe061a45d41",
       "database": "sf_rc_validation",
-      "duration_seconds": 22.0,
+      "duration_seconds": 29.0,
       "exit_code": 0,
       "failure_classification": null,
-      "finished_at": "2026-09-08T21:56:36Z",
+      "finished_at": "2026-09-08T23:12:11Z",
       "lane": "performance",
       "log": {
         "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/performance.log",
-        "sha256": "a5f094f98fc6beb2f00f3ba793071d29732d1a71006f97a5545b3dc5aa060762",
+        "sha256": "4761d814cd9b75fbc73e8aea2cc6ac1a613efac2d7e6ac58430c29371cdbdb00",
         "size_bytes": 546
       },
-      "recorded_at": "2026-09-08T21:56:36.950404+00:00",
+      "recorded_at": "2026-09-08T23:12:11.315769+00:00",
       "runner": {
         "github_job": null,
         "github_run_attempt": null,
@@ -209,7 +209,7 @@
       },
       "schema_version": 2,
       "skip_reason": null,
-      "started_at": "2026-09-08T21:56:14Z",
+      "started_at": "2026-09-08T23:11:42Z",
       "status": "passed",
       "tools": {
         "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
@@ -222,19 +222,19 @@
     {
       "branch": "main",
       "command": "scripts/ci/run_rc_validation.sh portal",
-      "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
+      "commit": "9bdd55d9fe241aa74d91a7080a55cbe061a45d41",
       "database": "sf_rc_validation",
-      "duration_seconds": 34.0,
+      "duration_seconds": 31.0,
       "exit_code": 0,
       "failure_classification": null,
-      "finished_at": "2026-09-08T21:55:44Z",
+      "finished_at": "2026-09-08T23:11:14Z",
       "lane": "portal",
       "log": {
         "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/portal.log",
-        "sha256": "e833555bcc9baf42975cd79c69c25009522b298601b86c5cbc2d571f476774a2",
+        "sha256": "e24f4bb83270931f22a1b3588ef3de51b7da13537fe1a8812a8d466616c69e50",
         "size_bytes": 478
       },
-      "recorded_at": "2026-09-08T21:55:44.427556+00:00",
+      "recorded_at": "2026-09-08T23:11:14.691327+00:00",
       "runner": {
         "github_job": null,
         "github_run_attempt": null,
@@ -244,7 +244,7 @@
       },
       "schema_version": 2,
       "skip_reason": null,
-      "started_at": "2026-09-08T21:55:10Z",
+      "started_at": "2026-09-08T23:10:43Z",
       "status": "passed",
       "tools": {
         "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
@@ -257,19 +257,19 @@
     {
       "branch": "main",
       "command": "scripts/ci/run_rc_validation.sh preflight",
-      "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
+      "commit": "9bdd55d9fe241aa74d91a7080a55cbe061a45d41",
       "database": "sf_rc_validation",
-      "duration_seconds": 0.0,
+      "duration_seconds": 1.0,
       "exit_code": 1,
       "failure_classification": "unclassified",
-      "finished_at": "2026-09-08T21:36:39Z",
+      "finished_at": "2026-09-08T22:52:34Z",
       "lane": "preflight",
       "log": {
         "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/preflight.log",
         "sha256": "649bdabbb421f6217d26f08be52c6274f62695c92170ca717fa9a8759469dc31",
         "size_bytes": 763
       },
-      "recorded_at": "2026-09-08T21:36:39.367507+00:00",
+      "recorded_at": "2026-09-08T22:52:34.080306+00:00",
       "runner": {
         "github_job": null,
         "github_run_attempt": null,
@@ -279,7 +279,7 @@
       },
       "schema_version": 2,
       "skip_reason": null,
-      "started_at": "2026-09-08T21:36:39Z",
+      "started_at": "2026-09-08T22:52:33Z",
       "status": "failed",
       "tools": {
         "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
@@ -292,19 +292,19 @@
     {
       "branch": "main",
       "command": "scripts/ci/run_rc_validation.sh public",
-      "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
+      "commit": "9bdd55d9fe241aa74d91a7080a55cbe061a45d41",
       "database": "sf_rc_validation",
-      "duration_seconds": 30.0,
+      "duration_seconds": 28.0,
       "exit_code": 0,
       "failure_classification": null,
-      "finished_at": "2026-09-08T21:56:14Z",
+      "finished_at": "2026-09-08T23:11:42Z",
       "lane": "public",
       "log": {
         "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/public.log",
-        "sha256": "e88cc9b801505932b957daacd7fe5ff6f5f2cc4a0ffc7ae7e3b9c3ce66fef643",
+        "sha256": "882d79c732eb355b224925e0405530afc274f81d7ed0b3827cfa9944a64be7ca",
         "size_bytes": 477
       },
-      "recorded_at": "2026-09-08T21:56:14.237441+00:00",
+      "recorded_at": "2026-09-08T23:11:42.141781+00:00",
       "runner": {
         "github_job": null,
         "github_run_attempt": null,
@@ -314,7 +314,7 @@
       },
       "schema_version": 2,
       "skip_reason": null,
-      "started_at": "2026-09-08T21:55:44Z",
+      "started_at": "2026-09-08T23:11:14Z",
       "status": "passed",
       "tools": {
         "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
@@ -327,19 +327,19 @@
     {
       "branch": "main",
       "command": "scripts/ci/run_rc_validation.sh static",
-      "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
+      "commit": "9bdd55d9fe241aa74d91a7080a55cbe061a45d41",
       "database": "sf_rc_validation",
       "duration_seconds": 6.0,
       "exit_code": 0,
       "failure_classification": null,
-      "finished_at": "2026-09-08T21:36:45Z",
+      "finished_at": "2026-09-08T22:52:40Z",
       "lane": "static",
       "log": {
         "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/static.log",
         "sha256": "92b9bb7db9ba25382a5ed9a7bab0a2f4b7c7020345b9a1df29dd3d3b89b707f0",
         "size_bytes": 1762
       },
-      "recorded_at": "2026-09-08T21:36:45.990779+00:00",
+      "recorded_at": "2026-09-08T22:52:40.309546+00:00",
       "runner": {
         "github_job": null,
         "github_run_attempt": null,
@@ -349,7 +349,7 @@
       },
       "schema_version": 2,
       "skip_reason": null,
-      "started_at": "2026-09-08T21:36:39Z",
+      "started_at": "2026-09-08T22:52:34Z",
       "status": "passed",
       "tools": {
         "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
@@ -362,19 +362,19 @@
     {
       "branch": "main",
       "command": "scripts/ci/run_rc_validation.sh upgrade",
-      "commit": "121cd8e0983f99d09b913d3fff0a5bd334703910",
+      "commit": "9bdd55d9fe241aa74d91a7080a55cbe061a45d41",
       "database": "sf_rc_upgrade",
-      "duration_seconds": 20.0,
+      "duration_seconds": 24.0,
       "exit_code": 0,
       "failure_classification": null,
-      "finished_at": "2026-09-08T21:54:35Z",
+      "finished_at": "2026-09-08T23:10:14Z",
       "lane": "upgrade",
       "log": {
         "path": "/home/cedric/odoo/addons/artifacts/release/baseline/logs/upgrade.log",
-        "sha256": "0c5b9c2c65d7df76bf9d7b31b9e707d67e326cfd8d840a905572206bda1aeaeb",
+        "sha256": "364f7793ccf2d88330583314f886a2cad0ead604176fed0f7d18fd258034d6b0",
         "size_bytes": 410
       },
-      "recorded_at": "2026-09-08T21:54:35.095284+00:00",
+      "recorded_at": "2026-09-08T23:10:14.066936+00:00",
       "runner": {
         "github_job": null,
         "github_run_attempt": null,
@@ -384,7 +384,7 @@
       },
       "schema_version": 2,
       "skip_reason": null,
-      "started_at": "2026-09-08T21:54:15Z",
+      "started_at": "2026-09-08T23:09:50Z",
       "status": "passed",
       "tools": {
         "docker": "Docker version 29.1.3, build f52814d454173982e6692dd7e290a41b828d9cbc",
@@ -406,7 +406,7 @@
     "static",
     "upgrade"
   ],
-  "recorded_at": "2026-09-08T21:58:54.292808+00:00",
+  "recorded_at": "2026-09-08T23:14:28.192641+00:00",
   "required_lanes": [
     "preflight",
     "static",
