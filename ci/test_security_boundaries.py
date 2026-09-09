@@ -83,17 +83,21 @@ def test_workflow_transition_foundation_is_wired():
     transitions = load("check_workflow_transition_foundation")
     assert transitions.find_violations(ROOT) == []
 
+
 def test_matchday_transition_contract_is_complete():
     contract = load("check_matchday_transition_contract")
     assert contract.find_violations(ROOT) == []
+
 
 def test_result_transition_contract_is_complete():
     contract = load("check_result_transition_contract")
     assert contract.find_violations(ROOT) == []
 
+
 def test_browser_test_runtime_is_locked():
     runtime = load("check_browser_test_runtime")
     assert runtime.find_violations(ROOT) == []
+
 
 def test_release_baseline_evidence_is_isolated():
     contract = load("check_release_baseline_evidence")
@@ -102,12 +106,15 @@ def test_release_baseline_evidence_is_isolated():
 
 def test_release_failure_classification_is_actionable():
     classifier = load("classify_release_failure")
-    assert classifier.classify(
-        "Release workspace contains tracked changes", "preflight"
-    ) == "unsupported_configuration"
-    assert classifier.classify(
-        "ValidationError: workflow rejected", "full"
-    ) == "product_defect"
-    assert classifier.classify(
-        "websocket-client module is not installed", "acceptance"
-    ) == "unsupported_configuration"
+    assert (
+        classifier.classify("Release workspace contains tracked changes", "preflight")
+        == "unsupported_configuration"
+    )
+    assert (
+        classifier.classify("ValidationError: workflow rejected", "full")
+        == "product_defect"
+    )
+    assert (
+        classifier.classify("websocket-client module is not installed", "acceptance")
+        == "unsupported_configuration"
+    )

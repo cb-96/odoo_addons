@@ -154,9 +154,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
         result = self.env["federation.matchday.commands"].open_matchday(
             self.matchday.id
         )
-        session = self.env["federation.matchday.session"].browse(
-            result["session_id"]
-        )
+        session = self.env["federation.matchday.session"].browse(result["session_id"])
         self.assertEqual(session.publication_id, self.publication)
         self.assertEqual(session.publication_digest, self.publication.snapshot_digest)
         self.assertEqual(result["current_state"], "open")
@@ -324,9 +322,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
             "execute",
             side_effect=RuntimeError("injected transition failure"),
         ), self.assertRaises(RuntimeError):
-            self.env["federation.matchday.commands"].open_matchday(
-                self.matchday.id
-            )
+            self.env["federation.matchday.commands"].open_matchday(self.matchday.id)
         self.assertEqual(self.matchday.state, "scheduled")
         self.assertFalse(
             self.env["federation.matchday.session"].search(

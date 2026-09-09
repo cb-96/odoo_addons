@@ -176,26 +176,22 @@ class FederationMatchdayRestart(models.Model):
         )
         self.env["federation.matchday.deviation"].sudo().with_context(
             **{
-                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY:
-                    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY: MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
             }
         ).search([("matchday_id", "=", self.id)]).unlink()
         self.env["federation.matchday.session"].sudo().with_context(
             **{
-                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY:
-                    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY: MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
             }
         ).search([("matchday_id", "=", self.id)]).unlink()
         reviews.with_context(
             **{
-                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY:
-                    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY: MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
             }
         ).unlink()
         publications.with_context(
             **{
-                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY:
-                    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY: MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
             }
         ).unlink()
 
@@ -211,8 +207,7 @@ class FederationMatchdayRestart(models.Model):
         )
         schedules.with_context(
             **{
-                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY:
-                    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY: MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
             }
         ).unlink()
 

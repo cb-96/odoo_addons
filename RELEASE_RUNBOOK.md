@@ -1,8 +1,8 @@
 # Release Runbook
 
-Last updated: 2026-09-03
+Last updated: 2026-09-09
 Owner: Federation Platform Team
-Last reviewed: 2026-09-03
+Last reviewed: 2026-09-09
 Review cadence: Every release
 Release train: 2026.08
 
@@ -91,6 +91,41 @@ Exit code: 0; 116 tests run, 116 passed, 0 failed, 0 errors; 30 post-tests
 Rollback is the standard backup restore procedure in this runbook. Do not
 restore the deleted V1 controller or broaden portal publication access as a
 rollback workaround.
+
+### Transactional command ownership review evidence
+
+The current release diff changes model-owned match-day cleanup and command
+boundaries in `sports_federation_matchday`, `sports_federation_result_control`,
+and `sports_federation_schedule_approval`. The changes were reviewed as
+application and ownership behavior changes; no standalone migration script is
+required. The normal addon upgrade path remains the deployment mechanism, with
+the backup restore procedure below as the rollback path.
+
+Dry-run evidence captured on 2026-09-09:
+
+```text
+./scripts/upgrade_sports_federation.sh --db odoo --dry-run
+Exit code: 0
+Install: none
+Upgrade: sports_federation_base,sports_federation_calendar,
+sports_federation_competition_core,sports_federation_compliance,
+sports_federation_demo,sports_federation_discipline,
+sports_federation_finance_bridge,sports_federation_format,
+sports_federation_governance,sports_federation_import_tools,
+sports_federation_matchday,sports_federation_notifications,
+sports_federation_officiating,sports_federation_people,
+sports_federation_portal,sports_federation_public_site,
+sports_federation_registration,sports_federation_reporting,
+sports_federation_result_control,sports_federation_rosters,
+sports_federation_rules,sports_federation_schedule_approval,
+sports_federation_scheduling,sports_federation_standings,
+sports_federation_tournament,sports_federation_venues
+```
+
+The dry run only resolved the installed addon plan and did not modify the
+database. If the upgrade fails, preserve the logs and failed database state,
+then restore the pre-upgrade database and filestore backup before restarting
+the previous release.
 
 ### Release-candidate readiness review
 

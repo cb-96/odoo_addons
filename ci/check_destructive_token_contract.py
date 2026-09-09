@@ -26,10 +26,7 @@ def imported_names(tree: ast.AST) -> set[str]:
     for node in ast.walk(tree):
         if not isinstance(node, ast.ImportFrom):
             continue
-        if (
-            node.module
-            != "odoo.addons.sports_federation_base.destructive_tokens"
-        ):
+        if node.module != "odoo.addons.sports_federation_base.destructive_tokens":
             continue
         names.update(alias.name for alias in node.names)
     return names

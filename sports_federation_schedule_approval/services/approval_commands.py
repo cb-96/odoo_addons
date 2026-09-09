@@ -184,9 +184,7 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         review = self._resolve_pending(review_id)
         schedule = review.schedule_id.sudo()
         if schedule.state != "ready_for_review":
-            raise ValidationError(
-                _("Only a schedule awaiting review can be approved.")
-            )
+            raise ValidationError(_("Only a schedule awaiting review can be approved."))
         validation = self.env["federation.schedule.validator"].validate_map(
             schedule,
             {a.fixture_id.id: a.slot_id.id for a in schedule.assignment_ids},

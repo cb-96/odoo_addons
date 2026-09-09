@@ -19,7 +19,9 @@ class FederationResultCommands(models.AbstractModel):
     @api.model
     def _portal_scope_domain(self, actor):
         if "portal_club_scope_ids" not in actor._fields:
-            raise AccessError(_("Portal result commands require an explicit club scope."))
+            raise AccessError(
+                _("Portal result commands require an explicit club scope.")
+            )
         club_ids = actor.portal_club_scope_ids.ids
         if not club_ids:
             return [("id", "=", False)]
@@ -36,10 +38,7 @@ class FederationResultCommands(models.AbstractModel):
             raise AccessError(_("A valid portal actor is required."))
         domain = [("id", "=", int(match_id))] + self._portal_scope_domain(actor)
         match = (
-            self.env["federation.match"]
-            .with_user(actor)
-            .sudo()
-            .search(domain, limit=1)
+            self.env["federation.match"].with_user(actor).sudo().search(domain, limit=1)
         )
         if not match:
             raise AccessError(_("You do not have access to this match result."))
@@ -47,8 +46,10 @@ class FederationResultCommands(models.AbstractModel):
 
     @api.model
     def _command_match(self, match, actor):
-        return match.with_user(actor).sudo().with_context(
-            **{_RESULT_COMMAND_CONTEXT_KEY: _RESULT_COMMAND_TOKEN}
+        return (
+            match.with_user(actor)
+            .sudo()
+            .with_context(**{_RESULT_COMMAND_CONTEXT_KEY: _RESULT_COMMAND_TOKEN})
         )
 
     @api.model

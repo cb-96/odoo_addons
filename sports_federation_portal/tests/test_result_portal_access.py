@@ -313,7 +313,6 @@ class TestResultPortalAccess(TransactionCase):
         with self.assertRaises(ValidationError):
             self.match_ab.sudo().action_contest_result()
 
-
     def test_result_command_rejects_unrelated_club_actor(self):
         club = self.env["federation.club"].create(
             {"name": "Result Command Unrelated", "code": "RCU"}

@@ -48,7 +48,6 @@ def load_lane_records(evidence_dir: Path) -> dict[str, dict]:
     return records
 
 
-
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -110,10 +109,7 @@ def build_summary(
         lane for lane, record in records.items() if record.get("status") == "passed"
     )
     complete = (
-        not missing
-        and not unexpected
-        and not commit_mismatches
-        and not invalid_records
+        not missing and not unexpected and not commit_mismatches and not invalid_records
     )
     status = "passed" if complete and not failed and not skipped else "failed"
     return {

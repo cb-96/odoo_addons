@@ -57,8 +57,7 @@ class FederationMatchdayDeleteWizard(models.TransientModel):
         )
         matchday.with_context(
             **{
-                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY:
-                    MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
+                MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY: MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
             },
             matchday_delete_reason=reason,
         ).unlink()

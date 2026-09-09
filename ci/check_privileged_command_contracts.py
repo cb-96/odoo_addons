@@ -38,7 +38,10 @@ def class_contract(path: Path) -> tuple[str | None, set[str]]:
         for child in node.body:
             if not isinstance(child, ast.Assign):
                 continue
-            if any(isinstance(target, ast.Name) and target.id == "_name" for target in child.targets):
+            if any(
+                isinstance(target, ast.Name) and target.id == "_name"
+                for target in child.targets
+            ):
                 if isinstance(child.value, ast.Constant):
                     model_name = child.value.value
         if model_name:
@@ -61,7 +64,9 @@ def find_violations(root: Path = ROOT) -> list[str]:
         missing = sorted(contract["methods"] - methods)
         if missing:
             violations.append(f"{contract['path']}: missing command methods {missing}")
-    result_model = root / "sports_federation_result_control/models/match_result_control.py"
+    result_model = (
+        root / "sports_federation_result_control/models/match_result_control.py"
+    )
     source = result_model.read_text(encoding="utf-8")
     if "if self.env.su:" in source:
         violations.append(

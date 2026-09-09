@@ -10,8 +10,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 FOUNDATION = ROOT / "sports_federation_base/models/workflow_transition.py"
 APPROVAL_COMMANDS = (
-    ROOT
-    / "sports_federation_schedule_approval/services/approval_commands.py"
+    ROOT / "sports_federation_schedule_approval/services/approval_commands.py"
 )
 REQUIRED_ARGUMENTS = {
     "target_state",

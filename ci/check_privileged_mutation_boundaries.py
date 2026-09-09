@@ -52,14 +52,9 @@ def enclosing_function(tree: ast.AST, node: ast.AST) -> str:
     return "<module>"
 
 
-
 def assigned_names(node: ast.Assign | ast.AnnAssign) -> set[str]:
     targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-    return {
-        target.id
-        for target in targets
-        if isinstance(target, ast.Name)
-    }
+    return {target.id for target in targets if isinstance(target, ast.Name)}
 
 
 def elevated_names(function: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:

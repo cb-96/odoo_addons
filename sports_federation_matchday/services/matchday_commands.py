@@ -323,17 +323,21 @@ class FederationMatchdayCommands(models.AbstractModel):
                 }
             )
         )
-        incident = self.env["federation.matchday.incident"].sudo().create(
-            {
-                "matchday_id": matchday.id,
-                "incident_type": "schedule_change",
-                "description": _(
-                    "%(kind)s for %(match)s: %(reason)s",
-                    kind=deviation_type.title(),
-                    match=match.display_name,
-                    reason=reason,
-                ),
-            }
+        incident = (
+            self.env["federation.matchday.incident"]
+            .sudo()
+            .create(
+                {
+                    "matchday_id": matchday.id,
+                    "incident_type": "schedule_change",
+                    "description": _(
+                        "%(kind)s for %(match)s: %(reason)s",
+                        kind=deviation_type.title(),
+                        match=match.display_name,
+                        reason=reason,
+                    ),
+                }
+            )
         )
         self.env["federation.competition.event"].emit(
             matchday,

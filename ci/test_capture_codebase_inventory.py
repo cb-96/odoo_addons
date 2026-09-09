@@ -16,8 +16,14 @@ class TestCodebaseInventory(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.repo = Path(self.temp.name)
         subprocess.run(["git", "init", "-q"], cwd=self.repo, check=True)
-        subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=self.repo, check=True)
-        subprocess.run(["git", "config", "user.name", "Test"], cwd=self.repo, check=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@example.invalid"],
+            cwd=self.repo,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test"], cwd=self.repo, check=True
+        )
         addon = self.repo / "sports_federation_sample"
         (addon / "controllers").mkdir(parents=True)
         (addon / "data").mkdir()

@@ -65,10 +65,10 @@ def find_violations(root: Path = ROOT) -> list[str]:
     for direct in (
         'matchday.sudo().state = "open"',
         'matchday.sudo().state = "closed"',
-        'session.sudo().write(',
-        'status.sudo().write(',
-        'incident.sudo().write(',
-        'match.sudo().write(values)',
+        "session.sudo().write(",
+        "status.sudo().write(",
+        "incident.sudo().write(",
+        "match.sudo().write(values)",
     ):
         if direct in source:
             violations.append(f"direct operational mutation remains: {direct}")

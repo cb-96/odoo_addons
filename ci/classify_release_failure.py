@@ -7,13 +7,28 @@ import argparse
 from pathlib import Path
 
 RULES = (
-    ("unsupported_configuration", ("websocket-client module is not installed", "browser test dependency")),
-    ("documentation_drift", ("documentation freshness", "broken markdown link", "delivery language")),
-    ("migration_defect", ("migration", "upgrade failed", "invariant mismatch", "rollback")),
+    (
+        "unsupported_configuration",
+        ("websocket-client module is not installed", "browser test dependency"),
+    ),
+    (
+        "documentation_drift",
+        ("documentation freshness", "broken markdown link", "delivery language"),
+    ),
+    (
+        "migration_defect",
+        ("migration", "upgrade failed", "invariant mismatch", "rollback"),
+    ),
     ("performance_regression", ("performance regression", "query budget exceeded")),
-    ("fixture_defect", ("duplicate key value violates unique constraint", "fixture setup")),
+    (
+        "fixture_defect",
+        ("duplicate key value violates unique constraint", "fixture setup"),
+    ),
     ("test_defect", ("test collection", "test discovery", "no tests were found")),
-    ("infrastructure_defect", ("docker is required", "connection refused", "timed out", "no space left")),
+    (
+        "infrastructure_defect",
+        ("docker is required", "connection refused", "timed out", "no space left"),
+    ),
     ("product_defect", ("fail:", "error:", "validationerror", "assertionerror")),
 )
 

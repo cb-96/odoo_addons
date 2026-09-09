@@ -19,7 +19,9 @@ from pathlib import Path
 DEFAULT_LARGE_FILE_LINES = 500
 ROUTE_RE = re.compile(r"@(?:http\.)?route\s*\(")
 SUDO_RE = re.compile(r"\.sudo\s*\(")
-SQL_RE = re.compile(r"(?:\.execute\s*\(|\b(?:SELECT|INSERT|UPDATE|DELETE|ALTER|CREATE|DROP)\b)", re.I)
+SQL_RE = re.compile(
+    r"(?:\.execute\s*\(|\b(?:SELECT|INSERT|UPDATE|DELETE|ALTER|CREATE|DROP)\b)", re.I
+)
 CRON_RE = re.compile(r"<record\b[^>]*\bmodel=[\"']ir\.cron[\"']", re.I)
 MODEL_NAME_RE = re.compile(r"^\s*_(?:name|inherit)\s*=\s*[\"']([^\"']+)[\"']", re.M)
 
@@ -115,7 +117,13 @@ def build_inventory(repo: Path, large_file_lines: int) -> dict:
         )
     roots = addons + [repo / "ci", repo / "scripts"]
     files = sorted(
-        {path for root in roots if root.exists() for path in root.rglob("*") if path.is_file()}
+        {
+            path
+            for root in roots
+            if root.exists()
+            for path in root.rglob("*")
+            if path.is_file()
+        }
     )
     for path in files:
         rel = path.relative_to(repo).as_posix()
@@ -130,10 +138,17 @@ def build_inventory(repo: Path, large_file_lines: int) -> dict:
         if "/migrations/" in f"/{rel}" and path.suffix in {".py", ".sql"}:
             result["migrations"].append(rel)
     for key in (
-        "routes", "sudo_calls", "raw_sql_candidates", "scheduled_jobs",
-        "model_declarations", "large_python_files",
+        "routes",
+        "sudo_calls",
+        "raw_sql_candidates",
+        "scheduled_jobs",
+        "model_declarations",
+        "large_python_files",
     ):
-        result[key] = sorted(result[key], key=lambda item: (item["path"], item.get("line", 0), item.get("model", "")))
+        result[key] = sorted(
+            result[key],
+            key=lambda item: (item["path"], item.get("line", 0), item.get("model", "")),
+        )
     result["migrations"].sort()
     canonical = json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
     result["inventory_sha256"] = hashlib.sha256(canonical).hexdigest()
@@ -154,13 +169,17 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", type=Path, default=Path.cwd())
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--large-file-lines", type=int, default=DEFAULT_LARGE_FILE_LINES)
+    parser.add_argument(
+        "--large-file-lines", type=int, default=DEFAULT_LARGE_FILE_LINES
+    )
     args = parser.parse_args()
     repo = args.repo.resolve()
     inventory = build_inventory(repo, args.large_file_lines)
     output = args.output if args.output.is_absolute() else repo / args.output
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(inventory, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    output.write_text(
+        json.dumps(inventory, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     print(output)
     return 0
 
