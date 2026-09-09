@@ -11,17 +11,29 @@ EXPECTED = "websocket-client==1.8.0"
 
 def find_violations(root: Path = ROOT) -> list[str]:
     requirements = root / "requirements.txt"
+    runtime_requirements = root / "requirements-odoo-ci.txt"
     dockerfile = root / "ci/Dockerfile.odoo-ci"
     compose = root / "ci/docker-compose.ci.yaml"
     violations = []
     if not requirements.is_file() or EXPECTED not in requirements.read_text():
         violations.append(f"requirements.txt must lock {EXPECTED}")
+    if (
+        not runtime_requirements.is_file()
+        or EXPECTED not in runtime_requirements.read_text()
+    ):
+        violations.append(f"requirements-odoo-ci.txt must lock {EXPECTED}")
     if not dockerfile.is_file():
         violations.append("the Odoo CI Dockerfile is missing")
     else:
         source = dockerfile.read_text()
-        if "sports-federation-requirements.txt" not in source:
-            violations.append("the Odoo CI image does not install project requirements")
+        if "sports-federation-odoo-ci-requirements.txt" not in source:
+            violations.append(
+                "the Odoo CI image does not install its runtime requirements"
+            )
+        if "requirements.txt /tmp" in source:
+            violations.append(
+                "the Odoo CI image must not install host lint requirements"
+            )
         if "import websocket" not in source:
             violations.append("the Odoo CI image does not verify websocket-client")
     if not compose.is_file():

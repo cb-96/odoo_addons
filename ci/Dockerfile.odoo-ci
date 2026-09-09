@@ -2,9 +2,9 @@ FROM odoo:19
 
 USER root
 
-COPY requirements.txt /tmp/sports-federation-requirements.txt
+COPY requirements-odoo-ci.txt /tmp/sports-federation-odoo-ci-requirements.txt
 RUN python3 -m pip install \
     --break-system-packages \
     --no-cache-dir \
-    -r /tmp/sports-federation-requirements.txt \
+    -r /tmp/sports-federation-odoo-ci-requirements.txt \
     && python3 -c "import websocket; assert websocket.__version__ == '1.8.0'"

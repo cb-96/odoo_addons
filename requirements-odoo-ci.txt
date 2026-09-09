@@ -1,0 +1,2 @@
+# Dependencies required inside the Odoo runtime for release-critical browser tests.
+websocket-client==1.8.0
