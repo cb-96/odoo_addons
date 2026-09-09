@@ -22,7 +22,10 @@ services:
       retries: 10
 
   ci-odoo:
-    image: odoo:19
+    image: sports-federation-odoo-ci:19
+    build:
+      context: ..
+      dockerfile: ci/Dockerfile.odoo-ci
     user: root
     depends_on:
       ci-db:

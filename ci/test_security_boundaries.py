@@ -90,3 +90,7 @@ def test_matchday_transition_contract_is_complete():
 def test_result_transition_contract_is_complete():
     contract = load("check_result_transition_contract")
     assert contract.find_violations(ROOT) == []
+
+def test_browser_test_runtime_is_locked():
+    runtime = load("check_browser_test_runtime")
+    assert runtime.find_violations(ROOT) == []

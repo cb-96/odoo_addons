@@ -70,6 +70,7 @@ EOF
 ensure_stack() {
   require_compose
   write_config
+  "${compose[@]}" build ci-odoo
   "${compose[@]}" up -d --wait ci-db
   "${compose[@]}" exec -T \
     -e PGPASSWORD="$ci_postgres_password" \
@@ -120,6 +121,7 @@ run_odoo() {
   local container_command
   container_command="$(cat <<'EOF'
 set -eu
+python3 -c 'import websocket; assert websocket.__version__ == "1.8.0"'
 if [ ! -e /usr/lib/python3/dist-packages/odoo-bin ]; then
   ln -s /usr/bin/odoo /usr/lib/python3/dist-packages/odoo-bin
 fi
@@ -177,6 +179,7 @@ PY
   python3 ci/check_registration_contract.py
   python3 ci/check_access_csv_integrity.py
   python3 ci/check_source_collector_contract.py
+  python3 ci/check_browser_test_runtime.py
   python3 ci/check_addon_integrity.py
   python3 ci/check_test_discovery.py
   python3 ci/check_workflow_state_contracts.py
