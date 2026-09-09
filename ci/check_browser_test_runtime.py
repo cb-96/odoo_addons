@@ -44,6 +44,12 @@ def find_violations(root: Path = ROOT) -> list[str]:
         source = compose.read_text()
         if not re.search(r"dockerfile:\s+ci/Dockerfile\.odoo-ci", source):
             violations.append("ci-odoo does not build the locked Odoo CI image")
+        if not re.search(r"shm_size:\s*[\"']?2gb[\"']?", source):
+            violations.append("ci-odoo must provide 2 GB of browser shared memory")
+        if not re.search(r"init:\s+true", source):
+            violations.append("ci-odoo must use an init process to reap browsers")
+        if "${CI_ODOO_CONFIG_PATH:-/dev/null}" not in source:
+            violations.append("image-only builds must not require an Odoo config path")
     return violations
 
 

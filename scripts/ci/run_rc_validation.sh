@@ -134,8 +134,11 @@ else
 fi
 EOF
 )"
+  echo "[RC:$lane] Streaming Odoo output; full log: $logfile"
+  echo "[RC:$lane] Long standard/install lanes may run for more than an hour."
   if "${compose[@]}" run --rm ci-odoo sh -lc "$container_command" -- \
-    "${odoo_args[@]}" >"$logfile" 2>&1; then
+    "${odoo_args[@]}" 2>&1 | tee "$logfile"; then
+    echo "[RC:$lane] Odoo completed successfully."
     grep -E "odoo.tests.result:|[0-9]+ post-tests in" "$logfile" | tail -n 5 || true
     return 0
   else

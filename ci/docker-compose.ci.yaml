@@ -27,6 +27,9 @@ services:
       context: ..
       dockerfile: ci/Dockerfile.odoo-ci
     user: root
+    init: true
+    shm_size: "2gb"
+    stop_grace_period: 30s
     depends_on:
       ci-db:
         condition: service_healthy
@@ -37,6 +40,6 @@ services:
       PASSWORD: ${CI_POSTGRES_PASSWORD}
     volumes:
       - ../:/mnt/extra-addons:ro
-      - ${CI_ODOO_CONFIG_PATH:?CI_ODOO_CONFIG_PATH must point to the generated Odoo config}:/etc/odoo/odoo.conf:ro
+      - ${CI_ODOO_CONFIG_PATH:-/dev/null}:/etc/odoo/odoo.conf:ro
     # No HTTP – headless test runner; stop after init + test
     command: ["--no-http", "--stop-after-init", "--test-enable"]
