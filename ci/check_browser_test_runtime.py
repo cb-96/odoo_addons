@@ -36,8 +36,10 @@ def find_violations(root: Path = ROOT) -> list[str]:
             )
         if "import websocket" not in source:
             violations.append("the Odoo CI image does not verify websocket-client")
-        if "chromium" not in source:
-            violations.append("the Odoo CI image does not install Chromium")
+        if "google-chrome-stable_current_amd64.deb" not in source:
+            violations.append("the Odoo CI image does not install Google Chrome")
+        if "chromium-browser --version" not in source:
+            violations.append("the browser compatibility command is not verified")
     if not compose.is_file():
         violations.append("the CI Compose file is missing")
     else:
@@ -50,6 +52,8 @@ def find_violations(root: Path = ROOT) -> list[str]:
             violations.append("ci-odoo must use an init process to reap browsers")
         if "${CI_ODOO_CONFIG_PATH:-/dev/null}" not in source:
             violations.append("image-only builds must not require an Odoo config path")
+        if "ci-odoo-data:/var/lib/odoo" not in source:
+            violations.append("RC lanes must share the Odoo filestore volume")
     return violations
 
 

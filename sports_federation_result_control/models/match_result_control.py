@@ -97,6 +97,7 @@ class FederationMatchResultControl(models.Model):
         Standing = self.env.get("federation.standing")
         if Standing is None:
             return
+        Standing = Standing.sudo()
 
         for rec in self:
             standings = Standing.search([("tournament_id", "=", rec.tournament_id.id)])

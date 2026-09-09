@@ -85,12 +85,13 @@ class FederationScheduleReviewIntegrity(models.Model):
             )
         )
 
-    def unlink(self):
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_authorized_cleanup(self):
         if (
             self.env.context.get(MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY)
             is MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
         ):
-            return super().unlink()
+            return
         raise ValidationError("Schedule reviews are retained as audit evidence.")
 
 
@@ -123,12 +124,13 @@ class FederationSchedulePublicationIntegrity(models.Model):
             raise ValidationError("Invalid publication state.")
         return super().write(vals)
 
-    def unlink(self):
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_authorized_cleanup(self):
         if (
             self.env.context.get(MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY)
             is MATCHDAY_DESTRUCTIVE_DELETE_TOKEN
         ):
-            return super().unlink()
+            return
         raise ValidationError("Published schedules are retained as audit evidence.")
 
 

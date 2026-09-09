@@ -40,6 +40,10 @@ services:
       PASSWORD: ${CI_POSTGRES_PASSWORD}
     volumes:
       - ../:/mnt/extra-addons:ro
+      - ci-odoo-data:/var/lib/odoo
       - ${CI_ODOO_CONFIG_PATH:-/dev/null}:/etc/odoo/odoo.conf:ro
     # No HTTP – headless test runner; stop after init + test
     command: ["--no-http", "--stop-after-init", "--test-enable"]
+
+volumes:
+  ci-odoo-data:
