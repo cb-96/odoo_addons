@@ -5,7 +5,24 @@ lane="${1:-all}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
-modules="sports_federation_app,sports_federation_demo"
+install_modules="sports_federation_app,sports_federation_demo"
+production_modules="$(python3 - <<'PYMODULES'
+import ast
+from pathlib import Path
+manifest = ast.literal_eval(Path("sports_federation_app/__manifest__.py").read_text())
+print(",".join(
+    module for module in manifest["depends"]
+    if module.startswith("sports_federation_")
+))
+PYMODULES
+)"
+test_modules="$production_modules,sports_federation_demo"
+upgrade_modules="$production_modules,sports_federation_demo,sports_federation_app"
+federation_test_tags="$(python3 - "$test_modules" <<'PYTAGS'
+import sys
+print(",".join(f"/{module}" for module in sys.argv[1].split(",") if module))
+PYTAGS
+)"
 db_name="${DB_NAME:-sf_rc_validation}"
 upgrade_db_name="${UPGRADE_DB_NAME:-sf_rc_upgrade}"
 compose_file="${RC_COMPOSE_FILE:-$repo_root/ci/docker-compose.ci.yaml}"
@@ -135,7 +152,7 @@ fi
 EOF
 )"
   echo "[RC:$lane] Streaming Odoo output; full log: $logfile"
-  echo "[RC:$lane] Long standard/install lanes may run for more than an hour."
+  echo "[RC:$lane] Broad upstream-compatibility lanes may run for more than an hour."
   if "${compose[@]}" run --rm ci-odoo sh -lc "$container_command" -- \
     "${odoo_args[@]}" 2>&1 | tee "$logfile"; then
     echo "[RC:$lane] Odoo completed successfully."
@@ -210,10 +227,15 @@ PY
   fi
 }
 
-run_tags() {
-  local tags="$1"
-  run_odoo "${common[@]}" -d "$db_name" -u "$modules" \
+run_tags_on() {
+  local database="$1"
+  local tags="$2"
+  run_odoo "${common[@]}" -d "$database" -u "$test_modules" \
     --test-enable --test-tags "$tags"
+}
+
+run_tags() {
+  run_tags_on "$db_name" "$1"
 }
 
 assert_modules_installed() {
@@ -224,11 +246,11 @@ assert_modules_installed() {
   installed="$(
     "${compose[@]}" exec -T ci-db psql \
       -U "$ci_postgres_user" -d "$database" --tuples-only --no-align \
-      --command="SELECT count(*) FROM ir_module_module WHERE name = ANY(string_to_array('$modules', ',')) AND state = 'installed'" \
+      --command="SELECT count(*) FROM ir_module_module WHERE name = ANY(string_to_array('$upgrade_modules', ',')) AND state = 'installed'" \
       | tr -d '[:space:]'
   )"
   local expected
-  expected="$(awk -F',' '{print NF}' <<<"$modules")"
+  expected="$(awk -F',' '{print NF}' <<<"$upgrade_modules")"
   if [[ "$installed" != "$expected" ]]; then
     echo "ERROR: upgrade database $database has $installed of $expected required modules installed" >&2
     exit 2
@@ -237,17 +259,25 @@ assert_modules_installed() {
 
 run_upgrade() {
   assert_modules_installed "$upgrade_db_name"
-  run_odoo "${common[@]}" -d "$upgrade_db_name" -u "$modules"
+  run_odoo "${common[@]}" -d "$upgrade_db_name" -u "$upgrade_modules"
 }
 
 case "$lane" in
   cleanup) cleanup_compose ;;
   preflight) python3 ci/check_release_workspace.py ;;
   static) static_checks ;;
+  prepare)
+    ensure_database "$db_name"
+    run_odoo "${common[@]}" -d "$db_name" -i "$install_modules"
+    ;;
   install)
     ensure_database "$db_name"
-    run_odoo "${common[@]}" -d "$db_name" -i "$modules" \
-      --test-enable --test-tags 'standard'
+    run_odoo "${common[@]}" -d "$db_name" -i "$install_modules" \
+      --test-enable --test-tags "$federation_test_tags"
+    ;;
+  prepare-upgrade)
+    ensure_database "$upgrade_db_name"
+    run_odoo "${common[@]}" -d "$upgrade_db_name" -i "$install_modules"
     ;;
   upgrade) run_upgrade ;;
   core) run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications' ;;
@@ -257,26 +287,24 @@ case "$lane" in
     python3 ci/check_performance_qualification.py
     run_tags '/sports_federation_standings:TestStandingsPerformance,/sports_federation_reporting:TestReportSnapshot,/sports_federation_reporting:TestYearFourReporting,/sports_federation_public_site:TestPublicSiteNewEndpoints'
     ;;
-  acceptance) run_tags 'sf_operator_acceptance,sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus' ;;
+  acceptance) run_tags 'sf_operator_acceptance' ;;
   focus) run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus' ;;
-  full) run_tags 'standard' ;;
+  full) run_tags_on "$upgrade_db_name" "$federation_test_tags" ;;
+  upstream) run_tags 'standard' ;;
   all)
     python3 ci/check_release_workspace.py
     static_checks
     ensure_database "$db_name"
-    run_odoo "${common[@]}" -d "$db_name" -i "$modules" \
-      --test-enable --test-tags 'standard'
-    run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications'
+    run_odoo "${common[@]}" -d "$db_name" -i "$install_modules" \
+      --test-enable --test-tags "$federation_test_tags"
     ensure_database "$upgrade_db_name"
-    run_odoo "${common[@]}" -d "$upgrade_db_name" -i "$modules" \
-      --test-enable --test-tags 'standard'
+    run_odoo "${common[@]}" -d "$upgrade_db_name" -i "$install_modules"
     run_upgrade
-    run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile'
-    run_tags '/sports_federation_public_site'
+    run_tags_on "$upgrade_db_name" "$federation_test_tags"
     python3 ci/check_performance_qualification.py
     run_tags '/sports_federation_standings:TestStandingsPerformance,/sports_federation_reporting:TestReportSnapshot,/sports_federation_reporting:TestYearFourReporting,/sports_federation_public_site:TestPublicSiteNewEndpoints'
-    run_tags 'sf_operator_acceptance,sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus'
-    run_tags 'standard'
+    run_tags 'sf_operator_acceptance'
+    run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus'
     ;;
-  *) echo "Usage: $0 {preflight|static|install|upgrade|core|portal|public|performance|acceptance|focus|full|cleanup|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {preflight|static|prepare|install|prepare-upgrade|upgrade|core|portal|public|performance|acceptance|focus|full|upstream|cleanup|all}" >&2; exit 2 ;;
 esac

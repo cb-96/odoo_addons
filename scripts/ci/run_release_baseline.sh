@@ -23,13 +23,10 @@ required_lanes=(
   static
   install
   upgrade
-  core
-  portal
-  public
+  full
   performance
   acceptance
   focus
-  full
 )
 mkdir -p "$evidence_dir/logs"
 rm -f "$evidence_dir"/lane-*.json "$evidence_dir/summary.json"
@@ -92,9 +89,9 @@ record_lane() {
 prepare_upgrade_database() {
   local log_file="$evidence_dir/logs/upgrade-install.log"
   echo "[Release baseline] Preparing upgrade database: $upgrade_database" | tee "$log_file"
-  DB_NAME="$upgrade_database" \
+  UPGRADE_DB_NAME="$upgrade_database" \
     ODOO_LOGFILE="$log_file" \
-    scripts/ci/run_rc_validation.sh install 2>&1 | tee -a "$log_file"
+    scripts/ci/run_rc_validation.sh prepare-upgrade 2>&1 | tee -a "$log_file"
 }
 
 run_lane() {

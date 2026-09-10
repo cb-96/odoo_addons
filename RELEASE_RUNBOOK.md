@@ -645,6 +645,14 @@ acceptance evidence is not `passed`.
 The RC static lane validates essential paths in [`docs/COMPETITION_UI_WORKFLOW.md`](docs/COMPETITION_UI_WORKFLOW.md) against menu XML.
 
 
+## RC test scope
+
+The release baseline tests federation addons during fresh installation and once
+more on the same-version upgraded database. It does not include the broad Odoo
+`standard` dependency suite. That suite runs separately through the scheduled or
+manual **Upstream Odoo compatibility** workflow. Focused core, portal, and public
+lanes are diagnostic commands and are not repeated in the baseline.
+
 ## RC lane failure visibility
 
 Odoo lanes write to `odoo-rc.log`. On a non-zero exit the runner prints an error summary and the final 200 lines. gettext `Empty msgid` warnings alone do not explain exit code 1; use the first test failure or module-load traceback in the logfile.

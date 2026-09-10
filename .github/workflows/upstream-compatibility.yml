@@ -1,0 +1,46 @@
+name: Upstream Odoo compatibility
+
+on:
+  schedule:
+    - cron: '45 1 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: upstream-compatibility-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  upstream-standard-tests:
+    name: Broad Odoo standard suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      CI_PROJECT_NAME: sf_upstream_${{ github.run_id }}_${{ github.run_attempt }}
+      CI_POSTGRES_USER: odoo
+      CI_POSTGRES_PASSWORD: odoo
+      CI_POSTGRES_DB: postgres
+      CI_ODOO_DB_HOST: ci-db
+      CI_ODOO_DB_PORT: 5432
+      RC_COMPOSE_PROJECT: sf_upstream_${{ github.run_id }}_${{ github.run_attempt }}
+      RC_COMPOSE_RETAIN: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Docker Compose runtime
+        run: docker compose version
+      - name: Install federation platform without tests
+        run: scripts/ci/run_rc_validation.sh prepare
+      - name: Run broad upstream standard tests
+        run: scripts/ci/run_rc_validation.sh upstream
+      - name: Upload Odoo log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-odoo-compatibility-log
+          path: odoo-rc.log
+          if-no-files-found: ignore
+      - name: Clean Compose project
+        if: always()
+        run: RC_COMPOSE_RETAIN=1 scripts/ci/run_rc_validation.sh cleanup

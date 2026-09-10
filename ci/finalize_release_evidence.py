@@ -15,13 +15,10 @@ DEFAULT_REQUIRED_LANES = (
     "static",
     "install",
     "upgrade",
-    "core",
-    "portal",
-    "public",
+    "full",
     "performance",
     "acceptance",
     "focus",
-    "full",
 )
 
 

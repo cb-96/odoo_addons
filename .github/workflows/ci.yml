@@ -83,6 +83,9 @@ jobs:
       - name: Check CI hygiene
         run: python ci/check_ci_hygiene.py
 
+      - name: Check RC test scope
+        run: python ci/check_rc_test_scope.py
+
       - name: Verify legacy competition engine removal
         run: python ci/check_legacy_engine_removed.py
 

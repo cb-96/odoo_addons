@@ -58,6 +58,12 @@ summary manifest, run:
 scripts/ci/run_release_baseline.sh
 ```
 
+The release baseline runs federation-scoped installation and post-upgrade tests.
+The much broader Odoo `standard` suite is kept in the scheduled/manual
+`Upstream Odoo compatibility` workflow so normal release qualification does not
+repeat thousands of dependency tests. Focused `core`, `portal`, and `public`
+lanes remain available for local diagnosis.
+
 Run the normal development checks afterward:
 
 ```bash

@@ -47,15 +47,18 @@ one immutable log digest per lane. Required lanes are:
 
 - preflight;
 - static validation;
-- fresh install;
+- fresh install with federation-scoped tests;
 - same-version upgrade;
-- competition core;
-- portal;
-- public site;
+- complete federation suite on the upgraded database;
 - performance;
 - operator acceptance;
-- release focus;
-- full standard suite.
+- browser and release focus.
+
+The focused `core`, `portal`, and `public` lanes remain available for diagnosis
+and pull-request development but are not repeated in the release baseline. The
+broad Odoo `standard` suite is intentionally isolated in the scheduled/manual
+`Upstream Odoo compatibility` workflow because it also executes tests from
+framework dependencies such as `base`, `mail`, `web`, and `website`.
 
 A lane record contains the candidate SHA, exact command, start and finish time,
 duration, exit code, tool versions, runner identity, database name, and log hash.

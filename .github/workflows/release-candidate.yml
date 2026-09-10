@@ -49,19 +49,19 @@ jobs:
       - name: Verify Docker Compose runtime
         run: |
           docker compose version
-      - name: Fresh install and complete standard test suite
+      - name: Fresh install and federation test suite
         run: scripts/ci/run_rc_validation.sh install
+      - name: Prepare upgrade database without duplicate tests
+        run: scripts/ci/run_rc_validation.sh prepare-upgrade
       - name: Idempotent same-version upgrade smoke
+        run: scripts/ci/run_rc_validation.sh upgrade
+      - name: Complete federation suite after upgrade
+        run: scripts/ci/run_rc_validation.sh full
+      - name: Release performance and acceptance surfaces
         run: |
-          DB_NAME=sf_rc_upgrade scripts/ci/run_rc_validation.sh install
-          scripts/ci/run_rc_validation.sh upgrade
-      - name: Targeted post-install release surfaces
-        run: |
-          scripts/ci/run_rc_validation.sh core
-          scripts/ci/run_rc_validation.sh portal
-          scripts/ci/run_rc_validation.sh public
           scripts/ci/run_rc_validation.sh performance
-          scripts/ci/run_rc_validation.sh full
+          scripts/ci/run_rc_validation.sh acceptance
+          scripts/ci/run_rc_validation.sh focus
       - name: Upload Odoo logs
         if: always()
         uses: actions/upload-artifact@v4
