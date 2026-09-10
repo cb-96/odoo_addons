@@ -25,6 +25,7 @@ Quick links
 - Route inventory: `ROUTE_INVENTORY.md`
 - Release runbook: `RELEASE_RUNBOOK.md`
 - Reproducible repository baseline: `docs/REPOSITORY_BASELINE.md`
+- Release evidence contract: `docs/RELEASE_EVIDENCE.md`
 - Data retention policy: `DATA_RETENTION_POLICY.md`
 - Module owners: `MODULE_OWNERS.yaml`
 - Demo data pack: `sports_federation_demo/README.md`

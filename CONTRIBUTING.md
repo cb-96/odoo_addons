@@ -71,6 +71,7 @@ python3 ci/check_markdown_links.py
 python3 ci/check_module_owners.py
 python3 ci/check_openapi_contracts.py
 python3 ci/check_release_train.py
+python3 ci/check_known_release_failures.py
 python3 ci/check_explain_snapshots.py
 python3 ci/check_ci_hygiene.py
 python3 ci/check_privileged_mutation_boundaries.py

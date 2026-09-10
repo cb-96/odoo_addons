@@ -10,6 +10,7 @@ current_sources.txt
 # Generated review bundles
 current_git_metadata.txt
 current_sources.txt
+current_sources.jsonl.txt
 source_collector.py
 
 # Local environment and generated runtime config
@@ -24,3 +25,5 @@ ci/odoo-ci.generated.runtime.conf
 ci/logs/
 
 _logs/
+# Release evidence is generated outside the repository.
+artifacts/release/

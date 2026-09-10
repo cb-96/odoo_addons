@@ -113,6 +113,9 @@ jobs:
       - name: Verify single application entry point
         run: python ci/check_application_entrypoint.py
 
+      - name: Validate known release failure registry
+        run: python ci/check_known_release_failures.py
+
       - name: Verify workflow state contracts
         run: python ci/check_workflow_state_contracts.py
 
