@@ -5,7 +5,7 @@ lane="${1:-all}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
-modules="sports_federation_base,sports_federation_people,sports_federation_rules,sports_federation_tournament,sports_federation_competition_core,sports_federation_registration,sports_federation_result_control,sports_federation_format,sports_federation_venues,sports_federation_calendar,sports_federation_scheduling,sports_federation_schedule_approval,sports_federation_matchday,sports_federation_officiating,sports_federation_rosters,sports_federation_standings,sports_federation_portal,sports_federation_public_site,sports_federation_notifications,sports_federation_compliance,sports_federation_discipline,sports_federation_governance,sports_federation_import_tools,sports_federation_finance_bridge,sports_federation_reporting,sports_federation_demo"
+modules="sports_federation_app,sports_federation_demo"
 db_name="${DB_NAME:-sf_rc_validation}"
 upgrade_db_name="${UPGRADE_DB_NAME:-sf_rc_upgrade}"
 compose_file="${RC_COMPOSE_FILE:-$repo_root/ci/docker-compose.ci.yaml}"

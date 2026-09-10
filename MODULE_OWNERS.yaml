@@ -3,6 +3,10 @@ last_reviewed: 2026-04-18
 review_cadence: Every release
 
 modules:
+  sports_federation_app:
+    primary_owner: Federation Platform Team
+    secondary_owner: Federation Competition Operations
+    surface: Single supported installation entry point for the production platform
   sports_federation_base:
     primary_owner: Federation Platform Team
     secondary_owner: Federation Competition Operations

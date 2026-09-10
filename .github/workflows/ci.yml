@@ -110,6 +110,9 @@ jobs:
       - name: Verify addon manifests, dependencies, imports and ACLs
         run: python ci/check_addon_integrity.py
 
+      - name: Verify single application entry point
+        run: python ci/check_application_entrypoint.py
+
       - name: Verify workflow state contracts
         run: python ci/check_workflow_state_contracts.py
 

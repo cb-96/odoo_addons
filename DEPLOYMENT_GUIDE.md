@@ -137,40 +137,17 @@ Install the federation modules in dependency order. Use the Odoo CLI
 ### Using the CLI
 
 ```bash
-# Install the full federation stack
+# Install the complete production platform through its single entry point.
 docker compose exec odoo odoo \
   -c /etc/odoo/odoo.conf \
   -d odoo \
-  -i sports_federation_base,\
-sports_federation_people,\
-sports_federation_rules,\
-sports_federation_tournament,\
-sports_federation_venues,\
-sports_federation_competition_core,\
-sports_federation_registration,\
-sports_federation_format,\
-sports_federation_calendar,\
-sports_federation_scheduling,\
-sports_federation_schedule_approval,\
-sports_federation_matchday,\
-sports_federation_officiating,\
-sports_federation_rosters,\
-sports_federation_result_control,\
-sports_federation_standings,\
-sports_federation_compliance,\
-sports_federation_discipline,\
-sports_federation_governance,\
-sports_federation_finance_bridge,\
-sports_federation_notifications,\
-sports_federation_portal,\
-sports_federation_public_site,\
-sports_federation_reporting,\
-sports_federation_import_tools \
+  -i sports_federation_app \
   --stop-after-init
 ```
 
-**Do not install `sports_federation_demo` in production.** It creates synthetic
-sample data.
+Do not install `sports_federation_demo` in production. It creates synthetic
+sample data. Existing databases continue upgrading their installed domain
+addons; installing `sports_federation_app` is additive and does not move data.
 
 ### Recommended install order
 

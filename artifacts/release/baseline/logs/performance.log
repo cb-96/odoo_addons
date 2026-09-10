@@ -1,7 +1,0 @@
-[Release baseline] Running RC lane: performance
-Performance qualification contract passed: 8 budgets, 5 test files.
- Container sf_rc_baseline_1788907953_128949-ci-db-1  Running
- Container sf_rc_baseline_1788907953_128949-ci-db-1  Waiting
- Container sf_rc_baseline_1788907953_128949-ci-db-1  Healthy
-2026-09-08 23:12:02,568 30 INFO sf_rc_validation odoo.service.server: 0 post-tests in 0.01s, 0 queries 
-2026-09-08 23:12:02,568 30 INFO sf_rc_validation odoo.tests.result: 0 failed, 0 error(s) of 35 tests when loading database 'sf_rc_validation' 

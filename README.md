@@ -40,6 +40,18 @@ Source review bundle:
   the newest run directory in each category is collected. Runtime `.log`
   files are included as text so release evidence remains reviewable.
 
+## Supported installation entry point
+
+Install the complete production platform through one addon:
+
+```bash
+odoo -d DATABASE -i sports_federation_app --stop-after-init
+```
+
+The focused domain addons remain internal implementation and upgrade units.
+Install `sports_federation_demo` separately only for development or demos.
+See `docs/SIMPLIFIED_ARCHITECTURE.md`.
+
 **Architecture overview**
 
 High-level architecture (graph):
@@ -143,7 +155,8 @@ Notes and tips
 - To run module tests (example):
 
 ```bash
-bash ./ci/run_tests.sh --module sports_federation_format / sports_federation_scheduling
+bash ./ci/run_tests.sh --module sports_federation_format
+bash ./ci/run_tests.sh --module sports_federation_scheduling
 ```
 
 Development & tests
