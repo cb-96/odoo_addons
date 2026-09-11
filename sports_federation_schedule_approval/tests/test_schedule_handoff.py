@@ -18,11 +18,15 @@ class TestPhase51ScheduleHandoff(TransactionCase):
         self.assertTrue(hasattr(review, "action_publish_schedule"))
         self.assertTrue(hasattr(publication, "action_open_publication"))
 
-    def test_review_and_publication_cannot_be_deleted(self):
+    def test_review_and_publication_deletion_guards_reject_normal_context(self):
         with self.assertRaises(ValidationError):
-            self.env["federation.schedule.review"].unlink()
+            self.env[
+                "federation.schedule.review"
+            ]._unlink_except_authorized_cleanup()
         with self.assertRaises(ValidationError):
-            self.env["federation.schedule.publication"].unlink()
+            self.env[
+                "federation.schedule.publication"
+            ]._unlink_except_authorized_cleanup()
 
     def test_handoff_views_bind_buttons_to_model_actions(self):
         review_view = self.env.ref(

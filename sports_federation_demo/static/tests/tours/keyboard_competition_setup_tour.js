@@ -25,7 +25,6 @@ function assertFocused(element) {
 }
 
 registry.category("web_tour.tours").add("keyboard_competition_setup", {
-    test: true,
     steps: () => [
         {
             content: "Focus the competition setup control",
