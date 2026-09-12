@@ -2,7 +2,7 @@
 
 Version: 19.0.1.6.0
 Owner: Federation Platform Team
-Last reviewed: 2026-08-20
+Last reviewed: 2026-09-11
 Review cadence: Every release
 
 Referee records, certifications, match assignments, club referee duties, reimbursement requests, and competition-workspace readiness checks.
@@ -43,3 +43,7 @@ From **Match Operations → Officiating → Plan Match-Day Officials**, select *
 The allocator is deterministic and balances the accumulated duty count across eligible clubs. It excludes the two clubs playing the target match. By default it also prefers clubs that have no team playing during the target match window; matches on different courts are treated as concurrent when their published time windows overlap. A configurable fallback can use the least-loaded conflicted club when no non-playing club exists. Disable that fallback when the competition requires a strict non-playing-team rule.
 
 **Preserve existing assignments** is enabled by default. Existing active federation or volunteer referee assignments and existing club duties satisfy their role and are never overwritten. The wizard creates only the missing roles. Duties can be opened immediately for club nomination, or left in draft for operator review.
+
+The `(match, club, role)` duty key is validated before insertion and is also
+protected by a database uniqueness constraint. Duplicate submissions therefore
+return a normal validation message without exposing a database constraint error.

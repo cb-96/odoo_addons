@@ -300,7 +300,7 @@ class TestClubRefereeDutyUniqueness(TestClubRefereeDutyBase):
     def test_duplicate_duty_blocked(self):
         """Creating a second duty for same match/club/role raises."""
         self._make_duty(club=self.club_a, role="table")
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError):
             with self.env.cr.savepoint():
                 self._make_duty(club=self.club_a, role="table")
 

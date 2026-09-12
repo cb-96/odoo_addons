@@ -136,6 +136,45 @@ class FederationMatchClubRefereeDuty(models.Model):
         "A club can owe at most one duty per role per match.",
     )
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        seen = set()
+        for vals in vals_list:
+            match_id = vals.get("match_id")
+            club_id = vals.get("club_id")
+            role = vals.get("role") or "table"
+            if not match_id or not club_id:
+                continue
+            key = (match_id, club_id, role)
+            if key in seen or self.search_count(
+                [
+                    ("match_id", "=", match_id),
+                    ("club_id", "=", club_id),
+                    ("role", "=", role),
+                ]
+            ):
+                raise ValidationError(
+                    _("A club can owe at most one duty per role per match.")
+                )
+            seen.add(key)
+        return super().create(vals_list)
+
+    @api.constrains("match_id", "club_id", "role")
+    def _check_club_duty_unique(self):
+        for duty in self:
+            duplicate = self.search_count(
+                [
+                    ("id", "!=", duty.id),
+                    ("match_id", "=", duty.match_id.id),
+                    ("club_id", "=", duty.club_id.id),
+                    ("role", "=", duty.role),
+                ]
+            )
+            if duplicate:
+                raise ValidationError(
+                    _("A club can owe at most one duty per role per match.")
+                )
+
     def _assert_fixture_backing_for_activation(self):
         """Reject operational activation of assignments for ad-hoc matches."""
         self._assert_competition_matches(self.mapped("match_id"))

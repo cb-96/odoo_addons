@@ -235,7 +235,7 @@ class TestTourClubRefereeDuty(TransactionCase):
     def test_duplicate_duty_blocked(self):
         """SQL unique constraint prevents two duties for same match/club/role."""
         self._duty(role="table")
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError):
             with self.env.cr.savepoint():
                 self._duty(role="table")
 
