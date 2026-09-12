@@ -36,7 +36,7 @@ ci_postgres_db="${CI_POSTGRES_DB:-postgres}"
 ci_odo_db_host="${CI_ODOO_DB_HOST:-ci-db}"
 ci_odo_db_port="${CI_ODOO_DB_PORT:-5432}"
 compose=(docker compose -p "$compose_project" -f "$compose_file")
-common=(--no-http --stop-after-init --without-demo=all --log-level=test)
+common=(--no-http --stop-after-init --without-demo=True --log-level=test)
 
 export CI_PROJECT_NAME="$compose_project"
 export CI_POSTGRES_USER="$ci_postgres_user"
@@ -187,7 +187,10 @@ PY
   git -c core.whitespace=cr-at-eol diff --check
   python3 ci/check_legacy_engine_removed.py
   python3 ci/check_portal_sudo_guard.py
+  python3 ci/check_privileged_inventory_quality.py
   python3 ci/check_privileged_mutation_boundaries.py
+  python3 ci/check_workflow_command_boundaries.py
+  python3 ci/check_notification_side_effect_contract.py
   python3 ci/check_destructive_token_contract.py
   python3 ci/check_audit_acl_integrity.py
   python3 ci/check_privileged_command_contracts.py

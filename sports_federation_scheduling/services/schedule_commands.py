@@ -180,7 +180,14 @@ class FederationScheduleCommands(models.AbstractModel):
                     "reason": warning_override_reason,
                 }
             )
-        schedule.state = "ready_for_review"
+        self.env["federation.workflow.transition"].execute(
+            schedule,
+            "ready_for_review",
+            {"draft", "changes_requested"},
+            expected_revision=new_revision,
+            event_type="schedule_submitted",
+            description=_("Schedule submitted for independent review."),
+        )
         self.env["federation.competition.event"].emit(
             schedule, "schedule_submitted", {"revision": new_revision}
         )
