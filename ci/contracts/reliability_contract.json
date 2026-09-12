@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "destructive_operations": {
+    "required_tests": [
+      "test_closed_delete_action_opens_before_reason_is_entered",
+      "test_closed_matchday_delete_wizard_removes_impact_data",
+      "test_restart_from_scratch_creates_clean_replacement",
+      "test_restart_from_scratch_rejects_published_matchday",
+      "test_unlink_published_matchday_preserves_schedule_history"
+    ]
+  },
+  "idempotency": {
+    "required_capabilities": {
+      "schedule_commands": [
+        "_find_replay",
+        "idempotency_key"
+      ],
+      "standing_recompute": [
+        "request_recompute",
+        "idempotency_key"
+      ],
+      "integration_delivery": [
+        "_match_idempotent_delivery",
+        "idempotency_replay"
+      ],
+      "finance_events": [
+        "ensure_from_source"
+      ]
+    }
+  },
+  "sql_boundaries": {
+    "allowed_runtime_files": [
+      "sports_federation_base/models/operational_health.py",
+      "sports_federation_format/services/fixture_materializer.py",
+      "sports_federation_matchday/services/matchday_commands.py",
+      "sports_federation_reporting/models/report_sql_helper.py",
+      "sports_federation_result_control/models/match_result_control.py",
+      "sports_federation_schedule_approval/models/publication_integrity.py",
+      "sports_federation_schedule_approval/services/approval_commands.py",
+      "sports_federation_scheduling/models/schedule_integrity.py",
+      "sports_federation_scheduling/services/schedule_commands.py",
+      "sports_federation_scheduling/wizards/auto_schedule_wizard.py"
+    ],
+    "allowed_runtime_prefixes": [
+      "sports_federation_reporting/models/"
+    ]
+  }
+}

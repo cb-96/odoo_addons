@@ -20,9 +20,7 @@ class TestPhase51ScheduleHandoff(TransactionCase):
 
     def test_review_and_publication_deletion_guards_reject_normal_context(self):
         with self.assertRaises(ValidationError):
-            self.env[
-                "federation.schedule.review"
-            ]._unlink_except_authorized_cleanup()
+            self.env["federation.schedule.review"]._unlink_except_authorized_cleanup()
         with self.assertRaises(ValidationError):
             self.env[
                 "federation.schedule.publication"

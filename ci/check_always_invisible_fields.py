@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Require a local rationale for always-invisible fields in Odoo views."""
+
 from __future__ import annotations
 
 import argparse
@@ -8,7 +9,7 @@ from pathlib import Path
 
 FIELD = re.compile(r'<field\b[^>]*\bname=["\']([^"\']+)["\'][^>]*>')
 INVISIBLE = re.compile(r'\binvisible=["\'](?:1|True|true)["\']')
-COMMENT = re.compile(r'<!--\s*(.*?)\s*-->', re.DOTALL)
+COMMENT = re.compile(r"<!--\s*(.*?)\s*-->", re.DOTALL)
 RATIONALE = ("modifier", "domain", "context", "decoration", "technical", "relay")
 
 
@@ -36,7 +37,9 @@ def main() -> int:
         print("Always-invisible view fields need an adjacent rationale comment:")
         for failure in failures:
             print(f"- {failure}")
-        print("Use a short comment explaining the modifier, domain, context, decoration, or technical relay.")
+        print(
+            "Use a short comment explaining the modifier, domain, context, decoration, or technical relay."
+        )
         return 1
     print(f"Always-invisible view field check passed ({len(paths)} XML files).")
     return 0

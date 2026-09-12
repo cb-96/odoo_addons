@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Reject release evidence where critical browser tests were skipped or broken."""
+
 from __future__ import annotations
 
 import argparse
@@ -7,14 +8,22 @@ import re
 from pathlib import Path
 
 BLOCKERS = {
-    "missing websocket client": re.compile(r"websocket-client module is not installed", re.I),
-    "invalid tour registration": re.compile(r"web_tour\.tours.*unknown key|unknown key.*web_tour\.tours", re.I),
-    "tour module load failure": re.compile(r"modules failed to load.*sports_federation|sports_federation.*failed to load", re.I),
+    "missing websocket client": re.compile(
+        r"websocket-client module is not installed", re.I
+    ),
+    "invalid tour registration": re.compile(
+        r"web_tour\.tours.*unknown key|unknown key.*web_tour\.tours", re.I
+    ),
+    "tour module load failure": re.compile(
+        r"modules failed to load.*sports_federation|sports_federation.*failed to load",
+        re.I,
+    ),
 }
 CRITICAL_SKIP = re.compile(
     r"skipped.*(?:sf_browser_|sports_federation_(?:demo|public_site|finance_bridge)).*browser",
     re.I,
 )
+
 
 def inspect(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8", errors="replace")

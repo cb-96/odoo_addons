@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Keep protected workflow changes behind their owning command services."""
+
 from pathlib import Path
 import sys
 

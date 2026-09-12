@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Reject vague or incomplete privileged-call justifications."""
+
 import json
 from pathlib import Path
 import sys
@@ -20,7 +21,9 @@ def violations(path=INVENTORY):
         if reason in VAGUE or len(reason) < 12:
             failures.append(f"{entry['file']}:{entry['function']} has a vague reason")
         if ".sudo()" not in entry["statement"]:
-            failures.append(f"{entry['file']}:{entry['function']} has no sudo statement")
+            failures.append(
+                f"{entry['file']}:{entry['function']} has no sudo statement"
+            )
     return failures
 
 

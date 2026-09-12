@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Protect the non-blocking result-notification contract."""
+
 from pathlib import Path
 import sys
 
@@ -22,7 +23,9 @@ def violations(root=ROOT):
         if token not in dispatcher:
             failures.append(f"result notification is missing: {token}")
     if "except Exception" not in service:
-        failures.append("notification service does not contain an integration failure boundary")
+        failures.append(
+            "notification service does not contain an integration failure boundary"
+        )
     if "failure_category" not in service or "operator_message" not in service:
         failures.append("notification failures do not persist operator feedback")
     return failures

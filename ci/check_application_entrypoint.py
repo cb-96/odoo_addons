@@ -26,10 +26,14 @@ def main():
     actual = set(app.get("depends", []))
     missing = sorted(expected - actual)
     unexpected = sorted(
-        dep for dep in actual if dep.startswith("sports_federation_") and dep not in expected
+        dep
+        for dep in actual
+        if dep.startswith("sports_federation_") and dep not in expected
     )
     if missing:
-        failures.append("production addons missing from app depends: " + ", ".join(missing))
+        failures.append(
+            "production addons missing from app depends: " + ", ".join(missing)
+        )
     if unexpected:
         failures.append("unexpected federation dependencies: " + ", ".join(unexpected))
     if app.get("data") or app.get("demo"):
@@ -37,21 +41,29 @@ def main():
     if not app.get("application"):
         failures.append("application entry point must set application=True")
     other_apps = [
-        module for module in modules
+        module
+        for module in modules
         if module != APP and manifest(module).get("application")
     ]
     if other_apps:
-        failures.append("other addons expose duplicate Apps entries: " + ", ".join(other_apps))
+        failures.append(
+            "other addons expose duplicate Apps entries: " + ", ".join(other_apps)
+        )
     forbidden = ["models", "controllers", "security", "views", "wizards", "data"]
     present = [name for name in forbidden if (ROOT / APP / name).exists()]
     if present:
-        failures.append("entry point contains business implementation directories: " + ", ".join(present))
+        failures.append(
+            "entry point contains business implementation directories: "
+            + ", ".join(present)
+        )
     if failures:
         print("Application entry-point validation failed:")
         for failure in failures:
             print(f"- {failure}")
         return 1
-    print(f"Application entry-point validation passed ({len(expected)} production addons).")
+    print(
+        f"Application entry-point validation passed ({len(expected)} production addons)."
+    )
     return 0
 
 

@@ -192,6 +192,7 @@ PY
   python3 ci/check_workflow_command_boundaries.py
   python3 ci/check_notification_side_effect_contract.py
   python3 ci/check_destructive_token_contract.py
+  python3 ci/check_reliability_contract.py
   python3 ci/check_audit_acl_integrity.py
   python3 ci/check_privileged_command_contracts.py
   python3 ci/check_workflow_transition_foundation.py

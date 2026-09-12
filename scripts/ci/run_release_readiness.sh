@@ -8,6 +8,7 @@ candidate_sha="$(git rev-parse HEAD)"
 evidence_dir="${RELEASE_BASELINE_EVIDENCE_DIR:-${TMPDIR:-/tmp}/sports-federation-release-baseline/$candidate_sha}"
 
 python3 ci/check_always_invisible_fields.py
+python3 ci/check_reliability_contract.py
 scripts/ci/run_release_baseline.sh
 python3 ci/check_release_evidence.py \
   --evidence-dir "$evidence_dir" \
