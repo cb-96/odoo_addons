@@ -127,6 +127,52 @@ database. If the upgrade fails, preserve the logs and failed database state,
 then restore the pre-upgrade database and filestore backup before restarting
 the previous release.
 
+### Format progression and fixture ownership review evidence
+
+The current format release hardens structure-scoped progression validation,
+rejects ambiguous tied bracket results, makes Swiss pairing deterministic when
+the first candidate pairing dead-ends, and synchronizes approved fixture
+results through the authorized result-command boundary. These are model and
+workflow ownership changes without a standalone schema migration. The normal
+addon upgrade path remains the deployment mechanism, with database restore as
+the rollback path.
+
+Dry-run evidence captured on 2026-09-13:
+
+```text
+./scripts/upgrade_sports_federation.sh --db odoo --dry-run
+Exit code: 0
+Install: none
+Upgrade: sports_federation_app,sports_federation_base,
+sports_federation_calendar,sports_federation_competition_core,
+sports_federation_compliance,sports_federation_demo,
+sports_federation_discipline,sports_federation_finance_bridge,
+sports_federation_format,sports_federation_governance,
+sports_federation_import_tools,sports_federation_matchday,
+sports_federation_notifications,sports_federation_officiating,
+sports_federation_people,sports_federation_portal,
+sports_federation_public_site,sports_federation_registration,
+sports_federation_reporting,sports_federation_result_control,
+sports_federation_rosters,sports_federation_rules,
+sports_federation_schedule_approval,sports_federation_scheduling,
+sports_federation_standings,sports_federation_tournament,
+sports_federation_venues
+```
+
+Focused verification passed with the format addon and competition-core suite:
+
+```text
+bash ci/run_tests.sh --module sports_federation_format
+Exit code: 0; 20 tests run, 20 passed, 0 failed, 0 errors
+
+bash ci/run_tests.sh --suite competition_core
+Exit code: 0; 248 tests run, 248 passed, 0 failed, 0 errors
+```
+
+Rollback requires restoring the pre-upgrade database and filestore backup;
+do not bypass progression validation or fixture ownership checks as a
+rollback workaround.
+
 ### Release-candidate readiness review
 
 The release-candidate readiness contracts cover role-separated access,
