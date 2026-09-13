@@ -127,6 +127,26 @@ database. If the upgrade fails, preserve the logs and failed database state,
 then restore the pre-upgrade database and filestore backup before restarting
 the previous release.
 
+### Format model-ownership review evidence
+
+The `sports_federation_format` ownership refactor changed model-surface
+responsibilities. No schema migration script is required, but release evidence
+is still required for the migration-review gate.
+
+Dry-run evidence captured on 2026-09-13:
+
+```text
+python3 ci/check_migration_review.py --files \
+sports_federation_format/models/competition_structure.py \
+sports_federation_format/models/fixture_result_bridge.py \
+sports_federation_format/models/format_template.py \
+sports_federation_format/models/stage_graph.py \
+RELEASE_RUNBOOK.md
+Exit code: 0
+```
+
+Rollback follows the standard backup restore procedure in this runbook.
+
 ### Release-candidate readiness review
 
 The release-candidate readiness contracts cover role-separated access,
