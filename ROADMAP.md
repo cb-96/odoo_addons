@@ -4,6 +4,7 @@ Last updated: 2026-09-04
 Last reviewed: 2026-09-04
 Owner: Federation Platform Team
 Review cadence: Every release
+Release train: 2026.08
 Release target: First release candidate
 
 ## Product direction
