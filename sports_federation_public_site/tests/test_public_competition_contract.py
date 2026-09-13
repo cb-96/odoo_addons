@@ -101,6 +101,20 @@ class TestPublicCompetitionContract(TransactionCase):
             division.get_public_schedule_ics_path(),
         )
 
+    def test_public_competition_templates_hide_internal_format_metadata(self):
+        template = (
+            Path(__file__).resolve().parents[1]
+            / "views"
+            / "website_competition_templates.xml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("Upcoming matches", template)
+        self.assertIn("/standings", template)
+        self.assertNotIn("Format and standings", template)
+        self.assertNotIn("Publication v", template)
+        self.assertNotIn("graph_state", template)
+        self.assertNotIn("Progression fixture", template)
+        self.assertNotIn(">Round <", template)
+
     def test_route_cutover_repairs_stored_hub_inheritance_before_upgrade(self):
         migration = (
             Path(__file__).resolve().parents[1]

@@ -106,6 +106,27 @@ class PublicScheduleQueries(models.AbstractModel):
             return _("%(division)s · %(gender)s", division=label, gender=gender)
         return label
 
+
+    def edition_upcoming_matches(self, edition, division=None, limit=6):
+        """Return the next spectator-relevant matches from live publications."""
+        localized = self.with_context(
+            tz=self.env.company.partner_id.tz or self.env.user.tz or "UTC"
+        )
+        now_local = fields.Datetime.context_timestamp(localized, fields.Datetime.now())
+        rows = []
+        for matchday in self.edition_matchdays(edition):
+            for row in self.matchday_board(matchday)["matches"]:
+                fixture = row["match"].logical_fixture_id
+                if division and fixture.division_id != division:
+                    continue
+                if not row["start_local"] or row["start_local"] < now_local:
+                    continue
+                public_row = dict(row)
+                public_row["matchday"] = matchday
+                rows.append(public_row)
+        rows.sort(key=lambda row: (row["start_local"], row["match"].id))
+        return rows[: max(0, int(limit))]
+
     def edition_matchdays(self, edition):
         return (
             self.env["federation.matchday"]

@@ -76,18 +76,18 @@ tour.add("public_site_browser_lifecycle", {
             trigger: '.sf-competition-nav a.active[href$="/schedule"]',
         },
         {
-            content: "Open format and standings",
-            trigger: '.sf-competition-nav a[href="/competitions/browser-public-competition/format"]',
+            content: "Open the public standings",
+            trigger: '.sf-competition-nav a[href="/competitions/browser-public-competition/standings"]',
             run: "click",
             expectUnloadPage: true,
         },
         assertPath(
-            "/competitions/browser-public-competition/format",
-            "The format route is available"
+            "/competitions/browser-public-competition/standings",
+            "The standings route is available"
         ),
         {
-            content: "The format navigation state is active",
-            trigger: '.sf-competition-nav a.active[href$="/format"]',
+            content: "The standings navigation state is active",
+            trigger: '.sf-competition-nav a.active[href$="/standings"]',
         },
         navigate("/competitions", "Exercise the retired tournament index alias"),
         assertPath(

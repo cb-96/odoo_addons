@@ -87,11 +87,11 @@ class PublicCompetitionQueries(models.AbstractModel):
         suffixes = {
             None: "",
             "teams": "",
-            "standings": "",
+            "standings": "/standings",
             "results": "",
             "schedule": "/schedule",
-            "bracket": "/format",
-            "format": "/format",
+            "bracket": "/standings",
+            "format": "/standings",
         }
         if not division or section not in suffixes:
             return False
@@ -121,9 +121,6 @@ class PublicCompetitionQueries(models.AbstractModel):
             "divisions": divisions,
             "next_matchday": next_matchday,
             "matchdays": matchdays,
-            "current_stage": self.env["federation.public.format.queries"].current_stage(
-                edition
-            ),
         }
 
     def assert_publishable(self, edition):

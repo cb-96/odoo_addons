@@ -180,3 +180,11 @@ such as delayed, moved, postponed, or cancelled remain visible.
 Public match cards show the division and gender once at match level. Team rows
 use the plain team name without repeating the gender suffix for both participants.
 
+## Public competition information design
+
+The `/competitions` experience is spectator-focused. Overview pages prioritize
+upcoming matches from the current published schedule. Public navigation exposes
+schedule and standings, while competition-format configuration, logical rounds,
+progression rules, graph state, and publication revision metadata remain backend
+concerns. The former `/format` route redirects to `/standings` for compatibility.
+

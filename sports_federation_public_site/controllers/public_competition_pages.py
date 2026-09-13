@@ -129,9 +129,9 @@ class PublicCompetitionController(PublicRequestInfrastructureMixin, http.Control
         summary.update(
             {
                 "division": division,
-                "stage_cards": request.env[
-                    "federation.public.format.queries"
-                ].stage_cards(edition, division),
+                "upcoming_matches": request.env[
+                    "federation.public.schedule.queries"
+                ].edition_upcoming_matches(edition, division=division, limit=6),
             }
         )
         return request.render(
@@ -140,29 +140,44 @@ class PublicCompetitionController(PublicRequestInfrastructureMixin, http.Control
         )
 
     @http.route(
-        ["/competitions/<string:edition_slug>/format"],
+        ["/competitions/<string:edition_slug>/standings"],
         type="http",
         auth="public",
         website=True,
         sitemap=True,
     )
-    def competition_format(self, edition_slug, division_id=None, **kw):
+    def competition_standings(self, edition_slug, division_id=None, **kw):
         edition = self._edition_or_404(edition_slug)
         divisions = self._queries().public_divisions(edition)
         division = self._queries().resolve_division(edition, division_id)
         if division_id and not division:
             raise request.not_found()
+        stage_cards = request.env["federation.public.format.queries"].stage_cards(
+            edition, division
+        )
         return request.render(
-            "sports_federation_public_site.public_competition_competition_format",
+            "sports_federation_public_site.public_competition_competition_standings",
             {
                 "edition": edition,
                 "divisions": divisions,
                 "division": division,
-                "stage_cards": request.env[
-                    "federation.public.format.queries"
-                ].stage_cards(edition, division),
-                "page_name": "format",
+                "standing_cards": [card for card in stage_cards if card["standings"]],
+                "page_name": "standings",
             },
+        )
+
+    @http.route(
+        ["/competitions/<string:edition_slug>/format"],
+        type="http",
+        auth="public",
+        website=True,
+        sitemap=False,
+    )
+    def competition_format(self, edition_slug, division_id=None, **kw):
+        edition = self._edition_or_404(edition_slug)
+        suffix = "?division_id=%s" % division_id if division_id else ""
+        return request.redirect(
+            "/competitions/%s/standings%s" % (edition.public_slug, suffix), code=301
         )
 
     @http.route(
