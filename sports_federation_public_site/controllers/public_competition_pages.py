@@ -132,11 +132,40 @@ class PublicCompetitionController(PublicRequestInfrastructureMixin, http.Control
                 "upcoming_matches": request.env[
                     "federation.public.schedule.queries"
                 ].edition_upcoming_matches(edition, division=division, limit=6),
+                "recent_results": request.env[
+                    "federation.public.schedule.queries"
+                ].edition_recent_results(edition, division=division, limit=4),
             }
         )
         return request.render(
             "sports_federation_public_site.public_competition_competition_detail",
             summary,
+        )
+
+    @http.route(
+        ["/competitions/<string:edition_slug>/results"],
+        type="http",
+        auth="public",
+        website=True,
+        sitemap=True,
+    )
+    def competition_results(self, edition_slug, division_id=None, **kw):
+        edition = self._edition_or_404(edition_slug)
+        divisions = self._queries().public_divisions(edition)
+        division = self._queries().resolve_division(edition, division_id)
+        if division_id and not division:
+            raise request.not_found()
+        return request.render(
+            "sports_federation_public_site.public_competition_competition_results",
+            {
+                "edition": edition,
+                "divisions": divisions,
+                "division": division,
+                "results": request.env[
+                    "federation.public.schedule.queries"
+                ].edition_recent_results(edition, division=division),
+                "page_name": "results",
+            },
         )
 
     @http.route(

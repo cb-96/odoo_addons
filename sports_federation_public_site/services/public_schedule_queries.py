@@ -107,6 +107,35 @@ class PublicScheduleQueries(models.AbstractModel):
         return label
 
 
+    def edition_recent_results(self, edition, division=None, limit=None):
+        """Return approved results intended for public competition pages."""
+        divisions = edition.tournament_ids.filtered(
+            lambda item: item.active
+            and item.website_published
+            and item.show_public_results
+            and item.edition_id == edition
+            and (not division or item == division)
+        )
+        rows = []
+        for item in divisions:
+            for match in item.get_public_recent_result_matches():
+                rows.append(
+                    {
+                        "match": match,
+                        "division": item,
+                        "division_label": self._division_label(match),
+                    }
+                )
+        rows.sort(
+            key=lambda row: (
+                row["match"].date_scheduled
+                or fields.Datetime.from_string("1970-01-01"),
+                row["match"].id,
+            ),
+            reverse=True,
+        )
+        return rows[: max(0, int(limit))] if limit is not None else rows
+
     def edition_upcoming_matches(self, edition, division=None, limit=6):
         """Return the next spectator-relevant matches from live publications."""
         localized = self.with_context(

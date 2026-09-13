@@ -108,12 +108,15 @@ class TestPublicCompetitionContract(TransactionCase):
             / "website_competition_templates.xml"
         ).read_text(encoding="utf-8")
         self.assertIn("Upcoming matches", template)
+        self.assertIn("/results", template)
         self.assertIn("/standings", template)
+        self.assertIn("Latest results", template)
         self.assertNotIn("Format and standings", template)
         self.assertNotIn("Publication v", template)
         self.assertNotIn("graph_state", template)
         self.assertNotIn("Progression fixture", template)
         self.assertNotIn(">Round <", template)
+        self.assertNotIn("row['status'].replace", template)
 
     def test_route_cutover_repairs_stored_hub_inheritance_before_upgrade(self):
         migration = (

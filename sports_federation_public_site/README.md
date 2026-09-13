@@ -188,3 +188,8 @@ schedule and standings, while competition-format configuration, logical rounds,
 progression rules, graph state, and publication revision metadata remain backend
 concerns. The former `/format` route redirects to `/standings` for compatibility.
 
+Public competition navigation now separates schedules, official results, and
+standings. Overview pages show the next published matches and latest approved
+results. Match-day changes use spectator-facing labels rather than operational
+state values. Existing team profile, schedule, and results pages remain the
+team-first path for supporters.

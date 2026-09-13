@@ -8,6 +8,22 @@ PUBLIC_TOURNAMENT_STATE_LABELS = {
     "cancelled": "Cancelled",
 }
 
+PUBLIC_EDITION_STATE_LABELS = {
+    "draft": "Upcoming",
+    "open": "Upcoming",
+    "in_progress": "In progress",
+    "closed": "Completed",
+    "cancelled": "Cancelled",
+}
+
+PUBLIC_OPERATIONAL_STATUS_LABELS = {
+    "as_published": "Scheduled",
+    "moved": "Updated time or court",
+    "delayed": "Delayed",
+    "postponed": "Postponed",
+    "cancelled": "Cancelled",
+}
+
 PUBLIC_MATCH_STATE_LABELS = {
     "draft": "Awaiting kickoff",
     "scheduled": "Scheduled",
@@ -29,6 +45,18 @@ PUBLIC_LICENSE_STATE_LABELS = {
     "revoked": "Cancelled",
     "draft": "Draft",
 }
+
+
+class FederationCompetitionEdition(models.Model):
+    _inherit = "federation.competition.edition"
+
+    def get_public_site_state_label(self):
+        """Return the audience-facing competition status."""
+        self.ensure_one()
+        selection_label = dict(self._fields["state"].selection).get(
+            self.state, self.state or ""
+        )
+        return PUBLIC_EDITION_STATE_LABELS.get(self.state, selection_label)
 
 
 class FederationTournament(models.Model):
@@ -53,6 +81,13 @@ class FederationMatch(models.Model):
             self.state, self.state or ""
         )
         return PUBLIC_MATCH_STATE_LABELS.get(self.state, selection_label)
+
+    def get_public_operational_status_label(self):
+        """Translate match-day scheduling changes for spectators."""
+        self.ensure_one()
+        return PUBLIC_OPERATIONAL_STATUS_LABELS.get(
+            self.operational_status, "Scheduled"
+        )
 
 
 class FederationTournamentParticipant(models.Model):

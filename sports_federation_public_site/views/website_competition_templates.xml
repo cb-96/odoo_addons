@@ -3,7 +3,7 @@
     <article class="sf-competition-card card h-100 shadow-sm border-0">
       <div class="card-body d-flex flex-column">
         <div class="d-flex justify-content-between gap-2 mb-2">
-          <span class="badge text-bg-primary"><t t-esc="edition.state"/></span>
+          <span class="badge text-bg-primary"><t t-esc="edition.get_public_site_state_label()"/></span>
           <small class="text-muted"><t t-esc="edition.season_id.display_name"/></small>
         </div>
         <h2 class="h5"><t t-esc="edition.name"/></h2>
@@ -20,11 +20,22 @@
     <article class="sf-match-card" t-att-data-match-id="row['match'].id">
       <div class="d-flex justify-content-between gap-2 small text-muted mb-1">
         <span t-if="row['slot']"><t t-esc="row['slot'].court_id.display_name"/></span>
-        <span t-if="row['status'] != 'as_published'" class="sf-match-status"><t t-esc="row['status'].replace('_', ' ').title()"/></span>
+        <span t-if="row['status'] != 'as_published'" class="sf-match-status"><t t-esc="row['match'].get_public_operational_status_label()"/></span>
       </div>
       <div t-if="row['division_label']" class="small text-primary fw-semibold mb-1"><t t-esc="row['division_label']"/></div>
       <div class="sf-team-line"><strong><t t-esc="row['match'].home_team_id.name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].home_score"/></span></div>
       <div class="sf-team-line"><strong><t t-esc="row['match'].away_team_id.name or 'TBD'"/></strong><span t-if="row['match'].result_state in ('submitted','verified','approved')"><t t-esc="row['match'].away_score"/></span></div>
+    </article>
+  </template>
+
+  <template id="public_competition_result_card" name="Public result card">
+    <article class="card h-100 border-0 shadow-sm sf-result-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between gap-2 small text-muted mb-2"><span t-if="row['match'].date_scheduled"><t t-esc="row['match'].date_scheduled.strftime('%a %d %b · %H:%M')"/></span><span class="badge text-bg-success">Final</span></div>
+        <div t-if="row['division_label']" class="small text-primary fw-semibold mb-2"><t t-esc="row['division_label']"/></div>
+        <div class="sf-team-line"><strong><t t-esc="row['match'].home_team_id.name or 'TBD'"/></strong><strong><t t-esc="row['match'].home_score"/></strong></div>
+        <div class="sf-team-line"><strong><t t-esc="row['match'].away_team_id.name or 'TBD'"/></strong><strong><t t-esc="row['match'].away_score"/></strong></div>
+      </div>
     </article>
   </template>
 
@@ -48,13 +59,14 @@
     <nav class="nav nav-pills flex-nowrap overflow-auto mb-4 sf-competition-nav" aria-label="Competition sections">
       <a t-att-class="'nav-link ' + ('active' if page_name == 'overview' else '')" t-att-aria-current="'page' if page_name == 'overview' else None" t-att-href="'/competitions/%s' % edition.public_slug">Overview</a>
       <a t-att-class="'nav-link ' + ('active' if page_name == 'schedule' else '')" t-att-aria-current="'page' if page_name == 'schedule' else None" t-att-href="'/competitions/%s/schedule' % edition.public_slug">Schedule</a>
+      <a t-att-class="'nav-link ' + ('active' if page_name == 'results' else '')" t-att-aria-current="'page' if page_name == 'results' else None" t-att-href="'/competitions/%s/results' % edition.public_slug">Results</a>
       <a t-att-class="'nav-link ' + ('active' if page_name == 'standings' else '')" t-att-aria-current="'page' if page_name == 'standings' else None" t-att-href="'/competitions/%s/standings' % edition.public_slug">Standings</a>
     </nav>
   </template>
 
   <template id="public_competition_competition_detail" name="Competition detail">
     <t t-call="website.layout"><main>
-      <section class="sf-competition-hero"><div class="container py-5"><span class="badge text-bg-light mb-2"><t t-esc="edition.state"/></span><h1><t t-esc="edition.name"/></h1><p class="lead mb-0"><t t-esc="edition.public_summary or edition.season_id.display_name"/></p></div></section>
+      <section class="sf-competition-hero"><div class="container py-5"><span class="badge text-bg-light mb-2"><t t-esc="edition.get_public_site_state_label()"/></span><h1><t t-esc="edition.name"/></h1><p class="lead mb-0"><t t-esc="edition.public_summary or edition.season_id.display_name"/></p></div></section>
       <div class="container py-4"><t t-call="sports_federation_public_site.public_competition_competition_nav"/>
         <div class="d-flex flex-wrap gap-2 mb-4"><a t-foreach="divisions" t-as="item" t-att-class="'btn ' + ('btn-primary' if division == item else 'btn-outline-primary')" t-att-href="'/competitions/%s?division_id=%s' % (edition.public_slug, item.id)"><t t-esc="item.name"/></a></div>
         <section aria-labelledby="upcoming-matches-heading">
@@ -77,6 +89,11 @@
           </div>
           <div class="sf-empty-state" t-else=""><h3 class="h4">No upcoming matches</h3><p class="mb-0">New matches will appear here when the schedule is available.</p></div>
         </section>
+        <section class="mt-5" aria-labelledby="recent-results-heading">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><h2 class="h3 mb-1" id="recent-results-heading">Latest results</h2><p class="text-muted mb-0">The latest official scores.</p></div><a class="btn btn-outline-primary" t-att-href="'/competitions/%s/results' % edition.public_slug">View all results</a></div>
+          <div class="row g-3" t-if="recent_results"><div class="col-md-6" t-foreach="recent_results" t-as="row"><t t-call="sports_federation_public_site.public_competition_result_card"/></div></div>
+          <p class="text-muted" t-else="">No official results are available yet.</p>
+        </section>
       </div>
     </main></t>
   </template>
@@ -85,6 +102,14 @@
     <t t-call="website.layout"><main class="container py-5"><h1><t t-esc="edition.name"/> schedule</h1><t t-call="sports_federation_public_site.public_competition_competition_nav"/>
       <div class="row g-3" t-if="matchdays"><div class="col-md-6" t-foreach="matchdays" t-as="matchday"><article class="card h-100 shadow-sm"><div class="card-body"><p class="text-primary fw-semibold"><t t-esc="matchday.date"/></p><h2 class="h5"><t t-esc="matchday.name"/></h2><p class="text-muted"><t t-esc="matchday.venue_id.display_name"/></p><a class="btn btn-outline-primary" t-att-href="'/competitions/%s/gamedays/%s' % (edition.public_slug, matchday.id)">View match day</a></div></article></div></div>
       <div class="sf-empty-state" t-else=""><h2 class="h4">Schedule not available yet</h2><p>Match dates and times will appear here when they are available.</p></div>
+    </main></t>
+  </template>
+
+  <template id="public_competition_competition_results" name="Competition results">
+    <t t-call="website.layout"><main class="container py-5"><h1><t t-esc="edition.name"/> results</h1><t t-call="sports_federation_public_site.public_competition_competition_nav"/>
+      <div class="d-flex flex-wrap gap-2 mb-4" t-if="len(divisions) &gt; 1"><a t-foreach="divisions" t-as="item" t-att-class="'btn ' + ('btn-primary' if division == item else 'btn-outline-primary')" t-att-href="'/competitions/%s/results?division_id=%s' % (edition.public_slug, item.id)"><t t-esc="item.name"/></a></div>
+      <div class="row g-3" t-if="results"><div class="col-md-6 col-xl-4" t-foreach="results" t-as="row"><t t-call="sports_federation_public_site.public_competition_result_card"/></div></div>
+      <div class="sf-empty-state" t-else=""><h2 class="h4">No official results yet</h2><p class="mb-0">Final scores will appear here after they are confirmed.</p></div>
     </main></t>
   </template>
 

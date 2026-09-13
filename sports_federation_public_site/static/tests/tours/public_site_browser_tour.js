@@ -76,6 +76,20 @@ tour.add("public_site_browser_lifecycle", {
             trigger: '.sf-competition-nav a.active[href$="/schedule"]',
         },
         {
+            content: "Open the public results",
+            trigger: '.sf-competition-nav a[href="/competitions/browser-public-competition/results"]',
+            run: "click",
+            expectUnloadPage: true,
+        },
+        assertPath(
+            "/competitions/browser-public-competition/results",
+            "The results route is available"
+        ),
+        {
+            content: "The results navigation state is active",
+            trigger: '.sf-competition-nav a.active[href$="/results"]',
+        },
+        {
             content: "Open the public standings",
             trigger: '.sf-competition-nav a[href="/competitions/browser-public-competition/standings"]',
             run: "click",
