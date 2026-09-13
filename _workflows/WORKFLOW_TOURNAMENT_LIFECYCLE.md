@@ -212,6 +212,9 @@ including byes and future-round wiring for non-power-of-two participant counts.
      that stage with `auto_advance=True` will be executed automatically — new
      participants are created in the target stage and (optionally) a new stage
      schedule can be generated automatically.
+    - Structure-scoped progression edges reject overlapping source rank ranges
+       and destination seed ranges before generation. A tied approved bracket
+       result is also blocked until an explicit tie-break outcome exists.
 4. Tournament templates (`federation.tournament.template`) let administrators
    scaffold common stage/group/progression combinations (for recurring
    tournaments). Use `action_apply()` from the template to create stages and

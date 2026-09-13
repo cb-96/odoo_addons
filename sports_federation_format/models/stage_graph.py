@@ -186,7 +186,14 @@ class FederationStageProgression(models.Model):
     active = fields.Boolean(default=True)
     applied = fields.Boolean(readonly=True)
 
-    @api.constrains("source_stage_id", "target_stage_id", "rank_from", "rank_to")
+    @api.constrains(
+        "source_stage_id",
+        "target_stage_id",
+        "rank_from",
+        "rank_to",
+        "target_seed_from",
+        "active",
+    )
     def _check(self):
         for r in self:
             if (
@@ -198,6 +205,53 @@ class FederationStageProgression(models.Model):
                 )
             if r.rank_from < 1 or r.rank_to < r.rank_from:
                 raise ValidationError("Invalid rank range.")
+            if r.target_seed_from < 1:
+                raise ValidationError("Target seed must be positive.")
+
+        target_stage_ids = self.mapped("target_stage_id").ids
+        progressions = self.search(
+            [
+                ("target_stage_id", "in", target_stage_ids),
+                ("active", "=", True),
+            ]
+        )
+
+        def ranges_overlap(start_a, end_a, start_b, end_b):
+            return max(start_a, start_b) <= min(end_a, end_b)
+
+        for progression in progressions:
+            target_size = progression.rank_to - progression.rank_from + 1
+            target_seed_to = progression.target_seed_from + target_size - 1
+            for other in progressions:
+                if other.id <= progression.id:
+                    continue
+                if (
+                    other.target_stage_id == progression.target_stage_id
+                    and other.source_stage_id == progression.source_stage_id
+                    and ranges_overlap(
+                        progression.rank_from,
+                        progression.rank_to,
+                        other.rank_from,
+                        other.rank_to,
+                    )
+                ):
+                    raise ValidationError(
+                        "Rank ranges from the same source stage must not overlap."
+                    )
+                other_size = other.rank_to - other.rank_from + 1
+                other_target_seed_to = other.target_seed_from + other_size - 1
+                if (
+                    other.target_stage_id == progression.target_stage_id
+                    and ranges_overlap(
+                        progression.target_seed_from,
+                        target_seed_to,
+                        other.target_seed_from,
+                        other_target_seed_to,
+                    )
+                ):
+                    raise ValidationError(
+                        "Target seed ranges in a stage must not overlap."
+                    )
 
 
 class FederationStageStandingSnapshot(models.Model):

@@ -2,7 +2,9 @@
 """Validate release evidence without rewriting its summary."""
 
 from __future__ import annotations
-import argparse, json, subprocess
+import argparse
+import json
+import subprocess
 from pathlib import Path
 from finalize_release_evidence import DEFAULT_REQUIRED_LANES, build_summary
 

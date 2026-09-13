@@ -124,6 +124,99 @@ class TestStageGraphEngine(TransactionCase):
         with self.assertRaises(ValidationError):
             self.env["federation.stage.graph.engine"].validate_graph(self.structure)
 
+    def test_overlapping_progression_ranges_are_rejected(self):
+        source = self.env["federation.structure.stage"].create(
+            {
+                "name": "Overlap Source",
+                "structure_id": self.structure.id,
+                "stage_type": "league",
+                "format_type": "single_round_robin",
+                "source_type": "registration",
+            }
+        )
+        target = self.env["federation.structure.stage"].create(
+            {
+                "name": "Overlap Target",
+                "structure_id": self.structure.id,
+                "stage_type": "knockout",
+                "format_type": "knockout",
+                "source_type": "progression",
+            }
+        )
+        progression_model = self.env["federation.structure.stage.progression"]
+        progression_model.create(
+            {
+                "name": "Ranks 1 to 3",
+                "source_stage_id": source.id,
+                "target_stage_id": target.id,
+                "rank_from": 1,
+                "rank_to": 3,
+                "target_seed_from": 1,
+            }
+        )
+        with self.assertRaises(ValidationError):
+            progression_model.create(
+                {
+                    "name": "Ranks 3 to 4",
+                    "source_stage_id": source.id,
+                    "target_stage_id": target.id,
+                    "rank_from": 3,
+                    "rank_to": 4,
+                    "target_seed_from": 4,
+                }
+            )
+
+    def test_overlapping_target_seed_ranges_are_rejected(self):
+        source_a, source_b = self.env["federation.structure.stage"].create(
+            [
+                {
+                    "name": "Seed Source A",
+                    "structure_id": self.structure.id,
+                    "stage_type": "league",
+                    "format_type": "single_round_robin",
+                    "source_type": "registration",
+                },
+                {
+                    "name": "Seed Source B",
+                    "structure_id": self.structure.id,
+                    "stage_type": "league",
+                    "format_type": "single_round_robin",
+                    "source_type": "registration",
+                },
+            ]
+        )
+        target = self.env["federation.structure.stage"].create(
+            {
+                "name": "Seed Target",
+                "structure_id": self.structure.id,
+                "stage_type": "knockout",
+                "format_type": "knockout",
+                "source_type": "progression",
+            }
+        )
+        progression_model = self.env["federation.structure.stage.progression"]
+        progression_model.create(
+            {
+                "name": "Source A",
+                "source_stage_id": source_a.id,
+                "target_stage_id": target.id,
+                "rank_from": 1,
+                "rank_to": 2,
+                "target_seed_from": 1,
+            }
+        )
+        with self.assertRaises(ValidationError):
+            progression_model.create(
+                {
+                    "name": "Source B",
+                    "source_stage_id": source_b.id,
+                    "target_stage_id": target.id,
+                    "rank_from": 1,
+                    "rank_to": 2,
+                    "target_seed_from": 2,
+                }
+            )
+
     def test_placement_bracket_matrix_has_valid_sources(self):
         club = self.env["federation.club"].create({"name": "Matrix Club"})
         for count in (2, 3, 4, 5, 6, 7, 8, 9, 12, 16):

@@ -23,6 +23,7 @@ ci/odoo-ci.generated.runtime.conf
 
 # CI logs (keep .gitkeep, ignore run output)
 ci/logs/
+odoo-rc.log
 
 _logs/
 # Release evidence is generated outside the repository.

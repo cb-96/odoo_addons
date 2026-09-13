@@ -216,6 +216,12 @@ class FederationStageGraphEngine(models.AbstractModel):
             or not match.include_in_official_standings
         ):
             return False, False
+        if match.home_score == match.away_score:
+            raise ValidationError(
+                _(
+                    "A tied result cannot determine progression without an explicit tie-break outcome."
+                )
+            )
         return (
             (match.home_team_id, match.away_team_id)
             if match.home_score > match.away_score

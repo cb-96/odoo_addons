@@ -15,24 +15,27 @@ class FederationDynamicPairing(models.AbstractModel):
             team_ids, key=lambda team_id: (-points.get(team_id, 0), team_id)
         )
         bye = ordered.pop() if len(ordered) % 2 else False
-        pairs = []
-        while ordered:
-            home = ordered.pop(0)
-            opponent_index = next(
-                (
-                    index
-                    for index, away in enumerate(ordered)
-                    if frozenset((home, away)) not in previous
-                ),
-                None,
-            )
-            if opponent_index is None:
-                raise ValidationError(
-                    _(
-                        "No repeat-free Swiss pairing is available for the current score group."
-                    )
+
+        def build_pairs(remaining):
+            if not remaining:
+                return []
+            home = remaining[0]
+            for index, away in enumerate(remaining[1:], 1):
+                if frozenset((home, away)) in previous:
+                    continue
+                rest = remaining[1:index] + remaining[index + 1 :]
+                pairs = build_pairs(rest)
+                if pairs is not None:
+                    return [(home, away), *pairs]
+            return None
+
+        pairs = build_pairs(ordered)
+        if pairs is None:
+            raise ValidationError(
+                _(
+                    "No repeat-free Swiss pairing is available for the current score group."
                 )
-            pairs.append((home, ordered.pop(opponent_index)))
+            )
         return {"pairs": pairs, "bye_team_id": bye}
 
     @api.model

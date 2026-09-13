@@ -2,7 +2,9 @@
 """Validate the bounded registry for temporary, known release failures."""
 
 from __future__ import annotations
-import argparse, json, re
+import argparse
+import json
+import re
 from datetime import date
 from pathlib import Path
 

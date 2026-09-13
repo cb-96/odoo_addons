@@ -147,6 +147,22 @@ class TestFixtureResultOwnership(TransactionCase):
         with self.assertRaises(ValidationError):
             fixture.action_approve_result()
 
+    def test_tied_result_cannot_resolve_stage_progression(self):
+        stage = self._stage("knockout", "knockout")
+        stage.action_prepare_stage()
+        fixture = stage.stage_fixture_ids.filtered("operational_match_id")[0]
+        match = fixture.operational_match_id.sudo()
+        match.write(
+            {
+                "home_score": 1,
+                "away_score": 1,
+                "result_state": "approved",
+                "include_in_official_standings": True,
+            }
+        )
+        with self.assertRaises(ValidationError):
+            self.env["federation.stage.graph.engine"]._result(fixture)
+
     def test_contest_invalidates_unprogressed_snapshot(self):
         stage = self._stage()
         stage.action_prepare_stage()

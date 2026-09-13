@@ -39,7 +39,12 @@ class FederationMatchFixtureBridge(models.Model):
 
     def _sync_logical_fixture_result(self):
         for match in self.filtered("logical_fixture_id"):
-            fixture = match.logical_fixture_id
+            # Result approval is authorized by Result Control, while the
+            # logical fixture is intentionally writable only by Format
+            # designers. Elevate only this already-linked fixture after the
+            # approval command has completed its authorization checks.
+            fixture = match.logical_fixture_id.sudo()
+            graph_engine = self.env["federation.stage.graph.engine"].sudo()
             if match.result_state == "approved" and match.include_in_official_standings:
                 if (
                     fixture.stage_id.stage_type in ("knockout", "placement")
@@ -47,7 +52,7 @@ class FederationMatchFixtureBridge(models.Model):
                 ):
                     raise ValidationError("Bracket matches require a winner.")
                 fixture.state = "completed"
-                self.env["federation.stage.graph.engine"].resolve_dependants(fixture)
+                graph_engine.resolve_dependants(fixture)
                 continue
 
             if match.result_state in ("contested", "corrected", "draft"):

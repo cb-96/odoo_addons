@@ -36,6 +36,17 @@ class TestAdvancedCompetitionEngine(TransactionCase):
             frozenset((3, 4)), {frozenset(pair) for pair in result["pairs"]}
         )
 
+    def test_swiss_pairing_backtracks_when_greedy_choice_dead_ends(self):
+        participants = MagicMock()
+        participants.mapped.return_value.ids = [1, 2, 3, 4]
+        result = self.env["federation.dynamic.pairing"].swiss_pairs(
+            participants, previous_pairs=[(3, 4)]
+        )
+        self.assertEqual(
+            {frozenset(pair) for pair in result["pairs"]},
+            {frozenset((1, 3)), frozenset((2, 4))},
+        )
+
     def test_feasibility_covers_dynamic_formats(self):
         analyzer = self.env["federation.format.feasibility"]
         swiss = analyzer.estimate("swiss", 9, swiss_round_count=5)
