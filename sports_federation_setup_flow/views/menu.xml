@@ -1,0 +1,1 @@
+<odoo><menuitem id="menu_competition_setup_home" name="Competitions" parent="sports_federation_competition_core.menu_competition_engine_competition_root" action="sports_federation_competition_core.action_competition_overview" sequence="1"/></odoo>
