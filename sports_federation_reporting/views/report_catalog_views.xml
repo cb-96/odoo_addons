@@ -1,0 +1,43 @@
+<odoo>
+  <record id="report_catalog_view_list" model="ir.ui.view">
+    <field name="name">federation.report.catalog.list</field>
+    <field name="model">federation.report.catalog</field>
+    <field name="arch" type="xml">
+      <list editable="bottom" default_order="category,name">
+        <field name="name"/>
+        <field name="category"/>
+        <field name="technical_model"/>
+        <field name="owner"/>
+        <field name="requirement"/>
+        <field name="last_confirmed_on"/>
+        <field name="active"/>
+      </list>
+    </field>
+  </record>
+  <record id="report_catalog_view_form" model="ir.ui.view">
+    <field name="name">federation.report.catalog.form</field>
+    <field name="model">federation.report.catalog</field>
+    <field name="arch" type="xml">
+      <form string="Report Catalog">
+        <sheet>
+          <group>
+            <field name="name"/>
+            <field name="technical_model"/>
+            <field name="category"/>
+            <field name="owner"/>
+            <field name="requirement"/>
+            <field name="last_confirmed_on"/>
+            <field name="active"/>
+          </group>
+          <field name="purpose"/>
+        </sheet>
+      </form>
+    </field>
+  </record>
+  <record id="report_catalog_action" model="ir.actions.act_window">
+    <field name="name">Report Catalog</field>
+    <field name="res_model">federation.report.catalog</field>
+    <field name="view_mode">list,form</field>
+    <field name="context">{'search_default_active': 1}</field>
+  </record>
+</odoo>
