@@ -190,6 +190,13 @@ class FederationMatchResultControl(models.Model):
             "results": results,
         }
 
+    def _competition_workflow_edition(self):
+        self.ensure_one()
+        fixture = self.logical_fixture_id
+        if fixture and fixture.structure_id:
+            return fixture.structure_id.edition_id
+        return self.env["federation.competition.edition"]
+
     def action_submit_result(self):
         """Submit the match result for verification atomically."""
         with self.env.cr.savepoint():
@@ -212,6 +219,11 @@ class FederationMatchResultControl(models.Model):
                 dispatcher = record.env.get("federation.notification.dispatcher")
                 if dispatcher is not None:
                     dispatcher.send_result_submitted(record)
+            editions = self.mapped(lambda match: match._competition_workflow_edition())
+            if editions and not any(edition.result_verification_required for edition in editions):
+                self.with_context(workflow_policy_bypass=True).action_verify_result()
+                if not any(edition.result_approval_required for edition in editions):
+                    self.with_context(workflow_policy_bypass=True).action_approve_result()
             return result
 
     def _lock_result_transition(self):
@@ -232,9 +244,15 @@ class FederationMatchResultControl(models.Model):
     def action_verify_result(self):
         """Verify submitted results atomically with separation of duties."""
         with self.env.cr.savepoint():
-            self._check_result_group(
-                "sports_federation_result_control.group_result_validator",
-                "Only result validators can verify submitted results.",
+            editions = self.mapped(lambda match: match._competition_workflow_edition())
+            bypass = self.env.context.get("workflow_policy_bypass")
+            if not bypass:
+                self._check_result_group(
+                    "sports_federation_result_control.group_result_validator",
+                    "Only result validators can verify submitted results.",
+                )
+            allow_self = bypass or (
+                editions and all(edition.result_self_verification_allowed for edition in editions)
             )
             self._lock_result_transition()
             return self._result_transition(
@@ -244,7 +262,7 @@ class FederationMatchResultControl(models.Model):
                     "result_verified_by_id": self.env.user.id,
                     "result_verified_on": fields.Datetime.now(),
                 },
-                forbidden_actor_fields=("result_submitted_by_id",),
+                forbidden_actor_fields=() if allow_self else ("result_submitted_by_id",),
                 event_type="verified",
                 description="Result verified.",
             )
@@ -252,9 +270,15 @@ class FederationMatchResultControl(models.Model):
     def action_approve_result(self):
         """Approve verified results atomically and recompute standings."""
         with self.env.cr.savepoint():
-            self._check_result_group(
-                "sports_federation_result_control.group_result_approver",
-                "Only result approvers can approve verified results.",
+            editions = self.mapped(lambda match: match._competition_workflow_edition())
+            bypass = self.env.context.get("workflow_policy_bypass")
+            if not bypass:
+                self._check_result_group(
+                    "sports_federation_result_control.group_result_approver",
+                    "Only result approvers can approve verified results.",
+                )
+            allow_self = bypass or (
+                editions and all(edition.result_self_approval_allowed for edition in editions)
             )
             self._lock_result_transition()
             result = self._result_transition(
@@ -265,7 +289,7 @@ class FederationMatchResultControl(models.Model):
                     "result_approved_on": fields.Datetime.now(),
                     "include_in_official_standings": True,
                 },
-                forbidden_actor_fields=(
+                forbidden_actor_fields=() if allow_self else (
                     "result_submitted_by_id",
                     "result_verified_by_id",
                 ),
