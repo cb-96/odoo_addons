@@ -200,6 +200,16 @@ class FederationCompetitionEntry(models.Model):
                 "reviewed_on": False,
             }
         )
+        automatic = self.filtered(lambda entry: not entry.edition_id.registration_approval_required)
+        if automatic:
+            automatic.write(
+                {
+                    "state": "approved",
+                    "reviewed_by_id": self.env.user.id,
+                    "reviewed_on": fields.Datetime.now(),
+                    "review_note": _("Automatically approved by competition workflow policy."),
+                }
+            )
         return True
 
     def action_approve(self):

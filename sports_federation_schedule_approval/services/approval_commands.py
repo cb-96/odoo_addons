@@ -81,12 +81,16 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         review = self.env["federation.schedule.review"].browse(int(review_id)).exists()
         if not review or review.state != "pending":
             raise ValidationError(_("Only pending reviews can be decided."))
-        self.env["federation.competition.role.assignment"].assert_role(
-            review.edition_id, "schedule_approver", "competition_director"
-        )
-        if review.submitted_by_id == self.env.user:
+        if review.edition_id.schedule_approval_required:
+            self.env["federation.competition.role.assignment"].assert_role(
+                review.edition_id, "schedule_approver", "competition_director"
+            )
+        if (
+            review.submitted_by_id == self.env.user
+            and not review.edition_id.schedule_self_approval_allowed
+        ):
             raise ValidationError(
-                _("The submitting planner cannot approve their own schedule.")
+                _("This competition requires another person to approve the schedule.")
             )
         # Approval revalidation is a read-only operation over the complete
         # submitted schedule, including calendar and venue records.  The caller

@@ -19,6 +19,13 @@
         </group>
       </xpath>
       <xpath expr="//notebook" position="inside">
+        <page string="Workflow" name="workflow_policy">
+          <group><field name="workflow_mode"/><div class="alert alert-info" role="status">Simple keeps validation and history but removes routine approval handoffs. Controlled preserves independent approvals. Custom lets this competition choose every checkpoint.</div></group>
+          <group string="Registration and format"><field name="registration_approval_required"/><field name="structure_freeze_confirmation_required"/></group>
+          <group string="Schedules"><field name="schedule_approval_required"/><field name="schedule_self_approval_allowed" invisible="not schedule_approval_required"/><field name="schedule_auto_publish_after_approval"/></group>
+          <group string="Results"><field name="result_verification_required"/><field name="result_approval_required"/><field name="result_self_verification_allowed" invisible="not result_verification_required"/><field name="result_self_approval_allowed" invisible="not result_approval_required"/><field name="auto_recompute_standings"/></group>
+          <group string="Progression and teams"><field name="standings_freeze_confirmation_required"/><field name="auto_progress_completed_stage"/><field name="roster_approval_required"/><field name="match_sheet_approval_required"/></group>
+        </page>
         <page string="Responsibilities" name="responsibilities">
           <field name="role_assignment_ids" context="{'default_edition_id': id}">
             <list editable="bottom"><field name="role"/><field name="user_id"/><field name="active"/></list>
