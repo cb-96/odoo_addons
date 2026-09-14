@@ -65,15 +65,15 @@ class FederationMatchdaySlotGenerationWizard(models.TransientModel):
             values.update(
                 {
                     "matchday_id": matchday.id,
-                    "court_ids": [
-                        (
-                            6,
-                            0,
-                            matchday.venue_id.playing_area_ids.filtered("active").ids,
-                        )
-                    ],
+                    "court_ids": [(6, 0, (
+                        matchday.planning_court_ids
+                        or matchday.venue_id.playing_area_ids.filtered("active")
+                    ).ids)],
                     "start_hour": matchday.default_day_start_hour,
+                    "end_hour": matchday.default_day_end_hour,
                     "slot_duration_minutes": matchday.default_slot_duration_minutes,
+                    "noon_pause": matchday.default_noon_pause,
+                    "noon_pause_minutes": matchday.default_noon_pause_minutes,
                 }
             )
         return values
@@ -137,6 +137,16 @@ class FederationMatchdaySlotGenerationWizard(models.TransientModel):
                     "to continue."
                 )
             )
+        self.matchday_id.write(
+            {
+                "default_day_start_hour": self.start_hour,
+                "default_day_end_hour": self.end_hour,
+                "default_slot_duration_minutes": self.slot_duration_minutes,
+                "default_noon_pause": self.noon_pause,
+                "default_noon_pause_minutes": self.noon_pause_minutes,
+                "planning_court_ids": [(6, 0, self.court_ids.ids)],
+            }
+        )
         self.env["federation.slot.generator"].generate_plan(
             self.matchday_id,
             self.court_ids,
