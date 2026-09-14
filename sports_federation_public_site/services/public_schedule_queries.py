@@ -34,7 +34,11 @@ class PublicScheduleQueries(models.AbstractModel):
                 lambda m: (m.operational_slot_id or m.published_slot_id).court_id.id
                 == court_id
             )
-        public_timezone = self.env.company.partner_id.tz or self.env.user.tz or "UTC"
+        # Public requests cannot read the company contact through the public user.
+        # Use the schedule configuration with controlled elevation.
+        public_timezone = (
+            self.env.company.sudo().partner_id.tz or self.env.user.tz or "UTC"
+        )
         localized = self.with_context(tz=public_timezone)
         rows = []
         for match in matches:
@@ -139,7 +143,7 @@ class PublicScheduleQueries(models.AbstractModel):
     def edition_upcoming_matches(self, edition, division=None, limit=6):
         """Return the next spectator-relevant matches from live publications."""
         localized = self.with_context(
-            tz=self.env.company.partner_id.tz or self.env.user.tz or "UTC"
+            tz=self.env.company.sudo().partner_id.tz or self.env.user.tz or "UTC"
         )
         now_local = fields.Datetime.context_timestamp(localized, fields.Datetime.now())
         rows = []

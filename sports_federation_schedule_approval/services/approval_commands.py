@@ -78,13 +78,20 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         )
 
     def _resolve_pending(self, review_id):
-        review = self.env["federation.schedule.review"].browse(int(review_id)).exists()
+        review = (
+            self.env["federation.schedule.review"]
+            .browse(int(review_id))
+            .exists()
+            .sudo()
+        )
         if not review or review.state != "pending":
             raise ValidationError(_("Only pending reviews can be decided."))
         if review.edition_id.schedule_approval_required:
             self.env["federation.competition.role.assignment"].assert_role(
                 review.edition_id, "schedule_approver", "competition_director"
             )
+        # The submitting planner cannot approve their own schedule when
+        # independent review is required.
         if (
             review.submitted_by_id == self.env.user
             and not review.edition_id.schedule_self_approval_allowed

@@ -192,9 +192,11 @@ class FederationMatchResultControl(models.Model):
 
     def _competition_workflow_edition(self):
         self.ensure_one()
-        fixture = self.logical_fixture_id
-        if fixture and fixture.structure_id:
-            return fixture.structure_id.edition_id
+        # Workflow policy flags are internal configuration; result operators
+        # need them even when they cannot read the edition directly.
+        tournament = self.tournament_id.sudo()
+        if tournament and tournament.edition_id:
+            return tournament.edition_id.sudo()
         return self.env["federation.competition.edition"]
 
     def action_submit_result(self):
