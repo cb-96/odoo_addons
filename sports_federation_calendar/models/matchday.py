@@ -49,7 +49,26 @@ class FederationMatchday(models.Model):
         help="Duration proposed for a new slot when no previous slot duration is available.",
     )
 
-    @api.constrains("default_day_start_hour", "default_slot_duration_minutes")
+    default_day_end_hour = fields.Float(
+        string="Default slot end", default=18.0, required=True,
+        help="Local end time; every generated slot must finish by this time.",
+    )
+    default_noon_pause = fields.Boolean(string="Default noon pause", default=False)
+    default_noon_pause_minutes = fields.Integer(
+        string="Default noon pause duration", default=60, required=True
+    )
+    planning_court_ids = fields.Many2many(
+        "federation.playing.area",
+        "federation_matchday_planning_court_rel",
+        "matchday_id", "court_id", string="Planning courts",
+        domain="[('venue_id', '=', venue_id), ('active', '=', True)]",
+    )
+
+    @api.constrains(
+        "default_day_start_hour", "default_day_end_hour",
+        "default_slot_duration_minutes", "default_noon_pause_minutes",
+        "planning_court_ids", "venue_id",
+    )
     def _check_slot_defaults(self):
         for rec in self:
             if rec.default_day_start_hour < 0 or rec.default_day_start_hour >= 24:
@@ -58,6 +77,14 @@ class FederationMatchday(models.Model):
                 )
             if rec.default_slot_duration_minutes <= 0:
                 raise ValidationError(_("The default slot duration must be positive."))
+            if rec.default_day_end_hour <= rec.default_day_start_hour:
+                raise ValidationError(_("The default slot end must be after its start."))
+            if rec.default_day_end_hour > 24:
+                raise ValidationError(_("The default slot end must not exceed 24:00."))
+            if rec.default_noon_pause_minutes <= 0:
+                raise ValidationError(_("The noon pause duration must be positive."))
+            if rec.planning_court_ids.filtered(lambda c: c.venue_id != rec.venue_id):
+                raise ValidationError(_("Planning courts must belong to the match-day venue."))
 
     @api.depends("allocation_ids.fixture_ids", "slot_ids.state")
     def _compute_capacity(self):

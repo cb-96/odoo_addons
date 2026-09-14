@@ -11,6 +11,10 @@ for concurrent edits.
 All access-control rows, including the auto-schedule wizard permissions, are
 loaded through `security/ir.model.access.csv`.
 
+The complete competition schedule wizard uses explicit short Many2many relation
+table names for its selected game days and structures. This keeps PostgreSQL
+identifiers below its 63-character limit during module installation and upgrade.
+
 
 ## Operator handoff to independent review
 
