@@ -36,7 +36,7 @@ class FederationCompetitionEditionSetup(models.Model):
             participant_sets = self.env["federation.participant.set"].search(
                 [("edition_id", "=", self.id), ("state", "=", "finalized")]
             )
-            participant_count = len(participant_sets.mapped("participant_ids"))
+            participant_count = len(participant_sets.mapped("line_ids.team_id"))
         gamedays = Matchday.search_count([("edition_id", "=", self.id)])
         schedules = Schedule.search([("edition_id", "=", self.id)])
         publications = 0
@@ -122,9 +122,11 @@ class FederationCompetitionEditionSetup(models.Model):
         return action
 
     def action_setup_participants(self):
-        return self._action_with_edition(
+        action = self._action_with_edition(
             "sports_federation_registration.action_registration_desk"
         )
+        action["domain"] = [("edition_id", "=", self.id)]
+        return action
 
     def action_setup_gamedays(self):
         self.ensure_one()

@@ -106,7 +106,11 @@ class FederationCompetitionGamedaySetupLine(models.TransientModel):
     name = fields.Char(required=True)
     date = fields.Date(required=True)
     venue_id = fields.Many2one("federation.venue", required=True)
-    court_ids = fields.Many2many("federation.playing.area", string="Courts")
+    court_ids = fields.Many2many(
+        "federation.playing.area",
+        relation="federation_gameday_setup_line_playing_area_rel",
+        string="Courts",
+    )
     start_hour = fields.Float(required=True, default=9.0)
     end_hour = fields.Float(required=True, default=18.0)
     slot_duration_minutes = fields.Integer(required=True, default=40)

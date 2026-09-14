@@ -1,0 +1,66 @@
+<odoo>
+  <record id="create_competition_wizard_journey" model="ir.ui.view">
+    <field name="name">federation.create.competition.wizard.journey</field>
+    <field name="model">federation.create.competition.wizard</field>
+    <field name="inherit_id" ref="sports_federation_registration.create_competition_wizard_form"/>
+    <field name="arch" type="xml">
+      <field name="setup_template" position="attributes">
+        <attribute name="string">Competition Type</attribute>
+      </field>
+      <field name="setup_template" position="after">
+        <field name="workflow_mode"/>
+        <field name="default_venue_id"/>
+      </field>
+      <button name="action_create_competition" position="attributes">
+        <attribute name="string">Create and Continue</attribute>
+      </button>
+    </field>
+  </record>
+
+  <record id="competition_edition_form_setup_journey" model="ir.ui.view">
+    <field name="name">federation.competition.edition.form.setup.journey</field>
+    <field name="model">federation.competition.edition</field>
+    <field name="inherit_id" ref="sports_federation_setup_flow.competition_edition_form_setup_flow"/>
+    <field name="arch" type="xml">
+      <xpath expr="//form/header" position="inside">
+        <button name="action_open_clone_setup" type="object" string="Copy Setup" class="btn-secondary"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="competition_gameday_setup_setup_journey" model="ir.ui.view">
+    <field name="name">federation.competition.gameday.setup.setup.journey</field>
+    <field name="model">federation.competition.gameday.setup.wizard</field>
+    <field name="inherit_id" ref="sports_federation_setup_flow.competition_gameday_setup_form"/>
+    <field name="arch" type="xml">
+      <field name="default_slot_duration_minutes" position="after">
+        <field name="repeat_every_weeks"/>
+        <field name="repeat_count"/>
+        <button name="action_add_recurring_days" type="object" string="Add Recurring Game Days" class="btn-secondary"/>
+        <button name="action_copy_last_day" type="object" string="Copy Last Game Day" class="btn-secondary"/>
+      </field>
+    </field>
+  </record>
+
+  <record id="competition_clone_setup_form" model="ir.ui.view">
+    <field name="name">federation.competition.clone.setup.form</field>
+    <field name="model">federation.competition.clone.setup.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Copy Competition Setup">
+        <group>
+          <field name="source_edition_id"/>
+          <field name="name"/>
+          <field name="season_id"/>
+          <field name="date_start"/>
+          <field name="date_end"/>
+          <field name="copy_gameday_pattern"/>
+          <field name="copy_responsibilities"/>
+        </group>
+        <footer>
+          <button name="action_copy_setup" type="object" string="Copy and Continue" class="btn-primary"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>
