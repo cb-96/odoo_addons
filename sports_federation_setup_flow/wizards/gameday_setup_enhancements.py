@@ -12,6 +12,8 @@ class FederationCompetitionGamedaySetupWizardEnhancements(models.TransientModel)
 
     def action_add_recurring_days(self):
         self.ensure_one()
+        if not self.default_venue_id:
+            raise ValidationError(_("Select a venue before adding game days."))
         if self.repeat_every_weeks < 1 or self.repeat_count < 1:
             raise ValidationError(_("Repeat values must be positive."))
         date = self.new_date or self.edition_id.date_start or fields.Date.context_today(self)

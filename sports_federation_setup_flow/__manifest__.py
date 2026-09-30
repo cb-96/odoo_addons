@@ -15,9 +15,12 @@
     ],
     "data": [
         "security/ir.model.access.csv",
+        "security/setup_journey_access.csv",
         "views/competition_setup_views.xml",
         "views/gameday_setup_wizard_views.xml",
         "views/menu.xml",
+        "views/setup_consolidation_views.xml",
+        "views/setup_journey_views.xml",
     ],
     "installable": True,
     "application": False,

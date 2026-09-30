@@ -24,6 +24,7 @@ databases, model names, XML IDs, and upgrade paths stay stable.
         "sports_federation_calendar",
         "sports_federation_scheduling",
         "sports_federation_schedule_approval",
+        "sports_federation_setup_flow",
         "sports_federation_matchday",
         "sports_federation_officiating",
         "sports_federation_rosters",

@@ -23,7 +23,7 @@
     <field name="inherit_id" ref="sports_federation_setup_flow.competition_edition_form_setup_flow"/>
     <field name="arch" type="xml">
       <xpath expr="//form/header" position="inside">
-        <button name="action_open_clone_setup" type="object" string="Copy Setup" class="btn-secondary"/>
+        <button name="action_open_clone_setup" type="object" string="Copy Setup" class="btn-secondary" groups="sports_federation_base.group_federation_manager"/>
       </xpath>
     </field>
   </record>
