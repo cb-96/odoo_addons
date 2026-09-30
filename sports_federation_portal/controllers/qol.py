@@ -44,6 +44,18 @@ class FederationOperationTaskPortalQoL(FederationOperationTaskPortal):
             ):
                 bucket = "waiting"
             buckets[bucket] |= task
+        club_tasks = Task.search(
+            Task._portal_get_domain(user=request.env.user) + [("state", "!=", "done")]
+        )
+        cards = request.env["federation.portal.competition.queries"].list_cards(
+            user=request.env.user
+        )
+        upcoming = [(card, card["next_upcoming_match"]) for card in cards
+                    if card["next_upcoming_match"]]
+        next_card, next_match = (
+            min(upcoming, key=lambda item: (item[1].date_scheduled, item[1].id))
+            if upcoming else (False, False)
+        )
         representatives = (
             request.env["federation.club.representative"]
             .sudo()
@@ -59,6 +71,12 @@ class FederationOperationTaskPortalQoL(FederationOperationTaskPortal):
             "sports_federation_portal.portal_my_operation_tasks",
             {
                 "tasks": tasks,
+                "next_match": next_match,
+                "next_match_card": next_card,
+                "roster_action_count": len(club_tasks.filtered(
+                    lambda task: task.task_type == "roster_readiness")),
+                "referee_action_count": len(club_tasks.filtered(
+                    lambda task: task.task_type == "referee_duty")),
                 "buckets": buckets,
                 "representatives": representatives,
                 "active_scope": scope,

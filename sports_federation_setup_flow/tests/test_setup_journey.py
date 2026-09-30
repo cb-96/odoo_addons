@@ -41,6 +41,11 @@ class TestCompetitionSetupJourney(TransactionCase):
             {"name": "Court 1", "venue_id": cls.venue.id}
         )
 
+    def test_readiness_explains_next_blocker(self):
+        result = self.env["federation.competition.setup.readiness"].evaluate(self.edition)
+        self.assertEqual(result["step"], "divisions")
+        self.assertTrue(result["blocker_hint"])
+
     def test_creation_wizard_exposes_operator_defaults(self):
         fields = self.env["federation.create.competition.wizard"]._fields
         self.assertIn("workflow_mode", fields)

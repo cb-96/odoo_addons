@@ -11,6 +11,7 @@
     <div class="alert alert-info" role="status">Each game day uses its own start, end, duration, pause, courts and blackout constraints. Preview separates feasibility from schedule quality.</div>
     <group invisible="not preview_ready"><field name="blocking_issue_count"/><field name="warning_count"/></group>
     <notebook invisible="not preview_ready"><page string="Feasibility"><field name="feasibility_report" nolabel="1" readonly="1"/></page><page string="Quality"><field name="quality_report" nolabel="1" readonly="1"/></page></notebook>
+    <!-- Technical modifier relay: preview_ready controls preview and apply. -->
     <field name="preview_ready" invisible="1"/><field name="preview_signature" invisible="1"/>
     <footer><button name="action_preview" type="object" string="Preview" class="btn-secondary"/><button name="action_apply" type="object" string="Generate Draft Schedules" class="btn-primary" invisible="not preview_ready or blocking_issue_count" confirm="Apply this complete competition plan?"/><button string="Cancel" special="cancel" class="btn-secondary"/></footer>
    </form>

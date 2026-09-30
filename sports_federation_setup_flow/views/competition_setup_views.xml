@@ -7,8 +7,9 @@
    <xpath expr="//form/header" position="inside"><button name="action_continue_setup" type="object" string="Continue Setup" class="btn-primary" invisible="setup_step == 'complete'"/></xpath>
     <xpath expr="//group[.//field[@name='workflow_progress']]" position="replace">
     <group string="Competition Setup">
-     <group><field name="setup_progress" widget="progressbar"/><field name="setup_next_action" readonly="1"/><field name="setup_summary" readonly="1"/></group>
-     <group><button name="action_continue_setup" type="object" string="Continue Setup" class="btn-primary" invisible="setup_step == 'complete'"/><button name="action_setup_divisions" type="object" string="Divisions"/><button name="action_setup_participants" type="object" string="Teams"/><button name="action_setup_gamedays" type="object" string="Game Days"/><button name="action_setup_schedule" type="object" string="Schedule"/></group>
+     <group><field name="setup_progress" widget="progressbar"/><field name="setup_next_action" readonly="1"/><field name="setup_blocker_hint" readonly="1" invisible="setup_step == 'complete'"/><field name="setup_summary" readonly="1"/></group>
+     <group><button name="action_continue_setup" type="object" string="Resolve Next Blocker" class="btn-primary" invisible="setup_step == 'complete'"/><button name="action_setup_divisions" type="object" string="Divisions"/><button name="action_setup_participants" type="object" string="Teams"/><button name="action_setup_gamedays" type="object" string="Game Days"/><button name="action_setup_schedule" type="object" string="Schedule"/></group>
+     <!-- Technical modifier relay: setup_step controls Continue Setup. -->
      <field name="setup_step" invisible="1"/>
     </group>
    </xpath>

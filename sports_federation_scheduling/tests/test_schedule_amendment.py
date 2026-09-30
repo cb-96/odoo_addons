@@ -125,6 +125,10 @@ class TestScheduleAmendment(TransactionCase):
         self.assertEqual(self.schedule.superseded_by_id, replacement)
         self.assertEqual(replacement.revision_reason, "Late fixture added")
 
+    def test_replacement_previews_unchanged_assignments(self):
+        replacement = self.schedule.action_create_revision("Review impact")
+        self.assertIn("0 moved, 0 added, 0 removed", replacement.amendment_impact)
+
     def test_replacement_copies_assignments_without_mutating_source(self):
         original = self.schedule.assignment_ids
         replacement = self.schedule.action_create_revision("Copy assignments")

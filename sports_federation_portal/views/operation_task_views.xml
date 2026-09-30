@@ -76,6 +76,7 @@
                 <field name="tournament_id"/>
                 <filter name="open" string="Open" domain="[('state', 'in', ('open', 'acknowledged'))]"/>
                 <filter name="blocking" string="Blocking" domain="[('blocking', '=', True)]"/>
+                <filter name="matchday_exceptions" string="Match-day exceptions" domain="[('state', 'in', ('open', 'acknowledged')), ('blocking', '=', True), ('task_type', 'in', ('referee_duty', 'result_review'))]"/>
                 <filter name="overdue" string="Overdue" domain="[('deadline', '&lt;', context_today())]"/>
                 <group>
                     <filter name="group_type" string="Task type" context="{'group_by': 'task_type'}"/>
@@ -92,7 +93,7 @@
         <field name="res_model">federation.operation.task</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_federation_operation_task_search"/>
-        <field name="domain">[('audience', '=', 'manager'), ('state', '!=', 'done')]</field>
+        <field name="domain">['|', ('audience', '=', 'manager'), ('task_type', '=', 'referee_duty'), ('state', '!=', 'done')]</field>
         <field name="context">{'search_default_open': 1}</field>
     </record>
 </odoo>

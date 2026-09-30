@@ -18,6 +18,7 @@ class FederationCompetitionEditionSetup(models.Model):
     )
     setup_progress = fields.Integer(compute="_compute_setup_guidance")
     setup_next_action = fields.Char(compute="_compute_setup_guidance")
+    setup_blocker_hint = fields.Char(compute="_compute_setup_guidance")
     setup_summary = fields.Text(compute="_compute_setup_guidance")
     setup_division_count = fields.Integer(compute="_compute_setup_guidance")
     setup_participant_count = fields.Integer(compute="_compute_setup_guidance")

@@ -35,7 +35,16 @@ class FederationCompetitionSetupReadiness(models.AbstractModel):
             "publication": _("Publish schedule"),
             "complete": _("Setup complete"),
         }
+        hints = {
+            "divisions": _("Define at least one division."),
+            "participants": _("Finalize participating teams."),
+            "gamedays": _("Add a game day."),
+            "schedule": _("Generate a working schedule."),
+            "publication": _("Publish an approved schedule."),
+            "complete": False,
+        }
         return {
+            "blocker_hint": hints[step],
             "step": step,
             "progress": progress,
             "next_action": labels[step],
@@ -60,6 +69,7 @@ class FederationCompetitionEditionCanonicalSetup(models.Model):
             edition.setup_step = result["step"]
             edition.setup_progress = result["progress"]
             edition.setup_next_action = result["next_action"]
+            edition.setup_blocker_hint = result["blocker_hint"]
             edition.setup_division_count = counts["divisions"]
             edition.setup_participant_count = counts["participants"]
             edition.setup_gameday_count = counts["gamedays"]

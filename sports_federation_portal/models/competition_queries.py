@@ -1,4 +1,4 @@
-from odoo import _, api, models
+from odoo import _, api, fields, models
 from odoo.exceptions import AccessError
 
 
@@ -159,6 +159,10 @@ class FederationPortalCompetitionQueries(models.AbstractModel):
             "status_label": label,
             "status_tone": tone,
             "next_match": unfinished[:1],
+            "next_upcoming_match": unfinished.filtered(
+                lambda match: match.date_scheduled
+                and match.date_scheduled >= fields.Datetime.now()
+            )[:1],
             "published_matchday_count": len(days),
             "result_follow_up_count": len(
                 matches.filtered(
