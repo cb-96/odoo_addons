@@ -29,7 +29,7 @@ tour.add("full_competition_lifecycle", {
     steps: () => [
         {
             content: "The competition overview form is ready",
-            trigger: '.o_form_view .o_field_widget[name="workflow_next_action"]',
+            trigger: '.o_form_view .o_field_widget[name="setup_next_action"]',
         },
         openAction(
             "sports_federation_registration.action_registration_desk",

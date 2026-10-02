@@ -111,6 +111,26 @@ class TestPhase511Integrity(TransactionCase):
         )
         return schedule, review
 
+    def _create_ready_roster(self, team, suffix):
+        player = self.env["federation.player"].create(
+            {
+                "first_name": f"{suffix} {team.name}",
+                "last_name": "Roster Player",
+                "gender": team.gender,
+            }
+        )
+        roster = self.env["federation.team.roster"].create(
+            {
+                "name": f"{suffix} {team.name} Roster",
+                "team_id": team.id,
+                "season_id": self.edition.season_id.id,
+            }
+        )
+        self.env["federation.team.roster.line"].create(
+            {"roster_id": roster.id, "player_id": player.id}
+        )
+        roster.action_activate()
+
     def _valid_schedule_review(self, day, suffix):
         stage = self.env["federation.structure.stage"].create(
             {
@@ -126,6 +146,8 @@ class TestPhase511Integrity(TransactionCase):
                 {"name": f"5.1.1 Away {suffix}", "club_id": club.id},
             ]
         )
+        for team in teams:
+            self._create_ready_roster(team, suffix)
         fixture = self.env["federation.fixture"].create(
             {
                 "structure_id": self.structure.id,

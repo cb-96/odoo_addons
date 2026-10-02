@@ -1,7 +1,7 @@
 # Odoo 19 — Sports Federation Addons (quick context)
 
 Owner: Federation Platform Team
-Last reviewed: 2026-05-25
+Last reviewed: 2026-10-01
 Review cadence: Every release
 
 Purpose
@@ -83,6 +83,7 @@ Recent additions (2026-05-25)
 - `sports_federation_base/views/menu_items.xml` and related addon menu files — backend navigation now uses journey-first buckets (`Setup`, `Planning`, `Match Day`, `Publication`, `Administration`), with the Planning menu as the primary scheduling entry point.
 - `sports_federation_portal/views/portal_templates.xml` and `competition_templates.xml` — club representatives use the Competition and Match-Day workspaces; direct queues remain secondary operational links.
 - `sports_federation_base`, `sports_federation_tournament`, `sports_federation_rosters`, `sports_federation_result_control`, `sports_federation_standings`, and `sports_federation_public_site` form views now surface inline next-step guidance and direct cross-module handoffs, including season-registration-to-roster, participant-to-roster, result-to-tournament, and tournament-to-standings/publication flows.
+- `sports_federation_rosters` blocks future match scheduling after the roster deadline unless both teams have active, ready season rosters.
 - The competition modules and `sports_federation_portal` expose a clear phase model: scheduling prepares a complete draft, schedule approval publishes an immutable snapshot, match-day operations execute only that snapshot, and portal result pages handle result follow-up.
 
 See `odoo/TECHNICAL_NOTE.md` → "competition planning flow" for details.

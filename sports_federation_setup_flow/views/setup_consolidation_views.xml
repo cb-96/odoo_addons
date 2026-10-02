@@ -1,30 +1,4 @@
 <odoo>
-  <record id="competition_edition_form_setup_consolidation" model="ir.ui.view">
-    <field name="name">federation.competition.edition.form.setup.consolidation</field>
-    <field name="model">federation.competition.edition</field>
-    <field name="inherit_id" ref="sports_federation_competition_core.competition_edition_form_workflow"/>
-    <field name="priority">99</field>
-    <field name="arch" type="xml">
-      <button name="action_open_next_workspace" position="attributes">
-        <attribute name="string">Continue Setup</attribute>
-        <attribute name="class">btn-primary</attribute>
-        <attribute name="invisible">1</attribute>
-      </button>
-      <field name="workflow_progress" position="attributes">
-        <attribute name="invisible">1</attribute>
-      </field>
-      <field name="workflow_next_action" position="attributes">
-        <attribute name="invisible">1</attribute>
-      </field>
-      <field name="journey_state" position="attributes">
-        <attribute name="invisible">1</attribute>
-      </field>
-      <field name="journey_blocker_count" position="attributes">
-        <attribute name="invisible">1</attribute>
-      </field>
-    </field>
-  </record>
-
   <record id="action_competition_setup_home" model="ir.actions.act_window">
     <field name="name">Competitions</field>
     <field name="res_model">federation.competition.edition</field>

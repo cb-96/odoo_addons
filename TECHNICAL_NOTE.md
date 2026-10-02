@@ -2,7 +2,7 @@
 
 Last updated: 2026-05-29
 Owner: Federation Platform Team
-Last reviewed: 2026-05-25
+Last reviewed: 2026-10-01
 Review cadence: Every release
 
 ## Canonical terminology and workflow authority (2026-05-27)
@@ -320,7 +320,8 @@ workflow boundaries instead of leaving them as isolated checks.
     participant confirmation warns before the roster deadline, then requires an
     active ready roster once that deadline is reached for the tournament
     season, with competition-specific rosters preferred over generic season
-    rosters.
+    rosters. Future match scheduling enforces the same readiness requirement
+    once the deadline for the team's first match is reached.
 - Regression coverage was added for season-aware license checks, team-season
     registration checks, roster activation gating, match-sheet submission gating,
     and participant confirmation readiness.

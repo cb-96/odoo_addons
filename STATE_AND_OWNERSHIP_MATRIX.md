@@ -1,7 +1,7 @@
 # State And Ownership Matrix
 
 Owner: Federation Platform Team
-Last reviewed: 2026-05-20
+Last reviewed: 2026-10-01
 Review cadence: Every release
 
 This document records the canonical lifecycle states and ownership boundaries
@@ -13,7 +13,7 @@ controllers, record rules, tests, and workflow docs aligned with the code.
 | Record | Module | Primary owner | Create path | Canonical states | Ownership boundary | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | `federation.tournament` | `sports_federation_tournament` + `sports_federation_portal` | Federation competition operations | Backend UI, scheduling services, website publication helpers | `draft`, `open`, `in_progress`, `closed`, `cancelled` | Federation-owned season / competition scope | Portal tournament workspaces only expose active tournaments (`open`, `in_progress`) and only for teams inside the user's current whole-club or explicit team scope. |
-| `federation.match` | `sports_federation_tournament` | Federation competition operations | Backend UI, scheduling services, wizards | `draft`, `scheduled`, `in_progress`, `done`, `cancelled` | Federation-owned tournament/stage/group | Official standings inclusion is further gated by `include_in_official_standings` when `sports_federation_result_control` is installed. |
+| `federation.match` | `sports_federation_tournament` | Federation competition operations | Backend UI, scheduling services, wizards | `draft`, `scheduled`, `in_progress`, `done`, `cancelled` | Federation-owned tournament/stage/group | Future matches require active, ready team rosters once the roster deadline is reached; official standings inclusion is further gated by `include_in_official_standings` when `sports_federation_result_control` is installed. |
 | `federation.schedule.slot` | `sports_federation_calendar` | Calendar operations prepare capacity; scheduling assigns fixtures; approval publishes the resulting schedule | Match-day calendar and scheduling views | `available`, `break`, `blocked` | Federation-owned match day / playing-area scope | A slot belongs to one match day. Fixture assignment and overlap validation are enforced server-side. |
 | `federation.standing` | `sports_federation_standings` | Federation competition operations | Backend UI, recompute/freeze actions | `draft`, `computed`, `frozen` | Federation-owned tournament/stage/group | Only computed or frozen standings are publication candidates. |
 | `federation.tournament.participant` | `sports_federation_tournament` | Federation competition operations | Backend UI or confirmed tournament registration | `registered`, `confirmed`, `withdrawn` | Team's club within a federation tournament | Portal users do not write participants directly; confirmed registrations may create them. |
