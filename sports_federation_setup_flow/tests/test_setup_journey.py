@@ -1,4 +1,5 @@
 from datetime import date
+from unittest.mock import patch
 
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
@@ -45,6 +46,31 @@ class TestCompetitionSetupJourney(TransactionCase):
         result = self.env["federation.competition.setup.readiness"].evaluate(self.edition)
         self.assertEqual(result["step"], "divisions")
         self.assertTrue(result["blocker_hint"])
+
+    def test_continue_setup_routes_from_canonical_assessment(self):
+        routes = {
+            "divisions": "action_setup_divisions",
+            "participants": "action_setup_participants",
+            "gamedays": "action_setup_gamedays",
+            "schedule": "action_setup_schedule",
+            "publication": "action_setup_publication",
+        }
+        service = self.env["federation.competition.setup.readiness"]
+        for step, method in routes.items():
+            with self.subTest(step=step):
+                expected = {"type": "ir.actions.act_window", "name": step}
+                with patch.object(type(service), "evaluate", return_value={"step": step}):
+                    with patch.object(type(self.edition), method, return_value=expected) as target:
+                        self.assertEqual(self.edition.action_continue_setup(), expected)
+                        target.assert_called_once()
+
+    def test_completed_setup_stays_on_edition(self):
+        service = self.env["federation.competition.setup.readiness"]
+        with patch.object(type(service), "evaluate", return_value={"step": "complete"}):
+            with patch.object(type(self.edition), "action_setup_gamedays") as gamedays:
+                action = self.edition.action_continue_setup()
+                gamedays.assert_not_called()
+        self.assertEqual(action["res_id"], self.edition.id)
 
     def test_creation_wizard_exposes_operator_defaults(self):
         fields = self.env["federation.create.competition.wizard"]._fields

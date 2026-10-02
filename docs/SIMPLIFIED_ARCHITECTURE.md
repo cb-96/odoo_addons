@@ -12,6 +12,16 @@ physical merging would complicate migrations and add risk without simplifying
 the operator experience. Consolidation is allowed only when it removes real
 coupling and has a rehearsed upgrade path.
 
+## Guided setup ownership
+
+`federation.competition.setup.readiness.evaluate(edition)` decides the next
+operator-facing setup step, progress, blocker hint, and counts. The edition
+projects that assessment into its computed fields and routes Continue Setup
+using the same assessment. Step actions remain on the edition; completed setup
+opens the edition instead of inventing another task. The compatibility entry
+point delegates to Continue Setup. Keep setup decisions out of views and
+controllers.
+
 ## Product surfaces
 
 - **Core data:** clubs, teams, seasons, people, rules, and venues.

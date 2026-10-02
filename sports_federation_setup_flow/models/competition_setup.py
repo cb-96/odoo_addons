@@ -1,4 +1,4 @@
-from odoo import _, api, fields, models
+from odoo import _, fields, models
 from odoo.exceptions import ValidationError
 
 
@@ -47,51 +47,21 @@ class FederationCompetitionEditionSetup(models.Model):
             )
         return len(divisions), participant_count, gamedays, len(schedules), publications
 
-    @api.depends("tournament_ids", "state")
-    def _compute_setup_guidance(self):
-        labels = dict(self._fields["setup_step"].selection)
-        for edition in self:
-            divisions, participants, gamedays, schedules, publications = edition._setup_counts()
-            edition.setup_division_count = divisions
-            edition.setup_participant_count = participants
-            edition.setup_gameday_count = gamedays
-            edition.setup_schedule_count = schedules
-            edition.setup_publication_count = publications
-            if not divisions:
-                step, progress = "divisions", 10
-            elif not participants:
-                step, progress = "participants", 30
-            elif not gamedays:
-                step, progress = "gamedays", 50
-            elif not schedules:
-                step, progress = "schedule", 70
-            elif not publications:
-                step, progress = "publication", 90
-            else:
-                step, progress = "complete", 100
-            edition.setup_step = step
-            edition.setup_progress = progress
-            edition.setup_next_action = labels[step]
-            edition.setup_summary = _(
-                "%(divisions)s divisions, %(participants)s teams, %(gamedays)s game days, "
-                "%(schedules)s schedules and %(publications)s live publications.",
-                divisions=divisions,
-                participants=participants,
-                gamedays=gamedays,
-                schedules=schedules,
-                publications=publications,
-            )
-
     def action_continue_setup(self):
         self.ensure_one()
-        return {
+        assessment = self.env["federation.competition.setup.readiness"].evaluate(self)
+        actions = {
             "divisions": self.action_setup_divisions,
             "participants": self.action_setup_participants,
             "gamedays": self.action_setup_gamedays,
             "schedule": self.action_setup_schedule,
             "publication": self.action_setup_publication,
-            "complete": self.action_setup_gamedays,
-        }[self.setup_step]()
+        }
+        # Completed setup has no blocker; remain on the edition rather than
+        # sending the operator back to game-day creation.
+        if assessment["step"] == "complete":
+            return self.get_formview_action()
+        return actions[assessment["step"]]()
 
     def _action_with_edition(self, xmlid, **extra_context):
         self.ensure_one()
