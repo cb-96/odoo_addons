@@ -157,6 +157,29 @@ fi
 echo "[Release baseline] Evidence: $evidence_dir"
 if (( overall_status != 0 )); then
   echo "[Release baseline] Qualification failed. Review summary.json and lane logs." >&2
+  # Report the authoritative SHA-bound lane statuses without requiring jq.
+  python3 - "$evidence_dir/summary.json" <<'PY_SUMMARY' >&2
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+if not path.is_file():
+    print(f"[Release baseline] Summary missing: {path}")
+else:
+    try:
+        summary = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        print(f"[Release baseline] Cannot read summary: {exc}")
+    else:
+        print(f"[Release baseline] Commit: {summary.get('commit')}")
+        for lane in summary.get("failed_lanes", []):
+            print(f"[Release baseline] Failed {lane}: {path.parent / 'logs' / (lane + '.log')}")
+        for lane in summary.get("missing_lanes", []):
+            print(f"[Release baseline] Missing lane: {lane}")
+        for issue in summary.get("invalid_records", []):
+            print(f"[Release baseline] Invalid evidence: {issue}")
+PY_SUMMARY
   exit 1
 fi
 
