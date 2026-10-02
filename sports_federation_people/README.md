@@ -30,12 +30,12 @@ for sorting and flexible display.
 - `team_ids`: Many2many teams the player belongs to.
 - `email` / `phone` / `mobile`: Contact channels.
 - `photo`: Binary player photograph.
-- `state`: Selection with `draft`, `active`, `suspended`, or `retired`.
+- `state`: Selection with `active`, `inactive`, or `suspended` (default: `active`).
 - `license_ids`: One2many historical license records.
 - `license_count`: Integer stat-button counter.
 - `notes`: Free-form notes.
 
-- **State machine**: draft → active → suspended / retired.
+- **Actions**: activate, deactivate, and suspend update the player state.
 - **Stat button** navigates to license history.
 
 ### `federation.player.license`
@@ -49,7 +49,7 @@ multiple licenses across seasons, but only one active license per season applies
 - `club_id`: Many2one to the club at time of issue.
 - `issue_date` / `expiry_date`: Date validity window.
 - `state`: Selection with `draft`, `active`, `expired`, or `cancelled`.
-- `category`: Selection for license category such as amateur or professional.
+- `category`: Selection for license category: senior, youth, junior, or cadet.
 - `eligibility_notes`: Text eligibility remarks.
 - `notes`: Additional notes.
 
@@ -59,7 +59,7 @@ multiple licenses across seasons, but only one active license per season applies
 
 ## Data Files
 
-- `data/ir_sequence.xml`: `FED-LIC-` sequence for license numbers.
+- `data/ir_sequence.xml`: `LIC/%(year)s/` sequence prefix for license numbers.
 - `security/ir.model.access.csv`: CRUD rights for federation groups.
 
 ## Key Behaviours
@@ -67,6 +67,6 @@ multiple licenses across seasons, but only one active license per season applies
 1. **Name computation** — `name` is automatically composed from `last_name` and
    `first_name` and kept in sync.
 2. **License numbering** — Every new license receives an auto-incremented
-   `FED-LIC-XXXXX` reference via `ir.sequence`.
+   `LIC/<year>/<five-digit sequence>` reference via `ir.sequence`.
 3. **Club ↔ Player link** — `club_id` on the player is the *current* affiliation;
    the license records preserve the historical club at time of issue.

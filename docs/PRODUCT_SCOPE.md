@@ -14,6 +14,6 @@ python3 ci/audit_product_scope.py --json artifacts/product-scope.json
 
 For each optional addon, record an owner and one decision: keep, consolidate, disable, or retire. Absence of usage evidence is not evidence that deletion is safe. Database records, XML IDs, routes, scheduled jobs, and downstream dependencies must be checked before retirement.
 
-## Reporting catalog
+## Reporting review
 
-Every report must have a product-facing category, purpose, owner, and requirement classification. Reports marked `Usage must be confirmed` are candidates for consolidation. Reports marked `Retire` remain installed until their routes, menus, schedules, exports, and data-retention obligations have been removed safely.
+The report catalog model and view are not part of the installed product. Review existing reports through their owning reporting models, menus, schedules, exports, and retention requirements before consolidating or retiring any report.
