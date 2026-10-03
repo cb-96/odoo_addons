@@ -130,6 +130,10 @@ class TestPhase511Integrity(TransactionCase):
             {"roster_id": roster.id, "player_id": player.id}
         )
         roster.action_activate()
+        # A publishable schedule fixture must satisfy roster readiness itself.
+        # Keep the production scheduling guard active in publication tests.
+        self.assertEqual(roster.status, "active")
+        return roster
 
     def _valid_schedule_review(self, day, suffix):
         stage = self.env["federation.structure.stage"].create(
@@ -146,8 +150,11 @@ class TestPhase511Integrity(TransactionCase):
                 {"name": f"5.1.1 Away {suffix}", "club_id": club.id},
             ]
         )
-        for team in teams:
-            self._create_ready_roster(team, suffix)
+        rosters = [self._create_ready_roster(team, suffix) for team in teams]
+        for team, roster in zip(teams, rosters):
+            self.assertEqual(roster.team_id, team)
+            self.assertEqual(roster.season_id, self.edition.season_id)
+            self.assertFalse(roster._get_readiness_issues(reference_date=day.date))
         fixture = self.env["federation.fixture"].create(
             {
                 "structure_id": self.structure.id,
@@ -210,6 +217,22 @@ class TestPhase511Integrity(TransactionCase):
             )
         )
         return schedule, review
+
+    def test_publishable_schedule_fixture_has_ready_rosters(self):
+        schedule, review = self._valid_schedule_review(self.days[0], "roster-contract")
+        self.assertEqual(review.schedule_id, schedule)
+        self.assertEqual(len(schedule.assignment_ids), 1)
+        fixture = schedule.assignment_ids.fixture_id
+        for team in fixture.home_team_id | fixture.away_team_id:
+            roster = team._get_preferred_roster(
+                self.edition.season_id,
+                competition=self.structure.division_id.competition_id,
+                statuses=("active",),
+            )
+            self.assertTrue(roster, "Publishable fixture requires an active roster")
+            self.assertFalse(
+                roster._get_readiness_issues(reference_date=self.days[0].date)
+            )
 
     def test_publication_rejects_fixture_added_after_review(self):
         schedule, review = self._valid_schedule_review(
