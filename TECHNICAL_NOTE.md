@@ -1,8 +1,8 @@
 # Sports Federation — Technical Note
 
-Last updated: 2026-05-29
+Last updated: 2026-10-04
 Owner: Federation Platform Team
-Last reviewed: 2026-10-01
+Last reviewed: 2026-10-04
 Review cadence: Every release
 
 ## Canonical terminology and workflow authority (2026-05-27)
@@ -24,14 +24,16 @@ Review cadence: Every release
     website. Public copy may say `tournament` where federation operations copy
     says `division`.
 - Round: logical pairing or bracket round, not the dated match day.
-- Gameday: dated `federation.tournament.round` used for venues, slots, and
-    one-day preparation.
-- Planning Workspace: primary season-competition and division scheduling
-    surface.
+- Match day: dated `federation.matchday` used for venues, slots, and physical
+    capacity. A structure round is a logical pairing round, not a physical day.
+- Competition Planner: canonical backend guided setup surface for season
+    competitions; it projects domain readiness and opens owner-module records
+    without replacing their command services.
 - Gameday Planner: day-level slot assignment and readiness surface.
 - Registration: enrolment request. Qualify it as season registration or
     tournament registration when needed.
-- Participant: confirmed team entry inside a division.
+- Participant: team in a finalized division participant set (or a legacy
+    tournament-participant record where that operational flow is still used).
 - Publication: public visibility controlled through `website_published` and the
     relevant visibility toggles. Not every public surface needs a dedicated
     `published` workflow state.
@@ -63,9 +65,10 @@ Review cadence: Every release
 - Federation backend navigation is now grouped by operator journey instead of a
     flat addon list: `Setup`, `Planning`, `Match Day`, `Publication`, and
     `Administration`.
-- `Planning Workspace` is the primary backend scheduling entry point. Legacy
-    round-robin and knockout generators remain available on tournament records,
-    but the UI now labels them as advanced wizard paths.
+- `Competition Planner` is the guided season-competition setup and readiness
+    entry point; `Schedule Planner` remains the working schedule assignment
+    surface. Legacy round-robin and knockout generators remain available on
+    tournament records, but the UI labels them as advanced wizard paths.
 - Club representatives now land on `Club Operations Workspace` as the primary
     portal start for registrations, rosters, match-day submissions, and result
     follow-up. Direct queues still exist, but the UI frames them as secondary or
@@ -155,6 +158,25 @@ remains authoritative for validation and publication.
     snapshot. Match-day commands reject unpublished or superseded schedules.
 - Portal and officiating modules extend their own surfaces without becoming the
     authoritative owner of competition transitions.
+
+### Competition setup readiness and portal ownership (2026-10-04)
+
+- The backend `Competition Planner` is the canonical guided setup entrypoint.
+    Its per-division and per-match-day readiness projection is also the source
+    for the edition form's setup progress and next-blocker hint.
+- Readiness requires a finalized participant set with at least two teams and a
+    latest frozen structure built from that set for every division. Every playable
+    fixture must be allocated; each allocated match day needs ready capacity, one
+    complete working schedule, and a live publication matching the schedule's
+    current revision.
+- The club portal supports team-scoped entry submission, review feedback,
+    correction/resubmission, and withdrawal. The public registration route and
+    portal call the same validated submission command. Resubmitting a withdrawn
+    entry reuses its unique team/window record.
+- Club representatives remain participants and club operators, not competition
+    organizers. Federation edition roles retain format freeze, schedule planning,
+    independent approval, and publication authority. Portal privilege writes and
+    state calls must continue to carry explicit team/window ownership scopes.
 
 ### Retired competition-core view cleanup (2026-08-27)
 

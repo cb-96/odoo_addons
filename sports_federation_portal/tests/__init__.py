@@ -16,5 +16,6 @@ from . import test_qol
 from . import test_production_security_matrix
 
 from . import test_competition_portal
+from . import test_competition_entry_portal
 
 from . import test_qol_search

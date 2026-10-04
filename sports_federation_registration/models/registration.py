@@ -188,9 +188,13 @@ class FederationCompetitionEntry(models.Model):
                 raise ValidationError(error)
 
     def action_submit(self):
-        invalid = self.filtered(lambda entry: entry.state not in ("draft", "rejected"))
+        invalid = self.filtered(
+            lambda entry: entry.state not in ("draft", "rejected", "withdrawn")
+        )
         if invalid:
-            raise ValidationError(_("Only draft or rejected entries can be submitted."))
+            raise ValidationError(
+                _("Only draft, returned, rejected, or withdrawn entries can be submitted.")
+            )
         self.write(
             {
                 "state": "submitted",
@@ -254,6 +258,10 @@ class FederationCompetitionEntry(models.Model):
     def action_withdraw(self):
         if self.filtered(lambda entry: entry.state == "approved"):
             raise ValidationError(_("Approved entries cannot be withdrawn directly."))
+        if self.filtered(lambda entry: entry.state not in ("draft", "submitted", "rejected")):
+            raise ValidationError(
+                _("Only draft, submitted, or rejected entries can be withdrawn.")
+            )
         self.write({"state": "withdrawn"})
         return True
 

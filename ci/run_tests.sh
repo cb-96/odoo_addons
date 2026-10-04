@@ -71,6 +71,8 @@ resolve_suite_modules() {
     competition_core)
       cat <<'EOF'
 sports_federation_base
+sports_federation_people
+sports_federation_rosters
 sports_federation_tournament
 sports_federation_competition_core
 sports_federation_registration
@@ -78,6 +80,7 @@ sports_federation_format
 sports_federation_calendar
 sports_federation_scheduling
 sports_federation_schedule_approval
+sports_federation_setup_flow
 sports_federation_matchday
 sports_federation_result_control
 sports_federation_standings
@@ -234,6 +237,7 @@ ALL_MODULES=(
   sports_federation_calendar
   sports_federation_scheduling
   sports_federation_schedule_approval
+  sports_federation_setup_flow
   sports_federation_matchday
   sports_federation_officiating
   sports_federation_discipline

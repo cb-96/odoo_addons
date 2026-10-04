@@ -15,11 +15,12 @@ calendar export while keeping older competition URLs working.
 | Module | Reason |
 |--------|--------|
 | `website` | Odoo website framework |
-| `sports_federation_portal` | Main tournament website hub and navigation |
+| `sports_federation_portal` | Representative ownership scope, audited portal command boundary, and shared website navigation |
 | `sports_federation_tournament` | Tournaments, matches, participants |
 | `sports_federation_standings` | Standings data |
 | `sports_federation_venues` | Venue information |
 | `sports_federation_result_control` | Approved result visibility |
+| `sports_federation_registration` | Competition entry and registration-window validation |
 
 ## Model extensions
 
@@ -140,7 +141,7 @@ Canonical follow and discovery routes:
 11. Backward compatibility: legacy competition routes keep resolving while the visible product language is tournament-first.
 12. Season discovery and editorial planning: published seasons aggregate featured tournaments, recent tournaments, and live editorial items with publication windows.
 13. Automatic menu cleanup: module installs and upgrades normalize stale `/competitions` website menus into the Tournaments submenu and remove leftover duplicates.
-14. Shared privileged-write boundary: website registration POST routes validate HTTP input and then reuse the same tournament registration helper as the portal layer.
+14. Shared privileged-write boundary: website registration POST routes validate HTTP input and reuse the same competition-entry submission command as the club portal, including the selected registration window.
 15. Registration feedback redirects preserve the division selector query parameter, so capacity and validation messages return to the correct registration form.
 16. Publication handoff guidance: tournament and standings Website tabs now explain whether visibility is blocked by tournament publication, missing standings, unpublished standings, or disabled standings toggles, with direct links back to standings when operators need to act there.
 

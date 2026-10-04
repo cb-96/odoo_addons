@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.7.1.0",
+    "version": "19.0.7.1.1",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -28,7 +28,6 @@ on top of the federation base modules.
         "sports_federation_schedule_approval",
         "sports_federation_matchday",
         "sports_federation_standings",
-        "sports_federation_public_site",
     ],
     "data": [
         "security/res_groups.xml",

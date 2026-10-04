@@ -44,7 +44,7 @@ class TestCompetitionSetupJourney(TransactionCase):
 
     def test_readiness_explains_next_blocker(self):
         result = self.env["federation.competition.setup.readiness"].evaluate(self.edition)
-        self.assertEqual(result["step"], "divisions")
+        self.assertEqual(result["step"], "basics")
         self.assertTrue(result["blocker_hint"])
 
     def test_continue_setup_opens_visual_planner(self):

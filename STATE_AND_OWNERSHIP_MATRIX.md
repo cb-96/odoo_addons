@@ -1,7 +1,7 @@
 # State And Ownership Matrix
 
 Owner: Federation Platform Team
-Last reviewed: 2026-10-01
+Last reviewed: 2026-10-04
 Review cadence: Every release
 
 This document records the canonical lifecycle states and ownership boundaries
@@ -16,8 +16,8 @@ controllers, record rules, tests, and workflow docs aligned with the code.
 | `federation.match` | `sports_federation_tournament` | Federation competition operations | Backend UI, scheduling services, wizards | `draft`, `scheduled`, `in_progress`, `done`, `cancelled` | Federation-owned tournament/stage/group | Future matches require active, ready team rosters once the roster deadline is reached; official standings inclusion is further gated by `include_in_official_standings` when `sports_federation_result_control` is installed. |
 | `federation.schedule.slot` | `sports_federation_calendar` | Calendar operations prepare capacity; scheduling assigns fixtures; approval publishes the resulting schedule | Match-day calendar and scheduling views | `available`, `break`, `blocked` | Federation-owned match day / playing-area scope | A slot belongs to one match day. Fixture assignment and overlap validation are enforced server-side. |
 | `federation.standing` | `sports_federation_standings` | Federation competition operations | Backend UI, recompute/freeze actions | `draft`, `computed`, `frozen` | Federation-owned tournament/stage/group | Only computed or frozen standings are publication candidates. |
-| `federation.tournament.participant` | `sports_federation_tournament` | Federation competition operations | Backend UI or confirmed tournament registration | `registered`, `confirmed`, `withdrawn` | Team's club within a federation tournament | Portal users do not write participants directly; confirmed registrations may create them. |
-| `federation.competition.entry` | `sports_federation_portal` | Shared: club representative submits, federation staff reviews | Portal form or backend UI | `draft`, `submitted`, `confirmed`, `rejected`, `cancelled` | Team must belong to one of the submitting user's represented clubs | This is the review buffer before participant creation. |
+| `federation.tournament.participant` | `sports_federation_tournament` | Federation competition operations | Backend UI or legacy/manual tournament registration | `registered`, `confirmed`, `withdrawn`, `eliminated` | Federation-owned tournament; team eligibility is checked server-side | Separate from edition-based competition entries, which finalize into participant sets and lines. Portal users do not write this record directly. |
+| `federation.competition.entry` | `sports_federation_registration` + `sports_federation_portal` | Club representative submits/corrects/withdraws within team scope; federation registration roles review | Club portal or public competition registration page; Registration Desk | `draft`, `submitted`, `approved`, `rejected`, `withdrawn` | Entry team must be in the authenticated representative's current team/club scope; writes are audited through the portal privilege boundary | A returned entry is `draft` with a review note. Resubmission reuses the same `(window, team)` row. Only federation roles approve, return/reject, or finalize participants. |
 | `federation.season.registration` | `sports_federation_base` + `sports_federation_portal` | Shared: club representative submits, federation staff confirms | Portal form or backend UI | `draft`, `submitted`, `confirmed`, `cancelled` | Team must belong to one of the submitting user's represented clubs | Portal extension adds `submitted`, `user_id`, and `rejection_reason`. Rejecting a registration returns it to `draft`; there is no persistent `rejected` enum. |
 | `federation.finance.event` | `sports_federation_finance_bridge` | Federation finance operations and approved workflow hooks | Backend UI or workflow automation | `draft`, `confirmed`, `settled`, `cancelled` | Source record remains authoritative; finance staff own settlement/cancellation | Season-registration confirmation and match finance hooks create events automatically. |
 
@@ -42,8 +42,8 @@ the backend UI so operational records do not disappear through ad hoc writes to
 | `federation.match` | Federation staff, scheduling services, result-control roles | Public routes are read-only. Match completion may trigger bracket advancement, and result-control transitions may trigger non-frozen standings recomputation. |
 | `federation.schedule.slot` | Calendar owns slot capacity and lifecycle; scheduling assigns fixtures; schedule approval publishes the resulting schedule | Slot availability and capacity are prepared by `sports_federation_calendar`; assignment validation is enforced by `sports_federation_scheduling`; approved schedules are immutable and published by `sports_federation_schedule_approval`. |
 | `federation.standing` | Federation staff | Frozen standings block recomputation unless forced. |
-| `federation.tournament.participant` | Federation staff, confirmed registration flow | Tournament/team eligibility is validated on create and update. |
-| `federation.competition.entry` | Portal club representatives for submission/cancel, federation staff for confirm/reject | Controllers validate club ownership and the model enforces ownership as defense in depth. |
+| `federation.tournament.participant` | Federation staff, legacy/manual participant flow | Tournament/team eligibility is validated on create and update. |
+| `federation.competition.entry` | Portal club representatives for submission, correction/resubmission, and withdrawal; federation registration roles for approval, return, rejection, and participant finalization | Team ownership is asserted before creation and records are re-resolved within current team scope. Elevated writes and calls provide an explicit team/window domain to `federation.portal.privilege`. Submission also validates window dates, division eligibility, duplicate entry, and capacity. |
 | `federation.season.registration` | Portal club representatives for submission/cancel, federation staff for confirm | Controllers validate club ownership and the model must enforce ownership as defense in depth. |
 | `federation.finance.event` | Federation finance staff for confirm/settle/cancel; approved workflow hooks for draft creation | Auto-created events must stay idempotent per source record and fee type. |
 
@@ -56,6 +56,8 @@ Use the model enums below in code, docs, and tests:
 - Competition planning is handed over through registration, format freeze, calendar capacity, scheduling, approval publication, and match-day execution.
 - Schedule slots use the calendar lifecycle `available`, `break`, and `blocked`; schedule approval protects published snapshots from routine edits.
 - Tournament registration review uses `submitted` and `rejected`.
+- Competition entry review uses `draft`, `submitted`, `approved`, `rejected`, and `withdrawn`; a return is represented by `draft` plus a federation review note.
+- Legacy tournament-participant records may also be `eliminated`; they are distinct from finalized participant-set lines.
 - Season registration review uses `submitted`; there is no `rejected` state in the current model.
 - Finance event lifecycle uses `settled`; `invoiced` and `paid` are future integration concepts, not current model states.
 - Seasons only open from `draft`, close from `open`, and return to `draft` from `cancelled`.

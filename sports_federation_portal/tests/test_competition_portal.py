@@ -13,6 +13,7 @@ class TestPortalcurrentContract(TransactionCase):
         for xmlid in (
             "sports_federation_portal.portal_my_competitions",
             "sports_federation_portal.portal_my_competition_detail",
+            "sports_federation_portal.portal_competition_entry_detail",
             "sports_federation_portal.portal_my_matchdays",
             "sports_federation_portal.portal_my_matchday_detail",
             "sports_federation_portal.portal_matchday_operations_page",
@@ -39,3 +40,4 @@ class TestPortalcurrentContract(TransactionCase):
             "sports_federation_matchday",
         ):
             self.assertIn(dependency, module.dependencies_id.mapped("name"))
+        self.assertNotIn("sports_federation_public_site", module.dependencies_id.mapped("name"))

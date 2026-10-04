@@ -6,19 +6,25 @@ enrolment through schedule generation, match execution, and final completion.
 ## Overview
 
 A **competition** is a recurring series (e.g. "National League Division 1").
-Within each season, competitions host one or more **tournaments** which are
-structured into stages, groups, and matches. This workflow covers the entire
-journey from initial setup to final completion.
+Each season has a **season competition** (competition edition) containing one
+or more **divisions** (tournament records), each structured into stages, groups,
+and matches. The backend Competition Planner guides the federation through
+edition-wide setup; the owner modules remain authoritative for each transition.
+This workflow covers setup through final completion.
 
-Canonical readiness chain (registration to publication):
+Canonical setup and readiness chain:
 
-1. Confirm season registration.
-2. Confirm tournament participant.
-3. Prepare active ready roster and match-day sheets.
-4. Publish schedule and run live operations.
-5. Approve results.
-6. Recompute/review standings.
-7. Publish tournament and standings surfaces.
+1. Create the season competition, divisions, registration windows, and role assignments.
+2. Representatives submit team entries; federation registration managers review and finalize participant sets.
+3. Freeze a versioned format for each division from its latest finalized participant set.
+4. Allocate every playable fixture to ready physical match days.
+5. Generate a complete working schedule for each allocated day; independently review and publish each current schedule revision.
+6. Run match-day operations from live publications, then approve results.
+7. Recompute/review standings and publish tournament and standings surfaces.
+
+Club representatives own only their scoped team entries and club operations.
+Federation edition roles own edition-wide setup, format freeze, calendar and
+scheduling, independent schedule approval, and publication.
 
 Blocking vs warning-only model:
 
@@ -54,20 +60,22 @@ Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md). The
 ### 1. Competition Setup
 
 **Actor**: Federation administrator
-**Module**: `sports_federation_rules`, `sports_federation_tournament`
+**Modules**: `sports_federation_competition_core`, `sports_federation_setup_flow`,
+`sports_federation_rules`
 
-1. Define a **rule set** with scoring values (win/draw/loss points), tie-break
-   criteria, squad-size limits, and eligibility rules.
-2. Create a **competition** (e.g. "National League Division 1").
-3. Link the competition to the active season and the rule set.
-4. Set competition state to `active`.
+1. Define reusable competition, rule, and setup templates as needed.
+2. Create the season competition from **Create Competition**. The setup flow
+   creates the edition, divisions, registration windows, and role assignments.
+3. Continue to **Competition Planner**. Its readiness projection identifies the
+   next blocker across divisions and match days; setup commands still run in
+   their owning modules.
 
 ### 2. Tournament Creation
 
 **Actor**: Federation administrator
-**Module**: `sports_federation_tournament`
+**Module**: `sports_federation_competition_core`, `sports_federation_tournament`
 
-1. Under the competition, create a **tournament** (e.g. "NL Div 1 — Season 2025").
+1. Create or review each **division** (tournament record) under the season competition (e.g. "NL Div 1 — Season 2025"). The setup wizard can create the initial divisions; use the division records for later corrections.
 2. Set tournament type: `league`, `cup`, `friendly`, or `playoff`.
 3. Assign date range, rule set (inherited from competition or overridden).
 4. Set maximum participants if applicable.
@@ -86,32 +94,43 @@ Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md). The
 2. Link venues to the tournament via the `venues` Many2many field.
 3. Individual matches can later reference specific venues and playing areas.
 
-### 4. Participant Enrolment
+### 4. Competition Entries and Participant Finalization
 
-**Actor**: Federation administrator (or via import)
-**Module**: `sports_federation_tournament`, `sports_federation_import_tools`
+**Actors**: Club representative for own-team submission and recovery; federation registration manager for review and finalization
+**Modules**: `sports_federation_registration`, `sports_federation_portal`
 
-1. Add **participants** to the tournament — each links a team to the tournament.
-    - If the flow starts from portal registration requests, an administrator first
-       confirms the `federation.competition.entry` record. That creates or links
-       a `federation.tournament.participant` record in state `registered`.
-    - That participant must still be moved to state `confirmed` before schedule
-       generation can use it.
-2. Optionally assign participants to specific stages and groups.
-3. Set seeding ranks for bracket placement.
-4. Participant states: `registered` → `confirmed` → `withdrawn` / `eliminated`.
-5. Participant confirmation can happen before the team has an active roster, but
+1. A representative selects a team in their current portal scope and an open
+   registration window. The club portal and public registration page use the
+   same submission command. It validates window/division ownership, open dates,
+   team scope and eligibility, duplicate entry, and division capacity.
+2. Competition-entry states are `draft` → `submitted` → `approved`, or
+   `rejected` / `withdrawn`. A returned entry is `draft` with a federation review
+   note; representatives can update the submission note and resubmit while the
+   window remains open.
+   Resubmitting after withdrawal reuses the same team/window record. Approved
+   entries cannot be withdrawn directly.
+3. Federation registration managers review/approve, return, or reject entries.
+   After closing the window, use **Finalize Participants** to create the
+   finalized participant set from approved entries. Only federation roles can
+   finalize that set; clubs cannot modify the division's participant roster.
+4. Do not confuse competition entries with legacy
+   `federation.tournament.participant` records. Where those records are used by
+   tournament operations, their lifecycle remains `registered` → `confirmed` →
+   `withdrawn` / `eliminated` and is governed by the tournament workflow.
+5. For legacy/manual tournament participant workflows only, participant
+   confirmation can happen before the team has an active roster, but
    only until one week before its first scheduled match, or one week before
    tournament start if no match has been scheduled yet. Once that deadline is
    reached, participant confirmation is blocked until the team has an active
    ready roster. When both a competition-specific roster and a season-wide
    roster are available, the competition-specific roster is used for readiness
    checks.
-6. The participant form now surfaces the current roster deadline feedback inline
+6. The legacy participant form surfaces current roster deadline feedback inline
    and exposes **Open Team Roster** when operators need to resolve the blocker
    in the rosters flow before confirmation can continue.
-7. Confirming a participant sends an email to the team and club contacts.
-8. Move tournament to `open` state once enrolment is complete.
+7. Confirming a legacy tournament participant sends an email to team and club
+   contacts.
+8. Move a tournament to `open` state once its operational enrolment is complete.
 
 Bulk enrolment is available via the **Import Tournament Participants** wizard.
 
@@ -147,9 +166,20 @@ The path is an explicit sequence of handovers:
 - Start live operations only from the published snapshot through
    `sports_federation_matchday`.
 
-1. Move the competition into the state that permits scheduling.
-2. Registration finalizes and locks the confirmed participant set.
-3. Format freezes the structure and stage graph for the competition edition.
+Competition Planner readiness is complete only when each division has at least
+two teams in its latest finalized participant set and a frozen structure built
+from that set, all playable fixtures are allocated, and every allocated match
+day has ready capacity, a complete schedule, and a live publication for that
+schedule revision. Edition-form progress and the planner consume the same
+readiness projection.
+
+1. Continue in Competition Planner after the season competition and divisions
+   exist; resolve the current blocker shown there.
+2. Registration closes the applicable window and finalizes a participant set
+   from approved competition entries. A corrected finalized set must be handled
+   as a governed replacement before format generation.
+3. Format freezes the structure and stage graph for the competition edition,
+   using the latest finalized set for each division.
    Round-robin and knockout generation remain deterministic and scoped to the
    frozen structure.
 4. Calendar creates match days and `federation.schedule.slot` capacity for the
@@ -266,7 +296,14 @@ Standings: draft → computed → frozen
 
 Participant: registered → confirmed → withdrawn
                                     → eliminated
+
 ```
+
+Competition entry states are `draft`, `submitted`, `approved`, `rejected`, and
+`withdrawn`. A return is represented by `draft` plus a review note. Draft,
+rejected, and withdrawn entries may be resubmitted while the window is open;
+draft, submitted, and rejected entries may be withdrawn. Approved entries
+cannot be withdrawn directly.
 
 ## Key Decision Points
 

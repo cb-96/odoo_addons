@@ -2,7 +2,7 @@
 
 Version: 19.0.4.1.0
 Owner: Federation Platform Team
-Last reviewed: 2026-08-23
+Last reviewed: 2026-10-04
 Review cadence: Every release
 
 Role-oriented self-service portal for club representatives, officials, and tournament operators.
@@ -65,10 +65,28 @@ competition entries and finalized participant sets. Match-day schedule data is
 rendered only from each match day's current live publication. Draft schedules,
 review evidence and superseded publications are intentionally unavailable.
 
+Club representatives can create entries only for teams in their current portal
+scope. Registration submission uses the selected window and validates its open
+dates, division eligibility, duplicate entry, and capacity before creating or
+reusing an entry. Representatives can update the submission note on returned or
+rejected entries and resubmit them;
+draft, submitted, or rejected entries can be withdrawn. A withdrawn entry is
+reused if the same team submits again for that window, preserving the one-entry
+per-team constraint. Review notes are visible on the entry detail page.
+
+This portal is a participant workspace, not a competition organizer console.
+Club-scoped entry, roster, and operational follow-up remain separate from
+edition-wide federation assignments. Federation roles retain format design and
+freeze, calendar/scheduling ownership, independent schedule approval, and
+publication authority.
+
 Primary routes:
 
 - `/my/competitions`
 - `/my/competition-entries`
+- `/my/competition-entries/<id>`
+- `/my/competition-entries/<id>/resubmit` (POST)
+- `/my/competition-entries/<id>/withdraw` (POST)
 - `/my/match-days`
 - `/sports/match-days/<id>/operations`
 
@@ -100,5 +118,11 @@ Result approval and contesting call `federation.result.commands`, which
 re-resolves the target inside the authenticated representative's current club
 scope before applying an elevated transition. Season-registration cancellation
 uses `federation.portal.privilege.portal_call` with an explicit club domain.
+Competition entry creation follows a team-scope assertion before elevation;
+correction, resubmission, and withdrawal pass through
+`federation.portal.privilege` with an explicit team/window scope. The
+public competition registration page and the club portal use the same entry
+submission command; the public-site addon therefore depends on the portal
+ownership services and registration owner.
 Controllers may keep publication-gated or ownership-scoped elevated reads, but
 must not mutate records that originated from those reads directly.

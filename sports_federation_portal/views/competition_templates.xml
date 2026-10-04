@@ -24,8 +24,36 @@
   <template id="portal_my_competition_entries" name="Competition Entries">
     <t t-call="portal.portal_layout"><div class="container py-3"><div class="d-flex justify-content-between"><div><h2>Competition entries</h2><p class="text-muted">Registration windows and entries for your represented teams.</p></div><a href="/my/competitions" class="btn btn-outline-primary">Competitions</a></div><div class="alert alert-success" t-if="success"><t t-esc="success"/></div><div class="alert alert-danger" t-if="error"><t t-esc="error"/></div>
       <section class="card mb-3"><div class="card-header"><strong>Submit a new entry</strong></div><div class="card-body"><form action="/my/competition-entries/new" method="post"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><div class="row g-2"><div class="col-md-5"><label class="form-label" for="window_id">Registration window</label><select id="window_id" name="window_id" class="form-select" required="required"><option value="">Select</option><option t-foreach="windows" t-as="window" t-att-value="window.id"><t t-esc="window.display_name"/> · <t t-esc="window.division_id.display_name"/></option></select></div><div class="col-md-5"><label class="form-label" for="team_id">Team</label><select id="team_id" name="team_id" class="form-select" required="required"><option value="">Select</option><option t-foreach="teams" t-as="team" t-att-value="team.id"><t t-esc="team.display_name"/></option></select></div><div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">Submit</button></div></div></form></div></section>
-      <section class="card"><div class="card-header"><strong>Current entries</strong></div><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Competition</th><th>Division</th><th>Team</th><th>Status</th></tr></thead><tbody><tr t-foreach="entries" t-as="entry"><td><t t-esc="entry.edition_id.display_name"/></td><td><t t-esc="entry.window_id.division_id.display_name"/></td><td><t t-esc="entry.team_id.display_name"/></td><td><span class="badge text-bg-light"><t t-esc="entry.state"/></span></td></tr></tbody></table></div></section>
+      <section class="card"><div class="card-header"><strong>Current entries</strong></div><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Competition</th><th>Division</th><th>Team</th><th>Status</th><th>Action</th></tr></thead><tbody><tr t-foreach="entries" t-as="entry"><td><t t-esc="entry.edition_id.display_name"/></td><td><t t-esc="entry.window_id.division_id.display_name"/></td><td><t t-esc="entry.team_id.display_name"/></td><td><span class="badge text-bg-light"><t t-esc="entry.get_portal_state_label()"/></span></td><td><a t-attf-href="/my/competition-entries/#{entry.id}" class="btn btn-sm btn-outline-primary">Open</a></td></tr></tbody></table></div></section>
     </div></t>
+  </template>
+  <template id="portal_competition_entry_detail" name="Competition Entry">
+    <t t-call="portal.portal_layout">
+      <div class="container py-3">
+        <a href="/my/competition-entries" class="text-decoration-none">← Competition entries</a>
+        <div class="d-flex justify-content-between align-items-start mt-2 mb-3">
+          <div><h2 class="mb-1"><t t-esc="entry.edition_id.display_name"/></h2><p class="text-muted mb-0"><t t-esc="entry.window_id.division_id.display_name"/> · <t t-esc="entry.team_id.display_name"/></p></div>
+          <span class="badge text-bg-light"><t t-esc="entry.get_portal_state_label()"/></span>
+        </div>
+        <div class="alert alert-success" t-if="success"><t t-esc="success"/></div>
+        <div class="alert alert-danger" t-if="error"><t t-esc="error"/></div>
+        <section class="card mb-3">
+          <div class="card-header"><strong>Federation feedback</strong></div>
+          <div class="card-body"><p class="mb-0" t-if="entry.review_note"><t t-esc="entry.review_note"/></p><p class="text-muted mb-0" t-else="">No review note has been added.</p></div>
+        </section>
+        <section class="card mb-3">
+          <div class="card-header"><strong>Submission details</strong></div>
+          <div class="card-body"><p class="mb-0" t-if="entry.submission_note"><t t-esc="entry.submission_note"/></p><p class="text-muted mb-0" t-else="">No submission note.</p></div>
+        </section>
+        <form t-if="entry.state in ('draft', 'rejected', 'withdrawn')" t-attf-action="/my/competition-entries/#{entry.id}/resubmit" method="post" class="card mb-3">
+          <div class="card-header"><strong>Correct and resubmit</strong></div>
+          <div class="card-body"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><label class="form-label" for="submission_note">Submission note</label><textarea id="submission_note" name="submission_note" class="form-control" rows="3"><t t-esc="entry.submission_note or ''"/></textarea><button class="btn btn-primary mt-3" type="submit">Resubmit entry</button></div>
+        </form>
+        <form t-if="entry.state in ('draft', 'submitted', 'rejected')" t-attf-action="/my/competition-entries/#{entry.id}/withdraw" method="post" class="card">
+          <div class="card-body d-flex justify-content-between align-items-center gap-3"><p class="mb-0">Withdraw this entry from the registration window.</p><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><button class="btn btn-outline-danger" type="submit">Withdraw entry</button></div>
+        </form>
+      </div>
+    </t>
   </template>
   <template id="portal_my_matchdays" name="My Match Days"><t t-call="portal.portal_layout"><div class="container py-3"><div class="d-flex justify-content-between"><div><h2>Match days</h2><p class="text-muted">Schedules are shown only from current live publications.</p></div><a href="/my/competitions" class="btn btn-outline-primary">Competitions</a></div><div class="list-group"><a t-foreach="matchdays" t-as="day" t-attf-href="/my/match-days/#{day.id}" class="list-group-item list-group-item-action"><strong><t t-esc="day.display_name"/></strong><span class="ms-2 badge text-bg-light">official schedule revision <t t-esc="day.current_publication_id.version"/></span><br/><span class="text-muted"><t t-esc="day.date"/> · <t t-esc="day.venue_id.display_name"/></span></a></div><div class="alert alert-info mt-3" t-if="not matchdays">No published match days are visible.</div></div></t></template>
   <template id="portal_my_matchday_detail" name="Match-Day Workspace"><t t-call="portal.portal_layout"><div class="container py-3"><a href="/my/match-days">← Match days</a><h2 class="mt-2"><t t-esc="workspace['matchday'].display_name"/></h2><p class="text-muted"><t t-esc="workspace['matchday'].date"/> · <t t-esc="workspace['matchday'].venue_id.display_name"/> · live official schedule revision <t t-esc="workspace['publication'].version"/></p><div class="table-responsive"><table class="table"><thead><tr><th>Time</th><th>Match</th><th>Court</th><th>Operational status</th><th>Result</th></tr></thead><tbody><tr t-foreach="workspace['matches']" t-as="match"><td><t t-esc="match.date_scheduled"/></td><td><t t-esc="match.display_name"/></td><td><t t-esc="(match.operational_slot_id or match.published_slot_id).display_name"/></td><td><span class="badge text-bg-light"><t t-esc="match.operational_status"/></span></td><td><t t-esc="match.result_state"/></td></tr></tbody></table></div></div></t></template>

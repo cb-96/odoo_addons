@@ -1,7 +1,8 @@
-from odoo import _, http
+from odoo import _, fields, http
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
 from werkzeug.utils import redirect
+from urllib.parse import urlencode
 
 from .portal_helpers import FederationPortalBase
 
@@ -50,13 +51,56 @@ class FederationPortalcurrent(FederationPortalBase):
         website=True,
     )
     def portal_my_competition_entries(self, **kw):
-        teams = request.env["federation.portal.scope"].teams(user=request.env.user)
-        entries = request.env["federation.competition.entry"].search(
-            [("team_id", "in", teams.ids)], order="create_date desc,id desc"
+        user = request.env.user
+        teams = request.env["federation.portal.scope"].teams(user=user)
+        privilege = request.env["federation.portal.privilege"]
+        Entry = request.env["federation.competition.entry"]
+        entries = privilege.portal_search(
+            Entry,
+            [("team_id", "in", teams.ids)],
+            user=user,
+            order="create_date desc,id desc",
         )
-        windows = request.env["federation.registration.window"].search(
-            [("state", "=", "open")], order="date_close asc,id asc"
+        now = fields.Datetime.now()
+        Window = request.env["federation.registration.window"]
+        candidates = privilege.portal_search(
+            Window,
+            [
+                ("state", "=", "open"),
+                "|",
+                ("date_open", "=", False),
+                ("date_open", "<=", now),
+                "|",
+                ("date_close", "=", False),
+                ("date_close", ">=", now),
+            ],
+            order="date_close asc,id asc",
+            user=user,
         )
+        windows = candidates.browse([])
+        for window in candidates:
+            eligible_teams = teams & window.division_id.search_eligible_teams(
+                extra_domain=[("active", "=", True)]
+            )
+            active_entries = entries.filtered(
+                lambda entry: entry.window_id == window
+                and entry.state != "withdrawn"
+            )
+            available_teams = eligible_teams - active_entries.mapped("team_id")
+            capacity_count = privilege.portal_search_count(
+                Entry,
+                [
+                    ("window_id", "=", window.id),
+                    ("state", "in", ("submitted", "approved")),
+                ],
+                user=user,
+            )
+            has_capacity = (
+                not window.division_id.max_participants
+                or capacity_count < window.division_id.max_participants
+            )
+            if available_teams and has_capacity:
+                windows |= window
         return request.render(
             "sports_federation_portal.portal_my_competition_entries",
             {
@@ -89,26 +133,104 @@ class FederationPortalcurrent(FederationPortalBase):
             request.env["federation.portal.scope"].assert_team(
                 team, user=request.env.user
             )
-            if not window or window.state != "open":
-                raise ValidationError(_("The registration window is not open."))
-            if window.division_id.get_team_eligibility_error(team):
-                raise ValidationError(
-                    window.division_id.get_team_eligibility_error(team)
-                )
-            entry = request.env["federation.portal.privilege"].portal_create(
-                request.env["federation.competition.entry"],
-                {"window_id": window.id, "team_id": team.id},
+            if not window:
+                raise ValidationError(_("The registration window was not found."))
+            request.env["federation.competition.entry"]._portal_submit_entry(
+                window.division_id,
+                team,
+                notes=kw.get("submission_note"),
                 user=request.env.user,
-            )
-            request.env["federation.portal.privilege"].portal_call(
-                entry,
-                "action_submit",
-                scope_domain=[("team_id", "=", team.id)],
-                user=request.env.user,
+                window=window,
             )
         except (AccessError, ValidationError, ValueError, TypeError) as exc:
-            return redirect(f"/my/competition-entries?error={str(exc)}", code=302)
+            return redirect(
+                "/my/competition-entries?" + urlencode({"error": str(exc)}),
+                code=302,
+            )
         return redirect("/my/competition-entries?success=Entry submitted", code=302)
+
+    def _portal_find_competition_entry(self, entry_id):
+        user = request.env.user
+        teams = request.env["federation.portal.scope"].teams(user=user)
+        return request.env["federation.portal.privilege"].portal_search_by_id(
+            request.env["federation.competition.entry"],
+            entry_id,
+            [("team_id", "in", teams.ids)],
+            user=user,
+        )
+
+    @http.route(
+        ["/my/competition-entries/<int:entry_id>"],
+        type="http",
+        auth="user",
+        website=True,
+        methods=["GET"],
+    )
+    def portal_competition_entry_detail(self, entry_id, **kw):
+        entry = self._portal_find_competition_entry(entry_id)
+        if not entry:
+            return self._not_found_or_denied()
+        return request.render(
+            "sports_federation_portal.portal_competition_entry_detail",
+            {
+                "entry": entry,
+                "page_name": "my_competition_entries",
+                "success": kw.get("success"),
+                "error": kw.get("error"),
+            },
+        )
+
+    @http.route(
+        ["/my/competition-entries/<int:entry_id>/resubmit"],
+        type="http",
+        auth="user",
+        website=True,
+        methods=["POST"],
+        csrf=True,
+    )
+    def portal_resubmit_competition_entry(self, entry_id, submission_note="", **kw):
+        entry = self._portal_find_competition_entry(entry_id)
+        if not entry:
+            return self._not_found_or_denied()
+        try:
+            entry.portal_resubmit(submission_note, user=request.env.user)
+        except (AccessError, ValidationError, ValueError, TypeError) as exc:
+            return redirect(
+                f"/my/competition-entries/{entry.id}?"
+                + urlencode({"error": str(exc)}),
+                code=302,
+            )
+        return redirect(
+            f"/my/competition-entries/{entry.id}?"
+            + urlencode({"success": "Entry resubmitted"}),
+            code=302,
+        )
+
+    @http.route(
+        ["/my/competition-entries/<int:entry_id>/withdraw"],
+        type="http",
+        auth="user",
+        website=True,
+        methods=["POST"],
+        csrf=True,
+    )
+    def portal_withdraw_competition_entry(self, entry_id, **kw):
+        entry = self._portal_find_competition_entry(entry_id)
+        if not entry:
+            return self._not_found_or_denied()
+        try:
+            entry.portal_withdraw(user=request.env.user)
+        except (AccessError, ValidationError, ValueError, TypeError) as exc:
+            return redirect(
+                f"/my/competition-entries/{entry.id}?"
+                + urlencode({"error": str(exc)}),
+                code=302,
+            )
+        return redirect(
+            f"/my/competition-entries/{entry.id}?"
+            + urlencode({"success": "Entry withdrawn"}),
+            code=302,
+        )
 
     @http.route(["/my/match-days"], type="http", auth="user", website=True)
     def portal_my_matchdays(self, **kw):

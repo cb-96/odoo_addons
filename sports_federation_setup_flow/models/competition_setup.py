@@ -7,8 +7,9 @@ class FederationCompetitionEditionSetup(models.Model):
 
     setup_step = fields.Selection(
         [
-            ("divisions", "Define divisions"),
-            ("participants", "Add teams"),
+            ("basics", "Define divisions"),
+            ("teams", "Finalize teams"),
+            ("format", "Freeze formats"),
             ("gamedays", "Define game days"),
             ("schedule", "Generate schedule"),
             ("publication", "Publish schedule"),
@@ -39,11 +40,16 @@ class FederationCompetitionEditionSetup(models.Model):
             )
             participant_count = len(participant_sets.mapped("line_ids.team_id"))
         gamedays = Matchday.search_count([("edition_id", "=", self.id)])
-        schedules = Schedule.search([("edition_id", "=", self.id)])
+        schedules = Schedule.search(
+            [("edition_id", "=", self.id), ("state", "!=", "superseded")]
+        )
         publications = 0
-        if "federation.schedule.publication" in self.env:
-            publications = self.env["federation.schedule.publication"].search_count(
-                [("edition_id", "=", self.id), ("state", "=", "live")]
+        if "current_publication_id" in Matchday._fields:
+            publications = Matchday.search_count(
+                [
+                    ("edition_id", "=", self.id),
+                    ("current_publication_id.state", "=", "live"),
+                ]
             )
         return len(divisions), participant_count, gamedays, len(schedules), publications
 
@@ -51,8 +57,9 @@ class FederationCompetitionEditionSetup(models.Model):
         self.ensure_one()
         assessment = self.env["federation.competition.setup.readiness"].evaluate(self)
         actions = {
-            "divisions": self.action_setup_divisions,
-            "participants": self.action_setup_participants,
+            "basics": self.action_setup_divisions,
+            "teams": self.action_setup_participants,
+            "format": self.action_setup_format,
             "gamedays": self.action_setup_gamedays,
             "schedule": self.action_setup_schedule,
             "publication": self.action_setup_publication,
@@ -98,6 +105,9 @@ class FederationCompetitionEditionSetup(models.Model):
         )
         action["domain"] = [("edition_id", "=", self.id)]
         return action
+
+    def action_setup_format(self):
+        return self.action_open_planner_step("format")
 
     def action_setup_gamedays(self):
         self.ensure_one()

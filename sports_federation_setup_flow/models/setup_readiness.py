@@ -12,48 +12,37 @@ class FederationCompetitionSetupReadiness(models.AbstractModel):
         decides where the operator should continue and must not mutate them.
         """
         edition.ensure_one()
-        divisions, participants, gamedays, schedules, publications = (
-            edition._setup_counts()
+        planner = edition.get_competition_planner_data()
+        step = "complete" if planner["complete"] else planner["current_step"]
+        progress = round(
+            100 * sum(item["complete"] for item in planner["steps"])
+            / len(planner["steps"])
         )
-        if not divisions:
-            step, progress = "divisions", 10
-        elif not participants:
-            step, progress = "participants", 30
-        elif not gamedays:
-            step, progress = "gamedays", 50
-        elif not schedules:
-            step, progress = "schedule", 70
-        elif not publications:
-            step, progress = "publication", 90
-        else:
-            step, progress = "complete", 100
         labels = {
-            "divisions": _("Define divisions"),
-            "participants": _("Add teams"),
+            "basics": _("Define divisions"),
+            "teams": _("Finalize teams"),
+            "format": _("Freeze formats"),
             "gamedays": _("Define game days"),
             "schedule": _("Generate schedule"),
             "publication": _("Publish schedule"),
             "complete": _("Setup complete"),
         }
-        hints = {
-            "divisions": _("Define at least one division."),
-            "participants": _("Finalize participating teams."),
-            "gamedays": _("Add a game day."),
-            "schedule": _("Generate a working schedule."),
-            "publication": _("Publish an approved schedule."),
-            "complete": False,
-        }
+        current_issue = next(
+            (item for item in planner["issues"] if item["step"] == step), None
+        )
+        blocker_hint = current_issue["message"] if current_issue else False
+        counts = planner["counts"]
         return {
-            "blocker_hint": hints[step],
+            "blocker_hint": blocker_hint,
             "step": step,
             "progress": progress,
             "next_action": labels[step],
             "counts": {
-                "divisions": divisions,
-                "participants": participants,
-                "gamedays": gamedays,
-                "schedules": schedules,
-                "publications": publications,
+                "divisions": counts["divisions"],
+                "participants": counts["participants"],
+                "gamedays": counts["gamedays"],
+                "schedules": counts["schedules"],
+                "publications": counts["publications"],
             },
         }
 

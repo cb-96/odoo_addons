@@ -19,6 +19,7 @@ My Account
 ├── Action items             /my/action-items
 ├── My teams                 /my/teams
 ├── Season registrations     /my/season-registrations
+├── Competition entries      /my/competition-entries
 ├── Match day                /my/match-day
 ├── Officials                /my/referee-duties
 └── Results                  /my/results
@@ -52,6 +53,12 @@ Federation > Competitions > Competition Operations > Create Competition
 
 The wizard selects the setup template, competition template, season, dates, optional rule set, registration dates, divisions, and responsibilities. It creates the season competition, divisions, registration windows, and role assignments, then opens the season competition.
 
+Use **Continue Setup** on the season competition to open the **Competition
+Planner**. It presents the ordered steps—divisions, teams, format, game days,
+schedule, and publication—and shares the same readiness/blocker projection as
+the edition form. The planner routes each action to its owner module; it does
+not replace registration, format, calendar, scheduling, or approval commands.
+
 Inspect the records through:
 
 ```text
@@ -73,12 +80,22 @@ Federation > Competitions > Competition Operations > Registration Desk
 Club portal:
 
 ```text
-My Account > Season registrations
+My Account > Competition entries
 ```
 
-Use **Open Registration** on a draft registration window. Clubs prepare and submit entries. Managers review them in the Registration Desk.
+Federation registration managers open a registration window in the Registration
+Desk. A club representative selects one of their scoped teams and an open
+window. The portal and public competition registration page apply the same
+window-date, eligibility, duplicate-entry, and capacity checks. Managers review
+and approve entries in the Registration Desk; only federation roles can finalize
+participants or change format, schedule approval, and publication state.
 
-**Recovery:** Use **Close Registration** to stop submissions. A submitted entry can be withdrawn by the club or returned by the manager with a reason. A returned entry can be corrected and resubmitted. Rejection remains historical evidence.
+**Recovery:** Use **Close Registration** to stop submissions. Representatives
+open an entry to read the federation review note. Draft/returned or rejected
+entries can have their submission note corrected and be resubmitted while the original window is open;
+draft, submitted, or rejected entries can be withdrawn. Resubmitting after
+withdrawal reuses the original entry row. Approved entries cannot be withdrawn
+directly; contact the federation registration manager for a governed correction.
 
 ### 4. Finalize participants
 
