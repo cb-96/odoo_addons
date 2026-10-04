@@ -93,6 +93,19 @@ cleanup_rc_compose() {
 }
 trap cleanup_rc_compose EXIT
 
+docker compose \
+  -f "$rc_compose_file" \
+  -p "$rc_compose_project" \
+  up --wait ci-db
+
+docker compose \
+  -f "$rc_compose_file" \
+  -p "$rc_compose_project" \
+  exec -T ci-db \
+  pg_isready \
+    -U "$ci_postgres_user" \
+    -d "$ci_postgres_db"
+
 restore_database() {
   local database="$1"
   local report="$2"
@@ -108,38 +121,73 @@ restore_database() {
 }
 
 restore_database "$target_db" "$evidence_dir/restore-before-upgrade.txt"
+
 python3 ci/capture_migration_invariants.py \
   --database "$target_db" \
   --output "$evidence_dir/before-upgrade.json"
 
+upgrade_command="UPGRADE_DB_NAME=$target_db scripts/ci/run_rc_validation.sh upgrade"
+upgrade_started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+upgrade_started_epoch="$(date +%s)"
+
 if UPGRADE_DB_NAME="$target_db" scripts/ci/run_rc_validation.sh upgrade; then
-  upgrade_status=passed
+  upgrade_status="passed"
+  upgrade_exit_code=0
 else
-  upgrade_status=failed
+  upgrade_exit_code=$?
+  upgrade_status="failed"
 fi
+
+upgrade_finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+upgrade_finished_epoch="$(date +%s)"
+upgrade_duration_seconds="$((upgrade_finished_epoch - upgrade_started_epoch))"
+
 python3 ci/capture_release_evidence.py \
   --lane migration-upgrade \
   --status "$upgrade_status" \
+  --command "$upgrade_command" \
+  --exit-code "$upgrade_exit_code" \
+  --started-at "$upgrade_started_at" \
+  --finished-at "$upgrade_finished_at" \
+  --duration-seconds "$upgrade_duration_seconds" \
   --database "$target_db" \
   --backup "$dump_file" \
   --output "$evidence_dir/upgrade.json"
-[[ "$upgrade_status" == passed ]] || exit 1
+
+[[ "$upgrade_status" == "passed" ]] || exit 1
 
 python3 ci/capture_migration_invariants.py \
   --database "$target_db" \
   --output "$evidence_dir/after-upgrade.json"
 
+acceptance_command="DB_NAME=$target_db scripts/ci/run_rc_validation.sh acceptance"
+acceptance_started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+acceptance_started_epoch="$(date +%s)"
+
 if DB_NAME="$target_db" scripts/ci/run_rc_validation.sh acceptance; then
-  acceptance_status=passed
+  acceptance_status="passed"
+  acceptance_exit_code=0
 else
-  acceptance_status=failed
+  acceptance_exit_code=$?
+  acceptance_status="failed"
 fi
+
+acceptance_finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+acceptance_finished_epoch="$(date +%s)"
+acceptance_duration_seconds="$((acceptance_finished_epoch - acceptance_started_epoch))"
+
 python3 ci/capture_release_evidence.py \
   --lane role-separated-acceptance \
   --status "$acceptance_status" \
+  --command "$acceptance_command" \
+  --exit-code "$acceptance_exit_code" \
+  --started-at "$acceptance_started_at" \
+  --finished-at "$acceptance_finished_at" \
+  --duration-seconds "$acceptance_duration_seconds" \
   --database "$target_db" \
   --output "$evidence_dir/operator-acceptance.json"
-[[ "$acceptance_status" == passed ]] || exit 1
+
+[[ "$acceptance_status" == "passed" ]] || exit 1
 
 restore_database "$rollback_db" "$evidence_dir/restore-rollback.txt"
 python3 ci/capture_migration_invariants.py \
