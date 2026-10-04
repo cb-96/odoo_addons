@@ -1,6 +1,6 @@
 {
     "name": "Competition Setup Flow",
-    "version": "19.0.1.0.0",
+    "version": "19.0.2.0.0",
     "category": "Sports",
     "summary": "Continuous and resumable competition setup",
     "author": "Sports Federation",
@@ -21,6 +21,13 @@
         "views/setup_consolidation_views.xml",
         "views/setup_journey_views.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "sports_federation_setup_flow/static/src/competition_planner/planner.js",
+            "sports_federation_setup_flow/static/src/competition_planner/planner.xml",
+            "sports_federation_setup_flow/static/src/competition_planner/planner.scss",
+        ],
+    },
     "installable": True,
     "application": False,
     "auto_install": False,

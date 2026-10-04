@@ -1,4 +1,4 @@
-from odoo import _, fields, models
+from odoo import fields, models
 
 
 class FederationCreateCompetitionWizardJourney(models.TransientModel):
@@ -23,8 +23,7 @@ class FederationCreateCompetitionWizardJourney(models.TransientModel):
         edition = self.env["federation.competition.edition"].browse(action.get("res_id")).exists()
         if edition:
             edition.write({"workflow_mode": self.workflow_mode})
-            action = edition.get_formview_action()
-            action["name"] = _("Continue Competition Setup")
+            action = edition.action_open_competition_planner()
             action["context"] = dict(
                 self.env.context,
                 competition_setup_created=True,
