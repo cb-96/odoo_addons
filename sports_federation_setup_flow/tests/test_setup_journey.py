@@ -47,30 +47,29 @@ class TestCompetitionSetupJourney(TransactionCase):
         self.assertEqual(result["step"], "divisions")
         self.assertTrue(result["blocker_hint"])
 
-    def test_continue_setup_routes_from_canonical_assessment(self):
-        routes = {
-            "divisions": "action_setup_divisions",
-            "participants": "action_setup_participants",
-            "gamedays": "action_setup_gamedays",
-            "schedule": "action_setup_schedule",
-            "publication": "action_setup_publication",
-        }
+    def test_continue_setup_opens_visual_planner(self):
         service = self.env["federation.competition.setup.readiness"]
-        for step, method in routes.items():
-            with self.subTest(step=step):
-                expected = {"type": "ir.actions.act_window", "name": step}
-                with patch.object(type(service), "evaluate", return_value={"step": step}):
-                    with patch.object(type(self.edition), method, return_value=expected) as target:
-                        self.assertEqual(self.edition.action_continue_setup(), expected)
-                        target.assert_called_once()
+        with patch.object(
+            type(service),
+            "evaluate",
+            side_effect=AssertionError("legacy readiness routing must not be used"),
+        ):
+            action = self.edition.action_continue_setup()
 
-    def test_completed_setup_stays_on_edition(self):
-        service = self.env["federation.competition.setup.readiness"]
-        with patch.object(type(service), "evaluate", return_value={"step": "complete"}):
-            with patch.object(type(self.edition), "action_setup_gamedays") as gamedays:
-                action = self.edition.action_continue_setup()
-                gamedays.assert_not_called()
-        self.assertEqual(action["res_id"], self.edition.id)
+        self.assertEqual(action["type"], "ir.actions.client")
+        self.assertEqual(
+            action["tag"], "sports_federation_setup_flow.CompetitionPlanner"
+        )
+        self.assertEqual(action["params"]["edition_id"], self.edition.id)
+
+    def test_legacy_workspace_entry_point_opens_planner_for_edition(self):
+        action = self.edition.action_open_next_workspace()
+
+        self.assertEqual(action["type"], "ir.actions.client")
+        self.assertEqual(
+            action["tag"], "sports_federation_setup_flow.CompetitionPlanner"
+        )
+        self.assertEqual(action["params"]["edition_id"], self.edition.id)
 
     def test_creation_wizard_exposes_operator_defaults(self):
         fields = self.env["federation.create.competition.wizard"]._fields
