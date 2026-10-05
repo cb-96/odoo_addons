@@ -261,3 +261,11 @@ Use source links to correct business records in their owning workflow. Retry onl
 - Use **Match Operations > Matches**, not “Results > Match Results”.
 - Use **Publishing > Standings**, not “Standings > Standings”.
 - Use **Format Studio** for stage progression; there is no standalone progression menu.
+
+## Competition simulation hardening
+
+- Generate schedules from an explicit competition-stage and game-day scope. Preview included and excluded fixture counts plus the allocation and remaining capacity for every selected day.
+- When published planning must change, close live operations, create a reasoned amendment, review the replacement independently, publish it, and reopen operations against the new publication. The original published assignment remains immutable.
+- Result submission requires deliberate score entry. A 0–0 result requires explicit confirmation; optional set / period rows must total to the aggregate result.
+- Result follow-up queues name the next responsible role: Result Submitter, Result Verifier, or Result Approver.
+- To finish a standings table, clear remaining result blockers, recompute, review included results and tie-break notes, freeze, then enable website publication.

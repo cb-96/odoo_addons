@@ -5,12 +5,12 @@
   <field name="arch" type="xml">
    <form string="Generate Competition Schedule">
     <group>
-     <group><field name="edition_id"/><field name="structure_ids" widget="many2many_tags"/><field name="matchday_ids" widget="many2many_tags"/></group>
+     <group string="Planning scope"><field name="edition_id"/><field name="structure_ids" widget="many2many_tags"/><field name="stage_ids" widget="many2many_tags"/><field name="matchday_ids" widget="many2many_tags"/></group>
      <group><field name="mode"/><field name="rebuild_reason" invisible="mode != 'rebuild'" required="mode == 'rebuild'"/><field name="generate_missing_fixtures"/><field name="preferred_rest_minutes"/></group>
     </group>
-    <div class="alert alert-info" role="status">Each game day uses its own start, end, duration, pause, courts and blackout constraints. Preview separates feasibility from schedule quality.</div>
-    <group invisible="not preview_ready"><field name="blocking_issue_count"/><field name="warning_count"/></group>
-    <notebook invisible="not preview_ready"><page string="Feasibility"><field name="feasibility_report" nolabel="1" readonly="1"/></page><page string="Quality"><field name="quality_report" nolabel="1" readonly="1"/></page></notebook>
+    <div class="alert alert-info" role="status"><strong>Scope first:</strong> select the competition stages and game days that belong in this run. The preview shows included and excluded fixtures, plans every selected shared day together, and separates capacity blockers from quality warnings.</div>
+    <group invisible="not preview_ready"><group string="Scope"><field name="selected_stage_count"/><field name="included_fixture_count"/><field name="excluded_fixture_count"/></group><group string="Checks"><field name="blocking_issue_count"/><field name="warning_count"/></group></group>
+    <notebook invisible="not preview_ready"><page string="Shared-day allocation"><field name="allocation_report" nolabel="1" readonly="1"/></page><page string="Feasibility"><field name="feasibility_report" nolabel="1" readonly="1"/></page><page string="Quality"><field name="quality_report" nolabel="1" readonly="1"/></page></notebook>
     <!-- Technical modifier relay: preview_ready controls preview and apply. -->
     <field name="preview_ready" invisible="1"/><field name="preview_signature" invisible="1"/>
     <footer><button name="action_preview" type="object" string="Preview" class="btn-secondary"/><button name="action_apply" type="object" string="Generate Draft Schedules" class="btn-primary" invisible="not preview_ready or blocking_issue_count" confirm="Apply this complete competition plan?"/><button string="Cancel" special="cancel" class="btn-secondary"/></footer>

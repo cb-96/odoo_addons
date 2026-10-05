@@ -126,3 +126,7 @@ submission command; the public-site addon therefore depends on the portal
 ownership services and registration owner.
 Controllers may keep publication-gated or ownership-scoped elevated reads, but
 must not mutate records that originated from those reads directly.
+
+## Result handoff queues
+
+Result follow-up tasks identify whether the next action belongs to the Result Submitter, Result Verifier, or Result Approver. Queue guidance names the required action while the underlying result commands continue to enforce separation of duties.

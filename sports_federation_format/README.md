@@ -34,3 +34,7 @@ deterministic planning helpers, but complete automatic fixture generation for
 those formats remains deliberately out of scope until their full workflows are
 implemented. Estimates are planning guidance; generation validates the final
 fixture graph.
+
+## Final stage freeze access
+
+Federation managers can create the immutable standing lines required by **Freeze & Progress**. The ACL grants create without granting write or delete, and a regression test exercises the manager workflow end to end.

@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 from ..services.result_commands import is_result_command_context
@@ -67,10 +67,83 @@ class FederationMatchResultControl(models.Model):
         "match_id",
         string="Result Audit",
     )
+    score_entry_confirmed = fields.Boolean(
+        string="Scores Entered and Checked",
+        help=(
+            "Confirms that both score fields were deliberately entered before "
+            "submission."
+        ),
+    )
+    zero_zero_confirmed = fields.Boolean(
+        string="Confirm 0–0 Result",
+        help="Required when both aggregate scores are zero.",
+    )
+    result_period_ids = fields.One2many(
+        "federation.match.result.period",
+        "match_id",
+        string="Set / Period Scores",
+    )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        prepared = []
+        for incoming in vals_list:
+            vals = dict(incoming)
+            if {"home_score", "away_score"} & set(vals):
+                vals.setdefault("score_entry_confirmed", True)
+            prepared.append(vals)
+        return super().create(prepared)
+
+    @api.constrains("home_score", "away_score")
+    def _check_non_negative_scores(self):
+        for match in self:
+            if match.home_score < 0 or match.away_score < 0:
+                raise ValidationError(_("Scores cannot be negative."))
+
+    def _validate_result_entry(self):
+        for match in self:
+            if not match.score_entry_confirmed:
+                raise ValidationError(
+                    _("Enter and check both scores before submitting the result.")
+                )
+            if (
+                match.home_score == 0
+                and match.away_score == 0
+                and not match.zero_zero_confirmed
+            ):
+                raise ValidationError(
+                    _(
+                        "Both scores are 0. Confirm that 0–0 is the intended "
+                        "result before submitting."
+                    )
+                )
+            if match.result_period_ids:
+                home_total = sum(match.result_period_ids.mapped("home_score"))
+                away_total = sum(match.result_period_ids.mapped("away_score"))
+                if (home_total, away_total) != (match.home_score, match.away_score):
+                    raise ValidationError(
+                        _(
+                            "Set / period totals are %(period_home)s–%(period_away)s, "
+                            "but the aggregate result is %(home)s–%(away)s. Align "
+                            "them before submitting.",
+                            period_home=home_total,
+                            period_away=away_total,
+                            home=match.home_score,
+                            away=match.away_score,
+                        )
+                    )
+        return True
 
     def write(self, vals):
         """Update records with module-specific side effects."""
-        if {"home_score", "away_score"} & set(vals) and not self.env.context.get(
+        protected_score_fields = {
+            "home_score",
+            "away_score",
+            "score_entry_confirmed",
+            "zero_zero_confirmed",
+        }
+        score_fields_changed = bool(protected_score_fields & set(vals))
+        if score_fields_changed and not self.env.context.get(
             "allow_approved_result_score_write"
         ):
             approved_results = self.filtered(lambda rec: rec.result_state == "approved")
@@ -78,6 +151,10 @@ class FederationMatchResultControl(models.Model):
                 raise ValidationError(
                     "Approved result scores are immutable. Contest or correct the result before editing scores."
                 )
+        if score_fields_changed:
+            vals = dict(vals)
+            vals.setdefault("score_entry_confirmed", True)
+            vals.setdefault("zero_zero_confirmed", False)
         return super().write(vals)
 
     def _check_result_group(self, group_xmlid, error_message):
@@ -203,6 +280,7 @@ class FederationMatchResultControl(models.Model):
         """Submit the match result for verification atomically."""
         with self.env.cr.savepoint():
             self._lock_result_transition()
+            self._validate_result_entry()
             result = self._result_transition(
                 "submitted",
                 {"draft", "corrected"},
@@ -371,3 +449,63 @@ class FederationMatchResultControl(models.Model):
             )
             self._recompute_related_standings()
             return result
+
+
+class FederationMatchResultPeriod(models.Model):
+    _name = "federation.match.result.period"
+    _description = "Match Set or Period Score"
+    _order = "sequence,id"
+
+    match_id = fields.Many2one(
+        "federation.match", required=True, ondelete="cascade", index=True
+    )
+    sequence = fields.Integer(string="Set / Period", required=True, default=1)
+    home_score = fields.Integer(required=True, default=0)
+    away_score = fields.Integer(required=True, default=0)
+    note = fields.Char()
+
+    _unique_match_period = models.Constraint(
+        "unique(match_id,sequence)",
+        "A set or period number can occur only once per match.",
+    )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        match_ids = [vals.get("match_id") for vals in vals_list if vals.get("match_id")]
+        if self.env["federation.match"].browse(match_ids).filtered(
+            lambda match: match.result_state == "approved"
+        ):
+            raise ValidationError(
+                _(
+                    "Approved set / period scores are immutable. Contest or correct "
+                    "the result first."
+                )
+            )
+        return super().create(vals_list)
+
+    @api.constrains("sequence", "home_score", "away_score")
+    def _check_period_score(self):
+        for period in self:
+            if period.sequence < 1:
+                raise ValidationError(_("Set / period number must be positive."))
+            if period.home_score < 0 or period.away_score < 0:
+                raise ValidationError(_("Set / period scores cannot be negative."))
+
+    def _assert_mutable(self):
+        if self.mapped("match_id").filtered(
+            lambda match: match.result_state == "approved"
+        ):
+            raise ValidationError(
+                _(
+                    "Approved set / period scores are immutable. Contest or correct "
+                    "the result first."
+                )
+            )
+
+    def write(self, vals):
+        self._assert_mutable()
+        return super().write(vals)
+
+    def unlink(self):
+        self._assert_mutable()
+        return super().unlink()

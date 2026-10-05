@@ -174,3 +174,7 @@ Every state transition is recorded with:
 - [Match Day Operations](WORKFLOW_MATCH_DAY_OPERATIONS.md) — score entry context
 - [Tournament Lifecycle](WORKFLOW_TOURNAMENT_LIFECYCLE.md) — standings in tournament context
 - [Governance Override](WORKFLOW_GOVERNANCE_OVERRIDE.md) — contested result escalation
+
+## Score-entry safeguards
+
+Before `action_submit_result`, both aggregate scores must be deliberately entered. A `0–0` aggregate needs explicit confirmation. When set / period rows are present, their home and away totals must equal the aggregate result. Approved aggregate and set / period scores remain immutable until the governed contest/correction flow reopens them.

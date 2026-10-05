@@ -35,6 +35,10 @@ modules:
     primary_owner: Federation Competition Operations
     secondary_owner: Federation Platform Team
     surface: Schedule review and immutable publication snapshots
+  sports_federation_setup_flow:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Guided competition setup and planner readiness projections
   sports_federation_matchday:
     primary_owner: Federation Competition Operations
     secondary_owner: Federation Platform Team

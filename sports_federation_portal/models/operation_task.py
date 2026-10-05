@@ -49,6 +49,17 @@ class FederationOperationTask(models.Model):
         required=True,
         index=True,
     )
+    required_role = fields.Selection(
+        [
+            ("result_submitter", "Result Submitter"),
+            ("result_verifier", "Result Verifier"),
+            ("result_approver", "Result Approver"),
+            ("competition_manager", "Competition Manager"),
+        ],
+        string="Required Role",
+        index=True,
+        readonly=True,
+    )
     blocking = fields.Boolean(default=True, index=True)
     blocking_reason = fields.Text()
     next_step = fields.Char()
@@ -124,6 +135,7 @@ class FederationOperationTask(models.Model):
         priority="0",
         blocking=True,
         deadline=False,
+        required_role=False,
     ):
         values = {
             "name": name,
@@ -134,6 +146,7 @@ class FederationOperationTask(models.Model):
             "blocking_reason": reason,
             "next_step": next_step,
             "deadline": deadline,
+            "required_role": required_role,
             "source_model": source._name,
             "source_record_id": source.id,
             "source_changed_on": source.write_date,
@@ -304,10 +317,30 @@ class FederationOperationTask(models.Model):
         )
         for match in matches:
             reason_by_state = {
-                "submitted": _("The result is waiting for validation."),
-                "verified": _("The result is waiting for approval."),
-                "contested": _("The result is contested and needs review."),
-                "corrected": _("The corrected result must be submitted again."),
+                "submitted": _(
+                    "The result is waiting for verification by a Result Verifier."
+                ),
+                "verified": _(
+                    "The result is waiting for approval by a Result Approver."
+                ),
+                "contested": _(
+                    "The result is contested and must return to the submitter for correction."
+                ),
+                "corrected": _(
+                    "The corrected result must be submitted again by a Result Submitter."
+                ),
+            }
+            next_step_by_state = {
+                "submitted": _("Verify result"),
+                "verified": _("Approve result"),
+                "contested": _("Correct contested result"),
+                "corrected": _("Submit corrected result"),
+            }
+            role_by_state = {
+                "submitted": "result_verifier",
+                "verified": "result_approver",
+                "contested": "result_submitter",
+                "corrected": "result_submitter",
             }
             specs.append(
                 self._task_spec(
@@ -316,8 +349,9 @@ class FederationOperationTask(models.Model):
                     "manager",
                     _("Result follow-up: %(match)s") % {"match": match.display_name},
                     reason_by_state[match.result_state],
-                    _("Open result follow-up"),
+                    next_step_by_state[match.result_state],
                     priority="2" if match.result_state == "contested" else "1",
+                    required_role=role_by_state[match.result_state],
                     deadline=(
                         fields.Datetime.to_datetime(match.date_scheduled)
                         + timedelta(days=1)

@@ -43,3 +43,34 @@ class TestCompetitionCore(TransactionCase):
         with self.assertRaises(Exception):
             with self.env.cr.savepoint():
                 self.env["federation.competition.role.assignment"].create(vals)
+
+
+class TestContextualRoleGuidance(TransactionCase):
+    def test_missing_role_names_required_role_and_handoff(self):
+        season = self.env["federation.season"].create(
+            {
+                "name": "Role Guidance Season",
+                "date_start": "2026-09-01",
+                "date_end": "2027-06-30",
+            }
+        )
+        competition = self.env["federation.competition"].create(
+            {"name": "Role Guidance", "competition_type": "league"}
+        )
+        edition = self.env["federation.competition.edition"].create(
+            {
+                "name": "Role Guidance Edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+            }
+        )
+        user = self.env["res.users"].with_context(no_reset_password=True).create(
+            {"name": "Unassigned Operator", "login": "unassigned.operator@example.com"}
+        )
+        with self.assertRaisesRegex(ValidationError, "Schedule Approver") as error:
+            (
+                self.env["federation.competition.role.assignment"]
+                .with_user(user)
+                .assert_role(edition, "schedule_approver")
+            )
+        self.assertIn("Competition Administrator", str(error.exception))

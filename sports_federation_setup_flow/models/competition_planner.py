@@ -66,11 +66,11 @@ class FederationCompetitionEditionPlanner(models.Model):
     def _planner_step_label(self, step):
         return {
             "basics": _("Basics"),
-            "teams": _("Teams"),
-            "format": _("Format"),
-            "gamedays": _("Game days"),
-            "schedule": _("Schedule"),
-            "publication": _("Publish"),
+            "teams": _("Team entries and participants"),
+            "format": _("Competition stages and fixtures"),
+            "gamedays": _("Match-day capacity"),
+            "schedule": _("Stage and match-day allocation"),
+            "publication": _("Independent review and publication"),
         }[step]
 
     def _planner_division_rows(self, windows, structures):

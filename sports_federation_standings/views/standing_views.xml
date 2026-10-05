@@ -57,6 +57,12 @@
                             <field name="rule_set_id"/>
                             <field name="computed_on"/>
                         </group>
+                        <group string="Finish this stage">
+                            <field name="finish_readiness" widget="badge"/>
+                            <field name="included_result_count"/>
+                            <field name="remaining_result_count"/>
+                            <field name="finish_guidance" readonly="1"/>
+                        </group>
                     </group>
                     <div class="alert alert-info"
                          invisible="state != 'draft'"
@@ -81,8 +87,8 @@
                     <div class="alert alert-info"
                          invisible="state not in ('computed', 'frozen')"
                          role="status">
-                        <strong>Next step:</strong>
-                        Review the table here, then use the Website tab when you are ready to make it public.
+                        <strong>Finish this stage:</strong>
+                        Recompute the table, review every included result and tie-break note, freeze it, then use the Website tab to publish it.
                     </div>
                     <notebook>
                         <page string="Standings Table" name="lines">

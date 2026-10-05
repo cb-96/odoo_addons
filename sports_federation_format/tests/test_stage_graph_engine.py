@@ -217,6 +217,58 @@ class TestStageGraphEngine(TransactionCase):
                 }
             )
 
+
+    def test_manager_can_freeze_stage_standing_lines_but_not_modify_them(self):
+        stage = self.env["federation.structure.stage"].create(
+            {
+                "name": "ACL Pool",
+                "structure_id": self.structure.id,
+                "stage_type": "pool",
+                "format_type": "single_round_robin",
+                "source_type": "registration",
+            }
+        )
+        stage.action_prepare_stage()
+        stage.stage_fixture_ids.mapped("operational_match_id").write(
+            {
+                "state": "done",
+                "home_score": 1,
+                "away_score": 0,
+                "result_state": "approved",
+                "include_in_official_standings": True,
+            }
+        )
+        manager_group = self.env.ref(
+            "sports_federation_base.group_federation_manager"
+        )
+        designer_group = self.env.ref(
+            "sports_federation_format.group_competition_designer"
+        )
+        manager = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Stage Freeze Manager",
+                    "login": "stage.freeze.manager@example.com",
+                    "group_ids": [(6, 0, [manager_group.id, designer_group.id])],
+                }
+            )
+        )
+
+        stage.with_user(manager).action_freeze_standings()
+
+        self.assertEqual(stage.graph_state, "frozen")
+        self.assertTrue(stage.standing_snapshot_id)
+        self.assertEqual(
+            len(stage.standing_snapshot_id.line_ids),
+            len(stage.stage_participant_ids),
+        )
+        with self.assertRaises(ValidationError):
+            stage.standing_snapshot_id.line_ids[:1].with_user(manager).write(
+                {"points": 999}
+            )
+
     def test_placement_bracket_matrix_has_valid_sources(self):
         club = self.env["federation.club"].create({"name": "Matrix Club"})
         for count in (2, 3, 4, 5, 6, 7, 8, 9, 12, 16):

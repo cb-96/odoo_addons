@@ -89,6 +89,41 @@ class TestStandings(TransactionCase):
             vals.setdefault("include_in_official_standings", True)
         return vals
 
+    def test_finish_readiness_counts_approved_and_blocked_results(self):
+        approved = self.env["federation.match"].create(
+            self._match_vals(
+                {
+                    "tournament_id": self.tournament.id,
+                    "home_team_id": self.team_a.id,
+                    "away_team_id": self.team_b.id,
+                    "home_score": 1,
+                    "away_score": 0,
+                    "state": "done",
+                }
+            )
+        )
+        if self.has_result_control:
+            approved.result_state = "approved"
+        self.env["federation.match"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "home_team_id": self.team_b.id,
+                "away_team_id": self.team_c.id,
+                "state": "scheduled",
+            }
+        )
+        standing = self.env["federation.standing"].create(
+            {"name": "Finish Readiness", "tournament_id": self.tournament.id}
+        )
+
+        standing._compute_finish_readiness()
+
+        self.assertEqual(standing.included_result_count, 1)
+        self.assertEqual(standing.remaining_result_count, 1)
+        self.assertEqual(standing.finish_readiness, "blocked")
+        with self.assertRaisesRegex(ValidationError, "Cannot freeze"):
+            standing.action_freeze()
+
     def test_recompute_two_team_standing(self):
         """Test standings computation with two teams."""
         # Create match: Team A beats Team B 2-1

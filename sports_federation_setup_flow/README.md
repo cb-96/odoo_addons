@@ -28,3 +28,7 @@ For operator routes, recovery instructions, and the full lifecycle see
 
 Focused tests run through the repository's `ci/run_tests.sh` harness for
 `sports_federation_setup_flow`.
+
+## Operator-facing labels
+
+Planner actions name the concrete work area, such as team entries and participants, competition stages and fixtures, match-day capacity, stage and match-day allocation, and independent review and publication.

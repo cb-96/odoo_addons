@@ -2,7 +2,7 @@ import logging
 from uuid import uuid4
 
 from odoo.addons.sports_federation_base.correlation import ensure_correlation_id
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -88,6 +88,18 @@ class FederationStanding(models.Model):
         compute="_compute_recompute_queue_counts",
         string="Failed Recomputes",
     )
+    included_result_count = fields.Integer(
+        compute="_compute_finish_readiness", string="Approved Results Included"
+    )
+    remaining_result_count = fields.Integer(
+        compute="_compute_finish_readiness", string="Remaining Result Blockers"
+    )
+    finish_readiness = fields.Selection(
+        [("blocked", "Blocked"), ("review", "Ready for Review"), ("frozen", "Frozen")],
+        compute="_compute_finish_readiness",
+        string="Stage Finish Readiness",
+    )
+    finish_guidance = fields.Char(compute="_compute_finish_readiness")
 
     _unique_tournament_stage_group_name = models.Constraint(
         "UNIQUE(tournament_id, stage_id, group_id, name)",
@@ -99,6 +111,54 @@ class FederationStanding(models.Model):
         """Compute line count."""
         for record in self:
             record.line_count = len(record.line_ids)
+
+    def _scope_match_domain(self):
+        self.ensure_one()
+        domain = [
+            ("tournament_id", "=", self.tournament_id.id),
+            ("state", "!=", "cancelled"),
+            ("home_team_id", "!=", False),
+            ("away_team_id", "!=", False),
+        ]
+        if self.stage_id:
+            domain.append(("stage_id", "=", self.stage_id.id))
+        if self.group_id:
+            domain.append(("group_id", "=", self.group_id.id))
+        return domain
+
+    def _compute_finish_readiness(self):
+        Match = self.env["federation.match"]
+        has_result_control = "result_state" in Match._fields
+        for standing in self:
+            matches = Match.search(standing._scope_match_domain())
+            included = matches.filtered(
+                lambda match: match.state == "done"
+                and (not has_result_control or match.result_state == "approved")
+                and (
+                    "include_in_official_standings" not in Match._fields
+                    or match.include_in_official_standings
+                )
+            )
+            standing.included_result_count = len(included)
+            standing.remaining_result_count = len(matches - included)
+            if standing.state == "frozen":
+                standing.finish_readiness = "frozen"
+                standing.finish_guidance = _(
+                    "Frozen. Review website visibility to publish the final table."
+                )
+            elif standing.remaining_result_count:
+                standing.finish_readiness = "blocked"
+                standing.finish_guidance = _(
+                    "Approve %(count)s remaining result(s), then recompute the table.",
+                    count=standing.remaining_result_count,
+                )
+            else:
+                standing.finish_readiness = "review"
+                standing.finish_guidance = _(
+                    "%(count)s approved result(s) are included. Recompute, review, "
+                    "then freeze the table.",
+                    count=standing.included_result_count,
+                )
 
     @api.depends("recompute_job_ids.state")
     def _compute_recompute_queue_counts(self):
@@ -210,16 +270,8 @@ class FederationStanding(models.Model):
         is counted (fallback behaviour).
         """
         self.ensure_one()
-        domain = [
-            ("tournament_id", "=", self.tournament_id.id),
-            ("state", "=", "done"),
-            ("home_team_id", "!=", False),
-            ("away_team_id", "!=", False),
-        ]
-        if self.stage_id:
-            domain.append(("stage_id", "=", self.stage_id.id))
-        if self.group_id:
-            domain.append(("group_id", "=", self.group_id.id))
+        domain = self._scope_match_domain()
+        domain.append(("state", "=", "done"))
         # If result_control is installed, only count officially approved matches
         if "include_in_official_standings" in self.env["federation.match"]._fields:
             domain.append(("include_in_official_standings", "=", True))
@@ -399,6 +451,15 @@ class FederationStanding(models.Model):
         source stage/group of this standing, they are executed automatically.
         """
         for record in self:
+            record._compute_finish_readiness()
+            if record.remaining_result_count:
+                raise ValidationError(
+                    _(
+                        "Cannot freeze this table while %(count)s result(s) still "
+                        "need completion or approval.",
+                        count=record.remaining_result_count,
+                    )
+                )
             record.state = "frozen"
             # Trigger auto-advance progression rules
             if record.tournament_id and record.stage_id:

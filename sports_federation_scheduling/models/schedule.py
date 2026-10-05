@@ -214,7 +214,9 @@ class FederationSchedule(models.Model):
             raise ValidationError("Only a published schedule can be amended.")
         if self.matchday_id.state == "open":
             raise ValidationError(
-                "Close live match-day operations before amending the schedule."
+                "This game day is live. Close Match-Day Operations, create the "
+                "amendment here, submit it for independent review, publish the "
+                "replacement, then reopen operations against the new publication."
             )
         self.env["federation.competition.role.assignment"].assert_role(
             self.edition_id, "schedule_planner", "competition_director"

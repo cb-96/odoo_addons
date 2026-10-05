@@ -85,7 +85,14 @@ class FederationCompetitionRoleAssignment(models.Model):
                 ("active", "=", True),
             ]
         ):
+            role_labels = dict(ROLE_SELECTION)
+            required = ", ".join(role_labels.get(role, role) for role in roles)
             raise ValidationError(
-                _("You are not assigned to the required competition role.")
+                _(
+                    "This action requires one of these competition roles: %(roles)s. "
+                    "Ask the Competition Administrator to assign the role, or hand "
+                    "this item to a user who already has it.",
+                    roles=required,
+                )
             )
         return True

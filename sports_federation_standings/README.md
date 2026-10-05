@@ -118,3 +118,7 @@ Key Behaviours
 ## Recompute job recovery
 
 Standing recompute jobs use bounded exponential retry. Exhausted jobs move to `Needs operator action`, preserve the correlation ID and error evidence, and can be explicitly returned to the queue by a manager. The queue cron also recovers jobs left in `running` after a worker interruption.
+
+## Finish this stage
+
+The standings form shows the number of approved results included and the number of remaining result blockers. Operators recompute, review the table and tie-break notes, freeze it, and then enable website publication. Freezing is blocked while scoped matches still need completion or approval.

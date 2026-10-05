@@ -341,6 +341,19 @@ class FederationPortalcurrent(FederationPortalBase):
                     "away_team": match.away_team_id.display_name,
                     "state": match.state,
                     "result_state": match.result_state,
+                    "home_score": match.home_score,
+                    "away_score": match.away_score,
+                    "score_entry_confirmed": match.score_entry_confirmed,
+                    "zero_zero_confirmed": match.zero_zero_confirmed,
+                    "period_scores": [
+                        {
+                            "sequence": period.sequence,
+                            "home_score": period.home_score,
+                            "away_score": period.away_score,
+                            "note": period.note or "",
+                        }
+                        for period in match.result_period_ids
+                    ],
                     "published_slot": match.published_slot_id.display_name,
                     "operational_slot": match.operational_slot_id.display_name,
                     "operational_status": match.operational_status,
@@ -399,11 +412,36 @@ class FederationPortalcurrent(FederationPortalBase):
             elif action == "finish":
                 privilege.portal_call(match, "action_done", user=request.env.user)
             elif action == "save_score":
+                if kw.get("home_score") in (None, "") or kw.get("away_score") in (
+                    None,
+                    "",
+                ):
+                    raise ValidationError(
+                        _("Enter both scores before saving the result.")
+                    )
+                home_score = int(kw["home_score"])
+                away_score = int(kw["away_score"])
+                if home_score < 0 or away_score < 0:
+                    raise ValidationError(_("Scores cannot be negative."))
+                zero_zero_confirmed = kw.get("confirm_zero_zero") in (
+                    True,
+                    1,
+                    "1",
+                    "true",
+                    "on",
+                    "yes",
+                )
+                if home_score == 0 and away_score == 0 and not zero_zero_confirmed:
+                    raise ValidationError(
+                        _("Both scores are 0. Confirm the 0–0 result before saving.")
+                    )
                 privilege.portal_write(
                     match,
                     {
-                        "home_score": int(kw.get("home_score", 0)),
-                        "away_score": int(kw.get("away_score", 0)),
+                        "home_score": home_score,
+                        "away_score": away_score,
+                        "score_entry_confirmed": True,
+                        "zero_zero_confirmed": zero_zero_confirmed,
                     },
                     user=request.env.user,
                 )

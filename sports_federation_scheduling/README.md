@@ -57,3 +57,7 @@ pinned assignments rather than an avoidable greedy choice.
 The competition wizard is the single planning entry point after participants and game days are defined. It generates missing supported structures, evaluates every game day's individual capacity, reports feasibility separately from quality warnings, preserves manual pins, rejects stale previews, and creates draft schedules through the existing fairness solver.
 
 Reruns are explicit: fill missing planning, replace automatic assignments, or rebuild mutable unpublished planning with a reason. Reviewed, published, open, or closed game days are never rebuilt. Result-dependent fixtures remain visible as deferred work.
+
+## Stage- and game-day-scoped generation
+
+The competition schedule preview may be limited to selected competition stages and game days. It reports included and excluded fixtures, shows the proposed allocation and remaining capacity for every selected shared day, warns when multiple stages are mixed, and blocks application when selected fixtures exceed capacity. Published planning remains immutable; corrections use a replacement amendment after live operations are closed.

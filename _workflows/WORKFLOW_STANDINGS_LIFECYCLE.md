@@ -165,3 +165,7 @@ When a result is contested after standings have been computed:
 - [WORKFLOW_RESULT_PIPELINE.md](WORKFLOW_RESULT_PIPELINE.md) — Result approval that triggers automatic recompute.
 - [WORKFLOW_APPEAL_DISPUTE.md](WORKFLOW_APPEAL_DISPUTE.md) — Appeal and dispute process for contested results.
 - [WORKFLOW_PUBLIC_PUBLICATION.md](WORKFLOW_PUBLIC_PUBLICATION.md) — Broader public-site publication workflow.
+
+## Finish-stage handoff
+
+The standings workspace reports approved results included and remaining blockers. The operator clears result blockers, recomputes, reviews rows and tie-break notes, freezes the table, and only then enables website publication. Freeze is rejected while scoped matches still need completion or approval.

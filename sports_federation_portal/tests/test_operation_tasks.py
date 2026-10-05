@@ -102,3 +102,30 @@ class TestFederationOperationTasks(TransactionCase):
         action = task.action_open_source()
         self.assertEqual(action["res_model"], self.window._name)
         self.assertEqual(action["res_id"], self.window.id)
+
+    def test_result_queue_identifies_required_workflow_role(self):
+        away_club = self.env["federation.club"].create({"name": "Queue Away Club"})
+        away_team = self.env["federation.team"].create(
+            {"name": "Queue Away Team", "club_id": away_club.id}
+        )
+        match = self.env["federation.match"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "home_team_id": self.team.id,
+                "away_team_id": away_team.id,
+                "home_score": 1,
+                "away_score": 0,
+                "state": "done",
+                "result_state": "submitted",
+            }
+        )
+
+        self.env["federation.operation.task"].sync_for_user(user=self.manager)
+        task = self.env["federation.operation.task"].search(
+            [("match_id", "=", match.id), ("state", "!=", "done")], limit=1
+        )
+
+        self.assertTrue(task)
+        self.assertEqual(task.task_type, "result_review")
+        self.assertEqual(task.required_role, "result_verifier")
+        self.assertEqual(task.next_step, "Verify result")

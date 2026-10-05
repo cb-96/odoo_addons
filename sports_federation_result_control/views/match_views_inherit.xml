@@ -89,7 +89,11 @@
                         <field name="result_approved_by_id"/>
                         <field name="result_approved_on"/>
                     </group>
-                    <group string="Standings">
+                    <group string="Score confirmation">
+                        <field name="score_entry_confirmed" readonly="result_state not in ('draft', 'corrected')"/>
+                        <field name="zero_zero_confirmed"
+                               invisible="home_score != 0 or away_score != 0"
+                               readonly="result_state not in ('draft', 'corrected')"/>
                         <field name="include_in_official_standings"/>
                     </group>
                 </group>
@@ -103,6 +107,19 @@
                 </group>
             </xpath>
             <xpath expr="//notebook" position="inside">
+                <page string="Set / Period Scores" name="result_period_scores">
+                    <div class="alert alert-info" role="status">
+                        Record the official scoring breakdown here. The set / period totals must equal the aggregate home and away scores before submission.
+                    </div>
+                    <field name="result_period_ids" readonly="result_state not in ('draft', 'corrected')">
+                        <list editable="bottom" delete="1">
+                            <field name="sequence"/>
+                            <field name="home_score"/>
+                            <field name="away_score"/>
+                            <field name="note" optional="show"/>
+                        </list>
+                    </field>
+                </page>
                 <page string="History" name="result_audit">
                     <field name="result_audit_ids" readonly="1">
                         <list create="0" delete="0" edit="0">

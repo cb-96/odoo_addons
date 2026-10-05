@@ -59,3 +59,7 @@ in a database savepoint, returns a structured command result, preserves the
 result-specific audit trail, and emits a common workflow-transition audit event.
 Separation of duties is expressed as forbidden actor fields for verification
 and approval.
+
+## Safe score entry
+
+Result submission requires deliberate entry of both aggregate scores. A 0–0 result needs an explicit confirmation. Optional set / period rows store the official scoring breakdown and must total to the aggregate score before submission. Approved aggregate and set / period scores remain immutable until the governed correction workflow is used.

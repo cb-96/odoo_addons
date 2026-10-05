@@ -161,6 +161,46 @@ class TestResultControl(TransactionCase):
             }
         )
 
+    def test_submit_requires_explicit_zero_zero_confirmation(self):
+        match = self.env["federation.match"].create(
+            {
+                "tournament_id": self.tournament.id,
+                "home_team_id": self.team_home.id,
+                "away_team_id": self.team_away.id,
+                "home_score": 0,
+                "away_score": 0,
+                "state": "done",
+            }
+        )
+        with self.assertRaisesRegex(ValidationError, "Confirm that 0–0"):
+            match.with_user(self.submitter_user).action_submit_result()
+        match.zero_zero_confirmed = True
+        match.with_user(self.submitter_user).action_submit_result()
+        self.assertEqual(match.result_state, "submitted")
+
+    def test_period_totals_must_match_aggregate_score(self):
+        self.env["federation.match.result.period"].create(
+            [
+                {
+                    "match_id": self.match.id,
+                    "sequence": 1,
+                    "home_score": 1,
+                    "away_score": 0,
+                },
+                {
+                    "match_id": self.match.id,
+                    "sequence": 2,
+                    "home_score": 0,
+                    "away_score": 0,
+                },
+            ]
+        )
+        with self.assertRaisesRegex(ValidationError, "period totals"):
+            self.match.with_user(self.submitter_user).action_submit_result()
+        self.match.result_period_ids[1].write({"home_score": 1, "away_score": 1})
+        self.match.with_user(self.submitter_user).action_submit_result()
+        self.assertEqual(self.match.result_state, "submitted")
+
     def test_submit_result(self):
         """Test that submit result."""
         self.assertEqual(self.match.result_state, "draft")
