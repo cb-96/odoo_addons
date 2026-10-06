@@ -137,3 +137,11 @@ class TestCompetitionSetupJourney(TransactionCase):
             wizard.line_ids.mapped("date"),
             [date(2026, 10, 3), date(2026, 10, 17), date(2026, 10, 31)],
         )
+
+    def test_creation_workflow_modes_explain_their_operational_effect(self):
+        wizard = self.env["federation.create.competition.wizard"].new(
+            {"workflow_mode": "controlled"}
+        )
+        self.assertIn("Separate people", wizard.workflow_summary)
+        wizard.workflow_mode = "custom"
+        self.assertIn("choose each", wizard.workflow_summary)

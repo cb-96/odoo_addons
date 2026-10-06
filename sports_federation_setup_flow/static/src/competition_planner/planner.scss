@@ -145,3 +145,33 @@
         }
     }
 }
+
+.o_competition_planner {
+    .o_competition_current_task {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1.5rem;
+        border: 1px solid var(--o-brand-primary, #714b67);
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        background: var(--body-bg, #fff);
+    }
+
+    .is-blocked .o_competition_journey_icon {
+        color: #495057;
+        background: #e9ecef;
+    }
+
+    @media (max-width: 767.98px) {
+        .o_competition_planner_header,
+        .o_competition_current_task {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .o_competition_current_task .btn-lg {
+            width: 100%;
+        }
+    }
+}

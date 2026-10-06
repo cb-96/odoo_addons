@@ -43,6 +43,7 @@ demonstration database with realistic walkthrough content.
         "web.assets_tests": [
             "sports_federation_demo/static/tests/tours/full_competition_lifecycle_tour.js",
             "sports_federation_demo/static/tests/tours/keyboard_competition_setup_tour.js",
+            "sports_federation_demo/static/tests/tours/competition_planner_intent_tour.js",
         ],
     },
     "demo": [

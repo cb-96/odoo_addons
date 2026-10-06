@@ -3,183 +3,93 @@
   <t t-name="sports_federation_setup_flow.CompetitionPlanner">
     <div class="o_competition_planner h-100 overflow-auto">
       <div t-if="state.loading" class="o_competition_planner_loading" role="status">
-        <i class="fa fa-spinner fa-spin" aria-hidden="true"/>
-        <span>Loading competition planner…</span>
+        <i class="fa fa-spinner fa-spin" aria-hidden="true"/><span>Loading competition planner…</span>
       </div>
-
       <div t-elif="!state.data" class="o_competition_planner_empty">
-        <h2>Competition planner</h2>
-        <p>Open a season competition to start or resume its setup.</p>
+        <h2>Competition planner</h2><p>Open a season competition to start or resume its setup.</p>
       </div>
-
       <main t-else="" class="container-fluid py-4" aria-labelledby="planner-title">
         <header class="o_competition_planner_header">
-          <div>
-            <div class="text-muted small">Competition Planner</div>
+          <div><div class="text-muted small">Competition Planner</div>
             <h1 id="planner-title" class="h2 mb-1" t-esc="state.data.edition.name"/>
-            <p class="text-muted mb-0">
-              <span t-esc="state.data.edition.season"/>
-              <t t-if="state.data.edition.date_start">
-                <span> · </span><span t-esc="state.data.edition.date_start"/>
-              </t>
-              <t t-if="state.data.edition.date_end">
-                <span> – </span><span t-esc="state.data.edition.date_end"/>
-              </t>
-            </p>
+            <p class="text-muted mb-0"><span t-esc="state.data.edition.season"/></p>
           </div>
           <div class="d-flex gap-2 flex-wrap">
-            <button class="btn btn-outline-secondary" t-on-click="load">
-              <i class="fa fa-refresh me-1" aria-hidden="true"/>Refresh
-            </button>
-            <button class="btn btn-outline-secondary" t-on-click="openBasics">
-              Competition details
-            </button>
+            <button class="btn btn-outline-secondary" t-on-click="load"><i class="fa fa-refresh me-1" aria-hidden="true"/>Refresh</button>
+            <button class="btn btn-outline-secondary" t-on-click="openBasics">Competition details</button>
           </div>
         </header>
 
         <nav class="o_competition_journey" aria-label="Competition setup progress">
-          <button
-            t-foreach="state.data.steps"
-            t-as="step"
-            t-key="step.key"
+          <button t-foreach="state.data.steps" t-as="step" t-key="step.key"
             t-att-class="'o_competition_journey_step is-' + step.status"
             t-att-aria-current="step.status === 'current' ? 'step' : undefined"
-            t-att-title="statusLabel(step)"
-            t-on-click="() => this.openStep(step.key)"
-          >
-            <span class="o_competition_journey_icon">
-              <i t-att-class="'fa ' + statusIcon(step)" aria-hidden="true"/>
-            </span>
-            <span class="o_competition_journey_text">
-              <strong t-esc="step.label"/>
-              <small t-esc="statusLabel(step)"/>
-            </span>
-            <span
-              t-if="step.issue_count"
-              class="badge rounded-pill text-bg-danger"
-              t-esc="step.issue_count"
-            />
+            t-att-title="statusLabel(step)" t-on-click="() => this.openStep(step.key)">
+            <span class="o_competition_journey_icon"><i t-att-class="'fa ' + statusIcon(step)" aria-hidden="true"/></span>
+            <span class="o_competition_journey_text"><strong t-esc="step.label"/><small t-esc="statusLabel(step)"/></span>
+            <span t-if="step.issue_count" class="badge rounded-pill text-bg-danger" t-esc="step.issue_count"/>
           </button>
         </nav>
 
-        <section
-          t-if="state.data.complete"
-          class="alert alert-success d-flex align-items-center gap-3 mt-4"
-          role="status"
-        >
-          <i class="fa fa-check-circle fa-2x" aria-hidden="true"/>
-          <div>
-            <strong>Competition setup is complete.</strong>
-            <div>The live schedule is available to match-day operations.</div>
+        <section t-if="state.data.complete" class="alert alert-success mt-4" role="status" data-planner-complete="true">
+          <div class="d-flex align-items-center gap-3">
+            <i class="fa fa-check-circle fa-2x" aria-hidden="true"/>
+            <div><strong>Competition setup is complete.</strong><div>The live schedule is ready. Continue with competition operations below.</div></div>
+          </div>
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <button class="btn btn-primary" t-on-click="() => this.openOperation('matchdays')">Open match-day operations</button>
+            <button class="btn btn-outline-primary" t-on-click="() => this.openOperation('schedules')">View schedules</button>
+            <button t-if="state.data.operations.rosters_available" class="btn btn-outline-primary" t-on-click="() => this.openOperation('rosters')">Roster readiness (<t t-esc="state.data.operations.roster_action_count"/>)</button>
+            <button t-if="state.data.operations.officials_available" class="btn btn-outline-primary" t-on-click="() => this.openOperation('officials')">Official coverage (<t t-esc="state.data.operations.official_action_count"/>)</button>
+            <button t-if="state.data.operations.results_available" class="btn btn-outline-primary" t-on-click="() => this.openOperation('results')">Result follow-up (<t t-esc="state.data.operations.result_action_count"/>)</button>
+          </div>
+          <div t-if="state.data.operations.next_matchday" class="small mt-3">
+            <strong>Next match day:</strong> <span t-esc="state.data.operations.next_matchday.name"/>
           </div>
         </section>
 
-        <section t-else="" class="o_competition_current_task mt-4" aria-labelledby="current-task-title">
-          <div>
-            <div class="text-muted small text-uppercase">Current task</div>
-            <h2 id="current-task-title" class="h4 mb-1" t-esc="state.data.current_label"/>
-            <p class="mb-0">
-              Resolve the visible blockers, then continue to the next setup step.
-            </p>
+        <section t-else="" class="o_competition_current_task mt-4" aria-labelledby="current-task-title" data-planner-current-action="true">
+          <div t-if="state.data.current_issue">
+            <div class="text-muted small text-uppercase">Current action</div>
+            <h2 id="current-task-title" class="h4 mb-1" t-esc="state.data.current_issue.title"/>
+            <p class="mb-1" t-esc="state.data.current_issue.message"/>
+            <div class="small text-muted"><strong>Responsible:</strong> <span t-esc="state.data.current_issue.owner"/> · <strong>Next area:</strong> <span t-esc="state.data.current_label"/></div>
           </div>
-          <button class="btn btn-primary btn-lg" t-on-click="openCurrent">
-            Open <t t-esc="state.data.current_label"/>
-            <i class="fa fa-arrow-right ms-2" aria-hidden="true"/>
-          </button>
+          <div t-else=""><h2 id="current-task-title" class="h4" t-esc="state.data.current_label"/></div>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-primary btn-lg" t-on-click="openCurrent" data-planner-primary-action="true">
+              <t t-esc="state.data.current_issue ? state.data.current_issue.action_label : 'Open current action'"/>
+              <i class="fa fa-arrow-right ms-2" aria-hidden="true"/>
+            </button>
+            <button class="btn btn-outline-secondary" t-on-click="() => this.openStep(state.data.current_step)">View all in this area</button>
+          </div>
         </section>
 
         <div class="row g-4 mt-1">
-          <section class="col-xl-8" aria-labelledby="divisions-title">
-            <div class="card h-100">
-              <div class="card-header d-flex justify-content-between align-items-center gap-3">
-                <div>
-                  <h2 id="divisions-title" class="h5 mb-0">Divisions</h2>
-                  <small class="text-muted">Team and format readiness by division</small>
-                </div>
-                <span class="badge text-bg-secondary">
-                  <t t-esc="state.data.counts.divisions"/> divisions
-                </span>
-              </div>
-              <div t-if="state.data.divisions.length" class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th scope="col">Division</th>
-                      <th scope="col">Teams</th>
-                      <th scope="col">Format</th>
-                      <th scope="col" class="text-end">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr t-foreach="state.data.divisions" t-as="division" t-key="division.id">
-                      <th scope="row" t-esc="division.name"/>
-                      <td>
-                        <span
-                          t-att-class="division.teams_status === 'complete' ? 'badge text-bg-success' : 'badge text-bg-warning'"
-                        >
-                          <t t-esc="division.team_count"/> teams
-                        </span>
-                      </td>
-                      <td>
-                        <span
-                          t-att-class="division.format_status === 'complete' ? 'badge text-bg-success' : 'badge text-bg-light text-dark'"
-                          t-esc="division.format_name || 'Not ready'"
-                        />
-                      </td>
-                      <td class="text-end">
-                        <button
-                          t-if="division.teams_status !== 'complete'"
-                          class="btn btn-sm btn-outline-primary"
-                          t-on-click="() => this.openStep('teams')"
-                        >Review team entries</button>
-                        <button
-                          t-else=""
-                          class="btn btn-sm btn-outline-primary"
-                          t-on-click="() => this.openStep('format')"
-                        >Configure division format</button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div t-else="" class="card-body text-center py-5">
-                <i class="fa fa-sitemap fa-3x text-muted mb-3" aria-hidden="true"/>
-                <h3 class="h5">No divisions yet</h3>
-                <p class="text-muted">Add the divisions that teams will enter.</p>
-                <button class="btn btn-primary" t-on-click="openBasics">Define competition divisions</button>
-              </div>
+          <section class="col-xl-7" aria-labelledby="divisions-title">
+            <div class="card h-100"><div class="card-header"><h2 id="divisions-title" class="h5 mb-0">Division readiness</h2></div>
+              <div t-if="state.data.divisions.length" class="table-responsive"><table class="table align-middle mb-0">
+                <thead><tr><th>Division</th><th>Teams</th><th>Format</th><th>Status</th></tr></thead>
+                <tbody><tr t-foreach="state.data.divisions" t-as="division" t-key="division.id">
+                  <td t-esc="division.name"/><td t-esc="division.team_count"/><td t-esc="division.format_name || division.format_status"/>
+                  <td><span t-att-class="division.ready ? 'badge text-bg-success' : 'badge text-bg-warning'" t-esc="division.ready ? 'Ready' : 'Needs action'"/></td>
+                </tr></tbody>
+              </table></div>
+              <div t-else="" class="card-body text-center py-5"><h3 class="h5">No divisions yet</h3><button class="btn btn-primary" t-on-click="openBasics">Define competition divisions</button></div>
             </div>
           </section>
-
-          <aside class="col-xl-4" aria-labelledby="issues-title">
-            <div class="card h-100">
-              <div class="card-header">
-                <h2 id="issues-title" class="h5 mb-0">What needs attention</h2>
-              </div>
-              <div t-if="state.data.issues.length" class="list-group list-group-flush">
-                <button
-                  t-foreach="state.data.issues"
-                  t-as="issue"
-                  t-key="issue.key"
-                  class="list-group-item list-group-item-action text-start"
-                  t-on-click="() => this.openStep(issue.step)"
-                >
-                  <div class="d-flex gap-2 align-items-start">
-                    <i class="fa fa-exclamation-circle text-danger mt-1" aria-hidden="true"/>
-                    <div>
-                      <strong t-esc="issue.title"/>
-                      <div class="small text-muted" t-esc="issue.message"/>
-                    </div>
-                  </div>
-                </button>
-              </div>
-              <div t-else="" class="card-body text-center py-5">
-                <i class="fa fa-check-circle fa-3x text-success mb-3" aria-hidden="true"/>
-                <h3 class="h5">No blockers</h3>
-                <p class="text-muted mb-0">This competition can continue to the next step.</p>
-              </div>
+          <aside class="col-xl-5" aria-labelledby="issues-title"><div class="card h-100">
+            <div class="card-header"><h2 id="issues-title" class="h5 mb-0">Action list</h2></div>
+            <div t-if="state.data.issues.length" class="list-group list-group-flush">
+              <button t-foreach="state.data.issues" t-as="issue" t-key="issue.key" class="list-group-item list-group-item-action text-start" t-on-click="() => this.openIssue(issue)" t-att-data-planner-issue="issue.key">
+                <div class="d-flex gap-2 align-items-start"><i class="fa fa-exclamation-circle text-danger mt-1" aria-hidden="true"/><div class="flex-grow-1">
+                  <strong t-esc="issue.title"/><div class="small text-muted" t-esc="issue.message"/>
+                  <div class="small mt-1"><span t-esc="issue.action_label"/> · <span t-esc="issue.owner"/></div>
+                </div></div>
+              </button>
             </div>
-          </aside>
+            <div t-else="" class="card-body text-center py-5"><h3 class="h5">No blockers</h3><p class="text-muted mb-0">The setup is ready for operational handoff.</p></div>
+          </div></aside>
         </div>
       </main>
     </div>

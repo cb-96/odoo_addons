@@ -32,3 +32,25 @@ Focused tests run through the repository's `ci/run_tests.sh` harness for
 ## Operator-facing labels
 
 Planner actions name the concrete work area, such as team entries and participants, competition stages and fixtures, match-day capacity, stage and match-day allocation, and independent review and publication.
+
+## Actionable planner guidance
+
+The planner exposes short business-language areas: Competition, Teams, Format,
+Dates & venues, Schedule, and Review & publish. Waiting areas remain inspectable
+and are labelled **Not ready**, rather than appearing locked.
+
+Every current blocker is returned with its responsible role and a direct action.
+The server resolves the blocker key again before opening anything, then routes to
+the exact registration window, format, match day, schedule, or review when one
+unambiguous record exists. The broader filtered workspace remains available as a
+secondary action. Resolved or stale blocker keys are rejected and require a
+planner refresh.
+
+After the live schedule is ready, the planner switches from setup guidance to an
+operational handoff with scoped links to match days and schedules. The creation
+wizard explains the practical effect of Simple, Controlled, and Custom workflow
+policies before the competition is created.
+
+The `competition_planner_intent` browser tour qualifies discoverability of the
+current action, direct blocker routing affordance, waiting-step terminology, and
+keyboard focus. Model tests cover exact-target routing and competition scoping.

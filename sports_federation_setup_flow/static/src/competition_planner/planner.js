@@ -5,7 +5,6 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { Component, onWillStart, useState } from "@odoo/owl";
 
-
 export class CompetitionPlanner extends Component {
     static template = "sports_federation_setup_flow.CompetitionPlanner";
 
@@ -20,10 +19,7 @@ export class CompetitionPlanner extends Component {
 
     async load() {
         if (!this.editionId) {
-            this.notification.add(
-                _t("Open the planner from a competition."),
-                {type: "warning"}
-            );
+            this.notification.add(_t("Open the planner from a competition."), {type: "warning"});
             this.state.loading = false;
             return;
         }
@@ -39,19 +35,28 @@ export class CompetitionPlanner extends Component {
         }
     }
 
-    async openStep(step) {
+    async doPlannerAction(method, argument) {
         const result = await this.orm.call(
-            "federation.competition.edition",
-            "action_open_planner_step",
-            [[this.editionId], step]
+            "federation.competition.edition", method, [[this.editionId], argument]
         );
-        return this.action.doAction(result, {
-            onClose: () => this.load(),
-        });
+        return this.action.doAction(result, {onClose: () => this.load()});
+    }
+
+    openStep(step) {
+        return this.doPlannerAction("action_open_planner_step", step);
+    }
+
+    openIssue(issue) {
+        return this.doPlannerAction("action_open_planner_issue", issue.key);
+    }
+
+    openOperation(operation) {
+        return this.doPlannerAction("action_open_planner_operation", operation);
     }
 
     openCurrent() {
-        return this.openStep(this.state.data.current_step);
+        const issue = this.state.data.current_issue;
+        return issue ? this.openIssue(issue) : this.openStep(this.state.data.current_step);
     }
 
     openBasics() {
@@ -59,27 +64,18 @@ export class CompetitionPlanner extends Component {
     }
 
     statusIcon(step) {
-        if (step.status === "complete") {
-            return "fa-check";
-        }
-        if (step.status === "current") {
-            return "fa-arrow-right";
-        }
-        return "fa-lock";
+        if (step.status === "complete") return "fa-check";
+        if (step.status === "current") return "fa-arrow-right";
+        return "fa-clock-o";
     }
 
     statusLabel(step) {
-        if (step.status === "complete") {
-            return _t("Complete");
-        }
-        if (step.status === "current") {
-            return _t("Current step");
-        }
-        return _t("Waiting");
+        if (step.status === "complete") return _t("Complete");
+        if (step.status === "current") return _t("Current action");
+        return _t("Not ready");
     }
 }
 
 registry.category("actions").add(
-    "sports_federation_setup_flow.CompetitionPlanner",
-    CompetitionPlanner
+    "sports_federation_setup_flow.CompetitionPlanner", CompetitionPlanner
 );

@@ -9,7 +9,7 @@ The rule is simple:
 2. The helper verifies the resulting backend state.
 3. The remaining records use the same public Odoo `action_*` method in bounded
    batches under the current browser session.
-4. A final `search_read` verifies the whole batch and writes evidence.
+4. The helper verifies every accelerated batch and writes evidence.
 
 This preserves model validation, role checks, workflow transitions, audit hooks,
 and transaction behavior. It only removes repetitive browser interaction. It
@@ -38,6 +38,7 @@ test("custom competition", async ({ page }) => {
         recordIds: matchIds,
         actionMethod: "action_submit_result",
         stateField: "result_state",
+        sourceStates: ["draft", "corrected"],
         // In simple workflow mode submission may auto-verify or auto-approve.
         expectedState: ["submitted", "verified", "approved"],
         taskInputs: {
@@ -54,9 +55,12 @@ test("custom competition", async ({ page }) => {
 ```
 
 Use a stable task key for one behavior, and put every behavior-changing custom
-setup value in `taskInputs`. The helper combines those inputs with the current
-Git revision. A changed policy or implementation therefore requires fresh UI
-confirmation instead of reusing stale evidence.
+setup value in `taskInputs`. `sourceStates` must list the allowed pre-action
+states, and `expectedState` must list the state(s) that mean the task is already
+complete. The helper combines those values, the target record IDs, and the
+current Git revision in its fingerprint. A changed target set, policy, state,
+or implementation therefore requires fresh UI confirmation instead of
+reusing stale evidence.
 
 ## Task design
 
@@ -77,15 +81,21 @@ Keep unique or decision-heavy work in Playwright:
 
 Do not combine different policy settings, roles, source states, or expected
 outcomes under one task key. Split those into separate confirmed tasks.
+For direct `confirmAndComplete(...)` calls, provide `isItemComplete(item,
+context)`. It must inspect persisted state and return `true` only when that item
+already has the requested outcome. The runner uses it to exclude completed
+items before confirmation and to reconcile a failed partial batch safely.
 
 ## Direct JSON routes
 
 For route-owned workflows such as the match-day operations board, use
-`runner.confirmAndComplete(...)`. Let `uiAction` prove the first records, let
-`fastAction` call the existing JSON route through `rpc.call(route, params)`, and
-let `verifyBatch` fetch the operations workspace once and validate all remaining
-matches. This keeps controller scope checks in place while avoiding repeated
-page navigation.
+`runner.confirmAndComplete(...)`. Let `isItemComplete` inspect the persisted
+match-day state, `uiAction` prove the first records, `fastAction` call the
+existing JSON route through `rpc.call(route, params)`, and `verifyBatch` fetch
+the operations workspace once and validate all remaining matches. After each
+successfully verified route chunk, call `reportProgress(itemKeys)` from the
+`fastAction` context so progress is durable if a later chunk fails. This keeps
+controller scope checks in place while avoiding repeated page navigation.
 
 ## Evidence and failure behavior
 
@@ -93,13 +103,20 @@ The evidence file records:
 
 - task key and fingerprint;
 - Git revision and task inputs;
+- target IDs and items already complete at the start of the run;
 - records confirmed through the UI;
 - records completed through the accelerated path;
 - pass/fail status and failure message.
 
 The confirmation is stored before accelerated execution. A backend validation
-failure is not retried or hidden. The run is marked failed and the original
-error is raised so the agent can inspect the custom setup.
+failure is not retried or hidden within that run: it is marked failed and the
+original error is raised so the agent can inspect the custom setup. Verified
+chunk progress is persisted. On a later invocation, `confirmRecordAction(...)`
+re-reads current states, skips records already at an expected state, and only
+processes records still in an allowed source state. The changed pending set
+requires fresh UI confirmation. Generic `confirmAndComplete(...)` tasks get
+the same retry behavior only when their `isItemComplete` callback accurately
+reflects persisted state.
 
 ## Run the helper tests
 

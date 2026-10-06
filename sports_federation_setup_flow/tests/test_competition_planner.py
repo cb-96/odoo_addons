@@ -320,3 +320,47 @@ class TestCompetitionPlanner(TransactionCase):
             "gameday-%s-missing-publication" % days[1].id,
             [issue["key"] for issue in planner["issues"]],
         )
+
+    def test_planner_blocker_is_actionable_and_opens_exact_record(self):
+        division = self.env["federation.tournament"].create(
+            {
+                "name": "Actionable Division",
+                "edition_id": self.edition.id,
+                "competition_id": self.competition.id,
+                "season_id": self.season.id,
+                "date_start": "2027-02-01",
+            }
+        )
+        window = self.env["federation.registration.window"].create(
+            {
+                "name": "Actionable Registration",
+                "edition_id": self.edition.id,
+                "division_id": division.id,
+            }
+        )
+
+        data = self.edition.get_competition_planner_data()
+        issue = next(
+            item
+            for item in data["issues"]
+            if item["key"] == f"division-{division.id}-teams"
+        )
+        self.assertEqual(issue["owner"], "Registration manager")
+        self.assertTrue(issue["action_label"])
+        self.assertEqual(data["current_issue"]["key"], issue["key"])
+
+        action = self.edition.action_open_planner_issue(issue["key"])
+        self.assertEqual(action["res_model"], "federation.registration.window")
+        self.assertEqual(action["res_id"], window.id)
+
+    def test_waiting_steps_use_short_business_labels(self):
+        data = self.edition.get_competition_planner_data()
+        self.assertEqual(
+            [step["label"] for step in data["steps"]],
+            ["Competition", "Teams", "Format", "Dates & venues", "Schedule", "Review & publish"],
+        )
+
+    def test_operation_actions_remain_competition_scoped(self):
+        action = self.edition.action_open_planner_operation("matchdays")
+        self.assertEqual(action["domain"], [("edition_id", "=", self.edition.id)])
+        self.assertEqual(action["context"]["default_edition_id"], self.edition.id)
