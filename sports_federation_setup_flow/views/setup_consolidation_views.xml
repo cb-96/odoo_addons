@@ -1,4 +1,15 @@
 <odoo>
+  <record id="view_competition_edition_list_setup_flow" model="ir.ui.view">
+    <field name="name">federation.competition.edition.list.setup.flow</field>
+    <field name="model">federation.competition.edition</field>
+    <field name="inherit_id" ref="sports_federation_tournament.view_federation_competition_edition_list"/>
+    <field name="arch" type="xml">
+      <field name="state" position="before">
+        <field name="setup_next_action" optional="show"/>
+      </field>
+    </field>
+  </record>
+
   <record id="action_competition_setup_home" model="ir.actions.act_window">
     <field name="name">Competition Hub</field>
     <field name="res_model">federation.competition.edition</field>

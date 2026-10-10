@@ -6,7 +6,7 @@
   <field name="arch" type="xml">
     <xpath expr="//form/header" position="inside"><button name="action_open_competition_planner" type="object" string="Open Competition Hub" class="btn-primary" data-keyboard-competition-setup="true"/></xpath>
     <xpath expr="//group[.//field[@name='workflow_progress']]" position="replace">
-    <group string="Competition Setup">
+    <group string="Competition Setup" class="o_competition_setup">
      <group><field name="setup_progress" widget="progressbar"/><field name="setup_next_action" readonly="1"/><field name="setup_blocker_hint" readonly="1" invisible="setup_step == 'complete'"/><field name="setup_summary" readonly="1"/></group>
       <group><button name="action_open_competition_planner" type="object" string="Open Workspace" class="btn-primary"/><button name="action_setup_divisions" type="object" string="Divisions" groups="sports_federation_base.group_federation_advanced_operator"/><button name="action_setup_participants" type="object" string="Teams" groups="sports_federation_base.group_federation_advanced_operator"/><button name="action_setup_gamedays" type="object" string="Game Days" groups="sports_federation_base.group_federation_advanced_operator"/><button name="action_setup_schedule" type="object" string="Schedule" groups="sports_federation_base.group_federation_advanced_operator"/></group>
      <!-- Technical modifier relay: setup_step controls Continue Setup. -->
