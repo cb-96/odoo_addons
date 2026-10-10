@@ -29,6 +29,15 @@ class FederationMatch(models.Model):
             matches._create_auto_match_sheets()
         return matches
 
+    def write(self, vals):
+        result = super().write(vals)
+        schedule_fields = {"date_scheduled", "round_id", "scheduled_time"}
+        if "schedule_publication_id" in self._fields:
+            schedule_fields.add("schedule_publication_id")
+        if schedule_fields.intersection(vals):
+            self.mapped("match_sheet_ids")._inherit_existing_gameday_lineup()
+        return result
+
     def _create_auto_match_sheets(self):
         """Create draft match sheets for home and away teams if not already present."""
         Sheet = self.env["federation.match.sheet"]

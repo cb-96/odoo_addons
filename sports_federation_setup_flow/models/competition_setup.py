@@ -100,19 +100,79 @@ class FederationCompetitionEditionSetup(models.Model):
         return action
 
     def action_setup_participants(self):
-        action = self._action_with_edition(
-            "sports_federation_registration.action_registration_desk"
+        self.ensure_one()
+        finalized_divisions = self.env["federation.participant.set"].search(
+            [("edition_id", "=", self.id), ("state", "=", "finalized")]
+        ).mapped("division_id")
+        division = (self.tournament_ids - finalized_divisions).sorted(
+            lambda item: (item.name or "", item.id)
+        )[:1] or self.tournament_ids.sorted(lambda item: (item.name or "", item.id))[:1]
+        if not division:
+            return self.action_setup_divisions()
+        wizard = self.env["federation.competition.team.selection.wizard"].create(
+            {"edition_id": self.id, "division_id": division.id}
         )
-        action["domain"] = [("edition_id", "=", self.id)]
-        return action
+        wizard._onchange_division_id()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Select Teams"),
+            "res_model": wizard._name,
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "views": [(False, "form")],
+            "target": "new",
+        }
 
     def action_setup_format(self):
-        return self.action_open_planner_step("format")
+        self.ensure_one()
+        structures = self.env["federation.competition.structure"].search(
+            [("edition_id", "=", self.id), ("state", "=", "frozen")]
+        )
+        division = (self.tournament_ids - structures.mapped("division_id")).sorted(
+            lambda item: (item.name or "", item.id)
+        )[:1] or self.tournament_ids.sorted(lambda item: (item.name or "", item.id))[:1]
+        if not division:
+            return self.action_setup_divisions()
+        participant_set = self.env["federation.participant.set"].search(
+            [
+                ("edition_id", "=", self.id),
+                ("division_id", "=", division.id),
+                ("state", "=", "finalized"),
+            ],
+            order="id desc",
+            limit=1,
+        )
+        if not participant_set:
+            return self.action_setup_participants()
+        wizard = self.env["federation.competition.format.setup.wizard"].create(
+            {
+                "edition_id": self.id,
+                "division_id": division.id,
+                "participant_set_id": participant_set.id,
+                "format_type": self.setup_default_format_type,
+            }
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Choose Format"),
+            "res_model": wizard._name,
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "views": [(False, "form")],
+            "target": "new",
+        }
 
     def action_setup_gamedays(self):
         self.ensure_one()
         wizard = self.env["federation.competition.gameday.setup.wizard"].create(
-            {"edition_id": self.id}
+            {
+                "edition_id": self.id,
+                "new_date": self.date_start or fields.Date.context_today(self),
+                "default_venue_id": self.setup_default_venue_id.id,
+                "default_start_hour": self.setup_default_start_hour,
+                "default_end_hour": self.setup_default_end_hour,
+                "default_slot_duration_minutes": self.setup_default_slot_duration_minutes,
+            }
         )
         return {
             "type": "ir.actions.act_window",
@@ -120,13 +180,30 @@ class FederationCompetitionEditionSetup(models.Model):
             "res_model": wizard._name,
             "res_id": wizard.id,
             "view_mode": "form",
+            "views": [(False, "form")],
             "target": "current",
         }
 
     def action_setup_schedule(self):
-        return self._action_with_edition(
-            "sports_federation_scheduling.action_competition_schedule_wizard"
+        self.ensure_one()
+        wizard = self.env["federation.competition.schedule.wizard"].create(
+            {"edition_id": self.id}
         )
+        wizard._onchange_edition_id()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Plan Competition"),
+            "res_model": wizard._name,
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "views": [(False, "form")],
+            "target": "new",
+            "context": dict(
+                self.env.context,
+                competition_planner_edition_id=self.id,
+                return_to_competition_workspace=True,
+            ),
+        }
 
     def action_setup_publication(self):
         return self._action_with_edition(

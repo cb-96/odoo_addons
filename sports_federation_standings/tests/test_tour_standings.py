@@ -98,6 +98,7 @@ class TestTourStandings(TransactionCase):
         }
         if self.has_include_flag:
             vals["include_in_official_standings"] = include
+            vals["result_state"] = "approved"
         return self.env["federation.match"].create(vals)
 
     def _make_standing(self):
@@ -196,6 +197,7 @@ class TestTourStandings(TransactionCase):
             }
             if has_flag:
                 vals["include_in_official_standings"] = True
+                vals["result_state"] = "approved"
             return self.env["federation.match"].create(vals)
 
         _m(self.team_a, self.team_b, 1, 0)  # A wins: 3pts, B: 0pts
@@ -228,6 +230,7 @@ class TestTourStandings(TransactionCase):
             }
             if has_flag:
                 vals["include_in_official_standings"] = True
+                vals["result_state"] = "approved"
             return self.env["federation.match"].create(vals)
 
         _m3(self.team_a, self.team_c, 2, 0)  # A 3pts, GD +2

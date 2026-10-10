@@ -130,3 +130,7 @@ must not mutate records that originated from those reads directly.
 ## Result handoff queues
 
 Result follow-up tasks identify whether the next action belongs to the Result Submitter, Result Verifier, or Result Approver. Queue guidance names the required action while the underlying result commands continue to enforce separation of duties.
+
+## Unified action projection (19.0.7.3.0)
+
+`federation.operation.task` remains the only persistent task projection. It now also emits one missing-parental-consent task per affected roster line and one shared game-day-lineup task per team/day scope. Parental-consent tasks open the player's canonical approval action. Lineup tasks open the shared match-sheet source. Source models remain authoritative and stale projections still complete through the existing idempotent synchronization.

@@ -1,6 +1,6 @@
 # Competition Engine
 
-> **UI navigation:** operators use **Federation → Competitions → Competition Operations**. See [`docs/COMPETITION_UI_WORKFLOW.md`](docs/COMPETITION_UI_WORKFLOW.md).
+> **UI navigation:** ordinary operators use **Federation → Competitions → Competition Hub**. Owner-module actions remain under Advanced Competition Tools and contextual links. See [`docs/COMPETITION_UI_WORKFLOW.md`](docs/COMPETITION_UI_WORKFLOW.md).
 
 This implementation provides role-owned capabilities and explicit handovers for competition planning and operations.
 

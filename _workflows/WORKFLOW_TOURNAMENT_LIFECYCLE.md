@@ -53,7 +53,7 @@ Blocking vs warning-only model:
 
 ## Verified UI navigation
 
-Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md). The main journey is under **Federation → Competitions → Competition Operations**; addon names below describe ownership, not menu labels.
+Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md). The ordinary journey is **Federation → Competitions → Competition Hub**; addon names below describe ownership, while raw workspaces are advanced or contextual.
 
 ## Step-by-Step Flow
 
@@ -249,7 +249,7 @@ including byes and future-round wiring for non-power-of-two participant counts.
    scaffold common stage/group/progression combinations (for recurring
    tournaments). Use `action_apply()` from the template to create stages and
    progression rules for a tournament in a single step.
-5. Generate the next stage in **Federation → Competitions → Competition Operations → Format Studio**, then assign it in **Schedule Planner**.
+5. Resume **Federation → Competitions → Competition Hub**. Advanced stage-graph recovery uses **Federation → Competitions → Advanced Competition Tools → Format Studio**, then the contextual schedule planner.
 6. Typical workflow: freeze the round-robin standing, auto-advance the top-ranked
    teams into the knockout stage through a `federation.stage.progression` rule,
    then schedule those knockout matches onto the planned knockout rounds.
@@ -319,3 +319,9 @@ cannot be withdrawn directly.
 - [Match Day Operations](WORKFLOW_MATCH_DAY_OPERATIONS.md) — detailed match-day process
 - [Result Pipeline](WORKFLOW_RESULT_PIPELINE.md) — score verification and approval
 - [Season Registration](WORKFLOW_SEASON_REGISTRATION.md) — prerequisite club/team registration
+
+## Simplified competition workspace contract (2026-10-10)
+
+Ordinary operators create and resume competitions through **Federation > Competitions > Competition Hub**. The workspace exposes one next action and unified readiness. Direct team selection must materialize the canonical registration entries and finalized participant set; format selection must call canonical generation/freeze commands; game-day setup must hand directly to complete-competition schedule planning; review/publication must preserve immutable snapshots and separation of duties when configured.
+
+Raw registration, format, calendar, schedule, review, and technical records remain available only through contextual links or Advanced Federation Tools. Hiding their menus does not relax their ACL, role, transition, validation, versioning, or audit contracts.

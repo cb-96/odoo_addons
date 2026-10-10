@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Rosters",
-    "version": "19.0.1.5.1",
+    "version": "19.0.1.7.0",
     "category": "Sports",
     "summary": "Season/competition-bound team rosters and match sheets",
     "description": """
@@ -15,12 +15,14 @@
         "sports_federation_people",
         "sports_federation_tournament",
         "sports_federation_rules",
+        "sports_federation_matchday",
         "mail",
     ],
     "data": [
         "security/ir.model.access.csv",
         "views/team_roster_views.xml",
         "views/match_sheet_views.xml",
+        "views/gameday_lineup_wizard_views.xml",
         "views/season_registration_views_inherit.xml",
         "views/tournament_participant_views_inherit.xml",
         "views/team_views_inherit.xml",

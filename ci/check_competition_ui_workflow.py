@@ -16,33 +16,24 @@ TOP_LEVEL = (
     "Insights",
     "Administration",
 )
-REQUIRED_PATHS = (
-    ("Federation", "Competitions", "Seasons"),
-    ("Federation", "Competitions", "Season Competitions"),
-    ("Federation", "Competitions", "Competition Operations", "Create Competition"),
-    ("Federation", "Competitions", "Competition Operations", "Competition Overview"),
-    ("Federation", "Competitions", "Competition Operations", "Registration Desk"),
-    ("Federation", "Competitions", "Competition Operations", "Format Studio"),
-    ("Federation", "Competitions", "Competition Operations", "Calendar Planner"),
-    ("Federation", "Competitions", "Competition Operations", "Schedule Planner"),
-    ("Federation", "Competitions", "Competition Operations", "Schedule Review Queue"),
+REQUIRED_OPERATOR_PATHS = (
+    ("Federation", "Competitions", "Competition Hub"),
     ("Federation", "Clubs & People", "Club Directory", "Clubs"),
     ("Federation", "Clubs & People", "Club Directory", "Teams"),
     ("Federation", "Match Operations", "Match-Day Control"),
-    ("Federation", "Match Operations", "Matches"),
-    ("Federation", "Match Operations", "Match Sheets"),
-    ("Federation", "Publishing", "Approved Schedules"),
-    ("Federation", "Publishing", "Schedule Publications"),
-    ("Federation", "Publishing", "Standings"),
-    ("Federation", "Finance & Assurance", "Finance"),
-    ("Federation", "Finance & Assurance", "Compliance"),
-    ("Federation", "Finance & Assurance", "Governance"),
+)
+REQUIRED_ADVANCED_PATHS = (
+    ("Federation", "Competitions", "Advanced Competition Tools", "Create Competition"),
+    ("Federation", "Competitions", "Advanced Competition Tools", "Registration Desk"),
+    ("Federation", "Competitions", "Advanced Competition Tools", "Format Studio"),
+    ("Federation", "Competitions", "Advanced Competition Tools", "Calendar Planner"),
+    ("Federation", "Competitions", "Advanced Competition Tools", "Schedule Planner"),
+    ("Federation", "Competitions", "Advanced Competition Tools", "Schedule Review Queue"),
     (
         "Federation",
-        "Insights",
-        "Reports & Insights",
-        "Overview & Readiness",
-        "Operational Health",
+        "Administration",
+        "Competition Audit & Recovery",
+        "Role Assignments",
     ),
     ("Federation", "Administration", "Action Queue"),
     ("Federation", "Administration", "System Health", "Operational Job Health"),
@@ -58,7 +49,8 @@ FORBIDDEN_TOP_LEVEL = {
 
 def index():
     records = {}
-    for path in ROOT.glob("sports_federation_*/views/*.xml"):
+    paths = list(ROOT.glob("sports_federation_*/views/*.xml"))
+    for path in paths:
         try:
             tree = ElementTree.parse(path)
         except ElementTree.ParseError as exc:
@@ -75,7 +67,43 @@ def index():
                 "name": node.get("name", ""),
                 "parent": parent,
                 "sequence": int(node.get("sequence", "10")),
+                "advanced": "group_federation_advanced_operator"
+                in node.get("groups", ""),
             }
+    # Explicit ir.ui.menu records update menus created in dependency addons.
+    # Apply the aggregate application overrides last, matching supported install
+    # order rather than relying on filesystem glob order.
+    paths.sort(key=lambda path: (path.parts[-3] == "sports_federation_app", str(path)))
+    for path in paths:
+        try:
+            tree = ElementTree.parse(path)
+        except ElementTree.ParseError:
+            continue
+        module = path.parts[-3]
+        for node in tree.iter("record"):
+            if node.get("model") != "ir.ui.menu" or not node.get("id"):
+                continue
+            rid = node.get("id")
+            xmlid = rid if "." in rid else f"{module}.{rid}"
+            record = records.setdefault(
+                xmlid, {"name": "", "parent": "", "sequence": 10, "advanced": False}
+            )
+            for field in node.findall("field"):
+                name = field.get("name")
+                if name == "name" and field.text:
+                    record["name"] = field.text.strip()
+                elif name == "parent_id" and field.get("ref"):
+                    parent = field.get("ref")
+                    record["parent"] = (
+                        parent if "." in parent else f"{module}.{parent}"
+                    )
+                elif name == "sequence" and field.text:
+                    record["sequence"] = int(field.text.strip())
+                elif name == "groups_id":
+                    record["advanced"] = (
+                        "group_federation_advanced_operator"
+                        in (field.get("eval") or "")
+                    )
     return records
 
 
@@ -115,12 +143,24 @@ def main():
     if stale:
         errors.append("obsolete root categories remain: " + ", ".join(sorted(stale)))
 
-    for labels in REQUIRED_PATHS:
+    for labels in REQUIRED_OPERATOR_PATHS + REQUIRED_ADVANCED_PATHS:
         rendered = " > ".join(labels)
         if not path_exists(records, labels):
             errors.append(f"menu path missing: {rendered}")
         if rendered not in navigation and rendered not in workflow:
             errors.append(f"documented path missing: {rendered}")
+
+    competition_root = "sports_federation_base.menu_federation_competitions"
+    ordinary_competition_entries = sorted(
+        record["name"]
+        for record in records.values()
+        if record["parent"] == competition_root and not record["advanced"]
+    )
+    if ordinary_competition_entries != ["Competition Hub"]:
+        errors.append(
+            "ordinary competition entries are "
+            f"{ordinary_competition_entries!r}, expected only Competition Hub"
+        )
 
     for label in TOP_LEVEL:
         if f"**{label}**" not in navigation:

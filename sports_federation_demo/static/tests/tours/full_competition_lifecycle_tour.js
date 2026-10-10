@@ -15,70 +15,44 @@ function openAction(xmlid, description) {
     };
 }
 
-function assertBackendView(description) {
-    return {
-        content: description,
-        trigger: ".o_action_manager .o_form_view, .o_action_manager .o_list_renderer, .o_action_manager .o_kanban_renderer, .o_action_manager .o_calendar_renderer",
-    };
-}
-
-// Navigate through actions rather than menu nodes. Menu nodes can be absent from
-// the DOM when an app section is collapsed. Odoo 19 list, kanban, and calendar
-// actions expose renderer classes rather than the historical *_view wrappers.
+// The ordinary lifecycle intentionally starts and resumes from one entry. Raw
+// registration, format, calendar, schedule and approval actions are covered by
+// their owning addon tests and remain available through contextual deep links.
 tour.add("full_competition_lifecycle", {
     steps: () => [
-        {
-            content: "The competition overview form is ready",
-            trigger: '.o_form_view .o_field_widget[name="setup_next_action"]',
-        },
         openAction(
-            "sports_federation_registration.action_registration_desk",
-            "Open the registration desk"
-        ),
-        assertBackendView("Registration windows are available"),
-        openAction(
-            "sports_federation_format.action_format_studio",
-            "Open the format studio"
-        ),
-        assertBackendView("Competition structures are available"),
-        openAction(
-            "sports_federation_calendar.action_calendar_planner",
-            "Open the calendar planner"
-        ),
-        assertBackendView("Competition match days are available"),
-        openAction(
-            "sports_federation_scheduling.action_schedule_planner_competition",
-            "Open the schedule planner"
-        ),
-        assertBackendView("Working schedules are available"),
-        openAction(
-            "sports_federation_schedule_approval.action_schedule_review_queue",
-            "Open the schedule review queue"
-        ),
-        assertBackendView("Schedule reviews are available"),
-        openAction(
-            "sports_federation_matchday.action_matchday_control",
-            "Open match-day control"
-        ),
-        assertBackendView("Published match days are available"),
-        openAction(
-            "sports_federation_officiating.action_matchday_assign_official_wizard",
-            "Open match-day officiating assignment"
+            "sports_federation_setup_flow.action_competition_setup_home",
+            "Open the canonical competition workspace"
         ),
         {
-            content: "The match-day officiating wizard is available",
-            trigger: '.o_dialog .o_form_view .o_field_widget[name="assignment_type"]',
+            content: "Competition rows expose the resumable workspace",
+            trigger: ".o_list_renderer button[name='action_open_competition_planner']",
         },
         {
-            content: "Close the officiating wizard",
-            trigger: ".o_dialog footer .btn-secondary",
+            content: "Resume without choosing a technical module",
+            trigger: ".o_list_renderer button[name='action_open_competition_planner']",
             run: "click",
         },
-        openAction(
-            "sports_federation_standings.action_federation_standing",
-            "Open official standings"
-        ),
-        assertBackendView("Official standings are available"),
+        {
+            content: "The simplified competition workspace is ready",
+            trigger: ".o_competition_planner [data-planner-primary-action='true']",
+        },
+        {
+            content: "Unified readiness covers planning and operations",
+            trigger: ".o_competition_planner [data-planner-unified-readiness='true']",
+        },
+        {
+            content: "Exactly one next action is promoted",
+            trigger: ".o_competition_planner [data-planner-primary-projection='true']",
+            run() {
+                const actions = document.querySelectorAll(
+                    ".o_competition_planner [data-planner-primary-action='true']"
+                );
+                if (actions.length !== 1) {
+                    throw new Error(`Expected one primary action, found ${actions.length}.`);
+                }
+            },
+        },
         {
             content: "Open the public competition index",
             trigger: "body",

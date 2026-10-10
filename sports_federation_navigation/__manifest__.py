@@ -1,0 +1,35 @@
+{
+    "name": "Sports Federation Navigation",
+    "version": "19.0.1.0.0",
+    "category": "Sports",
+    "summary": "Ordinary and advanced navigation assembly",
+    "description": """
+Cross-addon menu discoverability for the supported federation application.
+Domain addons continue to own actions, models, permissions, and migrations.
+""",
+    "author": "Sports Federation",
+    "license": "LGPL-3",
+    "depends": [
+        "sports_federation_base",
+        "sports_federation_competition_core",
+        "sports_federation_registration",
+        "sports_federation_format",
+        "sports_federation_calendar",
+        "sports_federation_scheduling",
+        "sports_federation_schedule_approval",
+        "sports_federation_setup_flow",
+        "sports_federation_matchday",
+        "sports_federation_rosters",
+        "sports_federation_officiating",
+        "sports_federation_venues",
+        "sports_federation_discipline",
+        "sports_federation_standings",
+        "sports_federation_portal",
+        "sports_federation_reporting",
+        "sports_federation_import_tools",
+    ],
+    "data": ["views/navigation.xml"],
+    "installable": True,
+    "application": False,
+    "auto_install": False,
+}

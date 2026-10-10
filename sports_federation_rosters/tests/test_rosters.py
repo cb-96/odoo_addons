@@ -67,6 +67,76 @@ class TestRosters(TransactionCase):
         self.assertEqual(roster.team_id, self.team)
         self.assertEqual(roster.season_id, self.season)
 
+    def test_minor_needs_verified_parental_approval_for_senior_roster(self):
+        minor = self.env["federation.player"].create(
+            {
+                "first_name": "Minor",
+                "last_name": "Senior League",
+                "birth_date": "2020-01-01",
+                "gender": "male",
+            }
+        )
+        roster = self.env["federation.team.roster"].create(
+            {
+                "name": "Adult League Roster",
+                "team_id": self.team.id,
+                "season_id": self.season.id,
+            }
+        )
+        approval = self.env["federation.player.parental.approval"].create(
+            {
+                "player_id": minor.id,
+                "guardian_name": "Minor Parent",
+                "approval_date": "2024-01-01",
+                "approval_document": b"c2lnbmVkLWFwcHJvdmFs",
+            }
+        )
+
+        with self.assertRaisesRegex(
+            ValidationError, "verified parental approval"
+        ), self.cr.savepoint():
+            self.env["federation.team.roster.line"].create(
+                {"roster_id": roster.id, "player_id": minor.id}
+            )
+
+        approval.action_verify()
+
+        line = self.env["federation.team.roster.line"].create(
+            {"roster_id": roster.id, "player_id": minor.id}
+        )
+        self.assertTrue(line.eligible)
+
+    def test_minor_does_not_need_parental_approval_for_youth_roster(self):
+        youth_team = self.env["federation.team"].create(
+            {
+                "name": "Youth Team",
+                "club_id": self.club.id,
+                "code": "YT",
+                "category": "youth",
+            }
+        )
+        minor = self.env["federation.player"].create(
+            {
+                "first_name": "Minor",
+                "last_name": "Youth League",
+                "birth_date": "2020-01-01",
+                "gender": "male",
+            }
+        )
+        roster = self.env["federation.team.roster"].create(
+            {
+                "name": "Youth Roster",
+                "team_id": youth_team.id,
+                "season_id": self.season.id,
+            }
+        )
+
+        line = self.env["federation.team.roster.line"].create(
+            {"roster_id": roster.id, "player_id": minor.id}
+        )
+
+        self.assertTrue(line.eligible)
+
     def test_create_roster_generates_name_from_scope(self):
         """Test that create roster generates name from scope."""
         roster = self.env["federation.team.roster"].create(

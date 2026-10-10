@@ -743,3 +743,11 @@ If you'd like, I can now: (1) open a PR draft for this change, (2) run a repo sc
 ## Simplified competition journey and reversible handoffs
 
 Competition editions expose Draft, Ready, Live, and Finished presentation states while detailed domain states remain authoritative. Calendar allocations support explicit late fixtures. Schedules derive their fixture pool from current allocations, flag stale work without deleting it, and permit pending review withdrawal. Published corrections use linked replacement revisions so immutable evidence remains intact.
+
+## Simplified competition workspace and navigation (2026-10-10)
+
+The supported aggregate application exposes one ordinary competition entry: `sports_federation_setup_flow.action_competition_setup_home`. The edition planner is the resumable application service and returns one `primary_action` plus unified planning/operational readiness. It routes simplified team, format, game-day, schedule, lineup, and publication commands while the owning registration, format, calendar, scheduling, approval, roster, result, and audit models remain authoritative.
+
+`sports_federation_navigation/views/navigation.xml` is intentionally cross-addon assembly loaded after its domain dependencies. It gates duplicate/raw/specialist menus behind `group_federation_advanced_operator` and moves competition audit/recovery under Administration. Actions, ACLs, record rules, model names, and XML IDs are retained for contextual deep links, recovery, integrations, and advanced users. `sports_federation_app` remains the dependency-only application entry point.
+
+The direct team picker materializes registration windows, approved entries, and immutable finalized participant sets. The simplified format wizard calls structure generation/freeze. The game-day lineup wizard writes canonical match sheets and reuses their shared-day synchronization, readiness, parental-consent, and audit behavior. `federation.operation.task` remains the only persistent work projection and adds parental-consent and shared-lineup task types.

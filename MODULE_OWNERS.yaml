@@ -1,5 +1,5 @@
 owner: Federation Platform Team
-last_reviewed: 2026-04-18
+last_reviewed: 2026-10-10
 review_cadence: Every release
 
 modules:
@@ -71,6 +71,10 @@ modules:
     primary_owner: Federation Platform Team
     secondary_owner: Federation Portal and Public Experience
     surface: Notification rules, outbound delivery, and communication hooks
+  sports_federation_navigation:
+    primary_owner: Federation Platform Team
+    secondary_owner: Federation Competition Operations
+    surface: Cross-addon ordinary and advanced menu discoverability
   sports_federation_officiating:
     primary_owner: Federation Competition Operations
     secondary_owner: Federation Portal and Public Experience

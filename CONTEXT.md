@@ -121,3 +121,11 @@ Priority 0 hardening snapshot (2026-04-10)
 Use this file as the quick orientation layer, then rely on the workflow docs and module READMEs for the operational details.
 For contributor-facing local setup and focused CI commands, continue with `CONTRIBUTING.md`.
 
+
+Recent additions (2026-10-10)
+
+- Ordinary competition work now starts at **Federation > Competitions > Competition Hub** and resumes through one visual planner.
+- Presets remember editable format, venue, day, and slot defaults; direct team and format wizards automatically materialize the existing registration and structure records.
+- Game-day setup hands directly to unified schedule planning; the planner exposes one actionable projection and unified setup/operations readiness.
+- Shared game-day lineup preparation is available from match-day context and keeps parental-consent enforcement, synchronization, approvals, and audits.
+- Duplicate, raw-model, technical, and specialist menus are opt-in through **Advanced Federation Tools**. Their actions and permissions remain available for deep links, recovery, compliance, audit, and security.

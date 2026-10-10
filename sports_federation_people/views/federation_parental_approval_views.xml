@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_federation_parental_approval_list" model="ir.ui.view">
+        <field name="name">federation.player.parental.approval.list</field>
+        <field name="model">federation.player.parental.approval</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="player_id"/>
+                <field name="guardian_name"/>
+                <field name="approval_date"/>
+                <field name="valid_until"/>
+                <field name="state"/>
+                <field name="verified_by_id"/>
+                <field name="verified_on"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_federation_parental_approval_form" model="ir.ui.view">
+        <field name="name">federation.player.parental.approval.form</field>
+        <field name="model">federation.player.parental.approval</field>
+        <field name="arch" type="xml">
+            <form string="Parental Approval">
+                <header>
+                    <button name="action_verify" string="Verify" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_revoke" string="Revoke" type="object" invisible="state != 'verified'" confirm="Revoke this parental approval? It will stop satisfying eligibility checks."/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,verified,revoked"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="player_id" readonly="state != 'draft'"/>
+                            <field name="guardian_name" readonly="state != 'draft'"/>
+                            <field name="guardian_email" widget="email" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="approval_date" readonly="state != 'draft'"/>
+                            <field name="valid_until" readonly="state != 'draft'"/>
+                            <field name="verified_by_id" readonly="1"/>
+                            <field name="verified_on" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="approval_document" filename="approval_document_filename" readonly="state != 'draft'"/>
+                        <!-- Technical filename relay used by the binary document widget. -->
+                        <field name="approval_document_filename" invisible="1"/>
+                    </group>
+                    <group invisible="state != 'verified'">
+                        <field name="revocation_reason" placeholder="Required before revocation"/>
+                    </group>
+                    <group>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_federation_parental_approval_search" model="ir.ui.view">
+        <field name="name">federation.player.parental.approval.search</field>
+        <field name="model">federation.player.parental.approval</field>
+        <field name="arch" type="xml">
+            <search string="Search Parental Approvals">
+                <field name="player_id"/>
+                <field name="guardian_name"/>
+                <filter name="verified" string="Verified" domain="[('state', '=', 'verified')]"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="revoked" string="Revoked" domain="[('state', '=', 'revoked')]"/>
+                <group>
+                    <filter name="player" string="Player" context="{'group_by': 'player_id'}"/>
+                    <filter name="state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="federation_parental_approval_action" model="ir.actions.act_window">
+        <field name="name">Parental Approvals</field>
+        <field name="res_model">federation.player.parental.approval</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_federation_parental_approval_search"/>
+    </record>
+</odoo>

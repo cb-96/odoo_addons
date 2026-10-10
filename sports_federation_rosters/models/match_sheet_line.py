@@ -1,5 +1,7 @@
-from odoo import api, fields, models, _
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+
+from .roster_line import _get_parental_approval_reasons
 
 
 class FederationMatchSheetLine(models.Model):
@@ -141,6 +143,10 @@ class FederationMatchSheetLine(models.Model):
 
     @api.depends(
         "player_id",
+        "player_id.birth_date",
+        "player_id.parental_approval_ids.state",
+        "player_id.parental_approval_ids.approval_date",
+        "player_id.parental_approval_ids.valid_until",
         "roster_line_id",
         "roster_line_id.eligible",
         "roster_line_id.eligibility_feedback",
@@ -288,6 +294,15 @@ class FederationMatchSheetLine(models.Model):
             if self.roster_line_id.eligibility_feedback:
                 reasons.extend(self.roster_line_id.eligibility_feedback.splitlines())
 
+        reasons.extend(
+            _get_parental_approval_reasons(
+                self.player_id,
+                sheet.team_id,
+                reference_date,
+                tournament=sheet.match_id.tournament_id,
+            )
+        )
+
         service = self.env.get("federation.eligibility.service")
         rule_set = sheet._get_effective_rule_set()
         if service is not None and rule_set:
@@ -317,4 +332,4 @@ class FederationMatchSheetLine(models.Model):
                 self.player_id, rule_set, context=context
             )
             reasons.extend(result.get("reasons", []))
-        return reasons
+        return list(dict.fromkeys(reason for reason in reasons if reason))

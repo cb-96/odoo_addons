@@ -51,6 +51,9 @@ steps; match-day locks prevent post-match tampering.
    - linked player license (auto-scoped to the roster's team and season)
 6. Portal users editing a roster only see licenses that match the roster's team and
    season; any attempt to supply out-of-scope IDs is rejected server-side.
+7. When the team or tournament is in the `senior` category, any player who is
+   under 16 on the participation date must have a verified parental approval
+   linked to the player account. The signed approval must cover that date.
 
 Roster status starts at **`draft`**.
 
@@ -93,8 +96,9 @@ Roster status starts at **`draft`**.
 **Actor**: Club administrator / team manager
 **Module**: `sports_federation_rosters`
 
-1. For each fixture, create a **match sheet** (`federation.match.sheet`) linked to
-   the match, the team, and the source roster.
+1. Create a **match sheet** (`federation.match.sheet`) linked to the match, the
+   team, and the source roster. The declared lineup is shared across all of the
+   team's matches on that game day.
 2. Set the **side** (home / away / other).
 3. Add **match sheet lines** — typically by selecting from the active roster lines.
    Mark starters vs. substitutes and assign jersey numbers.
@@ -109,11 +113,19 @@ Match sheet states: `draft` → `submitted` → `approved` → `locked`.
 **Actor**: Club administrator → Federation staff
 **Module**: `sports_federation_rosters`
 
-1. Club submits the sheet (`draft` → `submitted`).
-2. Federation staff reviews the lineup and **approves** it (`submitted` → `approved`).
+1. Club submits the game-day lineup (`draft` → `submitted`). The roster, players,
+   starter/substitute/captain roles, and jersey numbers are synchronized to the
+   team's other sheets for that game day.
+2. Federation staff reviews and **approves the game-day lineup once**. Every
+   synchronized sheet moves to `approved`; newly created matches on that already
+   approved game day inherit the approved declaration without another approval.
 3. If corrections are needed, staff resets to `draft` for the club to amend.
-4. Once approved, the listed players are locked in; only substitution-timing fields
-   remain editable until the sheet reaches `locked`.
+4. Once approved, the listed players are locked in across the game day. Only
+   match-specific substitution-timing fields remain editable until each sheet
+   reaches `locked`.
+5. The explicit `federation.matchday` from the live schedule publication defines
+   the scope when available. Older tournament fixtures fall back to tournament
+   plus scheduled calendar date.
 
 ### 7. Match-Day Lock
 
@@ -174,7 +186,9 @@ official record for disputes.
 |----------|---------|
 | Player license inactive for this season? | Block activation; list in readiness_feedback |
 | Player suspended? | Block activation / sheet submission |
+| Player under 16 entering a senior/adult league without verified parental approval? | Block roster eligibility and sheet submission |
 | Squad below minimum size? | Block activation |
+| Team has several matches on one game day? | Synchronize and approve one shared declared lineup |
 | Match sheet already locked? | No further lineup changes allowed |
 | Season closed? | Roster moved to `closed`; no new sheets accepted |
 

@@ -528,3 +528,128 @@ class TestMatchSheets(TransactionCase):
             [("match_id", "=", match.id)]
         )
         self.assertEqual(len(sheets), 2)
+
+    def test_one_approval_applies_same_lineup_to_every_match_on_gameday(self):
+        roster, roster_line, _unused = self._create_active_roster(
+            "Game-Day Shared Roster",
+            min_players=1,
+        )
+        same_day_match = (
+            self.env["federation.match"]
+            .with_context(skip_auto_match_sheets=True)
+            .create(
+                {
+                    "tournament_id": self.tournament.id,
+                    "home_team_id": self.team_home.id,
+                    "away_team_id": self.team_away.id,
+                    "date_scheduled": "2024-06-15 19:00:00",
+                }
+            )
+        )
+        next_day_match = (
+            self.env["federation.match"]
+            .with_context(skip_auto_match_sheets=True)
+            .create(
+                {
+                    "tournament_id": self.tournament.id,
+                    "home_team_id": self.team_home.id,
+                    "away_team_id": self.team_away.id,
+                    "date_scheduled": "2024-06-16 15:00:00",
+                }
+            )
+        )
+        first_sheet = self.env["federation.match.sheet"].create(
+            {
+                "match_id": self.match.id,
+                "team_id": self.team_home.id,
+                "roster_id": roster.id,
+                "side": "home",
+            }
+        )
+        same_day_sheet = self.env["federation.match.sheet"].create(
+            {
+                "match_id": same_day_match.id,
+                "team_id": self.team_home.id,
+                "side": "home",
+            }
+        )
+        next_day_sheet = self.env["federation.match.sheet"].create(
+            {
+                "match_id": next_day_match.id,
+                "team_id": self.team_home.id,
+                "side": "home",
+            }
+        )
+        self.env["federation.match.sheet.line"].create(
+            {
+                "match_sheet_id": first_sheet.id,
+                "player_id": self.player1.id,
+                "roster_line_id": roster_line.id,
+                "is_starter": True,
+                "is_captain": True,
+                "jersey_number": "9",
+            }
+        )
+
+        first_sheet.action_submit()
+        first_sheet.action_approve()
+
+        self.assertEqual(first_sheet.state, "approved")
+        self.assertEqual(same_day_sheet.state, "approved")
+        self.assertEqual(same_day_sheet.roster_id, roster)
+        self.assertEqual(len(same_day_sheet.line_ids), 1)
+        self.assertEqual(same_day_sheet.line_ids.player_id, self.player1)
+        self.assertTrue(same_day_sheet.line_ids.is_starter)
+        self.assertTrue(same_day_sheet.line_ids.is_captain)
+        self.assertEqual(same_day_sheet.line_ids.jersey_number, "9")
+        self.assertEqual(next_day_sheet.state, "draft")
+        self.assertFalse(next_day_sheet.line_ids)
+
+    def test_new_match_on_approved_gameday_inherits_approved_lineup(self):
+        roster, roster_line, _unused = self._create_active_roster(
+            "Late Game-Day Match Roster",
+            min_players=1,
+        )
+        approved_sheet = self.env["federation.match.sheet"].create(
+            {
+                "match_id": self.match.id,
+                "team_id": self.team_home.id,
+                "roster_id": roster.id,
+                "side": "home",
+            }
+        )
+        self.env["federation.match.sheet.line"].create(
+            {
+                "match_sheet_id": approved_sheet.id,
+                "player_id": self.player1.id,
+                "roster_line_id": roster_line.id,
+                "is_starter": True,
+            }
+        )
+        approved_sheet.action_submit()
+        approved_sheet.action_approve()
+
+        late_match = (
+            self.env["federation.match"]
+            .with_context(skip_auto_match_sheets=True)
+            .create(
+                {
+                    "tournament_id": self.tournament.id,
+                    "home_team_id": self.team_home.id,
+                    "away_team_id": self.team_away.id,
+                    "date_scheduled": "2024-06-15 21:00:00",
+                }
+            )
+        )
+        inherited_sheet = self.env["federation.match.sheet"].create(
+            {
+                "match_id": late_match.id,
+                "team_id": self.team_home.id,
+                "side": "home",
+            }
+        )
+
+        self.assertEqual(inherited_sheet.state, "approved")
+        self.assertEqual(inherited_sheet.roster_id, roster)
+        self.assertEqual(inherited_sheet.line_ids.player_id, self.player1)
+        self.assertTrue(inherited_sheet.line_ids.is_starter)

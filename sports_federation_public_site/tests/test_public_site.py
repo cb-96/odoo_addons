@@ -212,7 +212,7 @@ class TestPublicSite(TransactionCase):
         tournament_menu = self.env["website.menu"].create(
             {
                 "name": "Tournaments",
-                "url": "/tournaments",
+                "url": "/competitions",
                 "parent_id": root_menu.id,
                 "sequence": 50,
                 "website_id": website.id,
@@ -234,7 +234,7 @@ class TestPublicSite(TransactionCase):
         legacy_menu = self.env["website.menu"].browse(legacy_menu.id)
         self.assertEqual(legacy_menu.parent_id, tournament_menu)
         self.assertEqual(legacy_menu.name, "Tournament Updates")
-        self.assertEqual(legacy_menu.url, "/tournaments#published")
+        self.assertEqual(legacy_menu.url, "/competitions")
         self.assertTrue(legacy_menu.is_visible)
         self.assertEqual(legacy_menu.sequence, 10)
 
@@ -251,7 +251,7 @@ class TestPublicSite(TransactionCase):
         tournament_menu = self.env["website.menu"].create(
             {
                 "name": "Tournaments",
-                "url": "/tournaments",
+                "url": "/competitions",
                 "parent_id": root_menu.id,
                 "sequence": 50,
                 "website_id": website.id,
@@ -260,7 +260,7 @@ class TestPublicSite(TransactionCase):
         published_menu = self.env["website.menu"].create(
             {
                 "name": "Tournament Updates",
-                "url": "/tournaments#published",
+                "url": "/competitions",
                 "parent_id": tournament_menu.id,
                 "sequence": 10,
                 "is_visible": True,
@@ -293,7 +293,7 @@ class TestPublicSite(TransactionCase):
         published_menu = self.env["website.menu"].browse(published_menu.id)
         self.assertEqual(published_menu.parent_id, tournament_menu)
         self.assertEqual(published_menu.name, "Tournament Updates")
-        self.assertEqual(published_menu.url, "/tournaments#published")
+        self.assertEqual(published_menu.url, "/competitions")
         self.assertTrue(published_menu.is_visible)
         self.assertFalse(legacy_sibling.exists())
         self.assertFalse(legacy_child.exists())

@@ -5,7 +5,11 @@ class FederationCompetitionEditionWorkflowPolicy(models.Model):
     _inherit = "federation.competition.edition"
 
     workflow_mode = fields.Selection(
-        [("simple", "Simple"), ("controlled", "Controlled"), ("custom", "Custom")],
+        [
+            ("simple", "Streamlined"),
+            ("controlled", "Independent Review"),
+            ("custom", "Advanced / Custom"),
+        ],
         default="simple",
         required=True,
         tracking=True,

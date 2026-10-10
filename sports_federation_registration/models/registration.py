@@ -54,29 +54,126 @@ class FederationRegistrationWindow(models.Model):
                 raise ValidationError(_("At least two approved teams are required."))
             if len(approved.mapped("team_id")) != len(approved):
                 raise ValidationError(_("The approved list contains duplicate teams."))
-            pset = self.env["federation.participant.set"].create(
-                {
-                    "name": _("Participants - %s") % rec.division_id.display_name,
-                    "edition_id": rec.edition_id.id,
-                    "division_id": rec.division_id.id,
-                    "state": "finalized",
-                }
-            )
-            self.env["federation.participant.set.line"].create(
-                [
-                    {
-                        "participant_set_id": pset.id,
-                        "team_id": e.team_id.id,
-                        "seed": e.seed,
-                    }
-                    for e in approved
-                ]
-            )
-            rec.write({"state": "finalized", "participant_set_id": pset.id})
-            self.env["federation.competition.event"].emit(
-                pset, "participant_set_finalized", {"team_count": len(approved)}
-            )
+            rec._materialize_participant_set(approved)
         return True
+
+    def _materialize_participant_set(self, approved_entries):
+        """Create the immutable participant snapshot used by format planning.
+
+        Registration entries and participant sets stay authoritative even when
+        the streamlined team picker is used.  Keeping the materialization here
+        lets the normal desk and the simplified workspace share the exact same
+        legacy records, events and downstream contracts.
+        """
+        self.ensure_one()
+        approved_entries = approved_entries.sorted(lambda entry: (entry.seed, entry.id))
+        if len(approved_entries) < 2:
+            raise ValidationError(_("At least two approved teams are required."))
+        if len(approved_entries.mapped("team_id")) != len(approved_entries):
+            raise ValidationError(_("The approved list contains duplicate teams."))
+        pset = self.env["federation.participant.set"].create(
+            {
+                "name": _("Participants - %s") % self.division_id.display_name,
+                "edition_id": self.edition_id.id,
+                "division_id": self.division_id.id,
+                "state": "finalized",
+            }
+        )
+        self.env["federation.participant.set.line"].create(
+            [
+                {
+                    "participant_set_id": pset.id,
+                    "team_id": entry.team_id.id,
+                    "seed": entry.seed,
+                }
+                for entry in approved_entries
+            ]
+        )
+        self.write({"state": "finalized", "participant_set_id": pset.id})
+        self.env["federation.competition.event"].emit(
+            pset, "participant_set_finalized", {"team_count": len(approved_entries)}
+        )
+        return pset
+
+    def materialize_direct_team_selection(self, teams):
+        """Synchronize a direct selection into governed registration records.
+
+        This command is intentionally conservative.  Repeating the same
+        selection is idempotent.  A changed finalized selection is allowed only
+        before a format version depends on it; otherwise operators must use the
+        existing correction/versioning workflow.
+        """
+        self.ensure_one()
+        self.env["federation.competition.role.assignment"].assert_role(
+            self.edition_id, "registration_manager", "competition_director"
+        )
+        teams = self.env["federation.team"].browse(teams.ids).exists()
+        if len(teams) < 2:
+            raise ValidationError(_("Select at least two teams for the division."))
+        for team in teams:
+            error = self.division_id.get_team_eligibility_error(team)
+            if not team.active:
+                error = _("Only active teams can be selected.")
+            if error:
+                raise ValidationError(error)
+
+        selected_ids = set(teams.ids)
+        current = self.participant_set_id
+        current_ids = set(current.line_ids.mapped("team_id").ids) if current else set()
+        if current and current.state == "finalized" and current_ids == selected_ids:
+            return current
+        if current and current.state == "finalized":
+            Structure = self.env.get("federation.competition.structure")
+            dependent = (
+                Structure.search_count([("participant_set_id", "=", current.id)])
+                if Structure is not None
+                else 0
+            )
+            if dependent:
+                raise ValidationError(
+                    _(
+                        "This finalized team list already has a competition format. "
+                        "Create a governed successor format instead of replacing its history."
+                    )
+                )
+            current.write({"state": "superseded"})
+
+        now = fields.Datetime.now()
+        entries = self.entry_ids
+        by_team = {entry.team_id.id: entry for entry in entries}
+        approved = self.env["federation.competition.entry"]
+        for seed, team in enumerate(teams.sorted(lambda item: (item.name or "", item.id)), 1):
+            entry = by_team.get(team.id)
+            values = {
+                "seed": seed,
+                "state": "approved",
+                "submitted_by_id": self.env.user.id,
+                "submitted_on": now,
+                "reviewed_by_id": self.env.user.id,
+                "reviewed_on": now,
+                "review_note": _("Selected directly in the competition workspace."),
+            }
+            if entry:
+                entry.write(values)
+            else:
+                entry = self.env["federation.competition.entry"].create(
+                    {"window_id": self.id, "team_id": team.id, **values}
+                )
+            approved |= entry
+        deselected = entries.filtered(
+            lambda entry: entry.team_id.id not in selected_ids
+            and entry.state != "withdrawn"
+        )
+        if deselected:
+            deselected.write({"state": "withdrawn"})
+        self.write({"state": "closed", "participant_set_id": False})
+        participant_set = self._materialize_participant_set(approved)
+        self.env["federation.competition.event"].emit(
+            participant_set,
+            "competition_teams_selected",
+            {"team_count": len(teams), "source": "competition_workspace"},
+        )
+        return participant_set
 
 
 class FederationCompetitionEntry(models.Model):

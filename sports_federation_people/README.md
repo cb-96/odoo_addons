@@ -33,10 +33,29 @@ for sorting and flexible display.
 - `state`: Selection with `active`, `inactive`, or `suspended` (default: `active`).
 - `license_ids`: One2many historical license records.
 - `license_count`: Integer stat-button counter.
+- `parental_approval_ids`: One2many signed parental approvals linked to the
+  player account.
+- `has_verified_parental_approval`: Whether a verified, date-valid approval is
+  currently available.
 - `notes`: Free-form notes.
 
 - **Actions**: activate, deactivate, and suspend update the player state.
 - **Stat button** navigates to license history.
+- A second stat button opens parental approvals through the canonical Odoo
+  window action.
+
+### `federation.player.parental.approval`
+
+Audit-backed parental consent evidence for a minor. Each record links the
+player, parent/guardian, signed document, approval date, and optional expiry.
+Federation managers verify the record; verification records the responsible
+user and timestamp. Verified evidence cannot be edited and can only be revoked
+with a reason.
+
+- `state`: `draft`, `verified`, or `revoked`.
+- `approval_document`: Required signed approval stored as an attachment.
+- `approval_date` / `valid_until`: Participation-date validity window.
+- `verified_by_id` / `verified_on`: Read-only verification evidence.
 
 ### `federation.player.license`
 
@@ -70,3 +89,6 @@ multiple licenses across seasons, but only one active license per season applies
    `LIC/<year>/<five-digit sequence>` reference via `ir.sequence`.
 3. **Club ↔ Player link** — `club_id` on the player is the *current* affiliation;
    the license records preserve the historical club at time of issue.
+4. **Minor safeguarding** — the player exposes date-aware helpers used by
+   roster eligibility. A player who is under 16 on the participation date only
+   satisfies an adult-league check when a verified approval covers that date.

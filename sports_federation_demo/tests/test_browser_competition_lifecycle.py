@@ -62,8 +62,7 @@ class TestBrowserCompetitionLifecycle(HttpCase):
 
     def test_full_competition_lifecycle_browser_tour(self):
         self.start_tour(
-            "/odoo/action-sports_federation_competition_core.action_competition_overview/"
-            f"{self.edition.id}",
+            "/odoo/action-sports_federation_setup_flow.action_competition_setup_home",
             "full_competition_lifecycle",
             login="admin",
             timeout=180,
@@ -71,8 +70,7 @@ class TestBrowserCompetitionLifecycle(HttpCase):
 
     def test_keyboard_competition_setup_browser_tour(self):
         self.start_tour(
-            "/odoo/action-sports_federation_competition_core.action_competition_overview/"
-            f"{self.edition.id}",
+            "/odoo/action-sports_federation_setup_flow.action_competition_setup_home",
             "keyboard_competition_setup",
             login="admin",
             timeout=180,

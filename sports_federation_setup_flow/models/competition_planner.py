@@ -40,7 +40,16 @@ class FederationCompetitionEditionPlanner(models.Model):
         self.ensure_one()
         self.check_access("read")
         if step == "basics":
-            return self.get_formview_action()
+            return self.action_setup_divisions() if not self.tournament_ids else self.get_formview_action()
+        simplified_actions = {
+            "teams": self.action_setup_participants,
+            "format": self.action_setup_format,
+            "gamedays": self.action_setup_gamedays,
+            "schedule": self.action_setup_schedule,
+            "publication": self.action_setup_publication,
+        }
+        if step in simplified_actions:
+            return simplified_actions[step]()
         if step not in self._PLANNER_STEP_MODELS:
             raise ValidationError(_("Unknown competition planner step: %s") % step)
 
@@ -52,6 +61,7 @@ class FederationCompetitionEditionPlanner(models.Model):
             "name": self._planner_step_label(step),
             "res_model": model_name,
             "view_mode": view_mode,
+            "views": [(False, view_type) for view_type in view_mode.split(",")],
             "target": "current",
             "domain": [("edition_id", "=", self.id)],
             "context": {
@@ -71,6 +81,7 @@ class FederationCompetitionEditionPlanner(models.Model):
             "res_model": record._name,
             "res_id": record.id,
             "view_mode": "form",
+            "views": [(False, "form")],
             "target": "current",
             "context": {
                 "competition_planner_edition_id": self.id,
@@ -82,19 +93,14 @@ class FederationCompetitionEditionPlanner(models.Model):
         """Resolve a server-produced blocker to its smallest useful workspace."""
         key = issue["key"]
         if key == "missing-divisions":
-            return self.get_formview_action()
+            return self.action_setup_divisions()
         if key == "unallocated-fixtures":
-            action = self.env["ir.actions.act_window"]._for_xml_id(
-                "sports_federation_scheduling.action_competition_schedule_wizard"
+            has_days = self.env["federation.matchday"].search_count(
+                [("edition_id", "=", self.id), ("state", "!=", "cancelled")]
             )
-            action["context"] = {
-                **self.env.context,
-                "default_edition_id": self.id,
-                "competition_planner_edition_id": self.id,
-            }
-            return action
+            return self.action_setup_schedule() if has_days else self.action_setup_gamedays()
         if key == "missing-scheduled-days":
-            return self.action_open_planner_step("gamedays")
+            return self.action_setup_gamedays()
 
         parts = key.split("-")
         record_id = int(parts[1]) if len(parts) > 2 and parts[1].isdigit() else False
@@ -109,8 +115,10 @@ class FederationCompetitionEditionPlanner(models.Model):
                 )
                 return (
                     self._planner_record_action(window)
-                    if window
-                    else self.action_open_planner_step("teams")
+                    if window and self.env.user.has_group(
+                        "sports_federation_base.group_federation_advanced_operator"
+                    )
+                    else self._action_open_team_selection(division)
                 )
             structure = self.env["federation.competition.structure"].search(
                 [("edition_id", "=", self.id), ("division_id", "=", division.id)],
@@ -118,13 +126,19 @@ class FederationCompetitionEditionPlanner(models.Model):
             )
             return (
                 self._planner_record_action(structure)
-                if structure
-                else self.action_open_planner_step("format")
+                if structure and self.env.user.has_group(
+                    "sports_federation_base.group_federation_advanced_operator"
+                )
+                else self._action_open_format_selection(division)
             )
         if key.startswith("gameday-") and record_id:
             day = self.env["federation.matchday"].browse(record_id).exists()
             if not day or day.edition_id != self:
                 raise ValidationError(_("This planner item no longer belongs to the competition."))
+            if key.endswith("-missing-schedule"):
+                return self.action_setup_schedule()
+            if key.endswith(("-cancelled", "-capacity", "-not-ready")):
+                return self.action_setup_gamedays()
             if key.endswith(("-missing-publication", "-stale-publication")):
                 schedule = self.env["federation.schedule"].search(
                     [("edition_id", "=", self.id), ("matchday_id", "=", day.id)],
@@ -146,6 +160,51 @@ class FederationCompetitionEditionPlanner(models.Model):
             return self._planner_record_action(schedule)
         return self.action_open_planner_step(issue["step"])
 
+    def _action_open_team_selection(self, division):
+        wizard = self.env["federation.competition.team.selection.wizard"].create(
+            {"edition_id": self.id, "division_id": division.id}
+        )
+        wizard._onchange_division_id()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Select Teams"),
+            "res_model": wizard._name,
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "views": [(False, "form")],
+            "target": "new",
+        }
+
+    def _action_open_format_selection(self, division):
+        participant_set = self.env["federation.participant.set"].search(
+            [
+                ("edition_id", "=", self.id),
+                ("division_id", "=", division.id),
+                ("state", "=", "finalized"),
+            ],
+            order="id desc",
+            limit=1,
+        )
+        if not participant_set:
+            return self._action_open_team_selection(division)
+        wizard = self.env["federation.competition.format.setup.wizard"].create(
+            {
+                "edition_id": self.id,
+                "division_id": division.id,
+                "participant_set_id": participant_set.id,
+                "format_type": self.setup_default_format_type,
+            }
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Choose Format"),
+            "res_model": wizard._name,
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "views": [(False, "form")],
+            "target": "new",
+        }
+
     def action_open_planner_issue(self, issue_key):
         self.ensure_one()
         self.check_access("read")
@@ -163,10 +222,22 @@ class FederationCompetitionEditionPlanner(models.Model):
 
     def action_open_planner_operation(self, operation):
         self.ensure_one()
+        if operation == "lineups":
+            day = self.env["federation.matchday"].search(
+                [
+                    ("edition_id", "=", self.id),
+                    ("state", "in", ("scheduled", "open")),
+                ],
+                order="date,id",
+                limit=1,
+            )
+            if day and hasattr(day, "action_prepare_lineups"):
+                return day.action_prepare_lineups()
         allowed = {
             "matchdays": ("federation.matchday", "calendar,list,form", _("Match days")),
             "schedules": ("federation.schedule", "list,form", _("Schedules")),
             "rosters": ("federation.team.roster", "list,form", _("Roster readiness")),
+            "lineups": ("federation.match.sheet", "list,form", _("Game-day lineups")),
             "officials": ("federation.match.referee", "list,form", _("Official coverage")),
             "results": ("federation.match", "list,form", _("Result follow-up")),
         }
@@ -184,6 +255,11 @@ class FederationCompetitionEditionPlanner(models.Model):
                 ("season_id", "=", self.season_id.id),
                 ("competition_id", "=", self.competition_id.id),
             ]
+        elif operation == "lineups":
+            domain = [
+                ("match_id.tournament_id", "in", division_ids),
+                ("state", "in", ("draft", "submitted")),
+            ]
         elif operation == "officials":
             domain = [("tournament_id", "in", division_ids), ("state", "!=", "cancelled")]
         else:
@@ -193,10 +269,39 @@ class FederationCompetitionEditionPlanner(models.Model):
             "name": name,
             "res_model": model_name,
             "view_mode": view_mode,
+            "views": [(False, view_type) for view_type in view_mode.split(",")],
             "domain": domain,
             "context": {"default_edition_id": self.id, "competition_planner_edition_id": self.id},
             "target": "current",
         }
+
+    def action_open_planner_advanced(self):
+        self.ensure_one()
+        if not self.env.user.has_group(
+            "sports_federation_base.group_federation_advanced_operator"
+        ):
+            raise ValidationError(_("Advanced competition tools are not enabled for your role."))
+        return self.action_open_advanced_workspace()
+
+    def action_open_planner_administration(self):
+        self.ensure_one()
+        if not self.env.user.has_group(
+            "sports_federation_base.group_federation_advanced_operator"
+        ):
+            raise ValidationError(_("Administration tools are not enabled for your role."))
+        Task = self.env.get("federation.operation.task")
+        if Task is not None and Task.check_access_rights("read", raise_exception=False):
+            action = self.env["ir.actions.act_window"]._for_xml_id(
+                "sports_federation_portal.action_federation_operation_task"
+            )
+            action["domain"] = [
+                ("season_id", "=", self.season_id.id),
+                ("state", "!=", "done"),
+            ]
+            return action
+        return self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_base.action_federation_operation_job"
+        )
 
     def _planner_enrich_issues(self, issues):
         owners = {
@@ -209,10 +314,10 @@ class FederationCompetitionEditionPlanner(models.Model):
         }
         labels = {
             "basics": _("Edit competition"),
-            "teams": _("Open team entries"),
-            "format": _("Open format"),
-            "gamedays": _("Open date or venue"),
-            "schedule": _("Open scheduling"),
+            "teams": _("Select teams"),
+            "format": _("Choose format"),
+            "gamedays": _("Define game days"),
+            "schedule": _("Plan competition"),
             "publication": _("Open review"),
         }
         for issue in issues:
@@ -608,17 +713,25 @@ class FederationCompetitionEditionPlanner(models.Model):
         )
         steps = self._planner_steps(counts, division_rows, issues, expected_fixtures)
         current = next((step for step in steps if step["status"] == "current"), steps[-1])
-        current_issue = next((issue for issue in issues if issue["step"] == current["key"]), None)
+        current_issue = next(
+            (issue for issue in issues if issue["step"] == current["key"]),
+            issues[0] if issues else None,
+        )
         next_matchday = gamedays.filtered(lambda day: day.state != "cancelled").sorted(
             lambda day: (day.date or fields.Date.to_date("9999-12-31"), day.id)
         )[:1]
         division_ids = self.tournament_ids.ids
         roster_model = self.env.get("federation.team.roster")
+        lineup_model = self.env.get("federation.match.sheet")
         official_model = self.env.get("federation.match.referee")
         match_model = self.env.get("federation.match")
         roster_available = bool(
             roster_model is not None
             and roster_model.check_access_rights("read", raise_exception=False)
+        )
+        lineups_available = bool(
+            lineup_model is not None
+            and lineup_model.check_access_rights("read", raise_exception=False)
         )
         officials_available = bool(
             official_model is not None
@@ -636,6 +749,16 @@ class FederationCompetitionEditionPlanner(models.Model):
             roster_model.search_count(roster_domain + [("ready_for_activation", "=", False)])
             if roster_available else 0
         )
+        lineup_action_count = (
+            lineup_model.search_count(
+                [
+                    ("match_id.tournament_id", "in", division_ids),
+                    ("state", "in", ("draft", "submitted")),
+                ]
+            )
+            if lineups_available
+            else 0
+        )
         official_action_count = (
             official_model.search_count([
                 ("tournament_id", "in", division_ids),
@@ -649,6 +772,47 @@ class FederationCompetitionEditionPlanner(models.Model):
                 ("result_state", "!=", "approved"),
             ]) if results_available else 0
         )
+        operation_actions = [
+            ("rosters", roster_action_count, _("Complete roster readiness")),
+            ("lineups", lineup_action_count, _("Prepare game-day lineups")),
+            ("officials", official_action_count, _("Complete official coverage")),
+            ("results", result_action_count, _("Complete result follow-up")),
+        ]
+        if current_issue:
+            primary_action = {
+                "kind": "issue",
+                "key": current_issue["key"],
+                "label": current_issue["action_label"],
+                "title": current_issue["title"],
+                "message": current_issue["message"],
+                "owner": current_issue["owner"],
+            }
+        else:
+            pending_operation = next(
+                (item for item in operation_actions if item[1]), None
+            )
+            if pending_operation:
+                primary_action = {
+                    "kind": "operation",
+                    "key": pending_operation[0],
+                    "label": pending_operation[2],
+                    "title": _("Competition operations need attention"),
+                    "message": _(
+                        "%(count)s item(s) are waiting in the next operational step.",
+                        count=pending_operation[1],
+                    ),
+                    "owner": _("Competition operations"),
+                }
+            else:
+                primary_action = {
+                    "kind": "operation",
+                    "key": "matchdays",
+                    "label": _("Open match-day operations"),
+                    "title": _("Competition is ready"),
+                    "message": _("Planning is complete and no operational blocker is projected."),
+                    "owner": _("Match-day manager"),
+                }
+        operational_blockers = sum(item[1] for item in operation_actions)
 
         return {
             "edition": {
@@ -664,6 +828,29 @@ class FederationCompetitionEditionPlanner(models.Model):
             "current_label": current["label"],
             "current_issue": current_issue,
             "complete": all(step["complete"] for step in steps),
+            "primary_action": primary_action,
+            "readiness": {
+                "status": (
+                    "blocked"
+                    if issues
+                    else ("attention" if operational_blockers else "ready")
+                ),
+                "setup_complete": all(step["complete"] for step in steps),
+                "setup_blocker_count": len(issues),
+                "operational_action_count": operational_blockers,
+                "summary": (
+                    _("Resolve the current planning blocker.")
+                    if issues
+                    else (
+                        _("Planning is complete; operational follow-up remains.")
+                        if operational_blockers
+                        else _("Planning and current operational checks are ready.")
+                    )
+                ),
+            },
+            "can_use_advanced_tools": self.env.user.has_group(
+                "sports_federation_base.group_federation_advanced_operator"
+            ),
             "operations": {
                 "next_matchday": {
                     "id": next_matchday.id,
@@ -674,9 +861,11 @@ class FederationCompetitionEditionPlanner(models.Model):
                 "matchday_count": len(gamedays),
                 "schedule_count": len(schedules),
                 "roster_action_count": roster_action_count,
+                "lineup_action_count": lineup_action_count,
                 "official_action_count": official_action_count,
                 "result_action_count": result_action_count,
                 "rosters_available": roster_available,
+                "lineups_available": lineups_available,
                 "officials_available": officials_available,
                 "results_available": results_available,
             },

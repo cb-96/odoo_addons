@@ -1,133 +1,129 @@
 # Federation Backend Navigation
 
 Owner: Federation Platform Team
-Last verified against menu XML: 2026-09-04
+Last verified against menu XML: 2026-10-10
 Review cadence: Every release
 
 ## Goal
 
-The Federation backend is organized around operator intent, not addon names or implementation layers. A user should be able to decide where to go from the business task they are performing. The root navigation therefore has seven stable work areas:
+The normal competition journey has one discoverable entry: **Federation > Competitions > Competition Hub**. Opening a season competition resumes the same workspace and promotes exactly one next action. Operators do not need to choose between registration, format, calendar, scheduling, approval, or raw-record menus.
 
-1. **Competitions**: define, create, register, structure, schedule, and review competitions.
-2. **Clubs & People**: maintain clubs, teams, players, licenses, representatives, and season registrations.
-3. **Match Operations**: run match days and manage fixtures, match sheets, venues, officials, and discipline.
-4. **Publishing**: expose approved schedules, standings, and editorial content.
-5. **Finance & Assurance**: manage finance, compliance, and governed exceptions.
-6. **Insights**: review readiness, performance, assurance signals, trends, and scheduled reports.
-7. **Administration**: process operational tasks, integrations, notifications, retention, and technical job health.
+The underlying domain actions are not removed. They remain available through contextual links and to users assigned **Advanced Federation Tools**. This preserves recovery, compliance, audit, security, and specialist operations without presenting implementation structure to every operator.
 
-## Design rules
+## Stable work areas
 
-- Root tabs represent durable business responsibilities. They must not mirror addon names.
-- A record has one primary navigation home. Cross-links on forms may provide shortcuts, but duplicate root entries are avoided.
-- Daily workflow entries precede configuration and technical records.
-- Technical and audit records remain available, but are grouped at the end of their owning area.
-- Manager-only items stay role-gated. Reparenting a menu must not broaden its groups or model access.
-- Empty compatibility categories are not retained. Existing XML IDs are reused where practical so upgrades move menus instead of creating duplicates.
-- New menus must fit one of the seven work areas. Adding another root tab requires an update to this document and the navigation contract check.
+The source menu tree retains seven durable responsibility areas:
 
-## Intended menu map
+1. **Competitions**
+2. **Clubs & People**
+3. **Match Operations**
+4. **Publishing**
+5. **Finance & Assurance**
+6. **Insights**
+7. **Administration**
+
+Visibility is role based. A normal manager primarily sees Competition Hub, Clubs & People, and Match-Day Control. Publishing, assurance, insight, administration, and raw competition menus are available to the advanced or specialist groups that own them.
+
+## Ordinary operator map
 
 ```text
 Federation
 ├── Competitions
-│   ├── Seasons
-│   ├── Season Competitions
-│   ├── Competition Operations
+│   └── Competition Hub
+├── Clubs & People
+│   ├── Club Directory
+│   │   ├── Clubs
+│   │   └── Teams
+│   ├── Players & Licensing
+│   ├── Representatives & Access
+│   └── Season Registrations
+└── Match Operations
+    └── Match-Day Control
+```
+
+The workspace itself provides contextual actions for teams, format, game days, schedules, publication, rosters, game-day lineups, officials, results, and readiness. Contextual actions keep the active competition scope and therefore replace most global queue menus for ordinary work.
+
+## Advanced and administration map
+
+```text
+Federation
+├── Competitions
+│   ├── Competition Hub
+│   ├── Advanced Competition Tools
 │   │   ├── Create Competition
 │   │   ├── Competition Overview
 │   │   ├── Registration Desk
 │   │   ├── Format Studio
 │   │   ├── Calendar Planner
+│   │   ├── Generate Competition Schedule
 │   │   ├── Schedule Planner
-│   │   ├── Schedule Review Queue
-│   │   └── Audit & Technical Records
+│   │   └── Schedule Review Queue
+│   ├── Seasons
+│   ├── Season Competitions
 │   ├── Competition Templates
 │   ├── Format Templates
 │   ├── Rules & Policies
 │   └── Competition Records
-├── Clubs & People
-│   ├── Club Directory
-│   ├── Players & Licensing
-│   ├── Representatives & Access
-│   └── Season Registrations
 ├── Match Operations
 │   ├── Match-Day Control
 │   ├── Matches
-│   ├── Match Sheets
-│   ├── Officiating
+│   ├── Game-Day Lineups
 │   ├── Venues
+│   ├── Officiating
 │   └── Discipline
 ├── Publishing
-│   ├── Approved Schedules
-│   ├── Schedule Publications
-│   ├── Standings
-│   └── Public Editorial
 ├── Finance & Assurance
-│   ├── Finance
-│   ├── Compliance
-│   └── Governance
 ├── Insights
-│   └── Reports & Insights
-│       ├── Overview & Readiness
-│       ├── Performance
-│       ├── Assurance & Exceptions
-│       └── Automation & History
 └── Administration
     ├── Action Queue
     ├── Notification Centre
     ├── Imports & Integrations
+    ├── Competition Audit & Recovery
+    │   └── Role Assignments
     └── System Health
+        └── Operational Job Health
 ```
 
-Menus hidden by security groups are omitted for users who do not own that responsibility. The structure, labels, and ordering remain the same for every role.
-
-## Canonical path contracts
-
-The following operator paths are release contracts and are checked against the XML menu tree:
+Required advanced path contracts include:
 
 ```text
-Federation > Competitions > Seasons
-Federation > Competitions > Season Competitions
-Federation > Competitions > Competition Operations > Create Competition
-Federation > Competitions > Competition Operations > Competition Overview
-Federation > Competitions > Competition Operations > Registration Desk
-Federation > Competitions > Competition Operations > Format Studio
-Federation > Competitions > Competition Operations > Calendar Planner
-Federation > Competitions > Competition Operations > Schedule Planner
-Federation > Competitions > Competition Operations > Schedule Review Queue
-Federation > Clubs & People > Club Directory > Clubs
-Federation > Clubs & People > Club Directory > Teams
-Federation > Match Operations > Match-Day Control
-Federation > Match Operations > Matches
-Federation > Match Operations > Match Sheets
-Federation > Publishing > Approved Schedules
-Federation > Publishing > Schedule Publications
-Federation > Publishing > Standings
-Federation > Finance & Assurance > Finance
-Federation > Finance & Assurance > Compliance
-Federation > Finance & Assurance > Governance
-Federation > Insights > Reports & Insights > Overview & Readiness > Operational Health
+Federation > Competitions > Advanced Competition Tools > Create Competition
+Federation > Competitions > Advanced Competition Tools > Registration Desk
+Federation > Competitions > Advanced Competition Tools > Format Studio
+Federation > Competitions > Advanced Competition Tools > Calendar Planner
+Federation > Competitions > Advanced Competition Tools > Schedule Planner
+Federation > Competitions > Advanced Competition Tools > Schedule Review Queue
+Federation > Administration > Competition Audit & Recovery > Role Assignments
 Federation > Administration > Action Queue
 Federation > Administration > System Health > Operational Job Health
 ```
 
-## Ownership guidance
+## Design rules
 
-- Competition lifecycle records belong under **Competitions**, even when implemented by separate registration, format, calendar, or scheduling addons.
-- Live execution records belong under **Match Operations**. Match-Day Control is intentionally not duplicated under Competitions.
-- Approved output and public visibility controls belong under **Publishing**.
-- Compliance and governance are assurance activities, not system administration.
-- Reports are separated from operational administration to prevent the Administration tab becoming a miscellaneous catch-all.
-- Imports, delivery logs, retention evidence, and background-job recovery remain under **Administration** because they support the platform rather than one business workflow.
+- A business journey has one ordinary menu entry. Raw models and duplicate queues are advanced or contextual.
+- Hiding a menu never changes its action, ACL, record rule, protected command, or external identifier.
+- Contextual deep links are the primary recovery path because they keep the active competition, division, game day, or team scope.
+- The **Advanced Federation Tools** group controls discoverability only. It implies Manager but Manager does not imply it.
+- The focused `sports_federation_navigation` integration addon owns cross-addon menu visibility and is loaded after its domain dependencies. `sports_federation_app` remains dependency-only; domain addons continue to own their actions and records.
+- Compliance, immutable snapshots, audit events, operation jobs, retention evidence, and security configuration remain available to advanced users.
+- New ordinary competition menus require an explicit product decision and an update to `ci/check_competition_ui_workflow.py`.
+
+## Canonical path contracts
+
+```text
+Federation > Competitions > Competition Hub
+Federation > Clubs & People > Club Directory > Clubs
+Federation > Clubs & People > Club Directory > Teams
+Federation > Match Operations > Match-Day Control
+```
+
+The static navigation contract also verifies that Competition Hub is the only non-advanced direct child of Competitions in the supported aggregate application.
 
 ## Change checklist
 
-When adding or moving a backend menu:
-
-1. Select its primary operator intent and owning work area.
-2. Place daily actions before configuration and technical records.
-3. Preserve security groups and action access.
-4. Update `docs/COMPETITION_UI_WORKFLOW.md` if the competition journey changes.
-5. Update `ci/check_competition_ui_workflow.py` when a required path or root work area changes.
-6. Run the menu contract check and the affected addon tests.
+1. Prefer a workspace action or form smart button over a new ordinary menu.
+2. Keep the active business scope in every contextual action domain and context.
+3. Preserve action XML IDs and model permissions when changing discoverability.
+4. Put audit, recovery, and raw queues under Advanced Competition Tools or Administration.
+5. Update this file and `docs/COMPETITION_UI_WORKFLOW.md`.
+6. Run `python3 ci/check_competition_ui_workflow.py` and the browser tours.

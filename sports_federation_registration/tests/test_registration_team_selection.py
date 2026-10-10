@@ -120,3 +120,31 @@ class TestRegistrationTeamSelection(TransactionCase):
         )
         self.assertIn(eligible_team.id, entry.available_team_ids.ids)
         self.assertNotIn(registered_team.id, entry.available_team_ids.ids)
+
+    def test_direct_team_picker_materializes_registration_and_participant_snapshot(self):
+        first = self._make_team("Direct Team A")
+        second = self._make_team("Direct Team B")
+        wizard = self.env["federation.competition.team.selection.wizard"].create(
+            {
+                "edition_id": self.edition.id,
+                "division_id": self.division.id,
+                "window_id": self.window.id,
+                "team_ids": [(6, 0, [first.id, second.id])],
+            }
+        )
+
+        wizard.action_apply()
+
+        self.assertEqual(self.window.state, "finalized")
+        self.assertEqual(
+            set(self.window.entry_ids.mapped("state")), {"approved"}
+        )
+        self.assertEqual(
+            set(self.window.participant_set_id.line_ids.mapped("team_id").ids),
+            {first.id, second.id},
+        )
+        participant_set = self.window.participant_set_id
+        self.assertEqual(
+            self.window.materialize_direct_team_selection(first | second),
+            participant_set,
+        )

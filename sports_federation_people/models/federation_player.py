@@ -1,6 +1,7 @@
+from datetime import date
+
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
-from datetime import date
 
 
 class FederationPlayer(models.Model):
@@ -51,6 +52,19 @@ class FederationPlayer(models.Model):
     license_count = fields.Integer(
         string="License Count", compute="_compute_counts", store=True
     )
+    parental_approval_ids = fields.One2many(
+        "federation.player.parental.approval",
+        "player_id",
+        string="Parental Approvals",
+    )
+    parental_approval_count = fields.Integer(
+        string="Parental Approval Count",
+        compute="_compute_parental_approval_status",
+    )
+    has_verified_parental_approval = fields.Boolean(
+        string="Verified Parental Approval",
+        compute="_compute_parental_approval_status",
+    )
     is_eligible = fields.Boolean(
         string="Eligible",
         compute="_compute_is_eligible",
@@ -75,6 +89,20 @@ class FederationPlayer(models.Model):
         for rec in self:
             rec.license_count = len(rec.license_ids)
 
+    @api.depends(
+        "parental_approval_ids",
+        "parental_approval_ids.state",
+        "parental_approval_ids.approval_date",
+        "parental_approval_ids.valid_until",
+    )
+    def _compute_parental_approval_status(self):
+        today = fields.Date.context_today(self)
+        for record in self:
+            record.parental_approval_count = len(record.parental_approval_ids)
+            record.has_verified_parental_approval = (
+                record._has_verified_parental_approval(today)
+            )
+
     @api.depends("license_ids.state")
     def _compute_is_eligible(self):
         """Compute eligibility: True if the player has at least one active license."""
@@ -89,6 +117,44 @@ class FederationPlayer(models.Model):
         )
         action["domain"] = [("player_id", "=", self.id)]
         return action
+
+    def action_view_parental_approvals(self):
+        """Open the approvals linked to this player using the canonical action."""
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_people.federation_parental_approval_action"
+        )
+        action["domain"] = [("player_id", "=", self.id)]
+        action["context"] = {"default_player_id": self.id}
+        return action
+
+    def _is_under_age(self, age_limit, reference_date=None):
+        """Return whether the player is younger than ``age_limit`` on a date."""
+        self.ensure_one()
+        reference_date = fields.Date.to_date(
+            reference_date or fields.Date.context_today(self)
+        )
+        if not self.birth_date or not reference_date:
+            return False
+        birthday_reached = (reference_date.month, reference_date.day) >= (
+            self.birth_date.month,
+            self.birth_date.day,
+        )
+        age = reference_date.year - self.birth_date.year - (not birthday_reached)
+        return age < age_limit
+
+    def _has_verified_parental_approval(self, reference_date=None):
+        """Return whether verified approval covers the supplied participation date."""
+        self.ensure_one()
+        reference_date = fields.Date.to_date(
+            reference_date or fields.Date.context_today(self)
+        )
+        return any(
+            approval.state == "verified"
+            and approval.approval_date <= reference_date
+            and (not approval.valid_until or approval.valid_until >= reference_date)
+            for approval in self.parental_approval_ids
+        )
 
     @api.constrains("birth_date")
     def _check_birth_date(self):

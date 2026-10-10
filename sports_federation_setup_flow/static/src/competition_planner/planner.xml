@@ -16,7 +16,9 @@
           </div>
           <div class="d-flex gap-2 flex-wrap">
             <button class="btn btn-outline-secondary" t-on-click="load"><i class="fa fa-refresh me-1" aria-hidden="true"/>Refresh</button>
-            <button class="btn btn-outline-secondary" t-on-click="openBasics">Competition details</button>
+             <button class="btn btn-outline-secondary" t-on-click="openBasics">Competition details</button>
+             <button t-if="state.data.can_use_advanced_tools" class="btn btn-outline-secondary" t-on-click="openAdvanced">Advanced tools</button>
+             <button t-if="state.data.can_use_advanced_tools" class="btn btn-outline-secondary" t-on-click="openAdministration">Administration</button>
           </div>
         </header>
 
@@ -31,38 +33,25 @@
           </button>
         </nav>
 
-        <section t-if="state.data.complete" class="alert alert-success mt-4" role="status" data-planner-complete="true">
-          <div class="d-flex align-items-center gap-3">
-            <i class="fa fa-check-circle fa-2x" aria-hidden="true"/>
-            <div><strong>Competition setup is complete.</strong><div>The live schedule is ready. Continue with competition operations below.</div></div>
+        <section class="o_competition_current_task mt-4" aria-labelledby="current-task-title" data-planner-current-action="true" data-planner-primary-projection="true">
+          <div>
+            <div class="text-muted small text-uppercase">Next action</div>
+            <h2 id="current-task-title" class="h4 mb-1" t-esc="state.data.primary_action.title"/>
+            <p class="mb-1" t-esc="state.data.primary_action.message"/>
+            <div class="small text-muted"><strong>Responsible:</strong> <span t-esc="state.data.primary_action.owner"/></div>
           </div>
-          <div class="d-flex gap-2 flex-wrap mt-3">
-            <button class="btn btn-primary" t-on-click="() => this.openOperation('matchdays')">Open match-day operations</button>
-            <button class="btn btn-outline-primary" t-on-click="() => this.openOperation('schedules')">View schedules</button>
-            <button t-if="state.data.operations.rosters_available" class="btn btn-outline-primary" t-on-click="() => this.openOperation('rosters')">Roster readiness (<t t-esc="state.data.operations.roster_action_count"/>)</button>
-            <button t-if="state.data.operations.officials_available" class="btn btn-outline-primary" t-on-click="() => this.openOperation('officials')">Official coverage (<t t-esc="state.data.operations.official_action_count"/>)</button>
-            <button t-if="state.data.operations.results_available" class="btn btn-outline-primary" t-on-click="() => this.openOperation('results')">Result follow-up (<t t-esc="state.data.operations.result_action_count"/>)</button>
-          </div>
-          <div t-if="state.data.operations.next_matchday" class="small mt-3">
-            <strong>Next match day:</strong> <span t-esc="state.data.operations.next_matchday.name"/>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-primary btn-lg" t-on-click="openPrimary" data-planner-primary-action="true">
+              <t t-esc="state.data.primary_action.label"/>
+              <i class="fa fa-arrow-right ms-2" aria-hidden="true"/>
+            </button>
+            <button t-if="state.data.can_use_advanced_tools" class="btn btn-outline-secondary" t-on-click="() => this.openStep(state.data.current_step)">Open current area</button>
           </div>
         </section>
 
-        <section t-else="" class="o_competition_current_task mt-4" aria-labelledby="current-task-title" data-planner-current-action="true">
-          <div t-if="state.data.current_issue">
-            <div class="text-muted small text-uppercase">Current action</div>
-            <h2 id="current-task-title" class="h4 mb-1" t-esc="state.data.current_issue.title"/>
-            <p class="mb-1" t-esc="state.data.current_issue.message"/>
-            <div class="small text-muted"><strong>Responsible:</strong> <span t-esc="state.data.current_issue.owner"/> · <strong>Next area:</strong> <span t-esc="state.data.current_label"/></div>
-          </div>
-          <div t-else=""><h2 id="current-task-title" class="h4" t-esc="state.data.current_label"/></div>
-          <div class="d-flex gap-2 flex-wrap">
-            <button class="btn btn-primary btn-lg" t-on-click="openCurrent" data-planner-primary-action="true">
-              <t t-esc="state.data.current_issue ? state.data.current_issue.action_label : 'Open current action'"/>
-              <i class="fa fa-arrow-right ms-2" aria-hidden="true"/>
-            </button>
-            <button class="btn btn-outline-secondary" t-on-click="() => this.openStep(state.data.current_step)">View all in this area</button>
-          </div>
+        <section class="alert mt-3" t-att-class="state.data.readiness.status === 'ready' ? 'alert-success' : (state.data.readiness.status === 'attention' ? 'alert-warning' : 'alert-danger')" role="status" data-planner-unified-readiness="true">
+          <strong>Competition readiness:</strong> <span t-esc="state.data.readiness.summary"/>
+          <span class="ms-2 small"><t t-esc="state.data.readiness.setup_blocker_count"/> planning blocker(s) · <t t-esc="state.data.readiness.operational_action_count"/> operational action(s)</span>
         </section>
 
         <div class="row g-4 mt-1">
@@ -78,7 +67,7 @@
               <div t-else="" class="card-body text-center py-5"><h3 class="h5">No divisions yet</h3><button class="btn btn-primary" t-on-click="openBasics">Define competition divisions</button></div>
             </div>
           </section>
-          <aside class="col-xl-5" aria-labelledby="issues-title"><div class="card h-100">
+          <aside t-if="state.data.can_use_advanced_tools" class="col-xl-5" aria-labelledby="issues-title"><div class="card h-100">
             <div class="card-header"><h2 id="issues-title" class="h5 mb-0">Action list</h2></div>
             <div t-if="state.data.issues.length" class="list-group list-group-flush">
               <button t-foreach="state.data.issues" t-as="issue" t-key="issue.key" class="list-group-item list-group-item-action text-start" t-on-click="() => this.openIssue(issue)" t-att-data-planner-issue="issue.key">
@@ -89,6 +78,15 @@
               </button>
             </div>
             <div t-else="" class="card-body text-center py-5"><h3 class="h5">No blockers</h3><p class="text-muted mb-0">The setup is ready for operational handoff.</p></div>
+          </div></aside>
+          <aside t-else="" class="col-xl-5" aria-labelledby="operations-title"><div class="card h-100">
+            <div class="card-header"><h2 id="operations-title" class="h5 mb-0">At a glance</h2></div>
+            <div class="card-body">
+              <p><strong>Game days:</strong> <t t-esc="state.data.operations.matchday_count"/></p>
+              <p><strong>Schedules:</strong> <t t-esc="state.data.operations.schedule_count"/></p>
+              <p t-if="state.data.operations.next_matchday"><strong>Next match day:</strong> <t t-esc="state.data.operations.next_matchday.name"/></p>
+              <p class="text-muted mb-0">The workspace shows one next action at a time. Additional records remain available through contextual links and Advanced Tools.</p>
+            </div>
           </div></aside>
         </div>
       </main>

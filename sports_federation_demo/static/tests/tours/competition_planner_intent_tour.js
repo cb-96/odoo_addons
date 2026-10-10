@@ -17,8 +17,20 @@ registry.category("web_tour.tours").add("competition_planner_intent", {
             trigger: ".o_competition_journey_step.is-blocked .fa-clock-o",
         },
         {
-            content: "Every visible blocker is directly actionable",
-            trigger: ".o_competition_planner [data-planner-issue]",
+            content: "Planning and operations use one readiness projection",
+            trigger: ".o_competition_planner [data-planner-unified-readiness='true']",
+        },
+        {
+            content: "Only one next-action projection is promoted",
+            trigger: ".o_competition_planner [data-planner-primary-projection='true']",
+            run() {
+                const projections = document.querySelectorAll(
+                    ".o_competition_planner [data-planner-primary-projection='true']"
+                );
+                if (projections.length !== 1) {
+                    throw new Error(`Expected one actionable projection, found ${projections.length}.`);
+                }
+            },
         },
         {
             content: "The direct action remains keyboard reachable",

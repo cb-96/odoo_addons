@@ -1,6 +1,6 @@
 {
     "name": "Competition Registration",
-    "version": "19.0.1.2.2",
+    "version": "19.0.1.3.0",
     "category": "Sports",
     "summary": "Role-separated registration desk and finalized participant sets",
     "author": "Sports Federation",
@@ -10,6 +10,7 @@
         "security/security.xml",
         "security/ir.model.access.csv",
         "wizards/create_competition_wizard_views.xml",
+        "wizards/team_selection_wizard_views.xml",
         "views/registration_views.xml",
         "views/menu.xml",
     ],

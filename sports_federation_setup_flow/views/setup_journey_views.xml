@@ -14,7 +14,13 @@
             <strong>What this changes</strong>
             <div><field name="workflow_summary" nolabel="1" readonly="1"/></div>
           </div>
-          <field name="default_venue_id"/>
+          <group string="Planning defaults" col="4">
+            <field name="default_format_type"/>
+            <field name="default_venue_id"/>
+            <field name="default_start_hour" widget="float_time"/>
+            <field name="default_end_hour" widget="float_time"/>
+            <field name="default_slot_duration_minutes"/>
+          </group>
         </group>
       </field>
       <button name="action_create_competition" position="attributes">

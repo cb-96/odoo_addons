@@ -1,271 +1,139 @@
 # Competition Workflow in the User Interface
 
 Owner: Federation Competition Operations
-Last verified against menu XML: 2026-09-04
+Last verified against menu XML: 2026-10-10
 
-## Purpose
+## Canonical entry
 
-This guide replaces conceptual module names with the menus that actually exist in the **Federation** application. A menu can be hidden if the current user lacks the required role or record access.
-
-## Actual backend menu map
-
-The canonical backend structure is maintained in [`FEDERATION_BACKEND_NAVIGATION.md`](FEDERATION_BACKEND_NAVIGATION.md). The competition journey lives under **Federation > Competitions > Competition Operations**; supporting records are placed under the business area that owns them.
-
-## Actual club portal links
+Use one backend path for creating, resuming, and operating a competition:
 
 ```text
-My Account
-├── Overview                 /my/competitions
-├── Action items             /my/action-items
-├── My teams                 /my/teams
-├── Season registrations     /my/season-registrations
-├── Competition entries      /my/competition-entries
-├── Match day                /my/match-day
-├── Officials                /my/referee-duties
-└── Results                  /my/results
+Federation > Competitions > Competition Hub
 ```
 
-## Complete workflow and recovery
+The list disables raw season-edition creation. **Create Competition** opens the governed creation wizard; **Open Workspace** resumes an existing competition. The workspace projects the same readiness result used by the edition form, promotes exactly one next action, and retains the active competition scope when it opens an owning domain action.
 
-### 1. Prepare reusable setup
+Direct model actions and specialist menus still exist for contextual deep links, recovery, advanced operation, compliance, audit, and security. Users assigned **Advanced Federation Tools** can reach them from the workspace or the advanced menu paths documented in `FEDERATION_BACKEND_NAVIGATION.md`.
 
-Use:
+## Simplified end-to-end journey
 
-```text
-Federation > Competitions > Seasons
-Federation > Competitions > Competition Templates
-Federation > Competitions > Rules & Policies > Rule Sets & Policies
-Federation > Clubs & People > Club Directory > Clubs
-Federation > Clubs & People > Club Directory > Teams
-```
+### 1. Create with a meaningful preset
 
-Create the season, reusable competition definition, rule set, clubs, and teams. Points, tie-break, eligibility, and qualification components are below **Rules & Policies > Advanced Components**.
+Choose **Create Competition** from Competition Hub. Presets supply editable defaults:
 
-**Recovery:** Edit unused records. Archive records that already have history. Do not delete referenced seasons, competitions, clubs, teams, or rule sets merely to restart a workflow.
+- **Season League**: multi-day division, league format, streamlined workflow, season-aligned end date, and a 30-day registration lead.
+- **One-Day Tournament**: single-day division, league format, streamlined workflow, and same-day start/end.
+- **Knockout Cup**: multi-day division, knockout format, independent review, and an eight-week planning window.
+- **Custom**: leaves advanced choices to the operator.
 
-### 2. Create the season competition
+The wizard also remembers the default venue, day start/end, and match-slot duration on the season competition. These values seed the resumed planning steps instead of being discarded after creation.
 
-Preferred menu:
+Workflow language is operator-facing:
 
-```text
-Federation > Competitions > Competition Operations > Create Competition
-```
+- **Streamlined**: one operator may complete routine checkpoints after all validations pass. Registration, schedule review/publication, game-day lineup approval, and result verification/approval still execute their existing commands, snapshots, and audit events.
+- **Independent Review**: another responsible person approves protected work.
+- **Advanced / Custom**: an advanced user configures individual checkpoints.
 
-The wizard selects the setup template, competition template, season, dates, optional rule set, registration dates, divisions, and responsibilities. It creates the season competition, divisions, registration windows, and role assignments, then opens the season competition.
+### 2. Select teams directly
 
-Use **Continue Setup** on the season competition to open the **Competition
-Planner**. It presents the ordered steps—divisions, teams, format, game days,
-schedule, and publication—and shares the same readiness/blocker projection as
-the edition form. The planner routes each action to its owner module; it does
-not replace registration, format, calendar, scheduling, or approval commands.
+The next action opens **Select Teams** for the first incomplete division. Operators select eligible active teams directly; the command automatically materializes the existing registration window, approved entries, seeds, and finalized participant set.
 
-Inspect the records through:
+This does not replace registration models. It is a simplified command over them. Repeating the same selection is idempotent. Once a finalized participant set feeds a format, the picker refuses to rewrite history and directs the operator to the governed successor/version workflow.
 
-```text
-Federation > Competitions > Season Competitions
-Federation > Competitions > Competition Records > Structure & Fixtures > Divisions & Tournaments
-Federation > Competitions > Competition Operations > Competition Overview
-```
+Club self-service registration remains available in the portal and the advanced **Registration Desk**.
 
-**Recovery:** Correct newly created records before clubs submit. There is no generic **Undo Competition Wizard** button. If downstream entries, fixtures, schedules, results, or publications exist, preserve the original records and create controlled replacements.
+### 3. Choose the playing format
 
-### 3. Open registration and accept entries
+The next action opens **Choose Format** with the preset default:
 
-Backend:
+- league, once;
+- home-and-away league; or
+- knockout cup.
 
-```text
-Federation > Competitions > Competition Operations > Registration Desk
-```
+The wizard creates or resumes the canonical competition structure, runs the existing feasibility and fixture-generation commands, and freezes the generated structure. Complex stage graphs remain in **Federation > Competitions > Advanced Competition Tools > Format Studio**.
 
-Club portal:
+### 4. Define game days and plan the schedule
 
-```text
-My Account > Competition entries
-```
+**Define Game Days** starts with the remembered venue, hours, duration, and competition start date. Existing days are loaded for correction; recurring-day and copy-last-day helpers remain available.
 
-Federation registration managers open a registration window in the Registration
-Desk. A club representative selects one of their scoped teams and an open
-window. The portal and public competition registration page apply the same
-window-date, eligibility, duplicate-entry, and capacity checks. Managers review
-and approve entries in the Registration Desk; only federation roles can finalize
-participants or change format, schedule approval, and publication state.
+**Save & Plan Schedule** opens the unified competition schedule wizard directly. The wizard selects current structures, stages, and game days, previews included/excluded fixtures and capacity, generates slots, allocates fixtures, creates working schedules, and auto-schedules through the owning domain commands. Applying from the workspace returns to the same workspace.
 
-**Recovery:** Use **Close Registration** to stop submissions. Representatives
-open an entry to read the federation review note. Draft/returned or rejected
-entries can have their submission note corrected and be resubmitted while the original window is open;
-draft, submitted, or rejected entries can be withdrawn. Resubmitting after
-withdrawal reuses the original entry row. Approved entries cannot be withdrawn
-directly; contact the federation registration manager for a governed correction.
+Planner dead ends are removed:
 
-### 4. Finalize participants
+- no game days → Define Game Days;
+- unallocated fixtures with days → Plan Competition;
+- missing schedule → Plan Competition;
+- capacity/court blocker → Define Game Days;
+- review/publication blocker → exact schedule or review record.
 
-Menu:
+### 5. Review and publish
 
-```text
-Federation > Competitions > Competition Operations > Registration Desk
-```
+Submitting a schedule always creates the existing immutable review snapshot.
 
-Close the registration window and press **Finalize Participants**. The finalized participant set feeds the format structure.
+- In **Streamlined**, the command validates, records the review decision, and publishes automatically when no live publication would be replaced.
+- In **Independent Review**, the workspace opens the exact pending review for another responsible user.
+- Replacing a live publication still requires the amendment/replacement reason and preserves the superseded snapshot.
 
-**Recovery:** Correct entries before finalization. If a finalized set is wrong and nothing depends on it, create a corrected set through the registration workflow. If fixtures or schedules exist, create a successor structure or schedule revision instead of mutating published history.
+### 6. Prepare rosters and one lineup per game day
 
-### 5. Configure and generate the format
+Unified readiness includes roster and game-day lineup work.
 
-Menus:
+**Prepare Game-Day Lineup** selects a team, its active roster, starters, substitutes, captain, and jersey numbers once for the explicit match day. The existing shared-lineup behavior synchronizes the declaration to every match that team plays on that day; substitutions remain match-specific.
 
-```text
-Federation > Competitions > Competition Operations > Format Templates
-Federation > Competitions > Competition Operations > Format Studio
-```
+In Streamlined mode, **Save & Submit Lineup** validates and records the existing approval automatically. Independent Review leaves the synchronized lineup submitted for another responsible person.
 
-**Format Templates** is manager-only. In **Format Studio**, select the season competition, division, finalized participant set, and format settings. Use **Check Feasibility**, then **Generate Fixtures**. For multi-stage structures use **Validate Stage Graph**. Once accepted, use **Freeze Structure**.
+For senior participation, a player under 16 must have a verified parental approval covering the participation date. The roster and match-sheet eligibility services continue to enforce this server-side. Missing approvals also appear in the single `federation.operation.task` projection and open the player’s approval records directly.
 
-**Recovery:** Before freeze, correct and regenerate. Once operational matches or frozen stage snapshots exist, create a new structure version. The current UI has no generic structure-unfreeze command.
+### 7. Operate, record results, and publish standings
 
-### 6. Prepare and progress stages
+The workspace projects the next operational action from the existing models:
 
-There is no standalone **Stage Progression** menu. Stage controls are on the structure opened from:
+1. roster readiness;
+2. game-day lineup preparation;
+3. official coverage;
+4. result follow-up; or
+5. match-day operations when no blocker remains.
 
-```text
-Federation > Competitions > Competition Operations > Format Studio
-```
+Result submission keeps deliberate score validation. Streamlined mode invokes the existing verification and approval commands automatically; Independent Review preserves separation of duties. Official standings and public publication continue to use their existing protected actions and immutable/audited records.
 
-Available stage actions are **Prepare**, **Start**, and **Freeze & Progress**.
+## One actionable task projection
 
-**Recovery:** Correct a stage before starting it. Before progression, correct and recompute standings. Frozen snapshot lines are immutable; after progression use a corrected successor structure rather than editing evidence.
+The workspace promotes one `primary_action` at a time and shows one unified readiness summary. The existing `federation.operation.task` model remains the sole persistent task projection for portal/backend follow-up. It now also projects:
 
-### 7. Plan calendar capacity
+- missing verified parental consent; and
+- one shared lineup task per team and game day.
 
-Menu:
+No second task model or parallel state machine is introduced. Source records remain authoritative, stale projections are completed, and direct source navigation is preserved.
 
-```text
-Federation > Competitions > Competition Operations > Calendar Planner
-```
+## Recovery and advanced routing
 
-Create match days, slot windows, and capacity, then use **Mark Capacity Ready**. Venue setup and constraints are under:
+From Competition Hub, users with **Advanced Federation Tools** can open:
+
+- **Advanced tools**: the former owner-module router and raw workspaces;
+- **Administration**: the scoped action queue or operational job health;
+- the exact source record for each readiness blocker.
+
+Important recovery rules remain unchanged:
+
+- correct mutable drafts in their owning workflow;
+- create successor structures or schedule revisions after freeze/review;
+- replace, never mutate, live schedule publications;
+- correct approved results through the correction command;
+- keep signed parental approvals, audit events, publication snapshots, and stage snapshots as evidence;
+- do not bypass role checks, record rules, or server-side validation because a menu is hidden.
+
+## Retained advanced paths
 
 ```text
-Federation > Match Operations > Venues
-```
-
-**Recovery:** Edit draft calendar records. If a schedule already uses the calendar, make the deliberate calendar correction and refresh the working schedule. Stale assignments are flagged, not silently deleted.
-
-### 8. Build the working schedule
-
-Menu:
-
-```text
-Federation > Competitions > Competition Operations > Schedule Planner
-```
-
-Use **Refresh Calendar Fixtures**. Assign dates, times, venues, and courts manually, or use **Auto-schedule**, **Preview**, and **Apply Auto-schedule**. Review fairness warnings.
-
-**Recovery:** Draft and change-requested schedules remain editable. A preview does not change the schedule until applied. Refresh fixtures, move assignments, or regenerate while mutable.
-
-### 9. Submit and review the schedule
-
-Planner menu:
-
-```text
-Federation > Competitions > Competition Operations > Schedule Planner
-```
-
-Use **Submit for Review**. Approver menu:
-
-```text
-Federation > Competitions > Competition Operations > Schedule Review Queue
-```
-
-The review exposes **Withdraw Submission**, **Request Changes**, and **Approve Schedule** according to state and role.
-
-**Recovery:** Withdraw a pending submission to return it to editing. Request changes to return it to the planner. If an approval is mistaken, do not publish; correct it through a new review cycle while preserving separation of duties.
-
-### 10. Publish the schedule
-
-Use **Publish Schedule** on an approved review. The two real publication menus are:
-
-```text
-Federation > Publishing > Approved Schedules
-Federation > Publishing > Schedule Publications
-```
-
-**Recovery:** Live publications are immutable. Open the published schedule under **Federation > Competitions > Competition Operations > Schedule Planner**, use **Amend Schedule**, enter a reason, and press **Create Amendment**. The replacement follows submit, review, approve, and publish again. The old publication becomes superseded. There is no in-place **Unpublish** button.
-
-### 11. Operate match day
-
-Menu:
-
-```text
-Federation > Competitions > Competition Operations > Match-Day Control
-```
-
-Use **Open Match Day** when ready. During operations use **Update Court**, **Report Incident**, or **Operational Schedule Change**. Finish with **Close Match Day**. Supporting records are under:
-
-```text
-Federation > Match Operations > Match Sheets
-Federation > Competitions > Competition Operations > Technical Records > Incidents
-Federation > Competitions > Competition Operations > Technical Records > Operational Deviations
-```
-
-**Recovery:** Resolve incident and deviation records with **Resolve**. Operational changes are recorded rather than silently altering the approved publication. Correct the planning baseline through a schedule amendment.
-
-### 12. Submit and approve results
-
-Backend menu:
-
-```text
-Federation > Match Operations > Matches
-```
-
-Result Control extends the match form; there is no separate backend **Results** menu. The form provides **Submit Result**, **Verify Result**, **Approve Result**, **Raise Dispute / Request Exception**, **Correct Result**, and **Reset to Draft**.
-
-Club portal:
-
-```text
-My Account > Results
-```
-
-**Recovery:** Reset an incorrect in-progress result to draft. Raise a dispute for governed review. Correct contested or approved results through **Correct Result**. Never silently edit an approved score.
-
-### 13. Recompute and freeze standings
-
-Menu:
-
-```text
-Federation > Publishing > Standings
-```
-
-Use **Recompute** or **Queue Recompute**, inspect lines and tie-break notes, and then use **Freeze**.
-
-**Recovery:** Recompute while unfrozen. For a frozen standing, use **Unfreeze**, correct the source result or rule, use **Force Recompute**, and freeze again. Failed asynchronous work appears under the nested **Recompute Queue**.
-
-### 14. Monitor exceptions
-
-Menus:
-
-```text
+Federation > Competitions > Advanced Competition Tools > Create Competition
+Federation > Competitions > Advanced Competition Tools > Registration Desk
+Federation > Competitions > Advanced Competition Tools > Format Studio
+Federation > Competitions > Advanced Competition Tools > Calendar Planner
+Federation > Competitions > Advanced Competition Tools > Schedule Planner
+Federation > Competitions > Advanced Competition Tools > Schedule Review Queue
+Federation > Administration > Competition Audit & Recovery > Role Assignments
 Federation > Administration > Action Queue
-Federation > Insights > Reports & Insights > Overview & Readiness > Operational Health
 Federation > Administration > System Health > Operational Job Health
 ```
 
-Use source links to correct business records in their owning workflow. Retry only retryable jobs.
-
-## Required terminology in operator documentation
-
-- Use **Federation > Competitions > Competition Operations**, not “Competition Engine”.
-- Use **Registration Desk**, not “Registration Windows” as a menu.
-- Use **Schedule Planner**, not “Scheduling > Schedules”.
-- Use **Schedule Review Queue**, not “Schedule Approval > Reviews”.
-- Use **Publishing > Schedule Publications**, not “Schedule Approval > Publications”.
-- Use **Match Operations > Matches**, not “Results > Match Results”.
-- Use **Publishing > Standings**, not “Standings > Standings”.
-- Use **Format Studio** for stage progression; there is no standalone progression menu.
-
-## Competition simulation hardening
-
-- Generate schedules from an explicit competition-stage and game-day scope. Preview included and excluded fixture counts plus the allocation and remaining capacity for every selected day.
-- When published planning must change, close live operations, create a reasoned amendment, review the replacement independently, publish it, and reopen operations against the new publication. The original published assignment remains immutable.
-- Result submission requires deliberate score entry. A 0–0 result requires explicit confirmation; optional set / period rows must total to the aggregate result.
-- Result follow-up queues name the next responsible role: Result Submitter, Result Verifier, or Result Approver.
-- To finish a standings table, clear remaining result blockers, recompute, review included results and tie-break notes, freeze, then enable website publication.
+These menus are intentionally absent from an ordinary manager’s navigation but their action XML IDs remain stable for bookmarks, contextual actions, tests, and integrations.

@@ -5,3 +5,4 @@ from . import test_season_registration_handoff
 from . import test_roster_lifecycle
 from . import test_roster_scope_uniqueness
 from . import test_tour_roster_lifecycle
+from . import test_gameday_lineup_wizard

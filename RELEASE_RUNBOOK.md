@@ -173,6 +173,43 @@ Rollback requires restoring the pre-upgrade database and filestore backup;
 do not bypass progression validation or fixture ownership checks as a
 rollback workaround.
 
+### Parental approval and game-day lineup upgrade review
+
+Affected upgrades:
+
+- `sports_federation_people` `19.0.1.1.0` to `19.0.1.2.0`
+- `sports_federation_rosters` `19.0.1.5.1` to `19.0.1.6.0`
+
+The People upgrade is additive: Odoo creates the new
+`federation.player.parental.approval` table and its attachment-backed signed
+document field. No existing player requires a backfill; the adult-league rule
+only blocks players who are under 16 on the relevant participation date. The
+Rosters upgrade changes workflow behavior but adds no stored schema: a team's
+declared lineup is synchronized and approved once per explicit match day, with
+tournament plus scheduled date as the legacy fallback.
+
+Required dry run before promotion:
+
+```bash
+./scripts/upgrade_sports_federation.sh --db odoo \
+  --modules sports_federation_people,sports_federation_rosters --dry-run
+bash ./ci/run_tests.sh --suite people_rosters_rules
+```
+
+Patch-environment status on 2026-10-10: Python compilation, XML parsing, addon
+integrity, ACL integrity, dependency drift, workflow contracts, documentation,
+and focused source checks passed. The database dry run and Odoo test suite were
+not executed because this patch environment has no Docker/Podman or Odoo
+runtime. They remain mandatory release gates.
+
+Rollback trigger: module installation/upgrade failure, an unexpected eligibility
+blocker for an adult player or youth league, or inconsistent approved lineups in
+one game-day scope. Because signed approvals create database rows and filestore
+attachments, take a paired database/filestore backup before upgrading and
+restore both to roll back after operators have created approval records. Do not
+delete verified approvals or bypass the game-day synchronization as a rollback
+workaround.
+
 ### Release-candidate readiness review
 
 The release-candidate readiness contracts cover role-separated access,
@@ -702,3 +739,37 @@ lanes are diagnostic commands and are not repeated in the baseline.
 ## RC lane failure visibility
 
 Odoo lanes write to `odoo-rc.log`. On a non-zero exit the runner prints an error summary and the final 200 lines. gettext `Empty msgid` warnings alone do not explain exit code 1; use the first test failure or module-load traceback in the logfile.
+
+### Simplified competition workflow upgrade review
+
+Affected upgrades:
+
+- `sports_federation_base` `19.0.1.3.0` → `19.0.1.4.0`
+- `sports_federation_competition_core` `19.0.1.5.1` → `19.0.1.6.0`
+- `sports_federation_registration` `19.0.1.2.2` → `19.0.1.3.0`
+- `sports_federation_scheduling` `19.0.3.5.0` → `19.0.3.6.0`
+- `sports_federation_setup_flow` `19.0.3.0.0` → `19.0.4.0.0`
+- `sports_federation_rosters` `19.0.1.6.0` → `19.0.1.7.0`
+- `sports_federation_portal` `19.0.7.2.0` → `19.0.7.3.0`
+- `sports_federation_navigation` new at `19.0.1.0.0`
+- `sports_federation_app` `19.0.1.0.0` → `19.0.2.0.0`
+- `sports_federation_demo` `19.0.1.1.0` → `19.0.1.2.0`
+
+The setup-flow upgrade adds remembered preset/default columns on season competitions. The `19.0.4.0.0` post-migration backfills league/cup preset and format defaults without changing existing workflow states. New team, format, and lineup wizard records are transient. New task types reuse the existing task table. The new navigation integration addon updates only `ir.ui.menu` visibility/parent data and does not remove actions or permissions; the app entry point remains dependency-only.
+
+Upgrade order follows dependencies: base, competition core, registration, format/calendar/scheduling/approval/setup flow, matchday/rosters, portal, app, then demo. Use the aggregate app upgrade for the supported installation:
+
+```bash
+./scripts/upgrade_sports_federation.sh --db odoo \
+  --modules sports_federation_base,sports_federation_competition_core,sports_federation_registration,sports_federation_scheduling,sports_federation_setup_flow,sports_federation_rosters,sports_federation_portal,sports_federation_navigation,sports_federation_app --dry-run
+bash ./ci/run_tests.sh --suite competition_core
+bash ./ci/run_tests.sh --suite people_rosters_rules
+bash ./ci/run_tests.sh --suite portal_public_ops
+scripts/ci/run_rc_validation.sh install
+scripts/ci/run_rc_validation.sh upgrade
+scripts/ci/run_rc_validation.sh acceptance
+```
+
+Before promotion, verify one ordinary manager sees only Competition Hub under Competitions, an advanced user retains all owner workspaces and Administration recovery, Streamlined schedule/lineup/result transitions retain audit evidence, Independent Review retains separation of duties, and a missing parental approval blocks both roster and lineup submission.
+
+Rollback requires the paired pre-upgrade database/filestore backup. Navigation can be restored by rolling back the app data update, but do not delete participant sets, entries, approvals, reviews, publications, match sheets, or audit/task records created after upgrade. Restore the full backup if persisted operations occurred.

@@ -21,6 +21,10 @@
                                 class="oe_stat_button" icon="fa-id-card">
                             <field name="license_count" widget="statinfo" string="Licenses"/>
                         </button>
+                        <button name="action_view_parental_approvals" type="object"
+                                class="oe_stat_button" icon="fa-check-circle">
+                            <field name="parental_approval_count" widget="statinfo" string="Parental Approvals"/>
+                        </button>
                     </div>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
                             invisible="active"/>
@@ -53,6 +57,20 @@
                     <notebook>
                         <page string="Notes" name="notes">
                             <field name="notes"/>
+                        </page>
+                        <page string="Parental Approval" name="parental_approval">
+                            <group>
+                                <field name="has_verified_parental_approval" readonly="1"/>
+                            </group>
+                            <field name="parental_approval_ids" readonly="1">
+                                <list create="0" edit="0" delete="0">
+                                    <field name="guardian_name"/>
+                                    <field name="approval_date"/>
+                                    <field name="valid_until"/>
+                                    <field name="state"/>
+                                    <field name="verified_by_id"/>
+                                </list>
+                            </field>
                         </page>
                     </notebook>
                 </sheet>

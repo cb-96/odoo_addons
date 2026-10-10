@@ -20,9 +20,9 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_submit" string="Submit" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_submit" string="Submit Game-Day Lineup" type="object" class="oe_highlight" invisible="state != 'draft'"/>
                     <button name="action_reset_to_draft" string="Reset to Draft" type="object" invisible="state != 'submitted'"/>
-                    <button name="action_approve" string="Approve" type="object" class="oe_highlight" invisible="state != 'submitted'"/>
+                    <button name="action_approve" string="Approve Game-Day Lineup" type="object" class="oe_highlight" invisible="state != 'submitted'"/>
                     <button name="action_lock" string="Lock" type="object" invisible="state != 'approved'" confirm="Locking this match sheet is irreversible. No further changes will be possible. Continue?"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,locked"/>
                 </header>

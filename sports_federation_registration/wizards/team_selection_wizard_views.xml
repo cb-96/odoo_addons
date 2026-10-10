@@ -1,0 +1,30 @@
+<odoo>
+  <record id="competition_team_selection_wizard_form" model="ir.ui.view">
+    <field name="name">federation.competition.team.selection.wizard.form</field>
+    <field name="model">federation.competition.team.selection.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Select Teams">
+        <sheet>
+          <div class="oe_title">
+            <h1>Select the teams that will compete</h1>
+            <p class="text-muted">The workspace keeps registration entries and the finalized participant snapshot in sync automatically.</p>
+          </div>
+          <group>
+            <field name="edition_id"/>
+            <field name="division_id" options="{'no_create': True}"/>
+            <field name="window_id" invisible="1"/>
+            <field name="eligible_team_ids" invisible="1"/>
+          </group>
+          <field name="team_ids" widget="many2many_tags" options="{'no_create': True}" nolabel="1"/>
+          <div class="alert alert-info mt-3" role="status">
+            Select at least two eligible teams. Existing history is preserved; a finalized list that already feeds a format cannot be replaced here.
+          </div>
+        </sheet>
+        <footer>
+          <button name="action_apply" type="object" string="Save Teams &amp; Continue" class="btn-primary"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

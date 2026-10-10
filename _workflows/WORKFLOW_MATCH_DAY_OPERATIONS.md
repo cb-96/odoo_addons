@@ -348,3 +348,7 @@ linking them to the immutable publication.
 Publication replacement is impossible while a match day is open. Different
 match days in the same edition retain independent live publications and version
 sequences.
+
+## One lineup per team and game day (2026-10-10)
+
+Use **Prepare Lineups** on the published match day, or the next workspace action. One wizard selects the team, active roster, players, starters, substitutes, captain, and jersey numbers. Saving writes the canonical match sheet and synchronizes the declaration to every match for that team in the explicit match-day scope; substitution timing remains match-specific. Submission continues to enforce roster eligibility and verified parental approval for under-16 players in senior participation. Streamlined policy invokes the existing approval command automatically; Independent Review leaves the declaration submitted.

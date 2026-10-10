@@ -71,7 +71,10 @@ class FederationCompetitionGamedaySetupWizard(models.TransientModel):
 
     def action_save_continue(self):
         self._save_days()
-        return self.edition_id.action_continue_setup()
+        # Continue directly into the unified competition planner instead of
+        # returning to a raw match-day list and making the operator rediscover
+        # the next command.
+        return self.edition_id.action_setup_schedule()
 
     def _save_days(self):
         self.ensure_one()

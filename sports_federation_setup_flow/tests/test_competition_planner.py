@@ -53,14 +53,26 @@ class TestCompetitionPlanner(TransactionCase):
         self.assertFalse(data["complete"])
         self.assertEqual(data["counts"]["divisions"], 0)
         self.assertIn("missing-divisions", [issue["key"] for issue in data["issues"]])
+        self.assertEqual(data["primary_action"]["kind"], "issue")
+        self.assertEqual(data["primary_action"]["key"], "missing-divisions")
+        self.assertEqual(data["readiness"]["status"], "blocked")
 
-    def test_step_actions_keep_competition_scope(self):
+    def test_step_actions_open_simplified_scoped_workflows(self):
         action = self.edition.action_open_planner_step("gamedays")
 
-        self.assertEqual(action["res_model"], "federation.matchday")
-        self.assertEqual(action["domain"], [("edition_id", "=", self.edition.id)])
-        self.assertEqual(action["context"]["default_edition_id"], self.edition.id)
-        self.assertEqual(action["view_mode"], "calendar,list,form")
+        self.assertEqual(
+            action["res_model"], "federation.competition.gameday.setup.wizard"
+        )
+        wizard = self.env[action["res_model"]].browse(action["res_id"])
+        self.assertEqual(wizard.edition_id, self.edition)
+        self.assertEqual(action["views"], [(False, "form")])
+
+        schedule_action = self.edition.action_open_planner_step("schedule")
+        self.assertEqual(
+            schedule_action["res_model"], "federation.competition.schedule.wizard"
+        )
+        self.assertEqual(schedule_action["views"], [(False, "form")])
+        self.assertTrue(schedule_action["context"]["return_to_competition_workspace"])
 
     def _prepare_two_day_competition(self):
         division = self.env["federation.tournament"].create(
@@ -352,6 +364,51 @@ class TestCompetitionPlanner(TransactionCase):
         action = self.edition.action_open_planner_issue(issue["key"])
         self.assertEqual(action["res_model"], "federation.registration.window")
         self.assertEqual(action["res_id"], window.id)
+        self.assertEqual(action["views"], [(False, "form")])
+
+    def test_ordinary_manager_routes_to_simplified_team_picker(self):
+        division = self.env["federation.tournament"].create(
+            {
+                "name": "Simplified Team Picker Division",
+                "edition_id": self.edition.id,
+                "competition_id": self.competition.id,
+                "season_id": self.season.id,
+                "date_start": "2027-02-01",
+            }
+        )
+        self.env["federation.registration.window"].create(
+            {
+                "name": "Simplified Team Picker Registration",
+                "edition_id": self.edition.id,
+                "division_id": division.id,
+            }
+        )
+        manager = self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "name": "Ordinary Competition Manager",
+                "login": "ordinary.competition.manager",
+                "group_ids": [
+                    (
+                        6,
+                        0,
+                        [
+                            self.env.ref("base.group_user").id,
+                            self.env.ref(
+                                "sports_federation_base.group_federation_manager"
+                            ).id,
+                        ],
+                    )
+                ],
+            }
+        )
+        key = "division-%s-teams" % division.id
+
+        action = self.edition.with_user(manager).action_open_planner_issue(key)
+
+        self.assertEqual(
+            action["res_model"], "federation.competition.team.selection.wizard"
+        )
+        self.assertEqual(action["views"], [(False, "form")])
 
     def test_waiting_steps_use_short_business_labels(self):
         data = self.edition.get_competition_planner_data()
@@ -364,3 +421,7 @@ class TestCompetitionPlanner(TransactionCase):
         action = self.edition.action_open_planner_operation("matchdays")
         self.assertEqual(action["domain"], [("edition_id", "=", self.edition.id)])
         self.assertEqual(action["context"]["default_edition_id"], self.edition.id)
+        self.assertEqual(
+            action["views"],
+            [(False, "calendar"), (False, "list"), (False, "form")],
+        )

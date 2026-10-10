@@ -1,0 +1,51 @@
+<odoo>
+  <record id="gameday_lineup_wizard_form" model="ir.ui.view">
+    <field name="name">federation.gameday.lineup.wizard.form</field>
+    <field name="model">federation.gameday.lineup.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Prepare Game-Day Lineup">
+        <sheet>
+          <div class="oe_title">
+            <h1>Prepare one lineup for the whole game day</h1>
+            <p class="text-muted">The declared squad is shared with every match this team plays on the selected game day. Match-specific substitutions remain separate.</p>
+          </div>
+          <group>
+            <field name="matchday_id"/>
+            <field name="available_team_ids" invisible="1"/>
+            <field name="team_id" options="{'no_create': True}"/>
+            <field name="roster_id" options="{'no_create': True}"/>
+          </group>
+          <field name="line_ids" nolabel="1">
+            <list editable="bottom">
+              <field name="player_id" options="{'no_create': True}"/>
+              <field name="roster_line_id" options="{'no_create': True}"/>
+              <field name="is_starter"/>
+              <field name="is_substitute"/>
+              <field name="is_captain"/>
+              <field name="jersey_number"/>
+            </list>
+          </field>
+          <div class="alert alert-info mt-3" role="status">
+            <field name="readiness_message" readonly="1" nolabel="1"/>
+          </div>
+        </sheet>
+        <footer>
+          <button name="action_save_submit" type="object" string="Save &amp; Submit Lineup" class="btn-primary"/>
+          <button name="action_save_draft" type="object" string="Save Draft" class="btn-secondary"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <record id="matchday_form_lineup_preparation" model="ir.ui.view">
+    <field name="name">federation.matchday.form.lineup.preparation</field>
+    <field name="model">federation.matchday</field>
+    <field name="inherit_id" ref="sports_federation_matchday.matchday_form_operations"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_prepare_lineups" type="object" string="Prepare Lineups" class="btn-secondary" invisible="not current_publication_id or state == 'closed'"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

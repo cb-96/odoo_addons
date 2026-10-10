@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation",
-    "version": "19.0.1.0.0",
+    "version": "19.0.2.0.0",
     "category": "Sports",
     "summary": "Complete sports federation platform",
     "description": """
@@ -38,6 +38,7 @@ databases, model names, XML IDs, and upgrade paths stay stable.
         "sports_federation_public_site",
         "sports_federation_reporting",
         "sports_federation_import_tools",
+        "sports_federation_navigation",
     ],
     "data": [],
     "demo": [],

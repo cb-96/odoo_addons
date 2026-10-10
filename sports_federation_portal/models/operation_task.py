@@ -21,6 +21,8 @@ class FederationOperationTask(models.Model):
         [
             ("registration", "Competition entry"),
             ("roster_readiness", "Roster readiness"),
+            ("parental_consent", "Parental consent"),
+            ("gameday_lineup", "Game-day lineup"),
             ("referee_duty", "Club referee duty"),
             ("result_review", "Result follow-up"),
         ],
@@ -167,6 +169,24 @@ class FederationOperationTask(models.Model):
                 season_id=source.season_id.id,
                 action_url="/my/rosters/%s" % source.id,
             )
+        elif source._name == "federation.team.roster.line":
+            roster = source.roster_id
+            values.update(
+                responsible_club_id=roster.club_id.id,
+                season_id=roster.season_id.id,
+                roster_id=roster.id,
+                action_url="/my/rosters/%s" % roster.id,
+            )
+        elif source._name == "federation.match.sheet":
+            match = source.match_id
+            values.update(
+                responsible_club_id=source.team_id.club_id.id,
+                season_id=match.tournament_id.season_id.id,
+                tournament_id=match.tournament_id.id,
+                match_id=match.id,
+                roster_id=source.roster_id.id,
+                action_url="/my/match-sheets/%s" % source.id,
+            )
         elif source._name == "federation.match.club.referee.duty":
             values.update(
                 duty_id=source.id,
@@ -263,6 +283,76 @@ class FederationOperationTask(models.Model):
                     _("Complete roster readiness"),
                 )
             )
+
+        parental_rosters = (
+            self.env["federation.team.roster"]
+            .sudo()
+            .search(
+                ([] if is_manager else [("club_id", "in", club_ids)])
+                + [("status", "!=", "closed")]
+            )
+        )
+        roster_lines = parental_rosters.mapped("line_ids").filtered(
+            lambda line: line.status == "active"
+            and line.roster_id.team_id.category == "senior"
+            and line.player_id._is_under_age(
+                16, line.roster_id._get_reference_date()
+            )
+            and not line.player_id._has_verified_parental_approval(
+                line.roster_id._get_reference_date()
+            )
+        )
+        for line in roster_lines:
+            specs.append(
+                self._task_spec(
+                    line,
+                    "parental_consent",
+                    "club",
+                    _("Parental consent: %(player)s")
+                    % {"player": line.player_id.display_name},
+                    _(
+                        "A player under 16 in a senior team needs a verified approval covering participation."
+                    ),
+                    _("Upload and verify parental approval"),
+                    priority="2",
+                )
+            )
+
+        lineup_domain = [] if is_manager else [("team_id.club_id", "in", club_ids)]
+        sheets = (
+            self.env["federation.match.sheet"]
+            .sudo()
+            .search(
+                lineup_domain
+                + [
+                    ("state", "in", ("draft", "submitted")),
+                    ("match_id.state", "!=", "cancelled"),
+                ],
+                order="match_kickoff asc,id asc",
+            )
+        )
+        lineup_groups = {}
+        for sheet in sheets:
+            scope = sheet._get_gameday_scope() or ("sheet", sheet.id)
+            lineup_groups.setdefault((sheet.team_id.id, scope), sheet)
+        for (team_id, scope), sheet in lineup_groups.items():
+            status = (
+                _("Submit the shared lineup for this game day.")
+                if sheet.state == "draft"
+                else _("The shared lineup is waiting for federation approval.")
+            )
+            spec = self._task_spec(
+                sheet,
+                "gameday_lineup",
+                "club",
+                _("Game-day lineup: %(team)s")
+                % {"team": sheet.team_id.display_name},
+                status,
+                _("Prepare game-day lineup"),
+                priority="1",
+            )
+            spec["source_key"] = "gameday-lineup:%s:%s" % (team_id, repr(scope))
+            specs.append(spec)
 
         duties = (
             self.env["federation.match.club.referee.duty"]
@@ -476,6 +566,8 @@ class FederationOperationTask(models.Model):
         )
         if not source:
             raise ValidationError(_("The source record no longer exists."))
+        if self.task_type == "parental_consent" and source._name == "federation.team.roster.line":
+            return source.player_id.action_view_parental_approvals()
         return {
             "type": "ir.actions.act_window",
             "name": source.display_name,

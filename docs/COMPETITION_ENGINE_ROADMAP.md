@@ -1,6 +1,6 @@
 # Competition Engine Product Roadmap
 
-> **UI terminology:** the actual backend menu is **Federation → Competitions → Competition Operations**. See [`COMPETITION_UI_WORKFLOW.md`](COMPETITION_UI_WORKFLOW.md).
+> **UI terminology:** the ordinary backend entry is **Federation → Competitions → Competition Hub**. Raw owner-module actions are advanced or contextual. See [`COMPETITION_UI_WORKFLOW.md`](COMPETITION_UI_WORKFLOW.md).
 
 Owner: Federation Competition Operations
 Last updated: 2026-09-03

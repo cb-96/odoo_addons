@@ -68,6 +68,46 @@ class TestFederationPlayer(TransactionCase):
         ids = [r[0] if isinstance(r, (list, tuple)) else r.id for r in results]
         self.assertIn(self.player.id, ids)
 
+    def test_verified_parental_approval_is_linked_and_date_bounded(self):
+        minor = self.env["federation.player"].create(
+            {
+                "first_name": "Young",
+                "last_name": "Player",
+                "birth_date": "2012-11-20",
+            }
+        )
+        approval = self.env["federation.player.parental.approval"].create(
+            {
+                "player_id": minor.id,
+                "guardian_name": "Parent Player",
+                "approval_date": "2020-01-01",
+                "valid_until": "2099-12-31",
+                "approval_document": b"c2lnbmVkLWFwcHJvdmFs",
+                "approval_document_filename": "approval.pdf",
+            }
+        )
+
+        self.assertTrue(minor._is_under_age(16, "2026-10-10"))
+        self.assertFalse(minor._has_verified_parental_approval("2026-10-10"))
+
+        approval.action_verify()
+        minor.invalidate_recordset()
+
+        self.assertEqual(approval.state, "verified")
+        self.assertEqual(approval.verified_by_id, self.env.user)
+        self.assertTrue(minor._has_verified_parental_approval("2026-10-10"))
+        self.assertFalse(minor._has_verified_parental_approval("2100-01-01"))
+        self.assertTrue(minor.has_verified_parental_approval)
+
+    def test_parental_approval_stat_action_uses_canonical_window_action(self):
+        action = self.player.action_view_parental_approvals()
+
+        self.assertEqual(
+            action["res_model"], "federation.player.parental.approval"
+        )
+        self.assertEqual(action["domain"], [("player_id", "=", self.player.id)])
+        self.assertEqual(action["context"]["default_player_id"], self.player.id)
+
 
 class TestFederationPlayerLicense(TransactionCase):
 

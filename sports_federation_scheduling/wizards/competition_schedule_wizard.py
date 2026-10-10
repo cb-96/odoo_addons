@@ -124,7 +124,9 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             "res_model": self._name,
             "res_id": self.id,
             "view_mode": "form",
+            "views": [(False, "form")],
             "target": "new",
+            "context": dict(self.env.context),
         }
 
     def action_apply(self):
@@ -158,6 +160,10 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             if schedule.unassigned_fixture_ids:
                 raise ValidationError(_("%s still has unscheduled fixtures.") % day.display_name)
             schedules |= schedule
+        if self.env.context.get("return_to_competition_workspace") and hasattr(
+            self.edition_id, "action_open_competition_planner"
+        ):
+            return self.edition_id.action_open_competition_planner()
         return {
             "type": "ir.actions.act_window",
             "res_model": "federation.schedule",

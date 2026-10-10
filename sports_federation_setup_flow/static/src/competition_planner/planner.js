@@ -36,8 +36,9 @@ export class CompetitionPlanner extends Component {
     }
 
     async doPlannerAction(method, argument) {
+        const args = argument === undefined ? [[this.editionId]] : [[this.editionId], argument];
         const result = await this.orm.call(
-            "federation.competition.edition", method, [[this.editionId], argument]
+            "federation.competition.edition", method, args
         );
         return this.action.doAction(result, {onClose: () => this.load()});
     }
@@ -55,8 +56,22 @@ export class CompetitionPlanner extends Component {
     }
 
     openCurrent() {
-        const issue = this.state.data.current_issue;
-        return issue ? this.openIssue(issue) : this.openStep(this.state.data.current_step);
+        return this.openPrimary();
+    }
+
+    openPrimary() {
+        const primary = this.state.data.primary_action;
+        return primary.kind === "issue"
+            ? this.doPlannerAction("action_open_planner_issue", primary.key)
+            : this.openOperation(primary.key);
+    }
+
+    openAdvanced() {
+        return this.doPlannerAction("action_open_planner_advanced");
+    }
+
+    openAdministration() {
+        return this.doPlannerAction("action_open_planner_administration");
     }
 
     openBasics() {

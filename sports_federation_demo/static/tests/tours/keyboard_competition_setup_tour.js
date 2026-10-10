@@ -3,12 +3,7 @@
 import { registry } from "@web/core/registry";
 
 const CANONICAL_ACTION_XMLIDS = [
-    "sports_federation_competition_core.action_competition_overview",
-    "sports_federation_registration.action_registration_desk",
-    "sports_federation_format.action_format_studio",
-    "sports_federation_calendar.action_calendar_planner",
-    "sports_federation_scheduling.action_schedule_planner_competition",
-    "sports_federation_schedule_approval.action_schedule_review_queue",
+    "sports_federation_setup_flow.action_competition_setup_home",
 ];
 
 const SETUP_CONTROL_SELECTOR = [

@@ -1,0 +1,27 @@
+<odoo>
+  <record id="competition_format_setup_wizard_form" model="ir.ui.view">
+    <field name="name">federation.competition.format.setup.wizard.form</field>
+    <field name="model">federation.competition.format.setup.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Choose Format">
+        <sheet>
+          <div class="oe_title">
+            <h1>Choose how this division will play</h1>
+            <p class="text-muted">Fixtures are generated and frozen through the existing format commands. Advanced stage graphs remain available from Advanced Tools.</p>
+          </div>
+          <group>
+            <field name="edition_id"/>
+            <field name="division_id" options="{'no_create': True}"/>
+            <field name="participant_set_id"/>
+            <field name="team_count" readonly="1"/>
+          </group>
+          <field name="format_type" widget="radio"/>
+        </sheet>
+        <footer>
+          <button name="action_apply" type="object" string="Generate Fixtures &amp; Continue" class="btn-primary"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

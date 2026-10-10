@@ -27,10 +27,12 @@ class FederationCompetitionSetupReadiness(models.AbstractModel):
             "publication": _("Publish schedule"),
             "complete": _("Setup complete"),
         }
-        current_issue = next(
-            (item for item in planner["issues"] if item["step"] == step), None
+        primary_action = planner.get("primary_action") or {}
+        blocker_hint = (
+            primary_action.get("message")
+            if primary_action.get("kind") == "issue"
+            else False
         )
-        blocker_hint = current_issue["message"] if current_issue else False
         counts = planner["counts"]
         return {
             "blocker_hint": blocker_hint,

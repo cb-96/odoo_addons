@@ -230,6 +230,7 @@ class FederationMatchSheet(models.Model):
                     "match": record.match_id.display_name,
                 },
             )
+            record._inherit_existing_gameday_lineup()
         return records
 
     def write(self, vals):
@@ -301,6 +302,159 @@ class FederationMatchSheet(models.Model):
             return fields.Datetime.to_datetime(self.match_id.date_scheduled).date()
         return fields.Date.context_today(self)
 
+    def _get_gameday_scope(self):
+        """Return the explicit match-day scope, or a tournament/date fallback."""
+        self.ensure_one()
+        match = self.match_id
+        publication = (
+            match.schedule_publication_id
+            if "schedule_publication_id" in match._fields
+            else False
+        )
+        matchday = (
+            publication.matchday_id
+            if publication and "matchday_id" in publication._fields
+            else False
+        )
+        if matchday:
+            return ("matchday", matchday.id)
+        if self.match_scheduled_date and match.tournament_id:
+            return (
+                "tournament_date",
+                match.tournament_id.id,
+                self.match_scheduled_date,
+            )
+        return False
+
+    def _get_gameday_sheets(self):
+        """Return all sheets sharing this team's game-day declaration scope."""
+        self.ensure_one()
+        scope = self._get_gameday_scope()
+        if not scope:
+            return self
+        domain = [
+            ("team_id", "=", self.team_id.id),
+            ("match_id.state", "!=", "cancelled"),
+        ]
+        if scope[0] == "matchday":
+            domain.append(
+                ("match_id.schedule_publication_id.matchday_id", "=", scope[1])
+            )
+        else:
+            domain.extend(
+                [
+                    ("match_id.tournament_id", "=", scope[1]),
+                    ("match_scheduled_date", "=", scope[2]),
+                ]
+            )
+        return self.search(domain, order="match_kickoff asc, id asc")
+
+    def _declared_lineup_signature(self):
+        """Return the match-independent portion of a game-day lineup."""
+        self.ensure_one()
+        lines = sorted(
+            (
+                line.player_id.id,
+                line.roster_line_id.id or False,
+                bool(line.is_starter),
+                bool(line.is_substitute),
+                bool(line.is_captain),
+                line.jersey_number or "",
+            )
+            for line in self.line_ids
+        )
+        return (self.roster_id.id or False, tuple(lines))
+
+    def _get_existing_gameday_lineup_source(self):
+        """Choose an existing declaration to initialize a newly-created sheet."""
+        self.ensure_one()
+        candidates = (self._get_gameday_sheets() - self).filtered("line_ids")
+        if not candidates:
+            return self.env["federation.match.sheet"]
+        state_rank = {"locked": 4, "approved": 3, "submitted": 2, "draft": 1}
+        return candidates.sorted(
+            key=lambda sheet: (-state_rank.get(sheet.state, 0), sheet.id)
+        )[:1]
+
+    def _copy_declared_lineup_from(self, source, inherit_approval=False):
+        """Copy only declaration fields; substitutions remain match-specific."""
+        self.ensure_one()
+        source.ensure_one()
+        if self == source:
+            return False
+        if self.state in ("approved", "locked"):
+            if self._declared_lineup_signature() != source._declared_lineup_signature():
+                raise ValidationError(
+                    _(
+                        "Game-day match sheets for team '%(team)s' must use the "
+                        "same approved lineup."
+                    )
+                    % {"team": self.team_id.display_name}
+                )
+            return False
+
+        target_vals = {"roster_id": source.roster_id.id or False}
+        if source.coach_name and not self.coach_name:
+            target_vals["coach_name"] = source.coach_name
+        if source.manager_name and not self.manager_name:
+            target_vals["manager_name"] = source.manager_name
+        self.write(target_vals)
+        self.line_ids.unlink()
+        line_values = [
+            {
+                "match_sheet_id": self.id,
+                "player_id": line.player_id.id,
+                "roster_line_id": line.roster_line_id.id or False,
+                "is_starter": line.is_starter,
+                "is_substitute": line.is_substitute,
+                "is_captain": line.is_captain,
+                "jersey_number": line.jersey_number,
+            }
+            for line in source.line_ids
+        ]
+        if line_values:
+            self.env["federation.match.sheet.line"].create(line_values)
+        if inherit_approval and source.state in ("approved", "locked"):
+            self.write({"state": "approved"})
+            self._log_audit_event(
+                "match_sheet_approved",
+                _(
+                    "Match sheet '%(sheet)s' inherited the approved game-day lineup."
+                )
+                % {"sheet": self.display_name},
+            )
+        elif inherit_approval and source.state == "submitted":
+            self.write({"state": "submitted"})
+        return True
+
+    def _inherit_existing_gameday_lineup(self):
+        """Initialize new sheets from a previously declared lineup for the day."""
+        for record in self.filtered(lambda sheet: sheet.state == "draft"):
+            source = record._get_existing_gameday_lineup_source()
+            if source:
+                record._copy_declared_lineup_from(source, inherit_approval=True)
+
+    def _synchronize_gameday_lineup(self, source):
+        """Apply one declaration to every mutable sheet in the game-day scope."""
+        source.ensure_one()
+        sheets = source._get_gameday_sheets()
+        for sheet in sheets - source:
+            sheet._copy_declared_lineup_from(source)
+        return sheets
+
+    def _get_action_gameday_groups(self):
+        """Yield one selected source and complete sheet set per game-day scope."""
+        seen = set()
+        for record in self:
+            scope = (
+                record.team_id.id,
+                record._get_gameday_scope() or ("sheet", record.id),
+            )
+            if scope in seen:
+                continue
+            seen.add(scope)
+            yield record, record._get_gameday_sheets()
+
     def _get_submission_issues(self):
         """Return submission issues."""
         self.ensure_one()
@@ -354,6 +508,15 @@ class FederationMatchSheet(models.Model):
 
         return issues
 
+    def _requires_gameday_lineup_approval(self):
+        """Return whether this declaration needs a separate approval handoff."""
+        self.ensure_one()
+        edition = self.match_id.tournament_id.edition_id
+        if not edition or "match_sheet_approval_required" not in edition._fields:
+            # Legacy tournaments keep their established explicit approval flow.
+            return True
+        return bool(edition.match_sheet_approval_required)
+
     def _log_audit_event(self, event_type, description, player=False):
         """Handle log audit event."""
         Audit = self.env.get("federation.participation.audit")
@@ -373,25 +536,33 @@ class FederationMatchSheet(models.Model):
 
     def action_submit(self):
         """Execute the submit action."""
-        for record in self:
-            issues = record._get_submission_issues()
-            if issues:
-                raise ValidationError(
-                    _(
-                        "Match sheet '%(sheet)s' is not ready for submission:\n- %(issues)s"
+        for source, _initial_sheets in self._get_action_gameday_groups():
+            sheets = source._synchronize_gameday_lineup(source)
+            for record in sheets.filtered(lambda sheet: sheet.state == "draft"):
+                issues = record._get_submission_issues()
+                if issues:
+                    raise ValidationError(
+                        _(
+                            "Match sheet '%(sheet)s' is not ready for submission:\n"
+                            "- %(issues)s"
+                        )
+                        % {
+                            "sheet": record.display_name,
+                            "issues": "\n- ".join(issues),
+                        }
                     )
-                    % {
-                        "sheet": record.display_name,
-                        "issues": "\n- ".join(issues),
-                    }
+            submitted = sheets.filtered(lambda sheet: sheet.state == "draft")
+            submitted.write({"state": "submitted"})
+            for record in submitted:
+                record._log_audit_event(
+                    "match_sheet_submitted",
+                    _("Match sheet '%(sheet)s' submitted with its game-day lineup.")
+                    % {"sheet": record.display_name},
                 )
-        self.write({"state": "submitted"})
-        for record in self:
-            record._log_audit_event(
-                "match_sheet_submitted",
-                _("Match sheet '%(sheet)s' submitted.")
-                % {"sheet": record.display_name},
-            )
+            if submitted and not source._requires_gameday_lineup_approval():
+                # Streamlined mode still uses the existing approval command so
+                # readiness checks, synchronization and audit events are kept.
+                source.action_approve()
 
     def action_reset_to_draft(self):
         """Reset a submitted match sheet back to draft for corrections."""
@@ -400,11 +571,14 @@ class FederationMatchSheet(models.Model):
                 raise ValidationError(
                     _("Only submitted match sheets can be reset to draft.")
                 )
-        self.write({"state": "draft"})
-        for record in self:
+        reset_sheets = self.env["federation.match.sheet"]
+        for _source, sheets in self._get_action_gameday_groups():
+            reset_sheets |= sheets.filtered(lambda sheet: sheet.state == "submitted")
+        reset_sheets.write({"state": "draft"})
+        for record in reset_sheets:
             record._log_audit_event(
                 "match_sheet_reset",
-                _("Match sheet '%(sheet)s' reset to draft.")
+                _("Match sheet '%(sheet)s' reset with its game-day lineup.")
                 % {"sheet": record.display_name},
             )
 
@@ -413,12 +587,45 @@ class FederationMatchSheet(models.Model):
         for record in self:
             if record.state != "submitted":
                 raise ValidationError(_("Only submitted match sheets can be approved."))
-        self.write({"state": "approved"})
-        for record in self:
-            record._log_audit_event(
-                "match_sheet_approved",
-                _("Match sheet '%(sheet)s' approved.") % {"sheet": record.display_name},
+        for source, _initial_sheets in self._get_action_gameday_groups():
+            sheets = source._synchronize_gameday_lineup(source)
+            mutable_sheets = sheets.filtered(
+                lambda sheet: sheet.state in ("draft", "submitted")
             )
+            for record in mutable_sheets:
+                issues = record._get_submission_issues()
+                if issues:
+                    raise ValidationError(
+                        _(
+                            "Match sheet '%(sheet)s' is not ready for approval:\n"
+                            "- %(issues)s"
+                        )
+                        % {
+                            "sheet": record.display_name,
+                            "issues": "\n- ".join(issues),
+                        }
+                    )
+            newly_submitted = mutable_sheets.filtered(
+                lambda sheet: sheet.state == "draft"
+            )
+            if newly_submitted:
+                newly_submitted.write({"state": "submitted"})
+                for record in newly_submitted:
+                    record._log_audit_event(
+                        "match_sheet_submitted",
+                        _(
+                            "Match sheet '%(sheet)s' submitted through game-day "
+                            "lineup approval."
+                        )
+                        % {"sheet": record.display_name},
+                    )
+            mutable_sheets.write({"state": "approved"})
+            for record in mutable_sheets:
+                record._log_audit_event(
+                    "match_sheet_approved",
+                    _("Match sheet '%(sheet)s' game-day lineup approved.")
+                    % {"sheet": record.display_name},
+                )
 
     def action_lock(self):
         """Execute the lock action."""

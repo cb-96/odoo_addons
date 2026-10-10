@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation People",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "category": "Sports",
     "summary": "Player master data and license management",
     "author": "Sports Federation",
@@ -10,6 +10,7 @@
     "data": [
         "security/ir.model.access.csv",
         "data/ir_sequence.xml",
+        "views/federation_parental_approval_views.xml",
         "views/federation_player_views.xml",
         "views/federation_player_license_views.xml",
         "views/menu_items.xml",

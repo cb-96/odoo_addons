@@ -76,3 +76,7 @@ A physical addon merge is justified only when:
 - the merge removes a dependency or duplicate implementation;
 - model names, tables, XML IDs, and security identifiers remain stable;
 - fresh install, same-version upgrade, supported-version upgrade, and rollback pass.
+
+## Operator navigation assembly (2026-10-10)
+
+`sports_federation_app` remains the dependency-only supported installation entry. The focused `sports_federation_navigation` integration addon loads after its domain dependencies and applies menu discoverability only. Ordinary operators receive one Competition Hub entry; raw/specialist menus require Advanced Federation Tools or an owning specialist group. No model, table, action XML ID, ACL, record rule, audit record, or immutable snapshot moves between addons.

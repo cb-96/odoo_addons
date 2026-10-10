@@ -71,6 +71,12 @@ class TestCompetitionSetupJourney(TransactionCase):
         )
         self.assertEqual(action["params"]["edition_id"], self.edition.id)
 
+    def test_advanced_workspace_keeps_the_competition_scope(self):
+        action = self.edition.action_open_advanced_workspace()
+
+        self.assertEqual(action["domain"], [("edition_id", "=", self.edition.id)])
+        self.assertEqual(action["context"]["default_edition_id"], self.edition.id)
+
     def test_creation_wizard_exposes_operator_defaults(self):
         fields = self.env["federation.create.competition.wizard"]._fields
         self.assertIn("workflow_mode", fields)
@@ -142,6 +148,22 @@ class TestCompetitionSetupJourney(TransactionCase):
         wizard = self.env["federation.create.competition.wizard"].new(
             {"workflow_mode": "controlled"}
         )
-        self.assertIn("Separate people", wizard.workflow_summary)
+        self.assertIn("second person", wizard.workflow_summary)
         wizard.workflow_mode = "custom"
-        self.assertIn("choose each", wizard.workflow_summary)
+        self.assertIn("configure each checkpoint", wizard.workflow_summary)
+
+    def test_competition_presets_supply_meaningful_editable_defaults(self):
+        wizard = self.env["federation.create.competition.wizard"].new(
+            {
+                "setup_template": "tournament_day",
+                "season_id": self.season.id,
+                "date_start": "2026-10-03",
+            }
+        )
+        wizard._onchange_competition_preset()
+
+        self.assertEqual(wizard.date_end, date(2026, 10, 3))
+        self.assertEqual(wizard.workflow_mode, "simple")
+        self.assertEqual(wizard.default_format_type, "single_round_robin")
+        self.assertTrue(wizard.registration_open)
+        self.assertTrue(wizard.registration_close)

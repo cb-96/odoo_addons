@@ -43,3 +43,7 @@ The regression coverage is in
 `tests/test_registration_team_selection.py`. Run it with the repository's
 module-level Odoo test workflow after installing the registration addon and its
 declared dependencies.
+
+## Direct team selection
+
+`federation.competition.team.selection.wizard` is the streamlined workspace command. It does not introduce a second participant model: it creates or reuses the division registration window, validates team eligibility, synchronizes approved entries and seeds, and materializes the canonical finalized participant set. Repeating the same team set is idempotent. A finalized set already referenced by a competition structure cannot be replaced through the picker; use the governed successor format workflow.

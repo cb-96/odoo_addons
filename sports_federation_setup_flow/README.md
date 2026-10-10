@@ -48,9 +48,23 @@ planner refresh.
 
 After the live schedule is ready, the planner switches from setup guidance to an
 operational handoff with scoped links to match days and schedules. The creation
-wizard explains the practical effect of Simple, Controlled, and Custom workflow
-policies before the competition is created.
+wizard explains the practical effect of Streamlined, Independent Review, and
+Advanced / Custom workflow policies before the competition is created.
 
 The `competition_planner_intent` browser tour qualifies discoverability of the
 current action, direct blocker routing affordance, waiting-step terminology, and
 keyboard focus. Model tests cover exact-target routing and competition scoping.
+
+## Direct action contract
+
+The Owl planner obtains window actions through direct ORM calls and passes the
+returned dictionaries to the web action service. Hand-built window actions must
+therefore include the ordered `views` pairs required by the browser runtime;
+`view_mode` remains present for the conventional server-side action contract.
+Model regressions cover step, exact-record blocker, and operational actions.
+
+## Simplified resumable workspace (19.0.4.0.0)
+
+Competition Hub is the ordinary entry and always reopens the visual planner. It promotes one `primary_action` and one unified readiness summary. Direct team selection materializes registration records in the registration addon; the format picker generates and freezes structures through format commands; game-day setup continues directly into the complete competition scheduling wizard. Preset, format, venue, hours, and slot-duration defaults are remembered on the edition and are backfilled by the 19.0.4.0.0 migration.
+
+The former owner-module router remains callable as `action_open_advanced_workspace`. Exact records, audit data, and recovery actions are retained; only ordinary menu discoverability changes.
