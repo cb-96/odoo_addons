@@ -1,7 +1,9 @@
+from datetime import timedelta
 import re
+import uuid
 from urllib.parse import parse_qs, urlparse
 
-from odoo import SUPERUSER_ID, api
+from odoo import SUPERUSER_ID, api, fields
 from odoo.addons.sports_federation_base.tests.route_inventory import (
     load_route_inventory,
 )
@@ -506,6 +508,33 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
             "roster_line_id": roster_line.id,
             "foreign_line_id": foreign_line.id,
         }
+
+    def test_action_items_recent_task_renders_overdue_status(self):
+        task_name = "Portal action-items overdue status smoke"
+        with self.registry.cursor() as cr:
+            env = api.Environment(cr, SUPERUSER_ID, {})
+            env["federation.operation.task"].create(
+                {
+                    "name": task_name,
+                    "task_type": "roster_readiness",
+                    "audience": "club",
+                    "state": "done",
+                    "completed_on": fields.Datetime.now(),
+                    "deadline": fields.Datetime.now() - timedelta(days=1),
+                    "responsible_club_id": self.team_club.id,
+                    "source_model": "test.portal.http.smoke",
+                    "source_record_id": 1,
+                    "source_key": f"test.portal.http.smoke:{uuid.uuid4().hex}",
+                }
+            )
+            cr.commit()
+
+        self.authenticate(self.team_user.login, "ignored")
+        response = self.url_open("/my/action-items?scope=club&status=recent")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("Internal Server Error", response.text)
+        self.assertIn(task_name, response.text)
 
     def test_my_teams_empty_state_and_create_flow(self):
         self.authenticate(self.team_user.login, "ignored")

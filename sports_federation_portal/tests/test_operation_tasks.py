@@ -1,3 +1,6 @@
+from datetime import timedelta
+
+from odoo import fields
 from odoo.tests.common import TransactionCase
 
 
@@ -88,6 +91,37 @@ class TestFederationOperationTasks(TransactionCase):
         with self.assertRaisesRegex(Exception, "Blocking tasks"):
             task.action_acknowledge()
 
+    def test_is_overdue_only_marks_unfinished_tasks_past_deadline(self):
+        task_model = self.env["federation.operation.task"]
+        now = fields.Datetime.now()
+        task_specs = [
+            ("open-past", "open", now - timedelta(minutes=1)),
+            ("acknowledged-past", "acknowledged", now - timedelta(minutes=1)),
+            ("open-future", "open", now + timedelta(minutes=1)),
+            ("open-no-deadline", "open", False),
+            ("done-past", "done", now - timedelta(minutes=1)),
+        ]
+        tasks = task_model.create(
+            [
+                {
+                    "name": source_key,
+                    "task_type": "roster_readiness",
+                    "audience": "club",
+                    "state": state,
+                    "deadline": deadline,
+                    "source_model": "test.source",
+                    "source_record_id": index,
+                    "source_key": f"test.source:{source_key}",
+                }
+                for index, (source_key, state, deadline) in enumerate(task_specs, 1)
+            ]
+        )
+
+        self.assertEqual(
+            set(tasks.filtered("is_overdue").mapped("source_key")),
+            {"test.source:open-past", "test.source:acknowledged-past"},
+        )
+
     def test_operation_task_opens_its_owning_record(self):
         task = self.env["federation.operation.task"].create(
             {
@@ -122,7 +156,12 @@ class TestFederationOperationTasks(TransactionCase):
 
         self.env["federation.operation.task"].sync_for_user(user=self.manager)
         task = self.env["federation.operation.task"].search(
-            [("match_id", "=", match.id), ("state", "!=", "done")], limit=1
+            [
+                ("match_id", "=", match.id),
+                ("task_type", "=", "result_review"),
+                ("state", "!=", "done"),
+            ],
+            limit=1,
         )
 
         self.assertTrue(task)
@@ -185,8 +224,9 @@ class TestFederationOperationTasks(TransactionCase):
         away_team = self.env["federation.team"].create(
             {"name": "Lineup Away Team", "club_id": away_club.id}
         )
+        matches = self.env["federation.match"]
         for kickoff in ("2025-06-01 10:00:00", "2025-06-01 14:00:00"):
-            self.env["federation.match"].create(
+            matches |= self.env["federation.match"].create(
                 {
                     "tournament_id": self.tournament.id,
                     "home_team_id": self.team.id,
@@ -201,9 +241,31 @@ class TestFederationOperationTasks(TransactionCase):
             [
                 ("task_type", "=", "gameday_lineup"),
                 ("responsible_club_id", "=", self.club.id),
+                ("match_id", "in", matches.ids),
                 ("state", "!=", "done"),
             ]
         )
 
-        self.assertEqual(len(tasks), 1)
+        self.assertEqual(len(tasks), 1, tasks.mapped("source_key"))
         self.assertEqual(tasks.source_model, "federation.match.sheet")
+
+    def test_manager_sync_reuses_club_audience_roster_task(self):
+        roster = self.env["federation.team.roster"].create(
+            {
+                "team_id": self.team.id,
+                "season_id": self.season.id,
+                "competition_id": self.competition.id,
+            }
+        )
+        task_model = self.env["federation.operation.task"]
+        source_key = f"{roster._name}:{roster.id}:roster_readiness"
+
+        task_model.sync_for_user(user=self.manager)
+        task = task_model.search([("source_key", "=", source_key)])
+
+        self.assertEqual(len(task), 1)
+        self.assertEqual(task.audience, "club")
+
+        task_model.sync_for_user(user=self.manager)
+
+        self.assertEqual(task_model.search_count([("source_key", "=", source_key)]), 1)

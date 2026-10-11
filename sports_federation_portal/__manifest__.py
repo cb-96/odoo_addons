@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.7.3.0",
+    "version": "19.0.7.3.2",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """

@@ -131,6 +131,10 @@ must not mutate records that originated from those reads directly.
 
 Result follow-up tasks identify whether the next action belongs to the Result Submitter, Result Verifier, or Result Approver. Queue guidance names the required action while the underlying result commands continue to enforce separation of duties.
 
-## Unified action projection (19.0.7.3.0)
+## Unified action projection (19.0.7.3.2)
 
-`federation.operation.task` remains the only persistent task projection. It now also emits one missing-parental-consent task per affected roster line and one shared game-day-lineup task per team/day scope. Parental-consent tasks open the player's canonical approval action. Lineup tasks open the shared match-sheet source. Source models remain authoritative and stale projections still complete through the existing idempotent synchronization.
+`federation.operation.task` remains the only persistent task projection. It now also emits one missing-parental-consent task per affected roster line and one shared game-day-lineup task per team/day scope. When an explicit game-day scope is unavailable, lineup tasks group by tournament and match kickoff date; unscheduled matches remain scoped to their individual sheet. Parental-consent tasks open the player's canonical approval action. Lineup tasks open the shared match-sheet source. Source models remain authoritative and stale projections still complete through the existing idempotent synchronization.
+
+Manager and club portal refreshes reuse operational tasks by their global source key, even when the task's audience differs from the current refresh scope. This keeps repeated dashboard visits idempotent while each queue continues to show only its intended audience.
+
+Task queues expose overdue status for unfinished tasks whose deadline has passed. Tasks without a deadline and completed tasks are not overdue.

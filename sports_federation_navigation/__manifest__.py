@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Navigation",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "category": "Sports",
     "summary": "Ordinary and advanced navigation assembly",
     "description": """
@@ -12,6 +12,8 @@ Domain addons continue to own actions, models, permissions, and migrations.
     "depends": [
         "sports_federation_base",
         "sports_federation_competition_core",
+        "sports_federation_rules",
+        "sports_federation_tournament",
         "sports_federation_registration",
         "sports_federation_format",
         "sports_federation_calendar",

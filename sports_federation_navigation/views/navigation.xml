@@ -6,62 +6,62 @@
     the opt-in Advanced Federation Tools group.
   -->
   <record id="sports_federation_base.menu_federation_season" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_tournament.menu_federation_competition_edition" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_tournament.menu_federation_competition" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_format.menu_format_templates" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_rules.menu_federation_competition_rules" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_base.menu_federation_planning" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_competition_core.menu_competition_engine_competition_root" model="ir.ui.menu">
     <field name="name">Advanced Competition Tools</field>
     <field name="sequence">80</field>
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_competition_core.menu_competition_engine_competition_technical" model="ir.ui.menu">
     <field name="name">Competition Audit &amp; Recovery</field>
     <field name="parent_id" ref="sports_federation_base.menu_federation_administration"/>
     <field name="sequence">80</field>
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
 
   <record id="sports_federation_tournament.menu_federation_matches" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_rosters.menu_federation_match_sheets" model="ir.ui.menu">
     <field name="name">Game-Day Lineups</field>
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_officiating.menu_federation_officiating" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_venues.menu_federation_venues" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_discipline.menu_federation_discipline" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
 
   <record id="sports_federation_base.menu_federation_publication" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator'), ref('sports_federation_schedule_approval.group_schedule_approver')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator'), ref('sports_federation_schedule_approval.group_schedule_approver')])]"/>
   </record>
   <record id="sports_federation_base.menu_federation_business" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_base.menu_federation_insights" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_base.menu_federation_administration" model="ir.ui.menu">
-    <field name="groups_id" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
 </odoo>

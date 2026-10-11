@@ -315,10 +315,18 @@ Before upgrading a database that previously installed the legacy engine:
 1. Take the database and filestore backups described above.
 2. Run the upgrade script with `--dry-run` and confirm that the resolved module
    list contains the chain and does not contain the removed addon.
-3. Run the upgrade in a disposable restore of the backup first, then verify
+3. Separately inspect the target database's module state for
+   `sports_federation_competition_engine`; absence from the dry-run list does
+   not uninstall a module that remains registered in the database. If its
+   state is not `uninstalled`, stop for the reviewed legacy-data migration.
+   Do not force its state with SQL or uninstall it without reviewing the
+   module-owned operational records.
+4. Run the upgrade in a disposable restore of the backup first, then verify
    registration, format freeze, calendar capacity, scheduling, approval
-   publication, and match-day operations.
-4. Record the dry-run output and restore-drill result with the release ticket;
+   publication, and match-day operations. Review Odoo's upgrade output for
+   registry errors as well as the process exit code; an exit code of zero does
+   not make an inconsistent module registry a clean upgrade.
+5. Record the dry-run output and restore-drill result with the release ticket;
    do not silently reinterpret legacy planner or published-schedule records.
 
 If the restore drill or production upgrade fails, stop Odoo, preserve the

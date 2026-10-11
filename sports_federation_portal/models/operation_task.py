@@ -67,6 +67,7 @@ class FederationOperationTask(models.Model):
     next_step = fields.Char()
     action_url = fields.Char(readonly=True)
     deadline = fields.Datetime(index=True)
+    is_overdue = fields.Boolean(compute="_compute_is_overdue")
     assigned_user_id = fields.Many2one("res.users", index=True, tracking=True)
     waiting_on = fields.Selection(
         [
@@ -212,7 +213,8 @@ class FederationOperationTask(models.Model):
     def _sync_specs(self, specs, scope_domain):
         keys = {spec["source_key"] for spec in specs}
         existing = self.sudo().search(scope_domain)
-        by_key = {task.source_key: task for task in existing}
+        matching = self.sudo().search([("source_key", "in", list(keys))])
+        by_key = {task.source_key: task for task in matching}
         for spec in specs:
             task = by_key.get(spec["source_key"])
             if task:
@@ -333,7 +335,14 @@ class FederationOperationTask(models.Model):
         )
         lineup_groups = {}
         for sheet in sheets:
-            scope = sheet._get_gameday_scope() or ("sheet", sheet.id)
+            scope = sheet._get_gameday_scope()
+            if not scope and sheet.match_kickoff and sheet.match_id.tournament_id:
+                scope = (
+                    "tournament_date",
+                    sheet.match_id.tournament_id.id,
+                    fields.Datetime.to_datetime(sheet.match_kickoff).date(),
+                )
+            scope = scope or ("sheet", sheet.id)
             lineup_groups.setdefault((sheet.team_id.id, scope), sheet)
         for (team_id, scope), sheet in lineup_groups.items():
             status = (
@@ -463,6 +472,14 @@ class FederationOperationTask(models.Model):
             ("audience", "=", "club"),
             ("responsible_club_id", "in", self._portal_club_ids(user)),
         ]
+
+    @api.depends("deadline", "state")
+    def _compute_is_overdue(self):
+        now = fields.Datetime.now()
+        for task in self:
+            task.is_overdue = bool(
+                task.state != "done" and task.deadline and task.deadline < now
+            )
 
     @api.depends("audience", "state", "deadline", "assigned_user_id", "completed_on")
     def _compute_qol_status(self):

@@ -22,6 +22,8 @@ Registration finalizes a participant set. Format freezes a structure. Calendar p
 
 The legacy monolithic engine has been removed from the addon set. New and existing operational flows use the ownership split. Databases upgraded from a release that installed the legacy addon require the normal reviewed upgrade/migration procedure before production rollout; do not silently reinterpret existing production records.
 
+The source-tree removal does not uninstall the module from existing databases. Before treating such an upgrade as clean, inspect `ir_module_module` for `sports_federation_competition_engine`; an installed or pending state can produce an inconsistent-registry error even when the upgrade command exits successfully. Do not force the module state with SQL or uninstall it until a reviewed migration accounts for its model-owned operational data.
+
 
 ## Schedule handoff operator handoff
 
