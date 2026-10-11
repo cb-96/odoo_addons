@@ -7,7 +7,7 @@ const CANONICAL_ACTION_XMLIDS = [
 ];
 
 const SETUP_CONTROL_SELECTOR = [
-    "[data-keyboard-competition-setup]",
+    ".o_competition_setup_action",
     "[data-action='competition-setup']",
     ".o_competition_setup button",
     ".o_competition_setup [role='button']",

@@ -43,6 +43,7 @@
     <field name="model">federation.matchday</field>
     <field name="inherit_id" ref="sports_federation_matchday.matchday_form_operations"/>
     <field name="arch" type="xml">
+      <!-- Contextual shortcut; the canonical lineup logic remains owned by the wizard. -->
       <xpath expr="//header" position="inside">
         <button name="action_prepare_lineups" type="object" string="Prepare Lineups" class="btn-secondary" invisible="not current_publication_id or state == 'closed'"/>
       </xpath>

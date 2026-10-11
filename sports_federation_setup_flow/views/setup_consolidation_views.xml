@@ -36,7 +36,7 @@
       <xpath expr="//list" position="attributes">
         <attribute name="create">0</attribute>
       </xpath>
-      <xpath expr="//list" position="inside">
+      <xpath expr="//list/field[1]" position="before">
         <header>
           <button name="%(sports_federation_registration.action_create_competition_wizard)d" type="action" string="Create Competition" class="btn-primary" display="always"/>
         </header>
@@ -44,7 +44,7 @@
       <field name="tournament_count" position="after">
         <field name="setup_progress" widget="progressbar" string="Readiness"/>
         <field name="setup_next_action" string="Next Action"/>
-        <button name="action_open_competition_planner" type="object" string="Open Workspace" class="btn-primary" data-keyboard-competition-setup="true"/>
+        <button name="action_open_competition_planner" type="object" string="Open Workspace" class="btn-primary o_competition_setup_action"/>
       </field>
     </field>
   </record>

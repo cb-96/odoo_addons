@@ -166,6 +166,18 @@ def main():
         if f"**{label}**" not in navigation:
             errors.append(f"navigation purpose is undocumented: {label}")
 
+    setup_view = (ROOT / "sports_federation_setup_flow/views/competition_setup_views.xml").read_text(encoding="utf-8")
+    consolidation_view = (ROOT / "sports_federation_setup_flow/views/setup_consolidation_views.xml").read_text(encoding="utf-8")
+    keyboard_tour = (ROOT / "sports_federation_demo/static/tests/tours/keyboard_competition_setup_tour.js").read_text(encoding="utf-8")
+    if "data-keyboard-competition-setup" in setup_view + consolidation_view:
+        errors.append("setup views must use an Odoo-supported CSS class hook, not a custom XML attribute")
+    if "o_competition_setup_action" not in setup_view or "o_competition_setup_action" not in consolidation_view:
+        errors.append("setup action buttons must expose the o_competition_setup_action CSS hook")
+    if '<xpath expr="//list" position="inside">' in consolidation_view and "<header>" in consolidation_view:
+        errors.append("list headers must be inserted before a list field for Odoo 19 Relax NG compatibility")
+    if '".o_competition_setup_action"' not in keyboard_tour:
+        errors.append("keyboard setup tour must target the supported setup action CSS hook")
+
     if errors:
         print("Federation backend navigation contract failed:", file=sys.stderr)
         for error in errors:

@@ -4,7 +4,7 @@
   <field name="model">federation.competition.edition</field>
   <field name="inherit_id" ref="sports_federation_competition_core.competition_edition_form_workflow"/>
   <field name="arch" type="xml">
-    <xpath expr="//form/header" position="inside"><button name="action_open_competition_planner" type="object" string="Open Competition Hub" class="btn-primary" data-keyboard-competition-setup="true"/></xpath>
+    <xpath expr="//form/header" position="inside"><button name="action_open_competition_planner" type="object" string="Open Competition Hub" class="btn-primary o_competition_setup_action"/></xpath>
     <xpath expr="//group[.//field[@name='workflow_progress']]" position="replace">
     <group string="Competition Setup" class="o_competition_setup">
      <group><field name="setup_progress" widget="progressbar"/><field name="setup_next_action" readonly="1"/><field name="setup_blocker_hint" readonly="1" invisible="setup_step == 'complete'"/><field name="setup_summary" readonly="1"/></group>

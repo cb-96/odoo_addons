@@ -1,8 +1,8 @@
 # Simplify Competition Workflow — Implementation and Patch Notes
 
 Implementation date: 2026-10-10
-Repository commit: `393dd899739bcb6b66eca99e1bcb942013273c4f` (`comp_planner`)
-Patch baseline: the exact dirty working tree supplied in `current_sources.jsonl.txt` and `current_git_metadata.txt`
+Repository commit: `dc6a720499735d232c93d7456d3a6492c3feabff` (`comp_planner`)
+Patch baseline: the exact clean tree supplied in `current_sources.jsonl.txt` and `current_git_metadata.txt`
 
 ## Scope delivered
 
@@ -19,14 +19,12 @@ Patch baseline: the exact dirty working tree supplied in `current_sources.jsonl.
 
 ## Application order
 
-The downloadable patch is an incremental diff against the supplied current dirty
-working tree. It intentionally omits parental-approval, public-site, standings,
+The downloadable patch is an incremental diff against supplied commit `dc6a720`. It intentionally omits parental-approval, public-site, standings,
 notification, workflow-documentation, and shared-lineup changes that are already
 present, while retaining later simplification changes on the few overlapping
 files.
 
-Keep the working tree exactly as supplied and apply without `--index`, so current
-unstaged and untracked work remains unstaged and untracked:
+Apply from a clean checkout of `dc6a720` after verifying the preimage:
 
 ```bash
 git apply --check simplify_competition_workflow_incremental.patch
@@ -52,13 +50,11 @@ The supported aggregate upgrade command is documented in `RELEASE_RUNBOOK.md`.
 
 ## Validation results
 
-Passed against a reconstructed repository with the exact supplied commit, 25
-unstaged modifications, and two untracked parental-approval files:
+Passed against a reconstructed repository with the exact supplied commit, clean worktree at `dc6a720`:
 
 - `git apply --check` on the authoritative dirty-tree preimage;
 - application result matched the intended cumulative target for all 1,049 files;
-- reverse application restored the exact supplied content, Git modes, file set,
-  and 27-line porcelain status;
+- reverse application restored the exact supplied content, Git modes, and file set;
 - `git diff --check`;
 - syntax compilation of 42 changed Python files, XML parsing of 12 changed XML
   files, literal parsing of 10 changed manifests, and Node syntax checks for four
