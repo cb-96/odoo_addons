@@ -19,3 +19,4 @@ from . import test_competition_portal
 from . import test_competition_entry_portal
 
 from . import test_qol_search
+from . import test_parental_approval_portal

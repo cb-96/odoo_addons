@@ -12,3 +12,4 @@ from . import competition_portal
 from . import qol_search
 
 from . import data_api
+from . import parental_approval_portal

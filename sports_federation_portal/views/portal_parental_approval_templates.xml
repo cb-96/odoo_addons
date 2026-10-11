@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <template id="portal_my_players_parental_approval_action" inherit_id="sports_federation_portal.portal_my_players" name="Player Parental Approval Action">
+    <xpath expr="//table/thead/tr/th[last()]" position="after">
+      <th scope="col" class="text-end">Parental approval</th>
+    </xpath>
+    <xpath expr="//table/tbody/t/tr/td[last()]" position="after">
+      <td class="text-end">
+        <a t-attf-href="/my/players/#{player.id}/parental-approvals" class="btn btn-sm btn-outline-primary">Manage document</a>
+      </td>
+    </xpath>
+  </template>
+
+  <template id="portal_player_parental_approvals" name="Player Parental Approvals">
+    <t t-call="portal.portal_layout">
+      <div class="container py-4">
+        <a href="/my/players" class="btn btn-link px-0 mb-3"><i class="fa fa-arrow-left me-2"/>Back to players</a>
+        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
+          <div><h1 class="h3 mb-1">Parental approval</h1><p class="text-muted mb-0"><t t-esc="player.display_name"/></p></div>
+          <span class="badge bg-secondary">Federation verification required</span>
+        </div>
+        <div t-if="success" class="alert alert-success" role="status"><t t-esc="success"/></div>
+        <div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div>
+        <div class="row g-4">
+          <div class="col-lg-7">
+            <div class="card"><div class="card-body">
+              <h2 class="h5">Upload signed approval</h2>
+              <p class="text-muted">PDF, PNG or JPG, maximum 10 MiB. The federation verifies the document before it becomes valid.</p>
+              <form t-attf-action="/my/players/#{player.id}/parental-approvals/upload" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="mb-3"><label class="form-label" for="guardian_name">Parent or guardian name</label><input class="form-control" id="guardian_name" name="guardian_name" required="required"/></div>
+                <div class="mb-3"><label class="form-label" for="guardian_email">Guardian email</label><input class="form-control" id="guardian_email" name="guardian_email" type="email"/></div>
+                <div class="row g-3 mb-3"><div class="col-md-6"><label class="form-label" for="approval_date">Approval date</label><input class="form-control" id="approval_date" name="approval_date" type="date" required="required"/></div><div class="col-md-6"><label class="form-label" for="valid_until">Valid until</label><input class="form-control" id="valid_until" name="valid_until" type="date"/></div></div>
+                <div class="mb-3"><label class="form-label" for="approval_document">Signed document</label><input class="form-control" id="approval_document" name="approval_document" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" required="required"/></div>
+                <div class="mb-3"><label class="form-label" for="notes">Notes</label><textarea class="form-control" id="notes" name="notes" rows="3"/></div>
+                <button class="btn btn-primary" type="submit">Upload for review</button>
+              </form>
+            </div></div>
+          </div>
+          <div class="col-lg-5"><div class="card"><div class="card-body"><h2 class="h5">Submission history</h2>
+            <div t-if="not approvals" class="text-muted">No approval documents uploaded yet.</div>
+            <div t-foreach="approvals" t-as="approval" class="border-bottom py-3">
+              <div class="d-flex justify-content-between gap-2"><strong><t t-esc="approval.approval_document_filename"/></strong><span t-attf-class="badge #{'bg-success' if approval.state == 'verified' else ('bg-danger' if approval.state == 'revoked' else 'bg-warning text-dark')}"><t t-esc="dict(approval._fields['state'].selection).get(approval.state)"/></span></div>
+              <div class="small text-muted mt-1">Approved <t t-esc="approval.approval_date"/><t t-if="approval.valid_until"> · valid until <t t-esc="approval.valid_until"/></t></div>
+            </div>
+          </div></div></div>
+        </div>
+      </div>
+    </t>
+  </template>
+</odoo>

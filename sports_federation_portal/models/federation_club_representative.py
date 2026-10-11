@@ -248,6 +248,39 @@ class FederationClubRepresentative(models.Model):
                         f"'{rec.role_type_id.name}' at club '{rec.club_id.name}'."
                     )
 
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._check_representative_user_access_mode()
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        if {"user_id", "active", "date_start", "date_end"}.intersection(vals):
+            self._check_representative_user_access_mode()
+        return result
+
+    def _check_representative_user_access_mode(self):
+        """Keep representatives portal-only unless they hold a federation function."""
+        internal_group = self.env.ref("base.group_user")
+        federation_group = self.env.ref(
+            "sports_federation_base.group_federation_user"
+        )
+        portal_group = self.env.ref(
+            "sports_federation_portal.group_federation_portal_club"
+        )
+        for user in self.filtered(lambda record: record.is_current).mapped("user_id"):
+            if internal_group in user.group_ids and federation_group not in user.group_ids:
+                raise ValidationError(
+                    _(
+                        "A club representative without a federation function must use "
+                        "portal access and cannot be an internal Odoo user."
+                    )
+                )
+            if federation_group not in user.group_ids and portal_group not in user.group_ids:
+                user.sudo().write({"group_ids": [(4, portal_group.id)]})
+
     @api.onchange("user_id")
     def _onchange_user_id_portal(self):
         """Auto-populate partner_id from the linked user when set."""
