@@ -34,10 +34,20 @@ class FederationPlayerParentalApproval(models.Model):
         attachment=True,
     )
     approval_document_filename = fields.Char(string="Document Filename")
+    submitted_by_id = fields.Many2one(
+        "res.users", string="Submitted By", readonly=True, copy=False, ondelete="set null"
+    )
+    submitted_on = fields.Datetime(string="Submitted On", readonly=True, copy=False)
+    review_note = fields.Text(
+        string="Review Note",
+        help="Federation feedback shown to the submitting club when replacement is required.",
+        copy=False,
+    )
     state = fields.Selection(
         [
             ("draft", "Draft"),
             ("verified", "Verified"),
+            ("replacement_requested", "Replacement Required"),
             ("revoked", "Revoked"),
         ],
         default="draft",
@@ -85,6 +95,8 @@ class FederationPlayerParentalApproval(models.Model):
             "valid_until",
             "approval_document",
             "approval_document_filename",
+            "submitted_by_id",
+            "submitted_on",
         }
         workflow_change = "state" in vals and any(
             record.state != vals["state"] for record in self
@@ -134,6 +146,17 @@ class FederationPlayerParentalApproval(models.Model):
                 "verified_on": fields.Datetime.now(),
                 "verified_by_id": self.env.user.id,
             }
+        )
+        return True
+
+    def action_request_replacement(self):
+        for record in self:
+            if record.state != "draft":
+                raise ValidationError(_("Only draft parental approvals can require replacement."))
+            if not (record.review_note or "").strip():
+                raise ValidationError(_("Record a review note before requesting replacement."))
+        self.with_context(allow_verified_parental_approval_write=True).write(
+            {"state": "replacement_requested"}
         )
         return True
 

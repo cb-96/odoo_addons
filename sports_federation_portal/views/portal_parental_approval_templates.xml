@@ -41,8 +41,11 @@
           <div class="col-lg-5"><div class="card"><div class="card-body"><h2 class="h5">Submission history</h2>
             <div t-if="not approvals" class="text-muted">No approval documents uploaded yet.</div>
             <div t-foreach="approvals" t-as="approval" class="border-bottom py-3">
-              <div class="d-flex justify-content-between gap-2"><strong><t t-esc="approval.approval_document_filename"/></strong><span t-attf-class="badge #{'bg-success' if approval.state == 'verified' else ('bg-danger' if approval.state == 'revoked' else 'bg-warning text-dark')}"><t t-esc="dict(approval._fields['state'].selection).get(approval.state)"/></span></div>
-              <div class="small text-muted mt-1">Approved <t t-esc="approval.approval_date"/><t t-if="approval.valid_until"> · valid until <t t-esc="approval.valid_until"/></t></div>
+              <div class="d-flex justify-content-between gap-2"><strong><t t-esc="approval.approval_document_filename"/></strong><span t-attf-class="badge #{'bg-success' if approval.state == 'verified' else ('bg-danger' if approval.state in ('revoked', 'replacement_requested') else 'bg-warning text-dark')}"><t t-esc="dict(approval._fields['state'].selection).get(approval.state)"/></span></div>
+              <div class="small text-muted mt-1">Approval date <t t-esc="approval.approval_date"/><t t-if="approval.valid_until"> · valid until <t t-esc="approval.valid_until"/></t></div>
+              <div t-if="approval.submitted_on" class="small text-muted">Submitted <t t-esc="approval.submitted_on" t-options="{'widget': 'datetime'}"/> by <t t-esc="approval.submitted_by_id.name"/></div>
+              <div t-if="approval.review_note" class="alert alert-warning py-2 mt-2 mb-1"><strong>Federation feedback:</strong> <t t-esc="approval.review_note"/></div>
+              <a t-if="approval.approval_document" class="btn btn-sm btn-outline-secondary mt-2" t-attf-href="/my/players/#{player.id}/parental-approvals/#{approval.id}/download">Download submitted document</a>
             </div>
           </div></div></div>
         </div>

@@ -36,12 +36,35 @@ class TestParentalApprovalPortal(TransactionCase):
         self.assertEqual(approval.state, "draft")
         self.assertEqual(approval.create_uid, self.user)
         self.assertTrue(approval.approval_document)
+        self.assertEqual(approval.submitted_by_id, self.user)
+        self.assertTrue(approval.submitted_on)
 
     def test_representative_cannot_upload_for_foreign_player(self):
         with self.assertRaises(AccessError):
             self.env["federation.player.parental.approval"]._portal_create_parental_approval(
                 self.other_player, {"guardian_name": "Parent", "approval_date": "2026-10-11"}, self._upload(), user=self.user,
             )
+
+
+    def test_second_pending_upload_is_rejected(self):
+        model = self.env["federation.player.parental.approval"]
+        values = {"guardian_name": "Parent", "approval_date": "2026-10-11"}
+        model._portal_create_parental_approval(self.player, values, self._upload(), user=self.user)
+        with self.assertRaises(ValidationError):
+            model._portal_create_parental_approval(self.player, values, self._upload(), user=self.user)
+
+    def test_replacement_requires_review_note(self):
+        approval = self.env["federation.player.parental.approval"].create({
+            "player_id": self.player.id,
+            "guardian_name": "Parent",
+            "approval_date": "2026-10-11",
+            "approval_document": b"c2lnbmVk",
+        })
+        with self.assertRaises(ValidationError):
+            approval.action_request_replacement()
+        approval.review_note = "Signature is missing."
+        approval.action_request_replacement()
+        self.assertEqual(approval.state, "replacement_requested")
 
     def test_representative_without_federation_function_cannot_be_internal(self):
         internal = self.env["res.users"].with_context(no_reset_password=True).create({

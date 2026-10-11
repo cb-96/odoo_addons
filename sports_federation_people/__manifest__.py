@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation People",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.2.1",
     "category": "Sports",
     "summary": "Player master data and license management",
     "author": "Sports Federation",

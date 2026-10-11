@@ -45,6 +45,17 @@ class FederationPlayerParentalApprovalPortal(models.Model):
         if not approval_date:
             raise ValidationError(_("Approval date is required."))
 
+        pending = privilege.portal_search(
+            self,
+            [("player_id", "=", player.id), ("state", "=", "draft")],
+            user=user,
+            limit=1,
+        )
+        if pending:
+            raise ValidationError(
+                _("A parental approval for this player is already awaiting federation review.")
+            )
+
         approval_values = {
             "player_id": player.id,
             "guardian_name": guardian_name,
@@ -55,5 +66,7 @@ class FederationPlayerParentalApprovalPortal(models.Model):
             "approval_document_filename": checked["filename"],
             "notes": (values.get("notes") or "").strip() or False,
             "state": "draft",
+            "submitted_by_id": user.id,
+            "submitted_on": fields.Datetime.now(),
         }
         return privilege.portal_create(self, approval_values, user=user)

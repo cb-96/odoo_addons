@@ -1,3 +1,5 @@
+import base64
+
 from odoo import http
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
@@ -18,6 +20,19 @@ class FederationParentalApprovalPortal(FederationPortalBase):
             request.env["federation.player"],
             player_id,
             domain=[("club_id", "in", clubs.ids)],
+            user=request.env.user,
+        )
+
+
+    def _get_owned_approval(self, player, approval_id):
+        try:
+            approval_id = int(approval_id)
+        except (TypeError, ValueError):
+            return request.env["federation.player.parental.approval"]
+        return request.env["federation.portal.privilege"].portal_search_by_id(
+            request.env["federation.player.parental.approval"],
+            approval_id,
+            domain=[("player_id", "=", player.id)],
             user=request.env.user,
         )
 
@@ -44,6 +59,29 @@ class FederationParentalApprovalPortal(FederationPortalBase):
                 "success": kw.get("success"),
                 "error": kw.get("error"),
             },
+        )
+
+
+    @http.route(
+        "/my/players/<int:player_id>/parental-approvals/<int:approval_id>/download",
+        type="http", auth="user", website=True, methods=["GET"],
+    )
+    def portal_player_parental_approval_download(self, player_id, approval_id, **kw):
+        player = self._get_owned_player(player_id)
+        if not player:
+            return self._render_access_denied()
+        approval = self._get_owned_approval(player, approval_id)
+        if not approval or not approval.approval_document:
+            return request.not_found()
+        filename = (approval.approval_document_filename or "parental-approval.pdf").replace("\r", "").replace("\n", "")
+        return request.make_response(
+            base64.b64decode(approval.approval_document),
+            headers=[
+                ("Content-Type", "application/octet-stream"),
+                ("Content-Disposition", 'attachment; filename="%s"' % filename.replace('"', "")),
+                ("X-Content-Type-Options", "nosniff"),
+                ("Cache-Control", "private, no-store"),
+            ],
         )
 
     @http.route(

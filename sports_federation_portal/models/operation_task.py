@@ -176,7 +176,11 @@ class FederationOperationTask(models.Model):
                 responsible_club_id=roster.club_id.id,
                 season_id=roster.season_id.id,
                 roster_id=roster.id,
-                action_url="/my/rosters/%s" % roster.id,
+                action_url=(
+                    "/my/players/%s/parental-approvals" % source.player_id.id
+                    if task_type == "parental_consent"
+                    else "/my/rosters/%s" % roster.id
+                ),
             )
         elif source._name == "federation.match.sheet":
             match = source.match_id

@@ -10,6 +10,7 @@
                 <field name="approval_date"/>
                 <field name="valid_until"/>
                 <field name="state"/>
+                <field name="submitted_on" optional="show"/>
                 <field name="verified_by_id"/>
                 <field name="verified_on"/>
             </list>
@@ -23,8 +24,9 @@
             <form string="Parental Approval">
                 <header>
                     <button name="action_verify" string="Verify" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_request_replacement" string="Request Replacement" type="object" invisible="state != 'draft'"/>
                     <button name="action_revoke" string="Revoke" type="object" invisible="state != 'verified'" confirm="Revoke this parental approval? It will stop satisfying eligibility checks."/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,verified,revoked"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,replacement_requested,verified,revoked"/>
                 </header>
                 <sheet>
                     <group>
@@ -36,6 +38,8 @@
                         <group>
                             <field name="approval_date" readonly="state != 'draft'"/>
                             <field name="valid_until" readonly="state != 'draft'"/>
+                            <field name="submitted_by_id" readonly="1"/>
+                            <field name="submitted_on" readonly="1"/>
                             <field name="verified_by_id" readonly="1"/>
                             <field name="verified_on" readonly="1"/>
                         </group>
@@ -44,6 +48,9 @@
                         <field name="approval_document" filename="approval_document_filename" readonly="state != 'draft'"/>
                         <!-- Technical filename relay used by the binary document widget. -->
                         <field name="approval_document_filename" invisible="1"/>
+                    </group>
+                    <group invisible="state not in ('draft', 'replacement_requested')">
+                        <field name="review_note" placeholder="Required before requesting replacement"/>
                     </group>
                     <group invisible="state != 'verified'">
                         <field name="revocation_reason" placeholder="Required before revocation"/>
@@ -66,6 +73,7 @@
                 <field name="guardian_name"/>
                 <filter name="verified" string="Verified" domain="[('state', '=', 'verified')]"/>
                 <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="replacement_requested" string="Replacement Required" domain="[('state', '=', 'replacement_requested')]"/>
                 <filter name="revoked" string="Revoked" domain="[('state', '=', 'revoked')]"/>
                 <group>
                     <filter name="player" string="Player" context="{'group_by': 'player_id'}"/>
