@@ -61,6 +61,14 @@ At this point the result is entered but **not yet official**.
 5. `result_verified_by_id` and `result_verified_on` are recorded.
 6. The verifier cannot verify their own submission.
 
+Users can open **My federation work → Result review** (`/my/work/reviews`) to
+find submitted and verified records visible to their reviewer role. The queue
+omits a submitted result when the current user is its submitter unless the
+edition permits self-verification. It omits a verified result when the user is
+its submitter or verifier unless the edition permits self-approval. The queue
+is navigational only; the match result command continues to enforce group,
+state, and separation-of-duties rules when a decision is submitted.
+
 ### 4. Result Approval
 
 **Actor**: Result Approver (security group)

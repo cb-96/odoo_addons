@@ -12,7 +12,8 @@ It is a staging candidate, NOT a declaration that roadmap step 2 has passed all 
 - `/my/work`: role-aware entry points for club/team preparation, official assignments,
   existing competition planning, manager follow-up and result review.
 - `/my/work/reviews`: pending submitted/verified results read under the actual user's ORM
-  permissions. Links open existing backend records; existing result commands enforce policy.
+  permissions and filtered through edition-level self-review policy. Links open existing
+  backend records; existing result commands enforce policy.
 - Existing manager route now renders a working queue template and backend task links.
   Its role/filter checks remain in the original inherited controller.
 - Existing club inbox remains the route owner, extended through its QoL controller.
@@ -25,6 +26,12 @@ It is a staging candidate, NOT a declaration that roadmap step 2 has passed all 
   roster-creation POST. Existing model commands reuse a roster on repeated submission.
 - New `journey_team_id` projection and updated record rule support team-only task scope.
   Expired/current representation and effective-account lookup are considered in task scope.
+- Team-specific task assignments now accept only representatives for that team or
+  whole-club representatives; the command boundary rejects a forged cross-team user ID.
+- Source presentation evaluates ownership using the authenticated viewer even when task
+  searches are elevated; source records outside that viewer's scope render unavailable.
+- The manager queue entry and form use the existing `/federation/operations/action-items`
+  route. Official return navigation preserves only an allowlisted assignment filter.
 - Task presentation distinguishes actionable, waiting, completed and unavailable source.
   Submitted sheets and submitted draft consent documents wait for federation review.
 - Task sync preserves identities and assignment, skips unchanged writes, preserves a
@@ -53,7 +60,7 @@ static/src/js/journey_return_navigation.js and tests/test_role_journeys.py insid
 
 Updated: portal manifest, package imports, operational-task record rule and base inbox
 percentage removal. Existing domain models and earlier release scripts are not replaced.
-Two CI helper test files accompany the application tests.
+CI helper tests and the partial test-to-acceptance map accompany the application tests.
 
 ## Apply and upgrade
 
@@ -84,29 +91,31 @@ Tests are also tagged sf_release_confidence and are selected by the existing por
 release lanes. Rerun release confidence for the final committed candidate after upgrading.
 Do not reuse a passing summary from the previous commit.
 
-## Validation performed here
+## Validation performed
 
-- 12 Python pure-helper tests passed.
-- 12 frontend helper tests passed using a small DOM/storage stub.
-- Python/XML parse and JavaScript syntax checks passed.
-- Scoped XPath selectors checked against the uploaded inbox template.
-- Existing addon integrity, dependency drift, ACL CSV, portal sudo guard and route-ownership
-  checks passed. These are static checks, not proof of live permissions or rendering.
-- 13 Odoo model/HTTP regression tests written and registered, but NOT executed here.
-- No Docker executable or Odoo runtime was available. No deployment or database was changed.
+- 13 Python helper tests, 16 evidence-gate unit tests, and 14 frontend helper assertions
+  passed. The frontend test uses a stub DOM/storage environment, not a real browser.
+- JavaScript syntax, addon integrity (29 addons), dependency drift (30 modules), ACL CSV
+  integrity (269 records), portal sudo guard, and route ownership (118 routes) passed.
+- Focused isolated Odoo portal CI passed: 20 post-tests, 20 passed, 0 failures/errors,
+  including six ordinary-role `HttpCase` scenarios and model-level regressions.
+- Full isolated `sports_federation_portal` module CI passed: 161 tests, including 61
+  post-tests, 0 failures, and 0 errors.
+- These automated checks do not certify every acceptance item, actual browser behavior,
+  staging upgrade, or novice usability.
 
 ## Remaining acceptance work and known limits
 
-- Execute the model/HTTP tests and full installation/upgrade lanes on staging. Upstream
-  portal-home template inheritance and Odoo record URLs require live rendering validation.
+- Execute the upgrade and full installation lanes on authorized staging. No staging config,
+  approved sanitized fixture, or staging operator credentials were supplied here.
 - Run real browser tests for complete role journeys, return navigation, errors, mobile,
   keyboard and account switching. Frontend helper tests are not a substitute.
-- Run real novice sessions and the previous role-journey evidence gate. No observations
-  or completion rates were generated here; not all 39 acceptance checks are certified.
+- Run five real novice sessions per task and the role-journey evidence gate. No observations
+  or completion rates were generated; unmapped acceptance checks remain explicitly unproven.
 - Validate concurrent refresh with separate database connections. The existing unique
   source-key constraint remains; this patch does not claim to eliminate every create race.
-- Review the group-based reviewer list against tournament-specific assignments. Records
-  are readable candidates; final verification/approval remains checked by source commands.
+- Confirm whether business policy requires tournament-specific reviewer assignments beyond
+  the current role-group and edition-level independent-review rules before staging sign-off.
 - Return navigation covers portal pages. Backend record navigation is native, not a custom
   persisted return to a portal reviewer/manager filter.
 - The existing broad task sync and inbox query budgets need runtime performance measurement.
@@ -116,8 +125,11 @@ Do not reuse a passing summary from the previous commit.
 - The existing representation scope computation and midnight tenure refresh are not rewritten.
   Test delegation/expiry in the installation's actual role configuration.
 
-Step 2 is complete only after implementation, runtime/browser checks, real novice validation
-and fresh release confidence pass. This deliverable supplies the code, not an agent writing task.
+Step 2 is incomplete until staging upgrade, real browser/novice validation and fresh release
+confidence pass for the final commit. This run did not deploy or touch a staging or production
+database. Release confidence remains blocked pending the approved sanitized backup, source and
+attachment metadata, rollback owner/trigger, and private evidence inputs identified by the
+release gate.
 
 Suggested commit title:
 `feat: connect role-based workspaces and operational task handoffs`

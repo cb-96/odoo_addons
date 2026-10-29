@@ -1,5 +1,5 @@
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from ..journey_navigation import presentation
 
 
@@ -63,6 +63,43 @@ class OperationTaskJourneys(models.Model):
             ("effective_user_id", "=", user.id),
         ])
         return (reps.mapped("club_id") | user.portal_team_scope_ids.mapped("club_id")).ids
+
+    @api.model
+    def _journey_assert_source_access(self, source, user):
+        """Apply the same role scope as the source's owning portal workflow."""
+        if user.has_group("sports_federation_base.group_federation_manager"):
+            source.with_user(user).check_access("read")
+            return True
+        if source._name == "federation.competition.entry":
+            self.env["federation.portal.scope"].assert_team(
+                source.team_id, user=user
+            )
+        elif source._name == "federation.season.registration":
+            self.env["federation.team.roster"]._portal_assert_registration_access(
+                source, user=user
+            )
+        elif source._name == "federation.team.roster":
+            source._portal_assert_scope_access(user=user)
+        elif source._name == "federation.team.roster.line":
+            source.roster_id._portal_assert_scope_access(user=user)
+        elif source._name == "federation.match.sheet":
+            source._portal_assert_review_access(user=user)
+        elif source._name == "federation.match.club.referee.duty":
+            if source.club_id not in user.portal_club_scope_ids:
+                raise AccessError(_("You do not have access to this club duty."))
+        elif source._name == "federation.match" and not (
+            user.has_group("sports_federation_result_control.group_result_validator")
+            or user.has_group("sports_federation_result_control.group_result_approver")
+        ):
+            clubs = user.portal_club_scope_ids
+            if (
+                source.home_team_id.club_id not in clubs
+                and source.away_team_id.club_id not in clubs
+            ):
+                raise AccessError(_("You do not have access to this match result."))
+        else:
+            source.with_user(user).check_access("read")
+        return True
 
     @api.model
     def _portal_get_domain(self, user=None):
@@ -132,8 +169,17 @@ class OperationTaskJourneys(models.Model):
         for model, ids in grouped.items():
             if model in self.env:
                 sources[model] = {r.id: r for r in self.env[model].sudo().browse(list(ids)).exists()}
+        viewer_id = self.env.context.get("journey_viewer_id", self.env.uid)
+        viewer = self.env["res.users"].sudo().browse(viewer_id).exists()
         for task in self:
             source = sources.get(task.source_model, {}).get(task.source_record_id)
+            if source and viewer:
+                try:
+                    self._journey_assert_source_access(source, viewer)
+                except AccessError:
+                    source = False
+            else:
+                source = False
             source_state = None
             pending = False
             if source:
@@ -165,11 +211,16 @@ class OperationTaskJourneys(models.Model):
         tasks = self.sudo().search([
             ("state", "!=", "done"), ("assigned_user_id", "!=", False),
             "|", ("digest_sent_on", "=", False), ("digest_sent_on", "<", today),
-        ]).filtered(lambda task: task.journey_status == "actionable")
+        ])
         for user in tasks.mapped("assigned_user_id"):
-            user_tasks = tasks.filtered(lambda task: task.assigned_user_id == user)
+            user_tasks = tasks.with_context(journey_viewer_id=user.id).filtered(
+                lambda task: task.assigned_user_id == user
+                and task.journey_status == "actionable"
+            )
             if not user.has_group("sports_federation_base.group_federation_manager"):
-                allowed = self.sudo().search(self._portal_get_domain(user))
+                allowed = self.sudo().with_context(
+                    journey_viewer_id=user.id
+                ).search(self._portal_get_domain(user))
                 user_tasks &= allowed
             if not user_tasks:
                 continue

@@ -55,6 +55,13 @@ club, tournament, type, priority, deadline, and state. A task acknowledgement
 does not override a sporting blocker; the linked domain action remains the
 required resolution path.
 
+The manager queue is served at `/federation/operations/action-items`. Team-only
+representatives see tasks for their assigned team and may assign those tasks
+only to that team or a whole-club representative; the model rejects forged
+cross-team assignee IDs. Elevated task lookup does not determine source
+readiness: the portal projection checks the current viewer's source ownership
+and reports inaccessible sources as unavailable.
+
 ## Modules Involved
 
 | Module | Role |

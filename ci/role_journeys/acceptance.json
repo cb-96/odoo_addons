@@ -9,5 +9,44 @@
   },
   "shared_checks": ["one_authoritative_task_projection", "counts_and_destinations_same_scope", "unavailable_check_never_ready", "missing_records_not_omitted", "owner_deadline_next_step_visible", "no_duplicate_data_entry", "acknowledgement_not_completion", "source_transition_completes_or_reopens_task", "resolved_task_stops_reminders", "return_target_is_local_allowlisted", "forged_task_or_source_denied", "concurrent_refresh_idempotent", "current_representation_and_team_scope_respected", "no_new_duplicate_route_owner", "keyboard_mobile_and_error_recovery"],
   "novice_tasks": ["organiser_publish", "club_register_prepare", "team_prepare_lineup", "official_respond", "reviewer_decide"],
-  "novice_gate": {"minimum_participants": 5, "minimum_unassisted_completion_rate_per_task": 0.8, "critical_incidents_allowed": 0}
+  "novice_gate": {"minimum_participants": 5, "minimum_unassisted_completion_rate_per_task": 0.8, "critical_incidents_allowed": 0},
+  "automated_test_mapping_status": "partial; unmapped acceptance checks remain unproven",
+  "automated_test_map": {
+    "club_representative.registration_to_roster_connected": [
+      "TestJourneyTasks.test_missing_roster_sync_does_not_create_source",
+      "TestJourneyTasks.test_roster_creation_resolves_missing_task"
+    ],
+    "team_manager.team_scoped_pending_work": [
+      "TestJourneyHttp.test_team_manager_inbox_hides_other_team",
+      "TestJourneyTasks.test_team_task_assignment_rejects_another_team_representative"
+    ],
+    "reviewer.simple_and_controlled_policy_distinct": [
+      "TestJourneyTasks.test_reviewer_visibility_obeys_independent_review_policy",
+      "TestJourneyTasks.test_review_queue_applies_edition_policy_to_real_match"
+    ],
+    "shared.acknowledgement_not_completion": [
+      "TestJourneyTasks.test_acknowledged_is_not_completed"
+    ],
+    "shared.unavailable_check_never_ready": [
+      "TestJourneyTasks.test_unknown_source_not_ready"
+    ],
+    "shared.source_transition_completes_or_reopens_task": [
+      "TestJourneyTasks.test_roster_creation_resolves_missing_task",
+      "TestJourneyTasks.test_completed_timestamp_is_not_rewritten_by_refresh"
+    ],
+    "shared.forged_task_or_source_denied": [
+      "TestJourneyTasks.test_source_action_rechecks_actual_access",
+      "TestJourneyTasks.test_team_task_assignment_rejects_another_team_representative"
+    ],
+    "shared.current_representation_and_team_scope_respected": [
+      "TestJourneyTasks.test_expired_representative_has_no_club_scope",
+      "TestJourneyTasks.test_raw_task_read_respects_team_scope",
+      "TestJourneyHttp.test_team_manager_inbox_hides_other_team"
+    ],
+    "shared.return_target_is_local_allowlisted": [
+      "JourneyHelpers.test_return_filters_allowlisted",
+      "JourneyHelpers.test_external_destinations_rejected",
+      "ci/test_role_journey_navigation.cjs: safeReturn('/my/action-items?scope=club&status=recent&evil=1')"
+    ]
+  }
 }

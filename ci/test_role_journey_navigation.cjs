@@ -12,6 +12,8 @@ check("safeReturn('//evil.test/my/action-items')", null);
 check("safeReturn('/my/rosters/1')", null);
 check("safeReturn('/my/action-items?scope=unknown')", '/my/action-items');
 check("safeReturn('/my/referee-assignments')", '/my/referee-assignments');
+check("safeReturn('/my/referee-assignments?filterby=history&page=2')", '/my/referee-assignments?filterby=history');
+check("safeReturn('/my/referee-assignments?filterby=invalid')", '/my/referee-assignments');
 check("safeReturn('/my/work')", '/my/work');
 check("safeReturn('//local.test/my/work')", null);
 check("safeReturn('/my/action-items/%2e%2e/work')", null);

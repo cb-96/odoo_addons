@@ -506,21 +506,18 @@ class FederationOperationTask(models.Model):
                 task.work_bucket = "now"
 
     def _allowed_assignment_users(self):
-        """Return active representatives for the task club, never widening club scope."""
+        """Return active representatives in the task's club and optional team scope."""
         self.ensure_one()
         if not self.responsible_club_id:
             return self.env["res.users"].browse()
-        reps = (
-            self.env["federation.club.representative"]
-            .sudo()
-            .search(
-                [
-                    ("club_id", "=", self.responsible_club_id.id),
-                    ("is_current", "=", True),
-                    ("user_id", "!=", False),
-                ]
-            )
-        )
+        domain = [
+            ("club_id", "=", self.responsible_club_id.id),
+            ("is_current", "=", True),
+            ("user_id", "!=", False),
+        ]
+        if self.journey_team_id:
+            domain.append(("team_id", "in", [False, self.journey_team_id.id]))
+        reps = self.env["federation.club.representative"].sudo().search(domain)
         return reps.mapped("effective_user_id") | reps.mapped("user_id")
 
     def action_assign_user(self, user):

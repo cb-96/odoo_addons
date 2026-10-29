@@ -124,18 +124,35 @@ class TestFederationOperationTasks(TransactionCase):
         )
 
     def test_resolved_task_stops_daily_digest_reminders(self):
-        task = self.env["federation.operation.task"].create(
+        away_club = self.env["federation.club"].create(
+            {"name": "Digest Away Club"}
+        )
+        away_team = self.env["federation.team"].create(
+            {"name": "Digest Away Team", "club_id": away_club.id}
+        )
+        match = self.env["federation.match"].create(
             {
-                "name": "Resolved reminder task",
-                "task_type": "registration",
-                "audience": "manager",
-                "blocking": False,
-                "assigned_user_id": self.manager.id,
-                "source_model": "test.source",
-                "source_record_id": 912,
-                "source_key": "test.source:912:resolved-reminder",
+                "tournament_id": self.tournament.id,
+                "home_team_id": self.team.id,
+                "away_team_id": away_team.id,
+                "home_score": 1,
+                "away_score": 0,
+                "state": "done",
+                "result_state": "submitted",
             }
         )
+        task_model = self.env["federation.operation.task"]
+        task_model.sync_for_user(user=self.manager)
+        task = task_model.search(
+            [
+                ("match_id", "=", match.id),
+                ("task_type", "=", "result_review"),
+                ("state", "!=", "done"),
+            ],
+            limit=1,
+        )
+        self.assertTrue(task)
+        task.write({"assigned_user_id": self.manager.id})
         task_model_id = self.env["ir.model"]._get_id(task._name)
         activity_domain = [
             ("res_model_id", "=", task_model_id),

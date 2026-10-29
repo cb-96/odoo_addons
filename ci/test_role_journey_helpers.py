@@ -18,6 +18,9 @@ class JourneyHelpers(unittest.TestCase):
     def test_return_filters_allowlisted(self):
         result = nav.return_url("club", {"scope": "club", "status": "recent", "redirect": "https://example.com", "task_type": "invalid"})
         self.assertEqual(result, "/my/action-items?scope=club&status=recent")
+    def test_official_return_preserves_only_allowed_filter(self):
+        result = nav.return_url("official", {"filterby": "history", "page": "9", "redirect": "//evil.test"})
+        self.assertEqual(result, "/my/referee-assignments?filterby=history")
     def test_submitted_entry_waits(self): self.assertEqual(nav.presentation("open", "club", "federation.competition.entry", "submitted"), ("waiting", "federation"))
     def test_draft_entry_actionable(self): self.assertEqual(nav.presentation("open", "club", "federation.competition.entry", "draft"), ("actionable", "club"))
     def test_submitted_sheet_waits(self): self.assertEqual(nav.presentation("open", "club", "federation.match.sheet", "submitted")[0], "waiting")

@@ -1,7 +1,7 @@
 /** @odoo-module **/
 // Session navigation contains only allowlisted routes/filters and a user ID, never form data.
 const returnPaths = new Set(['/my/work', '/my/action-items', '/my/referee-assignments']);
-const filters = {scope: new Set(['my', 'club']), status: new Set(['open', 'recent']), task_type: new Set(['registration', 'roster_readiness', 'parental_consent', 'gameday_lineup', 'referee_duty', 'result_review'])};
+const filters = {scope: new Set(['my', 'club']), status: new Set(['open', 'recent']), task_type: new Set(['registration', 'roster_readiness', 'parental_consent', 'gameday_lineup', 'referee_duty', 'result_review']), filterby: new Set(['upcoming', 'pending', 'history', 'all'])};
 const ttl = 2 * 60 * 60 * 1000;
 function safeReturn(value) {
     if (typeof value !== "string" || value.startsWith("//") || /[\\%\r\n]/.test(value)) return null;

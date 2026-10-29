@@ -6,12 +6,13 @@ RETURNS = {
     "club": "/my/action-items",
     "home": "/my/work",
     "official": "/my/referee-assignments",
-    "manager": "/federation/action-items",
+    "manager": "/federation/operations/action-items",
 }
 FILTERS = {
     "scope": {"my", "club"},
     "status": {"open", "recent"},
     "task_type": {"registration", "roster_readiness", "parental_consent", "gameday_lineup", "referee_duty", "result_review"},
+    "filterby": {"upcoming", "pending", "history", "all"},
 }
 
 
@@ -44,3 +45,16 @@ def presentation(state, audience, source_model, source_state, pending_consent=Fa
         or pending_consent
     )
     return ("waiting", "federation") if waiting else ("actionable", "club" if audience == "club" else "federation")
+
+
+def reviewer_can_act(state, user_id, submitted_by_id, verified_by_id,
+                     self_verification_allowed=False, self_approval_allowed=False):
+    """Mirror the result workflow's actor-separation policy for queue visibility."""
+    if state == "submitted":
+        return bool(self_verification_allowed or submitted_by_id != user_id)
+    if state == "verified":
+        return bool(
+            self_approval_allowed
+            or (submitted_by_id != user_id and verified_by_id != user_id)
+        )
+    return False

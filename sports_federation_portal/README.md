@@ -1,8 +1,8 @@
 # Sports Federation Club Roles and Portal
 
-Version: 19.0.4.1.0
+Version: 19.0.7.5.0
 Owner: Federation Platform Team
-Last reviewed: 2026-10-04
+Last reviewed: 2026-10-29
 Review cadence: Every release
 
 Role-oriented self-service portal for club representatives, officials, and tournament operators.
@@ -138,3 +138,32 @@ Result follow-up tasks identify whether the next action belongs to the Result Su
 Manager and club portal refreshes reuse operational tasks by their global source key, even when the task's audience differs from the current refresh scope. This keeps repeated dashboard visits idempotent while each queue continues to show only its intended audience.
 
 Task queues expose overdue status for unfinished tasks whose deadline has passed. Tasks without a deadline and completed tasks are not overdue.
+
+## Role workspaces and scoped handoffs (19.0.7.5.0)
+
+`/my/work` is the role switchboard for club/team preparation, referee
+assignments, competition planning, result review, and manager operations. It
+links to existing workflow owners rather than introducing a second task or
+approval system. The manager queue route is
+`/federation/operations/action-items`.
+
+Team-scoped representatives see and assign work only for their assigned team;
+whole-club representatives can still own club-wide work. Assignment checks are
+enforced by the task model, so posting another team's representative ID cannot
+reassign a team task. Task presentation resolves the source using the actual
+portal viewer's current ownership scope, even when the projection is searched
+with elevated read access. An unreadable or missing source is presented as
+unavailable, never as ready.
+
+The result-review queue shows submitted or verified results only to users with
+the corresponding result role and only when the configured self-verification
+or self-approval policy allows that user to act. Result commands remain the
+authority for every decision. The official-assignment return link preserves
+only the allowlisted `filterby` values `upcoming`, `pending`, `history`, and
+`all`; arbitrary redirects and query parameters are discarded.
+
+Automated role-journey test mapping is recorded in
+`ci/role_journeys/acceptance.json` and is explicitly partial. Focused Odoo
+`HttpCase` tests exercise ordinary role accounts, but they are not browser
+qualification or real novice sessions. Staging/manual, keyboard/mobile, novice,
+and fresh release-confidence gates remain separate sign-off requirements.
