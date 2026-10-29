@@ -1,8 +1,23 @@
+"""Shared database fixtures for duty coverage tests.
+
+Fixtures use canonical models and materialized logical fixtures. The clock is
+fixed so certificate, availability and escalation checks do not depend on today.
+"""
+from unittest.mock import patch
+from odoo import fields
+
+
 class CoverageFixture:
     @classmethod
     def setUpClass(cls):
         """Set up shared test data for the test case."""
         super().setUpClass()
+        clock = patch(
+            "odoo.fields.Datetime.now",
+            return_value=fields.Datetime.to_datetime("2026-06-15 17:00:00"),
+        )
+        clock.start()
+        cls.addClassCleanup(clock.stop)
         cls.portal_official_group = cls.env.ref(
             "sports_federation_portal.group_federation_portal_official"
         )
@@ -250,4 +265,7 @@ class CoverageFixture:
             }
         )
         cls.match.write({"published_slot_id": slot.id})
+        cls.slot = slot
+        cls.matchday = matchday
+        cls.publication = publication
         (cls.referee | cls.other_referee).write({"coverage_playing_checked": True})
