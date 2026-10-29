@@ -13,6 +13,7 @@ databases, model names, XML IDs, and upgrade paths stay stable.
     "license": "LGPL-3",
     "depends": [
         "sports_federation_base",
+        "sports_federation_duty_coverage",
         "sports_federation_people",
         "sports_federation_rules",
         "sports_federation_tournament",

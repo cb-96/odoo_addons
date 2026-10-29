@@ -1,0 +1,4 @@
+<odoo noupdate="1">
+  <record id="coverage_activity_type" model="mail.activity.type"><field name="name">Duty coverage escalation</field></record>
+  <record id="coverage_cron" model="ir.cron"><field name="name">Federation: escalate unresolved duty coverage</field><field name="model_id" ref="sports_federation_tournament.model_federation_match"/><field name="state">code</field><field name="code">model.cron_escalate_coverage()</field><field name="user_id" ref="base.user_admin"/><field name="interval_number">1</field><field name="interval_type">hours</field><field name="active" eval="True"/></record>
+</odoo>

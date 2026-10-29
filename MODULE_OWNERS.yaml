@@ -119,3 +119,8 @@ modules:
     primary_owner: Federation Competition Operations
     secondary_owner: Federation Portal and Public Experience
     surface: Venue master data and schedule-level venue ownership
+
+  sports_federation_duty_coverage:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Schedule-linked duty coverage, individual responses, attendance and replacement evidence
