@@ -1,3 +1,5 @@
+from datetime import datetime, time, timedelta
+
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
@@ -318,11 +320,20 @@ class FederationMatchSheet(models.Model):
         )
         if matchday:
             return ("matchday", matchday.id)
-        if self.match_scheduled_date and match.tournament_id:
+        scheduled_date = (
+            match.round_id.round_date
+            if match.round_id and match.round_id.round_date
+            else (
+                fields.Datetime.to_datetime(match.date_scheduled).date()
+                if match.date_scheduled
+                else False
+            )
+        )
+        if scheduled_date and match.tournament_id:
             return (
                 "tournament_date",
                 match.tournament_id.id,
-                self.match_scheduled_date,
+                scheduled_date,
             )
         return False
 
@@ -341,12 +352,20 @@ class FederationMatchSheet(models.Model):
                 ("match_id.schedule_publication_id.matchday_id", "=", scope[1])
             )
         else:
-            domain.extend(
+            day_start = datetime.combine(scope[2], time.min)
+            day_end = day_start + timedelta(days=1)
+            matches = self.env["federation.match"].search(
                 [
-                    ("match_id.tournament_id", "=", scope[1]),
-                    ("match_scheduled_date", "=", scope[2]),
+                    ("tournament_id", "=", scope[1]),
+                    ("state", "!=", "cancelled"),
+                    "|",
+                    ("round_id.round_date", "=", scope[2]),
+                    "&",
+                    ("date_scheduled", ">=", fields.Datetime.to_string(day_start)),
+                    ("date_scheduled", "<", fields.Datetime.to_string(day_end)),
                 ]
             )
+            domain.append(("match_id", "in", matches.ids))
         return self.search(domain, order="match_kickoff asc, id asc")
 
     def _declared_lineup_signature(self):

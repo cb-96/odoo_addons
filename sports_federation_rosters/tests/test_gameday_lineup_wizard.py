@@ -1,6 +1,7 @@
 import hashlib
 import json
 
+from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
 
@@ -115,7 +116,12 @@ class TestGamedayLineupWizard(TransactionCase):
             )
             match.sudo().write({"schedule_publication_id": publication.id})
         player = cls.env["federation.player"].create(
-            {"name": "Lineup Wizard Player", "first_name": "Lineup", "last_name": "Player"}
+            {
+                "name": "Lineup Wizard Player",
+                "first_name": "Lineup",
+                "last_name": "Player",
+                "gender": "male",
+            }
         )
         rule_set = cls.env["federation.rule.set"].create(
             {"name": "Lineup Wizard Rules", "code": "LINEUP-WIZ", "squad_min_size": 1}
@@ -136,8 +142,11 @@ class TestGamedayLineupWizard(TransactionCase):
     def test_one_wizard_prepares_and_streamlines_shared_gameday_lineup(self):
         action = self.matchday.action_prepare_lineups()
         wizard = self.env[action["res_model"]].browse(action["res_id"])
+        self.assertEqual(wizard.team_id, self.home)
+        self.assertEqual(wizard.roster_id, self.roster)
         wizard.team_id = self.home
         wizard._onchange_team_id()
+        self.assertEqual(len(wizard.line_ids), 1)
 
         wizard.action_save_submit()
 
@@ -155,8 +164,11 @@ class TestGamedayLineupWizard(TransactionCase):
         self.edition.write({"workflow_mode": "controlled"})
         action = self.matchday.action_prepare_lineups()
         wizard = self.env[action["res_model"]].browse(action["res_id"])
+        self.assertEqual(wizard.team_id, self.home)
+        self.assertEqual(wizard.roster_id, self.roster)
         wizard.team_id = self.home
         wizard._onchange_team_id()
+        self.assertEqual(len(wizard.line_ids), 1)
 
         wizard.action_save_submit()
 
@@ -167,3 +179,9 @@ class TestGamedayLineupWizard(TransactionCase):
             ]
         )
         self.assertEqual(set(sheets.mapped("state")), {"submitted"})
+
+    def test_lineup_preparation_requires_an_active_roster(self):
+        self.roster.action_close()
+
+        with self.assertRaisesRegex(ValidationError, "Activate a team roster"):
+            self.matchday.action_prepare_lineups()

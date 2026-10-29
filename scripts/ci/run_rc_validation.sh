@@ -54,6 +54,13 @@ validate_database_name() {
   fi
 }
 
+record_rc_error() {
+  local message="$*"
+  local logfile="${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
+  echo "ERROR: $message" >&2
+  printf 'ERROR: %s\n' "$message" >> "$logfile"
+}
+
 require_compose() {
   command -v docker >/dev/null 2>&1 || {
     echo "ERROR: Docker is required for Odoo RC validation." >&2
@@ -155,6 +162,10 @@ EOF
   echo "[RC:$lane] Broad upstream-compatibility lanes may run for more than an hour."
   if "${compose[@]}" run --rm ci-odoo sh -lc "$container_command" -- \
     "${odoo_args[@]}" 2>&1 | tee "$logfile"; then
+    if ! python3 ci/check_odoo_registry_log.py "$logfile"; then
+      print_odoo_failure 1
+      return 1
+    fi
     echo "[RC:$lane] Odoo completed successfully."
     grep -E "odoo.tests.result:|[0-9]+ post-tests in" "$logfile" | tail -n 5 || true
     return 0
@@ -186,6 +197,7 @@ print('XML parse check passed')
 PY
   git -c core.whitespace=cr-at-eol diff --check
   python3 ci/check_legacy_engine_removed.py
+  python3 ci/test_check_odoo_registry_log.py
   python3 ci/check_portal_sudo_guard.py
   python3 ci/check_privileged_inventory_quality.py
   python3 ci/check_privileged_mutation_boundaries.py
@@ -256,13 +268,29 @@ assert_modules_installed() {
   local expected
   expected="$(awk -F',' '{print NF}' <<<"$upgrade_modules")"
   if [[ "$installed" != "$expected" ]]; then
-    echo "ERROR: upgrade database $database has $installed of $expected required modules installed" >&2
+    record_rc_error "upgrade database $database has $installed of $expected required modules installed"
+    exit 2
+  fi
+}
+
+assert_retired_engine_uninstalled() {
+  local database="$1"
+  local state
+  state="$(
+    "${compose[@]}" exec -T ci-db psql \
+      -U "$ci_postgres_user" -d "$database" --tuples-only --no-align \
+      --command="SELECT state FROM ir_module_module WHERE name='sports_federation_competition_engine'" \
+  )"
+  if [[ -n "$state" && "$state" != "uninstalled" ]]; then
+    record_rc_error "retired addon sports_federation_competition_engine has database state '$state'; stop for a reviewed legacy-data migration"
     exit 2
   fi
 }
 
 run_upgrade() {
+  : > "${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
   assert_modules_installed "$upgrade_db_name"
+  assert_retired_engine_uninstalled "$upgrade_db_name"
   run_odoo "${common[@]}" -d "$upgrade_db_name" -u "$upgrade_modules"
 }
 

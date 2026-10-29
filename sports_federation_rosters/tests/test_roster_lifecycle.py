@@ -264,10 +264,32 @@ class TestMatchSheetLifecycle(TransactionCase):
     # ── state cycle ──────────────────────────────────────────────────────────
 
     def test_full_state_cycle(self):
-        sheet = self._make_sheet()
+        roster = self.env["federation.team.roster"].create(
+            {
+                "team_id": self.team_home.id,
+                "season_id": self.season.id,
+            }
+        )
+        roster_line = self.env["federation.team.roster.line"].create(
+            {
+                "roster_id": roster.id,
+                "player_id": self.player.id,
+                "status": "active",
+            }
+        )
+        roster.action_activate()
+        sheet = self._make_sheet(roster_id=roster.id)
+        self.env["federation.match.sheet.line"].create(
+            {
+                "match_sheet_id": sheet.id,
+                "player_id": self.player.id,
+                "roster_line_id": roster_line.id,
+                "is_starter": True,
+            }
+        )
         self.assertEqual(sheet.state, "draft")
 
-        sheet.write({"state": "submitted"})
+        sheet.action_submit()
         self.assertEqual(sheet.state, "submitted")
 
         sheet.action_approve()

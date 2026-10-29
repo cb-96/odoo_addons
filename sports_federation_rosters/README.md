@@ -118,6 +118,10 @@ State machine:
 - Newly created matches on an already approved game day inherit the same roster,
   declared lineup, and approval. Match-specific substitution minutes are not
   copied.
+- **Prepare Lineups** preselects a team with an active roster and initializes
+   the wizard before it is saved; if no published match-day team has an active
+   roster, the action reports that prerequisite instead of failing during
+   wizard creation. Changing teams replaces the draft player rows.
 - Submitted sheets may return to draft for operator corrections before
    approval.
 - Matches created interactively receive draft home and away sheets when the

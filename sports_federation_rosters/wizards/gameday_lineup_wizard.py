@@ -70,7 +70,15 @@ class FederationGamedayLineupWizard(models.TransientModel):
     @api.model
     def _lineup_defaults(self, matchday, team):
         sheets = self._sheets_for(matchday, team)
-        source = sheets.filtered("line_ids")[:1] or sheets[:1]
+        source = sheets.filtered(
+            lambda sheet: sheet.roster_id
+            and sheet.roster_id.status == "active"
+            and sheet.line_ids
+        )[:1]
+        if not source:
+            source = sheets.filtered(
+                lambda sheet: sheet.roster_id and sheet.roster_id.status == "active"
+            )[:1]
         roster = source.roster_id if source else self.env["federation.team.roster"]
         if not roster:
             roster = self.env["federation.team.roster"].search(
@@ -84,7 +92,7 @@ class FederationGamedayLineupWizard(models.TransientModel):
                 limit=1,
             )
         commands = []
-        if source and source.line_ids:
+        if source and source.roster_id == roster and source.line_ids:
             commands = [
                 fields.Command.create(
                     {
@@ -118,9 +126,10 @@ class FederationGamedayLineupWizard(models.TransientModel):
             self.roster_id = False
             self.line_ids = False
             return
-        self.roster_id, self.line_ids = self._lineup_defaults(
+        self.roster_id, line_commands = self._lineup_defaults(
             self.matchday_id, self.team_id
         )
+        self.line_ids = [fields.Command.clear(), *line_commands]
 
     @api.depends("team_id", "roster_id", "line_ids", "line_ids.player_id")
     def _compute_readiness_message(self):

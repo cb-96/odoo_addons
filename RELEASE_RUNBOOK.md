@@ -329,6 +329,23 @@ Before upgrading a database that previously installed the legacy engine:
 5. Record the dry-run output and restore-drill result with the release ticket;
    do not silently reinterpret legacy planner or published-schedule records.
 
+### Odoo registry integrity
+
+An Odoo process exit code of zero is not sufficient evidence of a clean upgrade.
+The RC upgrade lane rejects a non-uninstalled
+`sports_federation_competition_engine` module state before running Odoo, then
+scans successful Odoo logs for inconsistent module states, missing dependencies,
+and models declared but not loadable. Treat any such finding as a failed upgrade
+and preserve the log; do not publish migration evidence as passed.
+
+The October 13, 2026 rehearsal against backup `2026-10-11_114539` is blocked:
+the restored database reports the retired engine as `to upgrade`. Its legacy
+metadata includes persistent stage progression, match-slot, schedule-revision,
+and workspace-presence rows. The rehearsal's zero exit and passing invariant
+comparison do not clear this blocker; a reviewed, data-preserving migration and
+rollback decision are required before a production-like upgrade can be called
+clean.
+
 If the restore drill or production upgrade fails, stop Odoo, preserve the
 failed logs, restore the database and filestore backup, and restart the prior
 release. Do not reinstall the removed engine as an ad-hoc rollback; use the

@@ -15,10 +15,28 @@ class FederationMatchdayLineup(models.Model):
             raise ValidationError(
                 _("Publish the schedule before preparing game-day lineups.")
             )
-        wizard = self.env["federation.gameday.lineup.wizard"].create(
-            {"matchday_id": self.id, "team_id": teams.sorted(lambda team: team.name)[:1].id}
+        wizard_model = self.env["federation.gameday.lineup.wizard"]
+        teams = teams.sorted(lambda item: (item.name or "", item.id))
+        defaults_by_team = {
+            team.id: wizard_model._lineup_defaults(self, team) for team in teams
+        }
+        team = next(
+            (team for team in teams if defaults_by_team[team.id][0]),
+            self.env["federation.team"],
         )
-        wizard._onchange_team_id()
+        if not team:
+            raise ValidationError(
+                _("Activate a team roster before preparing its game-day lineup.")
+            )
+        roster, lines = defaults_by_team[team.id]
+        wizard = wizard_model.create(
+            {
+                "matchday_id": self.id,
+                "team_id": team.id,
+                "roster_id": roster.id,
+                "line_ids": lines,
+            }
+        )
         return {
             "type": "ir.actions.act_window",
             "name": _("Prepare Game-Day Lineup"),

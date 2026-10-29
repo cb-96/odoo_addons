@@ -591,6 +591,21 @@ class TestMatchSheets(TransactionCase):
             }
         )
 
+        self.assertEqual(
+            first_sheet._get_gameday_scope(), same_day_sheet._get_gameday_scope()
+        )
+        self.assertIn(
+            same_day_sheet,
+            first_sheet._get_gameday_sheets(),
+            msg=(
+                "Legacy scope lookup omitted the same-date sheet: "
+                f"source={first_sheet._get_gameday_scope()!r}, "
+                f"target={same_day_sheet._get_gameday_scope()!r}, "
+                f"kickoffs=({first_sheet.match_id.date_scheduled!r}, "
+                f"{same_day_sheet.match_id.date_scheduled!r})"
+            ),
+        )
+
         first_sheet.action_submit()
         first_sheet.action_approve()
 
@@ -649,6 +664,17 @@ class TestMatchSheets(TransactionCase):
             }
         )
 
+        self.assertIn(
+            approved_sheet,
+            inherited_sheet._get_gameday_sheets(),
+            msg=(
+                "Legacy scope lookup omitted the approved source: "
+                f"source={approved_sheet._get_gameday_scope()!r}, "
+                f"target={inherited_sheet._get_gameday_scope()!r}, "
+                f"kickoffs=({approved_sheet.match_id.date_scheduled!r}, "
+                f"{inherited_sheet.match_id.date_scheduled!r})"
+            ),
+        )
         self.assertEqual(inherited_sheet.state, "approved")
         self.assertEqual(inherited_sheet.roster_id, roster)
         self.assertEqual(inherited_sheet.line_ids.player_id, self.player1)

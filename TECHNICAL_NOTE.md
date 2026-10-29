@@ -187,6 +187,18 @@ whose XML IDs disappear from a module's data files. The migration is
 idempotent and preserves the current role-assignment and competition-history
 actions.
 
+### Release registry integrity gate (2026-10-13)
+
+The UI cleanup does not uninstall the retired addon or migrate its persistent
+operational records. RC upgrades therefore stop when
+`sports_federation_competition_engine` is in any database state other than
+`uninstalled`, and successful Odoo runs are checked for inconsistent module
+states, missing dependencies, and models declared but not loadable. The October
+13 rehearsal found legacy stage progression, match-slot, schedule-revision, and
+workspace-presence rows in the restored backup. Preserve those records until a
+reviewed ownership/data migration defines their disposition; do not force the
+module state or mark the rehearsal clean based only on process exit status.
+
 ## Portal/public intuitiveness baseline (2026-05-26)
 
 - `sports_federation_portal/models/portal_status_labels.py` now centralizes

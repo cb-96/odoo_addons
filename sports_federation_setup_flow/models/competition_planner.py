@@ -109,17 +109,20 @@ class FederationCompetitionEditionPlanner(models.Model):
             if not division or division.edition_id != self:
                 raise ValidationError(_("This planner item no longer belongs to the competition."))
             if key.endswith(("-teams", "-team-count")):
-                window = self.env["federation.registration.window"].search(
-                    [("edition_id", "=", self.id), ("division_id", "=", division.id)],
-                    order="id desc", limit=1,
-                )
-                return (
-                    self._planner_record_action(window)
-                    if window and self.env.user.has_group(
-                        "sports_federation_base.group_federation_advanced_operator"
+                if self.env.user.has_group(
+                    "sports_federation_base.group_federation_advanced_operator"
+                ):
+                    window = self.env["federation.registration.window"].search(
+                        [
+                            ("edition_id", "=", self.id),
+                            ("division_id", "=", division.id),
+                        ],
+                        order="id desc",
+                        limit=1,
                     )
-                    else self._action_open_team_selection(division)
-                )
+                    if window:
+                        return self._planner_record_action(window)
+                return self._action_open_team_selection(division)
             structure = self.env["federation.competition.structure"].search(
                 [("edition_id", "=", self.id), ("division_id", "=", division.id)],
                 order="version desc,id desc", limit=1,
@@ -662,20 +665,25 @@ class FederationCompetitionEditionPlanner(models.Model):
         self.ensure_one()
         self.check_access("read")
 
-        windows = self.env["federation.registration.window"].search(
+        # The planner returns a sanitized readiness projection, not source
+        # records. After authorizing the edition, compute that projection with
+        # elevated access and edition-scoped queries; keep operation counts and
+        # action availability checks below in the caller's original environment.
+        projection = self.sudo()
+        windows = projection.env["federation.registration.window"].search(
             [("edition_id", "=", self.id)]
         )
-        structures = self.env["federation.competition.structure"].search(
+        structures = projection.env["federation.competition.structure"].search(
             [("edition_id", "=", self.id)]
         )
-        gamedays = self.env["federation.matchday"].search(
+        gamedays = projection.env["federation.matchday"].search(
             [("edition_id", "=", self.id)]
         )
-        schedules = self.env["federation.schedule"].search(
+        schedules = projection.env["federation.schedule"].search(
             [("edition_id", "=", self.id)]
         )
         division_count, participant_count, gameday_count, schedule_count, publication_count = (
-            self._setup_counts()
+            projection._setup_counts()
         )
         counts = {
             "divisions": division_count,
@@ -684,7 +692,7 @@ class FederationCompetitionEditionPlanner(models.Model):
             "schedules": schedule_count,
             "publications": publication_count,
         }
-        division_rows, issues, frozen_structures = self._planner_division_rows(
+        division_rows, issues, frozen_structures = projection._planner_division_rows(
             windows, structures
         )
         expected_fixtures = frozen_structures.mapped("fixture_ids").filtered(
@@ -700,8 +708,10 @@ class FederationCompetitionEditionPlanner(models.Model):
                     "message": _("Add at least one division."),
                 }
             )
-        issues += self._planner_global_issues(gamedays, schedules, expected_fixtures)
-        issues = self._planner_enrich_issues(issues)
+        issues += projection._planner_global_issues(
+            gamedays, schedules, expected_fixtures
+        )
+        issues = projection._planner_enrich_issues(issues)
         counts["scheduled_gamedays"] = len(
             gamedays.filtered(
                 lambda item: bool(
@@ -720,7 +730,7 @@ class FederationCompetitionEditionPlanner(models.Model):
         next_matchday = gamedays.filtered(lambda day: day.state != "cancelled").sorted(
             lambda day: (day.date or fields.Date.to_date("9999-12-31"), day.id)
         )[:1]
-        division_ids = self.tournament_ids.ids
+        division_ids = projection.tournament_ids.ids
         roster_model = self.env.get("federation.team.roster")
         lineup_model = self.env.get("federation.match.sheet")
         official_model = self.env.get("federation.match.referee")

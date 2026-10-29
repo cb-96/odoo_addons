@@ -17,6 +17,17 @@ class TestPortalQoL(TransactionCase):
                     "name": "Delegate",
                     "login": "qol.delegate@test",
                     "partner_id": partner.id,
+                    "group_ids": [
+                        (
+                            6,
+                            0,
+                            [
+                                self.env.ref(
+                                    "sports_federation_portal.group_federation_portal_club"
+                                ).id
+                            ],
+                        )
+                    ],
                 }
             )
         )

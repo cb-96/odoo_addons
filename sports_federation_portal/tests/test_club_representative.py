@@ -21,6 +21,17 @@ class TestClubRepresentative(TransactionCase):
                     "name": "Club Representative Test User",
                     "login": "club.representative.test.user@example.com",
                     "email": "club.representative.test.user@example.com",
+                    "group_ids": [
+                        (
+                            6,
+                            0,
+                            [
+                                cls.env.ref(
+                                    "sports_federation_portal.group_federation_portal_club"
+                                ).id
+                            ],
+                        )
+                    ],
                 }
             )
         )

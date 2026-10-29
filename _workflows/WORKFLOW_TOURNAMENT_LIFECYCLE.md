@@ -68,7 +68,9 @@ Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md). The
    creates the edition, divisions, registration windows, and role assignments.
 3. Continue to **Competition Planner**. Its readiness projection identifies the
    next blocker across divisions and match days; setup commands still run in
-   their owning modules.
+   their owning modules. Edition readers may see the scoped readiness summary,
+   while registration-window records remain restricted to registration
+   managers.
 
 ### 2. Tournament Creation
 
@@ -322,6 +324,6 @@ cannot be withdrawn directly.
 
 ## Simplified competition workspace contract (2026-10-10)
 
-Ordinary operators create and resume competitions through **Federation > Competitions > Competition Hub**. The workspace exposes one next action and unified readiness. Direct team selection must materialize the canonical registration entries and finalized participant set; format selection must call canonical generation/freeze commands; game-day setup must hand directly to complete-competition schedule planning; review/publication must preserve immutable snapshots and separation of duties when configured.
+Ordinary operators create and resume competitions through **Federation > Competitions > Competition Hub**. The workspace exposes one next action and unified readiness. Federation managers can use the team picker without general registration-window read access; it projects only the selected edition and division, while changes still pass through the role-checked registration command. Direct team selection must materialize the canonical registration entries and finalized participant set; format selection must call canonical generation/freeze commands; game-day setup must hand directly to complete-competition schedule planning; review/publication must preserve immutable snapshots and separation of duties when configured.
 
 Raw registration, format, calendar, schedule, review, and technical records remain available only through contextual links or Advanced Federation Tools. Hiding their menus does not relax their ACL, role, transition, validation, versioning, or audit contracts.

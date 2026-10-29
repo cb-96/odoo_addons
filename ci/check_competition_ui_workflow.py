@@ -99,7 +99,7 @@ def index():
                     )
                 elif name == "sequence" and field.text:
                     record["sequence"] = int(field.text.strip())
-                elif name == "groups_id":
+                elif name in {"groups_id", "group_ids"}:
                     record["advanced"] = (
                         "group_federation_advanced_operator"
                         in (field.get("eval") or "")

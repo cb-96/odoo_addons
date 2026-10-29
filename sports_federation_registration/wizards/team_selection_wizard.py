@@ -65,18 +65,30 @@ class FederationCompetitionTeamSelectionWizard(models.TransientModel):
     def _window_for_division(self, edition, division, *, create=True):
         if not edition or not division or division.edition_id != edition:
             raise ValidationError(_("Select a division from this competition."))
-        window = self.env["federation.registration.window"].search(
+        window_model = self.env["federation.registration.window"]
+        # The simplified picker is available to federation managers without
+        # granting them general registration-window ACLs. Resolve only the
+        # window belonging to the already-validated edition and division.
+        window = window_model.sudo().search(
             [("edition_id", "=", edition.id), ("division_id", "=", division.id)],
             order="id desc",
             limit=1,
         )
-        return window or (create and self.env["federation.registration.window"].create(
+        if window or not create:
+            return window
+        self.env["federation.competition.role.assignment"].assert_role(
+            edition, "registration_manager", "competition_director"
+        )
+        return window_model.sudo().create(
             {
-                "name": _("Team selection - %(division)s", division=division.display_name),
+                "name": _(
+                    "Team selection - %(division)s",
+                    division=division.display_name,
+                ),
                 "edition_id": edition.id,
                 "division_id": division.id,
             }
-        ))
+        )
 
     @api.depends("division_id", "division_id.category", "division_id.gender")
     def _compute_eligible_team_ids(self):
@@ -99,21 +111,29 @@ class FederationCompetitionTeamSelectionWizard(models.TransientModel):
         self.window_id = self._window_for_division(
             self.edition_id, self.division_id, create=False
         )
+        window = self.window_id.sudo()
         self.team_ids = (
-            self.window_id.participant_set_id.line_ids.mapped("team_id")
-            or self.window_id.entry_ids.filtered(
+            window.participant_set_id.line_ids.mapped("team_id")
+            or window.entry_ids.filtered(
                 lambda entry: entry.state != "withdrawn"
             ).mapped("team_id")
-            if self.window_id
+            if window
             else self.env["federation.team"]
         )
 
     def action_apply(self):
         self.ensure_one()
-        window = self.window_id or self._window_for_division(
-            self.edition_id, self.division_id
+        window = self._window_for_division(
+            self.edition_id, self.division_id, create=False
         )
-        window.materialize_direct_team_selection(self.team_ids)
+        if self.window_id and self.window_id.id != (window.id if window else False):
+            raise ValidationError(
+                _("The registration window no longer matches this division.")
+            )
+        window = window or self._window_for_division(
+            self.edition_id, self.division_id, create=True
+        )
+        window.sudo().materialize_direct_team_selection(self.team_ids)
         if hasattr(self.edition_id, "action_open_competition_planner"):
             return self.edition_id.action_open_competition_planner()
         return window.get_formview_action()

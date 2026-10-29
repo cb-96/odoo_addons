@@ -14,6 +14,10 @@ built from that set. Across the competition it requires every playable fixture
 to be allocated; each allocated match day must have usable capacity, a complete
 working schedule, and a current live publication matching that schedule
 revision. The first unresolved blocker is shown as the current setup step.
+Users who can read an edition may see its readiness summary, but this does not
+grant access to registration-window or format-structure records. The planner
+limits its internal readiness lookups to that edition and keeps record access
+with registration managers and competition designers, respectively.
 
 ## Ownership boundary
 

@@ -47,3 +47,8 @@ declared dependencies.
 ## Direct team selection
 
 `federation.competition.team.selection.wizard` is the streamlined workspace command. It does not introduce a second participant model: it creates or reuses the division registration window, validates team eligibility, synchronizes approved entries and seeds, and materializes the canonical finalized participant set. Repeating the same team set is idempotent. A finalized set already referenced by a competition structure cannot be replaced through the picker; use the governed successor format workflow.
+
+Federation managers can open this picker from the Competition Planner without
+receiving general registration-window access. The picker reads only the window
+and existing team selection for its validated edition and division; applying
+changes still runs through the registration command's role check.

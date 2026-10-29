@@ -401,6 +401,11 @@ class TestCompetitionPlanner(TransactionCase):
                 ],
             }
         )
+        self.assertFalse(
+            manager.has_group(
+                "sports_federation_registration.group_registration_manager"
+            )
+        )
         key = "division-%s-teams" % division.id
 
         action = self.edition.with_user(manager).action_open_planner_issue(key)
