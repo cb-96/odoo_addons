@@ -25,8 +25,8 @@
           </group>
         </group>
       </field>
-      <xpath expr="//group[@string='Registration']" position="attributes"><attribute name="invisible">not show_additional_settings</attribute></xpath>
-      <xpath expr="//page[@string='Responsibilities']" position="attributes"><attribute name="invisible">not show_additional_settings</attribute></xpath>
+      <xpath expr="//group[field[@name='registration_open']]" position="attributes"><attribute name="invisible">not show_additional_settings</attribute></xpath>
+      <xpath expr="//page[field[@name='role_line_ids']]" position="attributes"><attribute name="invisible">not show_additional_settings</attribute></xpath>
       <field name="code" position="attributes"><attribute name="column_invisible">not parent.show_additional_settings</attribute></field>
       <xpath expr="//footer" position="inside"><button name="action_save_creation_draft" type="object" string="Save Draft"/><field name="creation_draft_id" invisible="1"/></xpath>
       <button name="action_create_competition" position="attributes">

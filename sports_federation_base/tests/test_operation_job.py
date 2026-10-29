@@ -2,9 +2,10 @@ from datetime import timedelta
 
 from odoo import fields
 from odoo.exceptions import ValidationError
-from odoo.tests.common import TransactionCase
+from odoo.tests import TransactionCase, tagged
 
 
+@tagged("sf_release_confidence")
 class TestOperationJob(TransactionCase):
     def setUp(self):
         super().setUp()
@@ -47,6 +48,30 @@ class TestOperationJob(TransactionCase):
             self.env["federation.operation.job"]._recover_stale(), 1
         )
         self.assertEqual(self.job.state, "retry")
+
+    def test_recovering_the_same_stale_job_twice_does_not_duplicate_work(self):
+        self.job.write(
+            {
+                "state": "running",
+                "attempt_count": 1,
+                "started_on": fields.Datetime.now() - timedelta(hours=1),
+            }
+        )
+        jobs = self.env["federation.operation.job"]
+
+        self.assertEqual(jobs._recover_stale(), 1)
+        self.assertEqual(jobs._recover_stale(), 0)
+        self.assertEqual(self.job.state, "retry")
+        self.assertEqual(
+            jobs.search_count(
+                [
+                    ("source_model", "=", self.job.source_model),
+                    ("source_res_id", "=", self.job.source_res_id),
+                    ("correlation_id", "=", self.job.correlation_id),
+                ]
+            ),
+            1,
+        )
 
     def test_ensure_job_is_idempotent_for_source_correlation(self):
         source = self.job._source()

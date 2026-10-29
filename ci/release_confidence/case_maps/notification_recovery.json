@@ -1,0 +1,6 @@
+{
+  "delivery_failure_does_not_rollback_business_action": "TestReleaseConfidenceResultPolicy.test_result_approval_survives_notification_failure_and_safe_retry",
+  "failed_delivery_visible_to_operator": "TestOperationalReporting.test_notification_exception_report_shows_failed_logs",
+  "retry_does_not_duplicate_business_action": "TestReleaseConfidenceResultPolicy.test_result_approval_survives_notification_failure_and_safe_retry",
+  "resolved_task_stops_reminders": "TestFederationOperationTasks.test_resolved_task_stops_daily_digest_reminders"
+}

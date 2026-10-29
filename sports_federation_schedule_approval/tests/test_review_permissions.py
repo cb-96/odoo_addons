@@ -4,7 +4,12 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 
-@tagged("post_install", "-at_install", "sf_schedule_review_permissions")
+@tagged(
+    "post_install",
+    "-at_install",
+    "sf_schedule_review_permissions",
+    "sf_release_confidence",
+)
 @tagged("sf_release_focus")
 class TestScheduleReviewPermissions(TransactionCase):
     @classmethod
@@ -200,3 +205,27 @@ class TestScheduleReviewPermissions(TransactionCase):
             limit=1,
         )
         self.assertEqual(event.actor_user_id, self.planner)
+
+    @tagged("post_install", "-at_install", "sf_release_confidence")
+    def test_planner_cannot_approve_own_review_when_independent_review_is_required(
+        self,
+    ):
+        self.edition.write({"workflow_mode": "controlled"})
+        self.env["federation.competition.role.assignment"].create(
+            {
+                "edition_id": self.edition.id,
+                "user_id": self.planner.id,
+                "role": "schedule_approver",
+            }
+        )
+
+        with self.assertRaisesRegex(ValidationError, "another person"):
+            self.env["federation.schedule.approval.commands"].with_user(
+                self.planner
+            ).approve(self.review.id, "Self-review must be rejected.")
+
+        self.review.invalidate_recordset()
+        self.schedule.invalidate_recordset()
+        self.assertEqual(self.review.state, "pending")
+        self.assertFalse(self.review.reviewer_id)
+        self.assertEqual(self.schedule.state, "ready_for_review")

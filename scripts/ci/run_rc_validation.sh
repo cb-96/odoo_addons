@@ -145,6 +145,10 @@ run_odoo() {
   local container_command
   container_command="$(cat <<'EOF'
 set -eu
+if [ "${SF_CONFIDENCE_ISOLATED_FILESTORE:-0}" = "1" ]; then
+  mkdir -p /var/lib/odoo/filestore
+  chown -R odoo:odoo /var/lib/odoo/filestore
+fi
 python3 -c 'import websocket; assert websocket.__version__ == "1.8.0"'
 if [ ! -e /usr/lib/python3/dist-packages/odoo-bin ]; then
   ln -s /usr/bin/odoo /usr/lib/python3/dist-packages/odoo-bin
@@ -312,6 +316,7 @@ case "$lane" in
     run_odoo "${common[@]}" -d "$upgrade_db_name" -i "$install_modules"
     ;;
   upgrade) run_upgrade ;;
+  confidence) run_tags "${RC_CONFIDENCE_TEST_TAGS:-sf_release_confidence}" ;;
   core) run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications' ;;
   portal) run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile' ;;
   public) run_tags '/sports_federation_public_site' ;;

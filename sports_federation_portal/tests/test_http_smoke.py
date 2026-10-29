@@ -1,4 +1,5 @@
 from datetime import timedelta
+import json
 import re
 import uuid
 from urllib.parse import parse_qs, urlparse
@@ -58,7 +59,7 @@ class TestPortalHttpSmoke(HttpCase):
         self.assertIn(login, response.text)
 
 
-@tagged("-at_install", "post_install")
+@tagged("-at_install", "post_install", "sf_release_confidence")
 class TestPortalWorkflowHttpSmoke(HttpCase):
     @classmethod
     def setUpClass(cls):
@@ -506,6 +507,7 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
             "sheet_id": sheet.id,
             "roster_id": roster.id,
             "roster_line_id": roster_line.id,
+            "foreign_roster_id": foreign_roster.id,
             "foreign_line_id": foreign_line.id,
         }
 
@@ -740,6 +742,7 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         )
         self.assertIn("Open Sheet", match_day_response.text)
 
+    @tagged("-at_install", "post_install", "sf_release_confidence")
     def test_roster_routes_hide_foreign_rosters_and_lines(self):
         data = self._create_roster_workspace_smoke_data()
 
@@ -749,7 +752,33 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         # Cross-club access now returns 403 Access Denied (not a generic 404)
         self.assertEqual(foreign_roster_response.status_code, 403)
 
-        self.authenticate(self.season_user.login, "ignored")
+        self.authenticate(self.team_user.login, "ignored")
+
+        foreign_roster = self.env["federation.team.roster"].sudo().browse(
+            data["foreign_roster_id"]
+        )
+        original_notes = foreign_roster.notes
+        rpc_response = self.url_open(
+            "/web/dataset/call_kw/federation.team.roster/write",
+            data=json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "method": "call",
+                    "params": {
+                        "model": "federation.team.roster",
+                        "method": "write",
+                        "args": [[data["foreign_roster_id"]], {"notes": "forged"}],
+                        "kwargs": {},
+                    },
+                }
+            ),
+            headers={"Content-Type": "application/json"},
+        )
+        rpc_payload = json.loads(rpc_response.text)
+        self.assertIn("error", rpc_payload)
+        self.assertIn("AccessError", str(rpc_payload["error"]))
+        foreign_roster.invalidate_recordset()
+        self.assertEqual(foreign_roster.notes, original_notes)
 
         foreign_line_response = self.url_open(
             f"/my/rosters/{data['roster_id']}/lines/{data['foreign_line_id']}/edit"

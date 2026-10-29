@@ -10,9 +10,10 @@ from odoo.addons.sports_federation_import_tools.workflow_states import (
 )
 from odoo.exceptions import AccessError
 from odoo.exceptions import ValidationError
-from odoo.tests import TransactionCase
+from odoo.tests import TransactionCase, tagged
 
 
+@tagged("sf_release_confidence")
 class TestImportTools(TransactionCase):
     """Test cases for import tools wizards."""
 
@@ -585,6 +586,38 @@ class TestImportTools(TransactionCase):
             self.env["federation.club"].search([("code", "=", "DC001")], limit=1)
         )
 
+    def test_invalid_delivery_preview_records_errors_without_partial_import(self):
+        contract = self.env.ref(
+            "sports_federation_import_tools.federation_integration_contract_clubs_csv"
+        )
+        partner, _subscription = self._create_integration_partner(contract)
+        payload = self._create_csv_file(
+            "name;code\nPreview Only Club;RC_PREVIEW_ONLY\n;RC_INVALID"
+        ).decode("utf-8")
+        delivery = self.env["federation.integration.delivery"].stage_partner_delivery(
+            partner=partner,
+            contract=contract,
+            filename="mixed-clubs.csv",
+            payload_base64=payload,
+            content_type="text/csv",
+        )
+        action = delivery.action_open_import_wizard()
+        wizard = self.env[action["res_model"]].browse(action["res_id"])
+
+        wizard.action_parse_and_import()
+        delivery.invalidate_recordset()
+
+        self.assertEqual(delivery.state, "previewed")
+        self.assertEqual(wizard.line_count, 2)
+        self.assertEqual(wizard.success_count, 1)
+        self.assertEqual(wizard.error_count, 1)
+        self.assertIn("Name is required", wizard.result_message)
+        self.assertFalse(
+            self.env["federation.club"].search(
+                [("code", "=", "RC_PREVIEW_ONLY")], limit=1
+            )
+        )
+
     def test_inbound_delivery_rejects_disallowed_payload_extension(self):
         """Inbound staging should reject payloads outside the shared extension allowlist."""
         contract = self.env.ref(
@@ -624,6 +657,42 @@ class TestImportTools(TransactionCase):
         self.assertEqual(delivery.failure_category, "data_validation")
         self.assertEqual(delivery.operator_message, "Preview checksum failed")
         self.assertEqual(delivery.result_message, "Preview checksum failed")
+
+    def test_recovery_job_for_failed_delivery_requires_operator_action(self):
+        contract = self.env.ref(
+            "sports_federation_import_tools.federation_integration_contract_clubs_csv"
+        )
+        partner, _subscription = self._create_integration_partner(contract)
+        delivery = self.env["federation.integration.delivery"].stage_partner_delivery(
+            partner=partner,
+            contract=contract,
+            filename="recovery-clubs.csv",
+            payload_base64=self._create_csv_file(
+                "name;code\nRecovery Club;RCV001"
+            ).decode("utf-8"),
+        )
+        delivery.action_mark_failed(
+            "The import preview needs operator review.", category="data_validation"
+        )
+
+        delivery.action_create_recovery_job()
+
+        job = self.env["federation.operation.job"].search(
+            [
+                ("source_model", "=", delivery._name),
+                ("source_res_id", "=", delivery.id),
+            ],
+            limit=1,
+        )
+        self.assertTrue(job)
+        self.assertEqual(job.state, "operator_action")
+        self.assertIn("replay it through the import wizard", job.last_error)
+        delivery.invalidate_recordset()
+        self.assertEqual(delivery.state, "failed")
+        self.assertEqual(
+            delivery.operator_message,
+            "The import preview needs operator review.",
+        )
 
     def test_delivery_retention_purges_old_processed_records_and_payloads(self):
         """Retention should delete old terminal deliveries and their payload attachments."""

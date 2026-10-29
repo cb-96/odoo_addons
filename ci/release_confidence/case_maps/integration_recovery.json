@@ -1,0 +1,6 @@
+{
+  "unauthorised_delivery_rejected": "TestIntegrationApi.test_inbound_route_rejects_invalid_token_without_staging_delivery",
+  "duplicate_delivery_idempotent": "TestIntegrationApi.test_inbound_route_marks_idempotent_replay_in_headers",
+  "invalid_payload_recorded_without_partial_mutation": "TestImportTools.test_invalid_delivery_preview_records_errors_without_partial_import",
+  "retry_failure_visible_to_operator": "TestImportTools.test_recovery_job_for_failed_delivery_requires_operator_action"
+}

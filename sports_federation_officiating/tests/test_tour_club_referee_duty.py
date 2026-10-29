@@ -23,9 +23,11 @@ from datetime import timedelta
 
 from odoo import fields
 from odoo.exceptions import ValidationError
+from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 
+@tagged("sf_release_confidence")
 class TestTourClubRefereeDuty(TransactionCase):
     """Tour T-13b: Club referee duty nomination lifecycle."""
 
@@ -119,6 +121,7 @@ class TestTourClubRefereeDuty(TransactionCase):
             }
         )
 
+    @tagged("at_install", "sf_release_confidence")
     def test_full_happy_path(self):
         """draft → open → nominated → confirmed creates assignment."""
         duty = self._duty()

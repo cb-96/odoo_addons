@@ -1,7 +1,8 @@
 from odoo import fields
-from odoo.tests import TransactionCase
+from odoo.tests import TransactionCase, tagged
 
 
+@tagged("sf_release_confidence")
 class TestOperationalDashboard(TransactionCase):
     def test_snapshot_aggregates_source_queues_without_persisting_copies(self):
         self.env["federation.operation.job"].create(
@@ -51,6 +52,23 @@ class TestOperationalDashboard(TransactionCase):
         self.assertGreaterEqual(values["stale_job_count"], 1)
         self.assertEqual(values["overall_status"], "blocked")
         self.assertEqual(job.state, "running")
+
+    def test_dead_letter_job_is_visible_and_blocks_dashboard_health(self):
+        self.env["federation.operation.job"].create(
+            {
+                "name": "Dead-lettered release job",
+                "source_model": "federation.report.schedule",
+                "source_res_id": 83,
+                "correlation_id": "dashboard-dead-letter",
+                "state": "operator_action",
+                "failure_category": "unexpected_bug",
+            }
+        )
+
+        values = self.env["federation.operational.dashboard"]._snapshot_values()
+
+        self.assertGreaterEqual(values["operator_action_job_count"], 1)
+        self.assertEqual(values["overall_status"], "blocked")
 
     def test_release_evidence_link_uses_recorded_operator_url(self):
         params = self.env["ir.config_parameter"].sudo()

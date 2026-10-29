@@ -1,10 +1,12 @@
 import hashlib
 import json
 
-from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError
+from odoo.tests import tagged
+from odoo.tests.common import TransactionCase
 
 
+@tagged("sf_release_confidence")
 class TestCompetitionPlanner(TransactionCase):
     @classmethod
     def setUpClass(cls):
@@ -407,6 +409,10 @@ class TestCompetitionPlanner(TransactionCase):
                 "sports_federation_registration.group_registration_manager"
             )
         )
+        planner_data = self.edition.with_user(manager).get_competition_planner_data()
+        self.assertFalse(planner_data["operations"]["rosters_available"])
+        self.assertFalse(planner_data["operations"]["lineups_available"])
+        self.assertFalse(planner_data["operations"]["officials_available"])
         key = "division-%s-teams" % division.id
 
         action = self.edition.with_user(manager).action_open_planner_issue(key)
@@ -464,6 +470,7 @@ class TestCompetitionPlanner(TransactionCase):
         with self.assertRaises(ValidationError):
             wizard.action_apply()
 
+    @tagged("at_install", "sf_release_confidence")
     def test_creation_draft_round_trip(self):
         wizard = self.env["federation.create.competition.wizard"].create({
             "name": "Recoverable competition", "competition_id": self.competition.id,

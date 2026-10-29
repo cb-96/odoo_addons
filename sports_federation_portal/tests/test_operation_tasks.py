@@ -1,9 +1,10 @@
 from datetime import timedelta
 
 from odoo import fields
-from odoo.tests.common import TransactionCase
+from odoo.tests import TransactionCase, tagged
 
 
+@tagged("sf_release_confidence")
 class TestFederationOperationTasks(TransactionCase):
     @classmethod
     def setUpClass(cls):
@@ -121,6 +122,34 @@ class TestFederationOperationTasks(TransactionCase):
             set(tasks.filtered("is_overdue").mapped("source_key")),
             {"test.source:open-past", "test.source:acknowledged-past"},
         )
+
+    def test_resolved_task_stops_daily_digest_reminders(self):
+        task = self.env["federation.operation.task"].create(
+            {
+                "name": "Resolved reminder task",
+                "task_type": "registration",
+                "audience": "manager",
+                "blocking": False,
+                "assigned_user_id": self.manager.id,
+                "source_model": "test.source",
+                "source_record_id": 912,
+                "source_key": "test.source:912:resolved-reminder",
+            }
+        )
+        task_model_id = self.env["ir.model"]._get_id(task._name)
+        activity_domain = [
+            ("res_model_id", "=", task_model_id),
+            ("res_id", "=", task.id),
+            ("user_id", "=", self.manager.id),
+        ]
+
+        task.cron_send_action_digests()
+        self.assertEqual(self.env["mail.activity"].search_count(activity_domain), 1)
+
+        task.write({"state": "done"})
+        task.cron_send_action_digests()
+
+        self.assertEqual(self.env["mail.activity"].search_count(activity_domain), 1)
 
     def test_operation_task_opens_its_owning_record(self):
         task = self.env["federation.operation.task"].create(

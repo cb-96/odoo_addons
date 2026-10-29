@@ -736,26 +736,11 @@ class FederationCompetitionEditionPlanner(models.Model):
             lambda day: (day.date or fields.Date.to_date("9999-12-31"), day.id)
         )[:1]
         division_ids = projection.tournament_ids.ids
-        roster_model = self.env.get("federation.team.roster")
-        lineup_model = self.env.get("federation.match.sheet")
-        official_model = self.env.get("federation.match.referee")
-        match_model = self.env.get("federation.match")
-        roster_available = bool(
-            roster_model is not None
-            and roster_model.check_access_rights("read", raise_exception=False)
-        )
-        lineups_available = bool(
-            lineup_model is not None
-            and lineup_model.check_access_rights("read", raise_exception=False)
-        )
-        officials_available = bool(
-            official_model is not None
-            and official_model.check_access_rights("read", raise_exception=False)
-        )
-        results_available = bool(
-            match_model is not None
-            and match_model.check_access_rights("read", raise_exception=False)
-        )
+        operation_access = self._usability_operation_access()
+        roster_available = operation_access["rosters"]
+        lineups_available = operation_access["lineups"]
+        officials_available = operation_access["officials"]
+        results_available = operation_access["results"]
         tasks = self._usability_pending_tasks()
         roster_action_count = len(tasks["rosters"])
         lineup_action_count = len(tasks["lineups"])
@@ -767,9 +752,13 @@ class FederationCompetitionEditionPlanner(models.Model):
             ("lineups", lineup_action_count, _("Prepare game-day lineups")),
             ("officials", official_action_count, _("Resolve official coverage")),
         ]
-        day_blockers = len(gamedays.filtered(lambda d: d.state in ("scheduled", "open") and d.readiness_state != "ready"))
+        day_blockers = (
+            len(gamedays.filtered(lambda d: d.state in ("scheduled", "open") and d.readiness_state != "ready"))
+            if operation_access["matchdays"]
+            else 0
+        )
         operation_actions.append(("matchdays", day_blockers, _("Resolve match-day readiness")))
-        unchecked = not all((roster_available, lineups_available, officials_available, results_available))
+        unchecked = not all(operation_access.values())
         if current_issue:
             primary_action = {
                 "kind": "issue",
@@ -874,24 +863,64 @@ class FederationCompetitionEditionPlanner(models.Model):
             return [(self.env.ref("sports_federation_setup_flow.result_focus_list").id, "list"), (False, "form")]
         return [(False, kind) for kind in view_mode.split(",")]
 
+    def _usability_roster_checks_available(self):
+        required_models = (
+            self.env.get("federation.team.roster"),
+            self.env.get("federation.participant.set"),
+            self.env.get("federation.participant.set.line"),
+        )
+        return all(
+            model is not None
+            and model.check_access_rights("read", raise_exception=False)
+            for model in required_models
+        )
+
+    def _usability_operation_access(self):
+        def can_read(model_name):
+            model = self.env.get(model_name)
+            return bool(
+                model is not None
+                and model.check_access_rights("read", raise_exception=False)
+            )
+
+        matchday_access = can_read("federation.matchday")
+        match_access = can_read("federation.match")
+        return {
+            "rosters": self._usability_roster_checks_available(),
+            "lineups": (
+                matchday_access
+                and match_access
+                and can_read("federation.match.sheet")
+            ),
+            "officials": (
+                matchday_access
+                and match_access
+                and can_read("federation.match.referee")
+            ),
+            "results": match_access,
+            "matchdays": matchday_access,
+        }
+
     def _usability_pending_tasks(self):
         """Read-only caller-scoped task identities shared by badges and actions."""
         self.ensure_one()
         self.check_access("read")
         tasks = {key: [] for key in ("rosters", "lineups", "officials", "results")}
         divisions = self.tournament_ids
-        roster_model = self.env["federation.team.roster"]
-        if roster_model.check_access_rights("read", raise_exception=False):
+        operation_access = self._usability_operation_access()
+        if operation_access["rosters"]:
             for division in divisions:
                 for team in self._usability_division_teams(division):
                     roster = team._get_preferred_roster(self.season_id, competition=self.competition_id, statuses=("active", "draft"))
                     if not roster or roster.status != "active" or not roster.ready_for_activation:
                         tasks["rosters"].append(team.id)
-        days = self.env["federation.matchday"].search([
-            ("edition_id", "=", self.id), ("state", "in", ("scheduled", "open"))
-        ], order="date,id")
-        sheet_model = self.env["federation.match.sheet"]
-        if sheet_model.check_access_rights("read", raise_exception=False):
+        days = self.env["federation.matchday"].browse()
+        if operation_access["matchdays"]:
+            days = self.env["federation.matchday"].search([
+                ("edition_id", "=", self.id), ("state", "in", ("scheduled", "open"))
+            ], order="date,id")
+        sheet_model = self.env.get("federation.match.sheet")
+        if operation_access["lineups"]:
             for day in days:
                 matches = day.published_match_ids.filtered(lambda m: m.state not in ("done", "cancelled"))
                 sheets = sheet_model.search([("match_id", "in", matches.ids)])
@@ -899,15 +928,15 @@ class FederationCompetitionEditionPlanner(models.Model):
                 approved = {(s.match_id.id, s.team_id.id) for s in sheets if s.state in ("approved", "locked")}
                 if expected - approved:
                     tasks["lineups"].append(day.id)
-        match_model = self.env["federation.match"]
-        if match_model.check_access_rights("read", raise_exception=False):
+        match_model = self.env.get("federation.match")
+        if operation_access["results"]:
             tasks["results"] = match_model.search([
                 ("tournament_id", "in", divisions.ids), ("state", "=", "done"), ("result_state", "!=", "approved")
             ], order="date_scheduled,id").ids
-            if self.env["federation.match.referee"].check_access_rights("read", raise_exception=False):
-                tasks["officials"] = days.mapped("published_match_ids").filtered(
-                    lambda m: m.state not in ("done", "cancelled") and not m.is_officially_ready
-                ).ids
+        if operation_access["officials"]:
+            tasks["officials"] = days.mapped("published_match_ids").filtered(
+                lambda m: m.state not in ("done", "cancelled") and not m.is_officially_ready
+            ).ids
         tasks["rosters"] = list(dict.fromkeys(tasks["rosters"]))
         return tasks
 

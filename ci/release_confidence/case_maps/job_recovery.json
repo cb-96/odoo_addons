@@ -1,0 +1,6 @@
+{
+  "stale_running_job_detected": "TestOperationJob.test_stale_running_job_is_recovered",
+  "retry_or_dead_letter_visible": "TestOperationalDashboard.test_dead_letter_job_is_visible_and_blocks_dashboard_health",
+  "recovery_is_idempotent": "TestOperationJob.test_recovering_the_same_stale_job_twice_does_not_duplicate_work",
+  "monitor_detects_failed_or_stuck_job": "TestOperationalDashboard.test_stale_running_jobs_block_dashboard_health_without_mutation"
+}

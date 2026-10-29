@@ -1,0 +1,12 @@
+{
+  "role_journeys": ["organiser_creation_to_publication", "club_registration_roster_lineup_consent", "official_assignment_response", "controlled_result_review", "simple_policy_result_review"],
+  "access_isolation": ["club_a_cannot_read_or_mutate_club_b", "anonymous_cannot_read_private_data", "planner_cannot_self_approve_when_review_required", "guardian_and_payer_scope", "direct_rpc_and_http_negative_cases"],
+  "interrupted_operations": ["duplicate_registration_or_result_submission", "stale_schedule_preview_rejected", "concurrent_publication_or_result_transition", "failed_operation_rolls_back_atomically", "worker_interruption_recovers_without_duplicates"],
+  "draft_recovery": ["creation_draft_round_trip", "lineup_restore_and_discard", "account_switch_does_not_expose_draft", "storage_unavailable_is_safe", "failed_submission_keeps_recoverable_state"],
+  "attachment_restore": ["known_file_readable_after_upgrade", "known_file_readable_after_rollback", "database_attachment_reference_matches_file_checksum", "restored_files_visible_inside_odoo_container"],
+  "notification_recovery": ["delivery_failure_does_not_rollback_business_action", "failed_delivery_visible_to_operator", "retry_does_not_duplicate_business_action", "resolved_task_stops_reminders"],
+  "job_recovery": ["stale_running_job_detected", "retry_or_dead_letter_visible", "recovery_is_idempotent", "monitor_detects_failed_or_stuck_job"],
+  "integration_recovery": ["unauthorised_delivery_rejected", "duplicate_delivery_idempotent", "invalid_payload_recorded_without_partial_mutation", "retry_failure_visible_to_operator"],
+  "matchday_fallback": ["current_published_schedule_exported", "network_loss_does_not_claim_saved_result", "manual_result_reconciliation_preserves_review", "reconnection_does_not_duplicate_result"],
+  "mobile_accessibility": ["keyboard_critical_journey", "touch_sized_matchday_controls", "error_focus_and_recovery", "small_viewport_no_blocking_overflow"]
+}

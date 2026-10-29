@@ -9,7 +9,7 @@ from odoo.addons.sports_federation_base.exceptions import (
     AttachmentScanVerificationError,
 )
 from odoo.exceptions import AccessError, ValidationError
-from odoo.tests import TransactionCase
+from odoo.tests import TransactionCase, tagged
 
 from odoo.addons.sports_federation_import_tools.controllers.integration_api_auth_mixin import (
     FederationIntegrationApiAuthMixin,
@@ -22,6 +22,7 @@ from odoo.addons.sports_federation_import_tools.controllers.integration_api_resp
 )
 
 
+@tagged("sf_release_confidence")
 class TestIntegrationApi(TransactionCase):
     @classmethod
     def setUpClass(cls):
@@ -261,6 +262,39 @@ class TestIntegrationApi(TransactionCase):
         payload = json.loads(response.get_data(as_text=True))
         self.assertEqual(payload["error_code"], "retryable_delivery")
         self.assertIn("Try again later", payload["error"])
+
+    def test_inbound_route_rejects_invalid_token_without_staging_delivery(self):
+        request_stub = self._make_request(
+            headers={
+                "X-Federation-Partner-Code": self.partner.code,
+                "X-Federation-Partner-Token": "invalid-token",
+            },
+            json_payload={
+                "filename": "clubs.csv",
+                "payload_base64": "bmFtZTtjb2RlClN0YWdlZCBDbHViO1NDMDAx",
+                "content_type": "text/csv",
+            },
+        )
+        deliveries = self.env["federation.integration.delivery"]
+        initial_count = deliveries.search_count(
+            [("partner_id", "=", self.partner.id)]
+        )
+
+        with patch(
+            "odoo.addons.sports_federation_import_tools.controllers.integration_api.request",
+            request_stub,
+        ):
+            response = self.controller.integration_stage_inbound_delivery(
+                self.inbound_contract.code
+            )
+
+        payload = json.loads(response.get_data(as_text=True))
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(payload["error_code"], "access_denied")
+        self.assertEqual(
+            deliveries.search_count([("partner_id", "=", self.partner.id)]),
+            initial_count,
+        )
 
     def test_inbound_route_accepts_idempotency_key_header(self):
         request_stub = self._make_request(

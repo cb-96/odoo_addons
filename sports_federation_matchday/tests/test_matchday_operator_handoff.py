@@ -7,7 +7,12 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 
-@tagged("post_install", "-at_install", "sf_matchday_handoff")
+@tagged(
+    "post_install",
+    "-at_install",
+    "sf_matchday_handoff",
+    "sf_release_confidence",
+)
 class TestMatchdayOperatorHandoff(TransactionCase):
     @classmethod
     def setUpClass(cls):
@@ -315,6 +320,7 @@ class TestMatchdayOperatorHandoff(TransactionCase):
         self.assertFalse(replacement.allocation_ids)
         self.assertFalse(replacement.slot_ids)
 
+    @tagged("post_install", "-at_install", "sf_release_confidence")
     def test_open_failure_rolls_back_session_and_court_statuses(self):
         transition = self.env["federation.workflow.transition"]
         with patch.object(

@@ -19,6 +19,14 @@ grant access to registration-window or format-structure records. The planner
 limits its internal readiness lookups to that edition and keeps record access
 with registration managers and competition designers, respectively.
 
+Operational handoff counts remain role-scoped as well. Roster follow-up is
+available only when the caller can read team rosters and finalized participant
+sets with their lines; match-day, lineup, official, and result counts require
+read access to their source records. An edition reader without those domain
+permissions can still use the planner's setup routes; unavailable operations
+are marked unavailable instead of bypassing access controls or presenting an
+incomplete count as zero.
+
 ## Ownership boundary
 
 Federation competition roles own edition-wide setup, division format freeze,

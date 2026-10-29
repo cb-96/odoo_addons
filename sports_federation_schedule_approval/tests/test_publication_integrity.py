@@ -6,7 +6,7 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 
-@tagged("post_install", "-at_install", "sf_publication")
+@tagged("post_install", "-at_install", "sf_publication", "sf_release_confidence")
 class TestPhase511Integrity(TransactionCase):
     @classmethod
     def setUpClass(cls):
@@ -234,6 +234,7 @@ class TestPhase511Integrity(TransactionCase):
                 roster._get_readiness_issues(reference_date=self.days[0].date)
             )
 
+    @tagged("post_install", "-at_install", "sf_release_confidence")
     def test_publication_rejects_fixture_added_after_review(self):
         schedule, review = self._valid_schedule_review(
             self.days[0], "expanded-after-review"
