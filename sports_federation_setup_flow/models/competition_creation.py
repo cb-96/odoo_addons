@@ -2,11 +2,40 @@ from datetime import timedelta
 
 from dateutil.relativedelta import relativedelta
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 
 
 class FederationCreateCompetitionWizardJourney(models.TransientModel):
     _inherit = "federation.create.competition.wizard"
+
+    creation_draft_id = fields.Many2one("federation.competition.creation.draft", readonly=True)
+
+    def action_save_creation_draft(self):
+        self.ensure_one()
+        names = ["setup_template", "competition_id", "name", "season_id", "date_start", "date_end", "rule_set_id", "registration_open", "registration_close", "workflow_mode", "default_venue_id", "default_format_type", "default_start_hour", "default_end_hour", "default_slot_duration_minutes", "show_additional_settings"]
+        payload = self.read(names)[0]
+        payload.pop("id", None)
+        for name in names:
+            field = self._fields[name]
+            value = payload[name]
+            if field.type == "many2one": payload[name] = value[0] if value else False
+            elif field.type == "date": payload[name] = fields.Date.to_string(fields.Date.to_date(value)) if value else False
+            elif field.type == "datetime": payload[name] = fields.Datetime.to_string(fields.Datetime.to_datetime(value)) if value else False
+        for name, columns in [("division_line_ids", ["name", "code", "category", "gender", "tournament_type"]), ("role_line_ids", ["role", "user_id"])]:
+            commands = []
+            for row in self[name].read(columns):
+                row.pop("id", None)
+                if "user_id" in row: row["user_id"] = row["user_id"][0] if row["user_id"] else False
+                commands.append((0, 0, row))
+            payload[name] = commands
+        values = {"name": self.name or _("Competition draft"), "payload": payload}
+        if self.creation_draft_id:
+            self.creation_draft_id.write(values)
+        else:
+            self.creation_draft_id = self.env["federation.competition.creation.draft"].create(values)
+        return {"type": "ir.actions.act_window_close"}
+
+    show_additional_settings = fields.Boolean(string="Additional settings", default=False)
 
     setup_template = fields.Selection(
         selection_add=[("custom", "Custom")],
@@ -144,6 +173,8 @@ class FederationCreateCompetitionWizardJourney(models.TransientModel):
                     "setup_default_slot_duration_minutes": self.default_slot_duration_minutes,
                 }
             )
+            if self.creation_draft_id:
+                self.creation_draft_id.unlink()
             action = edition.action_open_competition_planner()
             action["context"] = dict(
                 self.env.context,

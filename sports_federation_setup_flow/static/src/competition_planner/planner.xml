@@ -54,6 +54,12 @@
           <span class="ms-2 small"><t t-esc="state.data.readiness.setup_blocker_count"/> planning blocker(s) · <t t-esc="state.data.readiness.operational_action_count"/> operational action(s)</span>
         </section>
 
+        <section class="card mt-3" aria-label="Operational tasks"><div class="card-body d-flex flex-wrap gap-2">
+          <button t-if="state.data.operations.rosters_available" class="btn btn-outline-primary" t-att-disabled="state.data.operations.roster_action_count === 0" t-on-click="() => this.openOperation('rosters')">Teams needing rosters: <t t-esc="state.data.operations.roster_action_count"/></button>
+          <button t-if="state.data.operations.lineups_available" class="btn btn-outline-primary" t-att-disabled="state.data.operations.lineup_action_count === 0" t-on-click="() => this.openOperation('lineups')">Game days needing lineups: <t t-esc="state.data.operations.lineup_action_count"/></button>
+          <button t-if="state.data.operations.officials_available" class="btn btn-outline-primary" t-att-disabled="state.data.operations.official_action_count === 0" t-on-click="() => this.openOperation('officials')">Matches needing officials: <t t-esc="state.data.operations.official_action_count"/></button>
+          <button t-if="state.data.operations.results_available" class="btn btn-outline-primary" t-att-disabled="state.data.operations.result_action_count === 0" t-on-click="() => this.openOperation('results')">Results awaiting approval: <t t-esc="state.data.operations.result_action_count"/></button>
+        </div></section>
         <div class="row g-4 mt-1">
           <section class="col-xl-7" aria-labelledby="divisions-title">
             <div class="card h-100"><div class="card-header"><h2 id="divisions-title" class="h5 mb-0">Division readiness</h2></div>

@@ -1,0 +1,21 @@
+<odoo>
+  <template id="club_preparation_journey" name="Club Preparation">
+    <t t-call="portal.portal_layout"><div class="container py-4">
+      <h1>Prepare your club</h1><p>Register your teams, complete the roster, prepare each lineup and resolve player eligibility. Uploading consent is not the same as federation approval.</p>
+      <nav aria-label="Club preparation steps" class="d-flex flex-wrap gap-2 mb-4"><a href="/my/competitions" class="btn btn-outline-primary">1. Registration</a><a href="/my/rosters" class="btn btn-outline-primary">2. Rosters</a><a href="/my/match-sheets" class="btn btn-outline-primary">3. Lineups</a><a href="/my/players" class="btn btn-outline-primary">4. Player eligibility and consent</a></nav>
+      <div t-if="not rows" class="alert alert-info">No confirmed season registration is available. Complete registration first, then return here.</div>
+      <section t-foreach="rows" t-as="row" class="card mb-3"><div class="card-body">
+        <h2 class="h5"><t t-esc="row['registration'].team_id.display_name"/></h2>
+        <t t-set="roster" t-value="row['roster']"/>
+        <t t-if="not roster"><p>No roster exists for this registration.</p><form t-attf-action="/my/rosters/create/#{row['registration'].id}" method="post"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><button type="submit" class="btn btn-primary">Create roster</button></form></t>
+        <t t-else=""><span class="badge text-bg-light"><t t-esc="roster.status"/></span><a t-attf-href="/my/rosters/#{roster.id}" class="btn btn-primary ms-2">Complete roster</a><p t-if="roster.readiness_feedback" class="mt-2" style="white-space: pre-line"><t t-esc="roster.readiness_feedback"/></p>
+          <ul class="mt-3"><li t-foreach="roster.line_ids.mapped('player_id')" t-as="player"><t t-esc="player.display_name"/>: <a t-attf-href="/my/players/#{player.id}/parental-approvals">Review consent documents</a></li></ul>
+        </t>
+      </div></section>
+      <section><h2 class="h4">Lineups awaiting preparation or review</h2><p class="text-muted">Up to 100 pending lineups are shown. The full lineup list includes all records.</p><div class="list-group"><a t-foreach="sheets" t-as="sheet" t-attf-href="/my/match-sheets/#{sheet.id}" class="list-group-item list-group-item-action"><t t-esc="sheet.team_id.display_name"/>: <t t-esc="sheet.match_id.display_name"/> <span class="badge text-bg-light"><t t-esc="sheet.state"/></span></a></div><a href="/my/match-sheets" class="btn btn-outline-primary mt-2">All lineups</a></section>
+    </div></t>
+  </template>
+  <template id="competition_preparation_link" inherit_id="sports_federation_portal.portal_my_competitions"><xpath expr="//div[contains(@class, 'container')]" position="inside"><a href="/my/preparation" class="btn btn-primary my-3">Prepare registrations, rosters and lineups</a></xpath></template>
+  <template id="roster_preparation_link" inherit_id="sports_federation_portal.portal_my_roster_detail"><xpath expr="//t[@t-call='portal.portal_layout']" position="inside"><a href="/my/preparation" class="btn btn-outline-primary m-3">Back to club preparation</a></xpath></template>
+  <template id="lineup_draft_recovery" inherit_id="sports_federation_portal.portal_my_match_sheet_detail"><xpath expr="//form[contains(@t-attf-action, '/prep')]" position="attributes"><attribute name="data-qol-draft-guard">1</attribute><attribute name="t-att-data-draft-user">request.env.user.id</attribute></xpath><xpath expr="//form[contains(@t-attf-action, '/squad')]" position="attributes"><attribute name="data-qol-draft-guard">1</attribute><attribute name="t-att-data-draft-user">request.env.user.id</attribute></xpath></template>
+</odoo>

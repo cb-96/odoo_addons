@@ -183,5 +183,8 @@ class TestGamedayLineupWizard(TransactionCase):
     def test_lineup_preparation_requires_an_active_roster(self):
         self.roster.action_close()
 
-        with self.assertRaisesRegex(ValidationError, "Activate a team roster"):
-            self.matchday.action_prepare_lineups()
+        action = self.matchday.action_prepare_lineups()
+        self.assertEqual(action["res_model"], "federation.team.roster")
+        roster = self.env["federation.team.roster"].browse(action["res_id"])
+        self.assertEqual(roster.season_id, self.edition.season_id)
+        self.assertEqual(roster.status, "draft")

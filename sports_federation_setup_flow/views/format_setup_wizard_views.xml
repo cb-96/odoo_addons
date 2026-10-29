@@ -7,18 +7,21 @@
         <sheet>
           <div class="oe_title">
             <h1>Choose how this division will play</h1>
-            <p class="text-muted">Fixtures are generated and frozen through the existing format commands. Advanced stage graphs remain available from Advanced Tools.</p>
+            <p class="text-muted">Review the number of matches before confirming. Published or played history is never replaced by this action.</p>
           </div>
           <group>
             <field name="edition_id"/>
             <field name="division_id" options="{'no_create': True}"/>
-            <field name="participant_set_id"/>
-            <field name="team_count" readonly="1"/>
+            <field name="participant_set_id" invisible="1"/>
+            <field name="team_count" readonly="1" string="Confirmed teams"/>
           </group>
           <field name="format_type" widget="radio"/>
+          <group string="Format preview"><field name="preview_match_count"/><field name="preview_matches_per_team" invisible="format_type == 'knockout'"/><field name="preview_byes" invisible="format_type != 'knockout'"/></group>
+          <div class="alert alert-info" invisible="format_type != 'knockout'">Knockout participation depends on results. The winner plays more matches than a team eliminated early.</div>
+          <field name="preview_confirmed"/>
         </sheet>
         <footer>
-          <button name="action_apply" type="object" string="Generate Fixtures &amp; Continue" class="btn-primary"/>
+          <button name="action_apply" type="object" string="Confirm Format &amp; Continue" class="btn-primary"/>
           <button string="Cancel" special="cancel" class="btn-secondary"/>
         </footer>
       </form>

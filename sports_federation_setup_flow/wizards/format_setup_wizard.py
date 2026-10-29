@@ -29,6 +29,24 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
         string="Format",
     )
 
+    preview_match_count = fields.Integer(compute="_compute_format_preview", string="Total matches")
+    preview_matches_per_team = fields.Integer(compute="_compute_format_preview", string="Matches per team (league)")
+    preview_byes = fields.Integer(compute="_compute_format_preview", string="First-round byes")
+    preview_confirmed = fields.Boolean(string="I have reviewed this format")
+
+    @api.depends("participant_set_id.line_ids", "format_type")
+    def _compute_format_preview(self):
+        for wizard in self:
+            n = len(wizard.participant_set_id.line_ids)
+            multiplier = 2 if wizard.format_type == "double_round_robin" else 1
+            wizard.preview_match_count = max(n - 1, 0) if wizard.format_type == "knockout" else n * max(n - 1, 0) // 2 * multiplier
+            wizard.preview_matches_per_team = 0 if wizard.format_type == "knockout" else max(n - 1, 0) * multiplier
+            wizard.preview_byes = (1 << (n - 1).bit_length()) - n if n > 1 and wizard.format_type == "knockout" else 0
+
+    @api.onchange("format_type", "division_id")
+    def _reset_preview_confirmation(self):
+        self.preview_confirmed = False
+
     @api.model
     def default_get(self, field_list):
         values = super().default_get(field_list)
@@ -82,9 +100,13 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
 
     def action_apply(self):
         self.ensure_one()
+        if not self.preview_confirmed:
+            raise ValidationError(_("Review the format preview before confirming."))
         participant_set = self._latest_participant_set(
             self.edition_id, self.division_id
         )
+        if participant_set != self.participant_set_id:
+            raise ValidationError(_("The participating teams changed. Reopen and review the format."))
         existing = self.env["federation.competition.structure"].search(
             [
                 ("edition_id", "=", self.edition_id.id),

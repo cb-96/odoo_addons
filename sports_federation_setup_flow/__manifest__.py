@@ -1,6 +1,6 @@
 {
     "name": "Competition Setup Flow",
-    "version": "19.0.4.0.1",
+    "version": "19.0.4.1.0",
     "category": "Sports",
     "summary": "Continuous and resumable competition setup",
     "author": "Sports Federation",
@@ -12,6 +12,9 @@
         "sports_federation_calendar",
         "sports_federation_scheduling",
         "sports_federation_schedule_approval",
+        "sports_federation_rosters",
+        "sports_federation_officiating",
+        "sports_federation_result_control",
     ],
     "data": [
         "security/ir.model.access.csv",
@@ -21,6 +24,7 @@
         "views/menu.xml",
         "views/setup_consolidation_views.xml",
         "views/setup_journey_views.xml",
+        "views/usability_views.xml",
     ],
     "assets": {
         "web.assets_backend": [

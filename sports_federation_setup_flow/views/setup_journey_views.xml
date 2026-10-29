@@ -8,13 +8,15 @@
         <attribute name="string">Competition Type</attribute>
       </field>
       <field name="setup_template" position="after">
+        <field name="show_additional_settings"/>
+
         <group string="Workflow and responsibility">
           <field name="workflow_mode" widget="radio" options="{'horizontal': true}"/>
           <div class="alert alert-info" role="status">
             <strong>What this changes</strong>
             <div><field name="workflow_summary" nolabel="1" readonly="1"/></div>
           </div>
-          <group string="Planning defaults" col="4">
+          <group string="Planning defaults" col="4" invisible="not show_additional_settings">
             <field name="default_format_type"/>
             <field name="default_venue_id"/>
             <field name="default_start_hour" widget="float_time"/>
@@ -23,6 +25,10 @@
           </group>
         </group>
       </field>
+      <xpath expr="//group[@string='Registration']" position="attributes"><attribute name="invisible">not show_additional_settings</attribute></xpath>
+      <xpath expr="//page[@string='Responsibilities']" position="attributes"><attribute name="invisible">not show_additional_settings</attribute></xpath>
+      <field name="code" position="attributes"><attribute name="column_invisible">not parent.show_additional_settings</attribute></field>
+      <xpath expr="//footer" position="inside"><button name="action_save_creation_draft" type="object" string="Save Draft"/><field name="creation_draft_id" invisible="1"/></xpath>
       <button name="action_create_competition" position="attributes">
         <attribute name="string">Create and Continue</attribute>
       </button>

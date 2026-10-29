@@ -2,6 +2,7 @@ import hashlib
 import json
 
 from odoo.tests.common import TransactionCase
+from odoo.exceptions import ValidationError
 
 
 class TestCompetitionPlanner(TransactionCase):
@@ -424,9 +425,56 @@ class TestCompetitionPlanner(TransactionCase):
 
     def test_operation_actions_remain_competition_scoped(self):
         action = self.edition.action_open_planner_operation("matchdays")
-        self.assertEqual(action["domain"], [("edition_id", "=", self.edition.id)])
+        self.assertEqual(action["domain"], [("edition_id", "=", self.edition.id), ("state", "not in", ("closed", "cancelled"))])
         self.assertEqual(action["context"]["default_edition_id"], self.edition.id)
         self.assertEqual(
             action["views"],
-            [(False, "calendar"), (False, "list"), (False, "form")],
+            [(False, "calendar"), (False, "list"), (self.env.ref("sports_federation_setup_flow.matchday_focus_form").id, "form")],
         )
+
+    def test_missing_rosters_are_counted_and_created_only_on_action(self):
+        self._prepare_two_day_competition()
+        before = self.env["federation.team.roster"].search_count([])
+        tasks = self.edition._usability_pending_tasks()
+        self.assertEqual(len(tasks["rosters"]), 4)
+        data = self.edition.get_competition_planner_data()
+        self.assertEqual(data["operations"]["roster_action_count"], 4)
+        self.assertEqual(self.env["federation.team.roster"].search_count([]), before)
+        action = self.edition.action_open_planner_operation("rosters")
+        self.assertEqual(action["res_model"], "federation.team.roster")
+        roster = self.env["federation.team.roster"].browse(action["res_id"])
+        self.assertEqual(roster.team_id.id, tasks["rosters"][0])
+        self.assertEqual(roster.season_id, self.season)
+        self.assertEqual(roster.competition_id, self.competition)
+        again = self.edition.action_open_planner_operation("rosters")
+        self.assertEqual(again["res_id"], action["res_id"])
+
+    def test_format_preview_requires_explicit_confirmation(self):
+        division, *_ = self._prepare_two_day_competition()
+        action = self.edition.action_setup_format()
+        wizard = self.env[action["res_model"]].browse(action["res_id"])
+        wizard.format_type = "single_round_robin"
+        self.assertEqual(wizard.preview_match_count, 6)
+        self.assertEqual(wizard.preview_matches_per_team, 3)
+        wizard.format_type = "double_round_robin"
+        self.assertEqual(wizard.preview_match_count, 12)
+        wizard.format_type = "knockout"
+        self.assertEqual(wizard.preview_match_count, 3)
+        self.assertEqual(wizard.preview_byes, 0)
+        with self.assertRaises(ValidationError):
+            wizard.action_apply()
+
+    def test_creation_draft_round_trip(self):
+        wizard = self.env["federation.create.competition.wizard"].create({
+            "name": "Recoverable competition", "competition_id": self.competition.id,
+            "season_id": self.season.id, "date_start": "2027-02-01", "workflow_mode": "controlled",
+        })
+        wizard.action_save_creation_draft()
+        draft = wizard.creation_draft_id
+        self.assertEqual(draft.owner_id, self.env.user)
+        action = draft.action_resume()
+        recovered = self.env[action["res_model"]].browse(action["res_id"])
+        self.assertEqual(recovered.name, wizard.name)
+        self.assertEqual(recovered.date_start, wizard.date_start)
+        self.assertEqual(recovered.workflow_mode, "controlled")
+        self.assertEqual(recovered.creation_draft_id, draft)

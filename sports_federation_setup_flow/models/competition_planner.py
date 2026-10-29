@@ -225,17 +225,27 @@ class FederationCompetitionEditionPlanner(models.Model):
 
     def action_open_planner_operation(self, operation):
         self.ensure_one()
-        if operation == "lineups":
-            day = self.env["federation.matchday"].search(
-                [
-                    ("edition_id", "=", self.id),
-                    ("state", "in", ("scheduled", "open")),
-                ],
-                order="date,id",
-                limit=1,
-            )
-            if day and hasattr(day, "action_prepare_lineups"):
-                return day.action_prepare_lineups()
+        self.check_access("read")
+        tasks = self._usability_pending_tasks()
+        if operation == "rosters" and tasks["rosters"]:
+            team = self.env["federation.team"].browse(tasks["rosters"][0])
+            division = self.tournament_ids.filtered(
+                lambda d: team in self._usability_division_teams(d)
+            )[:1]
+            return team._ensure_tournament_roster(division).get_formview_action()
+        if operation == "lineups" and tasks["lineups"]:
+            day = self.env["federation.matchday"].browse(tasks["lineups"][0])
+            return day.action_prepare_lineups()
+        if operation == "officials" and tasks["officials"]:
+            match = self.env["federation.match"].browse(tasks["officials"][0])
+            day = match.schedule_publication_id.matchday_id
+            if day:
+                action = self.env.ref(
+                    "sports_federation_officiating.action_matchday_assign_official_wizard"
+                ).read()[0]
+                action["context"] = {"default_matchday_id": day.id}
+                return action
+            return match.action_view_referee_assignments()
         allowed = {
             "matchdays": ("federation.matchday", "calendar,list,form", _("Match days")),
             "schedules": ("federation.schedule", "list,form", _("Schedules")),
@@ -250,29 +260,24 @@ class FederationCompetitionEditionPlanner(models.Model):
         model = self.env.get(model_name)
         if model is None or not model.check_access_rights("read", raise_exception=False):
             raise ValidationError(_("This operation is not available to your role."))
-        division_ids = self.tournament_ids.ids
         if operation in ("matchdays", "schedules"):
             domain = [("edition_id", "=", self.id)]
+            if operation == "matchdays":
+                domain.append(("state", "not in", ("closed", "cancelled")))
         elif operation == "rosters":
-            domain = [
-                ("season_id", "=", self.season_id.id),
-                ("competition_id", "=", self.competition_id.id),
-            ]
+            domain = [("team_id", "in", tasks["rosters"]), ("season_id", "=", self.season_id.id)]
         elif operation == "lineups":
-            domain = [
-                ("match_id.tournament_id", "in", division_ids),
-                ("state", "in", ("draft", "submitted")),
-            ]
+            domain = [("match_id.schedule_publication_id.matchday_id", "in", tasks["lineups"]), ("state", "in", ("draft", "submitted"))]
         elif operation == "officials":
-            domain = [("tournament_id", "in", division_ids), ("state", "!=", "cancelled")]
+            domain = [("match_id", "in", tasks["officials"]), ("state", "not in", ("confirmed", "done", "cancelled"))]
         else:
-            domain = [("tournament_id", "in", division_ids), ("result_state", "!=", "approved")]
+            domain = [("id", "in", tasks["results"])]
         return {
             "type": "ir.actions.act_window",
             "name": name,
             "res_model": model_name,
             "view_mode": view_mode,
-            "views": [(False, view_type) for view_type in view_mode.split(",")],
+            "views": self._usability_operation_views(operation, view_mode),
             "domain": domain,
             "context": {"default_edition_id": self.id, "competition_planner_edition_id": self.id},
             "target": "current",
@@ -727,7 +732,7 @@ class FederationCompetitionEditionPlanner(models.Model):
             (issue for issue in issues if issue["step"] == current["key"]),
             issues[0] if issues else None,
         )
-        next_matchday = gamedays.filtered(lambda day: day.state != "cancelled").sorted(
+        next_matchday = gamedays.filtered(lambda day: day.state not in ("cancelled", "closed")).sorted(
             lambda day: (day.date or fields.Date.to_date("9999-12-31"), day.id)
         )[:1]
         division_ids = projection.tournament_ids.ids
@@ -751,43 +756,20 @@ class FederationCompetitionEditionPlanner(models.Model):
             match_model is not None
             and match_model.check_access_rights("read", raise_exception=False)
         )
-        roster_domain = [
-            ("season_id", "=", self.season_id.id),
-            ("competition_id", "=", self.competition_id.id),
-        ]
-        roster_action_count = (
-            roster_model.search_count(roster_domain + [("ready_for_activation", "=", False)])
-            if roster_available else 0
-        )
-        lineup_action_count = (
-            lineup_model.search_count(
-                [
-                    ("match_id.tournament_id", "in", division_ids),
-                    ("state", "in", ("draft", "submitted")),
-                ]
-            )
-            if lineups_available
-            else 0
-        )
-        official_action_count = (
-            official_model.search_count([
-                ("tournament_id", "in", division_ids),
-                ("state", "not in", ("confirmed", "done", "cancelled")),
-            ]) if officials_available else 0
-        )
-        result_action_count = (
-            match_model.search_count([
-                ("tournament_id", "in", division_ids),
-                ("state", "=", "done"),
-                ("result_state", "!=", "approved"),
-            ]) if results_available else 0
-        )
+        tasks = self._usability_pending_tasks()
+        roster_action_count = len(tasks["rosters"])
+        lineup_action_count = len(tasks["lineups"])
+        official_action_count = len(tasks["officials"])
+        result_action_count = len(tasks["results"])
         operation_actions = [
-            ("rosters", roster_action_count, _("Complete roster readiness")),
+            ("results", result_action_count, _("Review completed results")),
+            ("rosters", roster_action_count, _("Complete team rosters")),
             ("lineups", lineup_action_count, _("Prepare game-day lineups")),
-            ("officials", official_action_count, _("Complete official coverage")),
-            ("results", result_action_count, _("Complete result follow-up")),
+            ("officials", official_action_count, _("Resolve official coverage")),
         ]
+        day_blockers = len(gamedays.filtered(lambda d: d.state in ("scheduled", "open") and d.readiness_state != "ready"))
+        operation_actions.append(("matchdays", day_blockers, _("Resolve match-day readiness")))
+        unchecked = not all((roster_available, lineups_available, officials_available, results_available))
         if current_issue:
             primary_action = {
                 "kind": "issue",
@@ -818,8 +800,8 @@ class FederationCompetitionEditionPlanner(models.Model):
                     "kind": "operation",
                     "key": "matchdays",
                     "label": _("Open match-day operations"),
-                    "title": _("Competition is ready"),
-                    "message": _("Planning is complete and no operational blocker is projected."),
+                    "title": _("Planning is complete"),
+                    "message": _("Open the match day to check readiness. Checks only include records available to your role."),
                     "owner": _("Match-day manager"),
                 }
         operational_blockers = sum(item[1] for item in operation_actions)
@@ -843,8 +825,9 @@ class FederationCompetitionEditionPlanner(models.Model):
                 "status": (
                     "blocked"
                     if issues
-                    else ("attention" if operational_blockers else "ready")
+                    else ("attention" if operational_blockers or unchecked else "ready")
                 ),
+                "checks_complete": not unchecked,
                 "setup_complete": all(step["complete"] for step in steps),
                 "setup_blocker_count": len(issues),
                 "operational_action_count": operational_blockers,
@@ -854,7 +837,7 @@ class FederationCompetitionEditionPlanner(models.Model):
                     else (
                         _("Planning is complete; operational follow-up remains.")
                         if operational_blockers
-                        else _("Planning and current operational checks are ready.")
+                        else (_("Some operational checks are unavailable to your role.") if unchecked else _("Planning and current operational checks are ready."))
                     )
                 ),
             },
@@ -883,3 +866,55 @@ class FederationCompetitionEditionPlanner(models.Model):
             "divisions": division_rows,
             "issues": issues,
         }
+
+    def _usability_operation_views(self, operation, view_mode):
+        if operation == "matchdays":
+            return [(False, "calendar"), (False, "list"), (self.env.ref("sports_federation_setup_flow.matchday_focus_form").id, "form")]
+        if operation == "results":
+            return [(self.env.ref("sports_federation_setup_flow.result_focus_list").id, "list"), (False, "form")]
+        return [(False, kind) for kind in view_mode.split(",")]
+
+    def _usability_pending_tasks(self):
+        """Read-only caller-scoped task identities shared by badges and actions."""
+        self.ensure_one()
+        self.check_access("read")
+        tasks = {key: [] for key in ("rosters", "lineups", "officials", "results")}
+        divisions = self.tournament_ids
+        roster_model = self.env["federation.team.roster"]
+        if roster_model.check_access_rights("read", raise_exception=False):
+            for division in divisions:
+                for team in self._usability_division_teams(division):
+                    roster = team._get_preferred_roster(self.season_id, competition=self.competition_id, statuses=("active", "draft"))
+                    if not roster or roster.status != "active" or not roster.ready_for_activation:
+                        tasks["rosters"].append(team.id)
+        days = self.env["federation.matchday"].search([
+            ("edition_id", "=", self.id), ("state", "in", ("scheduled", "open"))
+        ], order="date,id")
+        sheet_model = self.env["federation.match.sheet"]
+        if sheet_model.check_access_rights("read", raise_exception=False):
+            for day in days:
+                matches = day.published_match_ids.filtered(lambda m: m.state not in ("done", "cancelled"))
+                sheets = sheet_model.search([("match_id", "in", matches.ids)])
+                expected = {(m.id, t.id) for m in matches for t in (m.home_team_id | m.away_team_id)}
+                approved = {(s.match_id.id, s.team_id.id) for s in sheets if s.state in ("approved", "locked")}
+                if expected - approved:
+                    tasks["lineups"].append(day.id)
+        match_model = self.env["federation.match"]
+        if match_model.check_access_rights("read", raise_exception=False):
+            tasks["results"] = match_model.search([
+                ("tournament_id", "in", divisions.ids), ("state", "=", "done"), ("result_state", "!=", "approved")
+            ], order="date_scheduled,id").ids
+            if self.env["federation.match.referee"].check_access_rights("read", raise_exception=False):
+                tasks["officials"] = days.mapped("published_match_ids").filtered(
+                    lambda m: m.state not in ("done", "cancelled") and not m.is_officially_ready
+                ).ids
+        tasks["rosters"] = list(dict.fromkeys(tasks["rosters"]))
+        return tasks
+
+    def _usability_division_teams(self, division):
+        participant_set = self.env["federation.participant.set"].search([
+            ("edition_id", "=", self.id), ("division_id", "=", division.id), ("state", "=", "finalized")
+        ], order="id desc", limit=1)
+        if participant_set:
+            return participant_set.line_ids.mapped("team_id")
+        return division.participant_ids.filtered(lambda p: p.state != "withdrawn").mapped("team_id")
