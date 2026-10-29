@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "journeys": {
+    "organiser": ["creation_draft_resumes", "planning_blocker_opens_exact_fix", "format_and_schedule_preview_explained", "publication_uses_authorised_review", "return_to_same_competition"],
+    "club_representative": ["registration_to_roster_connected", "missing_roster_directly_fixable", "waiting_review_not_presented_as_club_action", "consent_upload_distinct_from_verification", "return_to_filtered_club_inbox"],
+    "team_manager": ["team_scoped_pending_work", "roster_to_lineup_connected", "submitted_lineup_opens_review_not_duplicate", "eligibility_blocker_opens_affected_record", "approved_or_locked_lineup_not_pending"],
+    "official": ["assignment_detail_and_response_connected", "accepted_distinct_from_eligible_and_present", "decline_or_replacement_has_next_owner", "return_to_own_assignments"],
+    "reviewer": ["only_authorised_reviews_visible", "simple_and_controlled_policy_distinct", "review_opens_exact_source", "decision_refreshes_both_audiences", "independent_review_cannot_be_bypassed"]
+  },
+  "shared_checks": ["one_authoritative_task_projection", "counts_and_destinations_same_scope", "unavailable_check_never_ready", "missing_records_not_omitted", "owner_deadline_next_step_visible", "no_duplicate_data_entry", "acknowledgement_not_completion", "source_transition_completes_or_reopens_task", "resolved_task_stops_reminders", "return_target_is_local_allowlisted", "forged_task_or_source_denied", "concurrent_refresh_idempotent", "current_representation_and_team_scope_respected", "no_new_duplicate_route_owner", "keyboard_mobile_and_error_recovery"],
+  "novice_tasks": ["organiser_publish", "club_register_prepare", "team_prepare_lineup", "official_respond", "reviewer_decide"],
+  "novice_gate": {"minimum_participants": 5, "minimum_unassisted_completion_rate_per_task": 0.8, "critical_incidents_allowed": 0}
+}
