@@ -128,3 +128,12 @@ modules:
     primary_owner: Federation Competition Operations
     secondary_owner: Federation Platform Team
     surface: Schedule-linked duty coverage, individual responses, attendance and replacement evidence
+
+  sports_federation_member_services:
+    primary_owner: Federation Platform Team
+    secondary_owner: Federation Portal and Public Experience
+    surface: Verified personal relationships and scoped membership requests
+  sports_federation_accounting:
+    primary_owner: Federation Finance and Compliance
+    secondary_owner: Federation Platform Team
+    surface: Native invoice linkage without a parallel accounting ledger

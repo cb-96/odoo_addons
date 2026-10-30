@@ -1,0 +1,2642 @@
+diff --git a/FEDERATION_SERVICES_REVIEW.md b/FEDERATION_SERVICES_REVIEW.md
+new file mode 100644
+--- /dev/null
++++ b/FEDERATION_SERVICES_REVIEW.md
+@@ -0,0 +1,74 @@
++# Verification and implementation candidate
++
++Full requested scope is NOT complete. Do not deploy this candidate to production.
++Baseline: workflow-improvement / 09509f22dbbed0665da148fceb0d2a6ff382e328.
++
++## Verification of points 1 to 5
++1. Release automation and evidence gates exist. Staging install/upgrade, browser
++   journeys, concurrent recovery, restoration and fallback have not been demonstrated.
++2. Role tasks and preparation journeys exist. Helper/gate tests pass; five novice
++   participants and real mobile/keyboard journeys have not been demonstrated.
++3. Duty coverage addon and tests exist. Current ORM/browser acceptance is unverified.
++4. Operations board exists, but the supplied machine bundle contains no dedicated
++   sports_federation_live_workspace addon. The earlier accompanying workflow_completion
++   patch applies cleanly and is included here, with its ACL CSV naming corrected.
++5. Scheduling and approval exist, but the dedicated visual proposal workspace was
++   missing with that addon. Its earlier implementation is included here. Runtime
++   pin survival, amendments and proposal application remain unverified.
++
++## Candidate changes
++- Restores the missing court/visual-workspace implementation from the accompanying
++  earlier patch, including its command-boundary and policy-test changes.
++- Adds verified, dated guardian/payer relationships and company-scoped administration.
++- Adds manager-controlled person/player identity links and multi-role season memberships.
++- Adds draft renewal requests with prior-season continuity and duplicate renewal lookup.
++- Adds /my/family and purpose-scoped uploads using the existing file policy/scanner.
++  Uploaded is not verified; verification is independent and never grants eligibility.
++  Payer status does not grant guardian access. Generic requests do not create existing
++  parental-approval records or replace their owning workflow.
++- Adds native invoice linkage for confirmed charges, row-locked invoice creation,
++  authoritative invoice balances/payment states and unpaid-settlement bypass guards.
++  Club/federation charge ownership is explicit. No parallel accounting ledger.
++- Adds distinct-member and club membership retention comparisons, including unknown
++  retention for an empty baseline. Membership is not proof of match participation.
++- Adds five cohort helper tests and five Odoo personal-scope test definitions.
++
++## Unfinished implementation, not merely unfinished validation
++Point 6: identity backfill, duplicate detection/controlled merging, licence renewal,
++parental-approval command linkage, verified request-recipient routing and full lifecycle.
++Point 7 communication: complete deadline reminders/escalation, delivery deduplication,
++failed-delivery administration, integrated notification centre and authenticated feeds.
++Existing task digests and public calendars are preserved, not claimed as completion.
++Point 7 payments: provider configuration and sandbox end-to-end integration, automatic
++settlement and full failed/partial/refund/cancellation lifecycle. Native Accounting owns
++these operations, but the new bridge has not been runtime-qualified.
++Point 8: journey abandonment/time/intervention instrumentation, actual participant
++retention and complete role-specific onboarding. Existing public team filters, display,
++progression and calendars are preserved but not browser-requalified.
++Cross-cutting accessibility, observability, short all-role guides and novice testing
++remain open. Deferred product areas remain deferred.
++
++## Executed checks
++84 helper/gate/policy tests passed: release 28, role helpers 13, role gates 16,
++live policy 22, cohorts 5. Addon integrity passes for 33 addons. Workflow state
++contracts and command boundaries pass. Candidate Python AST and XML parsing pass.
++New Odoo ORM tests were written but NOT executed. Odoo is unavailable locally and
++no staging connector was found. No database, provider or backup was touched.
++A repeated integrity check timed out in the Python subprocess environment; the
++subsequent container run passed. This is not a runtime release certificate.
++
++## Application
++This patch includes the earlier workflow_completion changes: do not apply both.
++Apply only to the supplied baseline or an identical tree:
++
++```sh
++git apply --check federation_services_candidate.patch
++git apply federation_services_candidate.patch
++```
++
++On authorised staging install/upgrade sports_federation_app and run sf_member_services,
++sf_live_workspace, sf_release_confidence and finance suites. Native account_payment
++and the chosen provider addon are required. Configure invoice payer, company, product,
++accounts and taxes before posting. Charge amount is the invoice line unit price;
++finance must validate the resulting total and taxes. No provider credentials are supplied.
++Complete the unfinished implementation and acceptance gates before production use.
+diff --git a/MODULE_OWNERS.yaml b/MODULE_OWNERS.yaml
+--- a/MODULE_OWNERS.yaml
++++ b/MODULE_OWNERS.yaml
+@@ -3,6 +3,10 @@
+ review_cadence: Every release
+ 
+ modules:
++  sports_federation_live_workspace:
++    primary_owner: Federation Platform Team
++    secondary_owner: Federation Competition Operations
++    surface: Scoped court capture, recovery evidence and governed visual planning
+   sports_federation_app:
+     primary_owner: Federation Platform Team
+     secondary_owner: Federation Competition Operations
+@@ -124,3 +128,12 @@
+     primary_owner: Federation Competition Operations
+     secondary_owner: Federation Platform Team
+     surface: Schedule-linked duty coverage, individual responses, attendance and replacement evidence
++
++  sports_federation_member_services:
++    primary_owner: Federation Platform Team
++    secondary_owner: Federation Portal and Public Experience
++    surface: Verified personal relationships and scoped membership requests
++  sports_federation_accounting:
++    primary_owner: Federation Finance and Compliance
++    secondary_owner: Federation Platform Team
++    surface: Native invoice linkage without a parallel accounting ledger
+diff --git a/ci/test_live_workspace_policy.py b/ci/test_live_workspace_policy.py
+new file mode 100644
+--- /dev/null
++++ b/ci/test_live_workspace_policy.py
+@@ -0,0 +1,86 @@
++import importlib.util
++from pathlib import Path
++import unittest
++
++spec = importlib.util.spec_from_file_location("live_policy", Path(__file__).resolve().parents[1] /
++    "sports_federation_live_workspace/policy.py")
++p = importlib.util.module_from_spec(spec)
++spec.loader.exec_module(p)
++
++
++class TestCapturePolicy(unittest.TestCase):
++    def payload(self, **values):
++        return {"home": 2, "away": 1, **values}
++
++    def test_aggregate(self):
++        self.assertEqual(p.validate_capture(self.payload())["home"], 2)
++
++    def test_negative(self):
++        with self.assertRaises(ValueError): p.validate_capture(self.payload(home=-1))
++
++    def test_bool_score(self):
++        with self.assertRaises(ValueError): p.validate_capture(self.payload(home=True))
++
++    def test_fraction(self):
++        with self.assertRaises(ValueError): p.validate_capture(self.payload(home=1.2))
++
++    def test_large_score(self):
++        with self.assertRaises(ValueError): p.validate_capture(self.payload(home=100001))
++
++    def test_unknown_field(self):
++        with self.assertRaises(ValueError): p.validate_capture(self.payload(approved=True))
++
++    def test_period_sum(self):
++        self.assertEqual(p.validate_capture(self.payload(periods=[{"home": 2, "away": 1}]), "periods")["home"], 2)
++
++    def test_period_mismatch(self):
++        with self.assertRaises(ValueError): p.validate_capture(self.payload(periods=[{"home": 3, "away": 1}]), "periods")
++
++    def test_empty_period_submission(self):
++        with self.assertRaises(ValueError): p.validate_capture(self.payload(), "periods")
++
++    def test_empty_period_draft(self):
++        p.validate_capture(self.payload(), "periods", complete=False)
++
++    def test_set_wins(self):
++        p.validate_capture(self.payload(periods=[{"home": 6, "away": 2}, {"home": 2, "away": 6},
++                                               {"home": 6, "away": 3}]), "sets", set_target=2)
++
++    def test_tied_set(self):
++        with self.assertRaises(ValueError): p.validate_capture(self.payload(periods=[{"home": 2, "away": 2}]), "sets")
++
++    def test_extra_set_after_target(self):
++        with self.assertRaises(ValueError): p.validate_capture(self.payload(home=3, away=0,
++            periods=[{"home": 6, "away": 2}] * 3), "sets", set_target=2)
++
++    def test_exception_reason(self):
++        with self.assertRaises(ValueError): p.validate_capture(self.payload(outcome="abandoned"))
++
++    def test_interruption(self):
++        p.validate_capture(self.payload(outcome="interrupted", reason="Power interruption"))
++
++    def test_forfeit_direction(self):
++        with self.assertRaises(ValueError): p.validate_capture(self.payload(outcome="forfeit_home", reason="Absent"))
++
++    def test_digest_order(self):
++        self.assertEqual(p.digest({"a": 1, "b": 2}), p.digest({"b": 2, "a": 1}))
++
++    def test_digest_content(self):
++        self.assertNotEqual(p.digest({"a": 1}), p.digest({"a": 2}))
++
++    def test_command(self):
++        p.validate_command({"key": "abcdefgh", "revision": 0, "operation": "save", "payload": {}, "signature": "a" * 64})
++
++    def test_command_bad_revision(self):
++        with self.assertRaises(ValueError): p.validate_command({"key": "abcdefgh", "revision": True,
++            "operation": "save", "payload": {}, "signature": "a" * 64})
++
++    def test_command_unknown_operation(self):
++        with self.assertRaises(ValueError): p.validate_command({"key": "abcdefgh", "revision": 0,
++            "operation": "approve", "payload": {}, "signature": "a" * 64})
++
++    def test_period_bound(self):
++        with self.assertRaises(ValueError): p.validate_capture(self.payload(periods=[{"home": 2, "away": 1}] * 101), "periods")
++
++
++if __name__ == "__main__": unittest.main()
+diff --git a/ci/test_membership_cohorts.py b/ci/test_membership_cohorts.py
+new file mode 100644
+--- /dev/null
++++ b/ci/test_membership_cohorts.py
+@@ -0,0 +1,25 @@
++import importlib.util
++from pathlib import Path
++import unittest
++
++spec = importlib.util.spec_from_file_location('cohorts', Path(__file__).resolve().parents[1] / 'sports_federation_member_services/cohorts.py')
++cohorts = importlib.util.module_from_spec(spec)
++spec.loader.exec_module(cohorts)
++
++
++class TestCohorts(unittest.TestCase):
++    def test_empty_baseline_is_unknown(self):
++        self.assertIsNone(cohorts.compare_cohorts([], [1])['retention_percent'])
++
++    def test_multiple_roles_do_not_duplicate_people(self):
++        self.assertEqual(cohorts.compare_cohorts([1, 1, 2], [1, 1, 3])['returning'], 1)
++
++    def test_leavers_and_new_members(self):
++        result = cohorts.compare_cohorts([1, 2], [2, 3])
++        self.assertEqual((result['new'], result['not_returned'], result['retention_percent']), (1, 1, 50.0))
++
++    def test_no_returners(self):
++        self.assertEqual(cohorts.compare_cohorts([1], [])['retention_percent'], 0)
++
++    def test_all_returners(self):
++        self.assertEqual(cohorts.compare_cohorts([1, 2], [2, 1])['retention_percent'], 100)
+diff --git a/sports_federation_accounting/README.md b/sports_federation_accounting/README.md
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_accounting/README.md
+@@ -0,0 +1,15 @@
++# Native accounting bridge
++Candidate implementation. Requires native `account_payment`, with the provider addon
++and credentials configured separately. No webhook or independent ledger is added.
++
++Confirmed positive charges create one draft `account.move` under a locked event.
++The selected product owns income accounts and tax defaults. Amount is the line unit
++price, not a promised tax-inclusive total; finance must verify the resulting invoice
++before posting. Club/federation charge ownership is separate from invoice company.
++The payer is the invoice partner, never inferred from a guardian relationship.
++
++Native invoice portal checkout, payment transactions, reconciliation, credit notes
++and cancellation remain authoritative. Balance and payment state are related fields.
++An invoiced event cannot settle until its posted invoice is paid. Non-invoiced legacy
++events retain the existing handoff workflow. This does not certify provider sandbox
++callbacks, partial payments, refunds, multi-company rules or live reconciliation.
+diff --git a/sports_federation_accounting/__init__.py b/sports_federation_accounting/__init__.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_accounting/__init__.py
+@@ -0,0 +1 @@
++from . import models
+diff --git a/sports_federation_accounting/__manifest__.py b/sports_federation_accounting/__manifest__.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_accounting/__manifest__.py
+@@ -0,0 +1,7 @@
++{'name': 'Federation Native Accounting',
++ 'version': '19.0.1.0.0',
++ 'license': 'LGPL-3',
++ 'depends': ['sports_federation_finance_bridge', 'account_payment'],
++ 'data': ['views/accounting.xml'],
++ 'installable': True,
++ 'application': False}
+diff --git a/sports_federation_accounting/models/__init__.py b/sports_federation_accounting/models/__init__.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_accounting/models/__init__.py
+@@ -0,0 +1 @@
++from . import finance
+diff --git a/sports_federation_accounting/models/finance.py b/sports_federation_accounting/models/finance.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_accounting/models/finance.py
+@@ -0,0 +1,76 @@
++from odoo import _, api, fields, models
++from odoo.exceptions import AccessError, ValidationError
++
++
++class Finance(models.Model):
++    _inherit = 'federation.finance.event'
++    account_move_id = fields.Many2one('account.move', readonly=True, copy=False, ondelete='restrict', check_company=True)
++    company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company)
++    invoice_product_id = fields.Many2one('product.product', check_company=True)
++    charge_owner = fields.Selection([('federation', 'Federation'), ('club', 'Club')], default='federation', required=True)
++    invoice_currency_id = fields.Many2one(related='account_move_id.currency_id')
++    invoice_balance = fields.Monetary(related='account_move_id.amount_residual', currency_field='invoice_currency_id')
++    invoice_payment_state = fields.Selection(related='account_move_id.payment_state')
++
++    def _finance_actor(self):
++        if not self.env.user.has_group('account.group_account_invoice'):
++            raise AccessError(_('Invoice administration permission is required.'))
++        self.check_access('write')
++
++    def write(self, vals):
++        if vals.get('state') == 'settled' and any(e.account_move_id and (e.account_move_id.state != 'posted' or e.account_move_id.payment_state != 'paid') for e in self):
++            raise ValidationError(_('An unpaid invoice cannot be bypassed by a state write.'))
++        if vals.get('state') == 'cancelled' and any(e.account_move_id and e.account_move_id.state != 'cancel' for e in self):
++            raise ValidationError(_('Resolve the native invoice before cancelling its obligation.'))
++        if 'account_move_id' in vals:
++            raise AccessError(_('Create invoices through the finance command.'))
++        if {'company_id', 'currency_id', 'partner_id', 'amount', 'event_type', 'invoice_product_id', 'charge_owner'} & set(vals) and any(self.mapped('account_move_id')):
++            raise ValidationError(_('Use native invoice corrections after invoicing.'))
++        return super().write(vals)
++
++    @api.model_create_multi
++    def create(self, vals_list):
++        if any(v.get('account_move_id') for v in vals_list):
++            raise AccessError(_('Invoice links are command-owned.'))
++        return super().create(vals_list)
++
++    def action_create_invoice(self):
++        self.ensure_one()
++        self._finance_actor()
++        self.env.cr.execute('SELECT id FROM federation_finance_event WHERE id=%s FOR UPDATE', [self.id])
++        self.invalidate_recordset()
++        if self.account_move_id:
++            return self.action_open_invoice()
++        if self.state != 'confirmed' or self.event_type != 'charge' or self.amount <= 0:
++            raise ValidationError(_('Only confirmed positive charges can create customer invoices.'))
++        if not self.partner_id or not self.invoice_product_id:
++            raise ValidationError(_('Select the authorised payer and a configured accounting product.'))
++        if self.charge_owner == 'club' and not self.club_id:
++            raise ValidationError(_('A club charge needs a club.'))
++        if self.company_id not in self.env.companies:
++            raise AccessError(_('The invoice company is outside your scope.'))
++        move = self.env['account.move'].with_company(self.company_id).create({
++            'move_type': 'out_invoice', 'partner_id': self.partner_id.id,
++            'company_id': self.company_id.id, 'currency_id': self.currency_id.id,
++            'invoice_origin': self.name,
++            'invoice_line_ids': [fields.Command.create({'product_id': self.invoice_product_id.id,
++                'name': self.name, 'quantity': 1, 'price_unit': self.amount})]})
++        super().write({'account_move_id': move.id})
++        return self.action_open_invoice()
++
++    def action_open_invoice(self):
++        self.ensure_one()
++        self.account_move_id.check_access('read')
++        return {'type': 'ir.actions.act_window', 'res_model': 'account.move',
++                'res_id': self.account_move_id.id, 'view_mode': 'form', 'target': 'current'}
++
++    def action_settle(self):
++        for event in self:
++            if event.account_move_id and (event.account_move_id.state != 'posted' or event.account_move_id.payment_state != 'paid'):
++                raise ValidationError(_('Settle only after the native invoice is posted and fully paid.'))
++        return super().action_settle()
++
++    def action_cancel(self):
++        if any(e.account_move_id and e.account_move_id.state != 'cancel' for e in self):
++            raise ValidationError(_('Resolve the invoice or credit-note workflow in Accounting first.'))
++        return super().action_cancel()
+diff --git a/sports_federation_accounting/views/accounting.xml b/sports_federation_accounting/views/accounting.xml
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_accounting/views/accounting.xml
+@@ -0,0 +1,5 @@
++<odoo><record id="finance_accounting_list" model="ir.ui.view"><field name="name">finance.accounting.list</field><field name="model">federation.finance.event</field><field name="arch" type="xml"><list><field name="name"/><field name="charge_owner"/><field name="club_id"/><field name="partner_id"/><field name="state"/><field name="account_move_id"/><field name="invoice_payment_state"/><field name="invoice_currency_id" invisible="1"/><field name="invoice_balance"/></list></field></record>
++<record id="finance_accounting_form" model="ir.ui.view"><field name="name">finance.accounting.form</field><field name="model">federation.finance.event</field><field name="arch" type="xml"><form><header><button name="action_create_invoice" type="object" string="Create or open invoice" groups="account.group_account_invoice"/></header><sheet><group><field name="name"/><field name="fee_type_id"/><field name="source_model"/><field name="source_res_id"/><field name="event_type"/><field name="state"/><field name="amount"/><field name="currency_id"/><field name="company_id"/><field name="charge_owner"/><field name="club_id"/><field name="partner_id"/><field name="invoice_product_id"/><field name="account_move_id"/><field name="invoice_payment_state"/><field name="invoice_currency_id" invisible="1"/><field name="invoice_balance"/></group><p>Payments, reconciliation, refunds and invoice cancellation are owned by Accounting. Creating a draft invoice does not settle this charge.</p></sheet></form></field></record>
++<record id="action_native_accounting" model="ir.actions.act_window"><field name="name">Charges and invoice balances</field><field name="res_model">federation.finance.event</field><field name="view_mode">list,form</field><field name="view_id" ref="finance_accounting_list"/></record>
++<menuitem id="menu_native_accounting" name="Charges and invoice balances" parent="sports_federation_base.menu_federation_administration" action="action_native_accounting" groups="account.group_account_invoice"/>
++</odoo>
+diff --git a/sports_federation_app/__manifest__.py b/sports_federation_app/__manifest__.py
+--- a/sports_federation_app/__manifest__.py
++++ b/sports_federation_app/__manifest__.py
+@@ -1,50 +1,50 @@
+-{
+-    "name": "Sports Federation",
+-    "version": "19.0.2.0.0",
+-    "category": "Sports",
+-    "summary": "Complete sports federation platform",
+-    "description": """
+-Single supported installation entry point for the production federation
+-platform. Domain implementation remains in focused internal addons so existing
+-databases, model names, XML IDs, and upgrade paths stay stable.
+-""",
+-    "author": "Sports Federation",
+-    "website": "",
+-    "license": "LGPL-3",
+-    "depends": [
+-        "sports_federation_base",
+-        "sports_federation_duty_coverage",
+-        "sports_federation_people",
+-        "sports_federation_rules",
+-        "sports_federation_tournament",
+-        "sports_federation_venues",
+-        "sports_federation_competition_core",
+-        "sports_federation_registration",
+-        "sports_federation_result_control",
+-        "sports_federation_format",
+-        "sports_federation_calendar",
+-        "sports_federation_scheduling",
+-        "sports_federation_schedule_approval",
+-        "sports_federation_setup_flow",
+-        "sports_federation_matchday",
+-        "sports_federation_officiating",
+-        "sports_federation_rosters",
+-        "sports_federation_standings",
+-        "sports_federation_compliance",
+-        "sports_federation_discipline",
+-        "sports_federation_governance",
+-        "sports_federation_finance_bridge",
+-        "sports_federation_notifications",
+-        "sports_federation_portal",
+-        "sports_federation_public_site",
+-        "sports_federation_reporting",
+-        "sports_federation_import_tools",
+-        "sports_federation_navigation",
+-    ],
+-    "data": [],
+-    "demo": [],
+-    "installable": True,
+-    "application": True,
+-    "auto_install": False,
+-    "sequence": 1,
+-}
++{'name': 'Sports Federation',
++ 'version': '19.0.2.1.0',
++ 'category': 'Sports',
++ 'summary': 'Complete sports federation platform',
++ 'description': '\n'
++                'Single supported installation entry point for the production '
++                'federation\n'
++                'platform. Domain implementation remains in focused internal addons so '
++                'existing\n'
++                'databases, model names, XML IDs, and upgrade paths stay stable.\n',
++ 'author': 'Sports Federation',
++ 'website': '',
++ 'license': 'LGPL-3',
++ 'depends': ['sports_federation_base',
++             'sports_federation_duty_coverage',
++             'sports_federation_people',
++             'sports_federation_rules',
++             'sports_federation_tournament',
++             'sports_federation_venues',
++             'sports_federation_competition_core',
++             'sports_federation_registration',
++             'sports_federation_result_control',
++             'sports_federation_format',
++             'sports_federation_calendar',
++             'sports_federation_scheduling',
++             'sports_federation_schedule_approval',
++             'sports_federation_setup_flow',
++             'sports_federation_matchday',
++             'sports_federation_officiating',
++             'sports_federation_rosters',
++             'sports_federation_standings',
++             'sports_federation_compliance',
++             'sports_federation_discipline',
++             'sports_federation_governance',
++             'sports_federation_finance_bridge',
++             'sports_federation_notifications',
++             'sports_federation_portal',
++             'sports_federation_public_site',
++             'sports_federation_reporting',
++             'sports_federation_import_tools',
++             'sports_federation_navigation',
++             'sports_federation_live_workspace',
++             'sports_federation_member_services',
++             'sports_federation_accounting'],
++ 'data': [],
++ 'demo': [],
++ 'installable': True,
++ 'application': True,
++ 'auto_install': False,
++ 'sequence': 1}
+diff --git a/sports_federation_live_workspace/README.md b/sports_federation_live_workspace/README.md
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/README.md
+@@ -0,0 +1,33 @@
++# Court Operations and Visual Planning
++
++Implementation candidate, not a staging acceptance certificate.
++
++## Installation
++Install or upgrade the supported `sports_federation_app` entry point. Its dependency graph now includes this addon. Apply the incremental patch only to the supplied current source baseline. Do not reapply earlier patches: their release-confidence, journey and duty-coverage code is already in that baseline.
++
++## Court operation
++1. Configure aggregate, period-total or sets-won scoring on the competition edition. Configure a winning set target where applicable.
++2. Publish through the existing independent schedule review and publication workflow.
++3. Open the canonical match-day session and assign named internal court operators.
++4. Operators open Match Day > Run this court, select their court, inspect lineups and separate accepted/eligible/present official facts, save drafts, then submit for result review.
++5. Submission is not approval. Existing verification, approval, corrections and standings controls remain authoritative.
++
++## Connectivity contract
++Offline capture is supported in an already loaded, authenticated workspace. This is not a cold-start offline PWA: opening the application or an uncached match requires connectivity. Device drafts and queued commands are stored under database/user/court/match-specific localStorage keys. No birth dates or contact details are cached. Use dedicated trusted devices; localStorage is not encrypted and a shared unlocked browser is not an access boundary.
++
++Each command carries an actor-bound content receipt, expected draft revision and schedule/result signature. Retry exactly the same key and payload after a lost response. A batch is atomic. A stale draft, changed publication, changed score, revoked operator or closed session stops synchronisation. No automatic score merging occurs. Export evidence before explicitly discarding the local queue or acknowledging a changed context. Exported evidence is not an authoritative result and is never automatically imported.
++
++Interrupted matches retain drafts for resumption. Disputed and abandoned captures raise linked incidents and retain a coordinator hold, even if an operator later changes the outcome back to normal. Match-day managers use Court recovery and exceptions > Resolve exception to record a reasoned resume or abandonment decision. Confirmed abandonment creates no official score. Forfeits require a reason and a score favouring the non-forfeiting team, then follow ordinary independent result review.
++
++## Visual planning
++Open a schedule and select Visual planning. The workspace projects existing stages, progression ranks, fixture sources and a court/time grid. Select a fixture and preview a manual move; applying it pins the assignment. Regeneration retains non-automatic assignments. Team/court unavailable windows and hard minimum rest are distinct from fairness preferences.
++
++Every preview is stored server-side, belongs to its actor and contains the exact candidate map. Before/after views show changed slots, unallocated fixtures, hard failures, warnings and weighted fairness penalty (lower is better). Apply revalidates the map and signature, performs one governed revision and retains the preview. Rejected-slot explanations do not misrepresent a heuristic solver as a proof of infeasibility.
++
++Published schedules cannot be edited here. Create a governed amendment, then return to the existing independent review/publication controls. Live operations must be closed before replacement publication. Practical constraints copy to amendment revisions.
++
++## Verification
++Standalone: `python -m unittest discover -s ci -p test_live_workspace_policy.py`.
++Installed application: run Odoo tests tagged `sf_live_workspace` and the existing `sf_release_confidence` suite on fresh and upgraded disposable databases. The addon includes persisted command tests and real backend browser journeys. Database, HTTP/browser and independent-transaction concurrency tests were not executed in the authoring environment because Odoo/PostgreSQL and a staging connector were unavailable.
++
++Keep production rollout blocked until fresh installation, upgrade, complete browser journeys, independent-transaction races, backup plus filestore restoration, monitoring recovery, fallback rehearsal and novice-user observations have actual evidence. The supplied acceptance audit distinguishes implementation from demonstrated acceptance.
+diff --git a/sports_federation_live_workspace/__init__.py b/sports_federation_live_workspace/__init__.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/__init__.py
+@@ -0,0 +1 @@
++from . import models
+diff --git a/sports_federation_live_workspace/__manifest__.py b/sports_federation_live_workspace/__manifest__.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/__manifest__.py
+@@ -0,0 +1 @@
++{'name': 'Court Operations and Visual Planning', 'version': '19.0.1.0.0', 'license': 'LGPL-3', 'depends': ['web', 'sports_federation_duty_coverage', 'sports_federation_result_control', 'sports_federation_matchday', 'sports_federation_scheduling'], 'data': ['security/ir.model.access.csv', 'security/rules.xml', 'views/workspaces.xml'], 'assets': {'web.assets_backend': ['sports_federation_live_workspace/static/src/workspaces.js', 'sports_federation_live_workspace/static/src/workspaces.xml', 'sports_federation_live_workspace/static/src/workspaces.scss']}, 'installable': True, 'application': False}
+diff --git a/sports_federation_live_workspace/models/__init__.py b/sports_federation_live_workspace/models/__init__.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/models/__init__.py
+@@ -0,0 +1,2 @@
++from . import court
++from . import planning
+diff --git a/sports_federation_live_workspace/models/court.py b/sports_federation_live_workspace/models/court.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/models/court.py
+@@ -0,0 +1,422 @@
++"""Scoped court capture with immutable receipts and optimistic concurrency."""
++import json
++from odoo import api, fields, models, _
++from odoo.exceptions import AccessError, ValidationError
++from odoo.addons.sports_federation_result_control.services.result_commands import (
++    _RESULT_COMMAND_CONTEXT_KEY, _RESULT_COMMAND_TOKEN,
++)
++from ..policy import digest, validate_capture, validate_command
++
++_TOKEN = object()
++_CONTEXT = "live_workspace_token"
++
++
++class CourtAccess(models.Model):
++    _name = "federation.court.access"
++    _description = "Named Court Operator"
++    matchday_id = fields.Many2one("federation.matchday", required=True, ondelete="restrict", index=True)
++    court_id = fields.Many2one("federation.playing.area", required=True, ondelete="restrict", index=True)
++    user_id = fields.Many2one("res.users", required=True, ondelete="restrict", index=True)
++    active = fields.Boolean(default=True)
++    _unique = models.Constraint("unique(matchday_id,court_id,user_id)", "Operator already assigned.")
++
++    @api.constrains("court_id", "matchday_id", "user_id")
++    def _check_scope(self):
++        for item in self:
++            if item.court_id.venue_id != item.matchday_id.venue_id or item.user_id.share:
++                raise ValidationError(_("Assign an internal operator to a court at this venue."))
++
++    def _assert_manager(self):
++        if not self.env.user.has_group("sports_federation_matchday.group_matchday_manager"):
++            raise AccessError(_("Only match-day managers assign court operators."))
++
++    @api.model_create_multi
++    def create(self, vals_list):
++        self._assert_manager()
++        for vals in vals_list:
++            day = self.env["federation.matchday"].browse(vals.get("matchday_id")).exists()
++            if not day:
++                raise ValidationError(_("Choose an existing match day."))
++            self.env["federation.competition.role.assignment"].assert_role(
++                day.edition_id, "matchday_manager", "competition_director")
++        return super().create(vals_list)
++
++    def write(self, values):
++        self._assert_manager()
++        if {"matchday_id", "court_id", "user_id"}.intersection(values):
++            raise ValidationError(_("Deactivate the old operator assignment and create a new one to preserve history."))
++        for item in self:
++            self.env["federation.competition.role.assignment"].assert_role(
++                item.matchday_id.edition_id, "matchday_manager", "competition_director")
++        return super().write(values)
++
++    def unlink(self):
++        self._assert_manager()
++        raise ValidationError(_("Deactivate court operator assignments; retain their history."))
++
++
++class CourtCapture(models.Model):
++    _name = "federation.court.capture"
++    _description = "Server Court Result Draft"
++    match_id = fields.Many2one("federation.match", required=True, ondelete="restrict", index=True)
++    revision = fields.Integer(default=0, required=True)
++    payload = fields.Json(default=dict, required=True)
++    previous_payload = fields.Json(default=dict)
++    undo_available = fields.Boolean(default=False)
++    submitted = fields.Boolean(default=False)
++    review_required = fields.Boolean(default=False)
++    closed = fields.Boolean(default=False)
++    signature = fields.Char(required=True)
++    _unique = models.Constraint("unique(match_id)", "One server capture per match.")
++
++    @api.model_create_multi
++    def create(self, vals_list):
++        self._assert_command()
++        return super().create(vals_list)
++
++    def action_resolve_exception(self):
++        self.ensure_one()
++        self.check_access("read")
++        return {"type": "ir.actions.act_window", "res_model": "federation.court.resolve.wizard",
++                "views": [(False, "form")], "target": "new", "context": {
++                    "default_capture_id": self.id, "default_expected_revision": self.revision}}
++
++    def action_open_result(self):
++        self.ensure_one()
++        self.check_access("read")
++        self.match_id.check_access("read")
++        return {"type": "ir.actions.act_window", "res_model": "federation.match",
++                "res_id": self.match_id.id, "views": [(False, "form")], "target": "current"}
++
++    def _assert_command(self):
++        if self.env.context.get(_CONTEXT) is not _TOKEN:
++            raise AccessError(_("Use the scoped court command service."))
++
++    def write(self, values):
++        self._assert_command()
++        return super().write(values)
++
++    @api.ondelete(at_uninstall=False)
++    def _retain(self):
++        raise ValidationError(_("Court captures are retained as result evidence."))
++
++
++class CourtReceipt(models.Model):
++    _name = "federation.court.receipt"
++    _description = "Immutable Court Command Receipt"
++    _order = "id desc"
++    capture_id = fields.Many2one("federation.court.capture", required=True, ondelete="restrict", index=True)
++    key = fields.Char(required=True, index=True)
++    digest = fields.Char(required=True)
++    actor_id = fields.Many2one("res.users", required=True, ondelete="restrict")
++    operation = fields.Char(required=True)
++    response = fields.Json(required=True)
++    _unique = models.Constraint("unique(capture_id,key)", "Command already processed.")
++
++    @api.model_create_multi
++    def create(self, vals_list):
++        if self.env.context.get(_CONTEXT) is not _TOKEN:
++            raise AccessError(_("Court receipts are command-owned."))
++        return super().create(vals_list)
++
++    def write(self, values):
++        raise ValidationError(_("Court receipts are immutable."))
++
++    @api.ondelete(at_uninstall=False)
++    def _retain(self):
++        raise ValidationError(_("Court receipts are retained."))
++
++
++class LiveEdition(models.Model):
++    _inherit = "federation.competition.edition"
++    court_scoring_mode = fields.Selection([
++        ("aggregate", "Aggregate"), ("periods", "Period totals"), ("sets", "Sets won")
++    ], default="aggregate", required=True)
++    court_set_target = fields.Integer(default=0)
++    court_max_periods = fields.Integer(default=100)
++
++    @api.constrains("court_set_target", "court_max_periods")
++    def _check_scoring_config(self):
++        for item in self:
++            if not 0 <= item.court_set_target <= 100 or not 1 <= item.court_max_periods <= 100:
++                raise ValidationError(_("Use a bounded set target and 1 to 100 periods."))
++
++
++class LiveMatch(models.Model):
++    _inherit = "federation.match"
++    court_outcome = fields.Selection([(k, v) for k, v in [
++        ("normal", "Normal"), ("interrupted", "Interrupted"), ("abandoned", "Abandoned"),
++        ("forfeit_home", "Home forfeits"), ("forfeit_away", "Away forfeits"), ("disputed", "Disputed")
++    ]], default="normal", readonly=True)
++    court_outcome_reason = fields.Text(readonly=True)
++
++    def write(self, values):
++        if {"court_outcome", "court_outcome_reason"}.intersection(values) and self.env.context.get(_CONTEXT) is not _TOKEN:
++            raise AccessError(_("Exceptional court outcomes require an audited command."))
++        return super().write(values)
++
++
++class CourtCommands(models.AbstractModel):
++    _name = "federation.court.commands"
++    _description = "Run This Court Commands"
++
++    def _access(self, matchday_id, court_id):
++        actor = self.env.user
++        if actor.share:
++            raise AccessError(_("Court operation requires a named internal account."))
++        access = self.env["federation.court.access"].sudo().search([
++            ("matchday_id", "=", int(matchday_id)), ("court_id", "=", int(court_id)),
++            ("user_id", "=", actor.id), ("active", "=", True)
++        ], limit=1)
++        if not access:
++            raise AccessError(_("You are not assigned to this court."))
++        session = access.matchday_id.active_session_id
++        if not session or session.state != "open":
++            raise ValidationError(_("Open the published match-day session before running this court."))
++        self.env.cr.execute("SELECT id FROM federation_court_access WHERE id=%s FOR SHARE", (access.id,))
++        access.invalidate_recordset()
++        if not access.active or access.user_id != actor:
++            raise AccessError(_("Court access was revoked."))
++        self.env.cr.execute("SELECT id FROM federation_matchday_session WHERE id=%s FOR SHARE", (session.id,))
++        session.invalidate_recordset()
++        if session.state != "open" or session.publication_id != access.matchday_id.current_publication_id:
++            raise ValidationError(_("The operational publication changed. Reopen the current session."))
++        return access, session
++
++    def _match(self, access, match_id):
++        match = self.env["federation.match"].sudo().browse(int(match_id)).exists()
++        if not match or match.schedule_publication_id.matchday_id != access.matchday_id:
++            raise AccessError(_("Match is outside this court."))
++        slot = match.operational_slot_id or match.published_slot_id
++        if not slot or slot.court_id != access.court_id or match.operational_status in {"cancelled", "postponed"}:
++            raise AccessError(_("Match is not currently runnable on this court."))
++        return match
++
++    def _signature(self, match, session):
++        slot = match.operational_slot_id or match.published_slot_id
++        return digest({"publication": session.publication_digest, "session": session.id,
++                       "slot": slot.id, "start": str(slot.start_datetime), "end": str(slot.end_datetime),
++                       "deviations": match.operational_deviation_ids.ids, "operational_state": match.operational_status,
++                       "home": match.home_score, "away": match.away_score, "state": match.result_state,
++                       "teams": [match.home_team_id.id, match.away_team_id.id],
++                       "scoring": [match._competition_workflow_edition().court_scoring_mode,
++                                   match._competition_workflow_edition().court_set_target],
++                       "periods": [(p.sequence, p.home_score, p.away_score) for p in match.result_period_ids]})
++
++    def _capture(self, match, signature):
++        Capture = self.env["federation.court.capture"].sudo().with_context(**{_CONTEXT: _TOKEN})
++        capture = Capture.search([("match_id", "=", match.id)], limit=1)
++        if not capture:
++            capture = Capture.create({"match_id": match.id, "signature": signature, "payload": {
++                "home": match.home_score, "away": match.away_score, "periods": [],
++                "outcome": "normal", "reason": "", "zero_confirmed": False}})
++        return capture
++
++    def _response(self, capture, match, session):
++        return {"match_id": match.id, "revision": capture.revision, "payload": capture.payload,
++                "signature": self._signature(match, session), "draft_signature": capture.signature,
++                "submitted": capture.submitted, "result_state": match.result_state,
++                "review_required": capture.review_required, "closed": capture.closed,
++                "undo_available": capture.undo_available, "saved_at": str(capture.write_date)}
++
++    @api.model
++    def courts(self):
++        accesses = self.env["federation.court.access"].sudo().search([
++            ("user_id", "=", self.env.uid), ("active", "=", True)
++        ]) if not self.env.user.share else self.env["federation.court.access"]
++        return [{"matchday_id": a.matchday_id.id, "court_id": a.court_id.id,
++                 "name": "%s / %s" % (a.matchday_id.display_name, a.court_id.display_name)} for a in accesses]
++
++    @api.model
++    def load(self, matchday_id, court_id):
++        access, session = self._access(matchday_id, court_id)
++        matches = self.env["federation.match"].sudo().search([("schedule_publication_id", "=", session.publication_id.id)])
++        queue = []
++        for match in matches:
++            slot = match.operational_slot_id or match.published_slot_id
++            if not slot or slot.court_id != access.court_id or match.operational_status in {"cancelled", "postponed"}:
++                continue
++            queue.append({"id": match.id, "name": match.display_name,
++                          "home": match.home_team_id.display_name, "away": match.away_team_id.display_name,
++                          "start": str(slot.start_datetime), "end": str(slot.end_datetime),
++                          "result_state": match.result_state, "operational_state": match.operational_status,
++                          "coverage": match._coverage_snapshot(),
++                          "officials": [{"name": a.referee_id.display_name, "role": a.role,
++                                        "accepted": a.coverage_accepted, "eligible": a.coverage_eligible,
++                                        "present": a.coverage_present} for a in match.referee_assignment_ids if a.state != "cancelled"]})
++        queue.sort(key=lambda row: (row["start"], row["id"]))
++        return {"queue": queue, "session": session.id, "publication": session.publication_digest,
++                "court": access.court_id.display_name, "matchday": access.matchday_id.display_name}
++
++    @api.model
++    def open_match(self, matchday_id, court_id, match_id):
++        access, session = self._access(matchday_id, court_id)
++        match = self._match(access, match_id)
++        # Serialize creation with all result mutations on the canonical match row.
++        match._lock_result_transition()
++        match.invalidate_recordset()
++        capture = self._capture(match, self._signature(match, session))
++        edition = match._competition_workflow_edition()
++        result = self._response(capture, match, session)
++        result.update({"mode": edition.court_scoring_mode, "set_target": edition.court_set_target,
++                       "max_periods": edition.court_max_periods, "lineups": self._lineups(match)})
++        return result
++
++    def _lineups(self, match):
++        # Resolve the canonical match sheets; never expose contact or birth data.
++        sheets = self.env["federation.match.sheet"].sudo().search([("match_id", "=", match.id)])
++        return [{"id": sheet.id, "name": sheet.display_name, "state": sheet.state,
++                 "players": [line.player_id.display_name for line in sheet.line_ids]} for sheet in sheets]
++
++    @api.model
++    def sync(self, matchday_id, court_id, match_id, commands):
++        if not isinstance(commands, list) or not 1 <= len(commands) <= 100:
++            raise ValidationError(_("Synchronise 1 to 100 commands at a time."))
++        with self.env.cr.savepoint():
++            access, session = self._access(matchday_id, court_id)
++            match = self._match(access, match_id)
++            match._lock_result_transition()
++            match.invalidate_recordset()
++            capture = self._capture(match, self._signature(match, session))
++            capture.invalidate_recordset()
++            receipts = self.env["federation.court.receipt"].sudo().with_context(**{_CONTEXT: _TOKEN})
++            responses = []
++            for command in commands:
++                try:
++                    validate_command(command)
++                except ValueError as error:
++                    raise ValidationError(str(error)) from error
++                fingerprint = digest(command)
++                replay = receipts.search([("capture_id", "=", capture.id), ("key", "=", command["key"])], limit=1)
++                if replay:
++                    if replay.digest != fingerprint or replay.actor_id != self.env.user:
++                        raise ValidationError(_("Idempotency key was reused for different content or actor."))
++                    responses.append(replay.response)
++                    continue
++                if (command["revision"] != capture.revision or command["signature"] != self._signature(match, session)
++                        or capture.signature != command["signature"]):
++                    raise ValidationError(_("Conflict: schedule, result or draft changed. Keep local evidence and reconcile explicitly."))
++                if capture.submitted or capture.closed or match.result_state not in {"draft", "corrected"}:
++                    raise ValidationError(_("Submitted or official results cannot be overwritten from court capture."))
++                operation = command["operation"]
++                if operation == "undo":
++                    if not capture.undo_available:
++                        raise ValidationError(_("No saved draft is available to undo."))
++                    payload = capture.previous_payload
++                else:
++                    edition = match._competition_workflow_edition()
++                    try:
++                        payload = validate_capture(command["payload"], edition.court_scoring_mode,
++                                                   edition.court_set_target, edition.court_max_periods, complete=operation == "submit")
++                    except ValueError as error:
++                        raise ValidationError(str(error)) from error
++                values = {"payload": payload, "previous_payload": capture.payload,
++                          "undo_available": operation != "undo", "revision": capture.revision + 1,
++                          "signature": command["signature"]}
++                if payload["outcome"] in {"abandoned", "disputed"}:
++                    values["review_required"] = True
++                if operation == "submit":
++                    if capture.review_required:
++                        raise ValidationError(_("A coordinator must resolve the dispute or abandonment hold."))
++                    if payload["outcome"] in {"interrupted", "abandoned", "disputed"}:
++                        raise ValidationError(_("Save this exception for coordinator review; it is not an official result."))
++                    self._submit(match, payload)
++                    values.update({"submitted": True, "undo_available": False,
++                                   "signature": self._signature(match, session)})
++                capture.write(values)
++                if payload["outcome"] != "normal" and operation != "undo":
++                    self.env["federation.matchday.incident"].sudo().create({
++                        "matchday_id": access.matchday_id.id, "incident_type": "other", "court_capture_id": capture.id,
++                        "description": "%s | %s | %s | command %s" % (
++                            match.display_name, payload["outcome"], payload["reason"], command["key"])})
++                response = self._response(capture, match, session)
++                receipts.create({"capture_id": capture.id, "key": command["key"], "digest": fingerprint,
++                                 "actor_id": self.env.uid, "operation": operation, "response": response})
++                responses.append(response)
++            return {"receipts": responses, "current": self._response(capture, match, session)}
++
++    def _submit(self, match, payload):
++        # Authorization has already been checked against the named court operator.
++        target = match.with_user(self.env.user).sudo().with_context(**{
++            _RESULT_COMMAND_CONTEXT_KEY: _RESULT_COMMAND_TOKEN, _CONTEXT: _TOKEN})
++        target.write({"home_score": payload["home"], "away_score": payload["away"],
++                      "score_entry_confirmed": True, "zero_zero_confirmed": payload["zero_confirmed"],
++                      "court_outcome": payload["outcome"], "court_outcome_reason": payload["reason"]})
++        target.result_period_ids.unlink()
++        edition = target._competition_workflow_edition()
++        for index, period in enumerate(payload["periods"], 1):
++            home, away = period["home"], period["away"]
++            if edition.court_scoring_mode == "sets":
++                home, away = int(home > away), int(away > home)
++            target.env["federation.match.result.period"].create({"match_id": target.id, "sequence": index,
++                "home_score": home, "away_score": away,
++                "note": "Raw set: %s:%s" % (period["home"], period["away"])})
++        target.action_submit_result()
++
++    @api.model
++    def reconcile(self, matchday_id, court_id, match_id, revision, reason):
++        if not isinstance(reason, str) or not reason.strip() or len(reason) > 2000:
++            raise ValidationError(_("Record why the draft remains valid."))
++        with self.env.cr.savepoint():
++            access, session = self._access(matchday_id, court_id)
++            match = self._match(access, match_id)
++            match._lock_result_transition()
++            match.invalidate_recordset()
++            capture = self._capture(match, self._signature(match, session))
++            capture.invalidate_recordset()
++            if capture.revision != int(revision) or capture.submitted or match.result_state not in {"draft", "corrected"}:
++                raise ValidationError(_("The draft changed or is no longer mutable."))
++            capture.write({"signature": self._signature(match, session), "revision": capture.revision + 1})
++            response = self._response(capture, match, session)
++            self.env["federation.court.receipt"].sudo().with_context(**{_CONTEXT: _TOKEN}).create({
++                "capture_id": capture.id, "key": "reconcile:%s" % capture.revision,
++                "digest": digest({"reason": reason, "revision": capture.revision}), "actor_id": self.env.uid,
++                "operation": "reconcile", "response": {**response, "reason": reason.strip()}})
++            return response
++
++
++class CourtIncident(models.Model):
++    _inherit = "federation.matchday.incident"
++    court_capture_id = fields.Many2one("federation.court.capture", readonly=True, ondelete="restrict", index=True)
++
++
++class ResolveCourtException(models.TransientModel):
++    _name = "federation.court.resolve.wizard"
++    _description = "Resolve Court Exception"
++    capture_id = fields.Many2one("federation.court.capture", required=True, readonly=True)
++    expected_revision = fields.Integer(required=True, readonly=True)
++    disposition = fields.Selection([("resume", "Resume or reopen capture"),
++        ("abandoned", "Confirm abandonment without an official score")], required=True)
++    reason = fields.Text(required=True)
++
++    def action_resolve(self):
++        self.ensure_one()
++        if not (self.reason or "").strip() or len(self.reason) > 2000:
++            raise ValidationError(_("Record the coordinator decision."))
++        if not self.env.user.has_group("sports_federation_matchday.group_matchday_manager"):
++            raise AccessError(_("Only match-day managers resolve court holds."))
++        capture = self.capture_id
++        match = capture.match_id
++        self.env["federation.competition.role.assignment"].assert_role(
++            match._competition_workflow_edition(), "matchday_manager", "competition_director")
++        with self.env.cr.savepoint():
++            match._lock_result_transition()
++            capture.invalidate_recordset()
++            if capture.revision != self.expected_revision or capture.submitted:
++                raise ValidationError(_("Court evidence changed. Open a new decision preview."))
++            payload = dict(capture.payload)
++            payload.update({"outcome": "normal" if self.disposition == "resume" else "abandoned",
++                            "reason": self.reason.strip()})
++            capture = capture.sudo().with_context(**{_CONTEXT: _TOKEN})
++            capture.write({"payload": payload, "previous_payload": capture.payload,
++                "revision": capture.revision + 1, "review_required": False,
++                "closed": self.disposition == "abandoned", "undo_available": False})
++            self.env["federation.court.receipt"].sudo().with_context(**{_CONTEXT: _TOKEN}).create({
++                "capture_id": capture.id, "key": "decision:%s" % capture.revision,
++                "digest": digest({"reason": self.reason, "disposition": self.disposition}),
++                "actor_id": self.env.uid, "operation": "coordinator_decision",
++                "response": {"revision": capture.revision, "payload": payload, "closed": capture.closed}})
++            for incident in self.env["federation.matchday.incident"].search([
++                ("court_capture_id", "=", capture.id), ("resolved", "=", False)]):
++                self.env["federation.matchday.commands"].resolve_incident(incident.id)
++        return {"type": "ir.actions.act_window_close"}
+diff --git a/sports_federation_live_workspace/models/planning.py b/sports_federation_live_workspace/models/planning.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/models/planning.py
+@@ -0,0 +1,297 @@
++"""Canonical visual planning with persisted previews and governed application."""
++import json
++from odoo import api, fields, models, _
++from odoo.exceptions import AccessError, ValidationError
++from ..policy import digest
++from .court import _CONTEXT, _TOKEN
++
++CONFIG = {"same_club_weight": "fairness_same_club_weight", "rest_weight": "fairness_rest_weight",
++    "consecutive_weight": "fairness_consecutive_weight", "time_balance_weight": "fairness_time_balance_weight",
++    "court_balance_weight": "fairness_court_balance_weight", "preferred_rest_minutes": "preferred_rest_minutes",
++    "max_consecutive_games": "max_consecutive_games"}
++
++
++class Constraint(models.Model):
++    _name = "federation.visual.constraint"
++    _description = "Practical Scheduling Constraint"
++    schedule_id = fields.Many2one("federation.schedule", required=True, ondelete="restrict", index=True)
++    name = fields.Char(required=True)
++    kind = fields.Selection([("team_window", "Team unavailable"), ("court_window", "Court unavailable"),
++                             ("minimum_rest", "Hard minimum rest")], required=True)
++    team_id = fields.Many2one("federation.team", ondelete="restrict")
++    court_id = fields.Many2one("federation.playing.area", ondelete="restrict")
++    start = fields.Datetime()
++    end = fields.Datetime()
++    minutes = fields.Integer(default=0)
++    active = fields.Boolean(default=True)
++
++    @api.model_create_multi
++    def create(self, vals_list):
++        for vals in vals_list:
++            self.env["federation.visual.planning"]._schedule(vals.get("schedule_id"), True)
++        return super().create(vals_list)
++
++    def write(self, values):
++        for c in self:
++            self.env["federation.visual.planning"]._schedule(c.schedule_id.id, True)
++        if "schedule_id" in values:
++            raise ValidationError(_("Constraints cannot move between schedules."))
++        return super().write(values)
++
++    def unlink(self):
++        for c in self:
++            self.env["federation.visual.planning"]._schedule(c.schedule_id.id, True)
++        return super().unlink()
++
++    @api.constrains("kind", "team_id", "court_id", "start", "end", "minutes", "schedule_id")
++    def _check(self):
++        for c in self:
++            if c.kind == "minimum_rest" and not 0 <= c.minutes <= 1440:
++                raise ValidationError(_("Rest must be 0 to 1440 minutes."))
++            if c.kind != "minimum_rest" and (not c.start or not c.end or c.end <= c.start):
++                raise ValidationError(_("Enter a valid unavailable window."))
++            if c.kind == "team_window" and c.team_id not in (
++                c.schedule_id.available_fixture_ids.mapped("home_team_id") |
++                c.schedule_id.available_fixture_ids.mapped("away_team_id")):
++                raise ValidationError(_("Choose a team in this schedule."))
++            if c.kind == "court_window" and c.court_id not in c.schedule_id.matchday_id.slot_ids.mapped("court_id"):
++                raise ValidationError(_("Choose a court in this schedule."))
++
++
++class Validator(models.AbstractModel):
++    _inherit = "federation.schedule.validator"
++
++    def validate_map(self, schedule, assignment_map):
++        result = super().validate_map(schedule, assignment_map)
++        constraints = self.env["federation.visual.constraint"].sudo().search([
++            ("schedule_id", "=", schedule.id), ("active", "=", True)])
++        fixtures = {f.id: f for f in schedule.available_fixture_ids}
++        slots = {s.id: s for s in schedule.matchday_id.slot_ids}
++        windows = {}
++        for fid, sid in assignment_map.items():
++            fixture, slot = fixtures.get(fid), slots.get(sid)
++            if not fixture or not slot:
++                continue
++            teams = fixture.home_team_id | fixture.away_team_id
++            for c in constraints:
++                blocked = False
++                if ((c.kind == "team_window" and c.team_id in teams) or
++                    (c.kind == "court_window" and c.court_id == slot.court_id)):
++                    blocked = slot.start_datetime < c.end and c.start < slot.end_datetime
++                if c.kind == "minimum_rest":
++                    for team in teams:
++                        for old in windows.get(team.id, []):
++                            gap = max((slot.start_datetime - old.end_datetime).total_seconds(),
++                                      (old.start_datetime - slot.end_datetime).total_seconds()) / 60
++                            blocked = blocked or gap < c.minutes
++                if blocked:
++                    result["errors"].append({"code": c.kind, "message": c.name,
++                        "fixture_id": fid, "slot_id": sid, "constraint_id": c.id})
++            for team in teams:
++                windows.setdefault(team.id, []).append(slot)
++        result["valid"] = not result["errors"] and not result["unassigned_fixture_ids"]
++        return result
++
++
++class Proposal(models.Model):
++    _name = "federation.visual.proposal"
++    _description = "Immutable Visual Preview"
++    schedule_id = fields.Many2one("federation.schedule", required=True, ondelete="restrict", index=True)
++    actor_id = fields.Many2one("res.users", required=True, ondelete="restrict")
++    signature = fields.Char(required=True)
++    revision = fields.Integer(required=True)
++    candidate = fields.Json(required=True)
++    methods = fields.Json(required=True)
++    comparison = fields.Json(required=True)
++    applied = fields.Boolean(default=False)
++    applied_reason = fields.Text(readonly=True)
++    applied_at = fields.Datetime(readonly=True)
++
++    @api.model_create_multi
++    def create(self, vals_list):
++        if self.env.context.get(_CONTEXT) is not _TOKEN:
++            raise AccessError(_("Use the preview command."))
++        return super().create(vals_list)
++
++    def write(self, values):
++        if self.env.context.get(_CONTEXT) is not _TOKEN or set(values) != {"applied", "applied_reason", "applied_at"}:
++            raise AccessError(_("Previews are immutable."))
++        return super().write(values)
++
++    @api.ondelete(at_uninstall=False)
++    def _retain(self):
++        raise ValidationError(_("Previews are retained as evidence."))
++
++
++class Schedule(models.Model):
++    _inherit = "federation.schedule"
++    visual_constraint_ids = fields.One2many("federation.visual.constraint", "schedule_id", copy=True)
++
++    def action_visual_plan(self):
++        self.ensure_one()
++        self.check_access("read")
++        return {"type": "ir.actions.client", "tag": "federation_visual_plan",
++                "name": _("Visual Planning"), "params": {"schedule_id": self.id}}
++
++
++class Planning(models.AbstractModel):
++    _name = "federation.visual.planning"
++    _description = "Explainable Visual Planning"
++
++    def _schedule(self, schedule_id, mutable=False):
++        schedule = self.env["federation.schedule"].browse(int(schedule_id or 0)).exists()
++        if not schedule:
++            raise ValidationError(_("Choose an existing schedule."))
++        schedule.check_access("read")
++        self.env["federation.competition.role.assignment"].assert_role(schedule.edition_id,
++            "schedule_planner", "competition_director", *( [] if mutable else ["schedule_approver"]))
++        if mutable:
++            schedule.check_access("write")
++            schedule.assert_mutable()
++        return schedule
++
++    def _map(self, schedule):
++        return {a.fixture_id.id: a.slot_id.id for a in schedule.assignment_ids}
++
++    def _cfg(self, schedule):
++        return {key: schedule[field] for key, field in CONFIG.items()}
++
++    def _signature(self, schedule):
++        return digest({"revision": schedule.revision, "state": schedule.state, "map": self._map(schedule),
++            "methods": [(a.fixture_id.id, a.method) for a in schedule.assignment_ids],
++            "fixtures": [(f.id, f.state, f.home_team_id.id, f.away_team_id.id, str(f.write_date))
++                         for f in schedule.available_fixture_ids],
++            "slots": [(s.id, s.state, s.court_id.id, str(s.start_datetime), str(s.end_datetime), str(s.write_date))
++                      for s in schedule.matchday_id.slot_ids],
++            "blackouts": [(b.id, b.active, str(b.date_start), str(b.date_end), b.playing_area_id.id) for b in schedule.matchday_id.venue_id.blackout_window_ids],
++            "constraints": [(c.id, c.active, c.kind, c.team_id.id, c.court_id.id, str(c.start), str(c.end), c.minutes) for c in schedule.visual_constraint_ids],
++            "config": self._cfg(schedule)})
++
++    def _explain(self, schedule, candidate):
++        validator = self.env["federation.schedule.validator"]
++        validation = validator.validate_map(schedule, candidate)
++        explanations = []
++        for fid in validation["unassigned_fixture_ids"]:
++            attempts = []
++            for slot in schedule.matchday_id.slot_ids:
++                trial = validator.validate_map(schedule, {**candidate, fid: slot.id})
++                attempts.append({"slot_id": slot.id, "court": slot.court_id.display_name,
++                                 "start": str(slot.start_datetime), "errors": trial["errors"]})
++            explanations.append({"fixture_id": fid, "attempts": attempts,
++                "message": _("No slots exist. Add court/time capacity.") if not attempts else
++                _("Inspect rejected slots. A feasible slot can be pinned manually; heuristic output is not proof of infeasibility.")})
++        return {"validation": validation, "unallocated": explanations,
++            "fairness": self.env["federation.schedule.fairness.solver"].evaluate(schedule, candidate, self._cfg(schedule))}
++
++    @api.model
++    def load(self, schedule_id):
++        schedule = self._schedule(schedule_id)
++        data = self.env["federation.schedule.queries"].load(schedule.id)
++        fixtures = self.env["federation.fixture"].search([("edition_id", "=", schedule.edition_id.id)])
++        stages = fixtures.mapped("stage_id") | schedule.structure_id.stage_ids
++        data.update({"signature": self._signature(schedule), "explanation": self._explain(schedule, self._map(schedule)),
++            "config": self._cfg(schedule), "constraints": [{"id": c.id, "name": c.name, "kind": c.kind,
++                "team_id": c.team_id.id, "court_id": c.court_id.id, "start": str(c.start or ""),
++                "end": str(c.end or ""), "minutes": c.minutes, "active": c.active} for c in schedule.visual_constraint_ids],
++            "fixtures": [{"id": f.id, "name": f.display_name, "stage_id": f.stage_id.id,
++                "round": f.round_number, "state": f.state, "home_source": f.home_source_fixture_id.id,
++                "away_source": f.away_source_fixture_id.id, "home_outcome": f.home_source_outcome,
++                "away_outcome": f.away_source_outcome} for f in fixtures],
++            "stages": [{"id": stage.id, "name": stage.name, "format": stage.format_type,
++                "state": stage.graph_state, "next": [{"id": p.target_stage_id.id, "rank_from": p.rank_from,
++                "rank_to": p.rank_to} for p in stage.outgoing_progression_ids if p.active]} for stage in stages],
++            "teams": [{"id": t.id, "name": t.display_name} for t in
++                schedule.available_fixture_ids.mapped("home_team_id") | schedule.available_fixture_ids.mapped("away_team_id")],
++            "methods": {a.fixture_id.id: a.method for a in schedule.assignment_ids}})
++        return data
++
++    @api.model
++    def preview(self, schedule_id, operation, fixture_id=False, slot_id=False):
++        schedule = self._schedule(schedule_id, True)
++        before = self._map(schedule)
++        methods = {a.fixture_id.id: a.method for a in schedule.assignment_ids}
++        candidate = dict(before)
++        if operation == "regenerate":
++            proposal = self.env["federation.schedule.fairness.solver"].propose(schedule, replace_automatic=True)
++            candidate = {a.fixture_id.id: a.slot_id.id for a in schedule.assignment_ids if a.method != "automatic"}
++            for item in proposal["assignments"]:
++                candidate[item["fixture_id"]] = item["slot_id"]
++                methods[item["fixture_id"]] = "automatic"
++        elif operation == "move":
++            fid, sid = int(fixture_id), int(slot_id)
++            if fid not in schedule.available_fixture_ids.ids or sid not in schedule.matchday_id.slot_ids.ids:
++                raise ValidationError(_("Choose a fixture and slot in this schedule."))
++            candidate[fid], methods[fid] = sid, "manual"
++        elif operation == "unassign":
++            candidate.pop(int(fixture_id), None)
++        else:
++            raise ValidationError(_("Unknown planning operation."))
++        comparison = {"before": self._explain(schedule, before), "after": self._explain(schedule, candidate),
++            "changes": [{"fixture_id": fid, "old_slot": before.get(fid, False), "new_slot": candidate.get(fid, False)}
++                        for fid in sorted(set(before) | set(candidate)) if before.get(fid) != candidate.get(fid)]}
++        preview = self.env["federation.visual.proposal"].sudo().with_context(**{_CONTEXT: _TOKEN}).create({
++            "schedule_id": schedule.id, "actor_id": self.env.uid, "signature": self._signature(schedule),
++            "revision": schedule.revision, "candidate": {str(k): v for k, v in candidate.items()},
++            "methods": {str(k): v for k, v in methods.items()}, "comparison": comparison})
++        return {"id": preview.id, **comparison}
++
++    @api.model
++    def apply(self, preview_id, reason):
++        if not isinstance(reason, str) or not reason.strip() or len(reason) > 2000:
++            raise ValidationError(_("Record a bounded reason for this change."))
++        with self.env.cr.savepoint():
++            preview = self.env["federation.visual.proposal"].sudo().browse(int(preview_id)).exists()
++            if not preview or preview.actor_id != self.env.user:
++                raise AccessError(_("This preview belongs to another operator."))
++            schedule = self._schedule(preview.schedule_id.id, True)
++            self.env.cr.execute("SELECT id FROM federation_visual_proposal WHERE id=%s FOR UPDATE", (preview.id,))
++            preview.invalidate_recordset()
++            if preview.applied:
++                if preview.applied_reason != reason.strip():
++                    raise ValidationError(_("Applied preview was retried with a different reason."))
++                return self.load(schedule.id)
++            if preview.signature != self._signature(schedule):
++                raise ValidationError(_("Preview is stale. Refresh and compare again."))
++            candidate = {int(k): int(v) for k, v in preview.candidate.items()}
++            validation = self.env["federation.schedule.validator"].validate_map(schedule, candidate)
++            if validation["errors"]:
++                raise ValidationError(validation["errors"][0]["message"])
++            schedule, revision = self.env["federation.schedule.commands"]._resolve(schedule.id, preview.revision)
++            before = self._map(schedule)
++            schedule.assignment_ids.filtered(lambda a: candidate.get(a.fixture_id.id) != a.slot_id.id).unlink()
++            existing = self._map(schedule)
++            for fid, sid in candidate.items():
++                if fid not in existing:
++                    self.env["federation.schedule.assignment"].create({"schedule_id": schedule.id,
++                        "fixture_id": fid, "slot_id": sid, "method": preview.methods.get(str(fid), "manual")})
++                elif preview.methods.get(str(fid)) == "manual":
++                    schedule.assignment_ids.filtered(lambda a: a.fixture_id.id == fid).write({"method": "manual"})
++            for fid in sorted(set(before) | set(candidate)):
++                if before.get(fid) != candidate.get(fid):
++                    self.env["federation.schedule.change"].create({"schedule_id": schedule.id, "revision": revision,
++                        "command": "visual_amend", "fixture_id": fid, "old_slot_id": before.get(fid, False),
++                        "new_slot_id": candidate.get(fid, False), "reason": reason.strip(),
++                        "idempotency_key": "visual:%s:%s" % (preview.id, fid)})
++            preview.with_context(**{_CONTEXT: _TOKEN}).write({"applied": True, "applied_reason": reason.strip(), "applied_at": fields.Datetime.now()})
++            return self.load(schedule.id)
++
++    @api.model
++    def configure(self, schedule_id, revision, values):
++        schedule = self._schedule(schedule_id, True)
++        if not isinstance(values, dict) or set(values) - set(CONFIG):
++            raise ValidationError(_("Unknown fairness setting."))
++        if any(type(v) not in (int, float) or not 0 <= v <= 10000 for v in values.values()):
++            raise ValidationError(_("Use finite non-negative bounded fairness settings."))
++        with self.env.cr.savepoint():
++            schedule, revision = self.env["federation.schedule.commands"]._resolve(schedule.id, revision)
++            schedule.write({CONFIG[k]: v for k, v in values.items()})
++            self.env["federation.schedule.change"].create({"schedule_id": schedule.id, "revision": revision,
++                "command": "visual_constraints", "reason": json.dumps(values, sort_keys=True)})
++        return self.load(schedule.id)
++
++    @api.model
++    def amend(self, schedule_id, reason):
++        schedule = self._schedule(schedule_id)
++        replacement = schedule.action_create_revision(reason)
++        return {"type": "ir.actions.client", "tag": "federation_visual_plan",
++                "params": {"schedule_id": replacement.id}, "name": _("Visual Amendment")}
+diff --git a/sports_federation_live_workspace/policy.py b/sports_federation_live_workspace/policy.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/policy.py
+@@ -0,0 +1,83 @@
++"""Pure, bounded input validation shared by online and offline commands."""
++import hashlib
++import json
++
++OUTCOMES = {"normal", "interrupted", "abandoned", "forfeit_home", "forfeit_away", "disputed"}
++MODES = {"aggregate", "periods", "sets"}
++
++
++def digest(value):
++    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
++                                    ensure_ascii=True, allow_nan=False).encode()).hexdigest()
++
++
++def validate_capture(value, mode="aggregate", set_target=0, max_periods=100, complete=True):
++    if not isinstance(value, dict) or set(value) - {
++        "home", "away", "periods", "outcome", "reason", "zero_confirmed"
++    }:
++        raise ValueError("Unknown result fields.")
++    if mode not in MODES:
++        raise ValueError("Unknown scoring mode.")
++    result = {"home": value.get("home", 0), "away": value.get("away", 0),
++              "periods": value.get("periods", []), "outcome": value.get("outcome", "normal"),
++              "reason": value.get("reason", ""), "zero_confirmed": value.get("zero_confirmed", False)}
++    if result["outcome"] not in OUTCOMES:
++        raise ValueError("Unknown match outcome.")
++    if not isinstance(result["reason"], str) or len(result["reason"]) > 2000:
++        raise ValueError("Reason must be at most 2000 characters.")
++    result["reason"] = result["reason"].strip()
++    if result["outcome"] != "normal" and not result["reason"]:
++        raise ValueError("Record a reason for exceptional outcomes.")
++    if type(result["zero_confirmed"]) is not bool:
++        raise ValueError("Zero score confirmation must be a boolean.")
++    for key in ("home", "away"):
++        if type(result[key]) is not int or not 0 <= result[key] <= 100000:
++            raise ValueError("Scores must be non-negative bounded integers.")
++    periods = result["periods"]
++    if not isinstance(periods, list) or len(periods) > max_periods:
++        raise ValueError("Too many periods or invalid period data.")
++    for period in periods:
++        if not isinstance(period, dict) or set(period) != {"home", "away"}:
++            raise ValueError("Each period needs exactly two scores.")
++        if any(type(period[k]) is not int or not 0 <= period[k] <= 100000 for k in ("home", "away")):
++            raise ValueError("Invalid period score.")
++    if mode == "aggregate" and periods:
++        raise ValueError("This competition uses aggregate scoring.")
++    if complete and mode in {"periods", "sets"} and result["outcome"] == "normal" and not periods:
++        raise ValueError("Enter the sets or periods.")
++    if periods:
++        totals = (sum(p["home"] for p in periods), sum(p["away"] for p in periods))
++        if mode == "sets":
++            if complete and any(p["home"] == p["away"] for p in periods):
++                raise ValueError("A completed set cannot be tied.")
++            totals = (sum(p["home"] > p["away"] for p in periods),
++                      sum(p["away"] > p["home"] for p in periods))
++            if complete and set_target and result["outcome"] == "normal" and max(totals) != set_target:
++                raise ValueError("The winning set target has not been reached.")
++            if set_target:
++                wins = [0, 0]
++                for index, p in enumerate(periods):
++                    wins[0 if p["home"] > p["away"] else 1] += 1
++                    if max(wins) >= set_target and index != len(periods) - 1:
++                        raise ValueError("No sets may follow the winning set.")
++        if totals != (result["home"], result["away"]):
++            raise ValueError("Aggregate scores do not match periods or sets.")
++    if complete and result["outcome"] == "forfeit_home" and result["home"] >= result["away"]:
++        raise ValueError("Home forfeit requires an away winning result.")
++    if complete and result["outcome"] == "forfeit_away" and result["away"] >= result["home"]:
++        raise ValueError("Away forfeit requires a home winning result.")
++    return result
++
++
++def validate_command(command):
++    if not isinstance(command, dict) or set(command) != {"key", "revision", "operation", "payload", "signature"}:
++        raise ValueError("Malformed court command.")
++    if not isinstance(command["key"], str) or not 8 <= len(command["key"]) <= 80:
++        raise ValueError("A bounded idempotency key is required.")
++    if type(command["revision"]) is not int or command["revision"] < 0:
++        raise ValueError("Invalid revision.")
++    if command["operation"] not in {"save", "undo", "submit"}:
++        raise ValueError("Unknown court command.")
++    if not isinstance(command["signature"], str) or len(command["signature"]) != 64:
++        raise ValueError("A schedule and result signature is required.")
++    return command
+diff --git a/sports_federation_live_workspace/security/ir.model.access.csv b/sports_federation_live_workspace/security/ir.model.access.csv
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/security/ir.model.access.csv
+@@ -0,0 +1,9 @@
++id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
++access_court_access_manager,Court operators,model_federation_court_access,sports_federation_matchday.group_matchday_manager,1,1,1,1
++access_capture_manager,Court evidence,model_federation_court_capture,sports_federation_matchday.group_matchday_manager,1,0,0,0
++access_receipt_manager,Command receipts,model_federation_court_receipt,sports_federation_matchday.group_matchday_manager,1,0,0,0
++access_constraint_planner,Planning constraints,model_federation_visual_constraint,sports_federation_scheduling.group_schedule_planner,1,1,1,1
++access_constraint_approver,Planning constraints review,model_federation_visual_constraint,sports_federation_schedule_approval.group_schedule_approver,1,0,0,0
++access_constraint_manager,Planning constraints manager,model_federation_visual_constraint,sports_federation_base.group_federation_manager,1,1,1,1
++access_proposal_manager,Visual evidence,model_federation_visual_proposal,sports_federation_base.group_federation_manager,1,0,0,0
++access_resolve_manager,Resolve court exception,model_federation_court_resolve_wizard,sports_federation_matchday.group_matchday_manager,1,1,1,1
+diff --git a/sports_federation_live_workspace/security/rules.xml b/sports_federation_live_workspace/security/rules.xml
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/security/rules.xml
+@@ -0,0 +1,7 @@
++<odoo>
++<record id="rule_court_access_scope" model="ir.rule"><field name="name">Competition-scoped court_access</field><field name="model_id" ref="model_federation_court_access"/><field name="domain_force">[(1, '=', 1)] if user.has_group('sports_federation_base.group_federation_manager') else [('matchday_id.edition_id.role_assignment_ids', 'any', [('user_id', '=', user.id), ('active', '=', True)])]</field></record>
++<record id="rule_court_capture_scope" model="ir.rule"><field name="name">Competition-scoped court_capture</field><field name="model_id" ref="model_federation_court_capture"/><field name="domain_force">[(1, '=', 1)] if user.has_group('sports_federation_base.group_federation_manager') else [('match_id.schedule_publication_id.schedule_id.edition_id.role_assignment_ids', 'any', [('user_id', '=', user.id), ('active', '=', True)])]</field></record>
++<record id="rule_court_receipt_scope" model="ir.rule"><field name="name">Competition-scoped court_receipt</field><field name="model_id" ref="model_federation_court_receipt"/><field name="domain_force">[(1, '=', 1)] if user.has_group('sports_federation_base.group_federation_manager') else [('capture_id.match_id.schedule_publication_id.schedule_id.edition_id.role_assignment_ids', 'any', [('user_id', '=', user.id), ('active', '=', True)])]</field></record>
++<record id="rule_visual_constraint_scope" model="ir.rule"><field name="name">Competition-scoped visual_constraint</field><field name="model_id" ref="model_federation_visual_constraint"/><field name="domain_force">[(1, '=', 1)] if user.has_group('sports_federation_base.group_federation_manager') else [('schedule_id.edition_id.role_assignment_ids', 'any', [('user_id', '=', user.id), ('active', '=', True)])]</field></record>
++<record id="rule_visual_proposal_scope" model="ir.rule"><field name="name">Competition-scoped visual_proposal</field><field name="model_id" ref="model_federation_visual_proposal"/><field name="domain_force">[(1, '=', 1)] if user.has_group('sports_federation_base.group_federation_manager') else [('schedule_id.edition_id.role_assignment_ids', 'any', [('user_id', '=', user.id), ('active', '=', True)])]</field></record>
++</odoo>
+diff --git a/sports_federation_live_workspace/static/src/workspaces.js b/sports_federation_live_workspace/static/src/workspaces.js
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/static/src/workspaces.js
+@@ -0,0 +1,223 @@
++/** @odoo-module **/
++import { Component, onWillStart, onWillUnmount, useState } from "@odoo/owl";
++import { registry } from "@web/core/registry";
++import { useService } from "@web/core/utils/hooks";
++import { session } from "@web/session";
++import { _t } from "@web/core/l10n/translation";
++
++const clone = (value) => JSON.parse(JSON.stringify(value));
++const key = () => crypto.randomUUID();
++
++export class CourtWorkspace extends Component {
++    static template = "sports_federation_live_workspace.Court";
++    static props = ["*"];
++    setup() {
++        this.orm = useService("orm");
++        this.action = useService("action");
++        this.state = useState({ courts: [], selected: "", board: null, match: null, draft: null,
++            pending: [], busy: false, dirty: false, status: _t("Not checked"), error: "", conflict: false });
++        this.storagePrefix = `sf-court:v1:${session.db}:${session.uid}:`;
++        this.online = () => { if (this.state.pending.length) this.sync(); };
++        this.unload = (event) => { if (this.state.dirty || this.state.pending.length) {
++            event.preventDefault(); event.returnValue = "";
++        }};
++        window.addEventListener("online", this.online);
++        window.addEventListener("beforeunload", this.unload);
++        onWillUnmount(() => {
++            window.removeEventListener("online", this.online);
++            window.removeEventListener("beforeunload", this.unload);
++        });
++        onWillStart(async () => {
++            try { this.state.courts = await this.orm.call("federation.court.commands", "courts", []); }
++            catch (error) { this.state.error = this.message(error); }
++        });
++    }
++    message(error) { return error?.data?.message || error?.message || _t("Operation failed. Local evidence retained."); }
++    get access() { return this.state.courts[Number(this.state.selected)]; }
++    get storageKey() { return `${this.storagePrefix}${this.access.matchday_id}:${this.access.court_id}:${this.state.match.match_id}`; }
++    get locked() { return this.state.match && (this.state.match.submitted || this.state.match.closed || !["draft", "corrected"].includes(this.state.match.result_state)); }
++    async chooseCourt(event) {
++        if (this.state.pending.length || this.state.dirty) { this.state.error = _t("Save or synchronise this match first."); return; }
++        this.state.selected = event.target.value;
++        this.state.match = null;
++        if (this.state.selected === "") return;
++        try { this.state.board = await this.orm.call("federation.court.commands", "load", [this.access.matchday_id, this.access.court_id]); }
++        catch (error) { this.state.error = this.message(error); }
++    }
++    async openMatch(id) {
++        if (this.state.pending.length || this.state.dirty) { this.state.error = _t("Save or synchronise this match first."); return; }
++        this.state.busy = true;
++        try {
++            const result = await this.orm.call("federation.court.commands", "open_match", [this.access.matchday_id, this.access.court_id, id]);
++            this.state.match = result;
++            this.state.draft = clone(result.payload);
++            this.state.conflict = result.signature !== result.draft_signature;
++            const cached = JSON.parse(localStorage.getItem(this.storageKey) || "null");
++            this.state.pending = cached?.pending || [];
++            if (this.state.pending.length && cached?.base) {
++                this.state.match.revision = cached.base.revision;
++                this.state.match.signature = cached.base.signature;
++            }
++            if (cached?.draft) this.state.draft = cached.draft;
++            this.state.dirty = Boolean(cached?.dirty);
++            this.state.status = (this.state.pending.length || this.state.dirty) ? _t("Unsynchronised: stored on this device") : result.submitted ? _t("Submitted: awaiting result review") : _t("Saved on server");
++            this.state.error = this.state.conflict ? _t("The published slot or canonical result changed. Reconcile explicitly.") : "";
++        } catch (error) { this.state.error = this.message(error); }
++        finally { this.state.busy = false; }
++    }
++    persist() {
++        try { localStorage.setItem(this.storageKey, JSON.stringify({ draft: clone(this.state.draft),
++            pending: clone(this.state.pending), dirty: this.state.dirty, base: clone(this.state.match) })); }
++        catch (error) { this.state.error = _t("Device storage failed. Export evidence before leaving this screen."); throw error; }
++    }
++    edited() { this.state.dirty = true; this.state.status = _t("Unsynchronised edits: stored on this device"); this.persist(); }
++    score(side, amount) {
++        if (this.locked || this.state.busy) return;
++        this.state.draft[side] = Math.max(0, this.state.draft[side] + amount); this.edited();
++    }
++    setScore(side, event) { this.state.draft[side] = Number(event.target.value); this.edited(); }
++    addPeriod() { this.state.draft.periods.push({ home: 0, away: 0 }); this.retotal(); }
++    removePeriod(index) { this.state.draft.periods.splice(index, 1); this.retotal(); }
++    periodScore(index, side, event) { this.state.draft.periods[index][side] = Number(event.target.value); this.retotal(); }
++    retotal() {
++        const periods = this.state.draft.periods;
++        this.state.draft.home = periods.reduce((sum, p) => sum + (this.state.match.mode === "sets" ? Number(p.home > p.away) : p.home), 0);
++        this.state.draft.away = periods.reduce((sum, p) => sum + (this.state.match.mode === "sets" ? Number(p.away > p.home) : p.away), 0);
++        this.edited();
++    }
++    async command(operation) {
++        if (this.locked || this.state.busy || this.state.conflict) return;
++        if (operation === "submit" && !window.confirm(_t("Submit this result for review? It will become read-only."))) return;
++        if (operation === "undo" && this.state.pending.length) { this.state.error = _t("Synchronise pending commands before server undo."); return; }
++        if (this.state.pending.some(c => c.operation === "submit")) {
++            this.state.error = _t("A submission is already queued. Synchronise it before further changes."); return;
++        }
++        if (this.state.pending.length >= 100) {
++            this.state.error = _t("Synchronise or export this device journal before adding more commands."); return;
++        }
++        const revision = this.state.match.revision + this.state.pending.length;
++        const command = { key: key(), revision, operation, payload: clone(this.state.draft), signature: this.state.match.signature };
++        this.state.pending.push(command);
++        this.state.dirty = false;
++        this.persist();
++        this.state.status = _t("Unsynchronised: stored on this device");
++        if (navigator.onLine) await this.sync();
++    }
++    async sync() {
++        if (!this.state.match || !this.state.pending.length || this.state.busy || this.state.conflict) return;
++        this.state.busy = true;
++        try {
++            const result = await this.orm.call("federation.court.commands", "sync", [this.access.matchday_id,
++                this.access.court_id, this.state.match.match_id, clone(this.state.pending)]);
++            const config = this.state.match;
++            this.state.match = { ...config, ...result.current };
++            this.state.pending = [];
++            this.state.draft = clone(result.current.payload);
++            this.state.dirty = false;
++            this.state.error = "";
++            this.state.status = result.current.submitted ? _t("Submitted: awaiting result review") : _t("Saved on server");
++            this.persist();
++            this.state.board = await this.orm.call("federation.court.commands", "load", [this.access.matchday_id, this.access.court_id]);
++        } catch (error) {
++            this.state.error = this.message(error);
++            this.state.status = _t("Unsynchronised: retry or reconcile; evidence retained");
++            // Validation/access errors are not transient connectivity failures.
++            if (error?.data) this.state.conflict = true;
++        } finally { this.state.busy = false; }
++    }
++    exportEvidence() {
++        const value = { schema: 1, court: this.access, match: this.state.match,
++            draft: this.state.draft, pending: this.state.pending, exported_at: new Date().toISOString() };
++        const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }));
++        const link = document.createElement("a"); link.href = url; link.download = `court-evidence-${this.state.match.match_id}.json`;
++        link.click(); URL.revokeObjectURL(url);
++    }
++    async reconcile() {
++        if (!navigator.onLine || this.state.busy) return;
++        this.exportEvidence();
++        if (!window.confirm(_t("Evidence exported. Discard the local command queue and reload the server draft? No official result will be changed."))) return;
++        localStorage.removeItem(this.storageKey);
++        const id = this.state.match.match_id;
++        this.state.pending = []; this.state.dirty = false; this.state.conflict = false;
++        await this.openMatch(id);
++    }
++    async acknowledge() {
++        const reason = window.prompt(_t("Explain why this draft remains valid after the schedule/result change:"));
++        if (!reason?.trim()) return;
++        try {
++            const result = await this.orm.call("federation.court.commands", "reconcile", [this.access.matchday_id,
++                this.access.court_id, this.state.match.match_id, this.state.match.revision, reason]);
++            this.state.match = { ...this.state.match, ...result }; this.state.conflict = false;
++            this.state.error = ""; this.persist();
++        } catch (error) { this.state.error = this.message(error); }
++    }
++    async nextMatch() {
++        if (this.state.pending.length || this.state.dirty) return;
++        const queue = this.state.board.queue;
++        const index = queue.findIndex(m => m.id === this.state.match?.match_id);
++        const next = queue.slice(index + 1).find(m => !["submitted", "verified", "approved"].includes(m.result_state));
++        if (next) await this.openMatch(next.id);
++    }
++}
++
++export class VisualPlan extends Component {
++    static template = "sports_federation_live_workspace.Plan";
++    static props = ["*"];
++    setup() {
++        this.orm = useService("orm"); this.action = useService("action");
++        this.id = this.props.action.params?.schedule_id || this.props.action.context?.active_id;
++        this.state = useState({ data: null, preview: null, fixture: "", reason: "", error: "", busy: false,
++            constraint: { name: "", kind: "team_window", team_id: "", court_id: "", start: "", end: "", minutes: 0 } });
++        onWillStart(() => this.refresh());
++    }
++    async run(callback) {
++        if (this.state.busy) return;
++        this.state.busy = true; this.state.error = "";
++        try { return await callback(); } catch (error) { this.state.error = error?.data?.message || error.message; }
++        finally { this.state.busy = false; }
++    }
++    async refresh() { await this.run(async () => {
++        this.state.data = await this.orm.call("federation.visual.planning", "load", [this.id]); this.state.preview = null;
++    }); }
++    get courts() { return [...new Map(this.state.data.slots.map(s => [s.court_id, { id: s.court_id, name: s.court_name }])).values()]; }
++    get times() { return [...new Set(this.state.data.slots.map(s => String(s.start)))].sort(); }
++    get editable() { return ["draft", "changes_requested"].includes(this.state.data.schedule.state); }
++    slotAt(court, time) { return this.state.data.slots.find(s => s.court_id === court && String(s.start) === time); }
++    assignment(slot) { return slot && this.state.data.assignments.find(a => a.slot_id === slot.id); }
++    fixtureName(id) { return this.state.data.fixtures.find(f => f.id === id)?.name || String(id); }
++    slotName(id) { const s = this.state.data.slots.find(s => s.id === id); return s ? `${s.court_name} / ${s.start}` : _t("Unassigned"); }
++    async preview(operation, slot = false) { await this.run(async () => {
++        this.state.preview = await this.orm.call("federation.visual.planning", "preview", [this.id, operation, Number(this.state.fixture), slot]);
++    }); }
++    async apply() { await this.run(async () => {
++        this.state.data = await this.orm.call("federation.visual.planning", "apply", [this.state.preview.id, this.state.reason]);
++        this.state.preview = null;
++    }); }
++    async configure() { await this.run(async () => {
++        this.state.data = await this.orm.call("federation.visual.planning", "configure", [this.id, this.state.data.schedule.revision, clone(this.state.data.config)]);
++        this.state.preview = null;
++    }); }
++    async addConstraint() { await this.run(async () => {
++        const c = this.state.constraint;
++        const values = { schedule_id: this.id, name: c.name, kind: c.kind, minutes: Number(c.minutes),
++            team_id: Number(c.team_id) || false, court_id: Number(c.court_id) || false,
++            start: c.start ? new Date(c.start).toISOString().slice(0, 19).replace("T", " ") : false,
++            end: c.end ? new Date(c.end).toISOString().slice(0, 19).replace("T", " ") : false };
++        await this.orm.create("federation.visual.constraint", [values]);
++        this.state.data = await this.orm.call("federation.visual.planning", "load", [this.id]); this.state.preview = null;
++    }); }
++    async removeConstraint(id) { await this.run(async () => {
++        await this.orm.unlink("federation.visual.constraint", [id]);
++        this.state.data = await this.orm.call("federation.visual.planning", "load", [this.id]); this.state.preview = null;
++    }); }
++    async amend() { await this.run(async () => {
++        const action = await this.orm.call("federation.visual.planning", "amend", [this.id, this.state.reason]);
++        await this.action.doAction(action);
++    }); }
++    async returnRecord() { await this.action.doAction({ type: "ir.actions.act_window", res_model: "federation.schedule",
++        res_id: this.id, views: [[false, "form"]], target: "current" }); }
++    async openFixture(id) { await this.action.doAction({ type: "ir.actions.act_window", res_model: "federation.fixture",
++        res_id: id, views: [[false, "form"]], target: "current" }); }
++}
++registry.category("actions").add("federation_run_court", CourtWorkspace);
++registry.category("actions").add("federation_visual_plan", VisualPlan);
+diff --git a/sports_federation_live_workspace/static/src/workspaces.scss b/sports_federation_live_workspace/static/src/workspaces.scss
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/static/src/workspaces.scss
+@@ -0,0 +1,18 @@
++.sf-live-workspace {
++    height: 100%; overflow: auto; padding: 1.25rem;
++    button, input, select { min-height: 48px; }
++    button { padding: .6rem 1rem; }
++    .sf-columns { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(300px, 3fr); gap: 1rem; }
++    .sf-card { border: 1px solid var(--border-color, #ccc); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
++    .sf-score { font-size: 2rem; width: 110px; text-align: center; }
++    .sf-grid { overflow-x: auto; }
++    table { width: 100%; border-collapse: collapse; }
++    td, th { border: 1px solid #ccc; padding: .5rem; min-width: 140px; }
++    .sf-stages { display: flex; gap: 1rem; overflow-x: auto; }
++    .sf-stage { min-width: 240px; max-width: 400px; }
++    .sf-hard { border-left: 5px solid #b42318; }
++    .sf-warning { border-left: 5px solid #b58105; }
++    .sf-status { font-weight: 700; padding: .5rem; }
++    button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #0078d4; outline-offset: 2px; }
++    @media (max-width: 800px) { .sf-columns { grid-template-columns: 1fr; } }
++}
+diff --git a/sports_federation_live_workspace/static/src/workspaces.xml b/sports_federation_live_workspace/static/src/workspaces.xml
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/static/src/workspaces.xml
+@@ -0,0 +1,107 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<templates xml:space="preserve">
++<t t-name="sports_federation_live_workspace.Court">
++ <main class="sf-live-workspace">
++  <h1>Run this court</h1>
++  <label>Assigned court <select class="form-select" t-on-change="chooseCourt" t-att-value="state.selected">
++   <option value="">Choose your court</option><t t-foreach="state.courts" t-as="court" t-key="court_index"><option t-att-value="court_index"><t t-esc="court.name"/></option></t>
++  </select></label>
++  <p t-if="!state.courts.length">No court assigned. Ask the match-day manager to assign your account.</p>
++  <div t-if="state.error" class="alert alert-danger" role="alert"><t t-esc="state.error"/></div>
++  <div t-if="state.board" class="sf-columns mt-3">
++   <aside aria-label="Next-match queue"><h2>Next matches</h2>
++    <t t-foreach="state.board.queue" t-as="m" t-key="m.id"><div class="sf-card">
++     <strong><t t-esc="m.start"/></strong><p><t t-esc="m.home"/> vs <t t-esc="m.away"/></p>
++     <p>Result: <t t-esc="m.result_state"/> | Officials: <t t-esc="m.coverage.state"/></p>
++     <button class="btn btn-outline-primary" t-on-click="() => this.openMatch(m.id)" t-att-disabled="state.busy">Open match</button>
++    </div></t>
++   </aside>
++   <section t-if="state.match" aria-label="Court result entry">
++    <h2>Match <t t-esc="state.match.match_id"/></h2>
++    <div class="sf-status" role="status" aria-live="polite"><t t-esc="state.status"/> | Review: <t t-esc="state.match.result_state"/></div>
++    <p t-if="state.match.review_required" class="alert alert-warning">Coordinator hold: disputed or abandoned evidence must be resolved before submission.</p><p t-if="state.match.closed" class="alert alert-info">Abandonment confirmed. No official score was created.</p><div class="sf-card"><h3>Lineups and officials</h3>
++     <p t-if="!state.match.lineups.length">Lineups not checked: no match sheets available. Contact the coordinator.</p>
++     <t t-foreach="state.match.lineups" t-as="sheet" t-key="sheet.id"><details><summary><t t-esc="sheet.name"/>: <t t-esc="sheet.state"/></summary><ul><t t-foreach="sheet.players" t-as="player" t-key="player_index"><li><t t-esc="player"/></li></t></ul></details></t>
++     <t t-foreach="state.board.queue.filter(m => m.id === state.match.match_id)" t-as="current" t-key="current.id">
++      <p>Official readiness: <t t-esc="current.coverage.state"/></p>
++      <t t-foreach="current.officials" t-as="official" t-key="official_index"><p><t t-esc="official.role"/>: <t t-esc="official.name"/> | Accepted: <t t-esc="official.accepted"/> | Eligible: <t t-esc="official.eligible"/> | Present: <t t-esc="official.present"/></p></t>
++     </t>
++    </div>
++    <fieldset t-att-disabled="locked || state.busy || state.conflict" class="sf-card">
++     <legend>Scores</legend><div class="d-flex gap-3 flex-wrap">
++      <t t-foreach="['home','away']" t-as="side" t-key="side"><label><t t-esc="side"/>
++       <div class="d-flex gap-2"><button class="btn btn-outline-secondary" t-on-click="() => this.score(side, -1)" t-att-disabled="state.match.mode !== 'aggregate'">−</button>
++        <input type="number" min="0" max="100000" class="sf-score form-control" t-att-value="state.draft[side]" t-on-change="(ev) => this.setScore(side, ev)" t-att-readonly="state.match.mode !== 'aggregate'"/>
++        <button class="btn btn-outline-secondary" t-on-click="() => this.score(side, 1)" t-att-disabled="state.match.mode !== 'aggregate'">+</button></div>
++      </label></t>
++     </div>
++     <div t-if="state.match.mode !== 'aggregate'" class="mt-3"><h3>Sets / periods</h3>
++      <t t-foreach="state.draft.periods" t-as="period" t-key="period_index"><div class="d-flex gap-2 align-items-center mb-2">
++       <span><t t-esc="period_index + 1"/></span>
++       <label>Home<input type="number" min="0" class="form-control" t-att-value="period.home" t-on-change="(ev) => this.periodScore(period_index, 'home', ev)"/></label>
++       <label>Away<input type="number" min="0" class="form-control" t-att-value="period.away" t-on-change="(ev) => this.periodScore(period_index, 'away', ev)"/></label>
++       <button class="btn btn-outline-danger" t-on-click="() => this.removePeriod(period_index)">Remove</button>
++      </div></t><button class="btn btn-outline-primary" t-on-click="addPeriod" t-att-disabled="state.draft.periods.length >= state.match.max_periods">Add set / period</button>
++     </div>
++     <label class="d-block mt-3">Outcome<select class="form-select" t-model="state.draft.outcome" t-on-change="edited"><option value="normal">Normal</option><option value="interrupted">Interrupted: save for resumption</option><option value="abandoned">Abandoned: coordinator decision required</option><option value="forfeit_home">Home forfeits</option><option value="forfeit_away">Away forfeits</option><option value="disputed">Disputed: coordinator review required</option></select></label>
++     <label class="d-block">Reason<textarea class="form-control" maxlength="2000" t-model="state.draft.reason" t-on-input="edited"/></label>
++     <label><input type="checkbox" t-model="state.draft.zero_confirmed" t-on-change="edited"/> Confirm intended 0–0 result</label>
++    </fieldset>
++    <div class="d-flex flex-wrap gap-2">
++     <button class="btn btn-primary" t-on-click="() => this.command('save')" t-att-disabled="locked || state.busy || state.conflict">Save draft</button>
++     <button class="btn btn-outline-secondary" t-on-click="() => this.command('undo')" t-att-disabled="locked || state.busy || !state.match.undo_available || state.pending.length">Undo last server save</button>
++     <button class="btn btn-success" t-on-click="() => this.command('submit')" t-att-disabled="locked || state.busy || state.conflict || state.match.review_required || ['interrupted','abandoned','disputed'].includes(state.draft.outcome)">Submit for review</button>
++     <button class="btn btn-outline-primary" t-on-click="sync" t-att-disabled="state.busy || !state.pending.length || state.conflict">Synchronise</button>
++     <button class="btn btn-outline-secondary" t-on-click="exportEvidence">Export recovery evidence</button>
++     <button class="btn btn-outline-secondary" t-on-click="nextMatch" t-att-disabled="state.pending.length || state.dirty || state.busy">Next match</button>
++    </div>
++    <div t-if="state.conflict" class="sf-card sf-hard mt-3"><h3>Explicit recovery</h3><p>Keep local evidence. Never merge scores automatically.</p>
++     <button class="btn btn-outline-danger" t-on-click="reconcile">Export local evidence and reload server draft</button>
++     <button class="btn btn-outline-primary" t-on-click="acknowledge" t-att-disabled="state.pending.length || locked">Acknowledge changed context with reason</button>
++    </div>
++   </section>
++  </div>
++ </main>
++</t>
++<t t-name="sports_federation_live_workspace.Plan">
++ <main class="sf-live-workspace">
++  <h1>Visual planning</h1><div t-if="state.error" class="alert alert-danger" role="alert"><t t-esc="state.error"/></div>
++  <t t-if="state.data">
++   <div class="d-flex gap-2 mb-3"><button class="btn btn-outline-secondary" t-on-click="returnRecord">Return to schedule and review controls</button><button class="btn btn-outline-primary" t-on-click="refresh" t-att-disabled="state.busy">Refresh</button></div>
++   <p><strong><t t-esc="state.data.schedule.name"/></strong> | <t t-esc="state.data.schedule.state"/> | Revision <t t-esc="state.data.schedule.revision"/></p>
++   <h2>Competition progression</h2><div class="sf-stages">
++    <t t-foreach="state.data.stages" t-as="stage" t-key="stage.id"><section class="sf-card sf-stage"><h3><t t-esc="stage.name"/></h3><p><t t-esc="stage.format"/> | <t t-esc="stage.state"/></p>
++     <t t-foreach="stage.next" t-as="next" t-key="next_index"><p>Ranks <t t-esc="next.rank_from"/>–<t t-esc="next.rank_to"/> → <t t-esc="state.data.stages.find(s => s.id === next.id)?.name || next.id"/></p></t>
++     <t t-foreach="state.data.fixtures.filter(f => f.stage_id === stage.id)" t-as="fixture" t-key="fixture.id"><div class="sf-card"><button class="btn btn-link" t-on-click="() => this.openFixture(fixture.id)"><t t-esc="fixture.name"/></button><p>Round <t t-esc="fixture.round"/> | <t t-esc="fixture.state"/></p><p t-if="fixture.home_source">Home: <t t-esc="fixture.home_outcome"/> of <t t-esc="fixtureName(fixture.home_source)"/></p><p t-if="fixture.away_source">Away: <t t-esc="fixture.away_outcome"/> of <t t-esc="fixtureName(fixture.away_source)"/></p></div></t>
++    </section></t>
++   </div>
++   <h2>Court by time</h2>
++   <label t-if="editable">Fixture to move or pin<select class="form-select" t-model="state.fixture"><option value="">Choose fixture</option><t t-foreach="state.data.fixtures" t-as="f" t-key="f.id"><option t-att-value="f.id"><t t-esc="f.name"/></option></t></select></label>
++   <div class="sf-grid mt-3"><table><thead><tr><th>Time (UTC)</th><t t-foreach="courts" t-as="court" t-key="court.id"><th><t t-esc="court.name"/></th></t></tr></thead><tbody>
++    <t t-foreach="times" t-as="time" t-key="time"><tr><th><t t-esc="time"/></th><t t-foreach="courts" t-as="court" t-key="court.id"><td>
++     <t t-set="slot" t-value="slotAt(court.id,time)"/><t t-set="a" t-value="assignment(slot)"/>
++     <t t-if="slot"><p><t t-esc="a ? a.fixture_name : 'Unassigned'"/></p><p t-if="a">Assignment: <t t-esc="state.data.methods[a.fixture_id]"/></p><button t-if="editable" class="btn btn-outline-primary" t-att-disabled="!state.fixture || state.busy" t-on-click="() => this.preview('move', slot.id)">Preview move here</button></t>
++    </td></t></tr></t>
++   </tbody></table></div>
++   <div t-if="editable" class="d-flex gap-2 mt-3"><button class="btn btn-primary" t-on-click="() => this.preview('regenerate')" t-att-disabled="state.busy">Preview regeneration, retain manual pins</button><button class="btn btn-outline-danger" t-on-click="() => this.preview('unassign')" t-att-disabled="!state.fixture || state.busy">Preview unassignment</button></div>
++   <section class="sf-card mt-3"><h2>Fairness preferences</h2><p>These are soft preferences, not hard feasibility constraints.</p><t t-foreach="Object.keys(state.data.config)" t-as="setting" t-key="setting"><label class="d-inline-block me-3"><t t-esc="setting.replaceAll('_',' ')"/><input class="form-control" type="number" min="0" t-model.number="state.data.config[setting]" t-att-disabled="!editable"/></label></t><button t-if="editable" class="btn btn-outline-primary" t-on-click="configure">Save preferences</button></section>
++   <section class="sf-card"><h2>Hard constraints</h2><t t-foreach="state.data.constraints" t-as="c" t-key="c.id"><p><t t-esc="c.name"/> | <t t-esc="c.kind"/> | <t t-esc="c.start"/>–<t t-esc="c.end"/> | <t t-esc="c.minutes"/> min <button t-if="editable" class="btn btn-outline-danger" t-on-click="() => this.removeConstraint(c.id)">Remove</button></p></t>
++    <fieldset t-if="editable"><label>Name<input class="form-control" t-model="state.constraint.name"/></label><label>Constraint<select class="form-select" t-model="state.constraint.kind"><option value="team_window">Team unavailable</option><option value="court_window">Court unavailable</option><option value="minimum_rest">Minimum rest, hard</option></select></label>
++     <label>Team<select class="form-select" t-model="state.constraint.team_id"><option value="">Choose team</option><t t-foreach="state.data.teams" t-as="team" t-key="team.id"><option t-att-value="team.id"><t t-esc="team.name"/></option></t></select></label>
++     <label>Court<select class="form-select" t-model="state.constraint.court_id"><option value="">Choose court</option><t t-foreach="courts" t-as="court" t-key="court.id"><option t-att-value="court.id"><t t-esc="court.name"/></option></t></select></label>
++     <label>Start (local time)<input type="datetime-local" class="form-control" t-model="state.constraint.start"/></label><label>End (local time)<input type="datetime-local" class="form-control" t-model="state.constraint.end"/></label><label>Rest minutes<input type="number" class="form-control" t-model.number="state.constraint.minutes"/></label><button class="btn btn-primary" t-on-click="addConstraint">Add constraint</button>
++    </fieldset>
++   </section>
++   <section class="sf-card sf-hard"><h2>Hard failures</h2><t t-foreach="state.data.explanation.validation.errors" t-as="e" t-key="e_index"><p><t t-esc="e.message"/></p></t><p t-if="!state.data.explanation.validation.errors.length">No hard failures in allocated fixtures.</p></section>
++   <section class="sf-card sf-warning"><h2>Fairness warnings</h2><t t-foreach="state.data.explanation.validation.warnings" t-as="w" t-key="w_index"><p><t t-esc="w.message"/></p></t><p>Fairness penalty (lower is better): <t t-esc="state.data.explanation.fairness.weighted_score"/></p></section>
++   <section class="sf-card"><h2>Why fixtures remain unallocated</h2><t t-foreach="state.data.explanation.unallocated" t-as="u" t-key="u.fixture_id"><details><summary><t t-esc="fixtureName(u.fixture_id)"/></summary><p><t t-esc="u.message"/></p><t t-foreach="u.attempts" t-as="attempt" t-key="attempt.slot_id"><p><t t-esc="attempt.court"/> / <t t-esc="attempt.start"/>: <t t-esc="attempt.errors.map(e => e.message).join('; ') || 'Feasible manual candidate'"/></p></t></details></t></section>
++   <section t-if="state.preview" class="sf-card"><h2>Before / after</h2><p>Fairness: <t t-esc="state.preview.before.fairness.weighted_score"/> → <t t-esc="state.preview.after.fairness.weighted_score"/></p><p>Unallocated: <t t-esc="state.preview.before.validation.unassigned_fixture_ids.length"/> → <t t-esc="state.preview.after.validation.unassigned_fixture_ids.length"/></p>
++    <t t-foreach="state.preview.changes" t-as="change" t-key="change.fixture_id"><p><t t-esc="fixtureName(change.fixture_id)"/>: <t t-esc="slotName(change.old_slot)"/> → <t t-esc="slotName(change.new_slot)"/></p></t>
++    <t t-foreach="state.preview.after.validation.errors" t-as="e" t-key="e_index"><p class="text-danger">Hard: <t t-esc="e.message"/></p></t><t t-foreach="state.preview.after.validation.warnings" t-as="w" t-key="w_index"><p>Warning: <t t-esc="w.message"/></p></t>
++    <label>Change reason<textarea class="form-control" t-model="state.reason"/></label><button class="btn btn-success" t-on-click="apply" t-att-disabled="state.busy || !state.reason.trim() || state.preview.after.validation.errors.length">Apply exactly this preview</button>
++   </section>
++   <section t-if="state.data.schedule.state === 'published'" class="sf-card"><h2>Published history is protected</h2><p>Create a replacement, then submit for independent review and publication. Live operations must be closed first.</p><label>Amendment reason<textarea class="form-control" t-model="state.reason"/></label><button class="btn btn-primary" t-on-click="amend" t-att-disabled="!state.reason.trim() || state.busy">Create guided amendment</button></section>
++  </t>
++ </main>
++</t>
++</templates>
+diff --git a/sports_federation_live_workspace/tests/__init__.py b/sports_federation_live_workspace/tests/__init__.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/tests/__init__.py
+@@ -0,0 +1,2 @@
++from . import test_commands
++from . import test_browser
+diff --git a/sports_federation_live_workspace/tests/test_browser.py b/sports_federation_live_workspace/tests/test_browser.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/tests/test_browser.py
+@@ -0,0 +1,55 @@
++"""Real backend client journeys, executed only on an installed Odoo database."""
++from odoo.tests.common import HttpCase, tagged
++from .test_commands import LiveFixture
++
++HELPERS = """
++const wait = async (predicate) => {
++    for (let i=0; i<150; i++) { if (predicate()) return; await new Promise(r=>setTimeout(r,100)); }
++    throw new Error('Workspace condition timed out');
++};
++const button = (text) => [...document.querySelectorAll('main.sf-live-workspace button')].find(b=>b.textContent.trim()===text);
++const change = (input,value) => { input.value=value; input.dispatchEvent(new Event('input',{bubbles:true})); input.dispatchEvent(new Event('change',{bubbles:true})); };
++"""
++
++
++@tagged("post_install", "-at_install", "sf_live_workspace", "sf_release_confidence")
++class TestWorkspaceBrowser(LiveFixture, HttpCase):
++    def test_court_save_offline_capture_and_sync(self):
++        self.browser_js("/odoo/action-sports_federation_live_workspace.action_run_court", HELPERS + """
++(async () => {
++    await wait(()=>document.querySelector('main.sf-live-workspace select option[value="0"]'));
++    change(document.querySelector('main.sf-live-workspace select'),'0');
++    await wait(()=>button('Open match')); button('Open match').click();
++    await wait(()=>document.querySelectorAll('.sf-score').length===2);
++    change(document.querySelectorAll('.sf-score')[0],2); change(document.querySelectorAll('.sf-score')[1],1);
++    button('Save draft').click();
++    await wait(()=>document.querySelector('.sf-status').textContent.includes('Saved on server'));
++    Object.defineProperty(navigator,'onLine',{value:false,configurable:true});
++    change(document.querySelectorAll('.sf-score')[0],3); button('Save draft').click();
++    await wait(()=>document.querySelector('.sf-status').textContent.includes('Unsynchronised'));
++    const entries=Object.keys(localStorage).filter(k=>k.startsWith('sf-court:v1:'));
++    if(!entries.some(k=>JSON.parse(localStorage.getItem(k)).pending.length===1)) throw new Error('Journal not persisted');
++    Object.defineProperty(navigator,'onLine',{value:true,configurable:true}); window.dispatchEvent(new Event('online'));
++    await wait(()=>document.querySelector('.sf-status').textContent.includes('Saved on server'));
++    if(Number(document.querySelectorAll('.sf-score')[0].value)!==3) throw new Error('Synchronised score lost');
++    console.log('test successful');
++})().catch(error=>console.error(error));
++""", login=self.operator.login, timeout=90)
++
++    def test_visual_preview_and_apply(self):
++        action = self.env["ir.actions.client"].create({"name": "Visual test", "tag": "federation_visual_plan",
++            "context": repr({"active_id": self.schedule.id})})
++        self.browser_js("/odoo/action-%s" % action.id, HELPERS + """
++(async () => {
++    await wait(()=>document.querySelector('.sf-grid table'));
++    button('Preview regeneration, retain manual pins').click();
++    await wait(()=>button('Apply exactly this preview'));
++    const section=button('Apply exactly this preview').closest('section');
++    change(section.querySelector('textarea'),'Browser-tested proposal');
++    await wait(()=>!button('Apply exactly this preview').disabled);
++    button('Apply exactly this preview').click();
++    await wait(()=>!button('Apply exactly this preview'));
++    if(!document.querySelector('.sf-grid table').textContent.includes('vs')) throw new Error('Applied fixtures not displayed');
++    console.log('test successful');
++})().catch(error=>console.error(error));
++""", login=self.env.user.login, timeout=90)
+diff --git a/sports_federation_live_workspace/tests/test_commands.py b/sports_federation_live_workspace/tests/test_commands.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/tests/test_commands.py
+@@ -0,0 +1,193 @@
++"""Persisted command contracts. Run on the supported application installation."""
++from uuid import uuid4
++from odoo import fields
++from odoo.exceptions import AccessError, ValidationError
++from odoo.tests.common import TransactionCase, tagged
++from odoo.addons.sports_federation_duty_coverage.tests.common import CoverageFixture
++
++
++class LiveFixture(CoverageFixture):
++    @classmethod
++    def setUpClass(cls):
++        super().setUpClass()
++        cls.env.user.write({"group_ids": [(4, cls.env.ref("sports_federation_matchday.group_matchday_manager").id),
++            (4, cls.env.ref("sports_federation_base.group_federation_manager").id)]})
++        cls.operator = cls.env["res.users"].with_context(no_reset_password=True).create({
++            "name": "Court operator", "login": "court.operator@example.test",
++            "group_ids": [(6, 0, [cls.env.ref("base.group_user").id])]})
++        cls.access = cls.env["federation.court.access"].create({"matchday_id": cls.matchday.id,
++            "court_id": cls.slot.court_id.id, "user_id": cls.operator.id})
++        cls.session = cls.env["federation.matchday.session"].create({"matchday_id": cls.matchday.id,
++            "publication_id": cls.publication.id, "publication_digest": cls.publication.snapshot_digest})
++        cls.matchday.write({"active_session_id": cls.session.id})
++        cls.edition.write({"result_verification_required": True, "result_approval_required": True})
++        cls.schedule = cls.env["federation.schedule"].create({"name": "Visual test schedule",
++            "edition_id": cls.edition.id, "structure_id": cls.publication.schedule_id.structure_id.id,
++            "matchday_id": cls.matchday.id})
++        cls.env["federation.matchday.allocation"].create({"matchday_id": cls.matchday.id,
++            "structure_id": cls.schedule.structure_id.id, "round_number": 1})
++        cls.second_slot = cls.env["federation.schedule.slot"].create({"matchday_id": cls.matchday.id,
++            "court_id": cls.slot.court_id.id, "start_datetime": "2026-06-15 19:30:00",
++            "end_datetime": "2026-06-15 20:00:00"})
++
++@tagged("post_install", "-at_install", "sf_live_workspace", "sf_release_confidence")
++class TestLiveCommands(LiveFixture, TransactionCase):
++    def setUp(self):
++        super().setUp()
++        self.commands = self.env["federation.court.commands"].with_user(self.operator)
++        self.plan = self.env["federation.visual.planning"]
++        self.args = [self.matchday.id, self.slot.court_id.id, self.match.id]
++
++    def open(self):
++        return self.commands.open_match(*self.args)
++
++    def command(self, operation="save", payload=None, base=None):
++        base = base or self.open()
++        return {"key": str(uuid4()), "revision": base["revision"], "operation": operation,
++            "payload": payload or {"home": 2, "away": 1}, "signature": base["signature"]}
++
++    def test_scoped_queue(self):
++        self.assertIn(self.match.id, [m["id"] for m in self.commands.load(*self.args[:2])["queue"]])
++
++    def test_portal_denied(self):
++        with self.assertRaises(AccessError):
++            self.env["federation.court.commands"].with_user(self.official_user).load(*self.args[:2])
++
++    def test_wrong_court_denied(self):
++        with self.assertRaises(AccessError): self.commands.load(self.matchday.id, 999999)
++
++    def test_unassigned_match_denied(self):
++        with self.assertRaises(AccessError): self.commands.open_match(*self.args[:2], self.other_match.id)
++
++    def test_revoked_operator(self):
++        self.access.write({"active": False})
++        with self.assertRaises(AccessError): self.open()
++
++    def test_closed_session(self):
++        self.session.write({"state": "closed"})
++        with self.assertRaises(ValidationError): self.open()
++
++    def test_save_is_not_official(self):
++        result = self.commands.sync(*self.args, [self.command()])
++        self.assertEqual(result["current"]["revision"], 1)
++        self.assertEqual(self.match.result_state, "draft")
++        self.assertFalse(self.match.include_in_official_standings)
++
++    def test_duplicate_save_replays(self):
++        command = self.command()
++        first = self.commands.sync(*self.args, [command])
++        second = self.commands.sync(*self.args, [command])
++        self.assertEqual(first, second)
++        self.assertEqual(self.env["federation.court.receipt"].sudo().search_count([("key", "=", command["key"])]), 1)
++
++    def test_key_content_reuse_rejected(self):
++        command = self.command()
++        self.commands.sync(*self.args, [command])
++        command["payload"] = {"home": 4, "away": 1}
++        with self.assertRaises(ValidationError): self.commands.sync(*self.args, [command])
++
++    def test_stale_revision_rejected(self):
++        base = self.open()
++        self.commands.sync(*self.args, [self.command(base=base)])
++        with self.assertRaises(ValidationError): self.commands.sync(*self.args, [self.command(base=base)])
++
++    def test_batch_rolls_back(self):
++        base = self.open()
++        good = self.command(base=base)
++        bad = self.command(payload={"home": -1, "away": 0}, base={**base, "revision": 1})
++        with self.assertRaises(ValidationError): self.commands.sync(*self.args, [good, bad])
++        self.assertEqual(self.open()["revision"], 0)
++        self.assertFalse(self.env["federation.court.receipt"].sudo().search([("key", "=", good["key"])]))
++
++    def test_undo_restores_saved_draft(self):
++        base = self.open()
++        self.commands.sync(*self.args, [self.command(base=base)])
++        result = self.commands.sync(*self.args, [self.command("undo")])
++        self.assertEqual(result["current"]["payload"], base["payload"])
++
++    def test_submit_replays_once(self):
++        command = self.command("submit")
++        self.commands.sync(*self.args, [command])
++        self.commands.sync(*self.args, [command])
++        self.assertEqual(self.match.result_state, "submitted")
++        self.assertEqual(self.match.home_score, 2)
++        self.assertFalse(self.match.include_in_official_standings)
++        with self.assertRaises(ValidationError): self.commands.sync(*self.args, [self.command()])
++
++    def test_interruption_routes_incident(self):
++        payload = {"home": 1, "away": 0, "outcome": "interrupted", "reason": "Court unavailable"}
++        self.commands.sync(*self.args, [self.command(payload=payload)])
++        self.assertTrue(self.env["federation.matchday.incident"].search([("matchday_id", "=", self.matchday.id)]))
++        with self.assertRaises(ValidationError): self.commands.sync(*self.args, [self.command("submit", payload)])
++
++    def test_external_result_change_requires_reconciliation(self):
++        base = self.open()
++        self.match.write({"home_score": 5})
++        with self.assertRaises(ValidationError): self.commands.sync(*self.args, [self.command(base=base)])
++        result = self.commands.reconcile(*self.args, base["revision"], "Coordinator checked the source sheet")
++        self.assertEqual(result["revision"], 1)
++
++    def test_capture_raw_sudo_write_denied(self):
++        self.open()
++        capture = self.env["federation.court.capture"].sudo().search([("match_id", "=", self.match.id)])
++        with self.assertRaises(AccessError): capture.write({"submitted": True})
++
++    def test_visual_preview_is_nonmutating(self):
++        fid = self.schedule.available_fixture_ids[0].id
++        revision = self.schedule.revision
++        self.plan.preview(self.schedule.id, "move", fid, self.slot.id)
++        self.assertEqual(self.schedule.revision, revision)
++        self.assertFalse(self.schedule.assignment_ids)
++
++    def test_visual_apply_exact_preview_and_replay(self):
++        fid = self.schedule.available_fixture_ids[0].id
++        preview = self.plan.preview(self.schedule.id, "move", fid, self.slot.id)
++        self.plan.apply(preview["id"], "Pin court")
++        self.plan.apply(preview["id"], "Pin court")
++        self.assertEqual(len(self.schedule.assignment_ids), 1)
++        self.assertEqual(self.schedule.assignment_ids.method, "manual")
++        self.assertEqual(self.schedule.revision, 1)
++
++    def test_visual_stale_constraint_rejected(self):
++        fid = self.schedule.available_fixture_ids[0].id
++        preview = self.plan.preview(self.schedule.id, "move", fid, self.slot.id)
++        self.env["federation.visual.constraint"].create({"schedule_id": self.schedule.id,
++            "name": "Hard rest", "kind": "minimum_rest", "minutes": 30})
++        with self.assertRaises(ValidationError): self.plan.apply(preview["id"], "Stale")
++
++    def test_visual_hard_constraint_blocks(self):
++        self.env["federation.visual.constraint"].create({"schedule_id": self.schedule.id,
++            "name": "Court closed", "kind": "court_window", "court_id": self.slot.court_id.id,
++            "start": self.slot.start_datetime, "end": self.slot.end_datetime})
++        preview = self.plan.preview(self.schedule.id, "move", self.schedule.available_fixture_ids[0].id, self.slot.id)
++        self.assertTrue(preview["after"]["validation"]["errors"])
++        with self.assertRaises(ValidationError): self.plan.apply(preview["id"], "Cannot apply")
++
++    def test_manual_pin_survives_regeneration(self):
++        fid = self.schedule.available_fixture_ids[0].id
++        preview = self.plan.preview(self.schedule.id, "move", fid, self.slot.id)
++        self.plan.apply(preview["id"], "Pin")
++        preview = self.plan.preview(self.schedule.id, "regenerate")
++        record = self.env["federation.visual.proposal"].sudo().browse(preview["id"])
++        self.assertEqual(record.candidate[str(fid)], self.slot.id)
++
++    def test_published_preview_denied(self):
++        with self.assertRaises(ValidationError): self.plan.preview(self.publication.schedule_id.id, "regenerate")
++
++    def test_visual_portal_denied(self):
++        with self.assertRaises((AccessError, ValidationError)):
++            self.plan.with_user(self.official_user).load(self.schedule.id)
++
++    def test_schedule_replay_content_bound(self):
++        commands = self.env["federation.schedule.commands"]
++        fid = self.schedule.available_fixture_ids[0].id
++        commands.assign(self.schedule.id, fid, self.slot.id, 0, idempotency_key="test-replay")
++        with self.assertRaises(ValidationError):
++            commands.assign(self.schedule.id, fid, self.second_slot.id, 0, idempotency_key="test-replay")
++
++    def test_dispute_hold_survives_normal_save(self):
++        self.commands.sync(*self.args, [self.command(payload={"home": 2, "away": 1,
++            "outcome": "disputed", "reason": "Score disagreement"})])
++        self.commands.sync(*self.args, [self.command()])
++        self.assertTrue(self.open()["review_required"])
++        with self.assertRaises(ValidationError): self.commands.sync(*self.args, [self.command("submit")])
+diff --git a/sports_federation_live_workspace/views/workspaces.xml b/sports_federation_live_workspace/views/workspaces.xml
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_live_workspace/views/workspaces.xml
+@@ -0,0 +1,14 @@
++<odoo>
++ <record id="action_run_court" model="ir.actions.client"><field name="name">Run this court</field><field name="tag">federation_run_court</field></record>
++ <menuitem id="menu_run_court" name="Run this court" parent="sports_federation_base.menu_federation_match_day" action="action_run_court" sequence="1" groups="base.group_user"/>
++ <record id="court_access_list" model="ir.ui.view"><field name="name">federation.court.access.list</field><field name="model">federation.court.access</field><field name="arch" type="xml"><list editable="bottom"><field name="matchday_id"/><field name="court_id"/><field name="user_id"/><field name="active"/></list></field></record>
++ <record id="action_court_access" model="ir.actions.act_window"><field name="name">Assign court operators</field><field name="res_model">federation.court.access</field><field name="view_mode">list,form</field></record>
++ <menuitem id="menu_court_access" name="Assign court operators" parent="sports_federation_base.menu_federation_match_day" action="action_court_access" sequence="2" groups="sports_federation_matchday.group_matchday_manager"/>
++ <record id="capture_list" model="ir.ui.view"><field name="name">federation.court.capture.list</field><field name="model">federation.court.capture</field><field name="arch" type="xml"><list create="0" edit="0" delete="0"><field name="match_id"/><field name="revision"/><field name="submitted"/><field name="review_required"/><field name="closed"/><field name="write_date"/></list></field></record>
++ <record id="capture_form" model="ir.ui.view"><field name="name">federation.court.capture.form</field><field name="model">federation.court.capture</field><field name="arch" type="xml"><form create="0" edit="0" delete="0"><header><button name="action_resolve_exception" type="object" string="Resolve exception"/><button name="action_open_result" type="object" string="Open canonical result review"/></header><sheet><group><field name="match_id"/><field name="revision"/><field name="submitted"/><field name="review_required"/><field name="closed"/><field name="payload"/><field name="previous_payload"/><field name="signature"/></group></sheet></form></field></record>
++ <record id="action_court_evidence" model="ir.actions.act_window"><field name="name">Court recovery and exceptions</field><field name="res_model">federation.court.capture</field><field name="view_mode">list,form</field></record>
++ <menuitem id="menu_court_evidence" name="Court recovery and exceptions" parent="sports_federation_base.menu_federation_match_day" action="action_court_evidence" sequence="3" groups="sports_federation_matchday.group_matchday_manager"/>
++ <record id="schedule_visual_form" model="ir.ui.view"><field name="name">schedule.visual.entry</field><field name="model">federation.schedule</field><field name="inherit_id" ref="sports_federation_scheduling.schedule_form"/><field name="arch" type="xml"><xpath expr="//header" position="inside"><button name="action_visual_plan" type="object" string="Visual planning"/></xpath></field></record>
++ <record id="edition_scoring_form" model="ir.ui.view"><field name="name">edition.court.scoring</field><field name="model">federation.competition.edition</field><field name="inherit_id" ref="sports_federation_competition_core.competition_edition_form_workflow"/><field name="arch" type="xml"><xpath expr="//sheet" position="inside"><group string="Court scoring"><field name="court_scoring_mode"/><field name="court_set_target" invisible="court_scoring_mode != 'sets'"/><field name="court_max_periods"/></group></xpath></field></record>
++ <record id="resolve_exception_form" model="ir.ui.view"><field name="name">court.resolve.form</field><field name="model">federation.court.resolve.wizard</field><field name="arch" type="xml"><form string="Coordinator decision"><group><field name="capture_id"/><field name="expected_revision"/><field name="disposition"/><field name="reason"/></group><footer><button name="action_resolve" type="object" string="Record decision" class="btn-primary"/><button special="cancel" string="Cancel"/></footer></form></field></record>
++</odoo>
+diff --git a/sports_federation_member_services/README.md b/sports_federation_member_services/README.md
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/README.md
+@@ -0,0 +1,22 @@
++# Member and family services
++Implementation candidate, not an acceptance certificate.
++
++People are existing `res.partner` records; accounts remain `res.users`. The optional
++player `person_id` is manager-controlled and unique. Memberships are season/club/role
++records and do not replace licences, rosters or eligibility. No identity is inferred
++from an email address. Existing players require reviewed identity linking.
++
++Managers create and verify dated guardian or payer relationships. Only current
++verified guardian relationships expand personal document and membership access.
++Payer relationships never expand that access. Billing access remains native invoice
++partner access. `/my/family` exposes bounded dictionaries, not elevated recordsets.
++
++Requests use the shared upload policy and scanning configuration. Uploaded is not
++verified. Verification is independent and applies only to the named purpose; it
++never creates a parental approval or a licence. Existing parental approvals remain
++in their owning workflow. Renewal creates/reuses a draft membership, preserving its
++previous season reference; it does not activate membership or eligibility.
++
++Remaining work: reviewed identity backfill, duplicate review/merge workflow, linked
++parental-approval requests, notification routing, company-scoped administration,
++full browser and concurrent transaction tests. No claim of complete point 6.
+diff --git a/sports_federation_member_services/__init__.py b/sports_federation_member_services/__init__.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/__init__.py
+@@ -0,0 +1,2 @@
++from . import models
++from . import controllers
+diff --git a/sports_federation_member_services/__manifest__.py b/sports_federation_member_services/__manifest__.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/__manifest__.py
+@@ -0,0 +1,12 @@
++{'name': 'Member and Family Services',
++ 'version': '19.0.1.0.0',
++ 'license': 'LGPL-3',
++ 'depends': ['sports_federation_people',
++             'sports_federation_portal',
++             'sports_federation_base'],
++ 'data': ['security/ir.model.access.csv',
++          'security/rules.xml',
++          'views/services.xml',
++          'views/growth.xml'],
++ 'installable': True,
++ 'application': False}
+diff --git a/sports_federation_member_services/cohorts.py b/sports_federation_member_services/cohorts.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/cohorts.py
+@@ -0,0 +1,9 @@
++def compare_cohorts(previous, current):
++    previous, current = set(previous), set(current)
++    returning = previous & current
++    return {
++        'previous': len(previous), 'current': len(current),
++        'returning': len(returning), 'new': len(current - previous),
++        'not_returned': len(previous - current),
++        'retention_percent': round(100 * len(returning) / len(previous), 2) if previous else None,
++    }
+diff --git a/sports_federation_member_services/controllers/__init__.py b/sports_federation_member_services/controllers/__init__.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/controllers/__init__.py
+@@ -0,0 +1 @@
++from . import portal
+diff --git a/sports_federation_member_services/controllers/portal.py b/sports_federation_member_services/controllers/portal.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/controllers/portal.py
+@@ -0,0 +1,29 @@
++from odoo import http
++from odoo.http import request
++from odoo.exceptions import AccessError, ValidationError
++
++
++class MemberPortal(http.Controller):
++    @http.route('/my/family', type='http', auth='user', methods=['GET'], website=True)
++    def family(self, **kw):
++        return request.render('sports_federation_member_services.family', {
++            'memberships': request.env['federation.person.membership']._portal_rows(),
++            'requests': request.env['federation.person.request']._portal_rows(),
++            'seasons': request.env['federation.season'].sudo().search([('state', '=', 'open')]),
++            'feedback': kw.get('feedback', '')})
++
++    @http.route('/my/family/memberships/<int:membership_id>/renew', type='http', auth='user', methods=['POST'], website=True, csrf=True)
++    def renew(self, membership_id, season_id=None, **kw):
++        try:
++            request.env['federation.person.membership'].browse(membership_id)._renew(season_id)
++        except (AccessError, ValidationError, ValueError, TypeError):
++            return request.redirect('/my/family?feedback=Renewal+not+accepted')
++        return request.redirect('/my/family?feedback=Renewal+requested%3B+review+is+still+required')
++
++    @http.route('/my/family/requests/<int:request_id>/upload', type='http', auth='user', methods=['POST'], website=True, csrf=True)
++    def upload(self, request_id, **kw):
++        try:
++            request.env['federation.person.request'].browse(request_id)._upload(request.httprequest.files.get('document'))
++        except (AccessError, ValidationError):
++            return request.redirect('/my/family?feedback=Upload+not+accepted')
++        return request.redirect('/my/family?feedback=Uploaded%3B+not+yet+verified')
+diff --git a/sports_federation_member_services/models/__init__.py b/sports_federation_member_services/models/__init__.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/models/__init__.py
+@@ -0,0 +1,2 @@
++from . import membership
++from . import growth
+diff --git a/sports_federation_member_services/models/growth.py b/sports_federation_member_services/models/growth.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/models/growth.py
+@@ -0,0 +1,34 @@
++import json
++from odoo import _, fields, models
++from odoo.exceptions import ValidationError
++from .membership import manager
++from ..cohorts import compare_cohorts
++
++
++class GrowthReport(models.TransientModel):
++    _name = 'federation.membership.cohort.report'
++    _description = 'Membership and Club Retention Comparison'
++    previous_season_id = fields.Many2one('federation.season', required=True)
++    current_season_id = fields.Many2one('federation.season', required=True)
++    club_id = fields.Many2one('federation.club')
++    summary = fields.Text(readonly=True)
++
++    def action_compare(self):
++        self.ensure_one()
++        manager(self.env)
++        if self.current_season_id.date_start <= self.previous_season_id.date_start:
++            raise ValidationError(_('Choose two seasons in chronological order.'))
++        domain = [('state', '=', 'active')]
++        if self.club_id:
++            domain.append(('club_id', '=', self.club_id.id))
++        memberships = self.env['federation.person.membership']
++        previous = memberships.search(domain + [('season_id', '=', self.previous_season_id.id)])
++        current = memberships.search(domain + [('season_id', '=', self.current_season_id.id)])
++        self.summary = json.dumps({
++            'definition': 'Distinct people and clubs with active membership records; not proof of match participation.',
++            'members': compare_cohorts(previous.person_id.ids, current.person_id.ids),
++            'clubs': compare_cohorts(previous.club_id.ids, current.club_id.ids),
++            'scope': self.club_id.name or 'All accessible clubs',
++        }, indent=2)
++        return {'type': 'ir.actions.act_window', 'res_model': self._name,
++                'res_id': self.id, 'view_mode': 'form', 'target': 'new'}
+diff --git a/sports_federation_member_services/models/membership.py b/sports_federation_member_services/models/membership.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/models/membership.py
+@@ -0,0 +1,215 @@
++import base64
++from odoo import _, api, fields, models
++from odoo.exceptions import AccessError, ValidationError
++
++
++def manager(env):
++    if not env.user.has_group('sports_federation_base.group_federation_manager'):
++        raise AccessError(_('Membership administration permission is required.'))
++
++
++class Player(models.Model):
++    _inherit = 'federation.player'
++    person_id = fields.Many2one('res.partner', ondelete='restrict', index=True,
++                               groups='sports_federation_base.group_federation_manager')
++    _person_unique = models.Constraint('UNIQUE(person_id)', 'A person can have only one player identity.')
++
++    @api.model_create_multi
++    def create(self, vals_list):
++        if any(v.get('person_id') for v in vals_list):
++            manager(self.env)
++        return super().create(vals_list)
++
++    def write(self, vals):
++        if 'person_id' in vals:
++            manager(self.env)
++        return super().write(vals)
++
++
++class Relationship(models.Model):
++    _name = 'federation.person.relationship'
++    _description = 'Verified Person Relationship'
++    _inherit = ['mail.thread']
++    company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company, index=True)
++    person_id = fields.Many2one('res.partner', required=True, ondelete='restrict', index=True)
++    delegate_id = fields.Many2one('res.partner', required=True, ondelete='restrict', index=True)
++    kind = fields.Selection([('guardian', 'Guardian'), ('payer', 'Payer')], required=True)
++    valid_from = fields.Date(required=True, default=fields.Date.today)
++    valid_until = fields.Date(required=True)
++    state = fields.Selection([('draft', 'Not verified'), ('verified', 'Verified'), ('revoked', 'Revoked')], default='draft', required=True, readonly=True, tracking=True)
++    verified_by_id = fields.Many2one('res.users', readonly=True)
++    reason = fields.Text(required=True)
++
++    @api.constrains('valid_from', 'valid_until', 'person_id', 'delegate_id')
++    def _check_scope(self):
++        for r in self:
++            if r.valid_until < r.valid_from or r.person_id == r.delegate_id:
++                raise ValidationError(_('Check relationship dates and identities.'))
++
++    @api.model_create_multi
++    def create(self, vals_list):
++        manager(self.env)
++        if any(v.get('state', 'draft') != 'draft' for v in vals_list):
++            raise AccessError(_('Use Verify to activate a relationship.'))
++        return super().create(vals_list)
++
++    def write(self, vals):
++        manager(self.env)
++        if 'state' in vals or 'verified_by_id' in vals:
++            raise AccessError(_('Use relationship commands.'))
++        if any(r.state == 'verified' for r in self):
++            raise ValidationError(_('Revoke a verified relationship before changing its scope.'))
++        return super().write(vals)
++
++    def action_verify(self):
++        manager(self.env)
++        if any(r.state != 'draft' for r in self):
++            raise ValidationError(_('Only unverified relationships can be verified.'))
++        return super().write({'state': 'verified', 'verified_by_id': self.env.uid})
++
++    def action_revoke(self):
++        manager(self.env)
++        return super().write({'state': 'revoked'})
++
++
++class Membership(models.Model):
++    _name = 'federation.person.membership'
++    _description = 'Season Membership'
++    _inherit = ['mail.thread']
++    company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company, index=True)
++    person_id = fields.Many2one('res.partner', required=True, ondelete='restrict', index=True)
++    club_id = fields.Many2one('federation.club', required=True, ondelete='restrict', index=True)
++    season_id = fields.Many2one('federation.season', required=True, ondelete='restrict', index=True)
++    role = fields.Selection([('player', 'Player'), ('coach', 'Coach'), ('official', 'Official'), ('volunteer', 'Volunteer')], required=True)
++    state = fields.Selection([('draft', 'Needs review'), ('active', 'Active'), ('cancelled', 'Cancelled')], default='draft', required=True, tracking=True)
++    review_note = fields.Text()
++    previous_id = fields.Many2one('federation.person.membership', ondelete='restrict', readonly=True)
++    _membership_unique = models.Constraint('UNIQUE(person_id, club_id, season_id, role)', 'This membership already exists.')
++
++    def write(self, vals):
++        manager(self.env)
++        if any(r.state == 'active' for r in self) and {'person_id', 'club_id', 'season_id', 'role', 'company_id'} & set(vals):
++            raise ValidationError(_('Active membership identity is immutable.'))
++        return super().write(vals)
++
++    @api.model
++    def _person_ids(self, kind='guardian'):
++        if self.env.user._is_public():
++            raise AccessError(_('Sign in first.'))
++        today = fields.Date.today()
++        partner = self.env.user.partner_id
++        relationships = self.env['federation.person.relationship'].sudo().search([
++            ('company_id', 'in', self.env.companies.ids), ('delegate_id', '=', partner.id), ('kind', '=', kind), ('state', '=', 'verified'),
++            ('valid_from', '<=', today), ('valid_until', '>=', today)])
++        return list(set([partner.id] + relationships.person_id.ids))
++
++    @api.model
++    def _portal_rows(self):
++        rows = self.sudo().search([('company_id', 'in', self.env.companies.ids), ('person_id', 'in', self._person_ids())], limit=200)
++        return [{'id': r.id, 'person': r.person_id.name, 'club': r.club_id.name,
++                 'season': r.season_id.name, 'role': r.role, 'state': r.state,
++                 'note': r.review_note or ''} for r in rows]
++
++    def _renew(self, season_id):
++        self.ensure_one()
++        if not self.sudo().exists() or self.sudo().company_id not in self.env.companies or self.sudo().person_id.id not in self._person_ids():
++            raise AccessError(_('This membership is outside your personal scope.'))
++        old = self.sudo()
++        season = self.env['federation.season'].sudo().browse(int(season_id)).exists()
++        if not season or season.state != 'open' or season.date_start <= old.season_id.date_start:
++            raise ValidationError(_('Choose a later open season.'))
++        self.env.cr.execute('SELECT id FROM federation_person_membership WHERE id=%s FOR UPDATE', [self.id])
++        domain = [('person_id', '=', old.person_id.id), ('club_id', '=', old.club_id.id),
++                  ('season_id', '=', season.id), ('role', '=', old.role)]
++        existing = self.sudo().search(domain, limit=1)
++        if existing:
++            return existing.id
++        return self.sudo().create({'person_id': old.person_id.id, 'club_id': old.club_id.id,
++            'season_id': season.id, 'role': old.role, 'previous_id': old.id, 'company_id': old.company_id.id}).id
++
++
++class Request(models.Model):
++    _name = 'federation.person.request'
++    _description = 'Scoped Personal Document Request'
++    _inherit = ['mail.thread']
++    name = fields.Char(required=True)
++    company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company, index=True)
++    person_id = fields.Many2one('res.partner', required=True, ondelete='restrict', index=True)
++    guardian_required = fields.Boolean(default=False)
++    deadline = fields.Date(required=True)
++    purpose = fields.Text(required=True)
++    state = fields.Selection([('requested', 'Requested'), ('uploaded', 'Uploaded, awaiting review'),
++        ('verified', 'Verified for this request'), ('returned', 'Replacement requested'), ('cancelled', 'Cancelled')],
++        default='requested', required=True, readonly=True, tracking=True)
++    document = fields.Binary(attachment=True, groups='sports_federation_base.group_federation_manager')
++    filename = fields.Char(groups='sports_federation_base.group_federation_manager')
++    review_note = fields.Text()
++    uploaded_by_id = fields.Many2one('res.users', readonly=True)
++    verified_by_id = fields.Many2one('res.users', readonly=True)
++    valid_until = fields.Date()
++
++    def _allowed(self):
++        self.ensure_one()
++        if not self.sudo().exists() or self.sudo().company_id not in self.env.companies:
++            return False
++        person = self.sudo().person_id.id
++        if self.sudo().guardian_required:
++            membership = self.env['federation.person.membership']
++            ids = membership._person_ids()
++            # Self access is not sufficient when a guardian is explicitly required.
++            return person in ids and person != self.env.user.partner_id.id
++        return person in self.env['federation.person.membership']._person_ids()
++
++    @api.model
++    def _portal_rows(self):
++        ids = self.env['federation.person.membership']._person_ids()
++        rows = self.sudo().search([('company_id', 'in', self.env.companies.ids), ('person_id', 'in', ids)], limit=200)
++        return [{'id': r.id, 'name': r.name, 'purpose': r.purpose, 'state': r.state,
++            'deadline': r.deadline, 'note': r.review_note or '', 'can_upload': r.with_user(self.env.user)._allowed()
++            and r.state in ('requested', 'returned')} for r in rows]
++
++    def _upload(self, upload):
++        self.ensure_one()
++        if not self._allowed():
++            raise AccessError(_('You are not authorised for this document request.'))
++        self.env.cr.execute('SELECT id FROM federation_person_request WHERE id=%s FOR UPDATE', [self.id])
++        record = self.sudo()
++        record.invalidate_recordset()
++        if record.state not in ('requested', 'returned'):
++            raise ValidationError(_('This request is no longer accepting uploads.'))
++        if not upload:
++            raise ValidationError(_('Select a document.'))
++        policy = self.env['federation.attachment.policy']
++        maximum = policy.get_policy('portal_document')['max_bytes']
++        payload = upload.read(maximum + 1)
++        checked = policy.validate_upload('portal_document', upload.filename, payload, mimetype=upload.content_type)
++        # Bypass only the command-field guard after actor, scope and state validation.
++        super(Request, record).write({'document': base64.b64encode(checked['payload']),
++            'filename': upload.filename, 'state': 'uploaded', 'uploaded_by_id': self.env.uid})
++
++    def write(self, vals):
++        manager(self.env)
++        if {'state', 'document', 'uploaded_by_id', 'verified_by_id'} & set(vals):
++            raise AccessError(_('Use the request workflow commands.'))
++        if any(r.state in ('uploaded', 'verified') for r in self) and {'person_id', 'guardian_required', 'purpose'} & set(vals):
++            raise ValidationError(_('Reviewed request scope is immutable.'))
++        return super().write(vals)
++
++    @api.model_create_multi
++    def create(self, vals_list):
++        manager(self.env)
++        if any(v.get('state', 'requested') != 'requested' or v.get('document') for v in vals_list):
++            raise AccessError(_('Create an empty request first.'))
++        return super().create(vals_list)
++
++    def action_verify(self):
++        manager(self.env)
++        if any(r.state != 'uploaded' or r.uploaded_by_id.id == self.env.uid for r in self):
++            raise ValidationError(_('Independent review of an uploaded document is required.'))
++        return super().write({'state': 'verified', 'verified_by_id': self.env.uid})
++
++    def action_return(self):
++        manager(self.env)
++        if any(r.state not in ('uploaded', 'verified') or not r.review_note for r in self):
++            raise ValidationError(_('Explain the required replacement.'))
++        return super().write({'state': 'returned'})
+diff --git a/sports_federation_member_services/security/ir.model.access.csv b/sports_federation_member_services/security/ir.model.access.csv
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/security/ir.model.access.csv
+@@ -0,0 +1,5 @@
++id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
++access_person_relationship,Membership administration,model_federation_person_relationship,sports_federation_base.group_federation_manager,1,1,1,0
++access_person_membership,Membership administration,model_federation_person_membership,sports_federation_base.group_federation_manager,1,1,1,0
++access_person_request,Membership administration,model_federation_person_request,sports_federation_base.group_federation_manager,1,1,1,0
++access_membership_cohort_report,Membership retention report,model_federation_membership_cohort_report,sports_federation_base.group_federation_manager,1,1,1,1
+diff --git a/sports_federation_member_services/security/rules.xml b/sports_federation_member_services/security/rules.xml
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/security/rules.xml
+@@ -0,0 +1 @@
++<odoo><record id="rule_person_relationship_company" model="ir.rule"><field name="name">Personal service company scope</field><field name="model_id" ref="model_federation_person_relationship"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record><record id="rule_person_membership_company" model="ir.rule"><field name="name">Personal service company scope</field><field name="model_id" ref="model_federation_person_membership"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record><record id="rule_person_request_company" model="ir.rule"><field name="name">Personal service company scope</field><field name="model_id" ref="model_federation_person_request"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record></odoo>
+diff --git a/sports_federation_member_services/tests/__init__.py b/sports_federation_member_services/tests/__init__.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/tests/__init__.py
+@@ -0,0 +1 @@
++from . import test_scope
+diff --git a/sports_federation_member_services/tests/test_scope.py b/sports_federation_member_services/tests/test_scope.py
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/tests/test_scope.py
+@@ -0,0 +1,55 @@
++from datetime import timedelta
++from odoo import fields
++from odoo.tests import TransactionCase, tagged
++from odoo.exceptions import AccessError, ValidationError
++
++
++@tagged('post_install', '-at_install', 'sf_member_services')
++class TestPersonalScope(TransactionCase):
++    @classmethod
++    def setUpClass(cls):
++        super().setUpClass()
++        cls.manager = cls.env['res.users'].create({'name': 'Membership reviewer', 'login': 'member_reviewer',
++            'group_ids': [(6, 0, [cls.env.ref('base.group_user').id,
++            cls.env.ref('sports_federation_base.group_federation_manager').id])]})
++        cls.portal = cls.env['res.users'].create({'name': 'Personal portal', 'login': 'member_portal',
++            'group_ids': [(6, 0, [cls.env.ref('base.group_portal').id])]})
++        cls.child = cls.env['res.partner'].create({'name': 'Scoped person'})
++
++    def relationship(self, kind='guardian', expired=False):
++        today = fields.Date.today()
++        row = self.env['federation.person.relationship'].with_user(self.manager).create({
++            'person_id': self.child.id, 'delegate_id': self.portal.partner_id.id, 'kind': kind,
++            'valid_from': today - timedelta(days=20),
++            'valid_until': today - timedelta(days=1) if expired else today + timedelta(days=20),
++            'reason': 'Test identity evidence'})
++        row.action_verify()
++        return row
++
++    def test_payer_is_not_guardian(self):
++        self.relationship('payer')
++        ids = self.env['federation.person.membership'].with_user(self.portal)._person_ids()
++        self.assertNotIn(self.child.id, ids)
++
++    def test_guardian_scope_and_revocation(self):
++        row = self.relationship()
++        service = self.env['federation.person.membership'].with_user(self.portal)
++        self.assertIn(self.child.id, service._person_ids())
++        row.action_revoke()
++        self.assertNotIn(self.child.id, service._person_ids())
++
++    def test_expired_guardian_does_not_grant_scope(self):
++        self.relationship(expired=True)
++        self.assertNotIn(self.child.id, self.env['federation.person.membership'].with_user(self.portal)._person_ids())
++
++    def test_verified_relationship_cannot_be_retargeted(self):
++        row = self.relationship()
++        with self.assertRaises(ValidationError):
++            row.write({'kind': 'payer'})
++        with self.assertRaises(AccessError):
++            row.write({'state': 'draft'})
++
++    def test_portal_cannot_verify_relationship(self):
++        row = self.relationship()
++        with self.assertRaises(AccessError):
++            row.with_user(self.portal).action_revoke()
+diff --git a/sports_federation_member_services/views/growth.xml b/sports_federation_member_services/views/growth.xml
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/views/growth.xml
+@@ -0,0 +1 @@
++<odoo><record id="membership_cohort_form" model="ir.ui.view"><field name="name">membership.cohort.form</field><field name="model">federation.membership.cohort.report</field><field name="arch" type="xml"><form><group><field name="previous_season_id"/><field name="current_season_id"/><field name="club_id"/></group><field name="summary"/><footer><button name="action_compare" type="object" string="Compare membership retention" class="btn-primary"/><button special="cancel" string="Close"/></footer></form></field></record><record id="action_membership_cohort" model="ir.actions.act_window"><field name="name">Membership and club retention</field><field name="res_model">federation.membership.cohort.report</field><field name="view_mode">form</field><field name="target">new</field></record><menuitem id="menu_membership_cohort" name="Membership retention" parent="sports_federation_base.menu_federation_administration" action="action_membership_cohort" groups="sports_federation_base.group_federation_manager"/></odoo>
+diff --git a/sports_federation_member_services/views/services.xml b/sports_federation_member_services/views/services.xml
+new file mode 100644
+--- /dev/null
++++ b/sports_federation_member_services/views/services.xml
+@@ -0,0 +1,27 @@
++<odoo>
++<record id="person_relationship_list" model="ir.ui.view"><field name="name">person.relationship.list</field><field name="model">federation.person.relationship</field><field name="arch" type="xml"><list><field name="person_id"/><field name="delegate_id"/><field name="kind"/><field name="valid_from"/><field name="valid_until"/><field name="state"/><field name="reason"/></list></field></record>
++<record id="person_relationship_form" model="ir.ui.view"><field name="name">person.relationship.form</field><field name="model">federation.person.relationship</field><field name="arch" type="xml"><form><header><button name="action_verify" type="object" string="Verify"/><button name="action_revoke" type="object" string="Revoke"/></header><sheet><group><field name="person_id"/><field name="delegate_id"/><field name="kind"/><field name="valid_from"/><field name="valid_until"/><field name="state"/><field name="reason"/></group></sheet><chatter/></form></field></record>
++<record id="action_person_relationship" model="ir.actions.act_window"><field name="name">Person.Relationship</field><field name="res_model">federation.person.relationship</field><field name="view_mode">list,form</field></record>
++<menuitem id="menu_person_relationship" name="Person.Relationship" action="action_person_relationship" parent="sports_federation_base.menu_federation_administration" groups="sports_federation_base.group_federation_manager"/>
++<record id="person_membership_list" model="ir.ui.view"><field name="name">person.membership.list</field><field name="model">federation.person.membership</field><field name="arch" type="xml"><list><field name="person_id"/><field name="club_id"/><field name="season_id"/><field name="role"/><field name="state"/><field name="review_note"/><field name="previous_id"/></list></field></record>
++<record id="person_membership_form" model="ir.ui.view"><field name="name">person.membership.form</field><field name="model">federation.person.membership</field><field name="arch" type="xml"><form><header></header><sheet><group><field name="person_id"/><field name="club_id"/><field name="season_id"/><field name="role"/><field name="state"/><field name="review_note"/><field name="previous_id"/></group></sheet><chatter/></form></field></record>
++<record id="action_person_membership" model="ir.actions.act_window"><field name="name">Person.Membership</field><field name="res_model">federation.person.membership</field><field name="view_mode">list,form</field></record>
++<menuitem id="menu_person_membership" name="Person.Membership" action="action_person_membership" parent="sports_federation_base.menu_federation_administration" groups="sports_federation_base.group_federation_manager"/>
++<record id="person_request_list" model="ir.ui.view"><field name="name">person.request.list</field><field name="model">federation.person.request</field><field name="arch" type="xml"><list><field name="name"/><field name="person_id"/><field name="guardian_required"/><field name="deadline"/><field name="purpose"/><field name="state"/><field name="review_note"/><field name="valid_until"/></list></field></record>
++<record id="person_request_form" model="ir.ui.view"><field name="name">person.request.form</field><field name="model">federation.person.request</field><field name="arch" type="xml"><form><header><button name="action_verify" type="object" string="Verify uploaded document"/><button name="action_return" type="object" string="Request replacement"/></header><sheet><group><field name="name"/><field name="person_id"/><field name="guardian_required"/><field name="deadline"/><field name="purpose"/><field name="state"/><field name="review_note"/><field name="valid_until"/></group><field name="document" filename="filename" readonly="1"/><field name="filename" invisible="1"/></sheet><chatter/></form></field></record>
++<record id="action_person_request" model="ir.actions.act_window"><field name="name">Person.Request</field><field name="res_model">federation.person.request</field><field name="view_mode">list,form</field></record>
++<menuitem id="menu_person_request" name="Person.Request" action="action_person_request" parent="sports_federation_base.menu_federation_administration" groups="sports_federation_base.group_federation_manager"/>
++
++<template id="family" name="Member and Family Services"><t t-call="portal.portal_layout"><main class="container py-4">
++<h1>My membership and family</h1><p>Membership, document verification and sporting eligibility are separate checks. Payer status does not grant access to personal documents.</p>
++<a href="/my/work">Return to my work</a><a href="/my/invoices" class="btn btn-link">My invoices</a>
++<p role="status" t-esc="feedback"/>
++<h2>Memberships</h2><div t-foreach="memberships" t-as="m" class="card p-3 mb-3"><h3 t-esc="m['person']"/>
++<p><t t-esc="m['club']"/> · <t t-esc="m['season']"/> · <t t-esc="m['role']"/> · <t t-esc="m['state']"/></p><p t-esc="m['note']"/>
++<form t-att-action="'/my/family/memberships/%s/renew' % m['id']" method="post"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
++<label t-att-for="'season-%s' % m['id']">Renew for an open season</label><select name="season_id" t-att-id="'season-%s' % m['id']" required="required" class="form-select"><option t-foreach="seasons" t-as="s" t-att-value="s.id" t-esc="s.name"/></select><button class="btn btn-primary mt-2">Request renewal</button></form></div>
++<h2>Document requests</h2><div t-foreach="requests" t-as="r" class="card p-3 mb-3"><h3 t-esc="r['name']"/><p t-esc="r['purpose']"/><p>Deadline: <t t-esc="r['deadline']"/></p><p>Status: <t t-esc="r['state']"/></p><p t-esc="r['note']"/>
++<form t-if="r['can_upload']" t-att-action="'/my/family/requests/%s/upload' % r['id']" method="post" enctype="multipart/form-data"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
++<label t-att-for="'doc-%s' % r['id']">Document (PDF, PNG or JPEG, maximum 10 MB)</label><input type="file" name="document" t-att-id="'doc-%s' % r['id']" required="required" accept=".pdf,.png,.jpg,.jpeg" class="form-control"/><button class="btn btn-primary mt-2">Upload for review</button></form></div>
++</main></t></template>
++</odoo>
+diff --git a/sports_federation_scheduling/__manifest__.py b/sports_federation_scheduling/__manifest__.py
+--- a/sports_federation_scheduling/__manifest__.py
++++ b/sports_federation_scheduling/__manifest__.py
+@@ -1,22 +1 @@
+-{
+-    "name": "Competition Scheduling",
+-    "version": "19.0.3.6.0",
+-    "category": "Sports",
+-    "summary": "Working schedules, assignments, validation and deterministic proposals",
+-    "author": "Sports Federation",
+-    "license": "LGPL-3",
+-    "depends": ["sports_federation_base", "sports_federation_calendar"],
+-    "data": [
+-        "security/security.xml",
+-        "security/ir.model.access.csv",
+-        "views/scheduling_views.xml",
+-        "views/submit_schedule_wizard_views.xml",
+-        "views/amend_schedule_wizard_views.xml",
+-        "views/fairness_views.xml",
+-        "views/competition_schedule_wizard_views.xml",
+-        "views/menu.xml",
+-    ],
+-    "installable": True,
+-    "application": False,
+-    "auto_install": False,
+-}
++{'name': 'Competition Scheduling', 'version': '19.0.3.6.1', 'category': 'Sports', 'summary': 'Working schedules, assignments, validation and deterministic proposals', 'author': 'Sports Federation', 'license': 'LGPL-3', 'depends': ['sports_federation_base', 'sports_federation_calendar'], 'data': ['security/security.xml', 'security/ir.model.access.csv', 'views/scheduling_views.xml', 'views/submit_schedule_wizard_views.xml', 'views/amend_schedule_wizard_views.xml', 'views/fairness_views.xml', 'views/competition_schedule_wizard_views.xml', 'views/menu.xml'], 'installable': True, 'application': False, 'auto_install': False}
+diff --git a/sports_federation_scheduling/services/schedule_commands.py b/sports_federation_scheduling/services/schedule_commands.py
+--- a/sports_federation_scheduling/services/schedule_commands.py
++++ b/sports_federation_scheduling/services/schedule_commands.py
+@@ -1,21 +1,41 @@
++from functools import wraps
+ from odoo import _, api, models
+ from odoo.exceptions import ValidationError
++
++
++def atomic_command(method):
++    @wraps(method)
++    def wrapped(self, *args, **kwargs):
++        with self.env.cr.savepoint():
++            return method(self, *args, **kwargs)
++    return wrapped
+ 
+ 
+ class FederationScheduleCommands(models.AbstractModel):
+     _name = "federation.schedule.commands"
+     _description = "Schedule Command Service"
+ 
+-    def _find_replay(self, schedule_id, idempotency_key):
++    def _find_replay(self, schedule_id, idempotency_key, command, fixture_id, slot_id=False, reason=False):
++        schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
++        if not schedule:
++            raise ValidationError(_("The schedule no longer exists."))
++        schedule.check_access("read")
++        self.env["federation.competition.role.assignment"].assert_role(
++            schedule.edition_id, "schedule_planner", "competition_director")
+         if not idempotency_key:
+             return False
+-        return self.env["federation.schedule.change"].search(
+-            [
+-                ("schedule_id", "=", int(schedule_id)),
+-                ("idempotency_key", "=", idempotency_key),
+-            ],
+-            limit=1,
+-        )
++        if not isinstance(idempotency_key, str) or len(idempotency_key) > 128:
++            raise ValidationError(_("Use a bounded idempotency key."))
++        # Serialize duplicate retries, including those arriving concurrently.
++        self.env.cr.execute("SELECT id FROM federation_schedule WHERE id=%s FOR UPDATE", (schedule.id,))
++        replay = self.env["federation.schedule.change"].search([
++            ("schedule_id", "=", schedule.id), ("idempotency_key", "=", idempotency_key)], limit=1)
++        if replay and (replay.actor_id != self.env.user or replay.command != command or
++                       replay.fixture_id.id != int(fixture_id) or
++                       (command == "assign" and replay.new_slot_id.id != int(slot_id)) or
++                       (replay.reason or "") != (reason or "")):
++            raise ValidationError(_("Idempotency key was reused for different content or actor."))
++        return replay
+ 
+     def _resolve(self, schedule_id, expected_revision):
+         schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
+@@ -24,6 +44,7 @@
+         self.env["federation.competition.role.assignment"].assert_role(
+             schedule.edition_id, "schedule_planner", "competition_director"
+         )
++        schedule.check_access("write")
+         schedule.assert_mutable()
+         self.env.cr.execute(
+             "UPDATE federation_schedule SET revision=revision+1 WHERE id=%s AND revision=%s RETURNING revision",
+@@ -41,6 +62,7 @@
+         return {a.fixture_id.id: a.slot_id.id for a in schedule.assignment_ids}
+ 
+     @api.model
++    @atomic_command
+     def assign(
+         self,
+         schedule_id,
+@@ -50,7 +72,7 @@
+         reason=False,
+         idempotency_key=False,
+     ):
+-        replay = self._find_replay(schedule_id, idempotency_key)
++        replay = self._find_replay(schedule_id, idempotency_key, "assign", fixture_id, slot_id, reason)
+         if replay:
+             return self.env["federation.schedule.queries"].delta(replay.schedule_id, [])
+         schedule, new_revision = self._resolve(schedule_id, expected_revision)
+@@ -93,6 +115,7 @@
+         return self.env["federation.schedule.queries"].delta(schedule, assignment)
+ 
+     @api.model
++    @atomic_command
+     def unassign(
+         self,
+         schedule_id,
+@@ -101,7 +124,7 @@
+         reason=False,
+         idempotency_key=False,
+     ):
+-        replay = self._find_replay(schedule_id, idempotency_key)
++        replay = self._find_replay(schedule_id, idempotency_key, "unassign", fixture_id, reason=reason)
+         if replay:
+             return self.env["federation.schedule.queries"].delta(replay.schedule_id, [])
+         schedule, new_revision = self._resolve(schedule_id, expected_revision)
+@@ -127,6 +150,7 @@
+         return self.env["federation.schedule.queries"].delta(schedule, [])
+ 
+     @api.model
++    @atomic_command
+     def apply_proposal(self, schedule_id, expected_revision):
+         schedule, new_revision = self._resolve(schedule_id, expected_revision)
+         proposal = self.env["federation.schedule.solver"].propose(schedule)
+@@ -158,6 +182,7 @@
+         return self.env["federation.schedule.queries"].delta(schedule, created)
+ 
+     @api.model
++    @atomic_command
+     def submit(self, schedule_id, expected_revision, warning_override_reason=False):
+         schedule, new_revision = self._resolve(schedule_id, expected_revision)
+         validation = self.env["federation.schedule.validator"].validate_map(

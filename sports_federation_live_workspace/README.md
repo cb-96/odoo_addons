@@ -31,3 +31,10 @@ Standalone: `python -m unittest discover -s ci -p test_live_workspace_policy.py`
 Installed application: run Odoo tests tagged `sf_live_workspace` and the existing `sf_release_confidence` suite on fresh and upgraded disposable databases. The addon includes persisted command tests and real backend browser journeys. Database, HTTP/browser and independent-transaction concurrency tests were not executed in the authoring environment because Odoo/PostgreSQL and a staging connector were unavailable.
 
 Keep production rollout blocked until fresh installation, upgrade, complete browser journeys, independent-transaction races, backup plus filestore restoration, monitoring recovery, fallback rehearsal and novice-user observations have actual evidence. The supplied acceptance audit distinguishes implementation from demonstrated acceptance.
+
+## ACL registration correction
+
+Version 19.0.1.0.1 registers the unchanged ACL rows through the standard
+security/ir.model.access.csv filename. The former access.csv is removed.
+Existing ACL external IDs and permissions are preserved. Upgrade this addon
+on staging so the corrected data registration is loaded.

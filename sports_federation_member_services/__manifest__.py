@@ -1,0 +1,12 @@
+{'name': 'Member and Family Services',
+ 'version': '19.0.1.0.0',
+ 'license': 'LGPL-3',
+ 'depends': ['sports_federation_people',
+             'sports_federation_portal',
+             'sports_federation_base'],
+ 'data': ['security/ir.model.access.csv',
+          'security/rules.xml',
+          'views/services.xml',
+          'views/growth.xml'],
+ 'installable': True,
+ 'application': False}
