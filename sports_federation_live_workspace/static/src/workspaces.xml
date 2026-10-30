@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="sports_federation_live_workspace.Court">
+ <main class="sf-live-workspace">
+  <h1>Run this court</h1>
+  <label>Assigned court <select class="form-select" t-on-change="chooseCourt" t-att-value="state.selected">
+   <option value="">Choose your court</option><t t-foreach="state.courts" t-as="court" t-key="court_index"><option t-att-value="court_index"><t t-esc="court.name"/></option></t>
+  </select></label>
+  <p t-if="!state.courts.length">No court assigned. Ask the match-day manager to assign your account.</p>
+  <div t-if="state.error" class="alert alert-danger" role="alert"><t t-esc="state.error"/></div>
+  <div t-if="state.board" class="sf-columns mt-3">
+   <aside aria-label="Next-match queue"><h2>Next matches</h2>
+    <t t-foreach="state.board.queue" t-as="m" t-key="m.id"><div class="sf-card">
+     <strong><t t-esc="m.start"/></strong><p><t t-esc="m.home"/> vs <t t-esc="m.away"/></p>
+     <p>Result: <t t-esc="m.result_state"/> | Officials: <t t-esc="m.coverage.state"/></p>
+     <button class="btn btn-outline-primary" t-on-click="() => this.openMatch(m.id)" t-att-disabled="state.busy">Open match</button>
+    </div></t>
+   </aside>
+   <section t-if="state.match" aria-label="Court result entry">
+    <h2>Match <t t-esc="state.match.match_id"/></h2>
+    <div class="sf-status" role="status" aria-live="polite"><t t-esc="state.status"/> | Review: <t t-esc="state.match.result_state"/></div>
+    <p t-if="state.match.review_required" class="alert alert-warning">Coordinator hold: disputed or abandoned evidence must be resolved before submission.</p><p t-if="state.match.closed" class="alert alert-info">Abandonment confirmed. No official score was created.</p><div class="sf-card"><h3>Lineups and officials</h3>
+     <p t-if="!state.match.lineups.length">Lineups not checked: no match sheets available. Contact the coordinator.</p>
+     <t t-foreach="state.match.lineups" t-as="sheet" t-key="sheet.id"><details><summary><t t-esc="sheet.name"/>: <t t-esc="sheet.state"/></summary><ul><t t-foreach="sheet.players" t-as="player" t-key="player_index"><li><t t-esc="player"/></li></t></ul></details></t>
+     <t t-foreach="state.board.queue.filter(m => m.id === state.match.match_id)" t-as="current" t-key="current.id">
+      <p>Official readiness: <t t-esc="current.coverage.state"/></p>
+      <t t-foreach="current.officials" t-as="official" t-key="official_index"><p><t t-esc="official.role"/>: <t t-esc="official.name"/> | Accepted: <t t-esc="official.accepted"/> | Eligible: <t t-esc="official.eligible"/> | Present: <t t-esc="official.present"/></p></t>
+     </t>
+    </div>
+    <fieldset t-att-disabled="locked || state.busy || state.conflict" class="sf-card">
+     <legend>Scores</legend><div class="d-flex gap-3 flex-wrap">
+      <t t-foreach="['home','away']" t-as="side" t-key="side"><label><t t-esc="side"/>
+       <div class="d-flex gap-2"><button class="btn btn-outline-secondary" t-on-click="() => this.score(side, -1)" t-att-disabled="state.match.mode !== 'aggregate'">−</button>
+        <input type="number" min="0" max="100000" class="sf-score form-control" t-att-value="state.draft[side]" t-on-change="(ev) => this.setScore(side, ev)" t-att-readonly="state.match.mode !== 'aggregate'"/>
+        <button class="btn btn-outline-secondary" t-on-click="() => this.score(side, 1)" t-att-disabled="state.match.mode !== 'aggregate'">+</button></div>
+      </label></t>
+     </div>
+     <div t-if="state.match.mode !== 'aggregate'" class="mt-3"><h3>Sets / periods</h3>
+      <t t-foreach="state.draft.periods" t-as="period" t-key="period_index"><div class="d-flex gap-2 align-items-center mb-2">
+       <span><t t-esc="period_index + 1"/></span>
+       <label>Home<input type="number" min="0" class="form-control" t-att-value="period.home" t-on-change="(ev) => this.periodScore(period_index, 'home', ev)"/></label>
+       <label>Away<input type="number" min="0" class="form-control" t-att-value="period.away" t-on-change="(ev) => this.periodScore(period_index, 'away', ev)"/></label>
+       <button class="btn btn-outline-danger" t-on-click="() => this.removePeriod(period_index)">Remove</button>
+      </div></t><button class="btn btn-outline-primary" t-on-click="addPeriod" t-att-disabled="state.draft.periods.length >= state.match.max_periods">Add set / period</button>
+     </div>
+     <label class="d-block mt-3">Outcome<select class="form-select" t-model="state.draft.outcome" t-on-change="edited"><option value="normal">Normal</option><option value="interrupted">Interrupted: save for resumption</option><option value="abandoned">Abandoned: coordinator decision required</option><option value="forfeit_home">Home forfeits</option><option value="forfeit_away">Away forfeits</option><option value="disputed">Disputed: coordinator review required</option></select></label>
+     <label class="d-block">Reason<textarea class="form-control" maxlength="2000" t-model="state.draft.reason" t-on-input="edited"/></label>
+     <label><input type="checkbox" t-model="state.draft.zero_confirmed" t-on-change="edited"/> Confirm intended 0–0 result</label>
+    </fieldset>
+    <div class="d-flex flex-wrap gap-2">
+     <button class="btn btn-primary" t-on-click="() => this.command('save')" t-att-disabled="locked || state.busy || state.conflict">Save draft</button>
+     <button class="btn btn-outline-secondary" t-on-click="() => this.command('undo')" t-att-disabled="locked || state.busy || !state.match.undo_available || state.pending.length">Undo last server save</button>
+     <button class="btn btn-success" t-on-click="() => this.command('submit')" t-att-disabled="locked || state.busy || state.conflict || state.match.review_required || ['interrupted','abandoned','disputed'].includes(state.draft.outcome)">Submit for review</button>
+     <button class="btn btn-outline-primary" t-on-click="sync" t-att-disabled="state.busy || !state.pending.length || state.conflict">Synchronise</button>
+     <button class="btn btn-outline-secondary" t-on-click="exportEvidence">Export recovery evidence</button>
+     <button class="btn btn-outline-secondary" t-on-click="nextMatch" t-att-disabled="state.pending.length || state.dirty || state.busy">Next match</button>
+    </div>
+    <div t-if="state.conflict" class="sf-card sf-hard mt-3"><h3>Explicit recovery</h3><p>Keep local evidence. Never merge scores automatically.</p>
+     <button class="btn btn-outline-danger" t-on-click="reconcile">Export local evidence and reload server draft</button>
+     <button class="btn btn-outline-primary" t-on-click="acknowledge" t-att-disabled="state.pending.length || locked">Acknowledge changed context with reason</button>
+    </div>
+   </section>
+  </div>
+ </main>
+</t>
+<t t-name="sports_federation_live_workspace.Plan">
+ <main class="sf-live-workspace">
+  <h1>Visual planning</h1><div t-if="state.error" class="alert alert-danger" role="alert"><t t-esc="state.error"/></div>
+  <t t-if="state.data">
+   <div class="d-flex gap-2 mb-3"><button class="btn btn-outline-secondary" t-on-click="returnRecord">Return to schedule and review controls</button><button class="btn btn-outline-primary" t-on-click="refresh" t-att-disabled="state.busy">Refresh</button></div>
+   <p><strong><t t-esc="state.data.schedule.name"/></strong> | <t t-esc="state.data.schedule.state"/> | Revision <t t-esc="state.data.schedule.revision"/></p>
+   <h2>Competition progression</h2><div class="sf-stages">
+    <t t-foreach="state.data.stages" t-as="stage" t-key="stage.id"><section class="sf-card sf-stage"><h3><t t-esc="stage.name"/></h3><p><t t-esc="stage.format"/> | <t t-esc="stage.state"/></p>
+     <t t-foreach="stage.next" t-as="next" t-key="next_index"><p>Ranks <t t-esc="next.rank_from"/>–<t t-esc="next.rank_to"/> → <t t-esc="state.data.stages.find(s => s.id === next.id)?.name || next.id"/></p></t>
+     <t t-foreach="state.data.fixtures.filter(f => f.stage_id === stage.id)" t-as="fixture" t-key="fixture.id"><div class="sf-card"><button class="btn btn-link" t-on-click="() => this.openFixture(fixture.id)"><t t-esc="fixture.name"/></button><p>Round <t t-esc="fixture.round"/> | <t t-esc="fixture.state"/></p><p t-if="fixture.home_source">Home: <t t-esc="fixture.home_outcome"/> of <t t-esc="fixtureName(fixture.home_source)"/></p><p t-if="fixture.away_source">Away: <t t-esc="fixture.away_outcome"/> of <t t-esc="fixtureName(fixture.away_source)"/></p></div></t>
+    </section></t>
+   </div>
+   <h2>Court by time</h2>
+   <label t-if="editable">Fixture to move or pin<select class="form-select" t-model="state.fixture"><option value="">Choose fixture</option><t t-foreach="state.data.fixtures" t-as="f" t-key="f.id"><option t-att-value="f.id"><t t-esc="f.name"/></option></t></select></label>
+   <div class="sf-grid mt-3"><table><thead><tr><th>Time (UTC)</th><t t-foreach="courts" t-as="court" t-key="court.id"><th><t t-esc="court.name"/></th></t></tr></thead><tbody>
+    <t t-foreach="times" t-as="time" t-key="time"><tr><th><t t-esc="time"/></th><t t-foreach="courts" t-as="court" t-key="court.id"><td>
+     <t t-set="slot" t-value="slotAt(court.id,time)"/><t t-set="a" t-value="assignment(slot)"/>
+     <t t-if="slot"><p><t t-esc="a ? a.fixture_name : 'Unassigned'"/></p><p t-if="a">Assignment: <t t-esc="state.data.methods[a.fixture_id]"/></p><button t-if="editable" class="btn btn-outline-primary" t-att-disabled="!state.fixture || state.busy" t-on-click="() => this.preview('move', slot.id)">Preview move here</button></t>
+    </td></t></tr></t>
+   </tbody></table></div>
+   <div t-if="editable" class="d-flex gap-2 mt-3"><button class="btn btn-primary" t-on-click="() => this.preview('regenerate')" t-att-disabled="state.busy">Preview regeneration, retain manual pins</button><button class="btn btn-outline-danger" t-on-click="() => this.preview('unassign')" t-att-disabled="!state.fixture || state.busy">Preview unassignment</button></div>
+   <section class="sf-card mt-3"><h2>Fairness preferences</h2><p>These are soft preferences, not hard feasibility constraints.</p><t t-foreach="Object.keys(state.data.config)" t-as="setting" t-key="setting"><label class="d-inline-block me-3"><t t-esc="setting.replaceAll('_',' ')"/><input class="form-control" type="number" min="0" t-model.number="state.data.config[setting]" t-att-disabled="!editable"/></label></t><button t-if="editable" class="btn btn-outline-primary" t-on-click="configure">Save preferences</button></section>
+   <section class="sf-card"><h2>Hard constraints</h2><t t-foreach="state.data.constraints" t-as="c" t-key="c.id"><p><t t-esc="c.name"/> | <t t-esc="c.kind"/> | <t t-esc="c.start"/>–<t t-esc="c.end"/> | <t t-esc="c.minutes"/> min <button t-if="editable" class="btn btn-outline-danger" t-on-click="() => this.removeConstraint(c.id)">Remove</button></p></t>
+    <fieldset t-if="editable"><label>Name<input class="form-control" t-model="state.constraint.name"/></label><label>Constraint<select class="form-select" t-model="state.constraint.kind"><option value="team_window">Team unavailable</option><option value="court_window">Court unavailable</option><option value="minimum_rest">Minimum rest, hard</option></select></label>
+     <label>Team<select class="form-select" t-model="state.constraint.team_id"><option value="">Choose team</option><t t-foreach="state.data.teams" t-as="team" t-key="team.id"><option t-att-value="team.id"><t t-esc="team.name"/></option></t></select></label>
+     <label>Court<select class="form-select" t-model="state.constraint.court_id"><option value="">Choose court</option><t t-foreach="courts" t-as="court" t-key="court.id"><option t-att-value="court.id"><t t-esc="court.name"/></option></t></select></label>
+     <label>Start (local time)<input type="datetime-local" class="form-control" t-model="state.constraint.start"/></label><label>End (local time)<input type="datetime-local" class="form-control" t-model="state.constraint.end"/></label><label>Rest minutes<input type="number" class="form-control" t-model.number="state.constraint.minutes"/></label><button class="btn btn-primary" t-on-click="addConstraint">Add constraint</button>
+    </fieldset>
+   </section>
+   <section class="sf-card sf-hard"><h2>Hard failures</h2><t t-foreach="state.data.explanation.validation.errors" t-as="e" t-key="e_index"><p><t t-esc="e.message"/></p></t><p t-if="!state.data.explanation.validation.errors.length">No hard failures in allocated fixtures.</p></section>
+   <section class="sf-card sf-warning"><h2>Fairness warnings</h2><t t-foreach="state.data.explanation.validation.warnings" t-as="w" t-key="w_index"><p><t t-esc="w.message"/></p></t><p>Fairness penalty (lower is better): <t t-esc="state.data.explanation.fairness.weighted_score"/></p></section>
+   <section class="sf-card"><h2>Why fixtures remain unallocated</h2><t t-foreach="state.data.explanation.unallocated" t-as="u" t-key="u.fixture_id"><details><summary><t t-esc="fixtureName(u.fixture_id)"/></summary><p><t t-esc="u.message"/></p><t t-foreach="u.attempts" t-as="attempt" t-key="attempt.slot_id"><p><t t-esc="attempt.court"/> / <t t-esc="attempt.start"/>: <t t-esc="attempt.errors.map(e => e.message).join('; ') || 'Feasible manual candidate'"/></p></t></details></t></section>
+   <section t-if="state.preview" class="sf-card"><h2>Before / after</h2><p>Fairness: <t t-esc="state.preview.before.fairness.weighted_score"/> → <t t-esc="state.preview.after.fairness.weighted_score"/></p><p>Unallocated: <t t-esc="state.preview.before.validation.unassigned_fixture_ids.length"/> → <t t-esc="state.preview.after.validation.unassigned_fixture_ids.length"/></p>
+    <t t-foreach="state.preview.changes" t-as="change" t-key="change.fixture_id"><p><t t-esc="fixtureName(change.fixture_id)"/>: <t t-esc="slotName(change.old_slot)"/> → <t t-esc="slotName(change.new_slot)"/></p></t>
+    <t t-foreach="state.preview.after.validation.errors" t-as="e" t-key="e_index"><p class="text-danger">Hard: <t t-esc="e.message"/></p></t><t t-foreach="state.preview.after.validation.warnings" t-as="w" t-key="w_index"><p>Warning: <t t-esc="w.message"/></p></t>
+    <label>Change reason<textarea class="form-control" t-model="state.reason"/></label><button class="btn btn-success" t-on-click="apply" t-att-disabled="state.busy || !state.reason.trim() || state.preview.after.validation.errors.length">Apply exactly this preview</button>
+   </section>
+   <section t-if="state.data.schedule.state === 'published'" class="sf-card"><h2>Published history is protected</h2><p>Create a replacement, then submit for independent review and publication. Live operations must be closed first.</p><label>Amendment reason<textarea class="form-control" t-model="state.reason"/></label><button class="btn btn-primary" t-on-click="amend" t-att-disabled="!state.reason.trim() || state.busy">Create guided amendment</button></section>
+  </t>
+ </main>
+</t>
+</templates>

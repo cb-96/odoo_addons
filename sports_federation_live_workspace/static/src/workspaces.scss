@@ -1,0 +1,18 @@
+.sf-live-workspace {
+    height: 100%; overflow: auto; padding: 1.25rem;
+    button, input, select { min-height: 48px; }
+    button { padding: .6rem 1rem; }
+    .sf-columns { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(300px, 3fr); gap: 1rem; }
+    .sf-card { border: 1px solid var(--border-color, #ccc); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
+    .sf-score { font-size: 2rem; width: 110px; text-align: center; }
+    .sf-grid { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    td, th { border: 1px solid #ccc; padding: .5rem; min-width: 140px; }
+    .sf-stages { display: flex; gap: 1rem; overflow-x: auto; }
+    .sf-stage { min-width: 240px; max-width: 400px; }
+    .sf-hard { border-left: 5px solid #b42318; }
+    .sf-warning { border-left: 5px solid #b58105; }
+    .sf-status { font-weight: 700; padding: .5rem; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #0078d4; outline-offset: 2px; }
+    @media (max-width: 800px) { .sf-columns { grid-template-columns: 1fr; } }
+}

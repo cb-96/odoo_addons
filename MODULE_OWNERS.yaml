@@ -3,6 +3,10 @@ last_reviewed: 2026-10-10
 review_cadence: Every release
 
 modules:
+  sports_federation_live_workspace:
+    primary_owner: Federation Platform Team
+    secondary_owner: Federation Competition Operations
+    surface: Scoped court capture, recovery evidence and governed visual planning
   sports_federation_app:
     primary_owner: Federation Platform Team
     secondary_owner: Federation Competition Operations

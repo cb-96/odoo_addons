@@ -179,8 +179,10 @@ def command_output(*args: str, check: bool = False) -> str:
 
 
 def validate_repository_root() -> None:
-    top_level = command_output("git", "rev-parse", "--show-toplevel", check=True)
-    if top_level != str(ROOT):
+    top_level = Path(
+        command_output("git", "rev-parse", "--show-toplevel", check=True)
+    ).resolve()
+    if top_level != ROOT:
         raise SystemExit("Run this script from the Git repository root.")
 
     required = [
