@@ -58,7 +58,7 @@ class FederationMatchRefereeFinanceHooks(models.Model):
         """Return referee reimbursement fee type."""
         self.ensure_one()
         fee_type = self.env["federation.fee.type"].search(
-            [("code", "=", "referee_reimbursement")],
+            [("code", "=", "referee_reimbursement"), ("company_id", "=", self.env.company.id)],
             limit=1,
         )
         if fee_type or not create_if_missing:

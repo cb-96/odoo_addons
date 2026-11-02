@@ -7,6 +7,8 @@ class FederationReportFinance(models.Model):
     _auto = False
     _order = "fee_type_id, state"
 
+    company_id = fields.Many2one('res.company', readonly=True)
+    currency_id = fields.Many2one('res.currency', readonly=True)
     fee_type_id = fields.Many2one(
         "federation.fee.type", string="Fee Type", readonly=True
     )
@@ -31,12 +33,14 @@ class FederationReportFinance(models.Model):
             CREATE VIEW federation_report_finance AS (
                 SELECT
                     MIN(fe.id) AS id,
+                    fe.company_id,
+                    fe.currency_id,
                     fe.fee_type_id,
                     fe.state,
                     COUNT(DISTINCT fe.id) AS event_count,
                     SUM(fe.amount) AS total_amount
                 FROM federation_finance_event fe
-                GROUP BY fe.fee_type_id, fe.state
+                GROUP BY fe.company_id, fe.currency_id, fe.fee_type_id, fe.state
             )
             """,
         )

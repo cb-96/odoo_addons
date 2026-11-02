@@ -104,3 +104,47 @@ class TestPersonalScope(TransactionCase):
         self.assertTrue(request.document)
         with self.assertRaises(ValidationError):
             portal_request._upload(upload())
+
+    def _revision_request(self):
+        self.relationship()
+        request = self.env['federation.person.request'].with_user(self.manager).create({
+            'name': 'Revision test', 'person_id': self.child.id, 'guardian_required': True,
+            'deadline': fields.Date.today(), 'purpose': 'Revision-bound review'})
+        request.with_user(self.portal)._upload(FileStorage(stream=BytesIO(b'%PDF-1.4 first'),
+            filename='first.pdf', content_type='application/pdf'))
+        return request
+
+    def test_stale_snapshot_cannot_verify_replacement(self):
+        request = self._revision_request()
+        action = request.action_verify()
+        wizard = self.env['federation.person.request.review'].with_user(self.manager).browse(action['res_id'])
+        wizard.write({'inspected': True})
+        first_checksum = wizard.checksum
+        request.write({'review_note': 'Replace document'})
+        request.action_return()
+        request.with_user(self.portal)._upload(FileStorage(stream=BytesIO(b'%PDF-1.4 second'),
+            filename='second.pdf', content_type='application/pdf'))
+        self.assertEqual(request.document_revision, 2)
+        self.assertNotEqual(request.document_checksum, first_checksum)
+        with self.assertRaises(ValidationError):
+            wizard.action_confirm()
+        self.assertEqual(request.state, 'uploaded')
+        self.assertFalse(request.verified_by_id)
+
+    def test_review_requires_inspection_and_records_revision(self):
+        request = self._revision_request()
+        action = request.action_verify()
+        wizard = self.env['federation.person.request.review'].with_user(self.manager).browse(action['res_id'])
+        with self.assertRaises(ValidationError):
+            wizard.action_confirm()
+        with self.assertRaises(AccessError):
+            wizard.write({'revision': 99})
+        wizard.write({'inspected': True})
+        wizard.action_confirm()
+        self.assertEqual(request.verified_revision, request.document_revision)
+        self.assertEqual(request.verified_by_id, self.manager)
+        self.assertTrue(request.verified_on)
+        request.write({'review_note': 'New evidence required'})
+        request.action_return()
+        self.assertFalse(request.verified_by_id)
+        self.assertEqual(request.verified_revision, 0)

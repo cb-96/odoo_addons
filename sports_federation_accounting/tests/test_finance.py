@@ -67,3 +67,41 @@ class TestNativeFinanceInvoice(TransactionCase):
         with self.assertRaises(ValidationError):
             event.action_create_invoice()
         self.assertFalse(event.account_move_id)
+
+    def test_uninvoiced_charge_cannot_be_settled(self):
+        event = self._event()
+        with self.assertRaises(ValidationError):
+            event.action_settle()
+        with self.assertRaises(ValidationError):
+            event.write({'state': 'settled'})
+
+    def test_draft_invoice_cannot_resolve_obligation(self):
+        event = self._event()
+        event.action_create_invoice()
+        with self.assertRaises(ValidationError):
+            event.action_settle()
+        with self.assertRaises(ValidationError):
+            event.action_cancel()
+
+    def test_confirmed_amount_is_immutable(self):
+        with self.assertRaises(ValidationError):
+            self._event().write({'amount': 1})
+
+    def test_handoff_metadata_cannot_be_forged(self):
+        from odoo.exceptions import AccessError
+        with self.assertRaises(AccessError):
+            self._event().write({'handoff_state': 'closed', 'closed_by_id': self.env.uid})
+
+    def test_other_company_event_is_not_visible(self):
+        company = self.env['res.company'].create({'name': 'Isolated finance company'})
+        fee = self.fee_type.copy({'code': 'isolated_fee', 'company_id': company.id})
+        event = self.env['federation.finance.event'].sudo().with_company(company).create({
+            'name': 'Other company obligation', 'company_id': company.id, 'fee_type_id': fee.id,
+            'event_type': 'charge', 'amount': 10, 'currency_id': company.currency_id.id,
+            'source_model': 'res.partner', 'source_res_id': self.partner.id})
+        user = self.env['res.users'].create({'name': 'Scoped finance manager', 'login': 'scoped_finance_manager',
+            'company_id': self.env.company.id, 'company_ids': [(6, 0, [self.env.company.id])],
+            'group_ids': [(6, 0, [self.env.ref('base.group_user').id,
+                self.env.ref('sports_federation_base.group_federation_manager').id])]})
+        visible = self.env['federation.finance.event'].with_user(user).with_context(allowed_company_ids=[self.env.company.id]).search([('id', '=', event.id)])
+        self.assertFalse(visible)

@@ -79,7 +79,7 @@ class FederationSanctionFinanceHooks(models.Model):
         """Return discipline fine fee type."""
         self.ensure_one()
         fee_type = self.env["federation.fee.type"].search(
-            [("code", "=", "discipline_fine")],
+            [("code", "=", "discipline_fine"), ("company_id", "=", self.company_id.id)],
             limit=1,
         )
         if fee_type or not create_if_missing:

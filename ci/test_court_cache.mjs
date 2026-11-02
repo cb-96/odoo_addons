@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const src = readFileSync(new URL('../sports_federation_live_workspace/static/src/court_cache.js', import.meta.url), 'utf8');
+const {restoreCourtCache} = await import(`data:text/javascript;base64,${Buffer.from(src).toString('base64')}`);
+const server = {revision: 5, signature: 'new', draft_signature: 'new', payload: {home: 4}};
+let r = restoreCourtCache(server, {dirty: false, draft: {home: 1}, base: {revision: 1, signature: 'old'}});
+assert.equal(r.draft.home, 4); assert.equal(r.match.revision, 5); assert.equal(r.conflict, false);
+r = restoreCourtCache(server, {dirty: true, draft: {home: 9}, base: {revision: 1, signature: 'old'}});
+assert.equal(r.draft.home, 9); assert.equal(r.conflict, true); assert.equal(server.revision, 5);
+r = restoreCourtCache(server, {pending: [{key: 'receipt'}], draft: {home: 8}, base: {revision: 4, signature: 'new'}});
+assert.equal(r.pending[0].key, 'receipt'); assert.equal(r.match.revision, 4); assert.equal(r.conflict, false);
+r = restoreCourtCache(server, {dirty: true, draft: {home: 9}}); assert.equal(r.conflict, true);
+r = restoreCourtCache({...server, draft_signature: 'old'}, null); assert.equal(r.conflict, true);
+console.log('Court cache: five regression cases passed');

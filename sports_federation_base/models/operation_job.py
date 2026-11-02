@@ -1,5 +1,8 @@
 import logging
 from datetime import timedelta
+from psycopg2 import IntegrityError
+from psycopg2.errors import SerializationFailure, DeadlockDetected
+from odoo.tools import SQL
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
@@ -57,6 +60,9 @@ class FederationOperationJob(models.Model):
         self, source, correlation_id, name=False, max_attempts=3, priority=50
     ):
         source.ensure_one()
+        source.check_access('read')
+        source.flush_recordset()
+        self.env.cr.execute(SQL('SELECT id FROM %s WHERE id=%s FOR UPDATE', SQL.identifier(source._table), source.id))
         values = {
             "name": name or source.display_name,
             "source_model": source._name,
@@ -73,7 +79,15 @@ class FederationOperationJob(models.Model):
             ],
             limit=1,
         )
-        return job or self.create(values)
+        if job:
+            return job
+        try:
+            with self.env.cr.savepoint():
+                return self.create(values)
+        except IntegrityError as error:
+            if error.pgcode != '23505':
+                raise
+            raise SerializationFailure('Concurrent job creation; retry transaction') from error
 
     def _source(self):
         self.ensure_one()
@@ -123,8 +137,21 @@ class FederationOperationJob(models.Model):
             }
         )
 
+    def _claim(self, states=('pending', 'retry')):
+        self.ensure_one()
+        self.check_access('write')
+        self.flush_recordset()
+        self.env.cr.execute('SELECT id FROM federation_operation_job WHERE id=%s FOR UPDATE SKIP LOCKED', [self.id])
+        if not self.env.cr.fetchone():
+            return False
+        self.invalidate_recordset()
+        self.check_access('write')
+        return self.state in states
+
     def _execute(self):
         self.ensure_one()
+        if not self._claim() or (self.next_retry_on and self.next_retry_on > fields.Datetime.now()):
+            return False
         source = self._source()
         if not source:
             self._fail(
@@ -135,9 +162,12 @@ class FederationOperationJob(models.Model):
             return False
         self._start()
         try:
-            source.with_context(
-                federation_correlation_id=self.correlation_id
-            )._retry_operational_job(self)
+            with self.env.cr.savepoint():
+                source.with_context(
+                    federation_correlation_id=self.correlation_id
+                )._retry_operational_job(self)
+        except (SerializationFailure, DeadlockDetected):
+            raise
         except Exception as error:  # pylint: disable=broad-except
             retryable = not isinstance(error, (UserError, ValidationError))
             self._fail(error, "unexpected_bug", retryable=retryable)
@@ -152,8 +182,10 @@ class FederationOperationJob(models.Model):
 
     def action_retry(self):
         for job in self:
-            if job.state not in ("retry", "operator_action"):
-                raise ValidationError(_("Only failed jobs can be retried."))
+            if not job._claim(('retry', 'operator_action', 'done')):
+                raise ValidationError(_('Recovery job changed; reload before retrying.'))
+            if job.state not in ('retry', 'operator_action', 'done'):
+                raise ValidationError(_("Only completed or failed recovery jobs can be retried."))
             job.write(
                 {
                     "state": "pending",
@@ -181,12 +213,16 @@ class FederationOperationJob(models.Model):
     def _recover_stale(self, stale_minutes=30):
         deadline = fields.Datetime.now() - timedelta(minutes=stale_minutes)
         stale = self.search([("state", "=", "running"), ("started_on", "<=", deadline)])
+        recovered = 0
         for job in stale:
+            if not job._claim(('running',)) or not job.started_on or job.started_on > deadline:
+                continue
+            recovered += 1
             job._fail(
                 _("Recovered after the worker stopped while processing."),
                 "infrastructure",
             )
-        return len(stale)
+        return recovered
 
     @api.model
     def _cron_process_jobs(self):

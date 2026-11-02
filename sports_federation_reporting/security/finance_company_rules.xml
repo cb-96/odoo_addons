@@ -1,0 +1,5 @@
+<odoo>
+<record id="report_finance_company_rule" model="ir.rule"><field name="name">report_finance company isolation</field><field name="model_id" ref="model_federation_report_finance"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
+<record id="report_finance_reconciliation_company_rule" model="ir.rule"><field name="name">report_finance_reconciliation company isolation</field><field name="model_id" ref="model_federation_report_finance_reconciliation"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
+<record id="report_finance_exception_company_rule" model="ir.rule"><field name="name">report_finance_exception company isolation</field><field name="model_id" ref="model_federation_report_finance_exception"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
+</odoo>

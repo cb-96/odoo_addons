@@ -198,7 +198,7 @@ class TestReportingHttpSmoke(HttpCase):
             "/reporting/export/finance",
             "finance_summary_csv",
             [
-                "Fee Type,Category,State,Event Count,Total Amount",
+                "Fee Type,Category,State,Event Count,Total Amount,Company,Currency",
                 self.fee_type.name,
                 "registration",
             ],

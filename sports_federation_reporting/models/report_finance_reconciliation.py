@@ -31,6 +31,7 @@ class FederationReportFinanceReconciliation(models.Model):
     finance_event_id = fields.Many2one(
         "federation.finance.event", string="Finance Event", readonly=True
     )
+    company_id = fields.Many2one('res.company', readonly=True)
     fee_type_id = fields.Many2one(
         "federation.fee.type", string="Fee Type", readonly=True
     )
@@ -73,6 +74,7 @@ class FederationReportFinanceReconciliation(models.Model):
                 -- block: report_rows
                 SELECT
                     fe.id AS id,
+                    fe.company_id,
                     fe.id AS finance_event_id,
                     fe.fee_type_id,
                     fe.event_type,

@@ -1,10 +1,14 @@
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
+
+_HANDOFF_TOKEN = object()
 
 
 class FederationFinanceEvent(models.Model):
     _name = "federation.finance.event"
     _description = "Federation Finance Event"
+    _check_company_auto = True
+    company_id = fields.Many2one('res.company', required=True, index=True, default=lambda self: self.env.company)
     _inherit = [
         "federation.finance.event.export.mixin",
         "mail.thread",
@@ -15,6 +19,7 @@ class FederationFinanceEvent(models.Model):
     name = fields.Char(required=True)
     fee_type_id = fields.Many2one(
         "federation.fee.type",
+        check_company=True,
         required=True,
         ondelete="restrict",
     )
@@ -97,7 +102,7 @@ class FederationFinanceEvent(models.Model):
     closed_by_id = fields.Many2one("res.users", readonly=True)
 
     _fee_source_unique = models.Constraint(
-        "unique (fee_type_id, source_model, source_res_id)",
+        "unique (company_id, fee_type_id, source_model, source_res_id)",
         "A finance event already exists for this fee type and source record.",
     )
 
@@ -187,8 +192,57 @@ class FederationFinanceEvent(models.Model):
             if record.source_res_id <= 0:
                 raise ValidationError("Source res ID must be > 0.")
 
+    def _finance_lock(self):
+        self.check_access('write')
+        if self:
+            self.flush_recordset()
+            self.env.cr.execute('SELECT id FROM federation_finance_event WHERE id IN %s ORDER BY id FOR UPDATE', [tuple(self.ids)])
+            self.invalidate_recordset()
+            self.check_access('write')
+
+    @api.constrains('company_id', 'fee_type_id', 'source_model', 'source_res_id', 'partner_id')
+    def _check_finance_company(self):
+        for event in self:
+            if event.fee_type_id.company_id != event.company_id:
+                raise ValidationError(_('Fee and obligation must belong to the same company.'))
+            if event.partner_id.company_id and event.partner_id.company_id != event.company_id:
+                raise ValidationError(_('The payer belongs to another company.'))
+            source = event._resolve_source_record(event.source_model, event.source_res_id)
+            if source and 'company_id' in source._fields and source.company_id and source.company_id != event.company_id:
+                raise ValidationError(_('The source belongs to another company.'))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        audit = ('exported_on', 'exported_by_id', 'reconciled_on', 'reconciled_by_id', 'closed_on', 'closed_by_id')
+        if any(v.get('state', 'draft') not in ('draft', 'confirmed')
+               or v.get('handoff_state', 'pending_export') != 'pending_export'
+               or any(v.get(k) for k in audit) for v in vals_list):
+            raise AccessError(_('Create an obligation without forged lifecycle metadata.'))
+        return super().create(vals_list)
+
+    def _write_handoff(self, vals):
+        return self.with_context(finance_handoff_token=_HANDOFF_TOKEN).write(vals)
+
+    def write(self, vals):
+        audit = {'handoff_state', 'exported_on', 'exported_by_id', 'reconciled_on', 'reconciled_by_id', 'closed_on', 'closed_by_id'}
+        if audit & set(vals) and self.env.context.get('finance_handoff_token') is not _HANDOFF_TOKEN:
+            raise AccessError(_('Use the accounting handoff commands.'))
+        self._finance_lock()
+        identity = {'company_id', 'fee_type_id', 'source_model', 'source_res_id', 'amount', 'currency_id', 'partner_id', 'event_type'}
+        allowed = {'draft': {'draft', 'confirmed', 'cancelled'}, 'confirmed': {'confirmed', 'settled', 'cancelled'},
+                   'settled': {'settled'}, 'cancelled': {'cancelled'}}
+        for event in self:
+            if identity & set(vals) and event.state != 'draft':
+                raise ValidationError(_('Confirmed obligation identity and amount are immutable.'))
+            target = vals.get('state', event.state)
+            reversal = target == 'cancelled' and event.state == 'settled' and hasattr(event, '_invoice_resolved') and event._invoice_resolved()
+            if not reversal and target not in allowed[event.state]:
+                raise ValidationError(_('Invalid obligation lifecycle transition.'))
+        return super().write(vals)
+
     def action_confirm(self):
         """Execute the confirm action."""
+        self._finance_lock()
         for record in self:
             if record.state != "draft":
                 raise ValidationError("Only draft events can be confirmed.")
@@ -200,6 +254,7 @@ class FederationFinanceEvent(models.Model):
 
     def action_settle(self):
         """Execute the settle action."""
+        self._finance_lock()
         for record in self:
             if record.state != "confirmed":
                 raise ValidationError("Only confirmed events can be settled.")
@@ -208,10 +263,11 @@ class FederationFinanceEvent(models.Model):
 
     def action_cancel(self):
         """Execute the cancel action."""
+        self._finance_lock()
         for record in self:
             if record.state == "settled":
                 raise ValidationError("Settled events cannot be cancelled.")
-            record.write(
+            record._write_handoff(
                 {
                     "state": "cancelled",
                     "handoff_state": "closed",
@@ -223,6 +279,7 @@ class FederationFinanceEvent(models.Model):
 
     def action_mark_exported(self):
         """Execute the mark exported action."""
+        self._finance_lock()
         for record in self:
             if record.state not in ("confirmed", "settled"):
                 raise ValidationError(
@@ -232,7 +289,7 @@ class FederationFinanceEvent(models.Model):
                 raise ValidationError(
                     "Closed handoff records cannot be exported again."
                 )
-            record.write(
+            record._write_handoff(
                 {
                     "handoff_state": "exported",
                     "exported_on": fields.Datetime.now(),
@@ -243,6 +300,7 @@ class FederationFinanceEvent(models.Model):
 
     def action_mark_reconciled(self):
         """Execute the mark reconciled action."""
+        self._finance_lock()
         for record in self:
             if record.state != "settled":
                 raise ValidationError(
@@ -252,7 +310,7 @@ class FederationFinanceEvent(models.Model):
                 raise ValidationError(
                     "Mark the event as exported before reconciling it with the accounting system."
                 )
-            record.write(
+            record._write_handoff(
                 {
                     "handoff_state": "reconciled",
                     "reconciled_on": fields.Datetime.now(),
@@ -263,6 +321,7 @@ class FederationFinanceEvent(models.Model):
 
     def action_close_handoff(self):
         """Execute the close handoff action."""
+        self._finance_lock()
         for record in self:
             if record.state != "settled":
                 raise ValidationError(
@@ -272,7 +331,7 @@ class FederationFinanceEvent(models.Model):
                 raise ValidationError(
                     "Reconcile the event before closing the accounting handoff."
                 )
-            record.write(
+            record._write_handoff(
                 {
                     "handoff_state": "closed",
                     "closed_on": fields.Datetime.now(),
@@ -332,6 +391,8 @@ class FederationFinanceEvent(models.Model):
         elif hasattr(source_record, "referee_id") and source_record.referee_id:
             vals["referee_id"] = source_record.referee_id.id
 
+        vals["company_id"] = fee_type.company_id.id
+
         if extra_vals:
             for key, value in extra_vals.items():
                 if key in self._fields:
@@ -371,7 +432,7 @@ class FederationFinanceEvent(models.Model):
         )
 
         if existing:
-            if update_existing and existing.state in ("draft", "cancelled"):
+            if update_existing and existing.state == "draft":
                 update_vals = {}
                 for field_name in (
                     "name",
@@ -454,45 +515,7 @@ class FederationFinanceEvent(models.Model):
         )
 
     def action_create_invoice(self):
-        """Create an account.move (customer invoice) from this finance event.
-
-        Guards silently when the accounting module is not installed.
-        Raises ValidationError if an invoice already exists or the event
-        is cancelled.
-        """
-        self.ensure_one()
-        if "account.move" not in self.env:
-            return False
-        if self.invoice_ref:
-            raise ValidationError("An invoice already exists for this finance event.")
-        if self.state == "cancelled":
-            raise ValidationError(
-                "Cannot create an invoice for a cancelled finance event."
-            )
-        partner = self.partner_id
-        if not partner:
-            raise ValidationError(
-                _("Select an invoice partner before creating a customer invoice.")
-            )
-        if "invoice_product_id" not in self._fields or not self.invoice_product_id:
-            raise ValidationError(
-                _("Configure an invoice product before creating a customer invoice.")
-            )
-        invoice_line_vals = {
-            "name": self.name,
-            "quantity": 1.0,
-            "price_unit": self.amount,
-            "currency_id": self.currency_id.id,
-            "product_id": self.invoice_product_id.id,
-        }
-        invoice_vals = {
-            "move_type": "out_invoice",
-            "partner_id": partner.id if partner else False,
-            "invoice_line_ids": [(0, 0, invoice_line_vals)],
-        }
-        invoice = self.env["account.move"].sudo().create(invoice_vals)
-        self.write({"invoice_ref": str(invoice.id)})
-        return invoice
+        raise UserError(_('Install the opt-in native accounting addon. No elevated invoice fallback is supported.'))
 
     def action_batch_create_invoices(self):
         """Create invoices for eligible finance events and report failures.

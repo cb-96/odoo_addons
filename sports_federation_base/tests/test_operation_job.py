@@ -93,3 +93,30 @@ class TestOperationJob(TransactionCase):
     def test_manual_retry_rejects_non_failed_job(self):
         with self.assertRaises(ValidationError):
             self.job.action_retry()
+
+    def test_callback_failure_rolls_back_business_mutation(self):
+        from unittest.mock import patch
+        source = self.job._source()
+        original_name = source.name
+        def failing(record, job):
+            record.write({'name': 'MUST ROLL BACK'})
+            raise ValidationError('Injected callback failure')
+        with patch.object(type(source), '_retry_operational_job', failing, create=True):
+            self.assertFalse(self.job._execute())
+        source.invalidate_recordset()
+        self.assertEqual(source.name, original_name)
+        self.assertEqual(self.job.attempt_count, 1)
+        self.assertEqual(self.job.state, 'retry')
+
+    def test_completed_recovery_can_be_replayed(self):
+        from unittest.mock import patch
+        source = self.job._source()
+        self.job.write({'state': 'done', 'attempt_count': 2})
+        with patch.object(type(source), '_retry_operational_job', lambda record, job: True, create=True):
+            self.job.action_retry()
+        self.assertEqual(self.job.state, 'done')
+        self.assertEqual(self.job.attempt_count, 1)
+
+    def test_terminal_job_is_not_claimed_by_cron(self):
+        self.job.write({'state': 'done'})
+        self.assertFalse(self.job._execute())

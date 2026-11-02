@@ -1,4 +1,5 @@
 /** @odoo-module **/
+import { restoreCourtCache } from "./court_cache";
 import { Component, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
@@ -49,17 +50,10 @@ export class CourtWorkspace extends Component {
         this.state.busy = true;
         try {
             const result = await this.orm.call("federation.court.commands", "open_match", [this.access.matchday_id, this.access.court_id, id]);
-            this.state.match = result;
-            this.state.draft = clone(result.payload);
-            this.state.conflict = result.signature !== result.draft_signature;
-            const cached = JSON.parse(localStorage.getItem(this.storageKey) || "null");
-            this.state.pending = cached?.pending || [];
-            if (this.state.pending.length && cached?.base) {
-                this.state.match.revision = cached.base.revision;
-                this.state.match.signature = cached.base.signature;
-            }
-            if (cached?.draft) this.state.draft = cached.draft;
-            this.state.dirty = Boolean(cached?.dirty);
+            let cached = null;
+            try { cached = JSON.parse(localStorage.getItem(`${this.storagePrefix}${this.access.matchday_id}:${this.access.court_id}:${id}`) || 'null'); }
+            catch { this.state.error = _t('Unreadable device cache. Preserve device evidence before clearing storage.'); }
+            Object.assign(this.state, restoreCourtCache(result, cached));
             this.state.status = (this.state.pending.length || this.state.dirty) ? _t("Unsynchronised: stored on this device") : result.submitted ? _t("Submitted: awaiting result review") : _t("Saved on server");
             this.state.error = this.state.conflict ? _t("The published slot or canonical result changed. Reconcile explicitly.") : "";
         } catch (error) { this.state.error = this.message(error); }

@@ -1,4 +1,7 @@
 import base64
+import hashlib
+from psycopg2 import IntegrityError
+from psycopg2.errors import SerializationFailure
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 
@@ -49,7 +52,7 @@ class Relationship(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         manager(self.env)
-        if any(v.get('state', 'draft') != 'draft' for v in vals_list):
+        if any(v.get('state', 'draft') != 'draft' or v.get('verified_by_id') for v in vals_list):
             raise AccessError(_('Use Verify to activate a relationship.'))
         return super().create(vals_list)
 
@@ -63,13 +66,25 @@ class Relationship(models.Model):
 
     def action_verify(self):
         manager(self.env)
-        if any(r.state != 'draft' for r in self):
+        self.check_access('write')
+        if not self:
+            return True
+        self.env.cr.execute('SELECT id FROM federation_person_relationship WHERE id IN %s ORDER BY id FOR UPDATE', [tuple(self.ids)])
+        self.invalidate_recordset()
+        self.check_access('write')
+        if any(r.state != 'draft' or r.valid_until < fields.Date.today() for r in self):
             raise ValidationError(_('Only unverified relationships can be verified.'))
         return super().write({'state': 'verified', 'verified_by_id': self.env.uid})
 
     def action_revoke(self):
         manager(self.env)
-        return super().write({'state': 'revoked'})
+        self.check_access('write')
+        if not self:
+            return True
+        self.env.cr.execute('SELECT id FROM federation_person_relationship WHERE id IN %s ORDER BY id FOR UPDATE', [tuple(self.ids)])
+        self.invalidate_recordset()
+        self.check_access('write')
+        return super().write({'state': 'revoked', 'verified_by_id': False})
 
 
 class Membership(models.Model):
@@ -86,8 +101,19 @@ class Membership(models.Model):
     previous_id = fields.Many2one('federation.person.membership', ondelete='restrict', readonly=True)
     _membership_unique = models.Constraint('UNIQUE(person_id, club_id, season_id, role)', 'This membership already exists.')
 
+    @api.constrains('previous_id', 'person_id', 'club_id', 'role', 'company_id', 'season_id')
+    def _check_renewal_chain(self):
+        for row in self.filtered('previous_id'):
+            previous = row.previous_id
+            if (row.person_id != previous.person_id or row.club_id != previous.club_id
+                    or row.role != previous.role or row.company_id != previous.company_id
+                    or row.season_id.date_start <= previous.season_id.date_start):
+                raise ValidationError(_('Renewal must preserve identity and follow an earlier season.'))
+
     def write(self, vals):
         manager(self.env)
+        if 'previous_id'  in vals:
+            raise AccessError(_('Renewal lineage cannot be edited.'))
         if any(r.state == 'active' for r in self) and {'person_id', 'club_id', 'season_id', 'role', 'company_id'} & set(vals):
             raise ValidationError(_('Active membership identity is immutable.'))
         return super().write(vals)
@@ -119,13 +145,26 @@ class Membership(models.Model):
         if not season or season.state != 'open' or season.date_start <= old.season_id.date_start:
             raise ValidationError(_('Choose a later open season.'))
         self.env.cr.execute('SELECT id FROM federation_person_membership WHERE id=%s FOR UPDATE', [self.id])
+        self.env.cr.execute('SELECT id FROM federation_season WHERE id=%s FOR UPDATE', [season.id])
+        old.invalidate_recordset()
+        season.invalidate_recordset()
+        if (old.state != 'active' or not old.club_id.active or season.state != 'open'
+                or season.date_start <= old.season_id.date_start or old.company_id not in self.env.companies
+                or old.person_id.id not in self._person_ids()):
+            raise ValidationError(_('Renew only an active membership in an active club into a later open season.'))
         domain = [('person_id', '=', old.person_id.id), ('club_id', '=', old.club_id.id),
                   ('season_id', '=', season.id), ('role', '=', old.role)]
         existing = self.sudo().search(domain, limit=1)
         if existing:
             return existing.id
-        return self.sudo().create({'person_id': old.person_id.id, 'club_id': old.club_id.id,
-            'season_id': season.id, 'role': old.role, 'previous_id': old.id, 'company_id': old.company_id.id}).id
+        try:
+            with self.env.cr.savepoint():
+                return self.sudo().create({'person_id': old.person_id.id, 'club_id': old.club_id.id,
+                    'season_id': season.id, 'role': old.role, 'previous_id': old.id, 'company_id': old.company_id.id}).id
+        except IntegrityError as error:
+            if error.pgcode != '23505':
+                raise
+            raise SerializationFailure('Concurrent renewal; retry transaction') from error
 
 
 class Request(models.Model):
@@ -147,6 +186,10 @@ class Request(models.Model):
     uploaded_by_id = fields.Many2one('res.users', readonly=True)
     verified_by_id = fields.Many2one('res.users', readonly=True)
     valid_until = fields.Date()
+    document_revision = fields.Integer(default=0, readonly=True, copy=False)
+    document_checksum = fields.Char(readonly=True, copy=False)
+    verified_revision = fields.Integer(readonly=True, copy=False)
+    verified_on = fields.Datetime(readonly=True, copy=False)
 
     def _allowed(self):
         self.ensure_one()
@@ -175,6 +218,8 @@ class Request(models.Model):
         self.env.cr.execute('SELECT id FROM federation_person_request WHERE id=%s FOR UPDATE', [self.id])
         record = self.sudo()
         record.invalidate_recordset()
+        if not record.with_user(self.env.user)._allowed():
+            raise AccessError(_('Document access changed.'))
         if record.state not in ('requested', 'returned'):
             raise ValidationError(_('This request is no longer accepting uploads.'))
         if not upload:
@@ -185,31 +230,110 @@ class Request(models.Model):
         checked = policy.validate_upload('portal_document', upload.filename, payload, mimetype=upload.content_type)
         # Bypass only the command-field guard after actor, scope and state validation.
         super(Request, record).write({'document': base64.b64encode(checked['payload']),
-            'filename': upload.filename, 'state': 'uploaded', 'uploaded_by_id': self.env.uid})
+             'filename': upload.filename, 'state': 'uploaded', 'uploaded_by_id': self.env.uid,
+            'document_revision': record.document_revision + 1,
+            'document_checksum': hashlib.sha256(checked['payload']).hexdigest(),
+            'verified_by_id': False, 'verified_revision': 0, 'verified_on': False})
+        record.message_post(body=_('Uploaded revision %(revision)s; checksum %(checksum)s.') % {
+            'revision': record.document_revision, 'checksum': record.document_checksum})
 
     def write(self, vals):
         manager(self.env)
-        if {'state', 'document', 'uploaded_by_id', 'verified_by_id'} & set(vals):
+        if {'state', 'document', 'uploaded_by_id', 'verified_by_id', 'document_revision', 'document_checksum', 'verified_revision', 'verified_on'} & set(vals):
             raise AccessError(_('Use the request workflow commands.'))
-        if any(r.state in ('uploaded', 'verified') for r in self) and {'person_id', 'guardian_required', 'purpose'} & set(vals):
+        if any(r.state in ('uploaded', 'verified') for r in self) and {'person_id', 'guardian_required', 'purpose', 'company_id', 'valid_until'} & set(vals):
             raise ValidationError(_('Reviewed request scope is immutable.'))
         return super().write(vals)
 
     @api.model_create_multi
     def create(self, vals_list):
         manager(self.env)
-        if any(v.get('state', 'requested') != 'requested' or v.get('document') for v in vals_list):
+        if any(v.get('state', 'requested') != 'requested' or any(v.get(k) for k in ('document', 'uploaded_by_id', 'verified_by_id', 'document_revision', 'document_checksum', 'verified_revision', 'verified_on')) for v in vals_list):
             raise AccessError(_('Create an empty request first.'))
         return super().create(vals_list)
 
-    def action_verify(self):
+    def _review_lock(self):
         manager(self.env)
-        if any(r.state != 'uploaded' or r.uploaded_by_id.id == self.env.uid for r in self):
+        self.ensure_one()
+        self.check_access('write')
+        self.flush_recordset()
+        self.env.cr.execute('SELECT id FROM federation_person_request WHERE id=%s FOR UPDATE', [self.id])
+        self.invalidate_recordset()
+        self.check_access('write')
+
+    def action_verify(self):
+        self._review_lock()
+        if self.state != 'uploaded' or not self.document or self.uploaded_by_id.id == self.env.uid:
             raise ValidationError(_('Independent review of an uploaded document is required.'))
-        return super().write({'state': 'verified', 'verified_by_id': self.env.uid})
+        checksum = hashlib.sha256(base64.b64decode(self.document)).hexdigest()
+        if not self.document_revision or not self.document_checksum:
+            super().write({'document_revision': max(1, self.document_revision), 'document_checksum': checksum})
+        if checksum != self.document_checksum:
+            raise ValidationError(_('Document checksum mismatch. Request replacement.'))
+        wizard = self.env['federation.person.request.review'].create({'request_id': self.id})
+        return {'type': 'ir.actions.act_window', 'res_model': wizard._name, 'res_id': wizard.id,
+                'view_mode': 'form', 'target': 'new', 'name': _('Review exact document revision')}
+
+    def _verify_revision(self, revision, checksum):
+        self._review_lock()
+        if self.valid_until and self.valid_until < fields.Date.today():
+            raise ValidationError(_('Expired evidence requires replacement.'))
+        actual = hashlib.sha256(base64.b64decode(self.document or b'')).hexdigest()
+        if (self.state != 'uploaded' or not self.document or self.uploaded_by_id.id == self.env.uid
+                or self.document_revision != revision or self.document_checksum != checksum or actual != checksum):
+            raise ValidationError(_('The reviewed document changed. Inspect the current revision.'))
+        super().write({'state': 'verified', 'verified_by_id': self.env.uid,
+                       'verified_revision': revision, 'verified_on': fields.Datetime.now()})
+        self.message_post(body=_('Verified revision %(revision)s; checksum %(checksum)s.') % {
+            'revision': revision, 'checksum': checksum})
+        return True
 
     def action_return(self):
+        for record in self.sorted('id'):
+            record._review_lock()
+            if record.state not in ('uploaded', 'verified') or not record.review_note:
+                raise ValidationError(_('Explain the required replacement.'))
+            record.message_post(body=_('Returned revision %(revision)s; checksum %(checksum)s. Previous approval remains in chatter history.') % {
+                'revision': record.document_revision, 'checksum': record.document_checksum or ''})
+            super(Request, record).write({'state': 'returned', 'verified_by_id': False,
+                                          'verified_revision': 0, 'verified_on': False})
+        return True
+
+
+class RequestReview(models.TransientModel):
+    _name = 'federation.person.request.review'
+    _description = 'Exact Document Revision Review'
+    request_id = fields.Many2one('federation.person.request', required=True, readonly=True)
+    revision = fields.Integer(readonly=True)
+    checksum = fields.Char(readonly=True)
+    document = fields.Binary(readonly=True, attachment=False)
+    filename = fields.Char(readonly=True)
+    inspected = fields.Boolean(string='I inspected this exact document revision')
+
+    @api.model_create_multi
+    def create(self, vals_list):
         manager(self.env)
-        if any(r.state not in ('uploaded', 'verified') or not r.review_note for r in self):
-            raise ValidationError(_('Explain the required replacement.'))
-        return super().write({'state': 'returned'})
+        prepared = []
+        for vals in vals_list:
+            request = self.env['federation.person.request'].browse(vals['request_id'])
+            request._review_lock()
+            if request.state != 'uploaded' or request.uploaded_by_id.id == self.env.uid:
+                raise ValidationError(_('Independent review is required.'))
+            prepared.append({'request_id': request.id, 'revision': request.document_revision,
+                             'checksum': request.document_checksum, 'document': request.document,
+                             'filename': request.filename, 'inspected': False})
+        return super().create(prepared)
+
+    def write(self, vals):
+        manager(self.env)
+        if set(vals) - {'inspected'}:
+            raise AccessError(_('Review snapshots cannot be edited.'))
+        return super().write(vals)
+
+    def action_confirm(self):
+        self.ensure_one()
+        self.check_access('read')
+        if self.create_uid != self.env.user or not self.inspected:
+            raise ValidationError(_('Inspect the document in your own review dialog.'))
+        self.request_id._verify_revision(self.revision, self.checksum)
+        return {'type': 'ir.actions.act_window_close'}

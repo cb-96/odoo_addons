@@ -171,6 +171,8 @@ class KpiExportController(http.Controller):
                 "State",
                 "Event Count",
                 "Total Amount",
+                "Company",
+                "Currency",
             ]
         )
         for row in finance_rows:
@@ -181,6 +183,8 @@ class KpiExportController(http.Controller):
                     row.state or "",
                     row.event_count,
                     row.total_amount,
+                    row.company_id.name,
+                    row.currency_id.name,
                 ]
             )
 
