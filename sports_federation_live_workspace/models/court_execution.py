@@ -121,4 +121,3 @@ class CourtCommandsExtension(models.AbstractModel):
                 "digest": digest({"reason": reason, "revision": capture.revision}), "actor_id": self.env.uid,
                 "operation": "reconcile", "response": {**response, "reason": reason.strip()}})
             return response
-

@@ -345,4 +345,3 @@ class FederationOperationTaskExtension(models.Model):
         scope_domain += [("audience", "=", "manager" if is_manager else "club")]
         self._sync_specs(specs, scope_domain)
         return self.sudo().search(scope_domain + [("state", "!=", "done")])
-

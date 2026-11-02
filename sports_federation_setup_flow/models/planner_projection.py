@@ -557,4 +557,3 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
             "divisions": division_rows,
             "issues": issues,
         }
-
