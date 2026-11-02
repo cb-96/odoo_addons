@@ -252,15 +252,15 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     }
                 )
             )
-            referee = env["federation.referee"].create(
-                {
-                    "name": "Portal Official Smoke Referee",
-                    "email": "portal.official.smoke@example.com",
-                    "certification_level": "national",
-                    "user_id": official_user.id,
-                    "coverage_playing_checked": True,
-                }
-            )
+            referee_values = {
+                "name": "Portal Official Smoke Referee",
+                "email": "portal.official.smoke@example.com",
+                "certification_level": "national",
+                "user_id": official_user.id,
+            }
+            if "coverage_playing_checked" in env["federation.referee"]._fields:
+                referee_values["coverage_playing_checked"] = True
+            referee = env["federation.referee"].create(referee_values)
             env["federation.referee.availability"].create(
                 {
                     "referee_id": referee.id,
@@ -682,6 +682,9 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         self.assertNotIn("Internal Server Error", submit_response.text)
 
     def test_officiating_response_flow_renders_success(self):
+        if "coverage_playing_checked" not in self.env["federation.referee"]._fields:
+            self.skipTest("sports_federation_duty_coverage is not installed")
+
         assignment = self.env["federation.match.referee"].sudo().browse(
             self.assignment.id
         )

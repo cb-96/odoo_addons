@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 
 
 class FederationCompetitionEditionPlanner(models.Model):
@@ -869,19 +869,22 @@ class FederationCompetitionEditionPlanner(models.Model):
             self.env.get("federation.participant.set"),
             self.env.get("federation.participant.set.line"),
         )
-        return all(
-            model is not None
-            and model.check_access_rights("read", raise_exception=False)
-            for model in required_models
-        )
+        return all(self._usability_model_can_read(model) for model in required_models)
+
+    @staticmethod
+    def _usability_model_can_read(model):
+        if model is None:
+            return False
+        try:
+            model.check_access("read")
+        except AccessError:
+            return False
+        return True
 
     def _usability_operation_access(self):
         def can_read(model_name):
             model = self.env.get(model_name)
-            return bool(
-                model is not None
-                and model.check_access_rights("read", raise_exception=False)
-            )
+            return self._usability_model_can_read(model)
 
         matchday_access = can_read("federation.matchday")
         match_access = can_read("federation.match")

@@ -25,7 +25,8 @@ sets with their lines; match-day, lineup, official, and result counts require
 read access to their source records. An edition reader without those domain
 permissions can still use the planner's setup routes; unavailable operations
 are marked unavailable instead of bypassing access controls or presenting an
-incomplete count as zero.
+incomplete count as zero. Availability probes use model-level `check_access`
+and treat `AccessError` as unavailable without broadening the caller's rights.
 
 ## Ownership boundary
 
