@@ -21,9 +21,9 @@ class TestBrowserFinanceBridge(HttpCase):
         )
         cls.fee_type = cls.env["federation.fee.type"].create(
             {
-                "name": "Browser Registration Fee",
-                "code": "BROWSER_REG",
-                "category": "registration",
+                "name": "Browser Referee Reimbursement",
+                "code": "BROWSER_REIMBURSEMENT",
+                "category": "reimbursement",
                 "default_amount": 125.0,
             }
         )
@@ -47,7 +47,7 @@ class TestBrowserFinanceBridge(HttpCase):
             {
                 "name": "Browser Finance Lifecycle",
                 "fee_type_id": cls.fee_type.id,
-                "event_type": "charge",
+                "event_type": "reimbursement",
                 "amount": 125.0,
                 "source_model": "federation.club",
                 "source_res_id": cls.club.id,

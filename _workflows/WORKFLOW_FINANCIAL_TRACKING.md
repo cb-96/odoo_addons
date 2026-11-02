@@ -64,7 +64,8 @@ Finance events are created in two ways:
 
 All automatic hooks create source-linked events idempotently and assign a
 deterministic `external_ref` so repeated workflow entries reuse the same draft
-record instead of creating duplicates.
+record instead of creating duplicates. A cancelled referee reimbursement has
+the additional guarded reactivation rule in step 6 below.
 
 Each event records:
 - Fee type (from catalogue)
@@ -72,6 +73,10 @@ Each event records:
 - Source record (via `source_model` / `source_res_id`)
 - Target entity: club, player, or referee
 - Partner (for accounting integration)
+
+If `season_id` is not supplied, the finance-event model infers it from the
+source record's known season relationship. This applies to both source-helper
+creation and direct model creation.
 
 ### 3. Event Confirmation
 
@@ -91,22 +96,24 @@ Each event records:
 **Actor**: Federation finance staff
 **Module**: `sports_federation_finance_bridge`
 
-For confirmed events that need an external accounting reference:
+For confirmed customer charges that need an invoice:
 
-1. Use the native accounting command when the federation accounting integration
-   is installed. The bridge fallback requires an explicit invoice partner and a
-   configured invoice product so accounting can resolve its income account.
-2. Record the generated invoice reference in `invoice_ref` when using the bridge
-   fallback.
-3. Keep the bridge event in `confirmed` until it is financially settled.
+1. Install the opt-in `sports_federation_accounting` addon and use its native
+   invoice command. It requires the authorized payer and a configured product.
+2. The finance bridge alone does not create invoices and provides no elevated
+   fallback; its command reports that the accounting addon is required.
+3. Keep the event in `confirmed` until the native invoice is posted and fully
+   paid.
 
 ### 5. Payment Recording
 
 **Actor**: Federation finance staff
 **Module**: `sports_federation_finance_bridge`
 
-1. When payment is received or reimbursement is completed:
-2. Set state to `settled`.
+1. Record the payment or completed reimbursement in the owning accounting
+   workflow.
+2. Customer charges can be settled only after the native invoice is posted and
+   fully paid. Reimbursements and credits use their authorized settlement path.
 3. Record external references if applicable (`external_ref`).
 
 ### 6. Cancellation
@@ -117,6 +124,10 @@ For confirmed events that need an external accounting reference:
 1. Events can be cancelled at any stage before `settled`.
 2. State → `cancelled`.
 3. Cancelled events remain in the system for audit but are excluded from totals.
+4. A source-linked referee reimbursement can return to `draft` if its assignment
+   is completed again, but only when it has not been invoiced, exported, or
+   reconciled. The reactivation is noted in chatter; externally handed-off
+   obligations remain cancelled for operator follow-up.
 
 ### 7. Reporting
 

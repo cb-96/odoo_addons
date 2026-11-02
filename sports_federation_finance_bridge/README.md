@@ -69,23 +69,23 @@ An individual financial occurrence.
 3. **Accounting-ready** — `invoice_ref` and `external_ref` keep the bridge ready
    for future accounting integration while the current lightweight workflow ends
    in `settled`.
-4. **Idempotent automation** — source-driven helpers reuse or reactivate matching
-  draft finance events instead of duplicating them on workflow re-entry.
+4. **Idempotent automation** — source-driven helpers reuse matching draft
+  events. A cancelled referee reimbursement can return to draft when its source
+  assignment is completed again, but only before invoice/export/reconciliation;
+  the reactivation is recorded in chatter.
 5. **Multi-entity** — Covers clubs, players, and referees.
 6. **Accounting handoff governance** — finance events now track export,
    reconciliation, and closure checkpoints for downstream accounting workflows.
 7. **Season intelligence support** — finance events infer a season scope from
-  their source record whenever possible so reporting and budget views can roll
-  up actuals without duplicate data entry.
+  their source record whenever possible, including direct model creation, so
+  reporting and budget views can roll up actuals without duplicate data entry.
 8. **Operator-safe batch invoicing** — list-view "Create Invoices" now reports
   per-event failures instead of silently skipping exceptions, so reconciliation
   issues are visible immediately.
-9. **Explicit invoice payer** — legacy bridge invoice creation requires
-  `partner_id`; a club record is not assumed to expose an accounting partner.
-  The legacy invoice command also puts the configured invoice product on the
-  invoice line so accounting can resolve the product's income account. When
-  `sports_federation_accounting` is installed, its native invoice command owns
-  invoice creation and uses the configured product and payer.
+9. **Native invoice boundary** — invoice creation is available only through
+  `sports_federation_accounting`, which requires an authorized payer and a
+  configured product. The bridge-only command does not create invoices or use
+  elevated fallback accounting access.
 
 ### `federation.season.budget`
 
@@ -161,6 +161,9 @@ match_result_hooks.py extends `federation.match` with:
 - the default fee type code is `referee_reimbursement`
 - reverting the assignment out of `done` cancels the draft reimbursement event
 - returning to `done` reuses the same source-traceable reimbursement event
+- a cancelled reimbursement can be reopened only while it has not been invoiced,
+  exported, or reconciled; otherwise the source transition is blocked for
+  operator follow-up
 
 ## Venue Booking Hooks
 

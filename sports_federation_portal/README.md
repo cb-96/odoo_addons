@@ -155,6 +155,12 @@ portal viewer's current ownership scope, even when the projection is searched
 with elevated read access. An unreadable or missing source is presented as
 unavailable, never as ready.
 
+Refreshing the work inbox also projects a roster-readiness task from each
+confirmed season registration that has no roster; refresh never creates the
+roster itself. Club tasks are visible only through a current representative
+relationship or an explicit team scope, so expired representatives do not keep
+access through stale task projections.
+
 The result-review queue shows submitted or verified results only to users with
 the corresponding result role and only when the configured self-verification
 or self-approval policy allows that user to act. Result commands remain the

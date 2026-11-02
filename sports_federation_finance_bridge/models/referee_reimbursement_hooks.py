@@ -1,4 +1,5 @@
-from odoo import api, models
+from odoo import _, api, models
+from odoo.exceptions import ValidationError
 
 
 class FederationMatchRefereeFinanceHooks(models.Model):
@@ -16,6 +17,30 @@ class FederationMatchRefereeFinanceHooks(models.Model):
         should_sync = any(
             key in vals for key in ("state", "referee_id", "match_id", "role")
         )
+        if vals.get("state") == "done":
+            FinanceEvent = self.env["federation.finance.event"]
+            for assignment in self:
+                fee_type = assignment._get_referee_reimbursement_fee_type(
+                    create_if_missing=False
+                )
+                existing_event = fee_type and FinanceEvent.search(
+                    [
+                        ("fee_type_id", "=", fee_type.id),
+                        ("source_model", "=", assignment._name),
+                        ("source_res_id", "=", assignment.id),
+                    ],
+                    limit=1,
+                )
+                if (
+                    existing_event
+                    and existing_event.state == "cancelled"
+                    and not existing_event._source_reactivation_allowed()
+                ):
+                    raise ValidationError(
+                        _(
+                            "Reconcile the cancelled reimbursement before completing this referee assignment again."
+                        )
+                    )
         res = super().write(vals)
         if should_sync:
             self._sync_reimbursement_finance_event()

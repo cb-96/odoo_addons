@@ -203,7 +203,12 @@ class TestCreateInvoice(TransactionCase):
         cls.partner = cls.env["res.partner"].create(
             {"name": "Invoice Test Customer"}
         )
-        if "account.move" in cls.env:
+        native_accounting = (
+            "account.move" in cls.env
+            and "invoice_product_id"
+            in cls.env["federation.finance.event"]._fields
+        )
+        if native_accounting:
             journal_model = cls.env["account.journal"]
             company = cls.env.company
             income_account = cls.env["account.account"].create(
@@ -231,18 +236,14 @@ class TestCreateInvoice(TransactionCase):
                 {
                     "name": "Invoice Test Service",
                     "type": "service",
-                    **(
-                        {"property_account_income_id": income_account.id}
-                        if "account.move" in cls.env
-                        else {}
-                    ),
+                    "property_account_income_id": income_account.id,
                 }
             )
-            if "account.move" in cls.env
-            else cls.env["product.product"].browse()
+            if native_accounting
+            else False
         )
 
-    def _make_event(self, amount=200.0, source_res_id=None):
+    def _make_event(self, amount=200.0, source_res_id=None, partner_id=None):
         return self.env["federation.finance.event"].create(
             {
                 "name": "Test Invoice Event",
@@ -253,7 +254,9 @@ class TestCreateInvoice(TransactionCase):
                 "source_model": "federation.season",
                 "source_res_id": source_res_id or self.season.id,
                 "club_id": self.club.id,
-                "partner_id": self.partner.id,
+                "partner_id": (
+                    self.partner.id if partner_id is None else partner_id
+                ),
                 "state": "confirmed",
                 **(
                     {"invoice_product_id": self.invoice_product.id}
@@ -270,13 +273,13 @@ class TestCreateInvoice(TransactionCase):
             return event.account_move_id
         return result
 
-    def test_create_invoice_skips_when_accounting_not_installed(self):
-        """action_create_invoice returns False gracefully without account module."""
-        if "account.move" in self.env:
-            self.skipTest("account module is installed; skipping guard test")
+    def test_create_invoice_requires_native_accounting_addon(self):
+        """The bridge must not create invoices without the opt-in accounting addon."""
+        if "invoice_product_id" in self.env["federation.finance.event"]._fields:
+            self.skipTest("native accounting extension is installed")
         event = self._make_event()
-        result = event.action_create_invoice()
-        self.assertFalse(result)
+        with self.assertRaises(UserError):
+            event.action_create_invoice()
         self.assertFalse(event.invoice_ref)
 
     def test_create_invoice_succeeds_when_accounting_installed(self):
@@ -306,18 +309,15 @@ class TestCreateInvoice(TransactionCase):
             self.assertEqual(event.invoice_ref, str(invoice.id))
 
     def test_create_invoice_requires_an_explicit_payer(self):
-        if "account.move" not in self.env:
-            self.skipTest("account module not installed; skipping invoice payer test")
-        event = self._make_event()
-        event.partner_id = False
+        if "invoice_product_id" not in self.env["federation.finance.event"]._fields:
+            self.skipTest("native accounting extension is not installed")
+        event = self._make_event(partner_id=False)
         with self.assertRaises(ValidationError):
             event.action_create_invoice()
 
     def test_create_invoice_requires_a_configured_product(self):
-        if "account.move" not in self.env:
-            self.skipTest(
-                "account module not installed; skipping invoice product test"
-            )
+        if "invoice_product_id" not in self.env["federation.finance.event"]._fields:
+            self.skipTest("native accounting extension is not installed")
         event = self._make_event()
         if "invoice_product_id" in event._fields:
             event.invoice_product_id = False
@@ -351,16 +351,8 @@ class TestCreateInvoice(TransactionCase):
 
     def test_create_invoice_on_cancelled_raises(self):
         """Calling action_create_invoice on a cancelled event raises ValidationError."""
-        if "account.move" not in self.env:
-            # Even without account.move, method returns False before the cancelled check;
-            # test the guard path directly by temporarily patching env.
-            event = self._make_event()
-            # Manually add a stub so the account.move guard passes
-            event.state = "cancelled"
-            # Without account.move the method short-circuits — just assert no crash
-            result = event.action_create_invoice()
-            self.assertFalse(result)
-            return
+        if "invoice_product_id" not in self.env["federation.finance.event"]._fields:
+            self.skipTest("native accounting extension is not installed")
         event = self._make_event()
         event.action_cancel()
         with self.assertRaises(ValidationError):

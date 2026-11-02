@@ -18,6 +18,5 @@ from . import federation_competition_entry
 
 from . import qol_search
 from . import federation_parental_approval
-from . import journey_operation_task
-
 from . import task_projection
+from . import journey_operation_task

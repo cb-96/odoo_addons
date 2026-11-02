@@ -1,5 +1,6 @@
 from io import BytesIO
 from datetime import timedelta
+from unittest.mock import patch
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import AccessError, ValidationError
@@ -25,7 +26,11 @@ class TestPersonalScope(TransactionCase):
             'valid_from': today - timedelta(days=20),
             'valid_until': today - timedelta(days=1) if expired else today + timedelta(days=20),
             'reason': 'Test identity evidence'})
-        row.action_verify()
+        if expired:
+            with patch.object(fields.Date, 'today', return_value=today - timedelta(days=2)):
+                row.action_verify()
+        else:
+            row.action_verify()
         return row
 
     def test_payer_is_not_guardian(self):

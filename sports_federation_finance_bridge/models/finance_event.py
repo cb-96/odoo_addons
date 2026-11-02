@@ -2,6 +2,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 
 _HANDOFF_TOKEN = object()
+_SOURCE_REACTIVATION_TOKEN = object()
 
 
 class FederationFinanceEvent(models.Model):
@@ -158,19 +159,6 @@ class FederationFinanceEvent(models.Model):
         source_record = self._resolve_source_record(source_model, source_res_id)
         return self._infer_season_from_source(source_record)
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        """Create records with module-specific defaults and side effects."""
-        prepared_vals_list = []
-        for vals in vals_list:
-            prepared_vals = dict(vals)
-            if not prepared_vals.get("season_id"):
-                season = self._infer_season_from_vals(prepared_vals)
-                if season:
-                    prepared_vals["season_id"] = season.id
-            prepared_vals_list.append(prepared_vals)
-        return super().create(prepared_vals_list)
-
     @api.constrains("amount")
     def _check_amount(self):
         """Validate amount."""
@@ -200,6 +188,24 @@ class FederationFinanceEvent(models.Model):
             self.invalidate_recordset()
             self.check_access('write')
 
+    def _source_reactivation_allowed(self):
+        self.ensure_one()
+        if (
+            self.state != "cancelled"
+            or self.source_model != "federation.match.referee"
+            or self.event_type != "reimbursement"
+            or self.handoff_state != "closed"
+            or self.invoice_ref
+            or self.exported_on
+            or self.reconciled_on
+            or self.accounting_batch_ref
+            or self.reconciliation_ref
+        ):
+            return False
+        return not (
+            "account_move_id" in self._fields and self.account_move_id
+        )
+
     @api.constrains('company_id', 'fee_type_id', 'source_model', 'source_res_id', 'partner_id')
     def _check_finance_company(self):
         for event in self:
@@ -214,18 +220,36 @@ class FederationFinanceEvent(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         audit = ('exported_on', 'exported_by_id', 'reconciled_on', 'reconciled_by_id', 'closed_on', 'closed_by_id')
-        if any(v.get('state', 'draft') not in ('draft', 'confirmed')
-               or v.get('handoff_state', 'pending_export') != 'pending_export'
-               or any(v.get(k) for k in audit) for v in vals_list):
-            raise AccessError(_('Create an obligation without forged lifecycle metadata.'))
-        return super().create(vals_list)
+        prepared_vals_list = []
+        for vals in vals_list:
+            prepared_vals = dict(vals)
+            if not prepared_vals.get("season_id"):
+                season = self._infer_season_from_vals(prepared_vals)
+                if season:
+                    prepared_vals["season_id"] = season.id
+            if (
+                prepared_vals.get('state', 'draft') not in ('draft', 'confirmed')
+                or prepared_vals.get('handoff_state', 'pending_export') != 'pending_export'
+                or any(prepared_vals.get(key) for key in audit)
+            ):
+                raise AccessError(_('Create an obligation without forged lifecycle metadata.'))
+            prepared_vals_list.append(prepared_vals)
+        return super().create(prepared_vals_list)
 
     def _write_handoff(self, vals):
         return self.with_context(finance_handoff_token=_HANDOFF_TOKEN).write(vals)
 
     def write(self, vals):
         audit = {'handoff_state', 'exported_on', 'exported_by_id', 'reconciled_on', 'reconciled_by_id', 'closed_on', 'closed_by_id'}
-        if audit & set(vals) and self.env.context.get('finance_handoff_token') is not _HANDOFF_TOKEN:
+        source_reactivation = (
+            self.env.context.get("finance_source_reactivation_token")
+            is _SOURCE_REACTIVATION_TOKEN
+        )
+        if (
+            audit & set(vals)
+            and self.env.context.get('finance_handoff_token') is not _HANDOFF_TOKEN
+            and not source_reactivation
+        ):
             raise AccessError(_('Use the accounting handoff commands.'))
         self._finance_lock()
         identity = {'company_id', 'fee_type_id', 'source_model', 'source_res_id', 'amount', 'currency_id', 'partner_id', 'event_type'}
@@ -233,10 +257,18 @@ class FederationFinanceEvent(models.Model):
                    'settled': {'settled'}, 'cancelled': {'cancelled'}}
         for event in self:
             if identity & set(vals) and event.state != 'draft':
-                raise ValidationError(_('Confirmed obligation identity and amount are immutable.'))
+                if not source_reactivation or not event._source_reactivation_allowed():
+                    raise ValidationError(_('Confirmed obligation identity and amount are immutable.'))
             target = vals.get('state', event.state)
+            reactivating = (
+                source_reactivation
+                and target == "draft"
+                and event._source_reactivation_allowed()
+            )
+            if source_reactivation and not reactivating:
+                raise ValidationError(_('Only an unexported referee reimbursement can be reopened from its source.'))
             reversal = target == 'cancelled' and event.state == 'settled' and hasattr(event, '_invoice_resolved') and event._invoice_resolved()
-            if not reversal and target not in allowed[event.state]:
+            if not reversal and not reactivating and target not in allowed[event.state]:
                 raise ValidationError(_('Invalid obligation lifecycle transition.'))
         return super().write(vals)
 
@@ -432,7 +464,17 @@ class FederationFinanceEvent(models.Model):
         )
 
         if existing:
-            if update_existing and existing.state == "draft":
+            reactivating = (
+                update_existing
+                and existing.state == "cancelled"
+                and source_record._name == "federation.match.referee"
+                and event_type == "reimbursement"
+            )
+            if update_existing and (existing.state == "draft" or reactivating):
+                if reactivating and not existing._source_reactivation_allowed():
+                    raise ValidationError(
+                        _("Reconcile the cancelled reimbursement before reopening its source assignment.")
+                    )
                 update_vals = {}
                 for field_name in (
                     "name",
@@ -451,7 +493,7 @@ class FederationFinanceEvent(models.Model):
                         existing_value = existing_value.id
                     if value not in (False, None, "") and existing_value != value:
                         update_vals[field_name] = value
-                if existing.state == "cancelled":
+                if reactivating:
                     update_vals.update(
                         {
                             "state": "draft",
@@ -461,7 +503,15 @@ class FederationFinanceEvent(models.Model):
                         }
                     )
                 if update_vals:
-                    existing.write(update_vals)
+                    if reactivating:
+                        existing.message_post(
+                            body=_("Reopened after the referee assignment returned to done.")
+                        )
+                        existing.with_context(
+                            finance_source_reactivation_token=_SOURCE_REACTIVATION_TOKEN
+                        ).write(update_vals)
+                    else:
+                        existing.write(update_vals)
             elif not existing.external_ref and vals.get("external_ref"):
                 existing.external_ref = vals["external_ref"]
             return existing

@@ -159,7 +159,7 @@ class TestFinanceBridge(TransactionCase):
             {
                 "name": "Test Fee",
                 "code": "TESTFEE",
-                "category": "registration",
+                "category": "reimbursement",
                 "default_amount": 100.00,
             }
         )
@@ -167,7 +167,7 @@ class TestFinanceBridge(TransactionCase):
             {
                 "name": "Test Event",
                 "fee_type_id": fee_type.id,
-                "event_type": "charge",
+                "event_type": "reimbursement",
                 "amount": 100.00,
                 "source_model": "federation.club",
                 "source_res_id": self.club.id,
@@ -210,7 +210,7 @@ class TestFinanceBridge(TransactionCase):
             {
                 "name": "Handoff Fee",
                 "code": "HANDOFF",
-                "category": "registration",
+                "category": "reimbursement",
                 "default_amount": 125.00,
             }
         )
@@ -218,7 +218,7 @@ class TestFinanceBridge(TransactionCase):
             {
                 "name": "Handoff Event",
                 "fee_type_id": fee_type.id,
-                "event_type": "charge",
+                "event_type": "reimbursement",
                 "amount": 125.00,
                 "source_model": "federation.club",
                 "source_res_id": self.club.id,
@@ -398,9 +398,15 @@ class TestFinanceBridge(TransactionCase):
             }
         )
 
-        event = self.env["federation.finance.event"].create_from_source(
-            source_record=registration,
-            fee_type=fee_type,
+        event = self.env["federation.finance.event"].create(
+            {
+                "name": "Manual Registration Fee",
+                "fee_type_id": fee_type.id,
+                "event_type": "charge",
+                "amount": 80.0,
+                "source_model": registration._name,
+                "source_res_id": registration.id,
+            }
         )
 
         self.assertEqual(event.season_id, self.season)

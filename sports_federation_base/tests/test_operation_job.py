@@ -100,7 +100,7 @@ class TestOperationJob(TransactionCase):
         original_name = source.name
         def failing(record, job):
             record.write({'name': 'MUST ROLL BACK'})
-            raise ValidationError('Injected callback failure')
+            raise RuntimeError('Injected callback failure')
         with patch.object(type(source), '_retry_operational_job', failing, create=True):
             self.assertFalse(self.job._execute())
         source.invalidate_recordset()
@@ -114,6 +114,9 @@ class TestOperationJob(TransactionCase):
         self.job.write({'state': 'done', 'attempt_count': 2})
         with patch.object(type(source), '_retry_operational_job', lambda record, job: True, create=True):
             self.job.action_retry()
+            self.assertEqual(self.job.state, 'pending')
+            self.assertEqual(self.job.attempt_count, 0)
+            self.assertTrue(self.job._execute())
         self.assertEqual(self.job.state, 'done')
         self.assertEqual(self.job.attempt_count, 1)
 
