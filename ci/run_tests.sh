@@ -589,9 +589,9 @@ if [ "$CI_SKIP_BROWSER_BOOTSTRAP" != "1" ]; then
   fi
 fi
 if command -v gosu >/dev/null 2>&1; then
-  run_odoo() { gosu odoo odoo --addons-path="$ADDONS_PATH" server --config=/etc/odoo/odoo.conf --no-http --stop-after-init "$@"; }
+  run_odoo() { gosu odoo odoo --addons-path="$ADDONS_PATH" server --config=/etc/odoo/odoo.conf --no-http --stop-after-init "\$@"; }
 elif command -v runuser >/dev/null 2>&1; then
-  run_odoo() { runuser -u odoo -- odoo --addons-path="$ADDONS_PATH" server --config=/etc/odoo/odoo.conf --no-http --stop-after-init "$@"; }
+  run_odoo() { runuser -u odoo -- odoo --addons-path="$ADDONS_PATH" server --config=/etc/odoo/odoo.conf --no-http --stop-after-init "\$@"; }
 else
   echo "ERROR: cannot drop root privileges before starting Odoo" >&2
   exit 2

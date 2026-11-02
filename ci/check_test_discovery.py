@@ -102,6 +102,8 @@ if '--addons-path="$ADDONS_PATH"' not in runner_source:
     errors.append("ci/run_tests.sh: Odoo must receive the explicit custom addons path")
 if 'odoo --addons-path="$ADDONS_PATH" server --config=/etc/odoo/odoo.conf' not in runner_source:
     errors.append("ci/run_tests.sh: Odoo server options must follow the Odoo 19 server subcommand")
+if ' --stop-after-init "\\$@"' not in runner_source:
+    errors.append("ci/run_tests.sh: generated Odoo shell must forward install/test arguments")
 if "--entrypoint bash" not in runner_source:
     errors.append("ci/run_tests.sh: CI shell script must override the Odoo image entrypoint")
 required_install_phases = (
