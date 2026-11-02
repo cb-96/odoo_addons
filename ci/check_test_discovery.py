@@ -100,6 +100,8 @@ if not re.search(r"^REQUIRE_POST_TESTS=1$", runner_source, re.MULTILINE):
     errors.append("ci/run_tests.sh: CI runs must require at least one post-test by default")
 if '--addons-path="$ADDONS_PATH"' not in runner_source:
     errors.append("ci/run_tests.sh: Odoo must receive the explicit custom addons path")
+if 'odoo --addons-path="$ADDONS_PATH" server --config=/etc/odoo/odoo.conf' not in runner_source:
+    errors.append("ci/run_tests.sh: Odoo server options must follow the Odoo 19 server subcommand")
 if "--entrypoint bash" not in runner_source:
     errors.append("ci/run_tests.sh: CI shell script must override the Odoo image entrypoint")
 required_install_phases = (
