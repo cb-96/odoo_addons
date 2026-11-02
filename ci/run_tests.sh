@@ -589,13 +589,24 @@ if [ "$CI_SKIP_BROWSER_BOOTSTRAP" != "1" ]; then
   fi
 fi
 if command -v gosu >/dev/null 2>&1; then
-  exec gosu odoo odoo --config=/etc/odoo/odoo.conf --addons-path="$ADDONS_PATH" --stop-after-init --test-enable --test-tags="$TEST_TAGS" $DEMO_OPTION -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+  run_odoo() { gosu odoo odoo --config=/etc/odoo/odoo.conf --addons-path="$ADDONS_PATH" --no-http --stop-after-init "$@"; }
 elif command -v runuser >/dev/null 2>&1; then
-  exec runuser -u odoo -- odoo --config=/etc/odoo/odoo.conf --addons-path="$ADDONS_PATH" --stop-after-init --test-enable --test-tags="$TEST_TAGS" $DEMO_OPTION -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+  run_odoo() { runuser -u odoo -- odoo --config=/etc/odoo/odoo.conf --addons-path="$ADDONS_PATH" --no-http --stop-after-init "$@"; }
 else
   echo "ERROR: cannot drop root privileges before starting Odoo" >&2
   exit 2
 fi
+
+DEMO_ARGS=()
+if [ -n "$DEMO_OPTION" ]; then
+  DEMO_ARGS+=("$DEMO_OPTION")
+fi
+
+# Install every requested addon before enabling tests. This lets optional addon
+# extensions (for example accounting and duty coverage) participate in tests
+# owned by their dependencies, independent of topological install order.
+run_odoo "${DEMO_ARGS[@]}" -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+run_odoo "${DEMO_ARGS[@]}" --test-enable --test-tags="$TEST_TAGS" -d "$CI_ODOO_DB_NAME" -u "$MODULE_CSV"
 EOF
 )
 
@@ -608,7 +619,7 @@ fi
 
 docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run "${RUN_CONTAINER_ARGS[@]}" \
   ci-odoo \
-  sh -lc "$TEST_CONTAINER_CMD" \
+  bash -lc "$TEST_CONTAINER_CMD" \
   2>&1 | tee "$RAW_LOG" || EXIT_CODE=$?
 
 if (( FRONTEND_STATIC_EXIT != 0 )); then

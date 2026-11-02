@@ -342,12 +342,14 @@ bash addons/ci/run_tests.sh --module sports_federation_portal --keep-on-failure
 bash addons/ci/run_tests.sh
 ```
 
-The runner passes the custom addon mount explicitly to Odoo and fails if the
-mount is missing or fewer than one post-install test is discovered. This keeps
-an ignored-module/zero-test run from appearing green. For an intentional
-install-only check of a module with no post-install tests, opt out explicitly
-with `--require-post-tests 0` and report it as an install smoke test, not a test
-suite.
+The runner installs all selected addons first, then updates them in a separate
+test-enabled pass. This ensures optional addon extensions are present before
+tests owned by their dependencies run. It passes the custom addon mount
+explicitly to Odoo and fails if the mount is missing or fewer than one
+post-install test is discovered. This keeps an ignored-module/zero-test run
+from appearing green. For an intentional install-only check of a module with no
+post-install tests, opt out explicitly with `--require-post-tests 0` and report
+it as an install smoke test, not a test suite.
 
 The CI runner produces a results block at the end:
 

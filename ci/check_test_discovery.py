@@ -100,6 +100,16 @@ if not re.search(r"^REQUIRE_POST_TESTS=1$", runner_source, re.MULTILINE):
     errors.append("ci/run_tests.sh: CI runs must require at least one post-test by default")
 if '--addons-path="$ADDONS_PATH"' not in runner_source:
     errors.append("ci/run_tests.sh: Odoo must receive the explicit custom addons path")
+required_install_phases = (
+    'run_odoo "${DEMO_ARGS[@]}" -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"',
+    'run_odoo "${DEMO_ARGS[@]}" --test-enable --test-tags="$TEST_TAGS" '
+    '-d "$CI_ODOO_DB_NAME" -u "$MODULE_CSV"',
+)
+for phase in required_install_phases:
+    if phase not in runner_source:
+        errors.append(
+            "ci/run_tests.sh: install all addons before running the test-enabled upgrade"
+        )
 
 if errors:
     print("Odoo test discovery contract failed:", file=sys.stderr)
