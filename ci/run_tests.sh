@@ -618,8 +618,9 @@ fi
 # container so its filestore and generated configuration remain inspectable.
 
 docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" run "${RUN_CONTAINER_ARGS[@]}" \
+  --entrypoint bash \
   ci-odoo \
-  bash -lc "$TEST_CONTAINER_CMD" \
+  -lc "$TEST_CONTAINER_CMD" \
   2>&1 | tee "$RAW_LOG" || EXIT_CODE=$?
 
 if (( FRONTEND_STATIC_EXIT != 0 )); then

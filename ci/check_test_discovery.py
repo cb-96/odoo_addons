@@ -100,6 +100,8 @@ if not re.search(r"^REQUIRE_POST_TESTS=1$", runner_source, re.MULTILINE):
     errors.append("ci/run_tests.sh: CI runs must require at least one post-test by default")
 if '--addons-path="$ADDONS_PATH"' not in runner_source:
     errors.append("ci/run_tests.sh: Odoo must receive the explicit custom addons path")
+if "--entrypoint bash" not in runner_source:
+    errors.append("ci/run_tests.sh: CI shell script must override the Odoo image entrypoint")
 required_install_phases = (
     'run_odoo "${DEMO_ARGS[@]}" -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"',
     'run_odoo "${DEMO_ARGS[@]}" --test-enable --test-tags="$TEST_TAGS" '
