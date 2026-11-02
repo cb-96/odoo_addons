@@ -104,11 +104,13 @@ if 'odoo --addons-path="$ADDONS_PATH" server --config=/etc/odoo/odoo.conf' not i
     errors.append("ci/run_tests.sh: Odoo server options must follow the Odoo 19 server subcommand")
 if ' --stop-after-init "\\$@"' not in runner_source:
     errors.append("ci/run_tests.sh: generated Odoo shell must forward install/test arguments")
+if r'run_odoo "\${DEMO_ARGS[@]}"' not in runner_source:
+    errors.append("ci/run_tests.sh: generated Odoo shell must preserve optional demo arguments")
 if "--entrypoint bash" not in runner_source:
     errors.append("ci/run_tests.sh: CI shell script must override the Odoo image entrypoint")
 required_install_phases = (
-    'run_odoo "${DEMO_ARGS[@]}" -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"',
-    'run_odoo "${DEMO_ARGS[@]}" --test-enable --test-tags="$TEST_TAGS" '
+    r'run_odoo "\${DEMO_ARGS[@]}" -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"',
+    r'run_odoo "\${DEMO_ARGS[@]}" --test-enable --test-tags="$TEST_TAGS" '
     '-d "$CI_ODOO_DB_NAME" -u "$MODULE_CSV"',
 )
 for phase in required_install_phases:

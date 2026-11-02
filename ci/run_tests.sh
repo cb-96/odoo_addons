@@ -605,8 +605,8 @@ fi
 # Install every requested addon before enabling tests. This lets optional addon
 # extensions (for example accounting and duty coverage) participate in tests
 # owned by their dependencies, independent of topological install order.
-run_odoo "${DEMO_ARGS[@]}" -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
-run_odoo "${DEMO_ARGS[@]}" --test-enable --test-tags="$TEST_TAGS" -d "$CI_ODOO_DB_NAME" -u "$MODULE_CSV"
+run_odoo "\${DEMO_ARGS[@]}" -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+run_odoo "\${DEMO_ARGS[@]}" --test-enable --test-tags="$TEST_TAGS" -d "$CI_ODOO_DB_NAME" -u "$MODULE_CSV"
 EOF
 )
 
