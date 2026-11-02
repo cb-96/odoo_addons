@@ -17,6 +17,10 @@ never creates a parental approval or a licence. Existing parental approvals rema
 in their owning workflow. Renewal creates/reuses a draft membership, preserving its
 previous season reference; it does not activate membership or eligibility.
 
+Regression tests cover retry-safe renewal and reject a second upload after a request
+has entered the uploaded state. These sequential tests do not replace independent-
+transaction concurrency tests.
+
 Remaining work: reviewed identity backfill, duplicate review/merge workflow, linked
 parental-approval requests, notification routing, company-scoped administration,
 full browser and concurrent transaction tests. No claim of complete point 6.

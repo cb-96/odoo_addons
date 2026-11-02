@@ -75,7 +75,8 @@ export class CourtWorkspace extends Component {
         if (this.locked || this.state.busy) return;
         this.state.draft[side] = Math.max(0, this.state.draft[side] + amount); this.edited();
     }
-    setScore(side, event) { this.state.draft[side] = Number(event.target.value); this.edited(); }
+    onHomeScore(event) { this.state.draft.home = Number(event.target.value); this.edited(); }
+    onAwayScore(event) { this.state.draft.away = Number(event.target.value); this.edited(); }
     addPeriod() { this.state.draft.periods.push({ home: 0, away: 0 }); this.retotal(); }
     removePeriod(index) { this.state.draft.periods.splice(index, 1); this.retotal(); }
     periodScore(index, side, event) { this.state.draft.periods[index][side] = Number(event.target.value); this.retotal(); }

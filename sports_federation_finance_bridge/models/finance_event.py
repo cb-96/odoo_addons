@@ -469,24 +469,26 @@ class FederationFinanceEvent(models.Model):
             raise ValidationError(
                 "Cannot create an invoice for a cancelled finance event."
             )
-        partner = self.partner_id or (
-            self.club_id.partner_id if self.club_id else False
-        )
+        partner = self.partner_id
+        if not partner:
+            raise ValidationError(
+                _("Select an invoice partner before creating a customer invoice.")
+            )
+        if "invoice_product_id" not in self._fields or not self.invoice_product_id:
+            raise ValidationError(
+                _("Configure an invoice product before creating a customer invoice.")
+            )
+        invoice_line_vals = {
+            "name": self.name,
+            "quantity": 1.0,
+            "price_unit": self.amount,
+            "currency_id": self.currency_id.id,
+            "product_id": self.invoice_product_id.id,
+        }
         invoice_vals = {
             "move_type": "out_invoice",
             "partner_id": partner.id if partner else False,
-            "invoice_line_ids": [
-                (
-                    0,
-                    0,
-                    {
-                        "name": self.name,
-                        "quantity": 1.0,
-                        "price_unit": self.amount,
-                        "currency_id": self.currency_id.id,
-                    },
-                )
-            ],
+            "invoice_line_ids": [(0, 0, invoice_line_vals)],
         }
         invoice = self.env["account.move"].sudo().create(invoice_vals)
         self.write({"invoice_ref": str(invoice.id)})

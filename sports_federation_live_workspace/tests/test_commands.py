@@ -14,21 +14,43 @@ class LiveFixture(CoverageFixture):
             (4, cls.env.ref("sports_federation_base.group_federation_manager").id)]})
         cls.operator = cls.env["res.users"].with_context(no_reset_password=True).create({
             "name": "Court operator", "login": "court.operator@example.test",
-            "group_ids": [(6, 0, [cls.env.ref("base.group_user").id])]})
+            "group_ids": [(6, 0, [
+                cls.env.ref("base.group_user").id,
+                cls.env.ref("sports_federation_matchday.group_matchday_manager").id,
+                cls.env.ref("sports_federation_base.group_federation_manager").id,
+                cls.env.ref("sports_federation_calendar.group_calendar_planner").id,
+                cls.env.ref("sports_federation_format.group_competition_designer").id,
+                cls.env.ref("sports_federation_scheduling.group_schedule_planner").id,
+            ])]})
         cls.access = cls.env["federation.court.access"].create({"matchday_id": cls.matchday.id,
             "court_id": cls.slot.court_id.id, "user_id": cls.operator.id})
-        cls.session = cls.env["federation.matchday.session"].create({"matchday_id": cls.matchday.id,
+        cls.matchday_session = cls.env["federation.matchday.session"].create({"matchday_id": cls.matchday.id,
             "publication_id": cls.publication.id, "publication_digest": cls.publication.snapshot_digest})
-        cls.matchday.write({"active_session_id": cls.session.id})
+        cls.matchday.write({"active_session_id": cls.matchday_session.id})
         cls.edition.write({"result_verification_required": True, "result_approval_required": True})
+        cls.planning_matchday = cls.env["federation.matchday"].create({
+            "name": "Visual planning test match day",
+            "edition_id": cls.edition.id,
+            "date": "2026-06-16",
+            "venue_id": cls.matchday.venue_id.id,
+        })
         cls.schedule = cls.env["federation.schedule"].create({"name": "Visual test schedule",
             "edition_id": cls.edition.id, "structure_id": cls.publication.schedule_id.structure_id.id,
-            "matchday_id": cls.matchday.id})
-        cls.env["federation.matchday.allocation"].create({"matchday_id": cls.matchday.id,
+            "matchday_id": cls.planning_matchday.id})
+        cls.env["federation.matchday.allocation"].create({"matchday_id": cls.planning_matchday.id,
             "structure_id": cls.schedule.structure_id.id, "round_number": 1})
-        cls.second_slot = cls.env["federation.schedule.slot"].create({"matchday_id": cls.matchday.id,
-            "court_id": cls.slot.court_id.id, "start_datetime": "2026-06-15 19:30:00",
-            "end_datetime": "2026-06-15 20:00:00"})
+        cls.planning_slot = cls.env["federation.schedule.slot"].create({
+            "matchday_id": cls.planning_matchday.id,
+            "court_id": cls.slot.court_id.id,
+            "start_datetime": "2026-06-16 18:00:00",
+            "end_datetime": "2026-06-16 18:30:00",
+        })
+        cls.second_slot = cls.env["federation.schedule.slot"].create({
+            "matchday_id": cls.planning_matchday.id,
+            "court_id": cls.slot.court_id.id,
+            "start_datetime": "2026-06-16 19:30:00",
+            "end_datetime": "2026-06-16 20:00:00",
+        })
 
 @tagged("post_install", "-at_install", "sf_live_workspace", "sf_release_confidence")
 class TestLiveCommands(LiveFixture, TransactionCase):
@@ -64,7 +86,7 @@ class TestLiveCommands(LiveFixture, TransactionCase):
         with self.assertRaises(AccessError): self.open()
 
     def test_closed_session(self):
-        self.session.write({"state": "closed"})
+        self.matchday_session.write({"state": "closed"})
         with self.assertRaises(ValidationError): self.open()
 
     def test_save_is_not_official(self):
@@ -135,13 +157,13 @@ class TestLiveCommands(LiveFixture, TransactionCase):
     def test_visual_preview_is_nonmutating(self):
         fid = self.schedule.available_fixture_ids[0].id
         revision = self.schedule.revision
-        self.plan.preview(self.schedule.id, "move", fid, self.slot.id)
+        self.plan.preview(self.schedule.id, "move", fid, self.planning_slot.id)
         self.assertEqual(self.schedule.revision, revision)
         self.assertFalse(self.schedule.assignment_ids)
 
     def test_visual_apply_exact_preview_and_replay(self):
         fid = self.schedule.available_fixture_ids[0].id
-        preview = self.plan.preview(self.schedule.id, "move", fid, self.slot.id)
+        preview = self.plan.preview(self.schedule.id, "move", fid, self.planning_slot.id)
         self.plan.apply(preview["id"], "Pin court")
         self.plan.apply(preview["id"], "Pin court")
         self.assertEqual(len(self.schedule.assignment_ids), 1)
@@ -150,38 +172,38 @@ class TestLiveCommands(LiveFixture, TransactionCase):
 
     def test_visual_stale_constraint_rejected(self):
         fid = self.schedule.available_fixture_ids[0].id
-        preview = self.plan.preview(self.schedule.id, "move", fid, self.slot.id)
+        preview = self.plan.preview(self.schedule.id, "move", fid, self.planning_slot.id)
         self.env["federation.visual.constraint"].create({"schedule_id": self.schedule.id,
             "name": "Hard rest", "kind": "minimum_rest", "minutes": 30})
         with self.assertRaises(ValidationError): self.plan.apply(preview["id"], "Stale")
 
     def test_visual_hard_constraint_blocks(self):
         self.env["federation.visual.constraint"].create({"schedule_id": self.schedule.id,
-            "name": "Court closed", "kind": "court_window", "court_id": self.slot.court_id.id,
-            "start": self.slot.start_datetime, "end": self.slot.end_datetime})
-        preview = self.plan.preview(self.schedule.id, "move", self.schedule.available_fixture_ids[0].id, self.slot.id)
+            "name": "Court closed", "kind": "court_window", "court_id": self.planning_slot.court_id.id,
+            "start": self.planning_slot.start_datetime, "end": self.planning_slot.end_datetime})
+        preview = self.plan.preview(self.schedule.id, "move", self.schedule.available_fixture_ids[0].id, self.planning_slot.id)
         self.assertTrue(preview["after"]["validation"]["errors"])
         with self.assertRaises(ValidationError): self.plan.apply(preview["id"], "Cannot apply")
 
     def test_manual_pin_survives_regeneration(self):
         fid = self.schedule.available_fixture_ids[0].id
-        preview = self.plan.preview(self.schedule.id, "move", fid, self.slot.id)
+        preview = self.plan.preview(self.schedule.id, "move", fid, self.planning_slot.id)
         self.plan.apply(preview["id"], "Pin")
         preview = self.plan.preview(self.schedule.id, "regenerate")
         record = self.env["federation.visual.proposal"].sudo().browse(preview["id"])
-        self.assertEqual(record.candidate[str(fid)], self.slot.id)
+        self.assertEqual(record.candidate[str(fid)], self.planning_slot.id)
 
     def test_published_preview_denied(self):
         with self.assertRaises(ValidationError): self.plan.preview(self.publication.schedule_id.id, "regenerate")
 
     def test_visual_portal_denied(self):
-        with self.assertRaises((AccessError, ValidationError)):
+        with self.assertRaises(AccessError):
             self.plan.with_user(self.official_user).load(self.schedule.id)
 
     def test_schedule_replay_content_bound(self):
         commands = self.env["federation.schedule.commands"]
         fid = self.schedule.available_fixture_ids[0].id
-        commands.assign(self.schedule.id, fid, self.slot.id, 0, idempotency_key="test-replay")
+        commands.assign(self.schedule.id, fid, self.planning_slot.id, 0, idempotency_key="test-replay")
         with self.assertRaises(ValidationError):
             commands.assign(self.schedule.id, fid, self.second_slot.id, 0, idempotency_key="test-replay")
 

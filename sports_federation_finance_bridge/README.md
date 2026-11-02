@@ -80,6 +80,12 @@ An individual financial occurrence.
 8. **Operator-safe batch invoicing** — list-view "Create Invoices" now reports
   per-event failures instead of silently skipping exceptions, so reconciliation
   issues are visible immediately.
+9. **Explicit invoice payer** — legacy bridge invoice creation requires
+  `partner_id`; a club record is not assumed to expose an accounting partner.
+  The legacy invoice command also puts the configured invoice product on the
+  invoice line so accounting can resolve the product's income account. When
+  `sports_federation_accounting` is installed, its native invoice command owns
+  invoice creation and uses the configured product and payer.
 
 ### `federation.season.budget`
 

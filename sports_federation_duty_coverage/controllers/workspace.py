@@ -48,8 +48,14 @@ class Workspace(FederationOfficiatingPortal):
             ("publication_id", "!=", False),
         ]
         if filterby == "current":
+            current_publications = (
+                request.env["federation.matchday"]
+                .sudo()
+                .search([("current_publication_id.state", "=", "live")])
+                .mapped("current_publication_id")
+            )
             domain += [
-                ("is_current_publication", "=", True),
+                ("publication_id", "in", current_publications.ids),
                 ("state", "not in", ["done", "cancelled"]),
             ]
         rows = model.search(

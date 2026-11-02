@@ -258,6 +258,14 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     "email": "portal.official.smoke@example.com",
                     "certification_level": "national",
                     "user_id": official_user.id,
+                    "coverage_playing_checked": True,
+                }
+            )
+            env["federation.referee.availability"].create(
+                {
+                    "referee_id": referee.id,
+                    "date_start": "2026-01-01 00:00:00",
+                    "date_end": "2027-01-01 00:00:00",
                 }
             )
             assignment_match = fixture.action_materialize_match()
@@ -271,6 +279,17 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     "edition_id": edition.id,
                     "date": "2026-12-12",
                     "venue_id": venue.id,
+                }
+            )
+            court = env["federation.playing.area"].create(
+                {"name": "Portal Officiating Smoke Court", "venue_id": venue.id}
+            )
+            slot = env["federation.schedule.slot"].create(
+                {
+                    "matchday_id": matchday.id,
+                    "court_id": court.id,
+                    "start_datetime": "2026-12-12 18:00:00",
+                    "end_datetime": "2026-12-12 18:30:00",
                 }
             )
             schedule = env["federation.schedule"].create(
@@ -311,7 +330,12 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                 }
             )
             matchday.sudo().write({"current_publication_id": publication.id})
-            assignment_match.write({"schedule_publication_id": publication.id})
+            assignment_match.write(
+                {
+                    "schedule_publication_id": publication.id,
+                    "published_slot_id": slot.id,
+                }
+            )
             assignment = env["federation.match.referee"].create(
                 {
                     "match_id": assignment_match.id,
@@ -658,18 +682,61 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         self.assertNotIn("Internal Server Error", submit_response.text)
 
     def test_officiating_response_flow_renders_success(self):
+        assignment = self.env["federation.match.referee"].sudo().browse(
+            self.assignment.id
+        )
+        self.assertTrue(
+            assignment.fixture_id, "Assignment must reference its logical fixture"
+        )
+        self.assertTrue(
+            assignment.publication_id, "Assignment must reference its publication"
+        )
+        self.assertTrue(
+            assignment.is_current_publication,
+            "Assignment publication must be current",
+        )
+        self.assertEqual(assignment.referee_id.user_id, self.official_user)
+        current_publications = (
+            self.env["federation.matchday"]
+            .sudo()
+            .search([("current_publication_id.state", "=", "live")])
+            .mapped("current_publication_id")
+        )
+        self.assertIn(assignment.publication_id, current_publications)
+        listed_assignments = self.env["federation.match.referee"].sudo().search(
+            [
+                ("referee_id.user_id", "=", self.official_user.id),
+                ("fixture_id", "!=", False),
+                ("publication_id", "in", current_publications.ids),
+                ("state", "not in", ["done", "cancelled"]),
+            ]
+        )
+        self.assertIn(assignment, listed_assignments)
         self.authenticate(self.official_user.login, "ignored")
 
-        list_response = self.url_open("/my/referee-assignments")
+        list_response = self.url_open("/my/duty-assignments")
         self.assertEqual(list_response.status_code, 200)
-        self.assertIn("Next step:", list_response.text)
-        self.assertIn("Respond now", list_response.text)
+        self.assertIn("My assignments", list_response.text)
+        self.assertIn(
+            f'href="/my/duty-assignments/{self.assignment.id}?filterby=current"',
+            list_response.text,
+        )
 
-        detail_response = self.url_open(f"/my/referee-assignments/{self.assignment.id}")
+        detail_response = self.url_open(
+            f"/my/duty-assignments/{self.assignment.id}"
+        )
+        signature = re.search(
+            r'name="signature"[^>]*value="([^"]+)"',
+            detail_response.text,
+            re.IGNORECASE | re.DOTALL,
+        )
+        self.assertIsNotNone(signature)
         submit_response = self.url_open(
-            f"/my/referee-assignments/{self.assignment.id}/respond",
+            f"/my/duty-assignments/{self.assignment.id}/respond",
             data={
                 "csrf_token": _extract_csrf_token(detail_response.text),
+                "signature": signature.group(1),
+                "filterby": "current",
                 "action": "confirm",
                 "response_note": "Confirmed from smoke test.",
             },
@@ -677,8 +744,10 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         )
 
         self.assertEqual(submit_response.status_code, 200)
-        self.assertIn("Assignment confirmed.", submit_response.text)
-        self.assertIn("Confirmed from smoke test.", submit_response.text)
+        self.assertIn("Response recorded.", submit_response.text)
+        assignment.invalidate_recordset(["state", "response_note"])
+        self.assertEqual(assignment.state, "confirmed")
+        self.assertEqual(assignment.response_note, "Confirmed from smoke test.")
 
     def test_route_inventory_lists_smoke_covered_portal_routes(self):
         inventory_routes = {

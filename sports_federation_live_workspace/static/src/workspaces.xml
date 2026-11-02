@@ -29,11 +29,12 @@
     </div>
     <fieldset t-att-disabled="locked || state.busy || state.conflict" class="sf-card">
      <legend>Scores</legend><div class="d-flex gap-3 flex-wrap">
-      <t t-foreach="['home','away']" t-as="side" t-key="side"><label><t t-esc="side"/>
-       <div class="d-flex gap-2"><button class="btn btn-outline-secondary" t-on-click="() => this.score(side, -1)" t-att-disabled="state.match.mode !== 'aggregate'">−</button>
-        <input type="number" min="0" max="100000" class="sf-score form-control" t-att-value="state.draft[side]" t-on-change="(ev) => this.setScore(side, ev)" t-att-readonly="state.match.mode !== 'aggregate'"/>
-        <button class="btn btn-outline-secondary" t-on-click="() => this.score(side, 1)" t-att-disabled="state.match.mode !== 'aggregate'">+</button></div>
-      </label></t>
+      <label>Home<div class="d-flex gap-2"><button class="btn btn-outline-secondary" t-on-click="() => this.score('home', -1)" t-att-disabled="state.match.mode !== 'aggregate'">−</button>
+       <input type="number" min="0" max="100000" class="sf-score form-control" t-att-value="state.draft.home" t-on-input="onHomeScore" t-att-readonly="state.match.mode !== 'aggregate'"/>
+       <button class="btn btn-outline-secondary" t-on-click="() => this.score('home', 1)" t-att-disabled="state.match.mode !== 'aggregate'">+</button></div></label>
+      <label>Away<div class="d-flex gap-2"><button class="btn btn-outline-secondary" t-on-click="() => this.score('away', -1)" t-att-disabled="state.match.mode !== 'aggregate'">−</button>
+       <input type="number" min="0" max="100000" class="sf-score form-control" t-att-value="state.draft.away" t-on-input="onAwayScore" t-att-readonly="state.match.mode !== 'aggregate'"/>
+       <button class="btn btn-outline-secondary" t-on-click="() => this.score('away', 1)" t-att-disabled="state.match.mode !== 'aggregate'">+</button></div></label>
      </div>
      <div t-if="state.match.mode !== 'aggregate'" class="mt-3"><h3>Sets / periods</h3>
       <t t-foreach="state.draft.periods" t-as="period" t-key="period_index"><div class="d-flex gap-2 align-items-center mb-2">

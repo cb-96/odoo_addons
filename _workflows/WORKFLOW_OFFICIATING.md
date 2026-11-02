@@ -230,6 +230,9 @@ assignment notification:
    - The portal assignments list highlights one explicit **Next step** action
      (nearest pending response) and shows pending/overdue counters so officials
      can prioritize urgent confirmations first.
+    - The duty workspace's **Current** list includes assignments tied to a
+       matchday's current live publication and excludes completed or cancelled
+       assignments; the **History** filter retains completed and cancelled work.
 2. Views the match date, venue, and role.
 3. Clicks **Confirm** or **Decline**:
    - **Confirm**: assignment state `draft → confirmed`.

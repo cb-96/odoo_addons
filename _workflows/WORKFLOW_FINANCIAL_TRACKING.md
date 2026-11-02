@@ -91,10 +91,14 @@ Each event records:
 **Actor**: Federation finance staff
 **Module**: `sports_federation_finance_bridge`
 
-1. For confirmed events that need an external accounting reference:
-2. Create or look up the invoice in the accounting system (future integration point).
-3. Record the invoice reference in `invoice_ref`.
-4. Keep the bridge event in `confirmed` until it is financially settled.
+For confirmed events that need an external accounting reference:
+
+1. Use the native accounting command when the federation accounting integration
+   is installed. The bridge fallback requires an explicit invoice partner and a
+   configured invoice product so accounting can resolve its income account.
+2. Record the generated invoice reference in `invoice_ref` when using the bridge
+   fallback.
+3. Keep the bridge event in `confirmed` until it is financially settled.
 
 ### 5. Payment Recording
 

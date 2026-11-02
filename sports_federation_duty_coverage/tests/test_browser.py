@@ -14,10 +14,12 @@ class TestCoverageBrowser(CoverageFixture, HttpCase):
                 const form = document.querySelector('form[action$="/respond"]');
                 if (!form) throw new Error('Response form missing');
                 const data = new FormData(form); data.set('action', 'confirm');
-                const response = await fetch(form.action, {method:'POST',body:data});
+                const response = await fetch(form.getAttribute('action'), {method:'POST',body:data});
                 const html = await response.text();
                 if (!response.ok || !html.includes('Response recorded.')) {
-                    throw new Error('Acceptance failed');
+                    const alert = new DOMParser().parseFromString(html, 'text/html')
+                        .querySelector('[role="alert"]');
+                    throw new Error(`Acceptance failed (${response.status}): ${alert?.textContent?.trim() || 'success response missing'}`);
                 }
                 if (!html.includes('Back to my assignments')) {
                     throw new Error('Return path missing');
@@ -25,7 +27,7 @@ class TestCoverageBrowser(CoverageFixture, HttpCase):
                 console.log('test successful');
             })().catch(error => console.error(error));
         """,
-            ready="document.querySelector('form[action$=\"/respond\"]')",
+            ready="Boolean(document.querySelector('form[action$=\"/respond\"]'))",
             login=self.official_user.login,
         )
 

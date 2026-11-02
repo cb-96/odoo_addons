@@ -202,6 +202,7 @@ PY
   git -c core.whitespace=cr-at-eol diff --check
   python3 ci/check_legacy_engine_removed.py
   python3 ci/test_check_odoo_registry_log.py
+  python3 ci/test_check_reliability_contract.py
   python3 ci/check_portal_sudo_guard.py
   python3 ci/check_privileged_inventory_quality.py
   python3 ci/check_privileged_mutation_boundaries.py

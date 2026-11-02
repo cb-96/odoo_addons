@@ -9,7 +9,7 @@ from odoo.tests import TransactionCase, tagged
 class TestOperationJob(TransactionCase):
     def setUp(self):
         super().setUp()
-        source = self.env["res.partner"].create({"name": "Job Source"})
+        source = self.env.ref("base.main_partner")
         self.job = self.env["federation.operation.job"].create(
             {
                 "name": "Test Job",

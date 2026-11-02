@@ -1,7 +1,9 @@
+from io import BytesIO
 from datetime import timedelta
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import AccessError, ValidationError
+from werkzeug.datastructures import FileStorage
 
 
 @tagged('post_install', '-at_install', 'sf_member_services')
@@ -53,3 +55,52 @@ class TestPersonalScope(TransactionCase):
         row = self.relationship()
         with self.assertRaises(AccessError):
             row.with_user(self.portal).action_revoke()
+
+    def test_membership_renewal_is_idempotent(self):
+        self.relationship()
+        club = self.env['federation.club'].create({'name': 'Renewal Club'})
+        previous_season = self.env['federation.season'].create({
+            'name': 'Previous Membership Season', 'code': 'PMS26',
+            'date_start': '2026-01-01', 'date_end': '2026-12-31',
+            'state': 'closed',
+        })
+        next_season = self.env['federation.season'].create({
+            'name': 'Renewal Membership Season', 'code': 'RMS27',
+            'date_start': '2027-01-01', 'date_end': '2027-12-31',
+            'state': 'open',
+        })
+        membership = self.env['federation.person.membership'].create({
+            'person_id': self.child.id, 'club_id': club.id,
+            'season_id': previous_season.id, 'role': 'player', 'state': 'active',
+        })
+
+        service_membership = membership.with_user(self.portal)
+        renewal_id = service_membership._renew(next_season.id)
+        replay_id = service_membership._renew(next_season.id)
+
+        self.assertEqual(replay_id, renewal_id)
+        renewal = self.env['federation.person.membership'].browse(renewal_id)
+        self.assertEqual(renewal.previous_id, membership)
+        self.assertEqual(renewal.state, 'draft')
+
+    def test_document_upload_is_one_time_for_guardian_request(self):
+        self.relationship()
+        request = self.env['federation.person.request'].with_user(self.manager).create({
+            'name': 'Membership document request', 'person_id': self.child.id,
+            'guardian_required': True, 'deadline': fields.Date.today(),
+            'purpose': 'Verify a membership document',
+        })
+
+        def upload():
+            return FileStorage(
+                stream=BytesIO(b'%PDF-1.4 membership document'),
+                filename='membership.pdf', content_type='application/pdf',
+            )
+
+        portal_request = request.with_user(self.portal)
+        portal_request._upload(upload())
+        self.assertEqual(request.state, 'uploaded')
+        self.assertEqual(request.filename, 'membership.pdf')
+        self.assertTrue(request.document)
+        with self.assertRaises(ValidationError):
+            portal_request._upload(upload())

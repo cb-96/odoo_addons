@@ -198,6 +198,15 @@ reporting, and domain test suites. Scheduling regressions belong in
 `sports_federation_calendar/tests/`.
 When a budget changes, update the assertion, explain the cause, and review the
 corresponding SQL plan or index before changing the documented value.
+
+## Runtime SQL boundary
+
+`ci/check_reliability_contract.py` detects direct database-cursor execution,
+not ORM workflow methods that happen to be named `execute`. New cursor SQL must
+remain parameterized, be limited to a reviewed lock or read-only boundary, and
+be listed with its rationale in `ci/contracts/reliability_contract.json`.
+Add a regression test for the command guarded by the lock; sequential retry tests
+do not establish independent-transaction concurrency safety.
         # Link users to clubs via representative records
         for user, club in ((cls.user_a, cls.club_a), (cls.user_b, cls.club_b)):
             cls.env["federation.club.representative"].create({

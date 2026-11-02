@@ -355,17 +355,28 @@ class TestCoverage(CoverageFixture, TransactionCase):
 
     def test_escalation_idempotent_and_cleanup(self):
         """One overdue activity is removed on readiness and presence recovery."""
-        self.match._coverage_sync_escalations()
-        activities = self._activities()
-        self.assertEqual(len(activities), 1)
-        self.assertEqual(activities.user_id, self.manager)
-        self.match._coverage_sync_escalations()
-        self.assertEqual(self._activities(), activities)
-        self._accept()
-        self.assertFalse(self._activities())
+        self.match.write({"date_scheduled": "2026-06-17 18:00:00"})
+        self.slot.write(
+            {
+                "start_datetime": "2026-06-17 18:00:00",
+                "end_datetime": "2026-06-17 18:30:00",
+            }
+        )
         with patch(
             "odoo.fields.Datetime.now",
-            return_value=fields.Datetime.to_datetime("2026-06-15 18:00:00"),
+            return_value=fields.Datetime.to_datetime("2026-06-15 19:00:00"),
+        ):
+            self.match._coverage_sync_escalations()
+            activities = self._activities()
+            self.assertEqual(len(activities), 1)
+            self.assertEqual(activities.user_id, self.manager)
+            self.match._coverage_sync_escalations()
+            self.assertEqual(self._activities(), activities)
+            self._accept()
+            self.assertFalse(self._activities())
+        with patch(
+            "odoo.fields.Datetime.now",
+            return_value=fields.Datetime.to_datetime("2026-06-17 18:00:00"),
         ):
             self.match._coverage_sync_escalations()
             self.assertEqual(len(self._activities()), 1)

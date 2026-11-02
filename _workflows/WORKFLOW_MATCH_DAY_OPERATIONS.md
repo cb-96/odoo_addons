@@ -316,12 +316,18 @@ Result saves on the operations board call the existing result-control action met
 
 All validation and workflow state guards remain server-side. Standings recomputation is triggered by the existing hooks in `sports_federation_result_control` on approve/contest/correct.
 
+Court operators using the authenticated **Run this court** workspace have a separate
+capture path: score edits persist to the device draft as they are entered, while
+**Save draft** queues the signed command for synchronization. Queued work syncs
+when connectivity returns. Device drafts remain non-official until the existing
+result review and approval process completes.
+
 ### Known limitations and follow-up ideas
 
 - Live push (Odoo bus) is not implemented; the board polls every 60 s.
 - Referee assignment workflow is not exposed on the board; use the existing officiating views.
 - Bracket visualization and drag-and-drop court scheduling are not in scope for this version.
-- QR-code per court, offline-first result capture, and pool standings preview are follow-up ideas.
+- Cold-start/offline-first PWA behavior, QR-code per court and pool standings preview are follow-up ideas. Court capture is available only after an authenticated workspace and match have been loaded.
 
 
 ## Schedule approval handoff

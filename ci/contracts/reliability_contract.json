@@ -39,8 +39,26 @@
       "sports_federation_schedule_approval/services/approval_commands.py",
       "sports_federation_scheduling/models/schedule_integrity.py",
       "sports_federation_scheduling/services/schedule_commands.py",
-      "sports_federation_scheduling/wizards/auto_schedule_wizard.py"
+      "sports_federation_scheduling/wizards/auto_schedule_wizard.py",
+      "sports_federation_accounting/models/finance.py",
+      "sports_federation_duty_coverage/models/assignment.py",
+      "sports_federation_duty_coverage/models/coverage.py",
+      "sports_federation_duty_coverage/models/duty.py",
+      "sports_federation_duty_coverage/wizards/resolve.py",
+      "sports_federation_live_workspace/models/court.py",
+      "sports_federation_live_workspace/models/planning.py",
+      "sports_federation_member_services/models/membership.py"
     ],
+    "runtime_reviews": {
+      "sports_federation_accounting/models/finance.py": "Locks the finance event row by parameterized primary key before invoice creation; the native invoice test verifies retry idempotency.",
+      "sports_federation_duty_coverage/models/assignment.py": "Locks match, referee, and assignment rows in stable ID order to serialize assignment and evidence transitions; persisted coverage tests exercise these commands.",
+      "sports_federation_duty_coverage/models/coverage.py": "Locks match rows by parameterized ID before computing and syncing escalation activities; escalation tests verify replay and cleanup.",
+      "sports_federation_duty_coverage/models/duty.py": "Locks matches and duty rows in stable order before nomination and coordinator transitions; duty workflow tests cover the state changes.",
+      "sports_federation_duty_coverage/wizards/resolve.py": "Locks the resolution wizard and referee rows before applying a preview; coverage tests verify stale-preview rejection and replay safety.",
+      "sports_federation_live_workspace/models/court.py": "Uses parameterized shared row locks on court access and the live session while validating command scope; tests cover revoked access and closed sessions.",
+      "sports_federation_live_workspace/models/planning.py": "Locks the visual proposal row before applying its revision-bound command; visual planning tests verify one-time application and identical replay.",
+      "sports_federation_member_services/models/membership.py": "Locks the source membership or document-request row before renewal or upload state checks; membership service tests cover idempotent renewals and one-time uploads."
+    },
     "allowed_runtime_prefixes": [
       "sports_federation_reporting/models/"
     ]
