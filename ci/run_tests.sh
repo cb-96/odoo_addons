@@ -39,7 +39,7 @@ Options:
   --module, -m        Add a module to the install/test list. Repeatable.
   --suite, -s         Add a named test suite. Repeatable.
   --test-tags         Override Odoo --test-tags expression used for discovery.
-  --require-post-tests Fail if discovered post-tests are below the provided minimum.
+  --require-post-tests Fail if discovered post-tests are below the provided minimum (default: 1).
   --frontend-module   Run frontend-only checks for a module. Repeatable.
   --affected-from     Select modules changed since a git ref.
   --include-dependents Expand affected modules through manifest reverse dependencies.
@@ -231,6 +231,7 @@ ALL_MODULES=(
   sports_federation_venues
   sports_federation_result_control
   sports_federation_portal
+  sports_federation_member_services
   sports_federation_rosters
   sports_federation_registration
   sports_federation_format
@@ -245,9 +246,14 @@ ALL_MODULES=(
   sports_federation_notifications
   sports_federation_import_tools
   sports_federation_finance_bridge
+  sports_federation_accounting
   sports_federation_compliance
   sports_federation_public_site
   sports_federation_reporting
+  sports_federation_duty_coverage
+  sports_federation_navigation
+  sports_federation_live_workspace
+  sports_federation_app
   sports_federation_demo
 )
 
@@ -279,7 +285,7 @@ MODULES=()
 SUITES=()
 FRONTEND_MODULES=()
 CUSTOM_TEST_TAGS=""
-REQUIRE_POST_TESTS=0
+REQUIRE_POST_TESTS=1
 KEEP=false
 KEEP_ON_FAILURE=false
 FRONTEND_MODE=false
@@ -530,7 +536,8 @@ if [[ "$FRONTEND_MODE" == "true" ]]; then
   for module in "${MODULES[@]}"; do
     while IFS= read -r js_path; do
       if [[ -n "$NODE_BIN" ]]; then
-        "$NODE_BIN" --check "$js_path" >> "$FRONTEND_STATIC_LOG" 2>&1 || FRONTEND_STATIC_EXIT=1
+        echo "Checking ES-module syntax: $js_path" >> "$FRONTEND_STATIC_LOG"
+        "$NODE_BIN" --input-type=module --check < "$js_path" >> "$FRONTEND_STATIC_LOG" 2>&1 || FRONTEND_STATIC_EXIT=1
       else
         echo "WARNING: node or nodejs unavailable; skipped JavaScript syntax check for $js_path" >> "$FRONTEND_STATIC_LOG"
       fi
@@ -560,7 +567,13 @@ if contains_module "sports_federation_demo" "${MODULES[@]}"; then
   DEMO_OPTION="--without-demo=False"
 fi
 
+ADDONS_PATH="/usr/lib/python3/dist-packages/odoo/addons,/var/lib/odoo/.local/share/Odoo/addons/19.0,/usr/lib/python3/dist-packages/addons,/mnt/extra-addons"
+
 TEST_CONTAINER_CMD=$(cat <<EOF
+if [ ! -f /mnt/extra-addons/sports_federation_base/__manifest__.py ]; then
+  echo "ERROR: custom addon mount is missing sports_federation_base/__manifest__.py" >&2
+  exit 2
+fi
 python3 -m pip show websocket-client >/dev/null 2>&1 || python3 -m pip install --break-system-packages --no-cache-dir websocket-client==1.8.0
 if [ "$CI_SKIP_BROWSER_BOOTSTRAP" != "1" ]; then
   if ! command -v google-chrome >/dev/null 2>&1 && ! command -v google-chrome-stable >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
@@ -576,9 +589,9 @@ if [ "$CI_SKIP_BROWSER_BOOTSTRAP" != "1" ]; then
   fi
 fi
 if command -v gosu >/dev/null 2>&1; then
-  exec gosu odoo odoo --stop-after-init --test-enable --test-tags="$TEST_TAGS" $DEMO_OPTION -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+  exec gosu odoo odoo --config=/etc/odoo/odoo.conf --addons-path="$ADDONS_PATH" --stop-after-init --test-enable --test-tags="$TEST_TAGS" $DEMO_OPTION -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
 elif command -v runuser >/dev/null 2>&1; then
-  exec runuser -u odoo -- odoo --stop-after-init --test-enable --test-tags="$TEST_TAGS" $DEMO_OPTION -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
+  exec runuser -u odoo -- odoo --config=/etc/odoo/odoo.conf --addons-path="$ADDONS_PATH" --stop-after-init --test-enable --test-tags="$TEST_TAGS" $DEMO_OPTION -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"
 else
   echo "ERROR: cannot drop root privileges before starting Odoo" >&2
   exit 2
