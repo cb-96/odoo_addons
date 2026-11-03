@@ -1,4 +1,6 @@
 from datetime import datetime, time, timedelta
+import pytz
+from ..time_policy import local_to_utc
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
@@ -13,6 +15,18 @@ class FederationMatchday(models.Model):
     edition_id = fields.Many2one(
         "federation.competition.edition", required=True, ondelete="cascade", index=True
     )
+    event_timezone = fields.Selection(
+        [(tz, tz) for tz in pytz.all_timezones], string="Event timezone",
+        default=lambda self: self.env.user.tz or "UTC", required=True,
+        help="Shared timezone for game-day planning. Existing UTC slots are not moved.")
+
+    def write(self, values):
+        if "event_timezone" in values:
+            for day in self:
+                if day.event_timezone != values["event_timezone"] and day.state not in ("draft", "capacity_ready"):
+                    raise ValidationError(_("The event timezone cannot change after scheduling starts."))
+        return super().write(values)
+
     date = fields.Date(required=True, index=True)
     venue_id = fields.Many2one(
         "federation.venue", required=True, ondelete="restrict", index=True
@@ -286,15 +300,12 @@ class FederationScheduleSlot(models.Model):
             rec.end_datetime = rec.start_datetime + timedelta(minutes=duration)
 
     @api.model
-    def _local_datetime_to_utc(self, local_value):
+    def _local_datetime_to_utc(self, local_value, timezone=None):
         """Convert a naive user-local datetime to the naive UTC value Odoo stores."""
-        if not self.env.user.tz:
-            return local_value
-        import pytz
-
-        timezone = pytz.timezone(self.env.user.tz)
-        aware = timezone.localize(local_value, is_dst=None)
-        return aware.astimezone(pytz.UTC).replace(tzinfo=None)
+        try:
+            return local_to_utc(local_value, timezone or self.env.user.tz or "UTC")
+        except ValueError as exc:
+            raise ValidationError(_("Choose a valid, unambiguous time in the event timezone.")) from exc
 
     @api.model
     def _first_start_for_matchday(self, matchday):
@@ -306,7 +317,7 @@ class FederationScheduleSlot(models.Model):
         local_start = datetime.combine(
             fields.Date.to_date(matchday.date), time(hour, minute)
         )
-        return self._local_datetime_to_utc(local_start)
+        return self._local_datetime_to_utc(local_start, matchday.event_timezone)
 
     def _latest_buffered_court_slot(self, court):
         """Return latest sibling row, including unsaved one2many commands."""

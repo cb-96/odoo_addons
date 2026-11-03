@@ -1,4 +1,5 @@
-from odoo import _, api, models
+from odoo import _, api, fields, models
+from odoo.addons.sports_federation_calendar.time_policy import local_to_utc
 from odoo.exceptions import AccessError, ValidationError
 from ..visual_policy import impact_sets, pin_changes
 
@@ -31,6 +32,25 @@ class VisualExperience(models.AbstractModel):
             schedule.invalidate_recordset()
             schedule.assert_mutable()
         return schedule
+
+    @api.model
+    def create_event_constraint(self, schedule_id, revision, values):
+        """Interpret local input in the event timezone inside the existing write boundary."""
+        schedule = self._schedule(schedule_id, mutable=True)
+        if schedule.revision != revision:
+            raise ValidationError(_("The schedule changed. Refresh before adding a rule."))
+        allowed = {'name', 'kind', 'minutes', 'team_id', 'court_id', 'start', 'end'}
+        if not isinstance(values, dict) or set(values) - allowed:
+            raise ValidationError(_("Invalid rule details."))
+        converted = dict(values, schedule_id=schedule.id)
+        try:
+            for key in ('start', 'end'):
+                converted[key] = fields.Datetime.to_string(local_to_utc(
+                    values.get(key), schedule.matchday_id.event_timezone)) or False
+        except ValueError as exc:
+            raise ValidationError(_("Choose a valid, unambiguous time in the event timezone.")) from exc
+        self.env['federation.visual.constraint'].create(converted)
+        return self.load(schedule.id)
 
     def _structures(self, schedule):
         return schedule.structure_id | schedule.matchday_id.allocation_ids.mapped('structure_id')
@@ -99,7 +119,7 @@ class VisualExperience(models.AbstractModel):
             data['can_edit'] = False
         for fixture in data['fixtures']:
             fixture['allocated'] = fixture['id'] in available
-        data['timezone'] = self.env.user.tz or 'UTC'
+        data['timezone'] = schedule.matchday_id.event_timezone or 'UTC'
         data['governance'] = _('Working changes need an exact preview and reason. Applying is not publication. Published schedules require a linked amendment and independent review.')
         data['hard_rules'] = [_('Slot and court availability'), _('No double-booked slots or overlapping teams'),
                               _('Resolved and ready participants'), _('Recorded team/court windows and mandatory minimum rest')]

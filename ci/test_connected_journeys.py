@@ -64,7 +64,7 @@ class ConnectedPolicyTests(unittest.TestCase):
 
     def test_shared_card_metadata(self):
         tree = etree.parse(str(ROOT / 'sports_federation_portal/views/role_journey_templates.xml'))
-        template = tree.xpath('//template[@id="connected_work_groups"]')[0]
+        template = tree.xpath('//template[@id="connected_work_card"]')[0]
         text = etree.tostring(template, encoding='unicode')
         for field in ('owner', 'deadline', 'blocker', 'next_action', 'handoff'):
             self.assertIn("card['%s']" % field, text)

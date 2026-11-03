@@ -798,3 +798,24 @@ scripts/ci/run_rc_validation.sh acceptance
 Before promotion, verify one ordinary manager sees only Competition Hub under Competitions, an advanced user retains all owner workspaces and Administration recovery, Streamlined schedule/lineup/result transitions retain audit evidence, Independent Review retains separation of duties, and a missing parental approval blocks both roster and lineup submission.
 
 Rollback requires the paired pre-upgrade database/filestore backup. Navigation can be restored by rolling back the app data update, but do not delete participant sets, entries, approvals, reviews, publications, match sheets, or audit/task records created after upgrade. Restore the full backup if persisted operations occurred.
+
+## Minimal workspace and portal revision: upgrade review
+
+Candidate source base: a9fbdebd0cd80e7122ae0e0a61637d6c5b763ebf.
+See docs/MINIMAL_UX_VALIDATION.md for the exact upgrade and role/browser checks.
+
+Schema change: federation.matchday.event_timezone. Calendar pre-migration explicitly
+backfills historical days to UTC without changing slot instants. New days capture the
+creator's timezone. Existing draft days require timezone review before generating slots.
+Scheduled days remain UTC unless a separately reviewed historical data migration is approved.
+The visual planner and court queue use event-local display; generic Odoo datetime widgets
+retain user-profile display. Constraints convert local input on the server under existing
+schedule access, mutability and revision checks. No new public route or sudo mutation is added.
+
+Dry-run evidence: source-policy tests and Python/XML/JavaScript syntax checks executed.
+Database upgrade, ORM/HTTP tests, browser/mobile sessions and novice acceptance have NOT
+been executed in this environment. This candidate is not production-qualified by these checks.
+
+Rollback: restore the pre-upgrade database and filestore together with the previous code.
+Do not roll back code alone after new event-local constraints or slot generation have occurred.
+Retain backups until event timezone review and staging acceptance are complete.

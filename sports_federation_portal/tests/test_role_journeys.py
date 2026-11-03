@@ -323,8 +323,12 @@ class TestJourneyHttp(HttpCase):
             self.authenticate('journey.%s@example.test' % role, 'journey-test-password')
             response = self.url_open('/my/work?role=%s' % role)
             self.assertEqual(response.status_code, 200)
-            for bucket in ('now', 'soon', 'waiting', 'recent'):
-                self.assertIn('data-journey-bucket="%s"' % bucket, response.text)
+            from lxml import html
+            tree = html.fromstring(response.text)
+            self.assertTrue(tree.xpath('//*[contains(@class, "sf-connected-work")]'))
+            for node in tree.xpath('//*[@data-journey-bucket="waiting" or @data-journey-bucket="recent"]'):
+                self.assertEqual(node.tag, 'details')
+                self.assertNotIn('open', node.attrib)
 
     def test_connected_role_switch_cannot_grant_access(self):
         self.authenticate('journey.club@example.test', 'journey-test-password')
@@ -335,7 +339,7 @@ class TestJourneyHttp(HttpCase):
         self.authenticate('journey.club@example.test', 'journey-test-password')
         response = self.url_open('/my')
         self.assertEqual(response.status_code, 200)
-        self.assertIn('My federation work', response.text)
+        self.assertIn('My work', response.text)
         generic = self.url_open('/my?generic=1')
         self.assertEqual(generic.status_code, 200)
         self.assertNotIn('data-journey-bucket=', generic.text)
@@ -358,3 +362,15 @@ class TestJourneyHttp(HttpCase):
         response = self.url_open('/federation/operations/action-items?status=recent')
         self.assertEqual(response.status_code, 200)
         self.assertIn('Completed work', response.text)
+
+    def test_minimal_home_rejects_foreign_and_malformed_club(self):
+        self.authenticate('journey.club@example.test', 'journey-test-password')
+        for value in ('not-a-number', '-1', '999999999'):
+            self.assertEqual(self.url_open('/my/work?role=club&club=' + value).status_code, 403)
+
+    def test_minimal_home_single_role_has_no_switch_control(self):
+        from lxml import html
+        self.authenticate('journey.club@example.test', 'journey-test-password')
+        response = self.url_open('/my/work?role=club')
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(html.fromstring(response.text).xpath('//select[@id="journey-role"]'))

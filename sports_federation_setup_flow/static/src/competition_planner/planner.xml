@@ -14,15 +14,15 @@
             <h1 id="planner-title" class="h2 mb-1" t-esc="state.data.edition.name"/>
             <p class="text-muted mb-0"><span t-esc="state.data.edition.season"/></p>
           </div>
-          <div class="d-flex gap-2 flex-wrap">
+          <details class="sf-disclosure"><summary>More</summary><div class="d-flex gap-2 flex-wrap">
             <button class="btn btn-outline-secondary" t-on-click="load"><i class="fa fa-refresh me-1" aria-hidden="true"/>Refresh</button>
              <button class="btn btn-outline-secondary" t-on-click="openBasics">Competition details</button>
              <button t-if="state.data.can_use_advanced_tools" class="btn btn-outline-secondary" t-on-click="openAdvanced">Advanced tools</button>
              <button t-if="state.data.can_use_advanced_tools" class="btn btn-outline-secondary" t-on-click="openAdministration">Administration</button>
-          </div>
+          </div></details>
         </header>
 
-        <nav class="o_competition_journey" aria-label="Competition setup progress">
+        <nav t-if="!state.data.complete" class="o_competition_journey" aria-label="Competition setup progress">
           <button t-foreach="state.data.steps" t-as="step" t-key="step.key"
             t-att-class="'o_competition_journey_step is-' + step.status"
             t-att-aria-current="step.status === 'current' ? 'step' : undefined"
@@ -50,17 +50,17 @@
           </div>
         </section>
 
-        <section class="alert mt-3" t-att-class="state.data.readiness.status === 'ready' ? 'alert-success' : (state.data.readiness.status === 'attention' ? 'alert-warning' : 'alert-danger')" role="status" data-planner-unified-readiness="true">
+        <section class="alert mt-3" t-att-class="state.data.readiness.status === 'ready' ? 'alert-success' : (state.data.readiness.status === 'attention' ? 'alert-warning' : 'alert-info')" role="status" data-planner-unified-readiness="true">
           <strong>Competition readiness:</strong> <span t-esc="state.data.readiness.summary"/>
           <span class="ms-2 small"><t t-esc="state.data.readiness.setup_blocker_count"/> planning blocker(s) · <t t-esc="state.data.readiness.operational_action_count"/> operational action(s)</span>
         </section>
 
-        <section class="card mt-3" aria-label="Operational tasks"><div class="card-body d-flex flex-wrap gap-2">
-          <button t-if="state.data.operations.rosters_available" class="btn btn-outline-primary" t-att-disabled="state.data.operations.roster_action_count === 0" t-on-click="() => this.openOperation('rosters')">Teams needing rosters: <t t-esc="state.data.operations.roster_action_count"/></button>
-          <button t-if="state.data.operations.lineups_available" class="btn btn-outline-primary" t-att-disabled="state.data.operations.lineup_action_count === 0" t-on-click="() => this.openOperation('lineups')">Game days needing lineups: <t t-esc="state.data.operations.lineup_action_count"/></button>
-          <button t-if="state.data.operations.officials_available" class="btn btn-outline-primary" t-att-disabled="state.data.operations.official_action_count === 0" t-on-click="() => this.openOperation('officials')">Matches needing officials: <t t-esc="state.data.operations.official_action_count"/></button>
-          <button t-if="state.data.operations.results_available" class="btn btn-outline-primary" t-att-disabled="state.data.operations.result_action_count === 0" t-on-click="() => this.openOperation('results')">Results awaiting approval: <t t-esc="state.data.operations.result_action_count"/></button>
-        </div></section>
+        <details t-if="state.data.operations.roster_action_count || state.data.operations.lineup_action_count || state.data.operations.official_action_count || state.data.operations.result_action_count" class="sf-disclosure"><summary>Other work</summary><section class="card mt-3" aria-label="Operational tasks"><div class="card-body d-flex flex-wrap gap-2">
+          <button t-if="state.data.operations.rosters_available &amp;&amp; state.data.operations.roster_action_count &gt; 0" class="btn btn-outline-primary" t-att-disabled="state.data.operations.roster_action_count === 0" t-on-click="() => this.openOperation('rosters')">Teams needing rosters: <t t-esc="state.data.operations.roster_action_count"/></button>
+          <button t-if="state.data.operations.lineups_available &amp;&amp; state.data.operations.lineup_action_count &gt; 0" class="btn btn-outline-primary" t-att-disabled="state.data.operations.lineup_action_count === 0" t-on-click="() => this.openOperation('lineups')">Game days needing lineups: <t t-esc="state.data.operations.lineup_action_count"/></button>
+          <button t-if="state.data.operations.officials_available &amp;&amp; state.data.operations.official_action_count &gt; 0" class="btn btn-outline-primary" t-att-disabled="state.data.operations.official_action_count === 0" t-on-click="() => this.openOperation('officials')">Matches needing officials: <t t-esc="state.data.operations.official_action_count"/></button>
+          <button t-if="state.data.operations.results_available &amp;&amp; state.data.operations.result_action_count &gt; 0" class="btn btn-outline-primary" t-att-disabled="state.data.operations.result_action_count === 0" t-on-click="() => this.openOperation('results')">Results awaiting approval: <t t-esc="state.data.operations.result_action_count"/></button>
+        </div></section></details>
         <div class="row g-4 mt-1">
           <section class="col-xl-7" aria-labelledby="divisions-title">
             <div class="card h-100"><div class="card-header"><h2 id="divisions-title" class="h5 mb-0">Division readiness</h2></div>
@@ -71,7 +71,7 @@
                   <td><span t-att-class="division.ready ? 'badge text-bg-success' : 'badge text-bg-warning'" t-esc="division.ready ? 'Ready' : 'Needs action'"/></td>
                 </tr></tbody>
               </table></div>
-              <div t-else="" class="card-body text-center py-5"><h3 class="h5">No divisions yet</h3><button class="btn btn-primary" t-on-click="openBasics">Define competition divisions</button></div>
+              <div t-else="" class="card-body text-center py-5"><h3 class="h5">No divisions yet</h3><button class="btn btn-outline-secondary" t-on-click="openBasics">Define competition divisions</button></div>
             </div>
           </section>
           <aside t-if="state.data.can_use_advanced_tools" class="col-xl-5" aria-labelledby="issues-title"><div class="card h-100">
@@ -92,7 +92,7 @@
               <p><strong>Game days:</strong> <t t-esc="state.data.operations.matchday_count"/></p>
               <p><strong>Schedules:</strong> <t t-esc="state.data.operations.schedule_count"/></p>
               <p t-if="state.data.operations.next_matchday"><strong>Earliest active game day:</strong> <t t-esc="state.data.operations.next_matchday.name"/></p>
-              <p class="text-muted mb-0">The workspace shows one next action at a time. Additional records remain available through contextual links and Advanced Tools.</p>
+              <p class="text-muted mb-0">Continue with the next action above. Other work is available when needed.</p>
             </div>
           </div></aside>
         </div>

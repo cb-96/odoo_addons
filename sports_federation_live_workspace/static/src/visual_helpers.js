@@ -25,3 +25,14 @@ export function navigationTarget(cells, index, key) {
         .sort((a,b) => Math.abs(a[axis]-current[axis]) - Math.abs(b[axis]-current[axis]));
     return candidates[0]?.index ?? index;
 }
+
+export function formatEventTime(value, timezone = 'UTC', locale) {
+    if (!value) return '';
+    const raw = String(value).replace(' ', 'T');
+    const instant = new Date(/[zZ]$|[+-]\d{2}:\d{2}$/.test(raw) ? raw : raw + 'Z');
+    if (!Number.isFinite(instant.getTime())) return '';
+    return new Intl.DateTimeFormat(locale, {
+        timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).format(instant);
+}

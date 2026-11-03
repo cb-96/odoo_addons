@@ -1,0 +1,30 @@
+// Shared presentation only; workflow state remains server-owned.
+:root {
+    --sf-space: 1rem;
+    --sf-radius: .5rem;
+    --sf-border: var(--border-color, #d8dadd);
+    --sf-surface: var(--body-bg, #fff);
+    --sf-focus: var(--o-brand-primary, #0078d4);
+}
+.sf-task-card, .sf-card { border-radius: var(--sf-radius); border-color: var(--sf-border); }
+.sf-task-card .card-body { padding: var(--sf-space); }
+.sf-task-card .sf-task-meta { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin-bottom: .5rem; }
+.sf-task-card .sf-task-blocker { white-space: pre-line; margin-bottom: .75rem; }
+.sf-disclosure { margin: 1rem 0; }
+.sf-disclosure > summary { cursor: pointer; padding: .5rem 0; min-height: 44px; }
+.sf-disclosure[open] > summary { margin-bottom: .75rem; }
+.sf-context { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; margin-bottom: 1rem; }
+.sf-context label { display: block; margin-bottom: .25rem; }
+.sf-context select { max-width: 100%; }
+.sf-context > div { min-width: 0; }
+.sf-connected-work, .o_competition_planner, .sf-live-workspace {
+    :is(button, a, input, select, textarea, summary):focus-visible {
+        outline: 3px solid var(--sf-focus); outline-offset: 3px;
+    }
+    .sf-empty { padding: 1rem 0; }
+}
+.sf-connected-work .btn, .sf-context .btn, .sf-context select { min-height: 44px; }
+@media (max-width: 575px) {
+    .sf-context > div { width: 100%; }
+    .sf-context select { width: 100%; }
+}

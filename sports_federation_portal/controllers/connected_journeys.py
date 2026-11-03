@@ -32,7 +32,7 @@ def task_cards(tasks, representatives=None):
         cards.append({
             'key': 'task:%s' % task.id, 'title': task.name, 'task': task, 'representatives': representatives,
             'url': task.journey_url, 'owner': owner or _('Owner not yet assigned'),
-            'deadline': task.deadline, 'blocker': task.blocking_reason or _('No recorded blocker'),
+            'deadline': task.deadline, 'blocker': task.blocking_reason or '',
             'next_action': (_('View completed work') if complete else
                             _('Inspect current status') if unavailable else
                             _('View submission status') if waiting else
@@ -82,7 +82,7 @@ class ConnectedRoleJourneys(RoleJourneys):
         return super().home(**kw)
 
     @http.route()
-    def role_home(self, role=None, **kw):
+    def role_home(self, role=None, club=None, **kw):
         response = super().role_home(**kw)
         context = response.qcontext
         allowed = [key for key in ROLE_LABELS if context.get(key + '_access')]
@@ -92,15 +92,37 @@ class ConnectedRoleJourneys(RoleJourneys):
         selected = choose_role(allowed, role, request.session.get(session_key))
         if selected:
             request.session[session_key] = selected
+        clubs = request.env['federation.club'].browse([])
+        selected_club = None
+        if selected == 'club':
+            club_ids = request.env['federation.operation.task']._portal_club_ids(request.env.user)
+            clubs = request.env['federation.portal.privilege'].portal_search(
+                request.env['federation.club'], [('id', 'in', club_ids)], user=request.env.user)
+            club_key = 'federation_journey_club:%s' % request.env.user.id
+            if club is not None:
+                try:
+                    selected_club = int(club) if club else None
+                except (ValueError, TypeError):
+                    return self._render_access_denied()
+                if selected_club and selected_club not in clubs.ids:
+                    return self._render_access_denied()
+            else:
+                remembered = request.session.get(club_key)
+                selected_club = remembered if remembered in clubs.ids else None
+            request.session[club_key] = selected_club
+        context.update(journey_clubs=clubs, journey_club=selected_club)
         cards = []
         if selected == 'club':
             model = request.env['federation.operation.task'].with_context(journey_viewer_id=request.env.user.id)
             tasks = request.env['federation.portal.privilege'].portal_search(
-                model, model._portal_get_domain(request.env.user), user=request.env.user,
-                order='id desc', limit=200)
+                model, model._portal_get_domain(request.env.user) + (
+                    [('responsible_club_id', '=', selected_club)] if selected_club else []),
+                user=request.env.user, order='id desc', limit=200)
             cards = task_cards(tasks)
             existing = {task.source_record_id for task in tasks if task.source_model == 'federation.competition.entry' and task.state != 'done'}
             for entry in model._journey_waiting_entries(user=request.env.user):
+                if selected_club and entry.team_id.club_id.id != selected_club:
+                    continue
                 if entry.id not in existing:
                     cards.append({'key': 'entry:%s' % entry.id, 'title': entry.team_id.display_name,
                                   'url': '/my/competition-entries/%s' % entry.id,
@@ -136,7 +158,7 @@ class ConnectedRoleJourneys(RoleJourneys):
                               'owner': issue.get('owner') or _('Competition organiser'),
                               'deadline': fields.Datetime.to_datetime(edition.date_start) if edition.date_start else False,
                               'blocker': issue.get('message') or _('No setup blocker recorded'),
-                              'next_action': _('Open competition and continue: %s') % data['current_label'],
+                              'next_action': _('Continue: %s') % data['current_label'],
                               'handoff': _('The existing planner resumes at the first incomplete step. Publication still requires independent review.'),
                               'bucket': bucket_for(complete=data['complete'], waiting=issue.get('step') == 'publication', deadline=fields.Datetime.to_datetime(edition.date_start) if edition.date_start else None, now=fields.Datetime.now(), blocking=bool(issue))})
         context.update(journey_role=selected, journey_roles=[{'key': key, 'label': _(ROLE_LABELS[key])} for key in allowed],

@@ -10,6 +10,31 @@ class TestVisualExperience(LiveFixture, TransactionCase):
         self.plan = self.env['federation.visual.planning']
         self.fixture = self.schedule.available_fixture_ids[0]
 
+    def test_event_constraint_uses_shared_timezone(self):
+        from odoo.addons.sports_federation_calendar.time_policy import local_to_utc
+        timezone = self.schedule.matchday_id.event_timezone
+        self.env.user.tz = 'Pacific/Honolulu'
+        values = {'name': 'Event time test', 'kind': 'court_window',
+                  'court_id': self.planning_slot.court_id.id,
+                  'start': '2026-11-03T10:00', 'end': '2026-11-03T11:00'}
+        data = self.plan.create_event_constraint(self.schedule.id, self.schedule.revision, values)
+        constraint = self.env['federation.visual.constraint'].search([
+            ('schedule_id', '=', self.schedule.id), ('name', '=', values['name'])])
+        self.assertEqual(constraint.start, local_to_utc(values['start'], timezone))
+        self.assertEqual(data['timezone'], timezone)
+
+    def test_event_constraint_rejects_stale_revision_and_extra_fields(self):
+        with self.assertRaises(ValidationError):
+            self.plan.create_event_constraint(self.schedule.id, self.schedule.revision + 1, {})
+        with self.assertRaises(ValidationError):
+            self.plan.create_event_constraint(self.schedule.id, self.schedule.revision, {'active': False})
+
+    def test_event_timezone_locked_after_scheduling(self):
+        self.schedule.matchday_id.state = 'scheduled'
+        timezone = 'Europe/Brussels' if self.schedule.matchday_id.event_timezone != 'Europe/Brussels' else 'UTC'
+        with self.assertRaises(ValidationError):
+            self.schedule.matchday_id.event_timezone = timezone
+
     def _destinations(self):
         return self.plan.destinations(self.schedule.id, self.fixture.id, self.plan.load(self.schedule.id)['signature'])
 

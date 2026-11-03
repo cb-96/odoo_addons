@@ -1,7 +1,7 @@
 /** @odoo-module **/
 import { restoreCourtCache } from "./court_cache";
 import { copy, readJournal, durableWrite, acknowledgedState, saveState, nextMatch } from "./mobile_recovery";
-import { destinationLabel, canApply, comparable, navigationTarget } from "./visual_helpers";
+import { destinationLabel, canApply, comparable, navigationTarget, formatEventTime } from "./visual_helpers";
 import { Component, useEffect, useRef, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
@@ -62,15 +62,16 @@ export class CourtWorkspace extends Component {
     }
     focusError() { setTimeout(() => document.getElementById("court-error")?.focus(), 0); }
     message(error) { return error?.data?.message || error?.message || _t("Operation failed. Local evidence retained."); }
+    eventTime(value) { return formatEventTime(value, this.state.board?.timezone || "UTC"); }
     get access() { return this.state.courts[Number(this.state.selected)]; }
     get storageKey() { return `${this.storagePrefix}${this.access.matchday_id}:${this.access.court_id}:${this.state.match.match_id}`; }
     get statusCode() { return saveState(this.state); }
     get status() {
-        return {memory: _t("Not saved on device: keep this screen open"), device: _t("Saved on this device only"),
-            submission_pending: _t("Submission queued on device; server outcome not confirmed"),
-            synchronised: _t("Synchronised draft; not submitted"), submitted: _t("Submitted; awaiting independent review"),
-            verified: _t("Verified; awaiting approval"), approved: _t("Approved official result"),
-            contested: _t("Contested; governed correction required"), unchecked: _t("No match loaded")}[this.statusCode];
+        return {memory: _t("Not saved. Keep this screen open."), device: _t("Saved on this device. Not submitted."),
+            submission_pending: _t("Submission queued on this device. Not confirmed by server."),
+            synchronised: _t("Saved to server. Not submitted."), submitted: _t("Submitted. Awaiting review."),
+            verified: _t("Reviewed. Awaiting approval."), approved: _t("Approved official result"),
+            contested: _t("Disputed. Correction required."), unchecked: _t("No match loaded")}[this.statusCode];
     }
     get locked() {
         return this.state.match && (this.state.match.submitted || this.state.match.closed
@@ -307,7 +308,8 @@ export class VisualPlan extends Component {
     slotAt(court, time) { return this.state.data.slots.find(s => s.court_id === court && String(s.start) === time); }
     assignment(slot) { return slot && this.state.data.assignments.find(a => a.slot_id === slot.id); }
     fixtureName(id) { return this.state.data.fixtures.find(f => f.id === id)?.name || String(id); }
-    slotName(id) { const s = this.state.data.slots.find(s => s.id === id); return s ? `${s.court_name} / ${s.start}` : _t("Unassigned"); }
+    eventTime(value) { return formatEventTime(value, this.state.data.timezone || 'UTC'); }
+    slotName(id) { const s = this.state.data.slots.find(s => s.id === id); return s ? `${s.court_name} / ${this.eventTime(s.start)}` : _t("Unassigned"); }
     constraintName(kind) { return ({team_window: _t('Team unavailable'), court_window: _t('Court unavailable'), minimum_rest: _t('Mandatory minimum rest for all teams')})[kind] || kind; }
     stageName(id) { return this.state.data.stages.find(s => s.id === id)?.name || String(id); }
     destination(slot) { if (!slot) return null; return this.state.destinations?.slots.find(row => row.slot_id === slot.id); }
@@ -380,12 +382,12 @@ export class VisualPlan extends Component {
     }); }
     async addConstraint() { await this.run(async () => {
         const c = this.state.constraint;
-        const values = { schedule_id: this.id, name: c.name, kind: c.kind, minutes: Number(c.minutes),
+        const values = { name: c.name, kind: c.kind, minutes: Number(c.minutes),
             team_id: Number(c.team_id) || false, court_id: Number(c.court_id) || false,
-            start: c.start ? new Date(c.start).toISOString().slice(0, 19).replace("T", " ") : false,
-            end: c.end ? new Date(c.end).toISOString().slice(0, 19).replace("T", " ") : false };
-        await this.orm.create("federation.visual.constraint", [values]);
-        this.state.data = await this.orm.call("federation.visual.planning", "load", [this.id]); this.state.preview = null; this.state.destinations = null; this.state.candidateA = null; this.state.comparison = null;
+            start: c.kind === "minimum_rest" ? false : c.start || false,
+            end: c.kind === "minimum_rest" ? false : c.end || false };
+        this.state.data = await this.orm.call("federation.visual.planning", "create_event_constraint",
+            [this.id, this.state.data.schedule.revision, values]); this.state.preview = null; this.state.destinations = null; this.state.candidateA = null; this.state.comparison = null;
     }); }
     async removeConstraint(id) { await this.run(async () => {
         await this.orm.unlink("federation.visual.constraint", [id]);

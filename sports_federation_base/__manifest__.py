@@ -1,12 +1,16 @@
 {
     "name": "Sports Federation Base",
-    "version": "19.0.1.4.0",
+    "version": "19.0.1.5.0",
     "category": "Sports",
     "summary": "Base module for federation clubs, teams, seasons, and registrations",
     "author": "Sports Federation",
     "website": "",
     "license": "LGPL-3",
     "depends": ["base", "mail", "base_setup"],
+    "assets": {
+        "web.assets_backend": ["sports_federation_base/static/src/scss/minimal_ux.scss"],
+        "web.assets_frontend": ["sports_federation_base/static/src/scss/minimal_ux.scss"],
+    },
     "data": [
         "security/res_groups.xml",
         "security/ir.model.access.csv",

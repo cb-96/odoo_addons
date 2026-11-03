@@ -12,6 +12,12 @@
     "statement": "window = ( request.env[\"federation.registration.window\"] .sudo() .browse(int(window_id)) .exists() )"
   },
   {
+    "file": "sports_federation_portal/controllers/connected_journeys.py",
+    "function": "role_home",
+    "reason": "adjacent ownership scope check",
+    "statement": "assignments = request.env['federation.portal.privilege'].portal_search( model, model._portal_get_domain(user=request.env.user) + [('publication_id', 'in', request.env['federation.matchday'].sudo().search([('current_publication_id.state', '=', 'live')]).mapped('current_publication_id').ids)], user=request.env.user, order='id desc', limit=100)"
+  },
+  {
     "file": "sports_federation_portal/controllers/manager_operation_tasks.py",
     "function": "manager_action_items",
     "reason": "adjacent ownership scope check",
