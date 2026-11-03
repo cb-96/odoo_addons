@@ -76,8 +76,9 @@ class TestPersonalScope(TransactionCase):
         })
         membership = self.env['federation.person.membership'].create({
             'person_id': self.child.id, 'club_id': club.id,
-            'season_id': previous_season.id, 'role': 'player', 'state': 'active',
+            'season_id': previous_season.id, 'role': 'player', 'review_note': 'Reviewed fixture membership',
         })
+        membership.action_activate()
 
         service_membership = membership.with_user(self.portal)
         renewal_id = service_membership._renew(next_season.id)

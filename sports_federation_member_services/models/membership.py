@@ -7,6 +7,9 @@ from odoo.exceptions import AccessError, ValidationError
 
 
 def manager(env):
+    from .lifecycle import _COMMAND
+    if env.context.get('member_lifecycle_token') is _COMMAND:
+        return
     if not env.user.has_group('sports_federation_base.group_federation_manager'):
         raise AccessError(_('Membership administration permission is required.'))
 
@@ -114,7 +117,8 @@ class Membership(models.Model):
         manager(self.env)
         if 'previous_id'  in vals:
             raise AccessError(_('Renewal lineage cannot be edited.'))
-        if any(r.state == 'active' for r in self) and {'person_id', 'club_id', 'season_id', 'role', 'company_id'} & set(vals):
+        from .lifecycle import _COMMAND
+        if self.env.context.get('member_lifecycle_token') is not _COMMAND and any(r.state == 'active' for r in self) and {'person_id', 'club_id', 'season_id', 'role', 'company_id'} & set(vals):
             raise ValidationError(_('Active membership identity is immutable.'))
         return super().write(vals)
 
@@ -138,7 +142,7 @@ class Membership(models.Model):
 
     def _renew(self, season_id):
         self.ensure_one()
-        if not self.sudo().exists() or self.sudo().company_id not in self.env.companies or self.sudo().person_id.id not in self._person_ids():
+        if not self.sudo().exists() or self.sudo().company_id not in self.env.companies or self.sudo().person_id.id not in self._membership_person_ids():
             raise AccessError(_('This membership is outside your personal scope.'))
         old = self.sudo()
         season = self.env['federation.season'].sudo().browse(int(season_id)).exists()
@@ -150,7 +154,7 @@ class Membership(models.Model):
         season.invalidate_recordset()
         if (old.state != 'active' or not old.club_id.active or season.state != 'open'
                 or season.date_start <= old.season_id.date_start or old.company_id not in self.env.companies
-                or old.person_id.id not in self._person_ids()):
+                or old.person_id.id not in self._membership_person_ids()):
             raise ValidationError(_('Renew only an active membership in an active club into a later open season.'))
         domain = [('person_id', '=', old.person_id.id), ('club_id', '=', old.club_id.id),
                   ('season_id', '=', season.id), ('role', '=', old.role)]
