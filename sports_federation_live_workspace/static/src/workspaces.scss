@@ -30,3 +30,9 @@
 }
 
 .sf-mobile-matchday { button, select, a.btn { min-height: 48px; } .card { min-width: 0; overflow-wrap: anywhere; } button:focus-visible, a:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #0078d4; outline-offset: 2px; } }
+
+.sf-timeline { overflow-x: auto; }
+.sf-timeline td { min-width: 12rem; vertical-align: top; }
+.sf-timeline [aria-disabled="true"] { opacity: .85; }
+.sf-timeline button:focus-visible, [data-candidate-comparison] button:focus-visible { outline: 3px solid #005fcc; outline-offset: 3px; }
+[data-preview-heading]:focus { outline: 2px solid #005fcc; }

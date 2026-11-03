@@ -1,7 +1,8 @@
 /** @odoo-module **/
 import { restoreCourtCache } from "./court_cache";
 import { copy, readJournal, durableWrite, acknowledgedState, saveState, nextMatch } from "./mobile_recovery";
-import { Component, onWillStart, onWillUnmount, useState } from "@odoo/owl";
+import { destinationLabel, canApply, comparable, navigationTarget } from "./visual_helpers";
+import { Component, useEffect, useRef, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { session } from "@web/session";
@@ -280,11 +281,16 @@ export class VisualPlan extends Component {
     static template = "sports_federation_live_workspace.Plan";
     static props = ["*"];
     setup() {
+        this.root = useRef("visualRoot");
         this.orm = useService("orm"); this.action = useService("action");
         this.id = this.props.action.params?.schedule_id || this.props.action.context?.active_id;
         this.state = useState({ data: null, preview: null, fixture: "", reason: "", error: "", busy: false,
+            destinations: null, selectedSlot: null, candidateA: null, comparison: null, announcement: "",
             constraint: { name: "", kind: "team_window", team_id: "", court_id: "", start: "", end: "", minutes: 0 } });
         onWillStart(() => this.refresh());
+        useEffect(() => {
+            if (this.state.preview) this.root.el?.querySelector('[data-preview-heading]')?.focus();
+        }, () => [this.state.preview?.id]);
     }
     async run(callback) {
         if (this.state.busy) return;
@@ -293,25 +299,84 @@ export class VisualPlan extends Component {
         finally { this.state.busy = false; }
     }
     async refresh() { await this.run(async () => {
-        this.state.data = await this.orm.call("federation.visual.planning", "load", [this.id]); this.state.preview = null;
+        this.state.data = await this.orm.call("federation.visual.planning", "load", [this.id]); this.state.preview = null; this.state.destinations = null; this.state.candidateA = null; this.state.comparison = null;
     }); }
     get courts() { return [...new Map(this.state.data.slots.map(s => [s.court_id, { id: s.court_id, name: s.court_name }])).values()]; }
     get times() { return [...new Set(this.state.data.slots.map(s => String(s.start)))].sort(); }
-    get editable() { return ["draft", "changes_requested"].includes(this.state.data.schedule.state); }
+    get editable() { return this.state.data.can_edit && ["draft", "changes_requested"].includes(this.state.data.schedule.state); }
     slotAt(court, time) { return this.state.data.slots.find(s => s.court_id === court && String(s.start) === time); }
     assignment(slot) { return slot && this.state.data.assignments.find(a => a.slot_id === slot.id); }
     fixtureName(id) { return this.state.data.fixtures.find(f => f.id === id)?.name || String(id); }
     slotName(id) { const s = this.state.data.slots.find(s => s.id === id); return s ? `${s.court_name} / ${s.start}` : _t("Unassigned"); }
-    async preview(operation, slot = false) { await this.run(async () => {
-        this.state.preview = await this.orm.call("federation.visual.planning", "preview", [this.id, operation, Number(this.state.fixture), slot]);
+    constraintName(kind) { return ({team_window: _t('Team unavailable'), court_window: _t('Court unavailable'), minimum_rest: _t('Mandatory minimum rest for all teams')})[kind] || kind; }
+    stageName(id) { return this.state.data.stages.find(s => s.id === id)?.name || String(id); }
+    destination(slot) { if (!slot) return null; return this.state.destinations?.slots.find(row => row.slot_id === slot.id); }
+    destinationLabel(slot) { return _t(destinationLabel(this.destination(slot))); }
+    get canApply() { return !this.state.busy && canApply(this.state.preview, this.state.reason); }
+    get canCompare() { return comparable(this.state.candidateA, this.state.preview); }
+    async selectFixture(id) {
+        if (!this.editable || this.state.busy) return;
+        this.state.fixture = String(id || ''); this.state.destinations = null; this.state.selectedSlot = null;
+        if (!id) return;
+        await this.run(async () => {
+            this.state.destinations = await this.orm.call('federation.visual.planning', 'destinations',
+                [this.id, Number(id), this.state.data.signature]);
+            this.state.announcement = _t('Destinations assessed. Select a slot to inspect mandatory rules and preferences.');
+        });
+    }
+    fixtureChanged(event) { return this.selectFixture(event.target.value); }
+    dragFixture(event, id) {
+        if (!this.editable || this.state.busy) { event.preventDefault(); return; }
+        event.dataTransfer.setData('text/plain', String(id)); event.dataTransfer.effectAllowed = 'move';
+        if (Number(this.state.fixture) !== id) this.selectFixture(id);
+    }
+    dragOver(event) { if (this.editable) { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; } }
+    dropFixture(event, slot) {
+        event.preventDefault();
+        if (Number(event.dataTransfer.getData('text/plain')) !== Number(this.state.fixture)) return;
+        return this.chooseSlot(slot);
+    }
+    slotKey(event) {
+        if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(event.key)) return;
+        const buttons = [...this.root.el.querySelectorAll('[data-destination-button]')];
+        const index = buttons.indexOf(event.currentTarget); if (index < 0) return;
+        const cells = buttons.map(button => ({row: button.closest('tr').rowIndex, column: button.closest('td').cellIndex}));
+        const target = navigationTarget(cells, index, event.key);
+        event.preventDefault(); buttons[target]?.focus();
+    }
+    async chooseSlot(slot) {
+        if (!slot || !this.editable) return;
+        this.state.selectedSlot = slot.id;
+        const assessment = this.destination(slot);
+        if (!assessment || this.state.busy) { this.state.announcement = _t('Choose a fixture and wait for destination assessment.'); return; }
+        if (!assessment.valid) { this.state.announcement = _t('This destination is blocked. Read the mandatory-rule explanation.'); return; }
+        return this.preview('move', slot.id);
+    }
+    rememberCandidate() {
+        if (!this.state.preview) return;
+        this.state.candidateA = clone(this.state.preview); this.state.comparison = null;
+        this.state.announcement = _t('Candidate A retained. Preview another candidate without applying or changing settings.');
+    }
+    async compareCandidates() { await this.run(async () => {
+        if (!this.canCompare) return;
+        this.state.comparison = await this.orm.call('federation.visual.planning', 'compare',
+            [this.state.candidateA.id, this.state.preview.id]);
     }); }
-    async apply() { await this.run(async () => {
+    chooseCandidateA() {
+        if (!this.canCompare) return;
+        const current = clone(this.state.preview); this.state.preview = clone(this.state.candidateA);
+        this.state.candidateA = current; this.state.comparison = null;
+    }
+    async preview(operation, slot = false) { await this.run(async () => {
+        this.state.preview = await this.orm.call("federation.visual.planning", "preview", [this.id, operation, Number(this.state.fixture), slot, this.state.data.signature]);
+    }); }
+    async apply() { if (!this.canApply) return; await this.run(async () => {
         this.state.data = await this.orm.call("federation.visual.planning", "apply", [this.state.preview.id, this.state.reason]);
-        this.state.preview = null;
+        this.state.preview = null; this.state.destinations = null; this.state.candidateA = null; this.state.comparison = null;
     }); }
     async configure() { await this.run(async () => {
         this.state.data = await this.orm.call("federation.visual.planning", "configure", [this.id, this.state.data.schedule.revision, clone(this.state.data.config)]);
-        this.state.preview = null;
+        this.state.preview = null; this.state.destinations = null; this.state.candidateA = null; this.state.comparison = null;
     }); }
     async addConstraint() { await this.run(async () => {
         const c = this.state.constraint;
@@ -320,11 +385,11 @@ export class VisualPlan extends Component {
             start: c.start ? new Date(c.start).toISOString().slice(0, 19).replace("T", " ") : false,
             end: c.end ? new Date(c.end).toISOString().slice(0, 19).replace("T", " ") : false };
         await this.orm.create("federation.visual.constraint", [values]);
-        this.state.data = await this.orm.call("federation.visual.planning", "load", [this.id]); this.state.preview = null;
+        this.state.data = await this.orm.call("federation.visual.planning", "load", [this.id]); this.state.preview = null; this.state.destinations = null; this.state.candidateA = null; this.state.comparison = null;
     }); }
     async removeConstraint(id) { await this.run(async () => {
         await this.orm.unlink("federation.visual.constraint", [id]);
-        this.state.data = await this.orm.call("federation.visual.planning", "load", [this.id]); this.state.preview = null;
+        this.state.data = await this.orm.call("federation.visual.planning", "load", [this.id]); this.state.preview = null; this.state.destinations = null; this.state.candidateA = null; this.state.comparison = null;
     }); }
     async amend() { await this.run(async () => {
         const action = await this.orm.call("federation.visual.planning", "amend", [this.id, this.state.reason]);

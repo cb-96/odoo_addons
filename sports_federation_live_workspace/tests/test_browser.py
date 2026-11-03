@@ -71,7 +71,7 @@ class TestWorkspaceBrowser(LiveFixture, HttpCase):
             "context": repr({"active_id": self.schedule.id})})
         self.browser_js("/odoo/action-%s" % action.id, HELPERS + """
 (async () => {
-    await wait(()=>document.querySelector('.sf-grid table'));
+    await wait(()=>document.querySelector('.sf-timeline table'));
     button('Preview regeneration, retain manual pins').click();
     await wait(()=>button('Apply exactly this preview'));
     const section=button('Apply exactly this preview').closest('section');
@@ -79,7 +79,7 @@ class TestWorkspaceBrowser(LiveFixture, HttpCase):
     await wait(()=>!button('Apply exactly this preview').disabled);
     button('Apply exactly this preview').click();
     await wait(()=>!button('Apply exactly this preview'));
-    if(!document.querySelector('.sf-grid table').textContent.includes('vs')) throw new Error('Applied fixtures not displayed');
+    if(!document.querySelector('.sf-timeline table').textContent.includes('vs')) throw new Error('Applied fixtures not displayed');
     console.log('test successful');
 })().catch(error=>console.error(error));
 """, login=self.operator.login, timeout=90)

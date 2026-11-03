@@ -229,6 +229,7 @@ class Planning(models.AbstractModel):
         comparison = {"before": self._explain(schedule, before), "after": self._explain(schedule, candidate),
             "changes": [{"fixture_id": fid, "old_slot": before.get(fid, False), "new_slot": candidate.get(fid, False)}
                         for fid in sorted(set(before) | set(candidate)) if before.get(fid) != candidate.get(fid)]}
+        comparison.update(operation=operation, impact=self._impact(schedule, before, candidate, {a.fixture_id.id: a.method for a in schedule.assignment_ids}))
         preview = self.env["federation.visual.proposal"].sudo().with_context(**{_CONTEXT: _TOKEN}).create({
             "schedule_id": schedule.id, "actor_id": self.env.uid, "signature": self._signature(schedule),
             "revision": schedule.revision, "candidate": {str(k): v for k, v in candidate.items()},
@@ -253,6 +254,10 @@ class Planning(models.AbstractModel):
             if preview.signature != self._signature(schedule):
                 raise ValidationError(_("Preview is stale. Refresh and compare again."))
             candidate = {int(k): int(v) for k, v in preview.candidate.items()}
+            if preview.comparison.get("operation") == "regenerate":
+                from ..visual_policy import pin_changes
+                if pin_changes(self._map(schedule), candidate, {a.fixture_id.id: a.method for a in schedule.assignment_ids}):
+                    raise ValidationError(_("Regeneration cannot change pinned assignments."))
             validation = self.env["federation.schedule.validator"].validate_map(schedule, candidate)
             if validation["errors"]:
                 raise ValidationError(validation["errors"][0]["message"])
