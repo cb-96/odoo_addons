@@ -65,3 +65,13 @@ The competition schedule preview may be limited to selected competition stages a
 ## Competition workspace handoff (19.0.3.6.0)
 
 The complete-competition schedule wizard preserves the workspace return context through preview and returns to the same competition planner after apply. The generated schedules, allocations, slots, validation, fairness checks, and protected submission commands are unchanged.
+
+## Exact day allocation and readable preview
+
+Distributed fixture subsets are stored as exact match-day allocations. These
+rows must not expand to every fixture in their structure: doing so can put the
+same fixture into more than one day's schedule when a structure is split across
+days. Fixtures already allocated to another day are excluded from a partial
+planning run, and the preview blocks any existing cross-day duplicate before
+generation. Allocation, capacity, and quality details are rendered as readable
+tables and summaries; the underlying JSON remains machine-readable source data.

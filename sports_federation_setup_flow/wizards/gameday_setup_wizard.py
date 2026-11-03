@@ -56,6 +56,11 @@ class FederationCompetitionGamedaySetupWizard(models.TransientModel):
                     "name": _("Game Day %(date)s", date=fields.Date.to_string(date)),
                     "date": date,
                     "venue_id": self.default_venue_id.id,
+                    "court_ids": [
+                        fields.Command.set(
+                            self.default_venue_id.playing_area_ids.filtered("active").ids
+                        )
+                    ],
                     "start_hour": self.default_start_hour,
                     "end_hour": self.default_end_hour,
                     "slot_duration_minutes": self.default_slot_duration_minutes,
@@ -92,6 +97,7 @@ class FederationCompetitionGamedaySetupWizard(models.TransientModel):
     def _reopen(self):
         return {
             "type": "ir.actions.act_window",
+            "name": _("Define Game Days"),
             "res_model": self._name,
             "res_id": self.id,
             "view_mode": "form",
@@ -113,6 +119,8 @@ class FederationCompetitionGamedaySetupLine(models.TransientModel):
         "federation.playing.area",
         relation="federation_gameday_setup_line_playing_area_rel",
         string="Courts",
+        domain="[('venue_id', '=', venue_id)]",
+        help="Only courts at the selected venue are available.",
     )
     start_hour = fields.Float(required=True, default=9.0)
     end_hour = fields.Float(required=True, default=18.0)

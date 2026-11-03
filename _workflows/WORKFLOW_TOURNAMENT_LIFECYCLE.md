@@ -18,13 +18,26 @@ Canonical setup and readiness chain:
 2. Representatives submit team entries; federation registration managers review and finalize participant sets.
 3. Freeze a versioned format for each division from its latest finalized participant set.
 4. Allocate every playable fixture to ready physical match days.
-5. Generate a complete working schedule for each allocated day; independently review and publish each current schedule revision.
+5. Generate a complete working schedule for each allocated day; review according to the edition's workflow policy and publish each current schedule revision.
 6. Run match-day operations from live publications, then approve results.
 7. Recompute/review standings and publish tournament and standings surfaces.
 
 Club representatives own only their scoped team entries and club operations.
 Federation edition roles own edition-wide setup, format freeze, calendar and
 scheduling, independent schedule approval, and publication.
+
+Competition responsibility assignments are per-edition routing; they do not
+grant federation-wide access groups. Operators need both the per-edition role
+and the global groups for every work area they access: Federation User is the
+base, Registration Manager covers team and participant setup, Calendar Planner
+covers game days, Schedule Planner covers working schedules, and Schedule
+Approver enables independent review. Streamlined schedule approval follows the
+edition's self-approval policy, while Independent Review enforces a different
+approver.
+   Competition-wide generation stores each distributed fixture subset as an
+   exact match-day allocation. Fixtures already allocated on another day are
+   not replanned by a partial run, and duplicate cross-day allocations block
+   generation before schedules are reviewed or published.
 
 Blocking vs warning-only model:
 

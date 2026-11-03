@@ -112,6 +112,12 @@ class TestPhase511Integrity(TransactionCase):
         return schedule, review
 
     def _create_ready_roster(self, team, suffix):
+        if not self.env.get("federation.player") or not self.env.get(
+            "federation.team.roster"
+        ):
+            self.skipTest(
+                "Roster publication checks require the optional people and rosters addons."
+            )
         player = self.env["federation.player"].create(
             {
                 "first_name": f"{suffix} {team.name}",
@@ -233,6 +239,29 @@ class TestPhase511Integrity(TransactionCase):
             self.assertFalse(
                 roster._get_readiness_issues(reference_date=self.days[0].date)
             )
+
+    def test_review_and_publication_snapshots_render_readable_assignments(self):
+        schedule, review = self._valid_schedule_review(self.days[0], "readable-snapshot")
+        fixture = schedule.assignment_ids.fixture_id
+        slot = schedule.assignment_ids.slot_id
+        review_summary = str(review.assignment_summary_html)
+
+        self.assertIn(fixture.display_name, review_summary)
+        self.assertIn(slot.court_id.display_name, review_summary)
+        self.assertIn("2026-10-03 09:00:00", review_summary)
+
+        publication = self.env["federation.schedule.publication"].sudo().create(
+            {
+                "schedule_id": schedule.id,
+                "version": 1,
+                "assignment_snapshot": review.assignment_snapshot,
+                "snapshot_digest": review.snapshot_digest,
+                "source_revision": schedule.revision,
+                "review_id": review.id,
+            }
+        )
+
+        self.assertIn(fixture.display_name, str(publication.assignment_summary_html))
 
     @tagged("post_install", "-at_install", "sf_release_confidence")
     def test_publication_rejects_fixture_added_after_review(self):

@@ -19,3 +19,13 @@ example `09:00–09:40 · Court 1`. The same label is used by the backend schedu
 assignment picker and by portal/public match-day views, so internal model names
 such as `federation.schedule.slot,42` are never shown to users.
 
+## Exact fixture subsets
+
+Competition-wide schedule generation may distribute one structure across
+multiple game days. Those allocation rows use **Only listed fixtures** so the
+fixture pool for each day is exactly the selected subset instead of every
+fixture in the structure. Ordinary stage/round allocations continue to expand
+from their selected structure, stage, or round. Upgrades convert matching
+mutable unpublished wizard allocations to exact-fixture mode; reviewed or live
+schedule evidence is not rewritten.
+

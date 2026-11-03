@@ -269,6 +269,28 @@ class TestStageGraphEngine(TransactionCase):
                 {"points": 999}
             )
 
+    def test_competition_designer_can_read_finalized_participants(self):
+        groups = [
+            self.env.ref("base.group_user"),
+            self.env.ref("sports_federation_base.group_federation_user"),
+            self.env.ref("sports_federation_format.group_competition_designer"),
+        ]
+        designer = self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "name": "Competition Designer Read Test",
+                "login": "competition.designer.read@example.invalid",
+                "group_ids": [(6, 0, [group.id for group in groups])],
+            }
+        )
+
+        for model_name in (
+            "federation.participant.set",
+            "federation.participant.set.line",
+        ):
+            model = self.env[model_name].with_user(designer)
+            self.assertTrue(model.check_access_rights("read", raise_exception=False))
+            self.assertFalse(model.check_access_rights("write", raise_exception=False))
+
     def test_placement_bracket_matrix_has_valid_sources(self):
         club = self.env["federation.club"].create({"name": "Matrix Club"})
         for count in (2, 3, 4, 5, 6, 7, 8, 9, 12, 16):

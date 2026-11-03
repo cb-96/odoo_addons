@@ -55,8 +55,13 @@ class FederationScheduleReviewIntegrity(models.Model):
         self.check_access("write")
         if self.state != "pending":
             raise ValidationError(_("Only pending reviews can be decided."))
+        self_approval = (
+            self.submitted_by_id == self.env.user
+            and self.edition_id.schedule_self_approval_allowed
+        )
+        required_role = "schedule_planner" if self_approval else "schedule_approver"
         self.env["federation.competition.role.assignment"].assert_role(
-            self.edition_id, "schedule_approver", "competition_director"
+            self.edition_id, required_role, "competition_director"
         )
         allowed_fields = {"state", "reviewer_id", "review_note", "reviewed_at"}
         if not vals or set(vals) - allowed_fields:

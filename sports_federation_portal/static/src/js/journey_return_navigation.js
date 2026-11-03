@@ -1,7 +1,7 @@
 /** @odoo-module **/
 // Session navigation contains only allowlisted routes/filters and a user ID, never form data.
-const returnPaths = new Set(['/my/work', '/my/action-items', '/my/referee-assignments']);
-const filters = {scope: new Set(['my', 'club']), status: new Set(['open', 'recent']), task_type: new Set(['registration', 'roster_readiness', 'parental_consent', 'gameday_lineup', 'referee_duty', 'result_review']), filterby: new Set(['upcoming', 'pending', 'history', 'all'])};
+const returnPaths = new Set(['/my/work', '/my/action-items', '/my/referee-assignments', '/my/preparation', '/my/work/reviews', '/federation/operations/action-items']);
+const filters = {role: new Set(['club','official','planner','reviewer','manager']), scope: new Set(['my', 'club']), status: new Set(['open', 'recent']), task_type: new Set(['registration', 'roster_readiness', 'parental_consent', 'gameday_lineup', 'referee_duty', 'result_review']), filterby: new Set(['upcoming', 'pending', 'history', 'all'])};
 const ttl = 2 * 60 * 60 * 1000;
 function safeReturn(value) {
     if (typeof value !== "string" || value.startsWith("//") || /[\\%\r\n]/.test(value)) return null;
@@ -19,17 +19,16 @@ function safeReturn(value) {
 function storage(fn) { try { return fn(sessionStorage); } catch { return null; } }
 async function init() {
     let user = document.querySelector('[data-journey-user]')?.dataset.journeyUser;
-    // Existing detail pages carry user identity via the portal layout extension below.
-    if (!user && location.pathname.startsWith('/my/')) {
-        try {
-            const response = await fetch('/my/work/context', {credentials: 'same-origin', cache: 'no-store'});
-            if (response.ok) user = String((await response.json()).user_id || '');
-        } catch { return; }
-    }
+    let database;
+    try {
+        const response = await fetch('/my/work/context', {credentials: 'same-origin', cache: 'no-store'});
+        if (!response.ok) return;
+        const context = await response.json();
+        user = String(context.user_id || ''); database = context.database;
+    } catch { return; }
     if (!user) return;
-    const key = `federation:journey-return:${user}`;
+    const key = `federation:journey-return:${database}:${user}`;
     if (returnPaths.has(location.pathname)) {
-        storage(s => s.removeItem(key));
         document.querySelectorAll('a[data-journey-open], a[href^="/my/referee-assignments/"]').forEach(link => {
             link.addEventListener('click', () => {
                 const target = new URL(link.href, location.origin);
@@ -38,13 +37,13 @@ async function init() {
                 if (path) storage(s => s.setItem(key, JSON.stringify({path, saved: Date.now()})));
             });
         });
-        return;
     }
-    if (!location.pathname.startsWith('/my/')) return;
+    if (!location.pathname.startsWith('/my/') && !location.pathname.startsWith('/federation/')) return;
     let record;
     try { record = JSON.parse(storage(s => s.getItem(key)) || 'null'); } catch { storage(s => s.removeItem(key)); }
     const path = record && safeReturn(record.path);
     if (!path || !Number.isFinite(record.saved) || Date.now() - record.saved > ttl || record.saved > Date.now() + 60000) { storage(s => s.removeItem(key)); return; }
+    if (path === safeReturn(location.href)) return;
     const main = document.querySelector('main .container, #wrap .container, main');
     if (!main) return;
     const link = document.createElement('a'); link.href = path;

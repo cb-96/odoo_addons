@@ -216,10 +216,14 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             },
             expected_revision=schedule.revision,
             revision_field="submitted_revision",
-            forbidden_actor_fields=("submitted_by_id",),
+            forbidden_actor_fields=(
+                ()
+                if review.edition_id.schedule_self_approval_allowed
+                else ("submitted_by_id",)
+            ),
             writer=review._write_decision,
             event_type="schedule_review_approved",
-            description=_("Schedule approved by the assigned independent reviewer."),
+            description=_("Schedule approval recorded according to the competition workflow policy."),
         )
         transition.execute(
             review.schedule_id.sudo(),
@@ -241,8 +245,17 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
         if not schedule:
             raise ValidationError(_("The schedule no longer exists."))
+        live = schedule.sudo().matchday_id.current_publication_id
+        streamlined_first_publish = bool(
+            not schedule.edition_id.schedule_approval_required
+            and schedule.edition_id.schedule_self_approval_allowed
+            and schedule.edition_id.schedule_auto_publish_after_approval
+            and (not live or live.state != "live")
+        )
         self.env["federation.competition.role.assignment"].assert_role(
-            schedule.edition_id, "schedule_approver", "competition_director"
+            schedule.edition_id,
+            "schedule_planner" if streamlined_first_publish else "schedule_approver",
+            "competition_director",
         )
         # Publication also reads the full schedule, match day and fixture
         # graph.  Keep those internal reads controlled and read-only after the

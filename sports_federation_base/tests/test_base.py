@@ -1,5 +1,7 @@
 """Tests for sports_federation_base: clubs, teams, seasons, registrations."""
 
+import xmlrpc.client
+
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError
 from odoo.tools.misc import mute_logger
@@ -184,6 +186,15 @@ class TestFederationSeason(TransactionCase):
         self.assertEqual(self.season.state, "open")
         self.season.action_close()
         self.assertEqual(self.season.state, "closed")
+
+    def test_workflow_transition_response_is_xmlrpc_serializable(self):
+        """Keep transition payloads compatible with standard RPC clients."""
+        result = self.env["federation.workflow.transition"].execute(
+            self.season, "open", {"draft"}
+        )
+
+        self.assertEqual(result["previous_states"], {str(self.season.id): "draft"})
+        self.assertTrue(xmlrpc.client.dumps((result,)))
 
     def test_season_state_guards_and_archive(self):
         """Test that season state guards and archive."""

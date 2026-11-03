@@ -31,7 +31,7 @@ class RoleJourneys(FederationRosterPortalBase):
 
     @http.route("/my/work/context", type="http", auth="user", methods=["GET"])
     def journey_context(self, **kw):
-        response = request.make_json_response({"user_id": request.env.user.id})
+        response = request.make_json_response({"user_id": request.env.user.id, "database": request.env.cr.dbname})
         response.headers["Cache-Control"] = "no-store"
         return response
 
@@ -74,8 +74,6 @@ class RoleJourneys(FederationRosterPortalBase):
         task = request.env["federation.portal.privilege"].portal_search(model, model._portal_get_domain(user) + [("id", "=", task_id)], user=user, limit=1)
         if not task:
             return self._render_access_denied()
-        if task.state == "done":
-            return request.redirect(return_url("club", kw))
         if task.journey_status == "unavailable" or not safe_destination(task.action_url):
             return request.redirect(return_url("club", kw))
         # Destination controllers enforce current source ownership; this bridge never mutates it.

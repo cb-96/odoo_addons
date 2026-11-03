@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <odoo>
 
     <template id="portal_my_referee_assignments" name="My Referee Assignments">
@@ -20,7 +20,7 @@
                         <strong><t t-esc="next_pending_assignment.match_id.display_name"/></strong>
                         <t t-if="next_pending_assignment.confirmation_deadline">
                             before
-                            <t t-esc="next_pending_assignment.confirmation_deadline" t-options='{"widget": "datetime"}'/>
+                            <t t-esc="next_pending_assignment.confirmation_deadline" t-options="{&quot;widget&quot;: &quot;datetime&quot;}"/>
                         </t>
                         <span t-if="overdue_count" class="badge text-bg-danger ms-2">
                             <t t-esc="overdue_count"/> overdue
@@ -45,60 +45,14 @@
                 </div>
 
                 <div class="d-flex gap-2 flex-wrap mb-3">
-                    <a t-attf-href="/my/referee-assignments?filterby=upcoming"
-                       t-att-class="'btn btn-sm %s' % ('btn-primary' if filterby == 'upcoming' else 'btn-outline-primary')">Upcoming</a>
-                    <a t-attf-href="/my/referee-assignments?filterby=pending"
-                       t-att-class="'btn btn-sm %s' % ('btn-primary' if filterby == 'pending' else 'btn-outline-primary')">Pending Response</a>
-                    <a t-attf-href="/my/referee-assignments?filterby=history"
-                       t-att-class="'btn btn-sm %s' % ('btn-primary' if filterby == 'history' else 'btn-outline-primary')">History</a>
-                    <a t-attf-href="/my/referee-assignments?filterby=all"
-                       t-att-class="'btn btn-sm %s' % ('btn-primary' if filterby == 'all' else 'btn-outline-primary')">All</a>
+                    <a t-attf-href="/my/referee-assignments?filterby=upcoming" t-att-class="'btn btn-sm %s' % ('btn-primary' if filterby == 'upcoming' else 'btn-outline-primary')">Upcoming</a>
+                    <a t-attf-href="/my/referee-assignments?filterby=pending" t-att-class="'btn btn-sm %s' % ('btn-primary' if filterby == 'pending' else 'btn-outline-primary')">Pending Response</a>
+                    <a t-attf-href="/my/referee-assignments?filterby=history" t-att-class="'btn btn-sm %s' % ('btn-primary' if filterby == 'history' else 'btn-outline-primary')">History</a>
+                    <a t-attf-href="/my/referee-assignments?filterby=all" t-att-class="'btn btn-sm %s' % ('btn-primary' if filterby == 'all' else 'btn-outline-primary')">All</a>
                 </div>
 
                 <div class="table-responsive" t-if="assignments">
-                    <table class="table align-middle">
-                        <caption class="visually-hidden">Officiating assignments visible to the current referee.</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">Match</th>
-                                <th scope="col">Tournament</th>
-                                <th scope="col">Role</th>
-                                <th scope="col">Kickoff</th>
-                                <th scope="col">Deadline</th>
-                                <th scope="col">Status</th>
-                                <th scope="col" class="text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <t t-foreach="assignments" t-as="assignment">
-                                <tr t-att-class="'table-danger' if assignment.is_confirmation_overdue and assignment.state == 'draft' else ''">
-                                    <td>
-                                        <strong><t t-esc="assignment.match_id.display_name"/></strong>
-                                    </td>
-                                    <td><t t-esc="assignment.tournament_id.display_name or ''"/></td>
-                                    <td><t t-esc="dict(assignment._fields['role'].selection).get(assignment.role)"/></td>
-                                    <td>
-                                        <t t-if="assignment.match_kickoff" t-esc="assignment.match_kickoff" t-options='{"widget": "datetime"}'/>
-                                    </td>
-                                    <td>
-                                        <t t-if="assignment.confirmation_deadline" t-esc="assignment.confirmation_deadline" t-options='{"widget": "datetime"}'/>
-                                        <span t-if="assignment.is_confirmation_overdue and assignment.state == 'draft'" class="badge text-bg-danger ms-1">Overdue</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge"
-                                              t-att-class="'badge text-bg-warning' if assignment.state == 'draft' else ('badge text-bg-success' if assignment.state == 'confirmed' else ('badge text-bg-secondary' if assignment.state == 'done' else 'badge text-bg-danger'))">
-                                            <t t-esc="assignment.get_portal_state_label()"/>
-                                        </span>
-                                    </td>
-                                    <td class="text-end">
-                                        <a t-attf-href="/my/referee-assignments/#{assignment.id}" class="btn btn-sm btn-outline-primary" t-if="assignment.state == 'draft'">Respond</a>
-                                        <a t-attf-href="/my/referee-assignments/#{assignment.id}" class="btn btn-sm btn-outline-primary" t-else="">Open</a>
-                                    </td>
-                                </tr>
-                            </t>
-                        </tbody>
-                    </table>
-                </div>
+                    <t t-call="sports_federation_portal.connected_work_groups"/></div>
 
                 <div t-if="not assignments" class="alert alert-info mb-0" role="status">
                     No officiating assignments match the current filter.
@@ -160,11 +114,11 @@
                                     </tr>
                                     <tr t-if="assignment.match_kickoff">
                                         <th>Kickoff</th>
-                                        <td><t t-esc="assignment.match_kickoff" t-options='{"widget": "datetime"}'/></td>
+                                        <td><t t-esc="assignment.match_kickoff" t-options="{&quot;widget&quot;: &quot;datetime&quot;}"/></td>
                                     </tr>
                                     <tr t-if="assignment.confirmation_deadline">
                                         <th>Confirmation Deadline</th>
-                                        <td><t t-esc="assignment.confirmation_deadline" t-options='{"widget": "datetime"}'/></td>
+                                        <td><t t-esc="assignment.confirmation_deadline" t-options="{&quot;widget&quot;: &quot;datetime&quot;}"/></td>
                                     </tr>
                                     <tr>
                                         <th>Status</th>

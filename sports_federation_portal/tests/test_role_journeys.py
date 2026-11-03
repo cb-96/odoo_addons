@@ -277,7 +277,7 @@ class TestJourneyHttp(HttpCase):
             ("journey.official@example.test", "My official assignments"),
             ("journey.planner@example.test", "Competition planning"),
             ("journey.reviewer@example.test", "Result review"),
-            ("journey.manager@example.test", "Organising and review"),
+            ("journey.manager@example.test", "Manager work queue"),
         )
         for login, expected in roles:
             with self.subTest(role=login):
@@ -317,3 +317,44 @@ class TestJourneyHttp(HttpCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers.get("Cache-Control"), "no-store")
         self.assertEqual(response.json()["user_id"], self.club_user.id)
+
+    def test_connected_groups_render_for_each_role(self):
+        for role in ('club', 'official', 'planner', 'reviewer', 'manager'):
+            self.authenticate('journey.%s@example.test' % role, 'journey-test-password')
+            response = self.url_open('/my/work?role=%s' % role)
+            self.assertEqual(response.status_code, 200)
+            for bucket in ('now', 'soon', 'waiting', 'recent'):
+                self.assertIn('data-journey-bucket="%s"' % bucket, response.text)
+
+    def test_connected_role_switch_cannot_grant_access(self):
+        self.authenticate('journey.club@example.test', 'journey-test-password')
+        response = self.url_open('/my/work?role=reviewer')
+        self.assertEqual(response.status_code, 403)
+
+    def test_connected_default_home_and_generic_escape(self):
+        self.authenticate('journey.club@example.test', 'journey-test-password')
+        response = self.url_open('/my')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('My federation work', response.text)
+        generic = self.url_open('/my?generic=1')
+        self.assertEqual(generic.status_code, 200)
+        self.assertNotIn('data-journey-bucket=', generic.text)
+
+    def test_connected_role_remembered(self):
+        self.authenticate('journey.reviewer@example.test', 'journey-test-password')
+        self.assertEqual(self.url_open('/my/work?role=reviewer').status_code, 200)
+        response = self.url_open('/my/work')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('value="reviewer" selected=', response.text)
+
+    def test_connected_participation_summary(self):
+        self.authenticate('journey.club@example.test', 'journey-test-password')
+        response = self.url_open('/my/preparation')
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('Internal Server Error', response.text)
+
+    def test_connected_manager_completed_filter(self):
+        self.authenticate('journey.manager@example.test', 'journey-test-password')
+        response = self.url_open('/federation/operations/action-items?status=recent')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Completed work', response.text)

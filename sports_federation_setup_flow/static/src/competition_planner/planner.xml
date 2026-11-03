@@ -9,7 +9,7 @@
         <h2>Competition planner</h2><p>Open a season competition to start or resume its setup.</p>
       </div>
       <main t-else="" class="container-fluid py-4" aria-labelledby="planner-title">
-        <header class="o_competition_planner_header">
+        <a href="/my/work?role=planner" class="btn btn-outline-secondary mb-3">Back to my federation work</a><header class="o_competition_planner_header">
           <div><div class="text-muted small">Competition Planner</div>
             <h1 id="planner-title" class="h2 mb-1" t-esc="state.data.edition.name"/>
             <p class="text-muted mb-0"><span t-esc="state.data.edition.season"/></p>
@@ -39,6 +39,7 @@
             <h2 id="current-task-title" class="h4 mb-1" t-esc="state.data.primary_action.title"/>
             <p class="mb-1" t-esc="state.data.primary_action.message"/>
             <div class="small text-muted"><strong>Responsible:</strong> <span t-esc="state.data.primary_action.owner"/></div>
+            <div class="small text-muted">The responsible person also needs the matching federation-wide access group and a responsibility assignment on this competition.</div>
           </div>
           <div class="d-flex gap-2 flex-wrap">
             <button class="btn btn-primary btn-lg" t-on-click="openPrimary" data-planner-primary-action="true">
@@ -90,7 +91,7 @@
             <div class="card-body">
               <p><strong>Game days:</strong> <t t-esc="state.data.operations.matchday_count"/></p>
               <p><strong>Schedules:</strong> <t t-esc="state.data.operations.schedule_count"/></p>
-              <p t-if="state.data.operations.next_matchday"><strong>Next match day:</strong> <t t-esc="state.data.operations.next_matchday.name"/></p>
+              <p t-if="state.data.operations.next_matchday"><strong>Earliest active game day:</strong> <t t-esc="state.data.operations.next_matchday.name"/></p>
               <p class="text-muted mb-0">The workspace shows one next action at a time. Additional records remain available through contextual links and Advanced Tools.</p>
             </div>
           </div></aside>

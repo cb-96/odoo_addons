@@ -181,7 +181,7 @@ class FederationCompetitionEditionSetup(models.Model):
             "res_id": wizard.id,
             "view_mode": "form",
             "views": [(False, "form")],
-            "target": "current",
+            "target": "new",
         }
 
     def action_setup_schedule(self):

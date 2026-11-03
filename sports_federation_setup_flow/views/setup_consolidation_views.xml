@@ -8,6 +8,7 @@
         <field name="setup_next_action" optional="show"/>
       </field>
     </field>
+    <field name="active">False</field>
   </record>
 
   <record id="action_competition_setup_home" model="ir.actions.act_window">

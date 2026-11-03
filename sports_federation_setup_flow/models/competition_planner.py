@@ -149,11 +149,27 @@ class FederationCompetitionEditionPlanner(models.Model):
                 )
                 if schedule:
                     review_model = self.env.get("federation.schedule.review")
-                    review = review_model and review_model.search(
-                        [("schedule_id", "=", schedule.id)], order="id desc", limit=1
-                    )
+                    review = False
+                    if review_model is not None:
+                        review = review_model.sudo().search(
+                            [
+                                ("schedule_id", "=", schedule.id),
+                                ("submitted_revision", "=", schedule.revision),
+                                ("state", "in", ("pending", "approved")),
+                            ],
+                            order="id desc",
+                            limit=1,
+                        )
                     if review:
-                        return self._planner_record_action(review, _("Schedule review"))
+                        review = review.with_env(self.env)
+                        try:
+                            review.check_access("read")
+                        except AccessError:
+                            review = self.env["federation.schedule.review"]
+                        if review:
+                            return self._planner_record_action(
+                                review, _("Schedule review")
+                            )
                     return self._planner_record_action(schedule)
             return self._planner_record_action(day)
         if key.startswith("schedule-") and record_id:

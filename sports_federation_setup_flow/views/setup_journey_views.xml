@@ -7,8 +7,14 @@
       <field name="setup_template" position="attributes">
         <attribute name="string">Competition Type</attribute>
       </field>
+      <field name="competition_id" position="attributes"><attribute name="string">Competition</attribute></field>
+      <field name="season_id" position="attributes"><attribute name="string">Season</attribute></field>
+      <field name="name" position="attributes"><attribute name="string">Competition name</attribute></field>
+      <field name="rule_set_id" position="attributes"><attribute name="string">Rule set</attribute></field>
+      <field name="date_start" position="attributes"><attribute name="string">Competition start date</attribute></field>
+      <field name="date_end" position="attributes"><attribute name="string">Competition end date</attribute></field>
       <field name="setup_template" position="after">
-        <field name="show_additional_settings"/>
+        <field name="show_additional_settings" string="Show additional settings"/>
 
         <group string="Workflow and responsibility">
           <field name="workflow_mode" widget="radio" options="{'horizontal': true}"/>
@@ -27,6 +33,9 @@
       </field>
       <xpath expr="//group[field[@name='registration_open']]" position="attributes"><attribute name="invisible">not show_additional_settings</attribute></xpath>
       <xpath expr="//page[field[@name='role_line_ids']]" position="attributes"><attribute name="invisible">not show_additional_settings</attribute></xpath>
+      <xpath expr="//page[field[@name='role_line_ids']]" position="inside">
+        <div class="alert alert-info" role="status">These assignments route responsibility within this competition; they do not grant record access. In Settings &gt; Users &amp; Companies &gt; Users, grant the needed global groups too: Federation User as the base, Registration Manager for team and participant setup, Calendar Planner for game days, Schedule Planner for working schedules, and Schedule Approver for independent review.</div>
+      </xpath>
       <field name="code" position="attributes"><attribute name="column_invisible">not parent.show_additional_settings</attribute></field>
       <xpath expr="//footer" position="inside"><button name="action_save_creation_draft" type="object" string="Save Draft"/><field name="creation_draft_id" invisible="1"/></xpath>
       <button name="action_create_competition" position="attributes">

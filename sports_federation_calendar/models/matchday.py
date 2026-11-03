@@ -143,12 +143,21 @@ class FederationMatchdayAllocation(models.Model):
         string="Additional Fixtures",
         help="Late fixtures included explicitly; removing them undoes the allocation.",
     )
+    manual_only = fields.Boolean(
+        string="Only listed fixtures",
+        help="Use exactly the listed fixtures instead of expanding the selected structure, stage, or round.",
+    )
     fixture_ids = fields.Many2many("federation.fixture", compute="_compute_fixtures")
 
-    @api.depends("structure_id", "stage_id", "round_number", "manual_fixture_ids")
+    @api.depends(
+        "structure_id", "stage_id", "round_number", "manual_fixture_ids", "manual_only"
+    )
     def _compute_fixtures(self):
         Fixture = self.env["federation.fixture"]
         for r in self:
+            if r.manual_only:
+                r.fixture_ids = r.manual_fixture_ids
+                continue
             domain = (
                 [("structure_id", "=", r.structure_id.id)]
                 if r.structure_id

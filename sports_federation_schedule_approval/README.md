@@ -32,6 +32,17 @@ calendar and venue data, so approvers do not need CRUD access to those
 administrator-managed records. Reviewers may edit the note while a review is
 pending; state and audit fields remain command-service-only.
 
+Streamlined workflow policy permits the submitting planner to complete the
+approval command after all schedule checks pass. Independent Review requires a
+different assigned approver. The command service and model-level writer enforce
+the same edition policy, so the streamlined path is not contradicted by a second
+unconditional separation-of-duties guard. Global access-group membership and
+the per-edition responsibility assignment are separate requirements; neither
+is granted implicitly. Review and publication forms present immutable snapshot
+assignments as a match/court/time table while retaining the original JSON as the
+authoritative evidence. A publication note is optional for the first live
+publication and required when replacing one.
+
 ## Tests and contracts
 
 ```bash

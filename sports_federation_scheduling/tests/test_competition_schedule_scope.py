@@ -123,3 +123,145 @@ class TestCompetitionScheduleScope(TransactionCase):
         self.assertEqual(included, self.pool_fixture)
         self.assertFalse(deferred)
         self.assertEqual(excluded, self.finals_fixture)
+
+    def test_generated_day_allocations_contain_only_the_distributed_fixtures(self):
+        second_day = self.env["federation.matchday"].create(
+            {
+                "name": "Scope Second Day",
+                "edition_id": self.edition.id,
+                "date": "2026-10-17",
+                "venue_id": self.matchday.venue_id.id,
+            }
+        )
+        wizard = self.env["federation.competition.schedule.wizard"].create(
+            {
+                "edition_id": self.edition.id,
+                "structure_ids": [(6, 0, self.structure.ids)],
+                "matchday_ids": [(6, 0, (self.matchday | second_day).ids)],
+            }
+        )
+
+        wizard._create_allocations(self.matchday, self.pool_fixture)
+        wizard._create_allocations(second_day, self.finals_fixture)
+        first_schedule = self.env["federation.schedule"].create(
+            {
+                "name": "Scope First Schedule",
+                "edition_id": self.edition.id,
+                "structure_id": self.structure.id,
+                "matchday_id": self.matchday.id,
+            }
+        )
+        second_schedule = self.env["federation.schedule"].create(
+            {
+                "name": "Scope Second Schedule",
+                "edition_id": self.edition.id,
+                "structure_id": self.structure.id,
+                "matchday_id": second_day.id,
+            }
+        )
+
+        self.assertEqual(first_schedule.available_fixture_ids, self.pool_fixture)
+        self.assertEqual(second_schedule.available_fixture_ids, self.finals_fixture)
+
+    def test_fixture_allocated_on_another_day_is_not_replanned(self):
+        second_day = self.env["federation.matchday"].create(
+            {
+                "name": "Scope Second Day",
+                "edition_id": self.edition.id,
+                "date": "2026-10-17",
+                "venue_id": self.matchday.venue_id.id,
+            }
+        )
+        self.env["federation.matchday.allocation"].create(
+            {
+                "matchday_id": self.matchday.id,
+                "structure_id": self.structure.id,
+                "manual_fixture_ids": [(6, 0, self.pool_fixture.ids)],
+                "manual_only": True,
+            }
+        )
+        wizard = self.env["federation.competition.schedule.wizard"].create(
+            {
+                "edition_id": self.edition.id,
+                "structure_ids": [(6, 0, self.structure.ids)],
+                "stage_ids": [(6, 0, self.pool_stage.ids)],
+                "matchday_ids": [(6, 0, second_day.ids)],
+            }
+        )
+
+        included, deferred, excluded = wizard._fixtures()
+
+        self.assertFalse(included)
+        self.assertFalse(deferred)
+        self.assertIn(self.pool_fixture, excluded)
+
+    def test_preview_blocks_a_fixture_allocated_to_multiple_days(self):
+        second_day = self.env["federation.matchday"].create(
+            {
+                "name": "Scope Second Day",
+                "edition_id": self.edition.id,
+                "date": "2026-10-17",
+                "venue_id": self.matchday.venue_id.id,
+            }
+        )
+        for day in (self.matchday, second_day):
+            self.env["federation.matchday.allocation"].create(
+                {
+                    "matchday_id": day.id,
+                    "structure_id": self.structure.id,
+                    "manual_fixture_ids": [(6, 0, self.pool_fixture.ids)],
+                    "manual_only": True,
+                }
+            )
+        wizard = self.env["federation.competition.schedule.wizard"].create(
+            {
+                "edition_id": self.edition.id,
+                "structure_ids": [(6, 0, self.structure.ids)],
+                "stage_ids": [(6, 0, self.pool_stage.ids)],
+                "matchday_ids": [(6, 0, (self.matchday | second_day).ids)],
+            }
+        )
+
+        errors, _warnings = wizard._validate_scope()
+
+        self.assertTrue(any("allocated to multiple game days" in error for error in errors))
+
+    def test_preview_reports_are_presented_as_readable_summaries(self):
+        wizard = self.env["federation.competition.schedule.wizard"].create(
+            {
+                "edition_id": self.edition.id,
+                "structure_ids": [(6, 0, self.structure.ids)],
+                "matchday_ids": [(6, 0, self.matchday.ids)],
+                "allocation_report": [
+                    {
+                        "matchday_id": self.matchday.id,
+                        "date": "2026-10-10",
+                        "capacity": 10,
+                        "included_fixture_count": 2,
+                        "remaining_capacity": 8,
+                    }
+                ],
+                "feasibility_report": {
+                    "fixture_count": 2,
+                    "included_fixture_count": 2,
+                    "excluded_fixture_count": 0,
+                    "deferred_fixture_count": 0,
+                    "selected_stage_count": 1,
+                    "available_slot_count": 10,
+                    "capacity_surplus": 8,
+                    "game_days": [],
+                    "errors": [],
+                },
+                "quality_report": {
+                    "warnings": [],
+                    "teams_with_multiple_same_day_matches": 0,
+                    "planned_fixture_counts": {str(self.matchday.id): 2},
+                    "remaining_capacity": {str(self.matchday.id): 8},
+                },
+            }
+        )
+
+        self.assertIn(self.matchday.display_name, str(wizard.allocation_report_html))
+        self.assertIn("Fixtures planned", str(wizard.allocation_report_html))
+        self.assertIn("Playable fixtures", str(wizard.feasibility_report_html))
+        self.assertIn("No quality warnings", str(wizard.quality_report_html))

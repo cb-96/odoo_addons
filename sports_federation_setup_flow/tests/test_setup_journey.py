@@ -1,6 +1,7 @@
 from datetime import date
 from unittest.mock import patch
 
+from odoo import Command
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
@@ -87,6 +88,32 @@ class TestCompetitionSetupJourney(TransactionCase):
         self.assertIn("repeat_every_weeks", fields)
         self.assertIn("repeat_count", fields)
 
+    def test_calendar_planner_can_create_gameday_setup_wizard(self):
+        groups = [
+            self.env.ref("base.group_user"),
+            self.env.ref("sports_federation_base.group_federation_user"),
+            self.env.ref("sports_federation_calendar.group_calendar_planner"),
+        ]
+        planner = self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "name": "Calendar Planner Setup Test",
+                "login": "calendar.planner.setup@example.invalid",
+                "group_ids": [Command.set([group.id for group in groups])],
+            }
+        )
+
+        wizard = self.env["federation.competition.gameday.setup.wizard"].with_user(
+            planner
+        ).create(
+            {
+                "edition_id": self.edition.id,
+                "new_date": "2026-10-03",
+                "default_venue_id": self.venue.id,
+            }
+        )
+
+        self.assertEqual(wizard.edition_id, self.edition)
+
     def test_competition_can_open_clone_setup(self):
         self.assertTrue(
             hasattr(self.env["federation.competition.edition"], "action_open_clone_setup")
@@ -167,3 +194,37 @@ class TestCompetitionSetupJourney(TransactionCase):
         self.assertEqual(wizard.default_format_type, "single_round_robin")
         self.assertTrue(wizard.registration_open)
         self.assertTrue(wizard.registration_close)
+
+    def test_switching_seasons_realigns_an_out_of_range_start_date(self):
+        wizard = self.env["federation.create.competition.wizard"].new(
+            {
+                "setup_template": "league",
+                "season_id": self.season.id,
+                "date_start": "2026-10-03",
+            }
+        )
+        wizard.season_id = self.next_season
+        wizard._onchange_competition_season()
+
+        self.assertEqual(wizard.date_start, date(2027, 9, 1))
+        self.assertEqual(wizard.date_end, date(2028, 6, 30))
+
+    def test_add_game_day_defaults_venue_courts_and_has_clear_title(self):
+        wizard = self.env["federation.competition.gameday.setup.wizard"].create(
+            {
+                "edition_id": self.edition.id,
+                "new_date": "2026-10-03",
+                "default_venue_id": self.venue.id,
+            }
+        )
+
+        action = wizard.action_add_day()
+
+        self.assertEqual(wizard.line_ids.court_ids, self.court)
+        self.assertEqual(action["name"], "Define Game Days")
+
+    def test_game_day_setup_opens_as_dialog_for_footer_actions(self):
+        action = self.edition.action_setup_gamedays()
+
+        self.assertEqual(action["target"], "new")
+        self.assertEqual(action["res_model"], "federation.competition.gameday.setup.wizard")

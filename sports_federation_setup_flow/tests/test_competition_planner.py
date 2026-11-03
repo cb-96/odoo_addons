@@ -1,6 +1,7 @@
 import hashlib
 import json
 
+from odoo import Command
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
@@ -368,6 +369,101 @@ class TestCompetitionPlanner(TransactionCase):
         self.assertEqual(action["res_model"], "federation.registration.window")
         self.assertEqual(action["res_id"], window.id)
         self.assertEqual(action["views"], [(False, "form")])
+
+    def test_publication_blocker_opens_current_review_directly(self):
+        _division, _structure, _fixtures, days, _slots, schedule = (
+            self._prepare_two_day_competition()
+        )
+        schedule.state = "ready_for_review"
+        commands = self.env["federation.schedule.approval.commands"]
+        snapshot = commands._snapshot(schedule)
+        review = self.env["federation.schedule.review"].sudo().create(
+            {
+                "schedule_id": schedule.id,
+                "submitted_revision": schedule.revision,
+                "state": "pending",
+                "assignment_snapshot": snapshot,
+                "snapshot_digest": commands._digest(snapshot),
+                "submitted_by_id": self.env.user.id,
+            }
+        )
+        issue_key = "gameday-%s-missing-publication" % days[0].id
+        planner = self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "name": "Planner Review Reader",
+                "login": "planner.review.reader",
+                "group_ids": [
+                    Command.set(
+                        [
+                            self.env.ref("base.group_user").id,
+                            self.env.ref(
+                                "sports_federation_base.group_federation_user"
+                            ).id,
+                            self.env.ref(
+                                "sports_federation_scheduling.group_schedule_planner"
+                            ).id,
+                            self.env.ref(
+                                "sports_federation_calendar.group_calendar_planner"
+                            ).id,
+                            self.env.ref(
+                                "sports_federation_registration.group_registration_manager"
+                            ).id,
+                        ]
+                    )
+                ],
+            }
+        )
+        self.env["federation.competition.role.assignment"].create(
+            {
+                "edition_id": self.edition.id,
+                "user_id": planner.id,
+                "role": "schedule_planner",
+            }
+        )
+        review.with_user(planner).check_access("read")
+        self.assertEqual(review.state, "pending")
+        self.assertEqual(review.submitted_revision, schedule.revision)
+        matching_review = self.env["federation.schedule.review"].sudo().search(
+            [
+                ("schedule_id", "=", schedule.id),
+                ("submitted_revision", "=", schedule.revision),
+                ("state", "in", ("pending", "approved")),
+            ],
+            limit=1,
+        )
+        self.assertEqual(matching_review, review)
+
+        planner_edition = self.edition.with_user(planner)
+        planner_schedule = planner_edition.env["federation.schedule"].search(
+            [
+                ("edition_id", "=", self.edition.id),
+                ("matchday_id", "=", days[0].id),
+            ],
+            order="revision desc,id desc",
+            limit=1,
+        )
+        self.assertEqual(planner_schedule, schedule)
+        planner_review = planner_edition.env.get("federation.schedule.review").sudo().search(
+            [
+                ("schedule_id", "=", planner_schedule.id),
+                ("submitted_revision", "=", planner_schedule.revision),
+                ("state", "in", ("pending", "approved")),
+            ],
+            order="id desc",
+            limit=1,
+        )
+        self.assertEqual(planner_review, review)
+        issue = next(
+            item
+            for item in planner_edition.get_competition_planner_data()["issues"]
+            if item["key"] == issue_key
+        )
+        direct_action = planner_edition._planner_issue_action(issue)
+        self.assertEqual(direct_action["res_model"], "federation.schedule.review")
+        action = planner_edition.action_open_planner_issue(issue_key)
+
+        self.assertEqual(action["res_model"], "federation.schedule.review")
+        self.assertEqual(action["res_id"], review.id)
 
     def test_ordinary_manager_routes_to_simplified_team_picker(self):
         division = self.env["federation.tournament"].create(

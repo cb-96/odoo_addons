@@ -18,7 +18,7 @@ class FederationSchedulePublishWizard(models.TransientModel):
     expected_publication_id = fields.Integer(required=True, readonly=True)
     reason = fields.Text(
         string="Publication reason",
-        help="Required when replacing the current live publication.",
+        help="Optional for the first publication; required when replacing a live publication.",
     )
 
     def action_publish(self):

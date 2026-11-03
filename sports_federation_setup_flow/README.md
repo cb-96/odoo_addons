@@ -27,6 +27,10 @@ permissions can still use the planner's setup routes; unavailable operations
 are marked unavailable instead of bypassing access controls or presenting an
 incomplete count as zero. Availability probes use model-level `check_access`
 and treat `AccessError` as unavailable without broadening the caller's rights.
+Calendar Planners can create and edit the guided game-day setup wizard. A
+Competition Designer can read finalized participant sets and their lines, but
+cannot change registration data; this is the read-only input needed to review
+format choices.
 
 ## Ownership boundary
 
@@ -81,3 +85,34 @@ Model regressions cover step, exact-record blocker, and operational actions.
 Competition Hub is the ordinary entry and always reopens the visual planner. It promotes one `primary_action` and one unified readiness summary. Direct team selection materializes registration records in the registration addon; the format picker generates and freezes structures through format commands; game-day setup continues directly into the complete competition scheduling wizard. Preset, format, venue, hours, and slot-duration defaults are remembered on the edition and are backfilled by the 19.0.4.0.0 migration.
 
 The former owner-module router remains callable as `action_open_advanced_workspace`. Exact records, audit data, and recovery actions are retained; only ordinary menu discoverability changes.
+
+## Walkthrough usability findings
+
+The end-to-end setup walkthrough found and corrected the following friction:
+
+- The creation form labels its basic fields explicitly. Changing the season
+	realigns a start date that falls outside the newly selected season, while
+	preserving a start date already inside its range.
+- The Competition Hub has one **Next Action** column. Planner guidance
+	distinguishes the responsible competition role from the required
+	federation-wide access groups and per-competition responsibility assignment.
+	It names Registration Manager, Calendar Planner, Schedule Planner, and
+	Schedule Approver as distinct access grants for their respective work areas.
+- Newly added game days inherit active courts from their default venue, and the
+	court selector is limited to that venue. Reopened game-day forms keep the
+	business title.
+- Schedule preview tabs and immutable review/publication snapshots use readable
+	tables and summaries instead of compact JSON. The preview retains its action
+	title, and the first-publication note no longer implies a replacement.
+- Publication blockers open the review for the current schedule revision, not
+	an unrelated historical review. The planner's glance label says
+	**Earliest active game day** to distinguish it from the next setup action.
+- Generated allocations preserve the exact fixture subset assigned to each
+	game day. Partial runs skip fixtures allocated elsewhere, and existing
+	cross-day duplicates block generation rather than becoming duplicate live
+	schedules.
+
+The game-day wizard opens in a dialog so its **Save & Plan Schedule**, **Save
+and Close**, and **Discard** footer actions stay visible. A full-page form hid
+those controls in the browser walkthrough. The supported continuation remains
+the wizard's save-and-continue command.

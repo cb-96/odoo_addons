@@ -147,7 +147,7 @@ class FederationPortalcurrent(FederationPortalBase):
                 "/my/competition-entries?" + urlencode({"error": str(exc)}),
                 code=302,
             )
-        return redirect("/my/competition-entries?success=Entry submitted", code=302)
+        return redirect("/my/competition-entries?" + urlencode({"success": "Entry submitted. The federation registration reviewer owns the next decision. No resubmission is needed while review is pending."}), code=302)
 
     def _portal_find_competition_entry(self, entry_id):
         user = request.env.user
@@ -202,7 +202,7 @@ class FederationPortalcurrent(FederationPortalBase):
             )
         return redirect(
             f"/my/competition-entries/{entry.id}?"
-            + urlencode({"success": "Entry resubmitted"}),
+            + urlencode({"success": "Entry resubmitted. The federation registration reviewer owns the next decision."}),
             code=302,
         )
 

@@ -9,6 +9,7 @@ RETURNS = {
     "manager": "/federation/operations/action-items",
 }
 FILTERS = {
+    "role": {"club", "official", "planner", "reviewer", "manager"},
     "scope": {"my", "club"},
     "status": {"open", "recent"},
     "task_type": {"registration", "roster_readiness", "parental_consent", "gameday_lineup", "referee_duty", "result_review"},

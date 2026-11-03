@@ -93,7 +93,7 @@ class FederationCreateCompetitionWizardJourney(models.TransientModel):
             ]
         return values
 
-    @api.onchange("setup_template", "date_start", "season_id")
+    @api.onchange("setup_template", "date_start")
     def _onchange_competition_preset(self):
         for wizard in self:
             preset = wizard.setup_template or "league"
@@ -136,6 +136,20 @@ class FederationCreateCompetitionWizardJourney(models.TransientModel):
                 lead_days = 30 if preset == "league" else 14
                 wizard.registration_open = start - timedelta(days=lead_days)
                 wizard.registration_close = start - timedelta(days=7)
+
+    @api.onchange("season_id")
+    def _onchange_competition_season(self):
+        for wizard in self:
+            season = wizard.season_id
+            if season and season.date_start:
+                start = wizard.date_start
+                if (
+                    not start
+                    or start < season.date_start
+                    or (season.date_end and start > season.date_end)
+                ):
+                    wizard.date_start = season.date_start
+            wizard._onchange_competition_preset()
 
     @api.depends("workflow_mode")
     def _compute_workflow_summary(self):

@@ -16,3 +16,5 @@ from . import parental_approval_portal
 
 from . import preparation_journey
 from . import role_journeys
+
+from . import connected_journeys

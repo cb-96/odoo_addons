@@ -34,6 +34,18 @@ Workflow language is operator-facing:
 - **Independent Review**: another responsible person approves protected work.
 - **Advanced / Custom**: an advanced user configures individual checkpoints.
 
+Changing the selected season resets a start date only when that date falls
+outside the new season; dates already inside the season remain editable. The
+additional responsibility rows assign roles only within this competition.
+Each operator also needs the matching federation-wide access group, managed in
+Per-competition assignments do not grant model access. In user settings, grant
+the required global groups as well: Federation User is the base; Registration
+Manager controls team and participant setup, Calendar Planner controls game
+days, Schedule Planner controls working schedules, and Schedule Approver
+enables independent review. A person working across areas may need more than
+one group. Competition Designers can read finalized participant sets for
+format setup, but only Registration Managers can change those records.
+
 ### 2. Select teams directly
 
 The next action opens **Select Teams** for the first incomplete division. Operators select eligible active teams directly; the command automatically materializes the existing registration window, approved entries, seeds, and finalized participant set.
@@ -54,9 +66,16 @@ The wizard creates or resumes the canonical competition structure, runs the exis
 
 ### 4. Define game days and plan the schedule
 
-**Define Game Days** starts with the remembered venue, hours, duration, and competition start date. Existing days are loaded for correction; recurring-day and copy-last-day helpers remain available.
+**Define Game Days** opens as a dialog with its save/continue footer visible and starts with the remembered venue, hours, duration, and competition start date. Existing days are loaded for correction; recurring-day and copy-last-day helpers remain available.
 
 **Save & Plan Schedule** opens the unified competition schedule wizard directly. The wizard selects current structures, stages, and game days, previews included/excluded fixtures and capacity, generates slots, allocates fixtures, creates working schedules, and auto-schedules through the owning domain commands. Applying from the workspace returns to the same workspace.
+
+New game-day rows inherit active courts from the default venue, and their court
+picker is restricted to that venue. Preview reports explain each day's fixture
+count and capacity in readable tables. A fixture already allocated to another
+day is excluded from a partial run; if the same fixture is already allocated to
+multiple days, generation is blocked until the calendar is corrected. Generated
+allocations retain the exact fixture subset assigned to each day.
 
 Planner dead ends are removed:
 
@@ -73,6 +92,15 @@ Submitting a schedule always creates the existing immutable review snapshot.
 - In **Streamlined**, the command validates, records the review decision, and publishes automatically when no live publication would be replaced.
 - In **Independent Review**, the workspace opens the exact pending review for another responsible user.
 - Replacing a live publication still requires the amendment/replacement reason and preserves the superseded snapshot.
+
+The Streamlined policy permits the submitting planner to complete its approval
+command; Independent Review requires a different assigned approver. Both paths
+retain immutable review evidence. Review and publication screens render the
+snapshot as a match, fixture, court, and time table while keeping the original
+JSON evidence intact. The publication note is optional on the first publish
+and required only when replacing a live publication. A planner publication
+blocker opens the pending or approved review for the current schedule revision
+directly.
 
 ### 6. Prepare rosters and one lineup per game day
 

@@ -45,7 +45,8 @@ class FederationScheduleApprovalHandoff(models.Model):
             if self.edition_id.schedule_auto_publish_after_approval:
                 current = self.matchday_id.current_publication_id
                 if not current or current.state != "live":
-                    commands.publish(self.id, expected_publication_id=0)
+                    publication = commands.publish(self.id, expected_publication_id=0)
+                    return publication.action_open_publication()
                 else:
                     return review.action_open_review()
         return review.action_open_review()

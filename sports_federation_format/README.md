@@ -38,3 +38,7 @@ fixture graph.
 ## Final stage freeze access
 
 Federation managers can create the immutable standing lines required by **Freeze & Progress**. The ACL grants create without granting write or delete, and a regression test exercises the manager workflow end to end.
+
+Competition Designers can read finalized participant sets and their lines to
+review the input to format selection. This is read-only access; registration
+managers retain the permissions to create and change registration records.
