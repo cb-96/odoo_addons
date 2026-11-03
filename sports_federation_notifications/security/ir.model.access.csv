@@ -1,3 +1,9 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_notification_log_user,federation.notification.log.user,model_federation_notification_log,sports_federation_base.group_federation_user,1,0,0,0
 access_notification_log_manager,federation.notification.log.manager,model_federation_notification_log,sports_federation_base.group_federation_manager,1,1,1,1
+access_communication_receipt_user,communication.receipt.user,model_federation_communication_receipt,base.group_user,1,0,0,0
+access_communication_receipt_portal,communication.receipt.portal,model_federation_communication_receipt,base.group_portal,1,0,0,0
+access_communication_preference_user,communication.preference.user,model_federation_communication_preference,base.group_user,1,0,0,0
+access_communication_preference_portal,communication.preference.portal,model_federation_communication_preference,base.group_portal,1,0,0,0
+access_communication_delivery_user,communication.delivery.user,model_federation_communication_delivery,base.group_user,1,0,0,0
+access_communication_delivery_portal,communication.delivery.portal,model_federation_communication_delivery,base.group_portal,1,0,0,0
