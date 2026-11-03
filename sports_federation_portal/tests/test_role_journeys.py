@@ -374,3 +374,41 @@ class TestJourneyHttp(HttpCase):
         response = self.url_open('/my/work?role=club')
         self.assertEqual(response.status_code, 200)
         self.assertFalse(html.fromstring(response.text).xpath('//select[@id="journey-role"]'))
+
+    def test_preparation_rejects_forged_context(self):
+        self.authenticate('journey.club@example.test', 'journey-test-password')
+        for query in ('club=-1', 'club=999999999', 'team=999999999', 'registration=999999999'):
+            self.assertEqual(self.url_open('/my/preparation?' + query).status_code, 403)
+
+    def test_scoped_lists_reject_forged_context(self):
+        self.authenticate('journey.club@example.test', 'journey-test-password')
+        for path in ('/my/rosters', '/my/match-sheets', '/my/competitions'):
+            self.assertEqual(self.url_open(path + '?team=999999999').status_code, 403)
+
+    def test_preparation_disclosures_render(self):
+        from lxml import html
+        self.authenticate('journey.club@example.test', 'journey-test-password')
+        response = self.url_open('/my/preparation')
+        self.assertEqual(response.status_code, 200)
+        tree = html.fromstring(response.text)
+        self.assertTrue(tree.xpath('//h1[contains(., "Prepare your team")]'))
+        self.assertFalse(tree.xpath('//details[@open]//summary[contains(., "Other team work")]'))
+
+    def test_minimal_preparation_browser(self):
+        self.browser_js('/my/preparation', """
+            const main = document.querySelector('.sf-preparation');
+            if (!main) throw new Error('Preparation workspace missing');
+            for (const card of main.querySelectorAll('section.card')) {
+                if (card.querySelectorAll('a.btn-primary').length > 1) throw new Error('Competing primary actions');
+            }
+            const details = main.querySelector('details');
+            if (details) {
+                if (details.open) throw new Error('Secondary work must start collapsed');
+                const summary = details.querySelector('summary');
+                summary.focus();
+                if (document.activeElement !== summary) throw new Error('Disclosure is not focusable');
+                summary.click();
+                if (!details.open) throw new Error('Disclosure cannot be opened');
+            }
+            console.log('test successful');
+        """, login='journey.club@example.test')

@@ -1,12 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <odoo>
 
     <!-- ============================================================ -->
     <!-- Portal navigation: add federation links to sidebar            -->
     <!-- ============================================================ -->
 
-    <template id="portal_my_home_federation" name="Federation Portal Home"
-              inherit_id="portal.portal_my_home" priority="30">
+    <template id="portal_my_home_federation" name="Federation Portal Home" inherit_id="portal.portal_my_home" priority="30">
         <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
             <t t-call="sports_federation_portal.portal_federation_links"/>
         </xpath>
@@ -73,7 +72,7 @@
                 <section class="o_fed_portal_group" aria-labelledby="portal-competition-heading">
                     <div class="o_fed_portal_group-header"><h3 id="portal-competition-heading">Competition</h3><p>Prepare matches and complete post-match actions.</p></div>
                     <a class="o_fed_portal_link" href="/my/match-day"><i class="fa fa-clock-o" aria-hidden="true"/><span><strong>Preparation queue</strong><br/><small class="text-muted">Lineups and readiness</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-                    <a class="o_fed_portal_link" href="/my/match-sheets"><i class="fa fa-list-alt" aria-hidden="true"/><span><strong>Match sheets</strong><br/><small class="text-muted">Open match records</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
+                    <a class="o_fed_portal_link" href="/my/match-sheets"><i class="fa fa-list-alt" aria-hidden="true"/><span><strong>Lineups</strong><br/><small class="text-muted">Open match records</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
                     <a class="o_fed_portal_link" href="/my/results"><i class="fa fa-check-circle" aria-hidden="true"/><span><strong>Result follow-up</strong><br/><small class="text-muted">Review, approve or contest</small></span><span t-if="federation_pending_results_count" class="badge bg-warning text-dark"><t t-esc="federation_pending_results_count"/></span><i class="fa fa-chevron-right" aria-hidden="true"/></a>
                 </section>
                 <section class="o_fed_portal_group" aria-labelledby="portal-admin-heading">
@@ -111,7 +110,7 @@
           <strong>Next match and club actions</strong>
           <div t-if="next_match" class="mt-2">
             <a t-attf-href="/my/competitions/#{next_match_card['edition'].id}"><t t-esc="next_match.display_name"/></a>
-            <time t-if="next_match.date_scheduled" class="ms-2" t-esc="next_match.date_scheduled" t-options="{'widget': 'datetime'}"/>
+            <time t-if="next_match.date_scheduled" class="ms-2" t-esc="request.env['federation.event.time'].display(next_match.date_scheduled, next_match)"/>
           </div>
           <p t-else="" class="text-muted mt-2 mb-0">No upcoming published match for your club.</p>
           <div class="d-flex gap-3 flex-wrap mt-2">
@@ -246,8 +245,7 @@
                                         <td><t t-esc="dict(team._fields['category'].selection).get(team.category) if team.category else '—'"/></td>
                                         <td><t t-esc="dict(team._fields['gender'].selection).get(team.gender) if team.gender else '—'"/></td>
                                         <td class="text-end">
-                                            <a t-attf-href="/my/season-registration/new?team_id=#{team.id}"
-                                               class="btn btn-sm btn-outline-primary">
+                                            <a t-attf-href="/my/season-registration/new?team_id=#{team.id}" class="btn btn-sm btn-outline-primary">
                                                 Register for Season
                                             </a>
                                         </td>
@@ -551,17 +549,14 @@
                                         <td><t t-esc="reg.name"/></td>
                                         <td><t t-esc="reg.season_id.name"/></td>
                                         <td><t t-esc="reg.team_id.name"/></td>
-                                        <td><t t-esc="reg.registration_date" t-options='{"widget": "date"}'/></td>
+                                        <td><t t-esc="reg.registration_date" t-options="{&quot;widget&quot;: &quot;date&quot;}"/></td>
                                         <td>
-                                            <span class="badge"
-                                                  t-att-class="'text-bg-warning' if reg.state in ('submitted', 'returned') else 'text-bg-success' if reg.state == 'confirmed' else 'text-bg-secondary' if reg.state == 'draft' else 'text-bg-danger'">
+                                            <span class="badge" t-att-class="'text-bg-warning' if reg.state in ('submitted', 'returned') else 'text-bg-success' if reg.state == 'confirmed' else 'text-bg-secondary' if reg.state == 'draft' else 'text-bg-danger'">
                                                 <t t-esc="reg.get_portal_state_label()"/>
                                             </span>
                                         </td>
                                         <td>
-                                            <form t-if="reg.state == 'returned'"
-                                                  t-attf-action="/my/tournament-registration/#{reg.id}/resubmit"
-                                                  method="POST" class="mb-2">
+                                            <form t-if="reg.state == 'returned'" t-attf-action="/my/tournament-registration/#{reg.id}/resubmit" method="POST" class="mb-2">
                                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                                 <label t-attf-for="registration_notes_#{reg.id}" class="form-label small">Correction note</label>
                                                 <textarea t-attf-id="registration_notes_#{reg.id}" name="notes" class="form-control form-control-sm mb-2" rows="2"><t t-esc="reg.notes or ''"/></textarea>
@@ -570,13 +565,9 @@
                                             <div t-if="reg.state == 'returned' and reg.decision_reason" class="alert alert-warning py-2 small" role="alert">
                                                 <strong>Federation feedback:</strong> <t t-esc="reg.decision_reason"/>
                                             </div>
-                                            <form t-if="reg.state in ('draft', 'submitted')"
-                                                  t-attf-action="/my/season-registration/#{reg.id}/cancel"
-                                                  method="POST" class="d-inline">
-                                                <input type="hidden" name="csrf_token"
-                                                       t-att-value="request.csrf_token()"/>
-                                                <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        onclick="return confirm('Cancel this registration?')">
+                                            <form t-if="reg.state in ('draft', 'submitted')" t-attf-action="/my/season-registration/#{reg.id}/cancel" method="POST" class="d-inline">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this registration?')">
                                                     Cancel
                                                 </button>
                                             </form>
@@ -656,17 +647,14 @@
                                             </a>
                                         </td>
                                         <td><t t-esc="reg.team_id.name"/></td>
-                                        <td><t t-esc="reg.registration_date" t-options='{"widget": "date"}'/></td>
+                                        <td><t t-esc="reg.registration_date" t-options="{&quot;widget&quot;: &quot;date&quot;}"/></td>
                                         <td>
-                                            <span class="badge"
-                                                  t-att-class="'text-bg-warning' if reg.state in ('submitted', 'returned') else 'text-bg-success' if reg.state == 'confirmed' else 'text-bg-secondary' if reg.state == 'draft' else 'text-bg-danger' if reg.state == 'rejected' else 'text-bg-dark'">
+                                            <span class="badge" t-att-class="'text-bg-warning' if reg.state in ('submitted', 'returned') else 'text-bg-success' if reg.state == 'confirmed' else 'text-bg-secondary' if reg.state == 'draft' else 'text-bg-danger' if reg.state == 'rejected' else 'text-bg-dark'">
                                                 <t t-esc="reg.get_portal_state_label()"/>
                                             </span>
                                         </td>
                                         <td>
-                                            <form t-if="reg.state == 'returned'"
-                                                  t-attf-action="/my/tournament-registration/#{reg.id}/resubmit"
-                                                  method="POST" class="mb-2">
+                                            <form t-if="reg.state == 'returned'" t-attf-action="/my/tournament-registration/#{reg.id}/resubmit" method="POST" class="mb-2">
                                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                                 <label t-attf-for="registration_notes_#{reg.id}" class="form-label small">Correction note</label>
                                                 <textarea t-attf-id="registration_notes_#{reg.id}" name="notes" class="form-control form-control-sm mb-2" rows="2"><t t-esc="reg.notes or ''"/></textarea>
@@ -675,13 +663,9 @@
                                             <div t-if="reg.state == 'returned' and reg.decision_reason" class="alert alert-warning py-2 small" role="alert">
                                                 <strong>Federation feedback:</strong> <t t-esc="reg.decision_reason"/>
                                             </div>
-                                            <form t-if="reg.state in ('draft', 'submitted')"
-                                                  t-attf-action="/my/tournament-registration/#{reg.id}/cancel"
-                                                  method="POST" class="d-inline">
-                                                <input type="hidden" name="csrf_token"
-                                                       t-att-value="request.csrf_token()"/>
-                                                <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        onclick="return confirm('Cancel this registration?')">
+                                            <form t-if="reg.state in ('draft', 'submitted')" t-attf-action="/my/tournament-registration/#{reg.id}/cancel" method="POST" class="d-inline">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this registration?')">
                                                     Cancel
                                                 </button>
                                             </form>
@@ -741,16 +725,14 @@
                 <div t-else="" class="card">
                     <div class="card-body">
                         <form action="/my/season-registration/new" method="POST">
-                            <input type="hidden" name="csrf_token"
-                                   t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
 
                             <div class="mb-3">
                                 <label for="team_id" class="form-label">Team <span class="text-danger">*</span></label>
                                 <select name="team_id" id="team_id" class="form-select" required="1">
                                     <option value="">— Select a team —</option>
                                     <t t-foreach="teams" t-as="team">
-                                        <option t-att-value="team.id"
-                                                t-att-selected="'selected' if preselect_team_id == team.id else None">
+                                        <option t-att-value="team.id" t-att-selected="'selected' if preselect_team_id == team.id else None">
                                             <t t-esc="team.name"/>
                                         </option>
                                     </t>
@@ -767,8 +749,8 @@
                                     <t t-foreach="seasons" t-as="season">
                                         <option t-att-value="season.id">
                                             <t t-esc="season.name"/>
-                                            (<t t-esc="season.date_start" t-options='{"widget": "date"}'/>
-                                            – <t t-esc="season.date_end" t-options='{"widget": "date"}'/>)
+                                            (<t t-esc="season.date_start" t-options="{&quot;widget&quot;: &quot;date&quot;}"/>
+                                            – <t t-esc="season.date_end" t-options="{&quot;widget&quot;: &quot;date&quot;}"/>)
                                         </option>
                                     </t>
                                 </select>
@@ -776,12 +758,10 @@
 
                             <div class="mb-3">
                                 <label for="notes" class="form-label">Notes <span class="text-muted">(optional)</span></label>
-                                <textarea name="notes" id="notes" class="form-control" rows="3"
-                                          placeholder="Any additional information for the federation…"/>
+                                <textarea name="notes" id="notes" class="form-control" rows="3" placeholder="Any additional information for the federation…"/>
                             </div>
 
-                            <button type="submit" class="btn btn-primary"
-                                    t-att-disabled="'disabled' if not teams else None">
+                            <button type="submit" class="btn btn-primary" t-att-disabled="'disabled' if not teams else None">
                                 <i class="fa fa-paper-plane me-1"/>Submit Registration
                             </button>
                             <a href="/my/season-registrations" class="btn btn-outline-secondary ms-2">Cancel</a>

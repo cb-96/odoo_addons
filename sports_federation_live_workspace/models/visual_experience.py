@@ -120,6 +120,7 @@ class VisualExperience(models.AbstractModel):
         for fixture in data['fixtures']:
             fixture['allocated'] = fixture['id'] in available
         data['timezone'] = schedule.matchday_id.event_timezone or 'UTC'
+        data['timezone_reviewed'] = schedule.matchday_id.event_timezone_reviewed
         data['governance'] = _('Working changes need an exact preview and reason. Applying is not publication. Published schedules require a linked amendment and independent review.')
         data['hard_rules'] = [_('Slot and court availability'), _('No double-booked slots or overlapping teams'),
                               _('Resolved and ready participants'), _('Recorded team/court windows and mandatory minimum rest')]

@@ -20,7 +20,7 @@
                         </list>
                     </field>
                 </page>
-                <page string="Match Sheet Lines" name="match_sheet_lines">
+                <page string="Lineup Lines" name="match_sheet_lines">
                     <field name="match_sheet_line_ids">
                         <list>
                             <field name="match_sheet_id"/>

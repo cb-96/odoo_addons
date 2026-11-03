@@ -12,7 +12,7 @@ export class CompetitionPlanner extends Component {
         this.action = useService("action");
         this.notification = useService("notification");
         this.orm = useService("orm");
-        this.state = useState({loading: true, data: null});
+        this.state = useState({loading: true, data: null, error: "", busy: false});
         this.editionId = Number(this.props.action.params?.edition_id);
         onWillStart(() => this.load());
     }
@@ -24,23 +24,32 @@ export class CompetitionPlanner extends Component {
             return;
         }
         this.state.loading = true;
+        this.state.error = "";
         try {
             this.state.data = await this.orm.call(
                 "federation.competition.edition",
                 "get_competition_planner_data",
                 [[this.editionId]]
             );
+        } catch (error) {
+            this.state.error = error?.data?.message || _t("Could not load this competition. Try again.");
         } finally {
             this.state.loading = false;
         }
     }
 
     async doPlannerAction(method, argument) {
-        const args = argument === undefined ? [[this.editionId]] : [[this.editionId], argument];
-        const result = await this.orm.call(
-            "federation.competition.edition", method, args
-        );
-        return this.action.doAction(result, {onClose: () => this.load()});
+        if (this.state.busy || this.state.error || this.state.loading) return;
+        this.state.busy = true;
+        try {
+            const args = argument === undefined ? [[this.editionId]] : [[this.editionId], argument];
+            const result = await this.orm.call("federation.competition.edition", method, args);
+            return await this.action.doAction(result, {onClose: () => this.load()});
+        } catch (error) {
+            this.notification.add(error?.data?.message || _t("Could not open this action. Try again."), {type: "danger"});
+        } finally {
+            this.state.busy = false;
+        }
     }
 
     openStep(step) {

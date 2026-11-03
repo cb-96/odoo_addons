@@ -36,9 +36,7 @@ class PublicScheduleQueries(models.AbstractModel):
             )
         # Public requests cannot read the company contact through the public user.
         # Use the schedule configuration with controlled elevation.
-        public_timezone = (
-            self.env.company.sudo().partner_id.tz or self.env.user.tz or "UTC"
-        )
+        public_timezone = matchday.event_timezone or "UTC"
         localized = self.with_context(tz=public_timezone)
         rows = []
         for match in matches:
@@ -87,6 +85,8 @@ class PublicScheduleQueries(models.AbstractModel):
             by_time[row["start_local"] if row["slot"] else False].append(row)
         return {
             "publication": publication,
+            "timezone": public_timezone,
+            "timezone_reviewed": matchday.event_timezone_reviewed,
             "matches": rows,
             "courts": courts,
             "times": times,

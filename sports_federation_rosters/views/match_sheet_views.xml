@@ -118,7 +118,7 @@
         <field name="name">federation.match.sheet.search</field>
         <field name="model">federation.match.sheet</field>
         <field name="arch" type="xml">
-            <search string="Search Match Sheets">
+            <search string="Search Lineups">
                 <field name="name"/>
                 <field name="match_id"/>
                 <field name="team_id"/>
@@ -136,13 +136,13 @@
     </record>
 
     <record id="action_federation_match_sheet" model="ir.actions.act_window">
-        <field name="name">Match Sheets</field>
+        <field name="name">Lineups</field>
         <field name="res_model">federation.match.sheet</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_federation_match_sheet_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Match sheets are created automatically for each team when a match is scheduled.
+                Lineups are created automatically for each team when a match is scheduled.
             </p>
         </field>
     </record>

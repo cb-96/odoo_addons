@@ -24,12 +24,18 @@ class FederationRosterPortal(FederationRosterPortalBase):
         if domain == [("id", "=", False)]:
             return self._redirect_with_query("/my/club")
 
+        try:
+            context_domain, context_query = self._journey_list_scope(kw, season_field="season_id")
+        except AccessError:
+            return self._render_access_denied()
+        domain += context_domain
         total = Roster.search_count(domain)
         pager = portal_pager(
             url="/my/rosters",
             total=total,
             page=page,
             step=20,
+            url_args=context_query,
         )
         rosters = Roster.search(
             domain,
@@ -40,6 +46,10 @@ class FederationRosterPortal(FederationRosterPortalBase):
         confirmed_registrations = request.env[
             "federation.team.roster"
         ]._portal_get_confirmed_registrations(user=request.env.user)
+        if context_query.get('club'):
+            confirmed_registrations = confirmed_registrations.filtered(lambda r: r.team_id.club_id.id == context_query['club'])
+        if context_query.get('team'):
+            confirmed_registrations = confirmed_registrations.filtered(lambda r: r.team_id.id == context_query['team'])
         roster_opportunities = [
             {
                 "registration": registration,

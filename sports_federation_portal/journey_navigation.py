@@ -20,6 +20,10 @@ FILTERS = {
 def return_url(key="club", values=None):
     path = RETURNS.get(key, RETURNS["club"])
     clean = {k: v for k, v in (values or {}).items() if k in FILTERS and v in FILTERS[k]}
+    for key in ('club', 'team', 'registration'):
+        value = str((values or {}).get(key, ''))
+        if re.fullmatch(r'[1-9][0-9]{0,9}', value):
+            clean[key] = value
     return path + ("?" + urlencode(clean) if clean else "")
 
 

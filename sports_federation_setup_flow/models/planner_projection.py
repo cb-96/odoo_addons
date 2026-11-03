@@ -507,6 +507,9 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                 "workflow_mode": self.workflow_mode,
             },
             "steps": steps,
+            "show_setup_progress": not all(step["complete"] for step in steps) and not gamedays.filtered(
+                lambda day: day.state in ("scheduled", "open", "closed")),
+            "remaining_issues": [issue for issue in issues if issue.get("key") != primary_action.get("key")],
             "current_step": current["key"],
             "current_label": current["label"],
             "current_issue": current_issue,

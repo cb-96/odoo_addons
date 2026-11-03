@@ -1,6 +1,6 @@
 /** @odoo-module **/
 // Session navigation contains only allowlisted routes/filters and a user ID, never form data.
-const returnPaths = new Set(['/my/work', '/my/action-items', '/my/referee-assignments', '/my/preparation', '/my/work/reviews', '/federation/operations/action-items']);
+const returnPaths = new Set(['/my/work', '/my/rosters', '/my/match-sheets', '/my/competitions', '/my/competition-entries', '/my/action-items', '/my/referee-assignments', '/my/preparation', '/my/work/reviews', '/federation/operations/action-items']);
 const filters = {role: new Set(['club','official','planner','reviewer','manager']), scope: new Set(['my', 'club']), status: new Set(['open', 'recent']), task_type: new Set(['registration', 'roster_readiness', 'parental_consent', 'gameday_lineup', 'referee_duty', 'result_review']), filterby: new Set(['upcoming', 'pending', 'history', 'all'])};
 const ttl = 2 * 60 * 60 * 1000;
 function safeReturn(value) {
@@ -12,6 +12,10 @@ function safeReturn(value) {
         for (const [key, allowed] of Object.entries(filters)) {
             const value = url.searchParams.get(key);
             if (allowed.has(value)) result.searchParams.set(key, value);
+        }
+        for (const key of ['club', 'team', 'registration']) {
+            const value = url.searchParams.get(key);
+            if (/^[1-9][0-9]{0,9}$/.test(value || '')) result.searchParams.set(key, value);
         }
         return result.pathname + result.search;
     } catch { return null; }
@@ -29,7 +33,7 @@ async function init() {
     if (!user) return;
     const key = `federation:journey-return:${database}:${user}`;
     if (returnPaths.has(location.pathname)) {
-        document.querySelectorAll('a[data-journey-open], a[href^="/my/referee-assignments/"]').forEach(link => {
+        document.querySelectorAll('a[data-journey-open], a[href^="/my/referee-assignments/"], a[href^="/my/rosters/"], a[href^="/my/match-sheets/"], a[href^="/my/competitions/"], a[href^="/my/competition-entries/"]').forEach(link => {
             link.addEventListener('click', () => {
                 const target = new URL(link.href, location.origin);
                 if (target.origin !== location.origin) return;
@@ -46,8 +50,8 @@ async function init() {
     if (path === safeReturn(location.href)) return;
     const main = document.querySelector('main .container, #wrap .container, main');
     if (!main) return;
-    const link = document.createElement('a'); link.href = path;
+    const link = document.querySelector('a[data-journey-return]') || document.createElement('a'); link.href = path;
     link.className = 'btn btn-outline-secondary my-3'; link.textContent = 'Back to my work';
-    main.prepend(link);
+    if (!link.isConnected) main.prepend(link);
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

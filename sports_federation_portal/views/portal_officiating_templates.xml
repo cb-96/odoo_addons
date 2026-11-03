@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version='1.0' encoding='UTF-8'?>
 <odoo>
 
     <template id="portal_my_referee_assignments" name="My Referee Assignments">
@@ -114,7 +114,7 @@
                                     </tr>
                                     <tr t-if="assignment.match_kickoff">
                                         <th>Kickoff</th>
-                                        <td><t t-esc="assignment.match_kickoff" t-options="{&quot;widget&quot;: &quot;datetime&quot;}"/></td>
+                                        <td><t t-esc="request.env['federation.event.time'].display(assignment.match_kickoff, assignment)"/></td>
                                     </tr>
                                     <tr t-if="assignment.confirmation_deadline">
                                         <th>Confirmation Deadline</th>

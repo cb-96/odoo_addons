@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <odoo>
 
     <!-- ================================================================
@@ -56,7 +56,7 @@
                                     </td>
                                     <td>
                                         <t t-if="match.date_scheduled">
-                                            <t t-esc="match.date_scheduled" t-options='{"widget": "date"}'/>
+                                            <t t-esc="request.env['federation.event.time'].display(match.date_scheduled, match)"/>
                                         </t>
                                         <span t-if="not match.date_scheduled" class="text-muted">—</span>
                                     </td>
@@ -64,19 +64,12 @@
                                         <t t-esc="match.home_score"/> – <t t-esc="match.away_score"/>
                                     </td>
                                     <td>
-                                        <span t-attf-class="badge #{
-                                            'bg-warning text-dark' if match.result_state == 'submitted' else
-                                            'bg-info text-dark'    if match.result_state == 'verified'  else
-                                            'bg-success'           if match.result_state == 'approved'  else
-                                            'bg-danger'            if match.result_state == 'contested' else
-                                            'bg-secondary'
-                                        }">
+                                        <span t-attf-class="badge #{                                             'bg-warning text-dark' if match.result_state == 'submitted' else                                             'bg-info text-dark'    if match.result_state == 'verified'  else                                             'bg-success'           if match.result_state == 'approved'  else                                             'bg-danger'            if match.result_state == 'contested' else                                             'bg-secondary'                                         }">
                                             <t t-esc="match.get_portal_result_state_label()"/>
                                         </span>
                                     </td>
                                     <td class="text-end">
-                                        <a t-attf-href="/my/results/#{match.id}"
-                                           class="btn btn-sm btn-outline-primary">Review</a>
+                                        <a t-attf-href="/my/results/#{match.id}" class="btn btn-sm btn-outline-primary">Review</a>
                                     </td>
                                 </tr>
                             </t>
@@ -146,7 +139,7 @@
                                     <dt class="col-sm-4">Date</dt>
                                     <dd class="col-sm-8">
                                         <t t-if="match.date_scheduled">
-                                            <t t-esc="match.date_scheduled" t-options='{"widget": "datetime"}'/>
+                                            <t t-esc="request.env['federation.event.time'].display(match.date_scheduled, match)"/>
                                         </t>
                                         <span t-if="not match.date_scheduled" class="text-muted">—</span>
                                     </dd>
@@ -169,13 +162,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex align-items-center justify-content-between">
                         <strong>Result</strong>
-                        <span t-attf-class="badge #{
-                            'bg-warning text-dark' if match.result_state == 'submitted' else
-                            'bg-info text-dark'    if match.result_state == 'verified'  else
-                            'bg-success'           if match.result_state == 'approved'  else
-                            'bg-danger'            if match.result_state == 'contested' else
-                            'bg-secondary'
-                        }">
+                        <span t-attf-class="badge #{                             'bg-warning text-dark' if match.result_state == 'submitted' else                             'bg-info text-dark'    if match.result_state == 'verified'  else                             'bg-success'           if match.result_state == 'approved'  else                             'bg-danger'            if match.result_state == 'contested' else                             'bg-secondary'                         }">
                             <t t-esc="match.get_portal_result_state_label()"/>
                         </span>
                     </div>
@@ -221,9 +208,7 @@
                                 This result has been verified by a federation official.
                                 Approve it to include it in official standings.
                             </p>
-                            <form t-attf-action="/my/results/#{match.id}/approve"
-                                  method="POST"
-                                  class="d-inline">
+                            <form t-attf-action="/my/results/#{match.id}/approve" method="POST" class="d-inline">
                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                 <button type="submit" class="btn btn-success me-2">
                                     <i class="fa fa-check me-1"/>Approve Result
@@ -233,20 +218,13 @@
 
                         <!-- Contest (submitted / verified / approved) -->
                         <t t-if="match.result_state in ('submitted', 'verified', 'approved')">
-                            <form t-attf-action="/my/results/#{match.id}/contest"
-                                  method="POST"
-                                  class="mt-3">
+                            <form t-attf-action="/my/results/#{match.id}/contest" method="POST" class="mt-3">
                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                 <div class="mb-3">
                                     <label for="result_contest_reason" class="form-label fw-semibold">
                                         Dispute / Exception Reason <span class="text-danger">*</span>
                                     </label>
-                                    <textarea id="result_contest_reason"
-                                              name="result_contest_reason"
-                                              class="form-control"
-                                              rows="3"
-                                              placeholder="Describe the dispute or exception request for this result…"
-                                              required="required"/>
+                                    <textarea id="result_contest_reason" name="result_contest_reason" class="form-control" rows="3" placeholder="Describe the dispute or exception request for this result…" required="required"/>
                                 </div>
                                 <button type="submit" class="btn btn-danger">
                                     <i class="fa fa-flag me-1"/>Raise Dispute / Request Exception

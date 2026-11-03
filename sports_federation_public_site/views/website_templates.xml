@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <odoo>
 
     <!-- Tournament Coverage List Page -->
@@ -27,10 +27,7 @@
                                     <p class="card-text text-muted" t-if="tournament.venue_id">
                                         <i class="fa fa-map-marker"/> <t t-esc="tournament.venue_id.name"/>
                                     </p>
-                                    <div t-if="tournament.public_description"
-                                         class="card-text"
-                                         style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;"
-                                         t-field="tournament.public_description"/>
+                                    <div t-if="tournament.public_description" class="card-text" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;" t-field="tournament.public_description"/>
                                 </div>
                             </div>
                         </div>
@@ -82,28 +79,19 @@
                         </p>
                     </div>
                     <div class="col-md-6 text-right">
-                                <a t-att-href="tournament.get_public_teams_path()"
-                           class="btn btn-outline-primary mr-2">
+                                <a t-att-href="tournament.get_public_teams_path()" class="btn btn-outline-primary mr-2">
                             <i class="fa fa-users"/> Teams
                         </a>
-                        <a t-if="tournament.get_public_schedule_sections()"
-                           t-att-href="tournament.get_public_schedule_path()"
-                           class="btn btn-outline-primary mr-2">
+                        <a t-if="tournament.get_public_schedule_sections()" t-att-href="tournament.get_public_schedule_path()" class="btn btn-outline-primary mr-2">
                             <i class="fa fa-calendar"/> Schedule
                         </a>
-                        <a t-if="tournament.show_public_standings"
-                           t-att-href="tournament.get_public_standings_path()"
-                           class="btn btn-outline-primary mr-2">
+                        <a t-if="tournament.show_public_standings" t-att-href="tournament.get_public_standings_path()" class="btn btn-outline-primary mr-2">
                             <i class="fa fa-table"/> Standings
                         </a>
-                        <a t-if="tournament.show_public_results"
-                           t-att-href="tournament.get_public_results_path()"
-                           class="btn btn-outline-primary">
+                        <a t-if="tournament.show_public_results" t-att-href="tournament.get_public_results_path()" class="btn btn-outline-primary">
                             <i class="fa fa-list"/> Results
                         </a>
-                        <a t-if="tournament.has_public_bracket()"
-                           t-att-href="tournament.get_public_bracket_path()"
-                           class="btn btn-outline-primary ml-2">
+                        <a t-if="tournament.has_public_bracket()" t-att-href="tournament.get_public_bracket_path()" class="btn btn-outline-primary ml-2">
                             <i class="fa fa-sitemap"/> Bracket
                         </a>
                     </div>
@@ -218,7 +206,7 @@
                                 <tr>
                                     <td>
                                         <t t-if="match.date_scheduled">
-                                            <t t-esc="match.date_scheduled.strftime('%b %d, %Y %H:%M')"/>
+                                            <t t-esc="request.env['federation.event.time'].display(match.date_scheduled, match)"/>
                                         </t>
                                     </td>
                                     <td>
@@ -293,7 +281,7 @@
                                         <tr>
                                             <td>
                                                 <t t-if="match.date_scheduled">
-                                                    <t t-esc="match.date_scheduled.strftime('%b %d, %Y %H:%M')"/>
+                                                    <t t-esc="request.env['federation.event.time'].display(match.date_scheduled, match)"/>
                                                 </t>
                                                 <t t-else="">TBD</t>
                                             </td>
@@ -350,7 +338,7 @@
                                         <div class="border rounded p-3 mb-3">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <strong t-esc="match.name"/>
-                                                <small class="text-muted" t-if="match.date_scheduled" t-esc="match.date_scheduled.strftime('%b %d, %Y %H:%M')"/>
+                                                <small class="text-muted" t-if="match.date_scheduled" t-esc="request.env['federation.event.time'].display(match.date_scheduled, match)"/>
                                             </div>
                                             <div class="text-muted mb-2" t-if="match.source_match_1_id or match.source_match_2_id">
                                                 <div t-if="match.source_match_1_id">Source 1: <t t-esc="match.source_type_1"/> of <t t-esc="match.source_match_1_id.name"/></div>

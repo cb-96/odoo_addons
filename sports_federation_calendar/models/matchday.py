@@ -15,17 +15,52 @@ class FederationMatchday(models.Model):
     edition_id = fields.Many2one(
         "federation.competition.edition", required=True, ondelete="cascade", index=True
     )
+    event_timezone_reviewed = fields.Boolean(default=True, readonly=True, copy=False)
+    event_timezone_review_note = fields.Text(readonly=True, copy=False)
+
+    def action_open_timezone_review(self):
+        self.ensure_one()
+        if not self.env.user.has_group('sports_federation_calendar.group_calendar_planner'):
+            from odoo.exceptions import AccessError
+            raise AccessError('Timezone review requires a calendar planner.')
+        return {'type': 'ir.actions.act_window', 'res_model': 'federation.event.timezone.review',
+                'view_mode': 'form', 'target': 'new', 'context': {'default_matchday_id': self.id}}
+
+    def _review_event_timezone(self, timezone, reason):
+        self.ensure_one()
+        if not self.env.user.has_group('sports_federation_calendar.group_calendar_planner'):
+            from odoo.exceptions import AccessError
+            raise AccessError('Timezone review requires a calendar planner.')
+        self.check_access('write')
+        self.env.cr.execute('SELECT id FROM federation_matchday WHERE id = %s FOR UPDATE', [self.id])
+        self.invalidate_recordset(['event_timezone', 'event_timezone_reviewed', 'state'])
+        if timezone not in pytz.all_timezones or not reason or not reason.strip():
+            raise ValidationError(_('Choose a timezone and explain the evidence used.'))
+        if self.event_timezone_reviewed and self.state not in ('draft', 'capacity_ready'):
+            raise ValidationError(_('A reviewed scheduled event timezone cannot be changed.'))
+        old = self.event_timezone
+        super(FederationMatchday, self).write({'event_timezone': timezone, 'event_timezone_reviewed': True,
+                                             'event_timezone_review_note': reason.strip()})
+        self.env['federation.match'].invalidate_model(['event_timezone_display', 'event_timezone_display_reviewed'])
+        self.message_post(body=_('Event timezone reviewed: %s to %s. Stored slot times were not moved. Evidence: %s') % (old, timezone, reason.strip()))
+        return True
+
     event_timezone = fields.Selection(
         [(tz, tz) for tz in pytz.all_timezones], string="Event timezone",
         default=lambda self: self.env.user.tz or "UTC", required=True,
         help="Shared timezone for game-day planning. Existing UTC slots are not moved.")
 
     def write(self, values):
+        if 'event_timezone_reviewed' in values or 'event_timezone_review_note' in values:
+            raise ValidationError(_('Use the timezone review action.'))
         if "event_timezone" in values:
             for day in self:
                 if day.event_timezone != values["event_timezone"] and day.state not in ("draft", "capacity_ready"):
                     raise ValidationError(_("The event timezone cannot change after scheduling starts."))
-        return super().write(values)
+        result = super().write(values)
+        if 'event_timezone' in values:
+            self.env['federation.match'].invalidate_model(['event_timezone_display', 'event_timezone_display_reviewed'])
+        return result
 
     date = fields.Date(required=True, index=True)
     venue_id = fields.Many2one(

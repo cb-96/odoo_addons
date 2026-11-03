@@ -11,6 +11,10 @@ class FederationOperationTask(models.Model):
     visible in a shared queue and are regenerated from current source state.
     """
 
+    def _journey_actionable_cards(self, groups):
+        from ..journey_cards import actionable_cards
+        return actionable_cards(groups)
+
     _name = "federation.operation.task"
     _description = "Federation Operational Task"
     _inherit = ["mail.thread", "mail.activity.mixin"]

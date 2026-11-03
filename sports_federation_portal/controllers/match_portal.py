@@ -39,6 +39,11 @@ class FederationMatchPortal(FederationRosterPortalBase):
         if domain == [("id", "=", False)]:
             return self._redirect_with_query("/my/club")
 
+        try:
+            context_domain, context_query = self._journey_list_scope(kw, season_field="roster_id.season_id")
+        except AccessError:
+            return self._render_access_denied()
+        domain += context_domain
         total = PortalPrivilege.portal_search_count(
             MatchSheet,
             domain,
@@ -49,6 +54,7 @@ class FederationMatchPortal(FederationRosterPortalBase):
             total=total,
             page=page,
             step=20,
+            url_args=context_query,
         )
         match_sheets = PortalPrivilege.portal_search(
             MatchSheet,

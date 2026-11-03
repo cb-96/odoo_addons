@@ -285,7 +285,7 @@ export class VisualPlan extends Component {
         this.root = useRef("visualRoot");
         this.orm = useService("orm"); this.action = useService("action");
         this.id = this.props.action.params?.schedule_id || this.props.action.context?.active_id;
-        this.state = useState({ data: null, preview: null, fixture: "", reason: "", error: "", busy: false,
+        this.state = useState({ data: null, stale: false, preview: null, fixture: "", reason: "", error: "", busy: false,
             destinations: null, selectedSlot: null, candidateA: null, comparison: null, announcement: "",
             constraint: { name: "", kind: "team_window", team_id: "", court_id: "", start: "", end: "", minutes: 0 } });
         onWillStart(() => this.refresh());
@@ -293,20 +293,40 @@ export class VisualPlan extends Component {
             if (this.state.preview) this.root.el?.querySelector('[data-preview-heading]')?.focus();
         }, () => [this.state.preview?.id]);
     }
-    async run(callback) {
-        if (this.state.busy) return;
+    async run(callback, allowStale = false) {
+        if (this.state.busy || (this.state.stale && !allowStale)) return;
         this.state.busy = true; this.state.error = "";
         try { return await callback(); } catch (error) { this.state.error = error?.data?.message || error.message; }
         finally { this.state.busy = false; }
     }
     async refresh() { await this.run(async () => {
-        this.state.data = await this.orm.call("federation.visual.planning", "load", [this.id]); this.state.preview = null; this.state.destinations = null; this.state.candidateA = null; this.state.comparison = null;
-    }); }
+        try {
+            this.state.data = await this.orm.call("federation.visual.planning", "load", [this.id]);
+            this.state.stale = false;
+            this.state.preview = null; this.state.destinations = null; this.state.candidateA = null; this.state.comparison = null;
+        } catch (error) {
+            this.state.stale = true;
+            throw error;
+        }
+    }, true); }
     get courts() { return [...new Map(this.state.data.slots.map(s => [s.court_id, { id: s.court_id, name: s.court_name }])).values()]; }
     get times() { return [...new Set(this.state.data.slots.map(s => String(s.start)))].sort(); }
-    get editable() { return this.state.data.can_edit && ["draft", "changes_requested"].includes(this.state.data.schedule.state); }
+    get editable() { return !this.state.stale && this.state.data.can_edit && ["draft", "changes_requested"].includes(this.state.data.schedule.state); }
     slotAt(court, time) { return this.state.data.slots.find(s => s.court_id === court && String(s.start) === time); }
     assignment(slot) { return slot && this.state.data.assignments.find(a => a.slot_id === slot.id); }
+    scheduleStateLabel(value) {
+        return {draft: _t('Draft'), changes_requested: _t('Changes requested'), submitted: _t('Submitted'),
+            approved: _t('Approved'), published: _t('Published'), superseded: _t('Replaced'),
+            cancelled: _t('Cancelled')}[value] || _t('Status unavailable');
+    }
+    fixtureIssues(id) {
+        const validation = this.state.data.explanation.validation;
+        const assignment = this.state.data.assignments.find(item => item.fixture_id === id);
+        return [...validation.errors, ...validation.warnings].filter(issue =>
+            issue.fixture_id === id || (issue.fixture_ids || []).includes(id) ||
+            (assignment && issue.slot_id === assignment.slot_id) ||
+            (!issue.fixture_id && !issue.fixture_ids && !issue.slot_id));
+    }
     fixtureName(id) { return this.state.data.fixtures.find(f => f.id === id)?.name || String(id); }
     eventTime(value) { return formatEventTime(value, this.state.data.timezone || 'UTC'); }
     slotName(id) { const s = this.state.data.slots.find(s => s.id === id); return s ? `${s.court_name} / ${this.eventTime(s.start)}` : _t("Unassigned"); }
@@ -314,7 +334,7 @@ export class VisualPlan extends Component {
     stageName(id) { return this.state.data.stages.find(s => s.id === id)?.name || String(id); }
     destination(slot) { if (!slot) return null; return this.state.destinations?.slots.find(row => row.slot_id === slot.id); }
     destinationLabel(slot) { return _t(destinationLabel(this.destination(slot))); }
-    get canApply() { return !this.state.busy && canApply(this.state.preview, this.state.reason); }
+    get canApply() { return !this.state.stale && !this.state.busy && canApply(this.state.preview, this.state.reason); }
     get canCompare() { return comparable(this.state.candidateA, this.state.preview); }
     async selectFixture(id) {
         if (!this.editable || this.state.busy) return;

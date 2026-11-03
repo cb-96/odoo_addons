@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Rosters",
-    "version": "19.0.1.8.0",
+    "version": "19.0.1.8.1",
     "category": "Sports",
     "summary": "Season/competition-bound team rosters and match sheets",
     "description": """

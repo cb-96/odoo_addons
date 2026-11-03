@@ -28,3 +28,10 @@
     .sf-context > div { width: 100%; }
     .sf-context select { width: 100%; }
 }
+
+.sf-preparation { max-width: 64rem; }
+.sf-preparation .sf-task-blocker { white-space: pre-line; }
+.sf-preparation .sf-disclosure > summary { min-height: 44px; }
+.sf-event-time { font-variant-numeric: tabular-nums; }
+.sf-context-line { display: flex; flex-wrap: wrap; gap: .25rem .75rem; }
+.o_competition_planner [aria-label="Remaining blockers"] .list-group-item { width: 100%; }

@@ -21,6 +21,21 @@ class FederationPortalcurrent(FederationPortalBase):
         cards = request.env["federation.portal.competition.queries"].list_cards(
             user=request.env.user
         )
+        try:
+            context_domain, context_query = self._journey_list_scope(kw)
+        except AccessError:
+            return self._render_access_denied()
+        if context_query:
+            scoped_cards = []
+            for card in cards:
+                teams = card['teams']
+                if context_query.get('club'):
+                    teams = teams.filtered(lambda team: team.club_id.id == context_query['club'])
+                if context_query.get('team'):
+                    teams = teams.filtered(lambda team: team.id == context_query['team'])
+                if teams:
+                    scoped_cards.append(dict(card, teams=teams))
+            cards = scoped_cards
         return request.render(
             "sports_federation_portal.portal_my_competitions",
             {"competition_cards": cards, "page_name": "my_competitions"},

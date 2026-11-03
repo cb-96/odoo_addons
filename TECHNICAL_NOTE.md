@@ -765,3 +765,18 @@ The supported aggregate application exposes one ordinary competition entry: `spo
 The direct team picker materializes registration windows, approved entries, and immutable finalized participant sets. The simplified format wizard calls structure generation/freeze. The game-day lineup wizard writes canonical match sheets and reuses their shared-day synchronization, readiness, parental-consent, and audit behavior. `federation.operation.task` remains the only persistent work projection and adds parental-consent and shared-lineup task types.
 
 Workflow transition responses use string record IDs in `previous_states` so the result remains serializable for both JSON-RPC and XML-RPC clients.
+
+## Complete minimal UX revision: upgrade and qualification review
+
+Candidate base: a6411d877a37986920c4c8b0337e10c794dc646f.
+See docs/COMPLETE_UX_VALIDATION.md for the seven-point scope, module upgrade list,
+local checks, runtime groups, browser matrix, historical-timezone review and rollback.
+The calendar migration marks historical event timezone evidence as unreviewed without
+moving stored slot instants. Calendar planners confirm evidence through an audited,
+write-authorised, row-locked command. Match timezone fields are nonstored projections
+of nonpersonal event metadata, not a new source of truth or a new access grant.
+Task/list context is a presentation filter intersected with existing ownership domains.
+No task system, readiness model, approval state or publication bypass is introduced.
+Local source/policy and mocked-service checks were executed. Odoo database upgrade,
+ORM/HTTP/browser runtime and novice acceptance remain unexecuted in this environment.
+Rollback requires the pre-upgrade database and filestore together with previous code.

@@ -32,7 +32,7 @@ def task_cards(tasks, representatives=None):
         cards.append({
             'key': 'task:%s' % task.id, 'title': task.name, 'task': task, 'representatives': representatives,
             'url': task.journey_url, 'owner': owner or _('Owner not yet assigned'),
-            'deadline': task.deadline, 'blocker': task.blocking_reason or '',
+            'event_record': task.match_id, 'deadline': task.deadline, 'blocking': task.blocking, 'blocker': task.blocking_reason or '',
             'next_action': (_('View completed work') if complete else
                             _('Inspect current status') if unavailable else
                             _('View submission status') if waiting else
@@ -117,7 +117,7 @@ class ConnectedRoleJourneys(RoleJourneys):
             tasks = request.env['federation.portal.privilege'].portal_search(
                 model, model._portal_get_domain(request.env.user) + (
                     [('responsible_club_id', '=', selected_club)] if selected_club else []),
-                user=request.env.user, order='id desc', limit=200)
+                user=request.env.user, order='blocking desc, deadline asc, id asc', limit=200)
             cards = task_cards(tasks)
             existing = {task.source_record_id for task in tasks if task.source_model == 'federation.competition.entry' and task.state != 'done'}
             for entry in model._journey_waiting_entries(user=request.env.user):
@@ -134,7 +134,7 @@ class ConnectedRoleJourneys(RoleJourneys):
         elif selected == 'manager':
             model = request.env['federation.operation.task']
             model.sync_for_user(user=request.env.user)
-            cards = task_cards(model.search([('audience', '=', 'manager')], order='id desc', limit=200))
+            cards = task_cards(model.search([('audience', '=', 'manager')], order='blocking desc, deadline asc, id asc', limit=200))
         elif selected == 'reviewer':
             states = ['approved']
             if request.env.user.has_group('sports_federation_result_control.group_result_validator'):
@@ -157,13 +157,13 @@ class ConnectedRoleJourneys(RoleJourneys):
                               'url': '/odoo/federation.competition.edition/%s' % edition.id,
                               'owner': issue.get('owner') or _('Competition organiser'),
                               'deadline': fields.Datetime.to_datetime(edition.date_start) if edition.date_start else False,
-                              'blocker': issue.get('message') or _('No setup blocker recorded'),
+                              'blocking': bool(issue), 'blocker': issue.get('message') or '',
                               'next_action': _('Continue: %s') % data['current_label'],
                               'handoff': _('The existing planner resumes at the first incomplete step. Publication still requires independent review.'),
                               'bucket': bucket_for(complete=data['complete'], waiting=issue.get('step') == 'publication', deadline=fields.Datetime.to_datetime(edition.date_start) if edition.date_start else None, now=fields.Datetime.now(), blocking=bool(issue))})
         context.update(journey_role=selected, journey_roles=[{'key': key, 'label': _(ROLE_LABELS[key])} for key in allowed],
                        journey_role_label=_(ROLE_LABELS[selected]) if selected else _('No federation responsibility assigned'),
-                       journey_role_url=ROLE_URLS.get(selected), journey_groups=group_cards(cards),
+                       journey_role_url=(ROLE_URLS.get(selected) + ('?club=%s' % selected_club if selected == 'club' and selected_club else '')) if selected else None, journey_groups=group_cards(cards),
                        journey_limit=200 if selected in ('club', 'manager') else 50 if selected == 'planner' else 100)
         return response
 
@@ -226,6 +226,8 @@ class ConnectedPreparation(ClubPreparationJourney):
     def club_preparation(self, **kw):
         response = super().club_preparation(**kw)
         context = response.qcontext
+        if response.status_code != 200 or 'rows' not in context:
+            return response
         for row in context['rows']:
             roster = row['roster']
             checks = [dict(label=_('Registration'), state='complete', detail=_('Confirmed registration'),
@@ -251,6 +253,23 @@ class ConnectedPreparation(ClubPreparationJourney):
                               for reason in _get_parental_approval_reasons(player, roster.team_id, roster._get_reference_date())] if roster else []
             checks.append(dict(label=_('Parental consent'), state='unknown' if not roster or not roster.line_ids else 'action' if consent_issues else 'complete',
                                detail='\n'.join(consent_issues) if consent_issues else _('Current roster-date parental-consent checks passed or are not required.') if roster and roster.line_ids else _('Add players before consent requirements can be checked.'), url='/my/players'))
+            if roster:
+                affected = next((player for player in roster.line_ids.mapped('player_id')
+                                 if _get_parental_approval_reasons(player, roster.team_id, roster._get_reference_date())), None)
+                if affected:
+                    checks[-1]['url'] = '/my/players/%s/parental-approvals' % affected.id
+            from ..context_scope import scoped_url
+            for check in checks:
+                check['url'] = scoped_url(check['url'], row['registration'].team_id.club_id.id,
+                                          row['registration'].team_id.id, row['registration'].id)
             row.update(participation_checks=checks, participation_status=participation_status(checks))
+            next_check = next((check for check in checks if check['state'] == 'action' and '/parental-approvals' in check['url']), None)
+            if not next_check:
+                next_check = next((check for check in checks if check['state'] == 'action'), None)
+            if not next_check:
+                next_check = next((check for check in checks if check['state'] == 'unknown'), None)
+            row['next_check'] = next_check
+            row['context_url'] = '/my/preparation?club=%s&team=%s&registration=%s' % (
+                row['registration'].team_id.club_id.id, row['registration'].team_id.id, row['registration'].id)
         context['journey_user_id'] = request.env.user.id
         return response

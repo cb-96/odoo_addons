@@ -1,5 +1,5 @@
 """Read-only presentation policy shared by existing role workspaces."""
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 ROLE_ORDER = ('club', 'official', 'planner', 'reviewer', 'manager')
 BUCKETS = ('now', 'soon', 'waiting', 'recent')
@@ -47,3 +47,20 @@ def participation_status(checks):
     if not states or 'unknown' in states:
         return 'unknown'
     return 'complete'
+
+
+def actionable_cards(groups, now=None):
+    """Blocking/overdue work first, then deadline; deterministic within ties."""
+    now = now or datetime.now(timezone.utc).replace(tzinfo=None)
+    def priority(card):
+        deadline = card.get('deadline')
+        if isinstance(deadline, str):
+            try:
+                deadline = datetime.fromisoformat(deadline)
+            except ValueError:
+                deadline = None
+        if deadline and deadline.tzinfo is not None:
+            deadline = deadline.astimezone(timezone.utc).replace(tzinfo=None)
+        urgent = bool(card.get('blocking')) or bool(deadline and deadline <= now)
+        return (not urgent, deadline is None, deadline or datetime.max, str(card['key']))
+    return sorted(groups.get('now', []) + groups.get('soon', []), key=priority)

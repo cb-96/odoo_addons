@@ -15,3 +15,12 @@ def local_to_utc(value, timezone):
     except (ValueError, TypeError, pytz.UnknownTimeZoneError,
             pytz.AmbiguousTimeError, pytz.NonExistentTimeError) as exc:
         raise ValueError("Choose a valid, unambiguous time in the event timezone.") from exc
+
+
+def utc_to_local(value, timezone='UTC'):
+    if not value:
+        return None
+    instant = datetime.fromisoformat(value) if isinstance(value, str) else value
+    if instant.tzinfo is None:
+        instant = pytz.UTC.localize(instant)
+    return instant.astimezone(pytz.timezone(timezone or 'UTC'))

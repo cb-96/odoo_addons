@@ -35,6 +35,30 @@ class TestVisualExperience(LiveFixture, TransactionCase):
         with self.assertRaises(ValidationError):
             self.schedule.matchday_id.event_timezone = timezone
 
+    def test_historical_timezone_review_preserves_slots(self):
+        day = self.schedule.matchday_id
+        slots = [(slot.id, slot.start_datetime, slot.end_datetime) for slot in day.slot_ids]
+        self.env.cr.execute('UPDATE federation_matchday SET event_timezone_reviewed=false WHERE id=%s', [day.id])
+        day.invalidate_recordset(['event_timezone_reviewed'])
+        day._review_event_timezone('Europe/Brussels', 'Venue event record confirms Brussels time')
+        self.assertTrue(day.event_timezone_reviewed)
+        self.assertEqual(day.event_timezone, 'Europe/Brussels')
+        self.assertEqual(slots, [(slot.id, slot.start_datetime, slot.end_datetime) for slot in day.slot_ids])
+
+    def test_event_display_ignores_user_timezone(self):
+        self.env.user.tz = 'Pacific/Honolulu'
+        text = self.env['federation.event.time'].display('2026-11-03 09:00:00', self.schedule.matchday_id)
+        self.assertIn(self.schedule.matchday_id.event_timezone, text)
+
+    def test_timezone_review_requires_calendar_authority(self):
+        public = self.env.ref('base.public_user')
+        with self.assertRaises(AccessError):
+            self.schedule.matchday_id.with_user(public)._review_event_timezone('Europe/Brussels', 'Forged review')
+
+    def test_timezone_review_requires_evidence(self):
+        with self.assertRaises(ValidationError):
+            self.schedule.matchday_id._review_event_timezone('Europe/Brussels', '')
+
     def _destinations(self):
         return self.plan.destinations(self.schedule.id, self.fixture.id, self.plan.load(self.schedule.id)['signature'])
 

@@ -38,7 +38,7 @@
                             <field name="line_count" string="Players" widget="statinfo"/>
                         </button>
                         <button name="action_view_match_sheets" type="object" class="oe_stat_button" icon="fa-list" invisible="not match_sheet_count">
-                            <field name="match_sheet_count" string="Match Sheets" widget="statinfo"/>
+                            <field name="match_sheet_count" string="Lineups" widget="statinfo"/>
                         </button>
                     </div>
                     <div class="oe_title">

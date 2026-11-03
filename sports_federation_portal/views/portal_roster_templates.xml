@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <odoo>
 
     <template id="portal_federation_links_rosters" inherit_id="sports_federation_portal.portal_federation_links">
@@ -59,13 +59,8 @@
                                                         <span t-if="not item['roster']" class="text-muted">No roster yet</span>
                                                     </td>
                                                     <td class="text-end">
-                                                        <a t-if="item['roster']"
-                                                           t-attf-href="/my/rosters/#{item['roster'].id}"
-                                                           class="btn btn-sm btn-outline-primary">Open Roster</a>
-                                                        <form t-if="not item['roster']"
-                                                              t-attf-action="/my/rosters/create/#{item['registration'].id}"
-                                                              method="POST"
-                                                              class="d-inline">
+                                                        <a t-if="item['roster']" t-attf-href="/my/rosters/#{item['roster'].id}" class="btn btn-sm btn-outline-primary">Open Roster</a>
+                                                        <form t-if="not item['roster']" t-attf-action="/my/rosters/create/#{item['registration'].id}" method="POST" class="d-inline">
                                                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                                             <button type="submit" class="btn btn-sm btn-primary">Create Draft Roster</button>
                                                         </form>
@@ -132,12 +127,8 @@
                         <h2><i class="fa fa-id-card me-2"/><t t-esc="roster.name"/></h2>
                     </div>
                     <div class="col-auto d-flex flex-wrap gap-2">
-                        <a t-if="can_edit_roster"
-                           t-attf-href="/my/rosters/#{roster.id}/edit"
-                           class="btn btn-primary">Edit Roster</a>
-                        <a t-if="can_edit_roster"
-                           t-attf-href="/my/rosters/#{roster.id}/lines/new"
-                           class="btn btn-outline-primary">Add Player</a>
+                        <a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/edit" class="btn btn-primary">Edit Roster</a>
+                        <a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/lines/new" class="btn btn-outline-primary">Add Player</a>
                         <a href="/my/rosters" class="btn btn-outline-secondary">Back to Rosters</a>
                     </div>
                 </div>
@@ -188,31 +179,19 @@
                                 </div>
                                 <form t-if="can_manage_roster and roster.status == 'draft' and other_rosters" t-attf-action="/my/rosters/#{roster.id}/copy-lines" method="POST" class="d-flex gap-2 flex-wrap mb-3" data-qol-draft-guard="1"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><label t-attf-for="source_roster_#{roster.id}" class="form-label mb-0 align-self-center">Copy eligible players from</label><select t-attf-id="source_roster_#{roster.id}" name="source_roster_id" class="form-select form-select-sm w-auto" required="1"><option value="">Choose roster</option><option t-foreach="other_rosters" t-as="source" t-att-value="source.id"><t t-esc="source.display_name"/></option></select><button class="btn btn-sm btn-outline-primary">Copy eligible players</button></form>
                                 <div t-if="can_manage_roster" class="d-flex flex-wrap gap-2 mt-3">
-                                    <form t-if="roster.status == 'draft'"
-                                          t-attf-action="/my/rosters/#{roster.id}/activate"
-                                          method="POST"
-                                          class="d-inline">
+                                    <form t-if="roster.status == 'draft'" t-attf-action="/my/rosters/#{roster.id}/activate" method="POST" class="d-inline">
                                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                         <button type="submit" class="btn btn-primary btn-sm">Activate Roster</button>
                                     </form>
-                                    <form t-if="roster.status == 'active'"
-                                          t-attf-action="/my/rosters/#{roster.id}/draft"
-                                          method="POST"
-                                          class="d-inline">
+                                    <form t-if="roster.status == 'active'" t-attf-action="/my/rosters/#{roster.id}/draft" method="POST" class="d-inline">
                                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                         <button type="submit" class="btn btn-outline-secondary btn-sm">Set To Draft</button>
                                     </form>
-                                    <form t-if="roster.status == 'active'"
-                                          t-attf-action="/my/rosters/#{roster.id}/close"
-                                          method="POST"
-                                          class="d-inline">
+                                    <form t-if="roster.status == 'active'" t-attf-action="/my/rosters/#{roster.id}/close" method="POST" class="d-inline">
                                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                         <button type="submit" class="btn btn-outline-danger btn-sm">Close Roster</button>
                                     </form>
-                                    <form t-if="roster.status == 'closed'"
-                                          t-attf-action="/my/rosters/#{roster.id}/reopen"
-                                          method="POST"
-                                          class="d-inline">
+                                    <form t-if="roster.status == 'closed'" t-attf-action="/my/rosters/#{roster.id}/reopen" method="POST" class="d-inline">
                                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                         <button type="submit" class="btn btn-outline-primary btn-sm">Reopen Roster</button>
                                     </form>
@@ -226,9 +205,7 @@
                     <div class="col-12">
                         <div class="d-flex justify-content-between align-items-center flex-wrap mb-2 gap-2">
                             <h4 class="mb-0">Roster Lines</h4>
-                            <a t-if="can_edit_roster"
-                               t-attf-href="/my/rosters/#{roster.id}/lines/new"
-                               class="btn btn-sm btn-outline-primary">Add Player</a>
+                            <a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/lines/new" class="btn btn-sm btn-outline-primary">Add Player</a>
                         </div>
                         <div class="table-responsive">
                         <table class="table table-sm">
@@ -262,22 +239,15 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <t t-if="line.date_from" t-esc="line.date_from" t-options='{"widget": "date"}'/>
+                                            <t t-if="line.date_from" t-esc="line.date_from" t-options="{&quot;widget&quot;: &quot;date&quot;}"/>
                                             <t t-if="line.date_from and line.date_to"> - </t>
-                                            <t t-if="line.date_to" t-esc="line.date_to" t-options='{"widget": "date"}'/>
+                                            <t t-if="line.date_to" t-esc="line.date_to" t-options="{&quot;widget&quot;: &quot;date&quot;}"/>
                                         </td>
                                         <td class="text-end">
-                                                          <a t-if="can_edit_roster and line.status == 'active'"
-                                               t-attf-href="/my/rosters/#{roster.id}/lines/#{line.id}/edit"
-                                               class="btn btn-sm btn-outline-primary">Edit</a>
-                                            <form t-if="can_edit_roster"
-                                                  t-attf-action="/my/rosters/#{roster.id}/lines/#{line.id}/delete"
-                                                  method="POST"
-                                                  class="d-inline">
+                                                          <a t-if="can_edit_roster and line.status == 'active'" t-attf-href="/my/rosters/#{roster.id}/lines/#{line.id}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            <form t-if="can_edit_roster" t-attf-action="/my/rosters/#{roster.id}/lines/#{line.id}/delete" method="POST" class="d-inline">
                                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-outline-danger"
-                                                        onclick="return confirm('Remove this player from the roster?')">Remove</button>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this player from the roster?')">Remove</button>
                                             </form>
                                         </td>
                                     </tr>
@@ -305,7 +275,7 @@
                             <tbody>
                                 <t t-foreach="roster.audit_event_ids" t-as="event">
                                     <tr>
-                                        <td><t t-esc="event.event_on" t-options='{"widget": "datetime"}'/></td>
+                                        <td><t t-esc="event.event_on" t-options="{&quot;widget&quot;: &quot;datetime&quot;}"/></td>
                                         <td><t t-esc="dict(event._fields['event_type'].selection).get(event.event_type)"/></td>
                                         <td><t t-esc="event.player_id.display_name if event.player_id else ''"/></td>
                                         <td><t t-esc="event.description"/></td>
@@ -359,20 +329,17 @@
 
                                     <div class="mb-3">
                                         <label class="form-label" for="roster_name">Roster Name</label>
-                                        <input id="roster_name" type="text" name="name" class="form-control" required="required"
-                                               t-att-value="roster.name"/>
+                                        <input id="roster_name" type="text" name="name" class="form-control" required="required" t-att-value="roster.name"/>
                                     </div>
 
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label" for="roster_valid_from">Valid From</label>
-                                            <input id="roster_valid_from" type="date" name="valid_from" class="form-control"
-                                                   t-att-value="roster.valid_from or ''"/>
+                                            <input id="roster_valid_from" type="date" name="valid_from" class="form-control" t-att-value="roster.valid_from or ''"/>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label" for="roster_valid_to">Valid To</label>
-                                            <input id="roster_valid_to" type="date" name="valid_to" class="form-control"
-                                                   t-att-value="roster.valid_to or ''"/>
+                                            <input id="roster_valid_to" type="date" name="valid_to" class="form-control" t-att-value="roster.valid_to or ''"/>
                                         </div>
                                     </div>
 
@@ -445,22 +412,18 @@
                                 <div class="col-md-4">
                                     <label class="form-label" for="roster_line_status">Status</label>
                                     <input type="hidden" name="status" t-att-value="line and line.status or 'active'"/>
-                                    <input id="roster_line_status" type="text" class="form-control"
-                                           t-att-value="dict(roster.line_ids._fields['status'].selection).get(line.status) if line else 'Active'"
-                                           readonly="readonly"/>
+                                    <input id="roster_line_status" type="text" class="form-control" t-att-value="dict(roster.line_ids._fields['status'].selection).get(line.status) if line else 'Active'" readonly="readonly"/>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label" for="roster_line_jersey_number">Jersey Number</label>
-                                    <input id="roster_line_jersey_number" type="text" name="jersey_number" class="form-control"
-                                           t-att-value="line and line.jersey_number or ''"/>
+                                    <input id="roster_line_jersey_number" type="text" name="jersey_number" class="form-control" t-att-value="line and line.jersey_number or ''"/>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label" for="roster_line_license_id">License</label>
                                     <select id="roster_line_license_id" name="license_id" class="form-select">
                                         <option value="">No license selected</option>
                                         <t t-foreach="available_licenses" t-as="license">
-                                            <option t-att-value="license.id"
-                                                    t-att-selected="line and line.license_id == license and 'selected' or None">
+                                            <option t-att-value="license.id" t-att-selected="line and line.license_id == license and 'selected' or None">
                                                 <t t-esc="license.player_id.display_name"/> - <t t-esc="license.name"/> (<t t-esc="license.get_portal_state_label()"/>)
                                             </option>
                                         </t>
@@ -471,28 +434,24 @@
                             <div class="row g-3 mt-1">
                                 <div class="col-md-6">
                                     <label class="form-label" for="roster_line_date_from">Date From</label>
-                                    <input id="roster_line_date_from" type="date" name="date_from" class="form-control"
-                                           t-att-value="line and line.date_from or ''"/>
+                                    <input id="roster_line_date_from" type="date" name="date_from" class="form-control" t-att-value="line and line.date_from or ''"/>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label" for="roster_line_date_to">Date To</label>
-                                    <input id="roster_line_date_to" type="date" name="date_to" class="form-control"
-                                           t-att-value="line and line.date_to or ''"/>
+                                    <input id="roster_line_date_to" type="date" name="date_to" class="form-control" t-att-value="line and line.date_to or ''"/>
                                 </div>
                             </div>
 
                             <div class="row g-3 mt-1">
                                 <div class="col-md-6">
                                     <div class="form-check mt-4">
-                                        <input id="roster_line_is_captain" class="form-check-input" type="checkbox" name="is_captain"
-                                               t-att-checked="line and line.is_captain and 'checked' or None"/>
+                                        <input id="roster_line_is_captain" class="form-check-input" type="checkbox" name="is_captain" t-att-checked="line and line.is_captain and 'checked' or None"/>
                                         <label class="form-check-label" for="roster_line_is_captain">Captain</label>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-check mt-4">
-                                        <input id="roster_line_is_vice_captain" class="form-check-input" type="checkbox" name="is_vice_captain"
-                                               t-att-checked="line and line.is_vice_captain and 'checked' or None"/>
+                                        <input id="roster_line_is_vice_captain" class="form-check-input" type="checkbox" name="is_vice_captain" t-att-checked="line and line.is_vice_captain and 'checked' or None"/>
                                         <label class="form-check-label" for="roster_line_is_vice_captain">Vice Captain</label>
                                     </div>
                                 </div>
@@ -514,18 +473,18 @@
         </t>
     </template>
 
-    <template id="portal_my_match_sheets" name="My Match Sheets">
+    <template id="portal_my_match_sheets" name="My Lineups">
         <t t-call="portal.portal_layout">
             <div class="container py-4">
                 <div class="row mb-3">
                     <div class="col">
-                        <h2><i class="fa fa-list-alt me-2"/>My Match Sheets</h2>
+                        <h2><i class="fa fa-list-alt me-2"/>My Lineups</h2>
                     </div>
                 </div>
 
                 <div class="table-responsive">
                 <table class="table">
-                    <caption class="visually-hidden">Match sheets available for pre-kick-off preparation.</caption>
+                    <caption class="visually-hidden">Lineups available for pre-kick-off preparation.</caption>
                     <thead>
                         <tr>
                             <th scope="col">Sheet</th>
@@ -567,7 +526,7 @@
         </t>
     </template>
 
-    <template id="portal_my_match_sheet_detail" name="My Match Sheet Detail">
+    <template id="portal_my_match_sheet_detail" name="My Lineup Detail">
         <t t-call="portal.portal_layout">
             <div class="container py-4">
                 <div class="row mb-3">
@@ -575,7 +534,7 @@
                         <h2><i class="fa fa-list-alt me-2"/><t t-esc="sheet.name"/></h2>
                     </div>
                     <div class="col-auto">
-                        <a href="/my/match-sheets" class="btn btn-outline-secondary">Back to Match Sheets</a>
+                        <a href="/my/match-sheets" class="btn btn-outline-secondary">Back to Lineups</a>
                     </div>
                 </div>
 
@@ -624,10 +583,7 @@
                                 <div t-if="not sheet.readiness_feedback and not sheet.match_id.result_contest_reason and not sheet.match_id.result_correction_reason" class="text-muted">
                                     No additional notes are recorded.
                                 </div>
-                                <form t-if="can_prepare_sheet"
-                                      t-attf-action="/my/match-sheets/#{sheet.id}/prep"
-                                      method="POST"
-                                      class="mt-4">
+                                <form t-if="can_prepare_sheet" t-attf-action="/my/match-sheets/#{sheet.id}/prep" method="POST" class="mt-4">
                                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                     <div class="row g-3">
                                         <!-- Roster -->
@@ -636,8 +592,7 @@
                                             <select id="match_sheet_roster_id" name="roster_id" class="form-select">
                                                 <option value="">— Select a roster —</option>
                                                 <t t-foreach="available_rosters" t-as="roster">
-                                                    <option t-att-value="roster.id"
-                                                            t-att-selected="sheet.roster_id and sheet.roster_id.id == roster.id and 'selected' or None">
+                                                    <option t-att-value="roster.id" t-att-selected="sheet.roster_id and sheet.roster_id.id == roster.id and 'selected' or None">
                                                         <t t-esc="roster.name"/>
                                                         (<t t-esc="roster.get_portal_status_label()"/>)
                                                     </option>
@@ -657,19 +612,14 @@
                                                 <select id="match_sheet_coach_id" name="coach_id" class="form-select">
                                                     <option value="">— Select a coach —</option>
                                                     <t t-foreach="available_coaches" t-as="rep">
-                                                        <option t-att-value="rep.id"
-                                                                t-att-selected="sheet.coach_id and sheet.coach_id.id == rep.id and 'selected' or None">
+                                                        <option t-att-value="rep.id" t-att-selected="sheet.coach_id and sheet.coach_id.id == rep.id and 'selected' or None">
                                                             <t t-esc="rep.partner_id.name"/>
                                                         </option>
                                                     </t>
                                                 </select>
                                             </t>
                                             <t t-if="not available_coaches">
-                                                <input id="match_sheet_coach_name" type="text" name="coach_name"
-                                                       class="form-control"
-                                                       placeholder="Coach name"
-                                                       aria-label="Coach name"
-                                                       t-att-value="sheet.coach_name or ''"/>
+                                                <input id="match_sheet_coach_name" type="text" name="coach_name" class="form-control" placeholder="Coach name" aria-label="Coach name" t-att-value="sheet.coach_name or ''"/>
                                                 <div class="form-text">No registered coaches found for this club.</div>
                                             </t>
                                         </div>
@@ -680,19 +630,14 @@
                                                 <select id="match_sheet_manager_id" name="manager_id" class="form-select">
                                                     <option value="">— Select a manager —</option>
                                                     <t t-foreach="available_managers" t-as="rep">
-                                                        <option t-att-value="rep.id"
-                                                                t-att-selected="sheet.manager_id and sheet.manager_id.id == rep.id and 'selected' or None">
+                                                        <option t-att-value="rep.id" t-att-selected="sheet.manager_id and sheet.manager_id.id == rep.id and 'selected' or None">
                                                             <t t-esc="rep.partner_id.name"/>
                                                         </option>
                                                     </t>
                                                 </select>
                                             </t>
                                             <t t-if="not available_managers">
-                                                <input id="match_sheet_manager_name" type="text" name="manager_name"
-                                                       class="form-control"
-                                                       placeholder="Manager name"
-                                                       aria-label="Manager name"
-                                                       t-att-value="sheet.manager_name or ''"/>
+                                                <input id="match_sheet_manager_name" type="text" name="manager_name" class="form-control" placeholder="Manager name" aria-label="Manager name" t-att-value="sheet.manager_name or ''"/>
                                                 <div class="form-text">No registered representatives found for this club.</div>
                                             </t>
                                         </div>
@@ -703,11 +648,7 @@
                                     </div>
                                     <div class="d-flex flex-wrap gap-2 mt-3">
                                         <button type="submit" class="btn btn-primary btn-sm">Save Preparation</button>
-                                        <button t-if="sheet.state == 'draft' and sheet.ready_for_submission"
-                                                type="submit"
-                                                name="submit_sheet"
-                                                value="1"
-                                                class="btn btn-outline-primary btn-sm">Save And Submit Sheet</button>
+                                        <button t-if="sheet.state == 'draft' and sheet.ready_for_submission" type="submit" name="submit_sheet" value="1" class="btn btn-outline-primary btn-sm">Save And Submit Sheet</button>
                                     </div>
                                 </form>
                             </div>
@@ -749,48 +690,30 @@
                                                     <t t-set="sl" t-value="sheet_line_by_player.get(rline.player_id.id)"/>
                                                     <tr t-att-class="'table-success' if sl else ''">
                                                         <td>
-                                                            <input type="checkbox"
-                                                                   name="squad_player_ids"
-                                                                   t-att-value="rline.player_id.id"
-                                                                   t-att-checked="sl and 'checked' or None"
-                                                                   aria-label="Include in squad"
-                                                                   class="form-check-input"/>
+                                                            <input type="checkbox" name="squad_player_ids" t-att-value="rline.player_id.id" t-att-checked="sl and 'checked' or None" aria-label="Include in squad" class="form-check-input"/>
                                                         </td>
                                                         <td>
                                                             <t t-esc="rline.player_id.display_name"/>
                                                             <span t-if="rline.jersey_number" class="text-muted ms-1 small">#<t t-esc="rline.jersey_number"/></span>
                                                         </td>
                                                         <td>
-                                                            <select t-attf-name="player_#{rline.player_id.id}_role"                                                                aria-label="Playing role"                                                                    class="form-select form-select-sm">
-                                                                <option value="starter"
-                                                                        t-att-selected="(sl and sl.is_starter or (not sl and True)) and 'selected' or None">
+                                                            <select t-attf-name="player_#{rline.player_id.id}_role" aria-label="Playing role" class="form-select form-select-sm">
+                                                                <option value="starter" t-att-selected="(sl and sl.is_starter or (not sl and True)) and 'selected' or None">
                                                                     Starter
                                                                 </option>
-                                                                <option value="substitute"
-                                                                        t-att-selected="sl and sl.is_substitute and 'selected' or None">
+                                                                <option value="substitute" t-att-selected="sl and sl.is_substitute and 'selected' or None">
                                                                     Substitute
                                                                 </option>
-                                                                <option value="other"
-                                                                        t-att-selected="sl and not sl.is_starter and not sl.is_substitute and 'selected' or None">
+                                                                <option value="other" t-att-selected="sl and not sl.is_starter and not sl.is_substitute and 'selected' or None">
                                                                     Other
                                                                 </option>
                                                             </select>
                                                         </td>
                                                         <td class="text-center">
-                                                            <input type="checkbox"
-                                                                   t-attf-name="player_#{rline.player_id.id}_captain"
-                                                                   value="1"
-                                                                   t-att-checked="sl and sl.is_captain and 'checked' or None"
-                                                                   aria-label="Captain"
-                                                                   class="form-check-input"/>
+                                                            <input type="checkbox" t-attf-name="player_#{rline.player_id.id}_captain" value="1" t-att-checked="sl and sl.is_captain and 'checked' or None" aria-label="Captain" class="form-check-input"/>
                                                         </td>
                                                         <td>
-                                                            <input type="text"
-                                                                   t-attf-name="player_#{rline.player_id.id}_jersey"
-                                                                   class="form-control form-control-sm"
-                                                                   aria-label="Jersey number"
-                                                                   style="width:80px"
-                                                                   t-att-value="(sl and sl.jersey_number) or rline.jersey_number or ''"/>
+                                                            <input type="text" t-attf-name="player_#{rline.player_id.id}_jersey" class="form-control form-control-sm" aria-label="Jersey number" style="width:80px" t-att-value="(sl and sl.jersey_number) or rline.jersey_number or ''"/>
                                                         </td>
                                                     </tr>
                                                 </t>
@@ -866,7 +789,7 @@
                             <tbody>
                                 <t t-foreach="sheet.audit_event_ids" t-as="event">
                                     <tr>
-                                        <td><t t-esc="event.event_on" t-options='{"widget": "datetime"}'/></td>
+                                        <td><t t-esc="event.event_on" t-options="{&quot;widget&quot;: &quot;datetime&quot;}"/></td>
                                         <td><t t-esc="dict(event._fields['event_type'].selection).get(event.event_type)"/></td>
                                         <td><t t-esc="event.description"/></td>
                                     </tr>
@@ -889,7 +812,7 @@
                             <tbody>
                                 <t t-foreach="sheet.match_id.result_audit_ids" t-as="event">
                                     <tr>
-                                        <td><t t-esc="event.created_on" t-options='{"widget": "datetime"}'/></td>
+                                        <td><t t-esc="event.created_on" t-options="{&quot;widget&quot;: &quot;datetime&quot;}"/></td>
                                         <td><t t-esc="dict(event._fields['event_type'].selection).get(event.event_type)"/></td>
                                         <td><t t-esc="event.reason or ''"/></td>
                                         <td><t t-esc="event.description"/></td>
@@ -936,7 +859,7 @@
                         <t t-foreach="match_day_sheets" t-as="sheet">
                             <tr>
                                 <td>
-                                    <t t-if="sheet.match_id.date_scheduled" t-esc="sheet.match_id.date_scheduled" t-options='{"widget": "datetime"}'/>
+                                    <t t-if="sheet.match_id.date_scheduled" t-esc="request.env['federation.event.time'].display(sheet.match_id.date_scheduled, sheet.match_id)"/>
                                 </td>
                                 <td><t t-esc="sheet.match_id.display_name"/></td>
                                 <td><t t-esc="sheet.team_id.name"/></td>
@@ -951,7 +874,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <a t-attf-href="/my/match-sheets/#{sheet.id}" class="btn btn-sm btn-outline-primary">Open Sheet</a>
+                                    <a t-attf-href="/my/match-sheets/#{sheet.id}" class="btn btn-sm btn-outline-primary">Open lineup</a>
                                 </td>
                             </tr>
                         </t>
