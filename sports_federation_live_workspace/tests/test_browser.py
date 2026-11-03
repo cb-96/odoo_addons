@@ -33,16 +33,16 @@ class TestWorkspaceBrowser(LiveFixture, HttpCase):
 (async () => {
     await wait(()=>document.querySelector('main.sf-live-workspace select option[value="0"]'));
     change(document.querySelector('main.sf-live-workspace select'),'0');
-    await wait(()=>button('Open match')); button('Open match').click();
+    await wait(()=>document.querySelectorAll('.sf-score').length===2);
     await wait(()=>document.querySelectorAll('.sf-score').length===2);
     change(document.querySelectorAll('.sf-score')[0],2); change(document.querySelectorAll('.sf-score')[1],1);
-    const journalKey=Object.keys(localStorage).find(key=>key.startsWith('sf-court:v1:'));
+    const journalKey=Object.keys(localStorage).find(key=>key.startsWith('sf-court:v1:') && !key.endsWith(':last'));
     if (!journalKey) throw new Error('Local score draft was not persisted before save');
     const startingRevision=JSON.parse(localStorage.getItem(journalKey)).base.revision;
     button('Save draft').click();
     await wait(()=>{
         const journal=JSON.parse(localStorage.getItem(journalKey)||'null');
-        return document.querySelector('.sf-status').textContent.includes('Saved on server')
+        return document.querySelector('.sf-status').textContent.includes('Synchronised draft')
             && !button('Save draft').disabled
             && journal?.pending.length===0
             && journal?.base.revision===startingRevision+1;
@@ -50,15 +50,15 @@ class TestWorkspaceBrowser(LiveFixture, HttpCase):
     setOnline(false);
     if (navigator.onLine) throw new Error('Offline state could not be simulated');
     change(document.querySelectorAll('.sf-score')[0],3);
-    await wait(()=>document.querySelector('.sf-status').textContent.includes('Unsynchronised edits')
+    await wait(()=>document.querySelector('.sf-status').textContent.includes('Saved on this device only')
         && Number(document.querySelectorAll('.sf-score')[0].value)===3);
     button('Save draft').click();
-    await wait(()=>document.querySelector('.sf-status').textContent.includes('Unsynchronised: stored on this device')
+    await wait(()=>document.querySelector('.sf-status').textContent.includes('Saved on this device only')
         && JSON.parse(localStorage.getItem(journalKey)||'null')?.pending.length===1);
-    const entries=Object.keys(localStorage).filter(k=>k.startsWith('sf-court:v1:'));
+    const entries=Object.keys(localStorage).filter(k=>k.startsWith('sf-court:v1:') && !k.endsWith(':last'));
     if(!entries.some(k=>JSON.parse(localStorage.getItem(k)).pending.length===1)) throw new Error('Journal not persisted');
     setOnline(true); window.dispatchEvent(new Event('online'));
-    await wait(()=>document.querySelector('.sf-status').textContent.includes('Saved on server')
+    await wait(()=>document.querySelector('.sf-status').textContent.includes('Synchronised draft')
         && !button('Save draft').disabled
         && entries.every(k=>JSON.parse(localStorage.getItem(k)).pending.length===0));
     if(Number(document.querySelectorAll('.sf-score')[0].value)!==3) throw new Error('Synchronised score lost');

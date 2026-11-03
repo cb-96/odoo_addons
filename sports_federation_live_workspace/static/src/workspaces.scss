@@ -16,3 +16,17 @@
     button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #0078d4; outline-offset: 2px; }
     @media (max-width: 800px) { .sf-columns { grid-template-columns: 1fr; } }
 }
+
+.sf-court-mobile {
+    .sf-single { grid-template-columns: minmax(0, 1fr); }
+    .sf-card, fieldset, section, aside { min-width: 0; overflow-wrap: anywhere; }
+    .sf-score { width: 5rem; min-width: 0; }
+    label { max-width: 100%; }
+    textarea, select { max-width: 100%; }
+    .sf-status { position: sticky; top: 0; background: var(--body-bg, #fff); z-index: 1; }
+    summary { cursor: pointer; min-height: 48px; padding: .6rem 0; }
+    textarea:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid #0078d4; outline-offset: 2px; }
+    @media (max-width: 400px) { padding: .5rem; .sf-card { padding: .65rem; } }
+}
+
+.sf-mobile-matchday { button, select, a.btn { min-height: 48px; } .card { min-width: 0; overflow-wrap: anywhere; } button:focus-visible, a:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #0078d4; outline-offset: 2px; } }

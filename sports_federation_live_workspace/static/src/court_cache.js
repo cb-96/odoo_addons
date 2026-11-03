@@ -13,7 +13,8 @@ export function restoreCourtCache(server, cached) {
             match.revision = cached.base.revision;
             match.signature = cached.base.signature;
             // Pending commands carry immutable receipts; let server replay decide.
-            if (!pending.length) conflict ||= cached.base.revision !== server.revision
+            if (pending.length) conflict = false; // Replay immutable receipts before judging the new server signature.
+            else conflict ||= cached.base.revision !== server.revision
                 || cached.base.signature !== server.signature;
         } else conflict = true;
     }

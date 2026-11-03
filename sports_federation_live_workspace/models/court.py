@@ -213,11 +213,24 @@ class CourtCommands(models.AbstractModel):
         return capture
 
     def _response(self, capture, match, session):
-        return {"match_id": match.id, "revision": capture.revision, "payload": capture.payload,
+        return {"match_id": match.id, "match_name": match.display_name,
+                "home_team": match.home_team_id.display_name, "away_team": match.away_team_id.display_name,
+                "revision": capture.revision, "payload": capture.payload,
                 "signature": self._signature(match, session), "draft_signature": capture.signature,
                 "submitted": capture.submitted, "result_state": match.result_state,
                 "review_required": capture.review_required, "closed": capture.closed,
-                "undo_available": capture.undo_available, "saved_at": str(capture.write_date)}
+                "undo_available": capture.undo_available, "saved_at": str(capture.write_date),
+                "receipt_count": self.env["federation.court.receipt"].sudo().search_count([("capture_id", "=", capture.id)])}
+
+    @api.model
+    def inspect(self, matchday_id, court_id, match_id):
+        access, session = self._access(matchday_id, court_id)
+        match = self._match(access, match_id)
+        match._lock_result_transition()
+        match.invalidate_recordset()
+        capture = self._capture(match, self._signature(match, session))
+        capture.invalidate_recordset()
+        return self._response(capture, match, session)
 
     @api.model
     def courts(self):
@@ -241,12 +254,15 @@ class CourtCommands(models.AbstractModel):
                           "start": str(slot.start_datetime), "end": str(slot.end_datetime),
                           "result_state": match.result_state, "operational_state": match.operational_status,
                           "coverage": match._coverage_snapshot(),
+                          "deviation": {"type": dict(match._fields["operational_status"].selection).get(match.operational_status),
+                                        "reason": match.operational_deviation_ids[:1].reason or ""},
                           "officials": [{"name": a.referee_id.display_name, "role": a.role,
                                         "accepted": a.coverage_accepted, "eligible": a.coverage_eligible,
                                         "present": a.coverage_present} for a in match.referee_assignment_ids if a.state != "cancelled"]})
         queue.sort(key=lambda row: (row["start"], row["id"]))
         return {"queue": queue, "session": session.id, "publication": session.publication_digest,
-                "court": access.court_id.display_name, "matchday": access.matchday_id.display_name}
+                "court": access.court_id.display_name, "matchday": access.matchday_id.display_name,
+                "venue": access.matchday_id.venue_id.display_name}
 
     @api.model
     def open_match(self, matchday_id, court_id, match_id):

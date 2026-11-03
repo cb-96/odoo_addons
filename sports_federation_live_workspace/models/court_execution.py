@@ -79,7 +79,8 @@ class CourtCommandsExtension(models.AbstractModel):
                 receipts.create({"capture_id": capture.id, "key": command["key"], "digest": fingerprint,
                                  "actor_id": self.env.uid, "operation": operation, "response": response})
                 responses.append(response)
-            return {"receipts": responses, "current": self._response(capture, match, session)}
+            return {"receipts": responses, "acknowledged_keys": [command["key"] for command in commands],
+                    "current": self._response(capture, match, session)}
 
 
     def _submit(self, match, payload):

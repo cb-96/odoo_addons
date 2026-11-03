@@ -1,5 +1,6 @@
 /** @odoo-module **/
 import { restoreCourtCache } from "./court_cache";
+import { copy, readJournal, durableWrite, acknowledgedState, saveState, nextMatch } from "./mobile_recovery";
 import { Component, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
@@ -16,141 +17,261 @@ export class CourtWorkspace extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this.state = useState({ courts: [], selected: "", board: null, match: null, draft: null,
-            pending: [], busy: false, dirty: false, status: _t("Not checked"), error: "", conflict: false });
+            pending: [], busy: false, dirty: false, error: "", conflict: false, storageFailed: false,
+            offline: !navigator.onLine, contextUnchecked: false, recoveryNotice: "", journalBlocked: false, queueOpen: false });
         this.storagePrefix = `sf-court:v1:${session.db}:${session.uid}:`;
-        this.online = () => { if (this.state.pending.length) this.sync(); };
-        this.unload = (event) => { if (this.state.dirty || this.state.pending.length) {
+        this.expectedRaw = null;
+        this.releaseLease = null;
+        this.online = () => { this.state.offline = false; if (this.state.pending.length) this.sync(); else this.refreshStatus(); };
+        this.offline = () => { this.state.offline = true; this.state.contextUnchecked = true; };
+        this.unload = event => { if (this.state.dirty || this.state.pending.length || this.state.storageFailed) {
             event.preventDefault(); event.returnValue = "";
         }};
+        this.storageChanged = event => {
+            if (this.state.match && event.key === this.storageKey && event.newValue !== this.expectedRaw) {
+                this.state.conflict = true;
+                this.state.journalBlocked = true;
+                this.state.error = _t("Another tab changed this journal. Export this screen's evidence before reloading.");
+            }
+        };
         window.addEventListener("online", this.online);
+        window.addEventListener("offline", this.offline);
         window.addEventListener("beforeunload", this.unload);
+        window.addEventListener("storage", this.storageChanged);
         onWillUnmount(() => {
+            this.releaseLease?.();
             window.removeEventListener("online", this.online);
+            window.removeEventListener("offline", this.offline);
             window.removeEventListener("beforeunload", this.unload);
+            window.removeEventListener("storage", this.storageChanged);
         });
         onWillStart(async () => {
-            try { this.state.courts = await this.orm.call("federation.court.commands", "courts", []); }
-            catch (error) { this.state.error = this.message(error); }
+            try {
+                this.state.courts = await this.orm.call("federation.court.commands", "courts", []);
+                let remembered;
+                try { remembered = JSON.parse(localStorage.getItem(`${this.storagePrefix}last`) || 'null'); } catch { /* No trusted context. */ }
+                const params = this.props.action?.params || {};
+                const index = this.state.courts.findIndex(court => court.matchday_id === Number(params.matchday_id || remembered?.matchday_id)
+                    && court.court_id === Number(params.court_id || remembered?.court_id));
+                if (index >= 0 || this.state.courts.length === 1) {
+                    await this.chooseCourt({target: {value: String(index >= 0 ? index : 0)}}, Number(params.match_id || remembered?.match_id) || null);
+                }
+            } catch (error) { this.state.error = this.message(error); }
         });
     }
+    focusError() { setTimeout(() => document.getElementById("court-error")?.focus(), 0); }
     message(error) { return error?.data?.message || error?.message || _t("Operation failed. Local evidence retained."); }
     get access() { return this.state.courts[Number(this.state.selected)]; }
     get storageKey() { return `${this.storagePrefix}${this.access.matchday_id}:${this.access.court_id}:${this.state.match.match_id}`; }
-    get locked() { return this.state.match && (this.state.match.submitted || this.state.match.closed || !["draft", "corrected"].includes(this.state.match.result_state)); }
-    async chooseCourt(event) {
-        if (this.state.pending.length || this.state.dirty) { this.state.error = _t("Save or synchronise this match first."); return; }
+    get statusCode() { return saveState(this.state); }
+    get status() {
+        return {memory: _t("Not saved on device: keep this screen open"), device: _t("Saved on this device only"),
+            submission_pending: _t("Submission queued on device; server outcome not confirmed"),
+            synchronised: _t("Synchronised draft; not submitted"), submitted: _t("Submitted; awaiting independent review"),
+            verified: _t("Verified; awaiting approval"), approved: _t("Approved official result"),
+            contested: _t("Contested; governed correction required"), unchecked: _t("No match loaded")}[this.statusCode];
+    }
+    get locked() {
+        return this.state.match && (this.state.match.submitted || this.state.match.closed
+            || !["draft", "corrected"].includes(this.state.match.result_state)
+            || this.state.pending.some(command => command.operation === 'submit'));
+    }
+    async lease(name) {
+        this.releaseLease?.(); this.releaseLease = null;
+        if (!navigator.locks) throw new Error(_t("Court editing requires a secure browser with Web Locks. Use a supported browser or the supervised fallback."));
+        return new Promise(resolve => {
+            navigator.locks.request(name, {ifAvailable: true}, async lock => {
+                if (!lock) { resolve(false); return; }
+                await new Promise(release => { this.releaseLease = release; resolve(true); });
+            }).catch(() => resolve(false));
+        });
+    }
+    async chooseCourt(event, preferredMatch = null) {
+        if (this.state.pending.length || this.state.dirty || this.state.storageFailed) {
+            this.state.error = _t("Synchronise or export this match before changing courts."); return;
+        }
+        this.releaseLease?.(); this.releaseLease = null;
         this.state.selected = event.target.value;
-        this.state.match = null;
+        this.state.match = null; this.state.board = null;
         if (this.state.selected === "") return;
-        try { this.state.board = await this.orm.call("federation.court.commands", "load", [this.access.matchday_id, this.access.court_id]); }
-        catch (error) { this.state.error = this.message(error); }
+        try {
+            this.state.board = await this.orm.call("federation.court.commands", "load", [this.access.matchday_id, this.access.court_id]);
+            const match = this.state.board.queue.find(item => item.id === preferredMatch) || nextMatch(this.state.board.queue);
+            if (preferredMatch) await this.openMatch(preferredMatch);
+            else if (match) await this.openMatch(match.id);
+        } catch (error) { this.state.error = this.message(error); }
     }
     async openMatch(id) {
-        if (this.state.pending.length || this.state.dirty) { this.state.error = _t("Save or synchronise this match first."); return; }
+        if (this.state.pending.length || this.state.dirty || this.state.storageFailed) {
+            this.state.error = _t("Synchronise or export this match first."); return;
+        }
         this.state.busy = true;
+        this.state.match = null; this.state.draft = null;
+        const name = `${this.storagePrefix}${this.access.matchday_id}:${this.access.court_id}:${id}`;
+        let cached = null;
+        this.state.journalBlocked = false;
         try {
-            const result = await this.orm.call("federation.court.commands", "open_match", [this.access.matchday_id, this.access.court_id, id]);
-            let cached = null;
-            try { cached = JSON.parse(localStorage.getItem(`${this.storagePrefix}${this.access.matchday_id}:${this.access.court_id}:${id}`) || 'null'); }
-            catch { this.state.error = _t('Unreadable device cache. Preserve device evidence before clearing storage.'); }
+            if (!await this.lease(name)) { this.state.journalBlocked = true; this.state.conflict = true; throw new Error(_t("This match is already open in another tab. Close that tab before editing.")); }
+            try { this.expectedRaw = localStorage.getItem(name); cached = readJournal(this.expectedRaw); }
+            catch (error) { this.state.journalBlocked = true; this.state.conflict = true; throw error; }
+            let result;
+            try {
+                result = await this.orm.call("federation.court.commands", "open_match", [this.access.matchday_id, this.access.court_id, id]);
+                this.state.contextUnchecked = false;
+            } catch (error) {
+                // Never fall back after an access/validation response. Offline cache is not authorisation.
+                if (error?.data || !cached?.snapshot || cached.snapshot.match_id !== id) throw error;
+                result = cached.snapshot;
+                this.state.contextUnchecked = true;
+                this.state.recoveryNotice = _t("Recovered previously loaded evidence. Current access and match context are not verified; reconnect before official submission.");
+            }
             Object.assign(this.state, restoreCourtCache(result, cached));
-            this.state.status = (this.state.pending.length || this.state.dirty) ? _t("Unsynchronised: stored on this device") : result.submitted ? _t("Submitted: awaiting result review") : _t("Saved on server");
-            this.state.error = this.state.conflict ? _t("The published slot or canonical result changed. Reconcile explicitly.") : "";
+            this.state.storageFailed = false;
+            this.state.error = this.state.conflict ? _t("Match context changed. Keep local evidence and reconcile explicitly.") : "";
+            if (!cached || !(cached.dirty || cached.pending.length)) this.persist();
+            if (this.state.pending.length && navigator.onLine && !this.state.conflict) {
+                this.state.recoveryNotice = _t("Pending commands recovered with their original keys. Synchronise to confirm the server outcome.");
+            }
         } catch (error) { this.state.error = this.message(error); }
         finally { this.state.busy = false; }
     }
     persist() {
-        try { localStorage.setItem(this.storageKey, JSON.stringify({ draft: clone(this.state.draft),
-            pending: clone(this.state.pending), dirty: this.state.dirty, base: clone(this.state.match) })); }
-        catch (error) { this.state.error = _t("Device storage failed. Export evidence before leaving this screen."); throw error; }
+        if (!this.state.match || this.state.journalBlocked) return false;
+        const snapshot = copy(this.state.match);
+        delete snapshot.lineups; // Player lists are not needed for score recovery.
+        const record = {schema: 2, draft: copy(this.state.draft), pending: copy(this.state.pending),
+            dirty: this.state.dirty, saved_at: new Date().toISOString(), snapshot,
+            base: {revision: this.state.match.revision, signature: this.state.match.signature}};
+        try {
+            this.expectedRaw = durableWrite(localStorage, this.storageKey, record, this.expectedRaw);
+            this.state.storageFailed = false;
+            try { localStorage.setItem(`${this.storagePrefix}last`, JSON.stringify({matchday_id: this.access.matchday_id, court_id: this.access.court_id, match_id: this.state.match.match_id})); } catch { /* Score journal already verified. */ }
+            return true;
+        } catch (error) {
+            this.state.storageFailed = true;
+            this.state.error = this.message(error);
+            return false;
+        }
     }
-    edited() { this.state.dirty = true; this.state.status = _t("Unsynchronised edits: stored on this device"); this.persist(); }
+    edited() { this.state.dirty = true; this.persist(); }
     score(side, amount) {
-        if (this.locked || this.state.busy) return;
+        if (this.locked || this.state.busy || this.state.conflict) return;
         this.state.draft[side] = Math.max(0, this.state.draft[side] + amount); this.edited();
     }
     onHomeScore(event) { this.state.draft.home = Number(event.target.value); this.edited(); }
     onAwayScore(event) { this.state.draft.away = Number(event.target.value); this.edited(); }
-    addPeriod() { this.state.draft.periods.push({ home: 0, away: 0 }); this.retotal(); }
+    addPeriod() { this.state.draft.periods.push({home: 0, away: 0}); this.retotal(); }
     removePeriod(index) { this.state.draft.periods.splice(index, 1); this.retotal(); }
     periodScore(index, side, event) { this.state.draft.periods[index][side] = Number(event.target.value); this.retotal(); }
     retotal() {
-        const periods = this.state.draft.periods;
-        this.state.draft.home = periods.reduce((sum, p) => sum + (this.state.match.mode === "sets" ? Number(p.home > p.away) : p.home), 0);
-        this.state.draft.away = periods.reduce((sum, p) => sum + (this.state.match.mode === "sets" ? Number(p.away > p.home) : p.away), 0);
+        this.state.draft.home = this.state.draft.periods.reduce((sum, period) => sum + (this.state.match.mode === "sets" ? Number(period.home > period.away) : period.home), 0);
+        this.state.draft.away = this.state.draft.periods.reduce((sum, period) => sum + (this.state.match.mode === "sets" ? Number(period.away > period.home) : period.away), 0);
         this.edited();
     }
     async command(operation) {
-        if (this.locked || this.state.busy || this.state.conflict) return;
-        if (operation === "submit" && !window.confirm(_t("Submit this result for review? It will become read-only."))) return;
+        if (this.locked || this.state.busy || this.state.conflict || this.state.journalBlocked) return;
+        if (operation === "submit" && !window.confirm(_t("Submit these scores for independent review? They become read-only after server confirmation."))) return;
         if (operation === "undo" && this.state.pending.length) { this.state.error = _t("Synchronise pending commands before server undo."); return; }
-        if (this.state.pending.some(c => c.operation === "submit")) {
-            this.state.error = _t("A submission is already queued. Synchronise it before further changes."); return;
-        }
-        if (this.state.pending.length >= 100) {
-            this.state.error = _t("Synchronise or export this device journal before adding more commands."); return;
-        }
-        const revision = this.state.match.revision + this.state.pending.length;
-        const command = { key: key(), revision, operation, payload: clone(this.state.draft), signature: this.state.match.signature };
-        this.state.pending.push(command);
-        this.state.dirty = false;
-        this.persist();
-        this.state.status = _t("Unsynchronised: stored on this device");
+        if (this.state.pending.length >= 100) { this.state.error = _t("Synchronise or export this journal before adding commands."); return; }
+        const command = {key: key(), revision: this.state.match.revision + this.state.pending.length,
+            operation, payload: copy(this.state.draft), signature: this.state.match.signature};
+        this.state.pending.push(command); this.state.dirty = false;
+        if (!this.persist()) return; // No acknowledged device save and no send after a failed durable write.
         if (navigator.onLine) await this.sync();
     }
     async sync() {
-        if (!this.state.match || !this.state.pending.length || this.state.busy || this.state.conflict) return;
+        if (!this.state.match || !this.state.pending.length || this.state.busy || this.state.conflict || this.state.journalBlocked) return;
+        if (!this.persist()) return;
         this.state.busy = true;
+        const commands = copy(this.state.pending);
+        const unsentDraft = this.state.dirty ? copy(this.state.draft) : null;
+        const originalSignature = this.state.match.signature;
         try {
             const result = await this.orm.call("federation.court.commands", "sync", [this.access.matchday_id,
-                this.access.court_id, this.state.match.match_id, clone(this.state.pending)]);
-            const config = this.state.match;
-            this.state.match = { ...config, ...result.current };
-            this.state.pending = [];
-            this.state.draft = clone(result.current.payload);
-            this.state.dirty = false;
-            this.state.error = "";
-            this.state.status = result.current.submitted ? _t("Submitted: awaiting result review") : _t("Saved on server");
+                this.access.court_id, this.state.match.match_id, commands]);
+            const confirmed = acknowledgedState(result.current, commands, result.acknowledged_keys);
+            this.state.match = {...this.state.match, ...confirmed.match};
+            this.state.pending = confirmed.pending; this.state.draft = unsentDraft || confirmed.draft; this.state.dirty = Boolean(unsentDraft);
+            this.state.contextUnchecked = false; this.state.recoveryNotice = ""; this.state.error = "";
+            if (unsentDraft && (result.current.signature !== originalSignature || result.current.revision !== commands.at(-1).revision + 1)) {
+                this.state.conflict = true; this.state.error = _t("Queued commands were acknowledged, but later edits need explicit reconciliation with changed context.");
+            }
             this.persist();
-            this.state.board = await this.orm.call("federation.court.commands", "load", [this.access.matchday_id, this.access.court_id]);
         } catch (error) {
             this.state.error = this.message(error);
-            this.state.status = _t("Unsynchronised: retry or reconcile; evidence retained");
-            // Validation/access errors are not transient connectivity failures.
+            this.state.contextUnchecked = true;
             if (error?.data) this.state.conflict = true;
+            this.focusError();
         } finally { this.state.busy = false; }
+        // A board-refresh failure must not undo a confirmed receipt or label it unsaved.
+        if (!this.state.pending.length) {
+            try { this.state.board = await this.orm.call("federation.court.commands", "load", [this.access.matchday_id, this.access.court_id]); }
+            catch { this.state.recoveryNotice = _t("Result acknowledgement is confirmed; the match queue could not refresh."); }
+        }
+    }
+    async refreshStatus() {
+        if (!this.state.match || this.state.busy) return;
+        if (this.state.pending.length) return this.sync();
+        this.state.busy = true;
+        try {
+            const result = await this.orm.call("federation.court.commands", "inspect", [this.access.matchday_id, this.access.court_id, this.state.match.match_id]);
+            if (this.state.dirty && (result.revision !== this.state.match.revision || result.signature !== this.state.match.signature)) {
+                this.state.conflict = true;
+                this.state.error = _t("Another session changed the match. Local edits are retained; reconcile explicitly.");
+            } else if (!this.state.dirty) {
+                this.state.match = {...this.state.match, ...result}; this.state.draft = copy(result.payload); this.persist();
+            }
+            this.state.contextUnchecked = false;
+        } catch (error) { this.state.error = this.message(error); this.state.contextUnchecked = true; }
+        finally { this.state.busy = false; }
     }
     exportEvidence() {
-        const value = { schema: 1, court: this.access, match: this.state.match,
-            draft: this.state.draft, pending: this.state.pending, exported_at: new Date().toISOString() };
-        const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }));
-        const link = document.createElement("a"); link.href = url; link.download = `court-evidence-${this.state.match.match_id}.json`;
-        link.click(); URL.revokeObjectURL(url);
+        const match = this.state.match ? copy(this.state.match) : null;
+        if (match) delete match.lineups;
+        const value = {schema: 2, court: this.access, match, draft: this.state.draft,
+            pending: this.state.pending, original_journal: this.expectedRaw, exported_at: new Date().toISOString()};
+        const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], {type: "application/json"}));
+        const anchor = document.createElement("a"); anchor.href = url; anchor.download = `court-${this.state.match?.match_id || 'recovery'}-evidence.json`;
+        anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
     async reconcile() {
-        if (!navigator.onLine || this.state.busy) return;
+        if (!this.state.match || this.state.busy) return;
         this.exportEvidence();
-        if (!window.confirm(_t("Evidence exported. Discard the local command queue and reload the server draft? No official result will be changed."))) return;
-        localStorage.removeItem(this.storageKey);
-        const id = this.state.match.match_id;
-        this.state.pending = []; this.state.dirty = false; this.state.conflict = false;
-        await this.openMatch(id);
+        if (!window.confirm(_t("After retaining the exported evidence, reload the server draft? Local scores will not be merged."))) return;
+        this.state.busy = true;
+        try {
+            const result = await this.orm.call("federation.court.commands", "inspect", [this.access.matchday_id, this.access.court_id, this.state.match.match_id]);
+            // Do not destroy the old journal before the authoritative read succeeds.
+            this.expectedRaw = localStorage.getItem(this.storageKey);
+            this.state.match = {...this.state.match, ...result}; this.state.draft = copy(result.payload);
+            this.state.pending = []; this.state.dirty = false; this.state.journalBlocked = false;
+            this.state.conflict = result.signature !== result.draft_signature;
+            this.state.contextUnchecked = false; this.persist();
+        } catch (error) { this.state.error = this.message(error); }
+        finally { this.state.busy = false; }
     }
     async acknowledge() {
-        const reason = window.prompt(_t("Explain why this draft remains valid after the schedule/result change:"));
-        if (!reason?.trim()) return;
+        if (this.state.pending.length || this.state.dirty || this.locked || this.state.busy || this.state.journalBlocked) return;
+        const reason = window.prompt(_t("Explain why the current server draft is valid in the changed match context."));
+        if (!reason) return;
+        this.state.busy = true;
         try {
             const result = await this.orm.call("federation.court.commands", "reconcile", [this.access.matchday_id,
                 this.access.court_id, this.state.match.match_id, this.state.match.revision, reason]);
-            this.state.match = { ...this.state.match, ...result }; this.state.conflict = false;
-            this.state.error = ""; this.persist();
+            this.state.match = {...this.state.match, ...result}; this.state.draft = copy(result.payload);
+            this.state.conflict = false; this.state.dirty = false; this.state.contextUnchecked = false; this.persist();
         } catch (error) { this.state.error = this.message(error); }
+        finally { this.state.busy = false; }
+    }
+    async openResultReview() {
+        if (!this.state.match || this.state.pending.length || this.state.dirty) return;
+        await this.action.doAction({type: "ir.actions.act_window", res_model: "federation.match",
+            res_id: this.state.match.match_id, views: [[false, "form"]], target: "current"});
     }
     async nextMatch() {
-        if (this.state.pending.length || this.state.dirty) return;
-        const queue = this.state.board.queue;
-        const index = queue.findIndex(m => m.id === this.state.match?.match_id);
-        const next = queue.slice(index + 1).find(m => !["submitted", "verified", "approved"].includes(m.result_state));
+        const queue = this.state.board?.queue || [];
+        const current = queue.findIndex(match => match.id === this.state.match?.match_id);
+        const next = queue.slice(current + 1).find(match => ["draft", "corrected"].includes(match.result_state));
         if (next) await this.openMatch(next.id);
     }
 }
