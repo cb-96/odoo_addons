@@ -57,6 +57,20 @@ class FederationRuleSet(models.Model):
         tracking=True,
         help="Maximum number of players allowed. 0 means no maximum enforced.",
     )
+    gameday_roster_max_size = fields.Integer(
+        string="Max Players per Gameday Roster",
+        default=0,
+        tracking=True,
+        help="Players a team may list on one gameday roster, shared by all its "
+        "matches that day. 0 uses the maximum squad size.",
+    )
+    match_player_max_size = fields.Integer(
+        string="Max Players per Match",
+        default=0,
+        tracking=True,
+        help="Players who may take part in one match. Extra gameday players are "
+        "crossed out before each match. 0 means every gameday player may play.",
+    )
 
     # Referee configuration
     referee_required_count = fields.Integer(
@@ -98,6 +112,8 @@ class FederationRuleSet(models.Model):
         "points_loss",
         "squad_min_size",
         "squad_max_size",
+        "gameday_roster_max_size",
+        "match_player_max_size",
         "referee_required_count",
         "seeding_mode",
         "points_rule_ids",
@@ -150,4 +166,18 @@ class FederationRuleSet(models.Model):
             ):
                 raise ValidationError(
                     "Minimum squad size cannot exceed maximum squad size."
+                )
+
+    @api.constrains("gameday_roster_max_size", "match_player_max_size")
+    def _check_gameday_limits(self):
+        """Validate gameday roster and per-match participation limits."""
+        for rec in self:
+            if rec.gameday_roster_max_size < 0 or rec.match_player_max_size < 0:
+                raise ValidationError("Player limits cannot be negative.")
+            if (
+                rec.gameday_roster_max_size > 0
+                and rec.match_player_max_size > rec.gameday_roster_max_size
+            ):
+                raise ValidationError(
+                    "Players per match cannot exceed players per gameday roster."
                 )

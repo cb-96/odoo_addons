@@ -188,3 +188,31 @@ class TestGamedayLineupWizard(TransactionCase):
         roster = self.env["federation.team.roster"].browse(action["res_id"])
         self.assertEqual(roster.season_id, self.edition.season_id)
         self.assertEqual(roster.status, "draft")
+
+    def test_gameday_roster_needs_no_starting_roles(self):
+        action = self.matchday.action_prepare_lineups()
+        wizard = self.env[action["res_model"]].browse(action["res_id"])
+        self.assertNotIn("is_starter", wizard.line_ids._fields)
+        self.assertNotIn("is_substitute", wizard.line_ids._fields)
+        wizard.action_save_draft()
+        sheets = self.env["federation.match.sheet"].search(
+            [
+                ("match_id.schedule_publication_id.matchday_id", "=", self.matchday.id),
+                ("team_id", "=", self.home.id),
+            ]
+        )
+        self.assertEqual(len(sheets), 2)
+        self.assertEqual(sheets[0].line_ids.player_id, sheets[1].line_ids.player_id)
+        self.assertFalse(
+            sheets.line_ids.filtered(lambda line: line.is_starter or line.is_substitute)
+        )
+
+    def test_wizard_reports_gameday_and_match_limits(self):
+        self.roster.rule_set_id.write(
+            {"gameday_roster_max_size": 14, "match_player_max_size": 12}
+        )
+        action = self.matchday.action_prepare_lineups()
+        wizard = self.env[action["res_model"]].browse(action["res_id"])
+        self.assertEqual(wizard.gameday_roster_limit, 14)
+        self.assertEqual(wizard.match_participant_limit, 12)
+        self.assertEqual(wizard.readiness_message, "Ready to save.")

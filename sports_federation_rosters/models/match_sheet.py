@@ -125,6 +125,36 @@ class FederationMatchSheet(models.Model):
         "match_sheet_id",
         string="Audit Events",
     )
+    gameday_roster_limit = fields.Integer(
+        compute="_compute_participation",
+        compute_sudo=True,
+        string="Max Players on Gameday Roster",
+    )
+    match_participant_limit = fields.Integer(
+        compute="_compute_participation",
+        compute_sudo=True,
+        string="Max Players per Match",
+    )
+    participant_count = fields.Integer(
+        compute="_compute_participation",
+        compute_sudo=True,
+        string="Playing This Match",
+    )
+    crossed_out_count = fields.Integer(
+        compute="_compute_participation",
+        compute_sudo=True,
+        string="Crossed Out",
+    )
+    participation_feedback = fields.Char(
+        compute="_compute_participation",
+        compute_sudo=True,
+        string="Match Participation",
+    )
+    can_record_participation = fields.Boolean(
+        compute="_compute_participation",
+        compute_sudo=True,
+        string="Can Cross Out Players",
+    )
     coach_name = fields.Char(string="Coach Name")
     manager_name = fields.Char(string="Manager Name")
     notes = fields.Text(string="Notes")
@@ -272,6 +302,27 @@ class FederationMatchSheet(models.Model):
             record.ready_for_submission = not bool(issues)
             record.readiness_feedback = "\n".join(issues) if issues else False
 
+    @api.depends(
+        "state",
+        "roster_id",
+        "line_ids",
+        "line_ids.crossed_out",
+        "match_id.state",
+        "match_id.tournament_id",
+    )
+    def _compute_participation(self):
+        """Summarize this match's participants from the shared gameday roster."""
+        for record in self:
+            playing = record.line_ids.filtered(lambda line: not line.crossed_out)
+            record.gameday_roster_limit = record._get_gameday_roster_limit()
+            record.match_participant_limit = record._get_match_participant_limit()
+            record.participant_count = len(playing)
+            record.crossed_out_count = len(record.line_ids) - len(playing)
+            record.participation_feedback = (
+                "\n".join(record._get_participation_issues()) or False
+            )
+            record.can_record_participation = record._participation_is_open()
+
     @api.constrains("side", "team_id", "match_id")
     def _check_side_team_consistency(self):
         """Validate side team consistency."""
@@ -303,6 +354,46 @@ class FederationMatchSheet(models.Model):
         if self.match_id.date_scheduled:
             return fields.Datetime.to_datetime(self.match_id.date_scheduled).date()
         return fields.Date.context_today(self)
+
+    def _get_gameday_roster_limit(self):
+        """Players allowed on the team's shared roster for one gameday."""
+        self.ensure_one()
+        rule_set = self._get_effective_rule_set()
+        if rule_set and rule_set.gameday_roster_max_size:
+            return rule_set.gameday_roster_max_size
+        if self.roster_id:
+            return self.roster_id._get_required_player_bounds()[1]
+        return rule_set.squad_max_size if rule_set else 0
+
+    def _get_match_participant_limit(self):
+        """Players allowed to take part in this one match (0 = no extra limit)."""
+        self.ensure_one()
+        rule_set = self._get_effective_rule_set()
+        return rule_set.match_player_max_size if rule_set else 0
+
+    def _participation_is_open(self):
+        """Players can be crossed out until the match is finished."""
+        self.ensure_one()
+        return (
+            self.state in ("submitted", "approved")
+            and bool(self.line_ids)
+            and self.match_id.state not in ("done", "cancelled")
+        )
+
+    def _get_participation_issues(self):
+        """Return what still blocks this match's participant list."""
+        self.ensure_one()
+        limit = self._get_match_participant_limit()
+        playing = len(self.line_ids.filtered(lambda line: not line.crossed_out))
+        if limit and playing > limit:
+            return [
+                _(
+                    "%(playing)s players are listed for this match; at most "
+                    "%(limit)s may play. Cross out %(extra)s player(s)."
+                )
+                % {"playing": playing, "limit": limit, "extra": playing - limit}
+            ]
+        return []
 
     def _get_gameday_scope(self):
         """Return the explicit match-day scope, or a tournament/date fallback."""
@@ -418,6 +509,9 @@ class FederationMatchSheet(models.Model):
         if source.manager_name and not self.manager_name:
             target_vals["manager_name"] = source.manager_name
         self.write(target_vals)
+        crossed_out_players = set(
+            self.line_ids.filtered("crossed_out").mapped("player_id").ids
+        )
         self.line_ids.unlink()
         line_values = [
             {
@@ -428,6 +522,7 @@ class FederationMatchSheet(models.Model):
                 "is_substitute": line.is_substitute,
                 "is_captain": line.is_captain,
                 "jersey_number": line.jersey_number,
+                "crossed_out": line.player_id.id in crossed_out_players,
             }
             for line in source.line_ids
         ]
@@ -504,11 +599,11 @@ class FederationMatchSheet(models.Model):
                 eligible_line_count += 1
 
         if self.roster_id:
-            min_required, max_allowed = self.roster_id._get_required_player_bounds()
+            min_required = self.roster_id._get_required_player_bounds()[0]
         else:
             rule_set = self._get_effective_rule_set()
             min_required = rule_set.squad_min_size if rule_set else 0
-            max_allowed = rule_set.squad_max_size if rule_set else 0
+        max_allowed = self._get_gameday_roster_limit()
 
         if min_required and eligible_line_count < min_required:
             issues.append(
@@ -520,7 +615,7 @@ class FederationMatchSheet(models.Model):
         if max_allowed and len(self.line_ids) > max_allowed:
             issues.append(
                 _(
-                    "Submitted players (%(actual)s) exceed the allowed maximum of %(expected)s."
+                    "The gameday roster lists %(actual)s players; the maximum is %(expected)s."
                 )
                 % {"actual": len(self.line_ids), "expected": max_allowed}
             )
@@ -651,6 +746,12 @@ class FederationMatchSheet(models.Model):
         for record in self:
             if record.state != "approved":
                 raise ValidationError(_("Only approved match sheets can be locked."))
+            issues = record._get_participation_issues()
+            if issues:
+                raise ValidationError(
+                    _("Match sheet '%(sheet)s' cannot be locked: %(issues)s")
+                    % {"sheet": record.display_name, "issues": " ".join(issues)}
+                )
         self.write(
             {
                 "state": "locked",
@@ -663,3 +764,52 @@ class FederationMatchSheet(models.Model):
                 "match_sheet_locked",
                 _("Match sheet '%(sheet)s' locked.") % {"sheet": record.display_name},
             )
+
+    def action_sync_gameday_roster(self):
+        """Share this draft gameday roster with the team's other matches that day."""
+        for record in self:
+            if record.state != "draft":
+                raise ValidationError(
+                    _("Only a draft gameday roster can be shared again.")
+                )
+            record._synchronize_gameday_lineup(record)
+        return True
+
+    def action_set_crossed_out(self, player_ids):
+        """Record which gameday players do not play this match.
+
+        ``player_ids`` is the complete crossed-out list for this match. Other
+        matches on the same gameday keep their own list.
+        """
+        self.ensure_one()
+        if not self._participation_is_open():
+            raise ValidationError(
+                _(
+                    "Players can be crossed out once the gameday roster is "
+                    "submitted, until the match is finished."
+                )
+            )
+        try:
+            requested = {int(player_id) for player_id in (player_ids or [])}
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(_("Select players from this gameday roster.")) from exc
+        listed = set(self.line_ids.mapped("player_id").ids)
+        if requested - listed:
+            raise ValidationError(_("Select players from this gameday roster."))
+        limit = self._get_match_participant_limit()
+        playing = len(listed - requested)
+        if limit and playing > limit:
+            raise ValidationError(
+                _(
+                    "%(playing)s players would play; at most %(limit)s may play. "
+                    "Cross out %(extra)s more player(s)."
+                )
+                % {"playing": playing, "limit": limit, "extra": playing - limit}
+            )
+        if not playing:
+            raise ValidationError(_("At least one player must play this match."))
+        for line in self.line_ids:
+            crossed = line.player_id.id in requested
+            if line.crossed_out != crossed:
+                line.write({"crossed_out": crossed})
+        return True

@@ -183,12 +183,13 @@ class FederationMatchSheet(models.Model):
         return True
 
     def _portal_sync_squad(self, squad_data, user=None):
-        """Sync match sheet lines from a portal squad selection.
+        """Save the team's gameday roster from a portal selection.
 
         squad_data is a list of dicts:
-            [{"player_id": int, "role": "starter"|"substitute"|"other",
-              "is_captain": bool, "jersey_number": str|False}]
-        Only players that exist on the linked roster are accepted.
+            [{"player_id": int, "is_captain": bool, "jersey_number": str|False}]
+        Starting roles are not declared in advance; any submitted "role" is
+        ignored. Only players on the linked roster are accepted. The saved
+        roster is shared with every match the team plays that gameday.
         """
         user = user or self.env.user
         self._portal_assert_review_access(user=user)
@@ -224,10 +225,10 @@ class FederationMatchSheet(models.Model):
                     user=user,
                 )
 
-            # Add or update selected players
+            # Add or update selected players (no advance starter/substitute roles)
             for player_id, data in submitted.items():
-                is_starter = data.get("role") == "starter"
-                is_substitute = data.get("role") == "substitute"
+                is_starter = False
+                is_substitute = False
                 is_captain = bool(data.get("is_captain"))
                 jersey_number = data.get("jersey_number") or False
                 roster_line = sheet.roster_id.line_ids.filtered(
@@ -260,7 +261,26 @@ class FederationMatchSheet(models.Model):
                         },
                         user=user,
                     )
+            Privilege.portal_call(
+                sheet,
+                "action_sync_gameday_roster",
+                scope_domain=self._portal_get_domain(user=user),
+                user=user,
+            )
         return True
+
+    def _portal_set_participation(self, crossed_out_player_ids, user=None):
+        """Record the players crossed out for this one match from the portal."""
+        user = user or self.env.user
+        self._portal_assert_review_access(user=user)
+        self.ensure_one()
+        return self.env["federation.portal.privilege"].portal_call(
+            self,
+            "action_set_crossed_out",
+            list(crossed_out_player_ids or []),
+            scope_domain=self._portal_get_domain(user=user),
+            user=user,
+        )
 
     def _portal_action_submit(self, user=None):
         """Handle the portal-specific action submit flow."""

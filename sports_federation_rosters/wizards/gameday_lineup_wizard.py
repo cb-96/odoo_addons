@@ -4,7 +4,7 @@ from odoo.exceptions import ValidationError
 
 class FederationGamedayLineupWizard(models.TransientModel):
     _name = "federation.gameday.lineup.wizard"
-    _description = "Prepare Game-Day Lineup"
+    _description = "Prepare Gameday Roster"
 
     matchday_id = fields.Many2one("federation.matchday", required=True, readonly=True)
     available_team_ids = fields.Many2many(
@@ -24,6 +24,8 @@ class FederationGamedayLineupWizard(models.TransientModel):
         "federation.gameday.lineup.wizard.line", "wizard_id", string="Players"
     )
     readiness_message = fields.Text(compute="_compute_readiness_message")
+    gameday_roster_limit = fields.Integer(compute="_compute_readiness_message")
+    match_participant_limit = fields.Integer(compute="_compute_readiness_message")
 
     @api.model
     def default_get(self, field_list):
@@ -98,8 +100,6 @@ class FederationGamedayLineupWizard(models.TransientModel):
                     {
                         "player_id": line.player_id.id,
                         "roster_line_id": line.roster_line_id.id,
-                        "is_starter": line.is_starter,
-                        "is_substitute": line.is_substitute,
                         "is_captain": line.is_captain,
                         "jersey_number": line.jersey_number,
                     }
@@ -112,7 +112,6 @@ class FederationGamedayLineupWizard(models.TransientModel):
                     {
                         "player_id": line.player_id.id,
                         "roster_line_id": line.id,
-                        "is_substitute": True,
                         "jersey_number": line.jersey_number,
                     }
                 )
@@ -131,10 +130,30 @@ class FederationGamedayLineupWizard(models.TransientModel):
         )
         self.line_ids = [fields.Command.clear(), *line_commands]
 
+    @api.model
+    def _limits_for(self, roster):
+        """Gameday and per-match limits from the roster's effective rules."""
+        rule_set = roster._get_effective_rule_set() if roster else False
+        gameday = (
+            (rule_set.gameday_roster_max_size if rule_set else 0)
+            or (roster._get_required_player_bounds()[1] if roster else 0)
+        )
+        per_match = rule_set.match_player_max_size if rule_set else 0
+        return gameday, per_match
+
     @api.depends("team_id", "roster_id", "line_ids", "line_ids.player_id")
     def _compute_readiness_message(self):
         for wizard in self:
+            gameday_limit, match_limit = self._limits_for(wizard.roster_id)
+            wizard.gameday_roster_limit = gameday_limit
+            wizard.match_participant_limit = match_limit
             issues = []
+            count = len(wizard.line_ids)
+            if gameday_limit and count > gameday_limit:
+                issues.append(
+                    _("Select at most %(limit)s players (%(count)s selected).")
+                    % {"limit": gameday_limit, "count": count}
+                )
             if not wizard.roster_id:
                 issues.append(_("Select an active roster."))
             if not wizard.line_ids:
@@ -143,11 +162,15 @@ class FederationGamedayLineupWizard(models.TransientModel):
                 issues.append(_("Each player can appear only once."))
             if len(wizard.line_ids.filtered("is_captain")) > 1:
                 issues.append(_("Select no more than one captain."))
-            if wizard.line_ids.filtered(
-                lambda line: line.is_starter and line.is_substitute
-            ):
-                issues.append(_("A player cannot be both a starter and a substitute."))
-            wizard.readiness_message = "\n".join(issues) if issues else _("Ready to save.")
+            if issues:
+                wizard.readiness_message = "\n".join(issues)
+            elif match_limit and count > match_limit:
+                wizard.readiness_message = _(
+                    "Ready to save. %(count)s players listed; at each match the "
+                    "coach crosses out who does not play (at most %(limit)s play)."
+                ) % {"count": count, "limit": match_limit}
+            else:
+                wizard.readiness_message = _("Ready to save.")
 
     def _apply(self):
         self.ensure_one()
@@ -166,8 +189,6 @@ class FederationGamedayLineupWizard(models.TransientModel):
             raise ValidationError(_("Each player can appear only once."))
         if len(self.line_ids.filtered("is_captain")) > 1:
             raise ValidationError(_("Select no more than one captain."))
-        if self.line_ids.filtered(lambda line: line.is_starter and line.is_substitute):
-            raise ValidationError(_("A player cannot be both a starter and a substitute."))
         sheets = self._sheets_for(self.matchday_id, self.team_id)
         if not sheets:
             raise ValidationError(
@@ -176,7 +197,7 @@ class FederationGamedayLineupWizard(models.TransientModel):
         source = sheets.filtered(lambda sheet: sheet.state == "draft")[:1]
         if not source:
             raise ValidationError(
-                _("This game-day lineup has already been submitted or approved.")
+                _("This gameday roster has already been submitted or approved.")
             )
         source.write({"roster_id": self.roster_id.id})
         source.line_ids.unlink()
@@ -186,8 +207,6 @@ class FederationGamedayLineupWizard(models.TransientModel):
                     "match_sheet_id": source.id,
                     "player_id": line.player_id.id,
                     "roster_line_id": line.roster_line_id.id,
-                    "is_starter": line.is_starter,
-                    "is_substitute": line.is_substitute,
                     "is_captain": line.is_captain,
                     "jersey_number": line.jersey_number,
                 }
@@ -209,15 +228,13 @@ class FederationGamedayLineupWizard(models.TransientModel):
 
 class FederationGamedayLineupWizardLine(models.TransientModel):
     _name = "federation.gameday.lineup.wizard.line"
-    _description = "Game-Day Lineup Player"
-    _order = "is_starter desc,is_substitute,id"
+    _description = "Gameday Roster Player"
+    _order = "id"
 
     wizard_id = fields.Many2one(
         "federation.gameday.lineup.wizard", required=True, ondelete="cascade"
     )
     player_id = fields.Many2one("federation.player", required=True)
     roster_line_id = fields.Many2one("federation.team.roster.line", required=True)
-    is_starter = fields.Boolean()
-    is_substitute = fields.Boolean(default=True)
     is_captain = fields.Boolean()
     jersey_number = fields.Char()

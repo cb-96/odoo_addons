@@ -282,8 +282,11 @@ class CourtCommands(models.AbstractModel):
     def _lineups(self, match):
         # Resolve the canonical match sheets; never expose contact or birth data.
         sheets = self.env["federation.match.sheet"].sudo().search([("match_id", "=", match.id)])
+        # Only players who were not crossed out for this match take part.
         return [{"id": sheet.id, "name": sheet.display_name, "state": sheet.state,
-                 "players": [line.player_id.display_name for line in sheet.line_ids]} for sheet in sheets]
+                 "players": [line.player_id.display_name for line in sheet.line_ids if not line.crossed_out],
+                 "not_playing": [line.player_id.display_name for line in sheet.line_ids if line.crossed_out],
+                 "participation_issue": sheet.participation_feedback or ""} for sheet in sheets]
 
 
 

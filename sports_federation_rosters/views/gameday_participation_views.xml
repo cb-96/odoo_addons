@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Gameday roster on the match sheet: shared players, per-match crossed-out players. -->
+    <record id="view_federation_match_sheet_form_gameday_participation" model="ir.ui.view">
+        <field name="name">federation.match.sheet.form.gameday.participation</field>
+        <field name="model">federation.match.sheet</field>
+        <field name="inherit_id" ref="sports_federation_rosters.view_federation_match_sheet_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_submit']" position="attributes">
+                <attribute name="string">Submit Gameday Roster</attribute>
+            </xpath>
+            <xpath expr="//button[@name='action_approve']" position="attributes">
+                <attribute name="string">Approve Gameday Roster</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_count']" position="after">
+                <field name="gameday_roster_limit" invisible="not gameday_roster_limit"/>
+                <field name="participant_count"/>
+                <field name="match_participant_limit" invisible="not match_participant_limit"/>
+            </xpath>
+            <xpath expr="//notebook" position="before">
+                <div invisible="not participation_feedback" class="alert alert-warning mb-3" role="status">
+                    <field name="participation_feedback" readonly="1" nolabel="1"/>
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='is_starter']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='is_substitute']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='entered_minute']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='left_minute']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='jersey_number']" position="after">
+                <field name="crossed_out" widget="boolean_toggle"/>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list" position="attributes">
+                <attribute name="decoration-muted">crossed_out</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_federation_rule_set_form_gameday_hint" model="ir.ui.view">
+        <field name="name">federation.rule.set.form.gameday.hint</field>
+        <field name="model">federation.rule.set</field>
+        <field name="inherit_id" ref="sports_federation_rules.view_federation_rule_set_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='match_player_max_size']" position="after">
+                <div class="text-muted small" colspan="2">
+                    Example: 14 per gameday roster, 12 per match. Coaches cross out extra players before each match.
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

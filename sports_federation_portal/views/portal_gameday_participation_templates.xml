@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- One gameday roster per team; the participating players are chosen per match. -->
+    <template id="portal_my_match_sheets_gameday" inherit_id="sports_federation_portal.portal_my_match_sheets" name="Gameday roster list">
+        <xpath expr="//td[t[@t-esc='sheet.match_id.display_name']]" position="inside">
+            <t t-set="gameday_matches" t-value="gameday_match_counts and gameday_match_counts.get(sheet.id)"/>
+            <div t-if="gameday_matches and gameday_matches &gt; 1" class="small text-muted">
+                Gameday roster shared by <t t-esc="gameday_matches"/> matches
+            </div>
+        </xpath>
+    </template>
+
+    <template id="portal_my_match_sheet_detail_gameday" inherit_id="sports_federation_portal.portal_my_match_sheet_detail" name="Gameday roster and match participation">
+        <xpath expr="//h4[normalize-space(.)='Squad']/ancestor::div[contains(@class, 'row')][1]" position="after">
+            <div t-if="sheet.line_ids and sheet.state != 'draft'" class="row mt-4">
+                <div class="col-12">
+                    <h4>Players for this match</h4>
+                    <p class="text-muted small">
+                        <t t-esc="sheet.participant_count"/> of <t t-esc="len(sheet.line_ids)"/> gameday players play this match<t t-if="sheet.match_participant_limit"> (at most <t t-esc="sheet.match_participant_limit"/>)</t>.
+                        Crossing out a player only affects this match; your other matches today keep their own choice.
+                    </p>
+                    <div t-if="sheet.participation_feedback" class="alert alert-warning" role="status">
+                        <t t-esc="sheet.participation_feedback"/>
+                    </div>
+                    <form t-if="sheet.can_record_participation" t-attf-action="/my/match-sheets/#{sheet.id}/participation" method="POST">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-2">
+                                <caption class="visually-hidden">Cross out gameday players who do not play this match.</caption>
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">Player</th>
+                                        <th scope="col" class="text-center">Not playing</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="sheet.line_ids" t-as="line">
+                                        <tr>
+                                            <td t-att-class="'text-muted text-decoration-line-through' if line.crossed_out else ''">
+                                                <t t-esc="line.player_id.display_name"/>
+                                                <span t-if="line.jersey_number" class="text-muted ms-1 small">#<t t-esc="line.jersey_number"/></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <input type="checkbox"
+                                                       name="crossed_out_player_ids"
+                                                       t-att-value="line.player_id.id"
+                                                       t-att-checked="line.crossed_out and 'checked' or None"
+                                                       t-attf-aria-label="Cross out #{line.player_id.display_name} for this match"
+                                                       class="form-check-input"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm">Save players for this match</button>
+                        </div>
+                    </form>
+                    <p t-if="not sheet.can_record_participation" class="text-muted small">
+                        Players can be crossed out after the gameday roster is submitted, until the match is finished.
+                    </p>
+                    <div t-if="gameday_sheets and len(gameday_sheets) &gt; 1" class="mt-3">
+                        <h5 class="h6">Other matches on this gameday</h5>
+                        <nav class="d-flex flex-wrap gap-2" aria-label="Matches sharing this gameday roster">
+                            <t t-foreach="gameday_sheets" t-as="other">
+                                <a t-if="other.id != sheet.id" t-attf-href="/my/match-sheets/#{other.id}" class="btn btn-outline-secondary btn-sm">
+                                    <t t-esc="other.match_id.display_name"/>
+                                    · <t t-esc="other.participant_count"/> playing
+                                </a>
+                            </t>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+
+        <xpath expr="//h4[normalize-space(.)='Squad']" position="replace">
+            <h4 class="mb-0">Gameday roster</h4>
+        </xpath>
+
+        <!-- The roster is the list for the whole gameday: no starting roles in advance. -->
+        <xpath expr="//form[contains(@t-attf-action, '/squad')]/preceding-sibling::p[1]" position="replace">
+            <p class="text-muted small mb-3">
+                Select the players available on this gameday<t t-if="sheet.gameday_roster_limit"> (at most <t t-esc="sheet.gameday_roster_limit"/>)</t>.
+                The roster is shared with every match your team plays that day. No starters are needed:
+                at each match you cross out the players who do not play.
+            </p>
+        </xpath>
+        <xpath expr="//form[contains(@t-attf-action, '/squad')]//th[normalize-space(.)='Role']" position="replace"/>
+        <xpath expr="//form[contains(@t-attf-action, '/squad')]//select[contains(@t-attf-name, '_role')]/.." position="replace"/>
+        <xpath expr="//form[contains(@t-attf-action, '/squad')]//button[@type='submit']" position="replace">
+            <button type="submit" class="btn btn-primary btn-sm">Save gameday roster</button>
+        </xpath>
+
+        <!-- Read-only roster: show this match's participation instead of starting roles. -->
+        <xpath expr="//table[.//t[@t-foreach='sheet.line_ids']]//th[normalize-space(.)='Role']" position="replace">
+            <th scope="col">This match</th>
+        </xpath>
+        <xpath expr="//span[@t-if='line.is_starter']/.." position="replace">
+            <td>
+                <span t-if="line.crossed_out" class="text-muted text-decoration-line-through">Not playing</span>
+                <span t-else="">Playing</span>
+            </td>
+        </xpath>
+
+    </template>
+</odoo>

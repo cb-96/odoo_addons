@@ -33,6 +33,13 @@ class FederationMatchSheetLine(models.Model):
     jersey_number = fields.Char(string="Jersey Number")
     entered_minute = fields.Integer(string="Entered Minute")
     left_minute = fields.Integer(string="Left Minute")
+    crossed_out = fields.Boolean(
+        string="Not Playing This Match",
+        default=False,
+        copy=False,
+        help="Crossed out on this match only. The player stays on the shared "
+        "gameday roster and can play in the team's other matches that day.",
+    )
     notes = fields.Text(string="Notes")
     eligible = fields.Boolean(
         compute="_compute_eligible",
@@ -68,6 +75,20 @@ class FederationMatchSheetLine(models.Model):
         """Update records with module-specific side effects."""
         self._assert_parent_sheet_line_editable(vals)
         result = super().write(vals)
+        if "crossed_out" in vals:
+            for record in self:
+                record.match_sheet_id._log_audit_event(
+                    "match_participation_updated",
+                    (
+                        _("'%(player)s' crossed out for this match.")
+                        if record.crossed_out
+                        else _("'%(player)s' restored to play this match.")
+                    )
+                    % {"player": record.player_id.display_name},
+                    player=record.player_id,
+                )
+            if not set(vals) - {"crossed_out"}:
+                return result
         if {"entered_minute", "left_minute"} & set(vals):
             for record in self:
                 minute_bits = []
@@ -190,7 +211,12 @@ class FederationMatchSheetLine(models.Model):
             if record.match_sheet_id.state == "locked":
                 raise ValidationError(_("Locked match sheets cannot be modified."))
             if record.match_sheet_id.state == "approved":
-                allowed_fields = {"entered_minute", "left_minute", "notes"}
+                allowed_fields = {
+                    "entered_minute",
+                    "left_minute",
+                    "notes",
+                    "crossed_out",
+                }
                 if vals is None or any(field not in allowed_fields for field in vals):
                     raise ValidationError(
                         _(
@@ -239,6 +265,19 @@ class FederationMatchSheetLine(models.Model):
                             "A player cannot leave before or at the same minute they entered."
                         )
                     )
+
+    @api.constrains("crossed_out", "entered_minute", "left_minute")
+    def _check_crossed_out_did_not_play(self):
+        """A crossed-out player cannot also have recorded playing time."""
+        for record in self:
+            if record.crossed_out and (record.entered_minute or record.left_minute):
+                raise ValidationError(
+                    _(
+                        "'%(player)s' is crossed out for this match and cannot "
+                        "have playing minutes."
+                    )
+                    % {"player": record.player_id.display_name}
+                )
 
     @api.constrains("roster_line_id", "match_sheet_id")
     def _check_roster_line_consistency(self):

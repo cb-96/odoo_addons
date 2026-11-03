@@ -834,3 +834,32 @@ No task system, readiness model, approval state or publication bypass is introdu
 Local source/policy and mocked-service checks were executed. Odoo database upgrade,
 ORM/HTTP/browser runtime and novice acceptance remain unexecuted in this environment.
 Rollback requires the pre-upgrade database and filestore together with previous code.
+
+## Gameday roster and per-match participation: upgrade review
+
+Candidate base: 4626ba2401ec05ca67ebac0e9f09b4d53d75338a.
+Behaviour: one roster per team gameday, shared by all its matches; no starters or
+substitutes declared in advance; at each match the coach crosses out the gameday
+players who do not play. Crossing out is match-specific and never edits the roster.
+
+Schema: federation.rule.set.gameday_roster_max_size and match_player_max_size
+(integers, default 0 = unchanged behaviour) and federation.match.sheet.line.crossed_out
+(boolean, default false). Odoo adds the columns on upgrade; no data migration runs and
+existing sheets keep every listed player as playing. Legacy starter/substitute values
+stay stored and synchronized, but new gameday rosters do not set them.
+
+Upgrade sports_federation_rules, sports_federation_rosters, sports_federation_portal and
+sports_federation_live_workspace, then set both limits (for example 14 and 12) on the
+competition rule sets that use them. With limits at 0 nothing new is enforced.
+
+New portal route: POST /my/match-sheets/<id>/participation (CSRF, ownership domain via
+the portal privilege boundary). No new sudo statement is introduced. Sheet locking now
+requires the per-match limit to be respected.
+
+Dry-run evidence: Python/XML syntax checks, template xpath simulation against the
+source templates, and repository static checks executed. Odoo upgrade, ORM/HTTP and
+browser tests (sf_gameday_participation and existing roster tests) were NOT executed in
+this environment and must pass on staging before release.
+
+Rollback: restore the pre-upgrade database and filestore with the previous code. A
+code-only rollback leaves unused columns and loses the record of crossed-out players.

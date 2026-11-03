@@ -96,12 +96,15 @@ Roster status starts at **`draft`**.
 **Actor**: Club administrator / team manager
 **Module**: `sports_federation_rosters`
 
-1. Create a **match sheet** (`federation.match.sheet`) linked to the match, the
-   team, and the source roster. The declared lineup is shared across all of the
-   team's matches on that game day.
+1. Prepare **one gameday roster** per team (match day form → **Prepare Gameday
+   Rosters**, or any of the team's match sheets in the portal). Underneath, each
+   match keeps a `federation.match.sheet`, but the listed players are shared across
+   all of the team's matches on that gameday.
 2. Set the **side** (home / away / other).
-3. Add **match sheet lines** — typically by selecting from the active roster lines.
-   Mark starters vs. substitutes and assign jersey numbers.
+3. Select the players available that day from the active roster lines and assign
+   jersey numbers. **No starters or substitutes are declared in advance.** The rule
+   set's *Max Players per Gameday Roster* (e.g. 14) caps this list; when it is 0 the
+   roster maximum squad size applies.
 4. Add coach and manager names if required.
 5. Computed `ready_for_submission` reflects the same license/discipline/squad-size
    checks as the parent roster. `readiness_feedback` lists any blockers.
@@ -113,16 +116,21 @@ Match sheet states: `draft` → `submitted` → `approved` → `locked`.
 **Actor**: Club administrator → Federation staff
 **Module**: `sports_federation_rosters`
 
-1. Club submits the game-day lineup (`draft` → `submitted`). The roster, players,
-   starter/substitute/captain roles, and jersey numbers are synchronized to the
-   team's other sheets for that game day.
+1. Club submits the gameday roster (`draft` → `submitted`). The roster, players,
+   captain and jersey numbers are synchronized to the team's other sheets for that
+   gameday.
 2. Federation staff reviews and **approves the game-day lineup once**. Every
    synchronized sheet moves to `approved`; newly created matches on that already
    approved game day inherit the approved declaration without another approval.
 3. If corrections are needed, staff resets to `draft` for the club to amend.
-4. Once approved, the listed players are locked in across the game day. Only
-   match-specific substitution-timing fields remain editable until each sheet
-   reaches `locked`.
+4. Once approved, the listed players are locked in across the gameday. What stays
+   match-specific is **who plays**: at the start of each match the coach crosses out
+   the listed players who do not play (portal: *Players for this match*; backend:
+   *Not Playing This Match*). With *Max Players per Match* = 12 and 14 listed, at
+   least two players are crossed out; the crossed-out players may differ per match.
+   Crossing out never removes anyone from the gameday roster, is possible from
+   submission until the match is finished, and is preserved if the roster is
+   re-synchronized during review. Crossed-out players cannot record playing minutes.
 5. The explicit `federation.matchday` from the live schedule publication defines
    the scope when available. Older tournament fixtures fall back to tournament
    plus scheduled calendar date.
@@ -133,7 +141,7 @@ Match sheet states: `draft` → `submitted` → `approved` → `locked`.
 **Module**: `sports_federation_rosters`
 
 1. After the match concludes (match state reaches `done`), the match sheet is
-   locked: status → **`locked`**, `locked_on` timestamp and `locked_by_id` are
+   locked once no more than the allowed number of players are left playing: status → **`locked`**, `locked_on` timestamp and `locked_by_id` are
    recorded.
 2. `match_day_locked` (computed on the roster) reflects whether any linked sheet
    is locked, surfacing a read-only message in the roster form.
