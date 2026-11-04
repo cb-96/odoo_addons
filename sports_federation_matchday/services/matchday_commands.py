@@ -31,7 +31,10 @@ class FederationMatchdayCommands(models.AbstractModel):
     @api.model
     def _open_matchday(self, matchday_id):
         matchday = self._resolve(matchday_id)
-        publication = matchday.current_publication_id
+        # _resolve has already verified the caller's match-day role. Read only
+        # this exact immutable publication elevated: match-day managers must
+        # validate the live snapshot without gaining broad publication access.
+        publication = matchday.sudo().current_publication_id
         if (
             matchday.state != "scheduled"
             or not publication
@@ -365,7 +368,9 @@ class FederationMatchdayCommands(models.AbstractModel):
     @api.model
     def _unresolved_placeholders(self, matchday):
         """Published placeholder fixtures that never got their match."""
-        publication = matchday.current_publication_id
+        # The caller has passed _resolve; keep this internal integrity check
+        # scoped to the authorized match day's current publication.
+        publication = matchday.sudo().current_publication_id
         if not publication:
             return self.env["federation.fixture"]
         return publication.schedule_id.assignment_ids.mapped("fixture_id").filtered(
@@ -386,8 +391,11 @@ class FederationMatchdayCommands(models.AbstractModel):
         unresolved = self.env["federation.matchday.incident"].search(
             [("matchday_id", "=", matchday.id), ("resolved", "=", False)]
         )
-        scheduled_matches = self.env["federation.match"].search(
-            [("schedule_publication_id", "=", matchday.current_publication_id.id)]
+        publication = matchday.sudo().current_publication_id
+        # Match-day authorization permits this read-only blocker check for the
+        # exact live publication, without granting operators match access.
+        scheduled_matches = self.env["federation.match"].sudo().search(
+            [("schedule_publication_id", "=", publication.id)]
         )
         unfinished = scheduled_matches.filtered(
             lambda match: match.state not in ("done", "cancelled")

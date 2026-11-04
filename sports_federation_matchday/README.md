@@ -8,6 +8,9 @@ approved publication evidence.
 - **Match-Day Control** shows readiness and the exact live publication.
 - **Open Match Day** validates the publication digest and creates an immutable
   execution session.
+- Match-day role authorization is checked before the command reads the current
+  publication. These integrity reads are scoped to that match day and do not
+  grant operators broad read access to schedule publication records.
 - Court status and incidents are changed through command-backed wizards.
 - Operational schedule changes support move, delay, postpone and cancel.
 - Every deviation requires a reason and records the session, publication, actor,
