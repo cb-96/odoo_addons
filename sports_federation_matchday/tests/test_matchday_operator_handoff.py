@@ -2,7 +2,8 @@ import hashlib
 import json
 from unittest.mock import patch
 
-from odoo.exceptions import ValidationError
+from odoo import Command
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -164,6 +165,49 @@ class TestMatchdayOperatorHandoff(TransactionCase):
         self.assertEqual(session.publication_digest, self.publication.snapshot_digest)
         self.assertEqual(result["current_state"], "open")
         self.assertEqual(self.matchday.state, "open")
+
+    def test_assigned_matchday_manager_can_open_and_close_without_publication_access(self):
+        manager_group = self.env.ref(
+            "sports_federation_matchday.group_matchday_manager"
+        )
+        calendar_planner_group = self.env.ref(
+            "sports_federation_calendar.group_calendar_planner"
+        )
+        manager = self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "name": "Assigned Match-Day Manager",
+                "login": "assigned.matchday.manager@example.invalid",
+                "group_ids": [
+                    Command.set(
+                        [
+                            self.env.ref("base.group_user").id,
+                            manager_group.id,
+                            calendar_planner_group.id,
+                        ]
+                    )
+                ],
+            }
+        )
+        self.env["federation.competition.role.assignment"].create(
+            {
+                "edition_id": self.edition.id,
+                "role": "matchday_manager",
+                "user_id": manager.id,
+            }
+        )
+        with self.assertRaises(AccessError):
+            self.publication.with_user(manager).read(["state"])
+
+        commands = self.env["federation.matchday.commands"].with_user(manager)
+        opened = commands.open_matchday(self.matchday.id)
+        self.assertEqual(opened["current_state"], "open")
+        closed = commands.close_matchday(
+            self.matchday.id,
+            close_note="Test the authorized command's scoped publication check.",
+            force=True,
+        )
+        self.assertEqual(closed["current_state"], "closed")
+        self.assertEqual(self.matchday.state, "closed")
 
     def test_operational_move_preserves_published_slot(self):
         self.env["federation.matchday.commands"].open_matchday(self.matchday.id)

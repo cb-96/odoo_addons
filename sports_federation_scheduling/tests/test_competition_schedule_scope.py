@@ -124,6 +124,30 @@ class TestCompetitionScheduleScope(TransactionCase):
         self.assertFalse(deferred)
         self.assertEqual(excluded, self.finals_fixture)
 
+    def test_waiting_seeded_bracket_is_selected_for_initial_schedule(self):
+        self.finals_stage.write(
+            {
+                "graph_state": "waiting",
+                "source_type": "progression",
+                "format_type": "knockout",
+            }
+        )
+        self.finals_fixture.write(
+            {
+                "home_team_id": False,
+                "away_team_id": False,
+                "home_source_seed": 1,
+                "away_source_seed": 2,
+            }
+        )
+        wizard = self.env["federation.competition.schedule.wizard"].create(
+            {"edition_id": self.edition.id}
+        )
+        wizard._onchange_edition_id()
+
+        self.assertIn(self.finals_stage, wizard.stage_ids)
+        self.assertIn(self.finals_fixture, wizard._fixtures()[0])
+
     def test_generated_day_allocations_contain_only_the_distributed_fixtures(self):
         second_day = self.env["federation.matchday"].create(
             {

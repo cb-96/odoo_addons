@@ -563,6 +563,12 @@ class TestCompetitionPlanner(TransactionCase):
         wizard.format_type = "knockout"
         self.assertEqual(wizard.preview_match_count, 3)
         self.assertEqual(wizard.preview_byes, 0)
+        wizard.format_type = "pool_knockout"
+        wizard.pool_count = 2
+        self.assertEqual(wizard.preview_match_count, 5)
+        wizard.pool_count = 3
+        self.assertEqual(wizard.preview_match_count, 0)
+        wizard.preview_confirmed = True
         with self.assertRaises(ValidationError):
             wizard.action_apply()
 
