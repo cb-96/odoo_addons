@@ -81,6 +81,17 @@ class FederationMatch(models.Model):
                 )
         return result
 
+    def action_start(self):
+        """Revalidate approved match participants immediately before play."""
+        for match in self:
+            blockers = match._get_match_participation_blockers()
+            if blockers:
+                raise ValidationError(
+                    _("Correct the players for %(match)s before starting:\n- %(issues)s")
+                    % {"match": match.display_name, "issues": "\n- ".join(blockers)}
+                )
+        return super().action_start()
+
     def action_done(self):
         """Lock valid approved gameday rosters once the match is finished."""
         result = super().action_done()

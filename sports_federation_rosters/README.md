@@ -128,6 +128,10 @@ State machine:
    rosters module is installed. Demo data loading runs without this side
    effect, so explicit fixtures such as the demo pack can define their own
    sheets without colliding with automatically created records.
+- Starting a match rechecks every listed, non-crossed-out player against the
+   current eligibility rules. If a suspension or other eligibility change has
+   occurred since roster approval, the affected player must be crossed out for
+   that match before play can start.
 
 ``federation.match.sheet.line``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
