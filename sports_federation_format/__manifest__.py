@@ -1,6 +1,6 @@
 {
     "name": "Competition Format",
-    "version": "19.0.6.2.0",
+    "version": "19.0.6.3.0",
     "category": "Sports",
     "summary": "Versioned competition structures, stages, progression and fixtures",
     "author": "Sports Federation",
@@ -18,6 +18,7 @@
         "views/format_template_views.xml",
         "views/stage_graph_views.xml",
         "views/fixture_match_views.xml",
+        "views/division_format_views.xml",
         "views/menu.xml",
     ],
     "installable": True,

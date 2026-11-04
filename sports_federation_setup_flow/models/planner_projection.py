@@ -189,6 +189,25 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                 }
             )
 
+        active_days = gamedays.filtered(lambda item: item.state != "cancelled")
+        if active_days and "division_ids" in active_days._fields:
+            for division in expected_fixtures.mapped("division_id").sorted(
+                lambda item: (item.name or "", item.id)
+            ):
+                if not any(day._allows_division(division) for day in active_days):
+                    issues.append(
+                        {
+                            "key": "nogameday-%s-division" % division.id,
+                            "step": "gamedays",
+                            "severity": "blocking",
+                            "title": division.display_name,
+                            "message": _(
+                                "No game day lets this division play. Add it to the "
+                                "divisions playing of at least one game day."
+                            ),
+                        }
+                    )
+
         scheduled_days = self.env["federation.matchday"]
         for gameday in gamedays.sorted(lambda item: (item.date, item.id)):
             day_fixtures = gameday.allocation_ids.mapped("fixture_ids").filtered(

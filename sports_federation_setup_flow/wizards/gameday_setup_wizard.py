@@ -15,6 +15,16 @@ class FederationCompetitionGamedaySetupWizard(models.TransientModel):
     default_start_hour = fields.Float(default=9.0)
     default_end_hour = fields.Float(default=18.0)
     default_slot_duration_minutes = fields.Integer(default=40)
+    default_division_ids = fields.Many2many(
+        "federation.tournament",
+        "federation_gameday_setup_wizard_division_rel",
+        "wizard_id",
+        "division_id",
+        string="Divisions playing",
+        domain="[('edition_id', '=', edition_id)]",
+        help="Divisions scheduled on the game days you add next. "
+        "Leave empty for all divisions.",
+    )
 
     @api.model_create_multi
     def create(self, values_list):
@@ -40,6 +50,7 @@ class FederationCompetitionGamedaySetupWizard(models.TransientModel):
                         "court_ids": [fields.Command.set(day.planning_court_ids.ids)],
                         "noon_pause": day.default_noon_pause,
                         "noon_pause_minutes": day.default_noon_pause_minutes,
+                        "division_ids": [fields.Command.set(day.division_ids.ids)],
                     }
                 )
                 for day in days
@@ -127,6 +138,16 @@ class FederationCompetitionGamedaySetupLine(models.TransientModel):
     slot_duration_minutes = fields.Integer(required=True, default=40)
     noon_pause = fields.Boolean()
     noon_pause_minutes = fields.Integer(default=60)
+    edition_id = fields.Many2one(related="wizard_id.edition_id")
+    division_ids = fields.Many2many(
+        "federation.tournament",
+        "federation_gameday_setup_line_division_rel",
+        "line_id",
+        "division_id",
+        string="Divisions playing",
+        domain="[('edition_id', '=', edition_id)]",
+        help="Leave empty for all divisions.",
+    )
     estimated_capacity = fields.Integer(compute="_compute_estimated_capacity")
 
     @api.depends("court_ids", "start_hour", "end_hour", "slot_duration_minutes", "noon_pause", "noon_pause_minutes")
@@ -166,4 +187,5 @@ class FederationCompetitionGamedaySetupLine(models.TransientModel):
             "planning_court_ids": [fields.Command.set(self.court_ids.ids)],
             "default_noon_pause": self.noon_pause,
             "default_noon_pause_minutes": self.noon_pause_minutes,
+            "division_ids": [fields.Command.set(self.division_ids.ids)],
         }

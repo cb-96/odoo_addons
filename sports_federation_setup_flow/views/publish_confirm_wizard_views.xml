@@ -1,0 +1,27 @@
+<odoo>
+  <record id="schedule_publish_confirm_wizard_form" model="ir.ui.view">
+    <field name="name">federation.schedule.publish.confirm.wizard.form</field>
+    <field name="model">federation.schedule.publish.confirm.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Publish schedule">
+        <div class="alert alert-warning" role="alert">
+          <strong>Some teams have less rest between matches than preferred.</strong>
+          These game days can be published if you accept the short rest. The reason is saved in each schedule's history.
+        </div>
+        <field name="details_html" nolabel="1" readonly="1"/>
+        <group>
+          <field name="reason" placeholder="Why the short rest is acceptable"/>
+        </group>
+        <p class="text-muted small">To avoid short rest instead: regenerate with a lower rest, more courts or time, or let these divisions play on more game days.</p>
+        <!-- Technical relay: the edition scopes the publication. -->
+        <field name="edition_id" invisible="1"/>
+        <footer>
+          <button name="action_publish_all" type="object" string="Accept short rest and publish" class="btn-primary"/>
+          <button name="action_publish_others" type="object" string="Publish the other game days only" class="btn-secondary"/>
+          <button name="action_regenerate" type="object" string="Regenerate schedule" class="btn-secondary"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

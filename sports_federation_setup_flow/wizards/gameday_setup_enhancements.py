@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 
@@ -14,6 +14,13 @@ class FederationCompetitionGamedaySetupWizardEnhancements(models.TransientModel)
         help="Dates without games, separated by commas (for example holidays). "
         "Skipped dates do not count towards the number of game days.",
     )
+
+    @api.model
+    def _gameday_name(self, date, divisions):
+        name = _("Game Day %(date)s", date=fields.Date.to_string(date))
+        if divisions:
+            name = "%s (%s)" % (name, ", ".join(divisions.mapped("name")))
+        return name
 
     def _parsed_skip_dates(self):
         self.ensure_one()
@@ -46,7 +53,9 @@ class FederationCompetitionGamedaySetupWizardEnhancements(models.TransientModel)
         commands = []
         courts = self.default_venue_id.playing_area_ids.filtered("active")
         skipped = self._parsed_skip_dates()
-        existing = set(self.line_ids.mapped("date"))
+        # Two game days may share a date (for example at different venues);
+        # only an identical date and venue counts as a duplicate.
+        existing = {(line.date, line.venue_id.id) for line in self.line_ids}
         day_date = date
         added = 0
         guard = 0
@@ -54,14 +63,15 @@ class FederationCompetitionGamedaySetupWizardEnhancements(models.TransientModel)
             guard += 1
             current = day_date
             day_date = day_date + timedelta(weeks=self.repeat_every_weeks)
-            if current in skipped or current in existing:
+            if current in skipped or (current, self.default_venue_id.id) in existing:
                 continue
             added += 1
             day_date_value = current
             commands.append(
                 fields.Command.create(
                     {
-                        "name": _("Game Day %(date)s", date=fields.Date.to_string(day_date_value)),
+                        "name": self._gameday_name(day_date_value, self.default_division_ids),
+                        "division_ids": [fields.Command.set(self.default_division_ids.ids)],
                         "date": day_date_value,
                         "venue_id": self.default_venue_id.id,
                         "start_hour": self.default_start_hour,
@@ -85,7 +95,8 @@ class FederationCompetitionGamedaySetupWizardEnhancements(models.TransientModel)
         self.line_ids = [
             fields.Command.create(
                 {
-                    "name": _("Game Day %(date)s", date=fields.Date.to_string(day_date)),
+                    "name": self._gameday_name(day_date, source.division_ids),
+                    "division_ids": [fields.Command.set(source.division_ids.ids)],
                     "date": day_date,
                     "venue_id": source.venue_id.id,
                     "start_hour": source.start_hour,

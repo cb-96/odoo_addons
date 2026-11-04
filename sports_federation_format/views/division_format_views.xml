@@ -1,0 +1,51 @@
+<odoo>
+  <!--
+    Workspace divisions: the frozen format replaces legacy stages, and the
+    division state follows the competition, so the manual lifecycle buttons
+    and legacy stage shortcuts are hidden for them.
+  -->
+  <record id="view_federation_tournament_form_workspace_format" model="ir.ui.view">
+    <field name="name">federation.tournament.form.workspace.format</field>
+    <field name="model">federation.tournament</field>
+    <field name="inherit_id" ref="sports_federation_tournament.view_federation_tournament_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/button[@name='action_open']" position="attributes">
+        <attribute name="invisible">state != 'draft' or has_workspace_format</attribute>
+      </xpath>
+      <xpath expr="//header/button[@name='action_start']" position="attributes">
+        <attribute name="invisible">state != 'open' or has_workspace_format</attribute>
+      </xpath>
+      <xpath expr="//button[@name='action_view_stages']" position="attributes">
+        <attribute name="invisible">has_workspace_format</attribute>
+      </xpath>
+      <xpath expr="//div[hasclass('o_form_label_info')][@invisible='participant_count']" position="attributes">
+        <attribute name="invisible">participant_count or has_workspace_format</attribute>
+      </xpath>
+      <xpath expr="//div[hasclass('o_form_label_warning')]" position="attributes">
+        <attribute name="invisible">state not in ('draft', 'open') or not participant_count or has_workspace_format</attribute>
+      </xpath>
+      <xpath expr="//div[hasclass('oe_title')]" position="after">
+        <div class="alert alert-info d-flex justify-content-between align-items-start gap-3" role="status" invisible="has_workspace_format or not edition_id">
+          <div><strong>Next step:</strong> choose the teams and how this division plays in the competition workspace.</div>
+          <button name="action_open_division_format" type="object" string="Set teams &amp; format" class="btn btn-link p-0 text-nowrap"/>
+        </div>
+        <div class="text-muted small mb-2" invisible="not has_workspace_format">This division follows its competition: it opens, starts and closes together with it.</div>
+        <!-- Technical modifier relay: has_workspace_format switches workspace and legacy controls. -->
+        <field name="has_workspace_format" invisible="1"/>
+      </xpath>
+      <xpath expr="//notebook" position="inside">
+        <page string="Format" name="workspace_format" invisible="not has_workspace_format">
+          <group>
+            <group>
+              <field name="format_type_label" readonly="1"/>
+            </group>
+            <group>
+              <button name="action_open_division_format" type="object" string="Change teams &amp; format" class="btn-secondary"/>
+            </group>
+          </group>
+          <field name="format_stage_summary" readonly="1" nolabel="1"/>
+        </page>
+      </xpath>
+    </field>
+  </record>
+</odoo>

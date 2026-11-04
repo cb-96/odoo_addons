@@ -210,6 +210,30 @@ restore both to roll back after operators have created approval records. Do not
 delete verified approvals or bypass the game-day synchronization as a rollback
 workaround.
 
+### Archived competitions hidden from the portal
+
+Affected upgrade: `sports_federation_portal` `19.0.7.10.0` to `19.0.7.11.0`.
+
+No schema change. Portal reads, the task projection and the portal ownership
+checks now exclude entries, matches, lineups, referee duties and assignments,
+game days and tasks of archived competitions and archived divisions. The
+`post-migrate.py` script closes open operation tasks of competitions that were
+already archived, so they leave the portal and the federation action queue.
+
+Required dry run before promotion:
+
+```bash
+./scripts/upgrade_sports_federation.sh --db odoo \
+  --modules sports_federation_portal --dry-run
+bash ./ci/run_tests.sh --module sports_federation_portal
+```
+
+The upgrade log reports how many tasks were closed. Rollback is the standard
+backup restore procedure. Without a restore, restoring a competition and its
+divisions makes everything visible again, and the next task sync reopens its
+tasks. Do not reopen tasks manually while the competition stays archived.
+
+
 ### Release-candidate readiness review
 
 The release-candidate readiness contracts cover role-separated access,

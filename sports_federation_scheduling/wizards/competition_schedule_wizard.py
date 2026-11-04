@@ -5,6 +5,8 @@ from html import escape
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
+from ..services.rest_capacity import max_matches_with_rest, time_rows
+
 
 class FederationCompetitionScheduleWizard(models.TransientModel):
     _name = "federation.competition.schedule.wizard"
@@ -54,6 +56,7 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
     preview_signature = fields.Char(readonly=True)
     feasibility_report = fields.Json(readonly=True)
     quality_report = fields.Json(readonly=True)
+    rest_shortfall_html = fields.Html(readonly=True, sanitize=True)
     blocking_issue_count = fields.Integer(readonly=True)
     warning_count = fields.Integer(readonly=True)
     included_fixture_count = fields.Integer(readonly=True)
@@ -286,7 +289,15 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         """
         self.ensure_one()
         self.action_preview()
-        if self.blocking_issue_count:
+        rest_shortfalls = (self.quality_report or {}).get("rest_shortfalls") or []
+        self.rest_shortfall_html = (
+            "<ul class='mb-0'>%s</ul>"
+            % "".join("<li>%s</li>" % escape(str(item)) for item in rest_shortfalls)
+            if rest_shortfalls
+            else False
+        )
+        stop_for_rest = rest_shortfalls and not self.env.context.get("accept_short_rest")
+        if self.blocking_issue_count or stop_for_rest:
             return {
                 "type": "ir.actions.act_window",
                 "name": _("Plan Competition"),
@@ -350,8 +361,8 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         ) if capacities else {"assignments": {}, "remaining_capacity": {}, "errors": [], "valid": False}
         errors.extend(distribution["errors"])
         duplicate_team_days = self._duplicate_team_days(fixtures, distribution)
-        if duplicate_team_days:
-            warnings.append(_("Some teams play more than once on a game day."))
+        rest_shortfalls = self._rest_shortfalls(fixtures, distribution)
+        warnings.extend(rest_shortfalls)
         total_capacity = sum(day["capacity"] for day in capacities)
         if len(fixtures) > total_capacity:
             errors.append(
@@ -391,6 +402,7 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             "quality": {
                 "warnings": warnings,
                 "teams_with_multiple_same_day_matches": duplicate_team_days,
+                "rest_shortfalls": rest_shortfalls,
                 "planned_fixture_counts": {
                     str(day_id): len(ids) for day_id, ids in distribution["assignments"].items()
                 },
@@ -493,7 +505,8 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             retained = len(day.slot_ids.filtered(lambda slot: slot.state == "available")) if self.mode == "fill" else 0
             capacities.append(
                 {"matchday_id": day.id, "date": day.date,
-                 "capacity": retained or len(plan["available"]), "blocked": plan["blocked_count"]}
+                 "capacity": retained or len(plan["available"]), "blocked": plan["blocked_count"],
+                 "division_ids": day.division_ids.ids}
             )
         return capacities
 
@@ -504,6 +517,78 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
                 for fixture in day.allocation_ids.mapped("fixture_ids"):
                     pinned[fixture.id] = day.id
         return pinned
+
+    def _day_time_rows(self, day):
+        """Time rows of the slots this game day will offer."""
+        if self.mode == "fill" and day.slot_ids:
+            slots = [
+                {"start_datetime": slot.start_datetime, "end_datetime": slot.end_datetime}
+                for slot in day.slot_ids.filtered(lambda item: item.state == "available")
+            ]
+        else:
+            try:
+                slots = self.env["federation.slot.generator"].plan(
+                    day, day.planning_court_ids, day.default_day_start_hour,
+                    day.default_day_end_hour, day.default_slot_duration_minutes,
+                    noon_pause=day.default_noon_pause,
+                    noon_pause_minutes=day.default_noon_pause_minutes,
+                )["available"]
+            except ValidationError:
+                return []
+        return time_rows(slots)
+
+    def _rest_shortfalls(self, fixtures, distribution):
+        """Explain game days where a team has more matches than rest allows.
+
+        Such a day can only be published by accepting short rest, so it is
+        reported here, while the operator can still add time, courts or game
+        days, or lower the rest.
+        """
+        by_id = {fixture.id: fixture for fixture in fixtures}
+        messages = []
+        for day in self.matchday_ids.sorted(lambda item: (item.date, item.id)):
+            fixture_ids = distribution["assignments"].get(day.id, [])
+            if not fixture_ids:
+                continue
+            counts = {}
+            for fixture_id in fixture_ids:
+                fixture = by_id.get(fixture_id)
+                if not fixture:
+                    continue
+                for team in (fixture.home_team_id, fixture.away_team_id):
+                    if team:
+                        counts[team] = counts.get(team, 0) + 1
+            if not counts:
+                continue
+            rows = self._day_time_rows(day)
+            if not rows:
+                continue
+            limit = max_matches_with_rest(rows, self.preferred_rest_minutes)
+            crowded = sorted(
+                (team for team, count in counts.items() if count > limit),
+                key=lambda team: (-counts[team], team.display_name or ""),
+            )
+            if not crowded:
+                continue
+            most = counts[crowded[0]]
+            names = ", ".join(team.display_name for team in crowded[:3])
+            if len(crowded) > 3:
+                names += _(" and %(count)s more", count=len(crowded) - 3)
+            messages.append(
+                _(
+                    "%(day)s: %(teams)s play up to %(most)s matches, but with "
+                    "%(rest)s minutes rest a team fits at most %(limit)s matches in "
+                    "this day. Lower the rest, add time or courts, or let these "
+                    "divisions play on more game days; otherwise short rest must "
+                    "be accepted when publishing.",
+                    day=day.display_name,
+                    teams=names,
+                    most=most,
+                    rest=self.preferred_rest_minutes,
+                    limit=limit,
+                )
+            )
+        return messages
 
     def _duplicate_team_days(self, fixtures, distribution):
         by_id = {fixture.id: fixture for fixture in fixtures}
@@ -567,6 +652,10 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         schedule = self.env["federation.schedule"].search(
             [("matchday_id", "=", day.id), ("state", "in", ("draft", "changes_requested"))], limit=1
         )
+        if schedule and schedule.preferred_rest_minutes != self.preferred_rest_minutes:
+            # The schedule is planned and later checked with this rest; a
+            # reused draft must not keep the value of an earlier generation.
+            schedule.preferred_rest_minutes = self.preferred_rest_minutes
         return schedule or self.env["federation.schedule"].create(
             {"name": _("%s schedule") % day.display_name, "edition_id": self.edition_id.id,
              "structure_id": fixtures[:1].structure_id.id, "matchday_id": day.id,

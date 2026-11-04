@@ -117,7 +117,11 @@ class FederationOperationTaskExtension(models.Model):
         if not is_manager and not club_ids:
             return self.browse([])
         specs = []
+        # Archived competitions produce no work: their sources are skipped,
+        # so their existing tasks fall out of the specs and are closed below.
+        hidden = self.env["federation.portal.archive.scope"].exclusion_domain
         entry_domain = [] if is_manager else [("team_id.club_id", "in", club_ids)]
+        entry_domain += hidden("federation.competition.entry")
         entries = (
             self.env["federation.competition.entry"]
             .sudo()
@@ -202,6 +206,7 @@ class FederationOperationTaskExtension(models.Model):
             )
 
         lineup_domain = [] if is_manager else [("team_id.club_id", "in", club_ids)]
+        lineup_domain += hidden("federation.match.sheet")
         sheets = (
             self.env["federation.match.sheet"]
             .sudo()
@@ -249,6 +254,7 @@ class FederationOperationTaskExtension(models.Model):
             .sudo()
             .search(
                 ([] if is_manager else [("club_id", "in", club_ids)])
+                + hidden("federation.match.club.referee.duty")
                 + [("state", "in", ("open", "rejected"))]
             )
         )
@@ -286,6 +292,7 @@ class FederationOperationTaskExtension(models.Model):
             .sudo()
             .search(
                 match_domain
+                + hidden("federation.match")
                 + [
                     (
                         "result_state",

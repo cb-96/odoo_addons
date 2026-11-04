@@ -12,6 +12,8 @@
           <field name="line_ids" nolabel="1">
             <list editable="bottom">
               <field name="name"/>
+              <field name="category"/>
+              <field name="gender"/>
               <field name="team_ids" widget="many2many_tags" options="{'no_create': True}"/>
               <field name="format_type"/>
               <field name="pool_count" invisible="format_type != 'pool_knockout'"/>

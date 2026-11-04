@@ -47,7 +47,12 @@ class RoleJourneys(FederationRosterPortalBase):
             return self._render_access_denied()
         # Read as the actual user: record rules and command-owned approval checks remain authoritative.
         matches = request.env["federation.match"].search(
-            [("result_state", "in", states)], limit=100, order="id desc"
+            [("result_state", "in", states)]
+            + request.env["federation.portal.archive.scope"].exclusion_domain(
+                "federation.match"
+            ),
+            limit=100,
+            order="id desc",
         )
         matches = matches.filtered(lambda match: self._can_review_match(match, user))
         return request.render("sports_federation_portal.review_work", {"matches": matches})

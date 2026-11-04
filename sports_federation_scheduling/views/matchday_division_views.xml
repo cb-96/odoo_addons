@@ -1,0 +1,22 @@
+<odoo>
+  <record id="matchday_form_divisions" model="ir.ui.view">
+    <field name="name">federation.matchday.form.divisions</field>
+    <field name="model">federation.matchday</field>
+    <field name="inherit_id" ref="sports_federation_calendar.matchday_form"/>
+    <field name="arch" type="xml">
+      <field name="edition_id" position="after">
+        <field name="division_ids" widget="many2many_tags" placeholder="All divisions" options="{'no_create': True}" readonly="state not in ('draft', 'capacity_ready')"/>
+      </field>
+    </field>
+  </record>
+  <record id="matchday_list_divisions" model="ir.ui.view">
+    <field name="name">federation.matchday.list.divisions</field>
+    <field name="model">federation.matchday</field>
+    <field name="inherit_id" ref="sports_federation_calendar.matchday_list"/>
+    <field name="arch" type="xml">
+      <xpath expr="//list" position="inside">
+        <field name="division_ids" widget="many2many_tags" optional="show" string="Divisions"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

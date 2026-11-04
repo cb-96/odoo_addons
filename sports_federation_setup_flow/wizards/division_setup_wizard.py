@@ -81,6 +81,8 @@ class FederationCompetitionDivisionSetupWizard(models.TransientModel):
         return {
             "division_id": division.id,
             "name": division.name,
+            "category": division.category or False,
+            "gender": division.gender or False,
             "team_ids": [fields.Command.set(teams.ids)],
             "format_type": format_type,
             "pool_count": (structure.pool_count if structure else 0) or 2,
@@ -92,6 +94,8 @@ class FederationCompetitionDivisionSetupWizard(models.TransientModel):
         division = self.env["federation.tournament"].create(
             {
                 "name": line.name,
+                "category": line.category or False,
+                "gender": line.gender or False,
                 "edition_id": edition.id,
                 "competition_id": edition.competition_id.id,
                 "season_id": edition.season_id.id,
@@ -140,8 +144,16 @@ class FederationCompetitionDivisionSetupWizard(models.TransientModel):
                 )
             try:
                 division = line.division_id or self._create_division(line)
-                if division.name != line.name:
-                    division.name = line.name
+                scope = {
+                    "name": line.name,
+                    "category": line.category or False,
+                    "gender": line.gender or False,
+                }
+                changed = {
+                    key: value for key, value in scope.items() if division[key] != value
+                }
+                if changed:
+                    division.write(changed)
                 if not line.team_ids:
                     # Saving the division without teams is allowed; the
                     # planner keeps reporting the missing team list.
@@ -181,6 +193,14 @@ class FederationCompetitionDivisionSetupLine(models.TransientModel):
     )
     division_id = fields.Many2one("federation.tournament", readonly=True)
     name = fields.Char(string="Division", required=True)
+    category = fields.Selection(
+        selection=lambda self: self.env["federation.tournament"]._fields["category"].selection,
+        string="Category",
+    )
+    gender = fields.Selection(
+        selection=lambda self: self.env["federation.tournament"]._fields["gender"].selection,
+        string="Gender",
+    )
     eligible_team_ids = fields.Many2many(
         "federation.team", compute="_compute_eligible_team_ids"
     )
@@ -200,15 +220,32 @@ class FederationCompetitionDivisionSetupLine(models.TransientModel):
     match_count = fields.Integer(compute="_compute_preview", string="Matches")
     feasibility_message = fields.Char(compute="_compute_preview", string="Check")
 
-    @api.depends("division_id")
+    @api.depends("division_id", "category", "gender")
     def _compute_eligible_team_ids(self):
         Team = self.env["federation.team"]
         for line in self:
-            line.eligible_team_ids = (
-                line.division_id.search_eligible_teams(extra_domain=[("active", "=", True)])
-                if line.division_id
-                else Team.search([("active", "=", True)])
-            )
+            division = line.division_id
+            if (
+                division
+                and (division.category or False) == (line.category or False)
+                and (division.gender or False) == (line.gender or False)
+            ):
+                # Stored scope: also applies the division's rule-set limits.
+                line.eligible_team_ids = division.search_eligible_teams(
+                    extra_domain=[("active", "=", True)]
+                )
+                continue
+            domain = [("active", "=", True)]
+            if line.category:
+                domain.append(("category", "=", line.category))
+            if line.gender:
+                domain.append(("gender", "=", line.gender))
+            line.eligible_team_ids = Team.search(domain)
+
+    @api.onchange("category", "gender")
+    def _onchange_scope_drop_ineligible_teams(self):
+        for line in self:
+            line.team_ids = line.team_ids & line.eligible_team_ids
 
     @api.depends("team_ids", "format_type", "pool_count")
     def _compute_preview(self):

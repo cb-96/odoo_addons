@@ -7,7 +7,7 @@
         <sheet>
           <div class="oe_title">
             <h1>Game days</h1>
-            <p class="text-muted">Describe the pattern once, then adjust single days in the table below.</p>
+            <p class="text-muted">Describe the pattern once, then adjust single days in the table below. To alternate divisions (for example men and women on some days, mixed on others), choose the divisions playing, add those days, then change the divisions and add the other days.</p>
           </div>
           <group>
             <group string="When">
@@ -21,6 +21,7 @@
               <field name="default_start_hour" widget="float_time" string="First match"/>
               <field name="default_end_hour" widget="float_time" string="Last match ends"/>
               <field name="default_slot_duration_minutes" string="Minutes per match"/>
+              <field name="default_division_ids" widget="many2many_tags" placeholder="All divisions" options="{'no_create': True}"/>
             </group>
           </group>
           <div class="d-flex gap-2 mb-3">
@@ -35,6 +36,7 @@
               <field name="start_hour" widget="float_time"/>
               <field name="end_hour" widget="float_time"/>
               <field name="court_ids" widget="many2many_tags"/>
+              <field name="division_ids" widget="many2many_tags" placeholder="All divisions" options="{'no_create': True}"/>
               <field name="slot_duration_minutes" optional="hide"/>
               <field name="noon_pause" optional="hide"/>
               <field name="noon_pause_minutes" invisible="not noon_pause" optional="hide"/>

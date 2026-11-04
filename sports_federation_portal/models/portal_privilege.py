@@ -111,8 +111,17 @@ class FederationPortalPrivilege(models.AbstractModel):
         return result
 
     @api.model
+    def _without_archived_competitions(self, model_env, domain):
+        """Records of archived competitions are never part of a portal scope."""
+        exclusion = self.env["federation.portal.archive.scope"].exclusion_domain(
+            model_env._name
+        )
+        return list(domain or []) + exclusion
+
+    @api.model
     def portal_search(self, model_env, domain, user=None, **kwargs):
         """Search through the shared portal privilege boundary."""
+        domain = self._without_archived_competitions(model_env, domain)
         return self.elevate(model_env, user=user).search(domain, **kwargs)
 
     @api.model
@@ -127,6 +136,7 @@ class FederationPortalPrivilege(models.AbstractModel):
     @api.model
     def portal_search_count(self, model_env, domain, user=None, **kwargs):
         """Count records through the shared portal privilege boundary."""
+        domain = self._without_archived_competitions(model_env, domain)
         return self.elevate(model_env, user=user).search_count(domain, **kwargs)
 
     @api.model
@@ -138,7 +148,8 @@ class FederationPortalPrivilege(models.AbstractModel):
 
         privileged_records = self.elevate(records, user=user)
         allowed_count = privileged_records.search_count(
-            list(domain) + [("id", "in", records.ids)]
+            self._without_archived_competitions(records, domain)
+            + [("id", "in", records.ids)]
         )
         if allowed_count != len(records):
             raise AccessError(access_message)

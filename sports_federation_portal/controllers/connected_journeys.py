@@ -142,7 +142,9 @@ class ConnectedRoleJourneys(RoleJourneys):
             if request.env.user.has_group('sports_federation_result_control.group_result_approver'):
                 states.append('verified')
             cards = review_cards(request.env['federation.match'].search(
-                [('result_state', 'in', states)], order='id desc', limit=100), self)
+                [('result_state', 'in', states)]
+                + request.env['federation.portal.archive.scope'].exclusion_domain('federation.match'),
+                order='id desc', limit=100), self)
         elif selected == 'official':
             model = request.env['federation.match.referee']
             assignments = request.env['federation.portal.privilege'].portal_search(
