@@ -8,6 +8,7 @@ NAVIGATION = ROOT / "docs/FEDERATION_BACKEND_NAVIGATION.md"
 WORKFLOW = ROOT / "docs/COMPETITION_UI_WORKFLOW.md"
 ROOT_MENU = "sports_federation_base.menu_federation_root"
 TOP_LEVEL = (
+    "Needs Attention",
     "Competitions",
     "Clubs & People",
     "Match Operations",
@@ -15,12 +16,13 @@ TOP_LEVEL = (
     "Finance & Assurance",
     "Insights",
     "Administration",
+    "Reports",
 )
 REQUIRED_OPERATOR_PATHS = (
-    ("Federation", "Competitions", "Competition Hub"),
-    ("Federation", "Clubs & People", "Club Directory", "Clubs"),
-    ("Federation", "Clubs & People", "Club Directory", "Teams"),
-    ("Federation", "Match Operations", "Match-Day Control"),
+    ("Federation", "Competitions", "Competitions"),
+    ("Federation", "Clubs & People", "Clubs"),
+    ("Federation", "Clubs & People", "Teams"),
+    ("Federation", "Match Operations", "Game Days"),
 )
 REQUIRED_ADVANCED_PATHS = (
     ("Federation", "Competitions", "Advanced Competition Tools", "Create Competition"),
@@ -156,7 +158,7 @@ def main():
         for record in records.values()
         if record["parent"] == competition_root and not record["advanced"]
     )
-    if ordinary_competition_entries != ["Competition Hub"]:
+    if ordinary_competition_entries not in (["Competition Hub"], ["Competitions"]):
         errors.append(
             "ordinary competition entries are "
             f"{ordinary_competition_entries!r}, expected only Competition Hub"

@@ -6,7 +6,7 @@ Review cadence: Every release
 
 ## Goal
 
-The normal competition journey has one discoverable entry: **Federation > Competitions > Competition Hub**. Opening a season competition resumes the same workspace and promotes exactly one next action. Operators do not need to choose between registration, format, calendar, scheduling, approval, or raw-record menus.
+The normal competition journey has one discoverable entry: **Federation > Competitions > Competitions**. Opening a season competition resumes the same workspace and promotes exactly one next action. Operators do not need to choose between registration, format, calendar, scheduling, approval, or raw-record menus.
 
 The underlying domain actions are not removed. They remain available through contextual links and to users assigned **Advanced Federation Tools**. This preserves recovery, compliance, audit, security, and specialist operations without presenting implementation structure to every operator.
 
@@ -14,6 +14,7 @@ The underlying domain actions are not removed. They remain available through con
 
 The source menu tree retains seven durable responsibility areas:
 
+1. **Needs Attention**: one inbox of manager tasks and referee duties that need a person.
 1. **Competitions**
 2. **Clubs & People**
 3. **Match Operations**
@@ -22,14 +23,14 @@ The source menu tree retains seven durable responsibility areas:
 6. **Insights**
 7. **Administration**
 
-Visibility is role based. A normal manager primarily sees Competition Hub, Clubs & People, and Match-Day Control. Publishing, assurance, insight, administration, and raw competition menus are available to the advanced or specialist groups that own them.
+Visibility is role based. A normal manager primarily sees Needs Attention, Competitions, Clubs & People, Game Days and Reports, at most fifteen entries. Publishing, assurance, insight, administration, and raw competition menus are available to the advanced or specialist groups that own them.
 
 ## Ordinary operator map
 
 ```text
 Federation
 ├── Competitions
-│   └── Competition Hub
+│   └── Competitions
 ├── Clubs & People
 │   ├── Club Directory
 │   │   ├── Clubs
@@ -38,7 +39,7 @@ Federation
 │   ├── Representatives & Access
 │   └── Season Registrations
 └── Match Operations
-    └── Match-Day Control
+    └── Game Days
 ```
 
 The workspace itself provides contextual actions for teams, format, game days, schedules, publication, rosters, game-day lineups, officials, results, and readiness. Contextual actions keep the active competition scope and therefore replace most global queue menus for ordinary work.
@@ -48,7 +49,7 @@ The workspace itself provides contextual actions for teams, format, game days, s
 ```text
 Federation
 ├── Competitions
-│   ├── Competition Hub
+│   ├── Competitions
 │   ├── Advanced Competition Tools
 │   │   ├── Create Competition
 │   │   ├── Competition Overview
@@ -65,7 +66,7 @@ Federation
 │   ├── Rules & Policies
 │   └── Competition Records
 ├── Match Operations
-│   ├── Match-Day Control
+│   ├── Game Days
 │   ├── Matches
 │   ├── Game-Day Lineups
 │   ├── Venues
@@ -111,13 +112,13 @@ Federation > Administration > System Health > Operational Job Health
 ## Canonical path contracts
 
 ```text
-Federation > Competitions > Competition Hub
-Federation > Clubs & People > Club Directory > Clubs
-Federation > Clubs & People > Club Directory > Teams
-Federation > Match Operations > Match-Day Control
+Federation > Competitions > Competitions
+Federation > Clubs & People > Clubs
+Federation > Clubs & People > Teams
+Federation > Match Operations > Game Days
 ```
 
-The static navigation contract also verifies that Competition Hub is the only non-advanced direct child of Competitions in the supported aggregate application.
+The static navigation contract also verifies that Competitions is the only non-advanced direct child of Competitions in the supported aggregate application.
 
 ## Change checklist
 
@@ -127,3 +128,8 @@ The static navigation contract also verifies that Competition Hub is the only no
 4. Put audit, recovery, and raw queues under Advanced Competition Tools or Administration.
 5. Update this file and `docs/COMPETITION_UI_WORKFLOW.md`.
 6. Run `python3 ci/check_competition_ui_workflow.py` and the browser tours.
+
+## Reports
+
+**Reports** opens the operational health dashboard. Specialist report menus
+remain under Insights for Advanced Federation Tools.

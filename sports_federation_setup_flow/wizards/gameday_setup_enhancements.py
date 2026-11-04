@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from odoo import _, fields, models
 from odoo.exceptions import ValidationError
@@ -7,8 +7,34 @@ from odoo.exceptions import ValidationError
 class FederationCompetitionGamedaySetupWizardEnhancements(models.TransientModel):
     _inherit = "federation.competition.gameday.setup.wizard"
 
-    repeat_every_weeks = fields.Integer(default=1, string="Repeat every")
+    repeat_every_weeks = fields.Integer(default=1, string="Every (weeks)")
     repeat_count = fields.Integer(default=1, string="Number of game days")
+    skip_dates = fields.Char(
+        string="Skip dates",
+        help="Dates without games, separated by commas (for example holidays). "
+        "Skipped dates do not count towards the number of game days.",
+    )
+
+    def _parsed_skip_dates(self):
+        self.ensure_one()
+        dates = set()
+        for raw in (self.skip_dates or "").replace(";", ",").split(","):
+            raw = raw.strip()
+            if not raw:
+                continue
+            parsed = None
+            for pattern in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y"):
+                try:
+                    parsed = datetime.strptime(raw, pattern).date()
+                    break
+                except ValueError:
+                    continue
+            if not parsed:
+                raise ValidationError(
+                    _("Could not read the skip date '%(value)s'. Use dd/mm/yyyy.", value=raw)
+                )
+            dates.add(parsed)
+        return dates
 
     def action_add_recurring_days(self):
         self.ensure_one()
@@ -19,13 +45,24 @@ class FederationCompetitionGamedaySetupWizardEnhancements(models.TransientModel)
         date = self.new_date or self.edition_id.date_start or fields.Date.context_today(self)
         commands = []
         courts = self.default_venue_id.playing_area_ids.filtered("active")
-        for index in range(self.repeat_count):
-            day_date = date + timedelta(weeks=index * self.repeat_every_weeks)
+        skipped = self._parsed_skip_dates()
+        existing = set(self.line_ids.mapped("date"))
+        day_date = date
+        added = 0
+        guard = 0
+        while added < self.repeat_count and guard < 520:
+            guard += 1
+            current = day_date
+            day_date = day_date + timedelta(weeks=self.repeat_every_weeks)
+            if current in skipped or current in existing:
+                continue
+            added += 1
+            day_date_value = current
             commands.append(
                 fields.Command.create(
                     {
-                        "name": _("Game Day %(date)s", date=fields.Date.to_string(day_date)),
-                        "date": day_date,
+                        "name": _("Game Day %(date)s", date=fields.Date.to_string(day_date_value)),
+                        "date": day_date_value,
                         "venue_id": self.default_venue_id.id,
                         "start_hour": self.default_start_hour,
                         "end_hour": self.default_end_hour,
@@ -35,7 +72,7 @@ class FederationCompetitionGamedaySetupWizardEnhancements(models.TransientModel)
                 )
             )
         self.line_ids = commands
-        self.new_date = date + timedelta(weeks=self.repeat_count * self.repeat_every_weeks)
+        self.new_date = day_date
         return self._reopen()
 
     def action_copy_last_day(self):

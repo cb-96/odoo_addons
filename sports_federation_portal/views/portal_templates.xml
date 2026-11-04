@@ -105,7 +105,7 @@
 
     <template id="portal_my_operation_tasks" name="Club Work Inbox">
       <t t-call="portal.portal_layout"><div class="container py-4">
-        <div class="d-flex justify-content-between gap-3 flex-wrap mb-4"><div><h2><i class="fa fa-inbox me-2"/>Club work inbox</h2><p class="text-muted mb-0">Deadlines, returned work and direct next steps in one place.</p></div><a href="/my/milestones" class="btn btn-outline-primary">Milestones</a></div>
+        <div class="d-flex justify-content-between gap-3 flex-wrap mb-4"><div><h2><i class="fa fa-inbox me-2"/>Club work inbox</h2><p class="text-muted mb-0">Deadlines, returned work and direct next steps in one place.</p></div><a href="/my/work" class="btn btn-outline-primary">Back to my work</a></div>
         <div t-if="success" class="alert alert-success" role="status"><t t-esc="success"/></div><div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div><div class="card mb-4"><div class="card-body">
           <strong>Next match and club actions</strong>
           <div t-if="next_match" class="mt-2">

@@ -72,7 +72,7 @@ class FederationCompetitionGamedaySetupWizard(models.TransientModel):
 
     def action_save_close(self):
         self._save_days()
-        return self.edition_id.get_formview_action()
+        return self.edition_id.action_open_competition_planner()
 
     def action_save_continue(self):
         self._save_days()

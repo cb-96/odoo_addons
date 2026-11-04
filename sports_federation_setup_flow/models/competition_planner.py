@@ -40,10 +40,10 @@ class FederationCompetitionEditionPlanner(models.Model):
         self.ensure_one()
         self.check_access("read")
         if step == "basics":
-            return self.action_setup_divisions() if not self.tournament_ids else self.get_formview_action()
+            return self.action_setup_teams_and_format() if not self.tournament_ids else self.get_formview_action()
         simplified_actions = {
-            "teams": self.action_setup_participants,
-            "format": self.action_setup_format,
+            "teams": self.action_setup_teams_and_format,
+            "format": self.action_setup_teams_and_format,
             "gamedays": self.action_setup_gamedays,
             "schedule": self.action_setup_schedule,
             "publication": self.action_setup_publication,
@@ -93,7 +93,7 @@ class FederationCompetitionEditionPlanner(models.Model):
         """Resolve a server-produced blocker to its smallest useful workspace."""
         key = issue["key"]
         if key == "missing-divisions":
-            return self.action_setup_divisions()
+            return self.action_setup_teams_and_format()
         if key == "unallocated-fixtures":
             has_days = self.env["federation.matchday"].search_count(
                 [("edition_id", "=", self.id), ("state", "!=", "cancelled")]
@@ -122,7 +122,7 @@ class FederationCompetitionEditionPlanner(models.Model):
                     )
                     if window:
                         return self._planner_record_action(window)
-                return self._action_open_team_selection(division)
+                return self.action_setup_teams_and_format()
             structure = self.env["federation.competition.structure"].search(
                 [("edition_id", "=", self.id), ("division_id", "=", division.id)],
                 order="version desc,id desc", limit=1,
@@ -132,7 +132,7 @@ class FederationCompetitionEditionPlanner(models.Model):
                 if structure and self.env.user.has_group(
                     "sports_federation_base.group_federation_advanced_operator"
                 )
-                else self._action_open_format_selection(division)
+                else self.action_setup_teams_and_format()
             )
         if key.startswith("gameday-") and record_id:
             day = self.env["federation.matchday"].browse(record_id).exists()
@@ -147,6 +147,9 @@ class FederationCompetitionEditionPlanner(models.Model):
                     [("edition_id", "=", self.id), ("matchday_id", "=", day.id)],
                     order="revision desc,id desc", limit=1,
                 )
+                if not schedule or schedule.state in ("draft", "changes_requested", "approved"):
+                    # One command publishes every ready game day.
+                    return self.action_setup_publication()
                 if schedule:
                     review_model = self.env.get("federation.schedule.review")
                     review = False

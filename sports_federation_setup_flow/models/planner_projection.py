@@ -19,11 +19,15 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
         }
         labels = {
             "basics": _("Edit competition"),
-            "teams": _("Select teams"),
-            "format": _("Choose format"),
+            "teams": _("Set up teams & format"),
+            "format": _("Set up teams & format"),
             "gamedays": _("Define game days"),
             "schedule": _("Plan competition"),
-            "publication": _("Open review"),
+            "publication": (
+                _("Submit schedule for review")
+                if self.schedule_approval_required
+                else _("Publish schedule")
+            ),
         }
         for issue in issues:
             issue["owner"] = owners[issue["step"]]
@@ -37,9 +41,9 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
             "basics": _("Competition"),
             "teams": _("Teams"),
             "format": _("Format"),
-            "gamedays": _("Dates & venues"),
+            "gamedays": _("Game days"),
             "schedule": _("Schedule"),
-            "publication": _("Review & publish"),
+            "publication": _("Publish"),
         }[step]
 
 
@@ -89,7 +93,7 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                         "step": "teams",
                         "severity": "blocking",
                         "title": division.display_name,
-                        "message": _("Finalize the participating teams for this division."),
+                        "message": _("Select the teams for this division."),
                     }
                 )
             elif team_count < 2:
@@ -111,7 +115,7 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                         "step": "format",
                         "severity": "blocking",
                         "title": division.display_name,
-                        "message": _("Choose and generate a competition format."),
+                        "message": _("Choose how this division plays."),
                     }
                 )
             elif current_structure.state != "frozen":
@@ -121,7 +125,7 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                         "step": "format",
                         "severity": "blocking",
                         "title": division.display_name,
-                        "message": _("Review and freeze the latest generated format."),
+                        "message": _("Confirm the format of this division."),
                     }
                 )
             elif current_structure.participant_set_id != participant_set:
@@ -145,7 +149,7 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                         "step": "format",
                         "severity": "blocking",
                         "title": division.display_name,
-                        "message": _("Generate at least one playable fixture."),
+                        "message": _("This format produces no matches. Check the teams and format."),
                     }
                 )
 
@@ -177,9 +181,9 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                     "key": "unallocated-fixtures",
                     "step": "gamedays",
                     "severity": "blocking",
-                    "title": _("Fixture allocation"),
+                    "title": _("Match allocation"),
                     "message": _(
-                        "Allocate all %(count)s playable fixtures to game days.",
+                        "Plan all %(count)s matches on game days.",
                         count=len(unallocated_fixtures),
                     ),
                 }
@@ -201,7 +205,7 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                         "severity": "blocking",
                         "title": gameday.display_name,
                         "message": _(
-                            "Move this division's fixtures to an active game day."
+                            "Move this division's matches to an active game day."
                         ),
                     }
                 )
@@ -214,7 +218,7 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                         "severity": "blocking",
                         "title": gameday.display_name,
                         "message": _(
-                            "Add playable court capacity or reduce allocated fixtures."
+                            "Add courts or time, or move matches to another game day."
                         ),
                     }
                 )
@@ -225,7 +229,7 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                         "step": "gamedays",
                         "severity": "blocking",
                         "title": gameday.display_name,
-                        "message": _("Mark the game-day capacity ready before scheduling."),
+                        "message": _("Complete the courts and times of this game day."),
                     }
                 )
 
@@ -277,7 +281,7 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                         "severity": "blocking",
                         "title": gameday.display_name,
                         "message": _(
-                            "Complete review and publish this game day's schedule."
+                            "Publish this game day's schedule."
                         ),
                     }
                 )
@@ -294,7 +298,7 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                         "severity": "blocking",
                         "title": gameday.display_name,
                         "message": _(
-                            "Publish the latest approved schedule revision for this game day."
+                            "Publish the latest schedule changes for this game day."
                         ),
                     }
                 )
@@ -307,7 +311,7 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                     "step": "gamedays",
                     "severity": "blocking",
                     "title": _("Game-day plan"),
-                    "message": _("Allocate playable fixtures to at least one game day."),
+                    "message": _("Plan the matches on at least one game day."),
                 }
             )
         return issues

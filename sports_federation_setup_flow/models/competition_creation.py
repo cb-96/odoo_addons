@@ -3,12 +3,70 @@ from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 
 from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class FederationCreateCompetitionWizardJourney(models.TransientModel):
     _inherit = "federation.create.competition.wizard"
 
     creation_draft_id = fields.Many2one("federation.competition.creation.draft", readonly=True)
+    # Only name, type, dates and divisions are asked up front.  The parent
+    # competition and the season are derived when left empty.
+    competition_id = fields.Many2one(required=False)
+    season_id = fields.Many2one(required=False)
+
+    _COMPETITION_TYPE_BY_PRESET = {
+        "league": "league",
+        "tournament_day": "tournament",
+        "cup": "cup",
+        "custom": "other",
+    }
+
+    def _derive_competition(self):
+        """Reuse a competition with the same name or create one."""
+        self.ensure_one()
+        Competition = self.env["federation.competition"]
+        competition = Competition.search([("name", "=ilike", self.name)], limit=1)
+        if competition:
+            return competition
+        return Competition.create(
+            {
+                "name": self.name,
+                "competition_type": self._COMPETITION_TYPE_BY_PRESET.get(
+                    self.setup_template or "league", "league"
+                ),
+                "rule_set_id": self.rule_set_id.id,
+            }
+        )
+
+    def _derive_season(self):
+        """Use the season that contains the start date, or create it."""
+        self.ensure_one()
+        Season = self.env["federation.season"]
+        season = Season.search(
+            [
+                ("date_start", "<=", self.date_start),
+                ("date_end", ">=", self.date_start),
+                ("state", "!=", "cancelled"),
+            ],
+            order="state desc,date_start desc",
+            limit=1,
+        )
+        if season:
+            return season
+        # Sport seasons run from July to June.
+        first_year = self.date_start.year if self.date_start.month >= 7 else self.date_start.year - 1
+        start = fields.Date.to_date("%s-07-01" % first_year)
+        end = fields.Date.to_date("%s-06-30" % (first_year + 1))
+        if self.date_end and self.date_end > end:
+            end = self.date_end
+        return Season.create(
+            {
+                "name": "%s-%s" % (first_year, first_year + 1),
+                "date_start": start,
+                "date_end": end,
+            }
+        )
 
     def action_save_creation_draft(self):
         self.ensure_one()
@@ -174,6 +232,12 @@ class FederationCreateCompetitionWizardJourney(models.TransientModel):
 
     def action_create_competition(self):
         self.ensure_one()
+        if not self.date_start:
+            raise ValidationError(_("Enter the start date."))
+        if not self.season_id:
+            self.season_id = self._derive_season()
+        if not self.competition_id:
+            self.competition_id = self._derive_competition()
         action = super().action_create_competition()
         edition = self.env["federation.competition.edition"].browse(action.get("res_id")).exists()
         if edition:

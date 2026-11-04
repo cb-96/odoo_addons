@@ -1,0 +1,11 @@
+<odoo>
+  <record id="cron_matchday_automation" model="ir.cron">
+    <field name="name">Federation: open and close game days automatically</field>
+    <field name="model_id" ref="sports_federation_calendar.model_federation_matchday"/>
+    <field name="state">code</field>
+    <field name="code">model._cron_matchday_automation()</field>
+    <field name="interval_number">15</field>
+    <field name="interval_type">minutes</field>
+    <field name="active" eval="True"/>
+  </record>
+</odoo>

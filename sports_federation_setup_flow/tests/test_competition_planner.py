@@ -522,7 +522,7 @@ class TestCompetitionPlanner(TransactionCase):
         data = self.edition.get_competition_planner_data()
         self.assertEqual(
             [step["label"] for step in data["steps"]],
-            ["Competition", "Teams", "Format", "Dates & venues", "Schedule", "Review & publish"],
+            ["Competition", "Teams", "Format", "Game days", "Schedule", "Publish"],
         )
 
     def test_operation_actions_remain_competition_scoped(self):

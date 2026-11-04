@@ -277,6 +277,28 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             "context": dict(self.env.context),
         }
 
+    def action_generate(self):
+        """Check and generate in one step.
+
+        The proposal is validated exactly like Preview. When nothing blocks,
+        the schedules are generated immediately; otherwise the wizard stays
+        open with the checks shown so the operator can fix the input.
+        """
+        self.ensure_one()
+        self.action_preview()
+        if self.blocking_issue_count:
+            return {
+                "type": "ir.actions.act_window",
+                "name": _("Plan Competition"),
+                "res_model": self._name,
+                "res_id": self.id,
+                "view_mode": "form",
+                "views": [(False, "form")],
+                "target": "new",
+                "context": dict(self.env.context),
+            }
+        return self.action_apply()
+
     def action_apply(self):
         self.ensure_one()
         if not self.preview_ready:

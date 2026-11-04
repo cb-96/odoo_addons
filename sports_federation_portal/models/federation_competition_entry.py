@@ -114,6 +114,7 @@ class FederationCompetitionEntry(models.Model):
             )
             return existing
 
+        self._portal_ensure_season_registration(division, team, user=user)
         entry = privilege.portal_create(
             self,
             {
@@ -189,3 +190,60 @@ class FederationCompetitionEntry(models.Model):
             "rejected": _("Rejected"),
             "withdrawn": _("Withdrawn"),
         }.get(self.state, self.state or "")
+
+
+    # -- One "Enter team" action ------------------------------------------
+    # A club used to register a team for the season, wait, then enter it in
+    # the competition, then create a roster.  Entering a team now also files
+    # the season registration when it is missing, and an approved entry
+    # confirms that pending season registration so the roster can be built.
+
+    @api.model
+    def _portal_ensure_season_registration(self, division, team, user=None):
+        user = user or self.env.user
+        season = division.season_id or division.edition_id.season_id
+        if not season:
+            return False
+        Registration = self.env["federation.season.registration"]
+        existing = Registration.sudo().search(
+            [
+                ("team_id", "=", team.id),
+                ("season_id", "=", season.id),
+                ("state", "!=", "cancelled"),
+            ],
+            limit=1,
+        )
+        if existing:
+            return existing
+        if season.state != "open":
+            return False
+        return Registration._portal_submit_registration_request(
+            season, team, notes=_("Filed with the competition entry."), user=user
+        )
+
+    def _confirm_linked_season_registrations(self):
+        approved = self.filtered(lambda entry: entry.state == "approved")
+        Registration = self.env["federation.season.registration"].sudo()
+        for entry in approved:
+            season = entry.window_id.division_id.season_id or entry.edition_id.season_id
+            if not season:
+                continue
+            pending = Registration.search(
+                [
+                    ("team_id", "=", entry.team_id.id),
+                    ("season_id", "=", season.id),
+                    ("state", "=", "submitted"),
+                ]
+            )
+            if pending:
+                pending.action_confirm()
+
+    def action_submit(self):
+        result = super().action_submit()
+        self._confirm_linked_season_registrations()
+        return result
+
+    def action_approve(self):
+        result = super().action_approve()
+        self._confirm_linked_season_registrations()
+        return result

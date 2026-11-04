@@ -26,7 +26,14 @@ class CourtAccess(models.Model):
             if item.court_id.venue_id != item.matchday_id.venue_id or item.user_id.share:
                 raise ValidationError(_("Assign an internal operator to a court at this venue."))
 
+    def _is_default_assignment(self):
+        # Default operators are created by the match-day opening command itself
+        # (superuser, explicit context); ordinary writes keep the manager check.
+        return self.env.su and self.env.context.get("court_default_operator")
+
     def _assert_manager(self):
+        if self._is_default_assignment():
+            return
         if not self.env.user.has_group("sports_federation_matchday.group_matchday_manager"):
             raise AccessError(_("Only match-day managers assign court operators."))
 
@@ -37,6 +44,8 @@ class CourtAccess(models.Model):
             day = self.env["federation.matchday"].browse(vals.get("matchday_id")).exists()
             if not day:
                 raise ValidationError(_("Choose an existing match day."))
+            if self._is_default_assignment():
+                continue
             self.env["federation.competition.role.assignment"].assert_role(
                 day.edition_id, "matchday_manager", "competition_director")
         return super().create(vals_list)

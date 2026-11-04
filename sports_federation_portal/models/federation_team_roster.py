@@ -364,6 +364,27 @@ class FederationTeamRoster(models.Model):
             user=user,
         )
 
+    def _portal_auto_activate(self, user=None):
+        """Activate draft rosters as soon as they meet the competition rules.
+
+        Clubs no longer press "Activate": a roster without readiness issues is
+        usable immediately.  Rosters with issues stay draft and keep showing
+        the readiness feedback.
+        """
+        user = user or self.env.user
+        activated = self.browse()
+        for roster in self:
+            elevated = self.env["federation.portal.privilege"].elevate(roster, user=user)
+            if elevated.status != "draft" or elevated._get_readiness_issues():
+                continue
+            try:
+                with self.env.cr.savepoint():
+                    roster._portal_action_activate(user=user)
+                activated |= roster
+            except ValidationError:
+                continue
+        return activated
+
     def _portal_action_set_draft(self, user=None):
         """Move rosters back to draft when the caller still owns the record."""
         user = user or self.env.user
@@ -631,6 +652,43 @@ class FederationTeamRosterLine(models.Model):
             prepared,
             user=user,
         )
+
+    @api.model
+    def _portal_add_players(self, roster, player_ids, user=None):
+        """Add several players at once, each through the governed line path."""
+        user = user or self.env.user
+        roster._portal_assert_manage_access(user=user)
+        if roster.status == "closed":
+            raise ValidationError(_("Closed rosters cannot be edited in the portal."))
+        wanted = set()
+        for value in player_ids or []:
+            try:
+                wanted.add(int(value))
+            except (TypeError, ValueError) as exc:
+                raise ValidationError(_("Select valid players.")) from exc
+        if not wanted:
+            raise ValidationError(_("Select at least one player."))
+        available = self._portal_get_available_players(roster, user=user)
+        chosen = available.filtered(lambda player: player.id in wanted)
+        if len(chosen) != len(wanted):
+            raise ValidationError(
+                _("Some selected players cannot be added to this roster.")
+            )
+        licenses = self._portal_get_available_licenses(roster, user=user)
+        created = self.browse()
+        for player in chosen:
+            player_licenses = licenses.filtered(lambda item: item.player_id == player)
+            license_record = (
+                player_licenses.filtered(lambda item: item.state == "active")[:1]
+                or player_licenses[:1]
+            )
+            created |= self._portal_create_line(
+                roster,
+                values={"player_id": player.id, "license_id": license_record.id or False},
+                user=user,
+            )
+        roster._portal_auto_activate(user=user)
+        return created
 
     def _portal_update_line(self, values=None, user=None):
         """Update roster lines without allowing player swaps or closed-roster edits."""

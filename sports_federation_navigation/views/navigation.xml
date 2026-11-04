@@ -64,4 +64,83 @@
   <record id="sports_federation_base.menu_federation_administration" model="ir.ui.menu">
     <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
+
+  <!--
+    Ordinary navigation, four nouns: Competition, Division, Game day, Match.
+    An ordinary federation manager sees at most fifteen entries. Specialist,
+    configuration and recovery screens stay reachable for Advanced Federation
+    Tools and from contextual buttons; no action, ACL or model is removed.
+  -->
+  <record id="sports_federation_tournament.menu_federation_tournament" model="ir.ui.menu">
+    <field name="name">Divisions &amp; Matches</field>
+  </record>
+  <record id="sports_federation_tournament.menu_federation_tournament_list" model="ir.ui.menu">
+    <field name="name">Divisions</field>
+  </record>
+  <record id="sports_federation_matchday.menu_matchday_control" model="ir.ui.menu">
+    <field name="name">Game Days</field>
+    <field name="sequence">1</field>
+  </record>
+  <record id="sports_federation_live_workspace.menu_run_court" model="ir.ui.menu">
+    <field name="name">Run this court</field>
+    <field name="sequence">2</field>
+  </record>
+  <record id="sports_federation_live_workspace.menu_court_access" model="ir.ui.menu">
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+  </record>
+  <record id="sports_federation_live_workspace.menu_court_evidence" model="ir.ui.menu">
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+  </record>
+  <record id="sports_federation_people.menu_federation_player_config" model="ir.ui.menu">
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+  </record>
+  <record id="sports_federation_portal.menu_federation_club_role_type" model="ir.ui.menu">
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+  </record>
+  <record id="sports_federation_portal.menu_federation_club_representative_portal" model="ir.ui.menu">
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+  </record>
+  <record id="sports_federation_standings.menu_federation_standing_recompute_jobs" model="ir.ui.menu">
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
+  </record>
+  <record id="sports_federation_schedule_approval.menu_approved_schedule_queue" model="ir.ui.menu">
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_schedule_approval.group_schedule_approver')])]"/>
+  </record>
+  <record id="sports_federation_schedule_approval.menu_schedule_publication_history" model="ir.ui.menu">
+    <field name="name">Published Schedules</field>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_schedule_approval.group_schedule_approver')])]"/>
+  </record>
+  <record id="sports_federation_base.menu_federation_publication" model="ir.ui.menu">
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_manager'), ref('sports_federation_schedule_approval.group_schedule_approver')])]"/>
+  </record>
+
+  <record id="sports_federation_people.menu_federation_player" model="ir.ui.menu">
+    <field name="parent_id" ref="sports_federation_base.menu_federation_setup"/>
+    <field name="sequence">15</field>
+  </record>
+  <record id="sports_federation_portal.menu_federation_club_representative" model="ir.ui.menu">
+    <field name="parent_id" ref="sports_federation_base.menu_federation_setup"/>
+    <field name="sequence">25</field>
+  </record>
+  <record id="sports_federation_base.menu_federation_club" model="ir.ui.menu">
+    <field name="parent_id" ref="sports_federation_base.menu_federation_setup"/>
+    <field name="sequence">5</field>
+  </record>
+  <record id="sports_federation_base.menu_federation_team" model="ir.ui.menu">
+    <field name="parent_id" ref="sports_federation_base.menu_federation_setup"/>
+    <field name="sequence">10</field>
+  </record>
+
+  <!-- One inbox for everything that needs a person, and one report entry. -->
+  <record id="action_needs_attention" model="ir.actions.act_window">
+    <field name="name">Needs Attention</field>
+    <field name="res_model">federation.operation.task</field>
+    <field name="view_mode">list,form</field>
+    <field name="search_view_id" ref="sports_federation_portal.view_federation_operation_task_search"/>
+    <field name="domain">['|', ('audience', '=', 'manager'), ('task_type', '=', 'referee_duty'), ('state', '!=', 'done')]</field>
+    <field name="context">{'search_default_open': 1}</field>
+    <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Nothing needs your attention right now.</p></field>
+  </record>
+  <menuitem id="menu_needs_attention" name="Needs Attention" parent="sports_federation_base.menu_federation_root" action="action_needs_attention" sequence="1" groups="sports_federation_base.group_federation_manager"/>
+  <menuitem id="menu_reports" name="Reports" parent="sports_federation_base.menu_federation_root" action="sports_federation_reporting.action_server_federation_operational_dashboard" sequence="90" groups="sports_federation_base.group_federation_manager"/>
 </odoo>

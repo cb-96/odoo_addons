@@ -118,6 +118,9 @@ class FederationQoLPortal(FederationPortalBase):
 
     @http.route("/my/milestones", type="http", auth="user", website=True)
     def portal_milestones(self, **kw):
+        """Deadlines live on the single role home, grouped by urgency."""
+        if kw.get("legacy") != "1":
+            return request.redirect("/my/work", code=303)
         Task, domain = self._task_scope()
         Task.sync_for_user(user=request.env.user)
         tasks = Task.search(

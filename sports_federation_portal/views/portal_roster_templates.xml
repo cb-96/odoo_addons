@@ -127,8 +127,8 @@
                         <h2><i class="fa fa-id-card me-2"/><t t-esc="roster.name"/></h2>
                     </div>
                     <div class="col-auto d-flex flex-wrap gap-2">
-                        <a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/edit" class="btn btn-primary">Edit Roster</a>
-                        <a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/lines/new" class="btn btn-outline-primary">Add Player</a>
+                        <a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/lines/bulk" class="btn btn-primary">Add players</a>
+                        <a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/edit" class="btn btn-outline-secondary">Edit Roster</a>
                         <a href="/my/rosters" class="btn btn-outline-secondary">Back to Rosters</a>
                     </div>
                 </div>
@@ -179,14 +179,7 @@
                                 </div>
                                 <form t-if="can_manage_roster and roster.status == 'draft' and other_rosters" t-attf-action="/my/rosters/#{roster.id}/copy-lines" method="POST" class="d-flex gap-2 flex-wrap mb-3" data-qol-draft-guard="1"><input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><label t-attf-for="source_roster_#{roster.id}" class="form-label mb-0 align-self-center">Copy eligible players from</label><select t-attf-id="source_roster_#{roster.id}" name="source_roster_id" class="form-select form-select-sm w-auto" required="1"><option value="">Choose roster</option><option t-foreach="other_rosters" t-as="source" t-att-value="source.id"><t t-esc="source.display_name"/></option></select><button class="btn btn-sm btn-outline-primary">Copy eligible players</button></form>
                                 <div t-if="can_manage_roster" class="d-flex flex-wrap gap-2 mt-3">
-                                    <form t-if="roster.status == 'draft'" t-attf-action="/my/rosters/#{roster.id}/activate" method="POST" class="d-inline">
-                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                        <button type="submit" class="btn btn-primary btn-sm">Activate Roster</button>
-                                    </form>
-                                    <form t-if="roster.status == 'active'" t-attf-action="/my/rosters/#{roster.id}/draft" method="POST" class="d-inline">
-                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                        <button type="submit" class="btn btn-outline-secondary btn-sm">Set To Draft</button>
-                                    </form>
+                                    <p t-if="roster.status == 'draft'" class="text-muted small mb-0">This roster becomes active automatically as soon as it meets the competition rules.</p>
                                     <form t-if="roster.status == 'active'" t-attf-action="/my/rosters/#{roster.id}/close" method="POST" class="d-inline">
                                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                         <button type="submit" class="btn btn-outline-danger btn-sm">Close Roster</button>
@@ -205,7 +198,7 @@
                     <div class="col-12">
                         <div class="d-flex justify-content-between align-items-center flex-wrap mb-2 gap-2">
                             <h4 class="mb-0">Roster Lines</h4>
-                            <a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/lines/new" class="btn btn-sm btn-outline-primary">Add Player</a>
+                            <span class="d-flex gap-2"><a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/lines/bulk" class="btn btn-sm btn-primary">Add players</a><a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/lines/new" class="btn btn-sm btn-outline-secondary">Add one player with details</a></span>
                         </div>
                         <div class="table-responsive">
                         <table class="table table-sm">
@@ -893,4 +886,35 @@
         </t>
     </template>
 
+
+    <template id="portal_my_roster_bulk_add" name="Add Roster Players">
+        <t t-call="portal.portal_layout">
+            <div class="container py-4">
+                <div class="row mb-3">
+                    <div class="col">
+                        <h2><i class="fa fa-users me-2"/>Add players to <t t-esc="roster.name"/></h2>
+                        <p class="text-muted mb-0">Tick every player who plays for this team. Licenses are linked automatically.</p>
+                    </div>
+                    <div class="col-auto">
+                        <a t-attf-href="/my/rosters/#{roster.id}" class="btn btn-outline-secondary">Back to Roster</a>
+                    </div>
+                </div>
+                <div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div>
+                <div t-if="not players" class="alert alert-info" role="status">Every eligible player of your club is already on this roster.</div>
+                <form t-if="players" t-attf-action="/my/rosters/#{roster.id}/lines/bulk" method="POST" data-qol-draft-guard="1">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <fieldset>
+                        <legend class="visually-hidden">Eligible players</legend>
+                        <div class="list-group mb-3">
+                            <label t-foreach="players" t-as="player" class="list-group-item d-flex gap-2 align-items-center">
+                                <input type="checkbox" class="form-check-input" name="player_ids" t-att-value="player.id"/>
+                                <span><t t-esc="player.display_name"/></span>
+                            </label>
+                        </div>
+                    </fieldset>
+                    <button type="submit" class="btn btn-primary">Add selected players</button>
+                </form>
+            </div>
+        </t>
+    </template>
 </odoo>

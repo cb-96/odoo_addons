@@ -99,6 +99,32 @@ class FederationCompetitionEditionSetup(models.Model):
         action["domain"] = [("edition_id", "=", self.id)]
         return action
 
+    def action_setup_teams_and_format(self):
+        """Open the one-screen teams and format editor for all divisions."""
+        self.ensure_one()
+        self.check_access("read")
+        wizard = self.env["federation.competition.division.setup.wizard"].with_context(
+            default_edition_id=self.id
+        ).create({"edition_id": self.id})
+        if not wizard.line_ids:
+            wizard.line_ids = [
+                fields.Command.create(
+                    self.env["federation.competition.division.setup.wizard"]._line_values(
+                        self, division
+                    )
+                )
+                for division in self.tournament_ids.sorted(lambda item: (item.name or "", item.id))
+            ] or [fields.Command.create({"name": _("Division 1")})]
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Teams & Format"),
+            "res_model": wizard._name,
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "views": [(False, "form")],
+            "target": "new",
+        }
+
     def action_setup_participants(self):
         self.ensure_one()
         finalized_divisions = self.env["federation.participant.set"].search(
@@ -206,7 +232,22 @@ class FederationCompetitionEditionSetup(models.Model):
         }
 
     def action_setup_publication(self):
-        return self._action_with_edition(
-            "sports_federation_schedule_approval.action_schedule_review_queue",
-            search_default_pending=1,
-        )
+        """Publish every ready game day in one command.
+
+        The former target, the pending review queue, is empty in Streamlined
+        mode because nothing has been submitted yet; that was a dead end.
+        """
+        self.ensure_one()
+        if self.schedule_approval_required and self._publication_waiting_for_review():
+            return self._action_with_edition(
+                "sports_federation_schedule_approval.action_schedule_review_queue",
+                search_default_pending=1,
+            )
+        return self.action_publish_competition_schedule()
+
+    def _publication_waiting_for_review(self):
+        self.ensure_one()
+        schedules = self._publishable_schedules()
+        return bool(schedules) and all(
+            schedule.state in ("ready_for_review", "published") for schedule in schedules
+        ) and any(schedule.state == "ready_for_review" for schedule in schedules)

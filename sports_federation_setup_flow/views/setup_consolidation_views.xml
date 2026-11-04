@@ -12,7 +12,7 @@
   </record>
 
   <record id="action_competition_setup_home" model="ir.actions.act_window">
-    <field name="name">Competition Hub</field>
+    <field name="name">Competitions</field>
     <field name="res_model">federation.competition.edition</field>
     <field name="view_mode">list,form</field>
     <field name="context">{'search_default_active': 1}</field>
@@ -23,7 +23,7 @@
   </record>
 
   <record id="menu_competition_setup_home" model="ir.ui.menu">
-    <field name="name">Competition Hub</field>
+    <field name="name">Competitions</field>
     <field name="action" ref="action_competition_setup_home"/>
     <field name="parent_id" ref="sports_federation_base.menu_federation_competitions"/>
     <field name="sequence">1</field>
@@ -39,7 +39,7 @@
       </xpath>
       <xpath expr="//list/field[1]" position="before">
         <header>
-          <button name="%(sports_federation_registration.action_create_competition_wizard)d" type="action" string="Create Competition" class="btn-primary" display="always"/>
+          <button name="%(sports_federation_registration.action_create_competition_wizard)d" type="action" string="New Competition" class="btn-primary" display="always"/>
         </header>
       </xpath>
       <field name="tournament_count" position="after">
