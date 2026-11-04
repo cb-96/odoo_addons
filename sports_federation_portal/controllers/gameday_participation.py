@@ -5,6 +5,7 @@ each match the coach only crosses out the players who do not play.
 """
 
 from odoo import _, http
+from odoo.addons.portal.controllers.portal import pager as portal_pager
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
 
@@ -22,27 +23,60 @@ class FederationGamedayParticipationPortal(FederationMatchPortal):
             user=request.env.user,
         )
 
+    _GAMEDAY_PAGE_SIZE = 20
+    _GAMEDAY_SHEET_LIMIT = 2000
+
     @http.route()
     def portal_my_match_sheets(self, page=1, **kw):
-        """Show one row per team gameday instead of one row per match."""
-        response = super().portal_my_match_sheets(page=page, **kw)
-        qcontext = getattr(response, "qcontext", None)
-        if not qcontext or "match_sheets" not in qcontext:
-            return response
-        rows = qcontext["match_sheets"].browse()
-        match_counts = {}
-        seen = set()
-        for sheet in qcontext["match_sheets"]:
+        """One row per team gameday; grouped before paging so a gameday
+        never appears on two pages."""
+        MatchSheet = self._portal_match_sheet_model()
+        Privilege = request.env["federation.portal.privilege"]
+        domain = self._portal_match_sheet_domain()
+        if domain == [("id", "=", False)]:
+            return self._redirect_with_query("/my/club")
+        try:
+            context_domain, context_query = self._journey_list_scope(
+                kw, season_field="roster_id.season_id"
+            )
+        except AccessError:
+            return self._render_access_denied()
+        sheets = Privilege.portal_search(
+            MatchSheet,
+            domain + context_domain,
+            limit=self._GAMEDAY_SHEET_LIMIT,
+            order="match_kickoff desc, id desc",
+            user=request.env.user,
+        )
+        groups = {}
+        for sheet in sheets:
             key = (sheet.team_id.id, sheet._get_gameday_scope() or ("sheet", sheet.id))
-            if key in seen:
-                continue
-            seen.add(key)
-            gameday_sheets = self._portal_gameday_sheets(sheet)
-            lead = gameday_sheets[:1] or sheet
+            groups.setdefault(key, MatchSheet.browse())
+            groups[key] |= sheet
+        ordered = list(groups.values())
+        pager = portal_pager(
+            url="/my/match-sheets",
+            total=len(ordered),
+            page=page,
+            step=self._GAMEDAY_PAGE_SIZE,
+            url_args=context_query,
+        )
+        page_groups = ordered[pager["offset"] : pager["offset"] + self._GAMEDAY_PAGE_SIZE]
+        rows = MatchSheet.browse()
+        match_counts = {}
+        for group in page_groups:
+            lead = group.sorted(lambda item: (item.match_kickoff or item.create_date, item.id))[:1]
             rows |= lead
-            match_counts[lead.id] = len(gameday_sheets) or 1
-        qcontext.update(match_sheets=rows, gameday_match_counts=match_counts)
-        return response
+            match_counts[lead.id] = len(group)
+        return request.render(
+            "sports_federation_portal.portal_my_match_sheets",
+            {
+                "match_sheets": rows,
+                "gameday_match_counts": match_counts,
+                "pager": pager,
+                "page_name": "my_match_sheets",
+            },
+        )
 
     @http.route()
     def portal_my_match_sheet_detail(self, sheet_id, **kw):

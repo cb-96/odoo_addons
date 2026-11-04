@@ -448,10 +448,13 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
         lineup_action_count = len(tasks["lineups"])
         official_action_count = len(tasks["officials"])
         result_action_count = len(tasks["results"])
+        finish_actions = self._planner_finish_actions()
         operation_actions = [
+            item for item in finish_actions if item[0] == "publish_website"
+        ] + [
             ("results", result_action_count, _("Review completed results")),
             ("rosters", roster_action_count, _("Complete team rosters")),
-            ("lineups", lineup_action_count, _("Prepare game-day lineups")),
+            ("lineups", lineup_action_count, _("Prepare gameday rosters")),
             ("officials", official_action_count, _("Resolve official coverage")),
         ]
         day_blockers = (
@@ -460,6 +463,9 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
             else 0
         )
         operation_actions.append(("matchdays", day_blockers, _("Resolve match-day readiness")))
+        operation_actions.extend(
+            item for item in finish_actions if item[0] != "publish_website"
+        )
         unchecked = not all(operation_access.values())
         if current_issue:
             primary_action = {
@@ -486,6 +492,15 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                     ),
                     "owner": _("Competition operations"),
                 }
+            elif self.state == "closed":
+                primary_action = {
+                    "kind": "operation",
+                    "key": "final_tables",
+                    "label": _("View final tables"),
+                    "title": _("Competition finished"),
+                    "message": _("All results are approved and the final tables are frozen."),
+                    "owner": _("Competition organiser"),
+                }
             else:
                 primary_action = {
                     "kind": "operation",
@@ -505,6 +520,7 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                 "date_start": self.date_start,
                 "date_end": self.date_end,
                 "workflow_mode": self.workflow_mode,
+                "state": self.state,
             },
             "steps": steps,
             "show_setup_progress": not all(step["complete"] for step in steps) and not gamedays.filtered(

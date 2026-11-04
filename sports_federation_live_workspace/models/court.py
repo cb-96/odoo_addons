@@ -155,6 +155,17 @@ class LiveMatch(models.Model):
             raise AccessError(_("Exceptional court outcomes require an audited command."))
         return super().write(values)
 
+    def _get_forfeit_winner(self):
+        """A forfeit recorded on court awards the match to the other team."""
+        winner = super()._get_forfeit_winner()
+        if winner:
+            return winner
+        if self.court_outcome == "forfeit_home":
+            return self.away_team_id
+        if self.court_outcome == "forfeit_away":
+            return self.home_team_id
+        return winner
+
 
 class CourtCommands(models.AbstractModel):
     _name = "federation.court.commands"

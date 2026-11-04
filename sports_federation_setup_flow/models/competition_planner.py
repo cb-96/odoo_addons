@@ -410,8 +410,11 @@ class FederationCompetitionEditionPlanner(models.Model):
                     tasks["lineups"].append(day.id)
         match_model = self.env.get("federation.match")
         if operation_access["results"]:
+            # An approved result finishes the match, so pending results are
+            # the ones submitted but not yet approved.
             tasks["results"] = match_model.search([
-                ("tournament_id", "in", divisions.ids), ("state", "=", "done"), ("result_state", "!=", "approved")
+                ("tournament_id", "in", divisions.ids), ("state", "!=", "cancelled"),
+                ("result_state", "in", ("submitted", "verified", "contested", "corrected")),
             ], order="date_scheduled,id").ids
         if operation_access["officials"]:
             tasks["officials"] = days.mapped("published_match_ids").filtered(

@@ -1,6 +1,6 @@
 {
     "name": "Competition Core",
-    "version": "19.0.1.6.0",
+    "version": "19.0.1.7.0",
     "category": "Sports",
     "summary": "Stable competition lifecycle, role ownership, and domain events",
     "author": "Sports Federation",

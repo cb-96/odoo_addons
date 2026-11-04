@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Discipline",
-    "version": '19.0.1.3.0',
+    "version": '19.0.1.4.0',
     "category": "Sports",
     "summary": "Incidents, cases, sanctions, and suspensions management",
     "description": """
@@ -22,6 +22,7 @@
         "security/ir.model.access.csv",
         "security/company_rules.xml",
         "data/ir_sequence.xml",
+        "data/suspension_cron.xml",
         "views/incident_views.xml",
         "views/disciplinary_case_views.xml",
         "views/sanction_views.xml",

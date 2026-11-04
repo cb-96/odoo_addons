@@ -808,6 +808,23 @@ class FederationMatchSheet(models.Model):
             )
         if not playing:
             raise ValidationError(_("At least one player must play this match."))
+        ineligible = []
+        for line in self.line_ids.filtered(
+            lambda item: item.player_id.id not in requested
+        ):
+            reasons = line._get_eligibility_reasons()
+            if reasons:
+                ineligible.append(
+                    "%s (%s)" % (line.player_id.display_name, "; ".join(reasons))
+                )
+        if ineligible:
+            raise ValidationError(
+                _(
+                    "These players are no longer eligible and must be crossed "
+                    "out for this match: %(players)s"
+                )
+                % {"players": ", ".join(ineligible)}
+            )
         for line in self.line_ids:
             crossed = line.player_id.id in requested
             if line.crossed_out != crossed:

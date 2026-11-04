@@ -169,6 +169,34 @@ class FederationMatchResultControl(models.Model):
         if not self.env.user.has_group(group_xmlid):
             raise ValidationError(error_message)
 
+    def _complete_after_result_approval(self):
+        """An approved result is the single signal that a match is finished."""
+        pending = self.filtered(
+            lambda match: match.result_state == "approved"
+            and match.state not in ("done", "cancelled")
+        )
+        if pending:
+            pending.action_done()
+        return True
+
+    def _reopen_after_result_change(self, previous_states):
+        """Reopen matches whose approved result was withdrawn or corrected."""
+        reopened = self.filtered(
+            lambda match: previous_states.get(match.id) == "approved"
+            and match.result_state != "approved"
+            and match.state == "done"
+        )
+        if reopened:
+            reopened.write({"state": "in_progress"})
+            for match in reopened:
+                match._log_result_audit(
+                    "reopened",
+                    "Match reopened because its approved result changed.",
+                    "approved",
+                    match.result_state,
+                )
+        return True
+
     def _recompute_related_standings(self):
         """Handle recompute related standings."""
         Standing = self.env.get("federation.standing")
@@ -380,6 +408,7 @@ class FederationMatchResultControl(models.Model):
                 dispatcher = record.env.get("federation.notification.dispatcher")
                 if dispatcher is not None:
                     dispatcher.send_result_approved(record)
+            self._complete_after_result_approval()
             self._recompute_related_standings()
             return result
 
@@ -387,6 +416,7 @@ class FederationMatchResultControl(models.Model):
         """Contest submitted, verified, or approved results atomically."""
         with self.env.cr.savepoint():
             self._lock_result_transition()
+            previous_states = {match.id: match.result_state for match in self}
             result = self._result_transition(
                 "contested",
                 {"submitted", "verified", "approved"},
@@ -400,6 +430,7 @@ class FederationMatchResultControl(models.Model):
                 dispatcher = record.env.get("federation.notification.dispatcher")
                 if dispatcher is not None:
                     dispatcher.send_result_contested(record)
+            self._reopen_after_result_change(previous_states)
             self._recompute_related_standings()
             return result
 
@@ -411,6 +442,7 @@ class FederationMatchResultControl(models.Model):
         """Correct contested or approved results atomically."""
         with self.env.cr.savepoint():
             self._lock_result_transition()
+            previous_states = {match.id: match.result_state for match in self}
             result = self._result_transition(
                 "corrected",
                 {"contested", "approved"},
@@ -423,6 +455,7 @@ class FederationMatchResultControl(models.Model):
                     "resubmitted."
                 ),
             )
+            self._reopen_after_result_change(previous_states)
             self._recompute_related_standings()
             return result
 
@@ -434,6 +467,7 @@ class FederationMatchResultControl(models.Model):
                 "Only result approvers can reset results to draft.",
             )
             self._lock_result_transition()
+            previous_states = {match.id: match.result_state for match in self}
             result = self._result_transition(
                 "draft",
                 {"submitted", "verified", "approved", "contested", "corrected"},
@@ -447,6 +481,7 @@ class FederationMatchResultControl(models.Model):
                 event_type="reset",
                 description="Result reset to draft.",
             )
+            self._reopen_after_result_change(previous_states)
             self._recompute_related_standings()
             return result
 

@@ -24,10 +24,24 @@ class FederationSuspension(models.Model):
         index=True,
     )
     date_start = fields.Date(string="Start Date", required=True)
-    date_end = fields.Date(string="End Date", required=True)
+    date_end = fields.Date(
+        string="End Date",
+        help="Last day of the suspension. Leave empty for a suspension of a "
+        "number of matches.",
+    )
+    match_count = fields.Integer(
+        string="Matches to Serve",
+        help="Suspension ends after the player's teams finished this many matches "
+        "from the start date. 0 means the suspension runs by date only.",
+    )
+    matches_served = fields.Integer(
+        compute="_compute_matches_served",
+        string="Matches Served",
+    )
     state = fields.Selection(
         [
             ("draft", "Draft"),
+            ("scheduled", "Upcoming"),
             ("active", "Active"),
             ("expired", "Expired"),
             ("cancelled", "Cancelled"),
@@ -45,15 +59,61 @@ class FederationSuspension(models.Model):
                 if record.date_end < record.date_start:
                     raise ValidationError("End date must be on or after start date.")
 
+    @api.constrains("date_end", "match_count")
+    def _check_duration(self):
+        for record in self:
+            if record.match_count < 0:
+                raise ValidationError("The number of matches cannot be negative.")
+            if not record.date_end and not record.match_count:
+                raise ValidationError(
+                    "Set an end date or a number of matches to serve."
+                )
+
+    def _served_matches(self):
+        """Finished matches of the player's teams since the start date."""
+        self.ensure_one()
+        teams = self.player_id.team_ids
+        if not teams or not self.date_start:
+            return self.env["federation.match"]
+        start = fields.Datetime.to_datetime(self.date_start)
+        return self.env["federation.match"].sudo().search(
+            [
+                ("state", "=", "done"),
+                ("date_scheduled", ">=", start),
+                "|",
+                ("home_team_id", "in", teams.ids),
+                ("away_team_id", "in", teams.ids),
+            ]
+        )
+
+    def _compute_matches_served(self):
+        for record in self:
+            record.matches_served = (
+                len(record._served_matches()) if record.match_count else 0
+            )
+
+    def _is_served(self, today=None):
+        self.ensure_one()
+        today = today or fields.Date.context_today(self)
+        if self.date_end and self.date_end < today:
+            return True
+        return bool(self.match_count) and self.matches_served >= self.match_count
+
     def action_activate(self):
-        """Activate the suspension and mark the affected player as suspended."""
-        records_to_activate = self.filtered(lambda record: record.state != "active")
+        """Activate the suspension; it affects eligibility from its start date."""
+        records_to_activate = self.filtered(
+            lambda record: record.state not in ("active", "scheduled")
+        )
         if not records_to_activate:
             return
 
-        records_to_activate.write({"state": "active"})
+        today = fields.Date.context_today(self)
+        upcoming = records_to_activate.filtered(lambda record: record.date_start > today)
+        started = records_to_activate - upcoming
+        upcoming.write({"state": "scheduled"})
+        started.write({"state": "active"})
 
-        for record in records_to_activate:
+        for record in started:
             record.player_id.action_suspend()
 
         dispatcher = self.env.get("federation.notification.dispatcher")
@@ -66,6 +126,31 @@ class FederationSuspension(models.Model):
         for record in self:
             record.state = "cancelled"
             record._maybe_restore_player_state()
+
+    @api.model
+    def _cron_update_suspensions(self):
+        """Start upcoming suspensions and end served ones (daily job)."""
+        today = fields.Date.context_today(self)
+        due = self.search([("state", "=", "scheduled"), ("date_start", "<=", today)])
+        if due:
+            due.write({"state": "active"})
+            for record in due:
+                record.player_id.action_suspend()
+        active = self.search([("state", "=", "active")])
+        active.filtered(lambda record: record._is_served(today)).action_expire()
+        return True
+
+    def _expire_served_by_matches(self, teams):
+        """Called when a match finishes: end match-count suspensions served."""
+        candidates = self.search(
+            [
+                ("state", "=", "active"),
+                ("match_count", ">", 0),
+                ("player_id.team_ids", "in", teams.ids),
+            ]
+        )
+        candidates.filtered(lambda record: record._is_served()).action_expire()
+        return True
 
     def action_expire(self):
         """Mark the suspension as expired and restore the player's state if eligible."""

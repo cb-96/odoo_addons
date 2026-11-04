@@ -437,9 +437,7 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         )
         allocated_elsewhere = other_days.mapped("allocation_ids.fixture_ids")
         scoped -= allocated_elsewhere
-        playable = scoped.filtered(
-            lambda fixture: fixture.home_team_id and fixture.away_team_id and fixture.state != "cancelled"
-        )
+        playable = scoped.filtered(lambda fixture: fixture._is_schedulable())
         deferred = scoped - playable
         excluded = all_fixtures - scoped
         return playable, deferred, excluded
@@ -483,7 +481,8 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             for fixture_id in fixture_ids:
                 fixture = by_id[fixture_id]
                 for team in (fixture.home_team_id, fixture.away_team_id):
-                    counts[team.id] = counts.get(team.id, 0) + 1
+                    if team:
+                        counts[team.id] = counts.get(team.id, 0) + 1
             total += sum(1 for count in counts.values() if count > 1)
         return total
 

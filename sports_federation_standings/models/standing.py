@@ -301,56 +301,24 @@ class FederationStanding(models.Model):
         # Build a dict from team_id → participant for O(1) lookup in the match loop
         participants = self._get_participants()
         participant_map = {p.team_id.id: p for p in participants}
-        stats = {}
-        for participant in participants:
-            stats[participant.id] = {
-                "played": 0,
-                "won": 0,
-                "drawn": 0,
-                "lost": 0,
-                "score_for": 0,
-                "score_against": 0,
-            }
+        engine = self.env["federation.standings.rules"]
+        stats = {participant.id: engine.initial_stats() for participant in participants}
 
-        # Process matches
+        # One shared calculator for every table: regular, forfeit and rule-set
+        # point overrides behave the same as in the format engine.
         for match in matches:
-            # O(1) lookup instead of O(m) filtered() scan
             home_participant = participant_map.get(match.home_team_id.id)
             away_participant = participant_map.get(match.away_team_id.id)
-
             if not home_participant or not away_participant:
                 continue
-
-            home_pid = home_participant.id
-            away_pid = away_participant.id
-
-            # Update played count
-            stats[home_pid]["played"] += 1
-            stats[away_pid]["played"] += 1
-
-            # Update scores
-            stats[home_pid]["score_for"] += match.home_score
-            stats[home_pid]["score_against"] += match.away_score
-            stats[away_pid]["score_for"] += match.away_score
-            stats[away_pid]["score_against"] += match.home_score
-
-            # Update win/draw/loss
-            if match.home_score > match.away_score:
-                stats[home_pid]["won"] += 1
-                stats[away_pid]["lost"] += 1
-            elif match.away_score > match.home_score:
-                stats[away_pid]["won"] += 1
-                stats[home_pid]["lost"] += 1
-            else:
-                stats[home_pid]["drawn"] += 1
-                stats[away_pid]["drawn"] += 1
-
-        # Calculate points
-        for pid in stats:
-            stats[pid]["points"] = (
-                stats[pid]["won"] * points_values["win"]
-                + stats[pid]["drawn"] * points_values["draw"]
-                + stats[pid]["lost"] * points_values["loss"]
+            engine.apply_match(
+                stats,
+                home_participant.id,
+                away_participant.id,
+                match.home_score,
+                match.away_score,
+                points_values,
+                forfeit_winner=engine.match_forfeit_side(match),
             )
 
         return stats

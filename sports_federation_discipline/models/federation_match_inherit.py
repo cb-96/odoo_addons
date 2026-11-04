@@ -28,3 +28,11 @@ class FederationMatch(models.Model):
         action["domain"] = [("match_id", "=", self.id)]
         action["context"] = {"default_match_id": self.id}
         return action
+
+    def action_done(self):
+        """A finished match counts towards match-count suspensions."""
+        result = super().action_done()
+        teams = self.mapped("home_team_id") | self.mapped("away_team_id")
+        if teams:
+            self.env["federation.suspension"].sudo()._expire_served_by_matches(teams)
+        return result

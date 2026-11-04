@@ -34,11 +34,11 @@ class FederationScheduleValidator(models.AbstractModel):
                         "fixture_id": fixture.id,
                     }
                 )
-            if not fixture.home_team_id or not fixture.away_team_id:
+            if not fixture._is_schedulable():
                 errors.append(
                     {
                         "code": "participants_unresolved",
-                        "message": "Resolve both fixture participants before scheduling.",
+                        "message": "Resolve both fixture participants, or link them to an earlier match or stage ranking, before scheduling.",
                         "fixture_id": fixture.id,
                     }
                 )
@@ -142,6 +142,22 @@ class FederationScheduleValidator(models.AbstractModel):
                             }
                         )
                 team_windows.setdefault(team.id, []).append((fixture, slot))
+        # A follow-up match must start after the match that decides its teams.
+        for fixture_id, slot_id in assignment_map.items():
+            fixture, slot = fixture_by_id.get(fixture_id), slot_by_id.get(slot_id)
+            if not fixture or not slot:
+                continue
+            for source in (fixture.home_source_fixture_id, fixture.away_source_fixture_id):
+                source_slot = slot_by_id.get(assignment_map.get(source.id)) if source else None
+                if source_slot and source_slot.end_datetime > slot.start_datetime:
+                    errors.append(
+                        {
+                            "code": "placeholder_before_source",
+                            "message": f"{fixture.name} starts before {source.name} ends; it depends on that result.",
+                            "fixture_id": fixture.id,
+                            "related_fixture_id": source.id,
+                        }
+                    )
         stale = sorted(set(assignment_map) - set(fixture_by_id))
         for fixture_id in stale:
             errors.append(
@@ -151,7 +167,17 @@ class FederationScheduleValidator(models.AbstractModel):
                     "fixture_id": fixture_id,
                 }
             )
-        missing = sorted(set(fixture_by_id) - set(assignment_map))
+        # Fixtures that can never be played here (a future bye has no
+        # opponent and no source) are not counted as unassigned.
+        missing = sorted(
+            fixture_id
+            for fixture_id, fixture in fixture_by_id.items()
+            if fixture_id not in assignment_map
+            and (
+                (fixture.home_team_id and fixture.away_team_id)
+                or fixture._is_schedulable()
+            )
+        )
         return {
             "valid": not errors and not missing,
             "errors": errors,

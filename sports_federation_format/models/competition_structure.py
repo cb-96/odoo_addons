@@ -140,6 +140,11 @@ class FederationCompetitionStructure(models.Model):
             self.env["federation.stage.graph.engine"].validate_graph(rec)
             for stage in roots:
                 stage.action_prepare_stage()
+            # Brackets fed by an earlier stage get placeholder fixtures now,
+            # so the whole competition can be scheduled before tables are final.
+            engine = self.env["federation.stage.graph.engine"]
+            for stage in (rec.stage_ids - roots).sorted("sequence"):
+                engine.prepare_placeholder_stage(stage)
             rec.state = "generated"
         return True
 

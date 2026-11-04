@@ -14,6 +14,7 @@ class FederationMatchResultAudit(models.Model):
             ("contested", "Contested"),
             ("corrected", "Corrected"),
             ("reset", "Reset To Draft"),
+            ("reopened", "Match Reopened"),
         ],
         string="Event Type",
         required=True,

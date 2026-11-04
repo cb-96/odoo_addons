@@ -81,6 +81,9 @@ class FederationMatchdayCommands(models.AbstractModel):
             "matchday_opened",
             {"session_id": session.id, "publication_id": publication.id},
         )
+        matchday.edition_id._advance_lifecycle(
+            "in_progress", reason=_("First gameday opened.")
+        )
         result.update({"session_id": session.id, "publication_id": publication.id})
         return result
 
@@ -360,6 +363,18 @@ class FederationMatchdayCommands(models.AbstractModel):
         return result
 
     @api.model
+    def _unresolved_placeholders(self, matchday):
+        """Published placeholder fixtures that never got their match."""
+        publication = matchday.current_publication_id
+        if not publication:
+            return self.env["federation.fixture"]
+        return publication.schedule_id.assignment_ids.mapped("fixture_id").filtered(
+            lambda fixture: not fixture.operational_match_id
+            and not fixture.bye_team_id
+            and fixture.state != "cancelled"
+        )
+
+    @api.model
     def close_matchday(self, matchday_id, close_note=False, force=False):
         with self.env.cr.savepoint():
             return self._close_matchday(matchday_id, close_note, force)
@@ -377,12 +392,21 @@ class FederationMatchdayCommands(models.AbstractModel):
         unfinished = scheduled_matches.filtered(
             lambda match: match.state not in ("done", "cancelled")
         )
-        if (unresolved or unfinished) and not force:
+        unplayed_placeholders = self._unresolved_placeholders(matchday)
+        if (unresolved or unfinished or unplayed_placeholders) and not force:
             raise ValidationError(
                 _(
                     "Resolve incidents and complete or cancel every published "
-                    "match before closing."
+                    "match before closing.%(placeholders)s"
                 )
+                % {
+                    "placeholders": (
+                        _(" Still waiting for teams: %s.")
+                        % ", ".join(unplayed_placeholders.mapped("name"))
+                        if unplayed_placeholders
+                        else ""
+                    )
+                }
             )
         if force and not (close_note or "").strip():
             raise ValidationError(

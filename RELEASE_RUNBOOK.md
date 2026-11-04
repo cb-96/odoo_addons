@@ -863,3 +863,36 @@ this environment and must pass on staging before release.
 
 Rollback: restore the pre-upgrade database and filestore with the previous code. A
 code-only rollback leaves unused columns and loses the record of crossed-out players.
+
+## Competition lifecycle completion: upgrade review
+
+Scope: one definition of a finished match, one standings/progression engine,
+knockout placeholders/ties/corrections, guided competition finish, forfeit/bye
+points and dated suspensions, and the gameday-roster follow-ups.
+
+Data changes:
+- result_control 19.0.1.6.0 post-migrate: matches with an approved result that
+  are not done or cancelled are set to done. Only the state column changes;
+  scores, audit and publication data are untouched. Safe to repeat.
+- format 19.0.6.1.0 post-migrate: every round-robin stage with participants gets
+  its linked league table (one savepoint per stage; failures are logged, not
+  fatal). Review the upgrade log for "No league table created for stage".
+- discipline: daily cron "Discipline: Start and End Suspensions" activates
+  suspensions on their start date and expires them after their end date.
+
+Behaviour changes to verify on staging: approving a result completes the match;
+contesting/correcting reopens it and withdraws an unplayed follow-up knockout
+match (audited as follow_up_match_withdrawn); knockout fixtures with unknown
+teams can be scheduled and are filled without republication; competitions move
+through Open/In Progress/Closed via the guarded transition and close only
+without blockers; forfeits and byes use rule-set points.
+
+Dry-run evidence: Python/XML syntax checks and repository static checks
+(privileged mutation, addon integrity, route ownership, ACL, workflow command,
+sudo guard) executed on the patched tree. Odoo upgrade, ORM/HTTP/browser tests
+and an end-to-end competition run were NOT executed in this environment and
+must pass on staging before release.
+
+Rollback: restore the pre-upgrade database and filestore with the previous
+code. Code-only rollback leaves done matches, linked tables and suspension
+states that the previous code does not expect.

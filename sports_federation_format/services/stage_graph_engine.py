@@ -72,10 +72,20 @@ class FederationStageGraphEngine(models.AbstractModel):
             order = [x for seed in order for x in (seed, mirror - seed)]
         return order
 
-    def _knockout(self, stage, full_placement):
-        participants = self._participants(stage)
-        count = len(participants)
-        by_seed = {p.seed: p.team_id for p in participants}
+    def _knockout(self, stage, full_placement, placeholder_count=0):
+        """Generate a bracket.
+
+        With ``placeholder_count`` the bracket is built before its teams are
+        known: first-round fixtures reference stage seeds that progression
+        fills in later, so the whole bracket can be scheduled in advance.
+        """
+        if placeholder_count:
+            count = placeholder_count
+            by_seed = {seed: None for seed in range(1, count + 1)}
+        else:
+            participants = self._participants(stage)
+            count = len(participants)
+            by_seed = {p.seed: p.team_id for p in participants}
         if set(by_seed) != set(range(1, count + 1)):
             raise ValidationError(
                 _("Bracket seeds must be consecutive from 1 to %(count)s.", count=count)
@@ -96,6 +106,14 @@ class FederationStageGraphEngine(models.AbstractModel):
                         "sequence": i * 5 + 10,
                         "home_team_id": a.id if a else False,
                         "away_team_id": b.id if b else False,
+                        "home_source_seed": (
+                            order[i] if placeholder_count and order[i] <= count else 0
+                        ),
+                        "away_source_seed": (
+                            order[i + 1]
+                            if placeholder_count and order[i + 1] <= count
+                            else 0
+                        ),
                         "placement_from": 1,
                         "placement_to": count,
                     }

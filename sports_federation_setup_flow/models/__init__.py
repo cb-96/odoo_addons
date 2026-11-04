@@ -9,3 +9,4 @@ from . import usability_operations
 from . import creation_draft
 
 from . import planner_projection
+from . import competition_finish
