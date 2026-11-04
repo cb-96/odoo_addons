@@ -47,7 +47,14 @@
       "sports_federation_duty_coverage/wizards/resolve.py",
       "sports_federation_live_workspace/models/court.py",
       "sports_federation_live_workspace/models/planning.py",
-      "sports_federation_member_services/models/membership.py"
+      "sports_federation_member_services/models/membership.py",
+      "sports_federation_base/models/operation_job.py",
+      "sports_federation_calendar/models/matchday.py",
+      "sports_federation_finance_bridge/models/finance_event.py",
+      "sports_federation_live_workspace/models/visual_experience.py",
+      "sports_federation_member_services/models/identity.py",
+      "sports_federation_member_services/models/lifecycle.py",
+      "sports_federation_notifications/models/actionable_communications.py"
     ],
     "runtime_reviews": {
       "sports_federation_accounting/models/finance.py": "Locks the finance event row by parameterized primary key before invoice creation; the native invoice test verifies retry idempotency.",
@@ -57,7 +64,14 @@
       "sports_federation_duty_coverage/wizards/resolve.py": "Locks the resolution wizard and referee rows before applying a preview; coverage tests verify stale-preview rejection and replay safety.",
       "sports_federation_live_workspace/models/court.py": "Uses parameterized shared row locks on court access and the live session while validating command scope; tests cover revoked access and closed sessions.",
       "sports_federation_live_workspace/models/planning.py": "Locks the visual proposal row before applying its revision-bound command; visual planning tests verify one-time application and identical replay.",
-      "sports_federation_member_services/models/membership.py": "Locks the source membership or document-request row before renewal or upload state checks; membership service tests cover idempotent renewals and one-time uploads."
+      "sports_federation_member_services/models/membership.py": "Locks the source membership or document-request row before renewal or upload state checks; membership service tests cover idempotent renewals and one-time uploads.",
+      "sports_federation_base/models/operation_job.py": "Locks the source row by its validated table identifier and primary key before enqueueing, and claims jobs with FOR UPDATE SKIP LOCKED so two workers never run the same job; job-claiming tests cover concurrent claims.",
+      "sports_federation_calendar/models/matchday.py": "Locks the match-day row by parameterized primary key before an audited event-timezone review so two reviewers cannot both change it; slot instants are not touched.",
+      "sports_federation_finance_bridge/models/finance_event.py": "Locks finance event rows in stable ID order before state transitions so retries and concurrent confirmations cannot create duplicate handoffs.",
+      "sports_federation_live_workspace/models/visual_experience.py": "Locks the schedule row by parameterized primary key so constraint edits, preview generation and application share one serialized schedule revision.",
+      "sports_federation_member_services/models/identity.py": "Takes a transaction-scoped advisory lock derived from the identity key before duplicate detection, so concurrent registrations of the same person cannot both create a record.",
+      "sports_federation_member_services/models/lifecycle.py": "Locks member records by validated table identifier in stable ID order before lifecycle transitions to prevent lost updates.",
+      "sports_federation_notifications/models/actionable_communications.py": "Takes a transaction-scoped advisory lock per communication key so the same actionable message is published at most once under concurrent triggers."
     },
     "allowed_runtime_prefixes": [
       "sports_federation_reporting/models/"
