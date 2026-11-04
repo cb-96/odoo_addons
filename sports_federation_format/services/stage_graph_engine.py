@@ -9,6 +9,73 @@ class FederationStageGraphEngine(models.AbstractModel):
     _description = "Stage Graph Engine"
 
     @api.model
+    def generate_pool_knockout_stages(self, structure):
+        """Create round-robin pools and a seeded two-qualifier bracket."""
+        pool_count = structure.pool_count
+        if pool_count < 1:
+            raise ValidationError(_("A pool-knockout format needs at least one pool."))
+        lines = structure.participant_set_id.line_ids.sorted(
+            lambda line: (line.seed or 9999, line.id)
+        )
+        pools = [[] for _index in range(pool_count)]
+        for index, line in enumerate(lines):
+            round_index, pool_index = divmod(index, pool_count)
+            if round_index % 2:
+                pool_index = pool_count - 1 - pool_index
+            pools[pool_index].append(line)
+
+        stages = self.env["federation.structure.stage"]
+        pool_stages = []
+        for index, pool_lines in enumerate(pools, 1):
+            stage = stages.create(
+                {
+                    "name": "%s - Pool %s" % (structure.name, index),
+                    "structure_id": structure.id,
+                    "sequence": index * 10,
+                    "stage_type": "pool",
+                    "format_type": "single_round_robin",
+                    "source_type": "manual",
+                }
+            )
+            self.env["federation.stage.participant"].create(
+                [
+                    {
+                        "stage_id": stage.id,
+                        "team_id": line.team_id.id,
+                        "seed": seed,
+                        "source_rank": line.seed or seed,
+                    }
+                    for seed, line in enumerate(pool_lines, 1)
+                ]
+            )
+            pool_stages.append(stage)
+
+        qualifiers_per_pool = 2
+        final_stage = stages.create(
+            {
+                "name": "%s - Knockout" % structure.name,
+                "structure_id": structure.id,
+                "sequence": (pool_count + 1) * 10,
+                "stage_type": "knockout",
+                "format_type": "knockout",
+                "source_type": "progression",
+            }
+        )
+        Progression = self.env["federation.structure.stage.progression"]
+        for index, stage in enumerate(pool_stages):
+            Progression.create(
+                {
+                    "name": _("%s top two to knockout") % stage.name,
+                    "source_stage_id": stage.id,
+                    "target_stage_id": final_stage.id,
+                    "rank_from": 1,
+                    "rank_to": qualifiers_per_pool,
+                    "target_seed_from": index * qualifiers_per_pool + 1,
+                }
+            )
+        return pool_stages + [final_stage]
+
+    @api.model
     def validate_graph(self, structure):
         return self.env["federation.stage.graph.validator"].validate(structure)
 

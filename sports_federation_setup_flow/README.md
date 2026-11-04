@@ -84,6 +84,12 @@ Model regressions cover step, exact-record blocker, and operational actions.
 
 Competition Hub is the ordinary entry and always reopens the visual planner. It promotes one `primary_action` and one unified readiness summary. Direct team selection materializes registration records in the registration addon; the format picker generates and freezes structures through format commands; game-day setup continues directly into the complete competition scheduling wizard. Preset, format, venue, hours, and slot-duration defaults are remembered on the edition and are backfilled by the 19.0.4.0.0 migration.
 
+The format picker supports **Groups then knockout** for tournament-day and
+season competitions. Operators choose the group count; the preview uses the
+same feasibility estimate as format generation. The generated structure seeds
+teams into groups, creates the knockout placeholders for the initial schedule,
+and advances the top two from each group when that group's standings are frozen.
+
 The former owner-module router remains callable as `action_open_advanced_workspace`. Exact records, audit data, and recovery actions are retained; only ordinary menu discoverability changes.
 
 ## Walkthrough usability findings

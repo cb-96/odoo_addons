@@ -23,27 +23,40 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
             ("single_round_robin", "League - play each team once"),
             ("double_round_robin", "Home & away league"),
             ("knockout", "Knockout cup"),
+            ("pool_knockout", "Groups then knockout"),
         ],
         required=True,
         default="single_round_robin",
         string="Format",
     )
+    pool_count = fields.Integer(default=2, required=True, string="Number of groups")
 
     preview_match_count = fields.Integer(compute="_compute_format_preview", string="Total matches")
     preview_matches_per_team = fields.Integer(compute="_compute_format_preview", string="Matches per team (league)")
     preview_byes = fields.Integer(compute="_compute_format_preview", string="First-round byes")
     preview_confirmed = fields.Boolean(string="I have reviewed this format")
 
-    @api.depends("participant_set_id.line_ids", "format_type")
+    @api.depends("participant_set_id.line_ids", "format_type", "pool_count")
     def _compute_format_preview(self):
         for wizard in self:
             n = len(wizard.participant_set_id.line_ids)
             multiplier = 2 if wizard.format_type == "double_round_robin" else 1
-            wizard.preview_match_count = max(n - 1, 0) if wizard.format_type == "knockout" else n * max(n - 1, 0) // 2 * multiplier
-            wizard.preview_matches_per_team = 0 if wizard.format_type == "knockout" else max(n - 1, 0) * multiplier
-            wizard.preview_byes = (1 << (n - 1).bit_length()) - n if n > 1 and wizard.format_type == "knockout" else 0
+            estimate = self.env["federation.format.feasibility"].estimate(
+                wizard.format_type, n, pool_count=wizard.pool_count
+            )
+            wizard.preview_match_count = estimate["fixture_count"]
+            wizard.preview_matches_per_team = (
+                0
+                if wizard.format_type in ("knockout", "pool_knockout")
+                else max(n - 1, 0) * multiplier
+            )
+            wizard.preview_byes = (
+                (1 << (n - 1).bit_length()) - n
+                if n > 1 and wizard.format_type == "knockout"
+                else 0
+            )
 
-    @api.onchange("format_type", "division_id")
+    @api.onchange("format_type", "division_id", "pool_count")
     def _reset_preview_confirmation(self):
         self.preview_confirmed = False
 
@@ -107,6 +120,14 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
         )
         if participant_set != self.participant_set_id:
             raise ValidationError(_("The participating teams changed. Reopen and review the format."))
+        if self.format_type == "pool_knockout":
+            estimate = self.env["federation.format.feasibility"].estimate(
+                self.format_type,
+                len(participant_set.line_ids),
+                pool_count=self.pool_count,
+            )
+            if not estimate["feasible"]:
+                raise ValidationError(estimate["message"])
         existing = self.env["federation.competition.structure"].search(
             [
                 ("edition_id", "=", self.edition_id.id),
@@ -118,6 +139,8 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
             order="version desc,id desc",
             limit=1,
         )
+        if self.format_type == "pool_knockout":
+            existing = existing.filtered(lambda item: item.pool_count == self.pool_count)
         structure = existing
         if not structure:
             latest = self.env["federation.competition.structure"].search(
@@ -135,6 +158,7 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
                     "participant_set_id": participant_set.id,
                     "version": (latest.version + 1) if latest else 1,
                     "format_type": self.format_type,
+                    "pool_count": self.pool_count,
                 }
             )
         if structure.state == "draft":

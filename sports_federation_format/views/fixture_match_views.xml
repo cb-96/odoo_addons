@@ -1,0 +1,15 @@
+<odoo>
+  <record id="view_federation_match_form_format_knockout" model="ir.ui.view">
+    <field name="name">federation.match.form.format.knockout</field>
+    <field name="model">federation.match</field>
+    <field name="inherit_id" ref="sports_federation_tournament.view_federation_match_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet" position="inside">
+        <field name="is_format_knockout" invisible="1"/>
+      </xpath>
+      <xpath expr="//page[@name='bracket']" position="attributes">
+        <attribute name="invisible">not source_match_1_id and not source_match_2_id and not bracket_type and not is_format_knockout</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

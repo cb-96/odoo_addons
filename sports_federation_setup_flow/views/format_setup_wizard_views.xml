@@ -17,8 +17,10 @@
             <field name="team_count" readonly="1" string="Confirmed teams"/>
           </group>
           <field name="format_type" widget="radio"/>
-          <group string="Format preview"><field name="preview_match_count"/><field name="preview_matches_per_team" invisible="format_type == 'knockout'"/><field name="preview_byes" invisible="format_type != 'knockout'"/></group>
-          <div class="alert alert-info" invisible="format_type != 'knockout'">Knockout participation depends on results. The winner plays more matches than a team eliminated early.</div>
+          <group invisible="format_type != 'pool_knockout'"><field name="pool_count"/></group>
+          <group string="Format preview"><field name="preview_match_count"/><field name="preview_matches_per_team" invisible="format_type in ('knockout', 'pool_knockout')"/><field name="preview_byes" invisible="format_type != 'knockout'"/></group>
+          <div class="alert alert-info" role="status" invisible="format_type != 'knockout'">Knockout participation depends on results. The winner plays more matches than a team eliminated early.</div>
+          <div class="alert alert-info" role="status" invisible="format_type != 'pool_knockout'">Teams play a round-robin group stage. The top two teams in each group advance into a seeded knockout bracket.</div>
           <field name="preview_confirmed"/>
         </sheet>
         <footer>

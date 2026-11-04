@@ -28,12 +28,19 @@ the view remains safe when translated page labels change.
 
 The format studio now estimates fixture and round counts before generation. It
 supports single and double leagues, seeded knockout and placement brackets,
-match series, pool-to-knockout configuration, and championship/relegation
-splits. Swiss pairing, ladder, and double-elimination services provide
-deterministic planning helpers, but complete automatic fixture generation for
-those formats remains deliberately out of scope until their full workflows are
-implemented. Estimates are planning guidance; generation validates the final
-fixture graph.
+match series, pool-to-knockout structures, and championship/relegation splits.
+For pool-knockout, seeded teams are distributed across the selected groups in a
+snake pattern, each group plays a single round robin, and the top two from each
+group feed a seeded knockout bracket. The knockout fixtures are created as
+placeholders before group results are known, so they can be included in the
+original schedule publication. Freezing each group table applies its progression
+edge; when all groups are frozen, teams fill the bracket without republishing.
+Knockout tie-resolution fields are available on the logical-format match form.
+
+Swiss pairing, ladder, and double-elimination services provide deterministic
+planning helpers, but complete automatic fixture generation for those formats
+remains deliberately out of scope until their full workflows are implemented.
+Estimates are planning guidance; generation validates the final fixture graph.
 
 ## Final stage freeze access
 

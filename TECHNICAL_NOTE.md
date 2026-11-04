@@ -133,6 +133,11 @@ Exception and publication recovery standard:
     assignments.
 - `sports_federation_schedule_approval` reviews schedules and publishes an
     immutable snapshot; `sports_federation_matchday` executes only that snapshot.
+- Format Studio's pool-knockout generation distributes seeds across configured
+    pools, creates round-robin fixtures, and prepares seeded knockout placeholders
+    for the first publication. Freezing each pool applies its progression edge;
+    the final bracket fills only after every pool has a frozen table. Tie
+    resolution is recorded on the operational match before result submission.
 - `sports_federation_portal` now names three distinct club-operator phases:
     match-day preparation in the workspace or preparation queue, live play in
     the live operations board, and result follow-up in the results queue. Those

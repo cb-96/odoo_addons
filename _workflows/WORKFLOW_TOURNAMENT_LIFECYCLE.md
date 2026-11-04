@@ -216,6 +216,14 @@ set where every team plays every other team once or twice according to policy.
 **Knockout**: The format service creates a seeded single-elimination bracket,
 including byes and future-round wiring for non-power-of-two participant counts.
 
+**Pools then knockout**: Choose the group count in the format picker. Seeds are
+distributed in a snake pattern, groups play a single round robin, and the top
+two teams from each frozen group table advance to a seeded bracket. Knockout
+placeholders are part of the original publication; after all group tables are
+frozen, progression fills the scheduled bracket without a replacement
+publication. For a tied knockout score, record the resolution and advancing team
+on the match before submitting the result.
+
 ### 7. Match Execution
 
 **Actor**: Federation staff, referees
@@ -223,6 +231,9 @@ including byes and future-round wiring for non-power-of-two participant counts.
 
 1. Matches are scheduled with date/time, venue, home/away teams.
 2. Match states progress: `draft` → `scheduled` → `in_progress` → `done`.
+   Immediately before play, every listed non-crossed-out player is rechecked
+   against current eligibility; a newly suspended or otherwise ineligible
+   player must be crossed out for that match before it can start.
 3. Scores are entered on the match form (home_score, away_score).
 4. Match-day details are handled by the [Match Day Operations](WORKFLOW_MATCH_DAY_OPERATIONS.md)
    workflow.

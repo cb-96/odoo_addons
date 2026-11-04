@@ -59,6 +59,7 @@ class FederationCreateCompetitionWizardJourney(models.TransientModel):
             ("single_round_robin", "League"),
             ("double_round_robin", "Home & Away League"),
             ("knockout", "Knockout Cup"),
+            ("pool_knockout", "Groups then Knockout"),
         ],
         default="single_round_robin",
         required=True,

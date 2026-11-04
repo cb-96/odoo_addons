@@ -13,11 +13,21 @@ class FederationMatchFixtureBridge(models.Model):
         ondelete="restrict",
         index=True,
     )
+    is_format_knockout = fields.Boolean(compute="_compute_is_format_knockout")
 
     _unique_logical_fixture = models.Constraint(
         "unique(logical_fixture_id)",
         "A logical fixture can materialize into only one operational match.",
     )
+
+    @api.depends("logical_fixture_id.stage_id.stage_type")
+    def _compute_is_format_knockout(self):
+        for match in self:
+            match.is_format_knockout = bool(
+                match.logical_fixture_id
+                and match.logical_fixture_id.stage_id.stage_type
+                in ("knockout", "placement")
+            )
 
     @api.constrains(
         "logical_fixture_id", "tournament_id", "home_team_id", "away_team_id"

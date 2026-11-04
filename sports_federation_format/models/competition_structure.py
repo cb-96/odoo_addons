@@ -105,8 +105,11 @@ class FederationCompetitionStructure(models.Model):
 
     def action_generate(self):
         for rec in self:
+            if rec.format_type == "pool_knockout" and rec.pool_count < 1:
+                raise ValidationError("A pool-knockout format needs at least one pool.")
             if not rec.generation_feasible and rec.format_type != "custom":
                 raise ValidationError(rec.feasibility_message)
+            engine = self.env["federation.stage.graph.engine"]
             if not rec.stage_ids and rec.format_type in (
                 "single_round_robin",
                 "double_round_robin",
@@ -132,6 +135,8 @@ class FederationCompetitionStructure(models.Model):
                         "source_type": "registration",
                     }
                 )
+            if not rec.stage_ids and rec.format_type == "pool_knockout":
+                engine.generate_pool_knockout_stages(rec)
             roots = rec.stage_ids.filtered(
                 lambda stage: not stage.incoming_progression_ids
             )
@@ -142,7 +147,6 @@ class FederationCompetitionStructure(models.Model):
                 stage.action_prepare_stage()
             # Brackets fed by an earlier stage get placeholder fixtures now,
             # so the whole competition can be scheduled before tables are final.
-            engine = self.env["federation.stage.graph.engine"]
             for stage in (rec.stage_ids - roots).sorted("sequence"):
                 engine.prepare_placeholder_stage(stage)
             rec.state = "generated"
