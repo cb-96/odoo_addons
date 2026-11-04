@@ -5,6 +5,7 @@
     <field name="inherit_id" ref="sports_federation_tournament.view_federation_match_form"/>
     <field name="arch" type="xml">
       <xpath expr="//sheet" position="inside">
+        <!-- Technical relay for the knockout-page visibility modifier. -->
         <field name="is_format_knockout" invisible="1"/>
       </xpath>
       <xpath expr="//page[@name='bracket']" position="attributes">
