@@ -20,3 +20,5 @@ from . import role_journeys
 
 from . import connected_journeys
 from . import roster_bulk
+
+from . import club_dashboard

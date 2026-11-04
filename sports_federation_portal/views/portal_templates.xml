@@ -12,95 +12,33 @@
     </template>
 
     <template id="portal_federation_links" name="Federation Portal Links">
-        <div t-if="federation_representative" class="o_fed_portal_shell o_fed_portal_home mb-5">
-            <section class="o_fed_portal_hero" aria-labelledby="club-portal-title">
-                <div class="o_fed_portal_eyebrow">Dodgeball Belgium · Club portal</div>
-                <h2 id="club-portal-title" class="mt-2 mb-2">
-                    <t t-esc="federation_club.name if federation_club else 'My club'"/>
-                </h2>
-                <p class="mb-0">Manage teams, prepare match days, fulfil officiating duties and follow up results from one place.</p>
-                <div class="o_fed_portal_task">
-                    <div>
-                        <div class="small text-uppercase fw-bold text-muted mb-1">Next action</div>
-                        <div class="fw-bold">Open your club operations workspace</div>
-                        <div class="small text-muted mt-1">
-                            <t t-if="federation_pending_duties_count or federation_pending_results_count">
-                                <t t-esc="(federation_pending_duties_count or 0) + (federation_pending_results_count or 0)"/> item(s) currently need attention.
-                            </t>
-                            <t t-else="">Review active competitions, upcoming matches and team readiness.</t>
-                        </div>
-                    </div>
-                    <a href="/my/competitions" class="btn btn-primary">Open workspace <i class="fa fa-arrow-right ms-2" aria-hidden="true"/></a>
-                </div>
-            </section>
+      <div t-if="federation_representative" class="o_fed_portal_shell o_fed_club_dashboard mb-5">
+        <t t-set="dash" t-value="federation_club_dashboard or {}"/>
+        <t t-set="badges" t-value="dash.get('badges', {})"/>
+        <section class="o_fed_portal_hero mb-4" aria-labelledby="club-dashboard-title">
+          <div class="o_fed_portal_eyebrow">Dodgeball Belgium · Club portal</div>
+          <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mt-2">
+            <div><h2 id="club-dashboard-title" class="mb-1"><t t-esc="federation_club.name if federation_club else 'My club'"/></h2><p class="mb-0">Your teams, people, competitions and match-day work in one overview.</p></div>
+            <a href="/my/action-items" class="btn btn-light position-relative"><i class="fa fa-check-square-o me-2"/>All actions<span t-if="dash.get('tasks')" class="badge rounded-pill text-bg-danger ms-2"><t t-esc="dash.get('tasks')"/></span></a>
+          </div>
+        </section>
 
-            <nav class="o_fed_portal_quicknav" aria-label="Club portal shortcuts">
-                <a class="o_fed_portal_quicklink" href="/my/competitions"><i class="fa fa-tachometer" aria-hidden="true"/><strong>Overview</strong></a>
-                <a class="o_fed_portal_quicklink" href="/my/match-day"><i class="fa fa-calendar-check-o" aria-hidden="true"/><strong>Match day</strong></a>
-                <a class="o_fed_portal_quicklink" href="/my/referee-duties"><i class="fa fa-flag" aria-hidden="true"/><span><strong>Officials</strong><span t-if="federation_pending_duties_count" class="badge bg-warning text-dark ms-2"><t t-esc="federation_pending_duties_count"/></span></span></a>
-                <a class="o_fed_portal_quicklink" href="/my/results"><i class="fa fa-check-circle" aria-hidden="true"/><span><strong>Results</strong><span t-if="federation_pending_results_count" class="badge bg-warning text-dark ms-2"><t t-esc="federation_pending_results_count"/></span></span></a>
-            </nav>
-
-                <div t-if="federation_operation_task_count" class="o_fed_portal_task mb-4">
-                    <div>
-                        <div class="small text-uppercase fw-bold text-muted mb-1">Action items</div>
-                        <div class="fw-bold"><t t-esc="federation_operation_task_count"/> item(s) need attention</div>
-                        <div class="small text-muted mt-1">Start with the most urgent readiness or match-day blocker.</div>
-                    </div>
-                    <a href="/my/action-items" class="btn btn-primary">Open action items <i class="fa fa-arrow-right ms-2" aria-hidden="true"/></a>
-                </div>
-                <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap mb-3">
-                <div>
-                    <h2 class="h4 o_fed_portal_section-title mb-1">Club administration</h2>
-                    <p class="text-muted mb-0">Common tasks first. Open the full catalogue only when you need it.</p>
-                </div>
-            </div>
-            <div class="o_fed_portal_grid mb-4">
-                <a class="o_fed_portal_link" href="/my/teams"><i class="fa fa-users" aria-hidden="true"/><span><strong>My teams</strong><br/><small class="text-muted">Teams, players and rosters</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-                <a class="o_fed_portal_link" href="/my/season-registrations"><i class="fa fa-pencil-square-o" aria-hidden="true"/><span><strong>Registrations</strong><br/><small class="text-muted">Season and tournament entries</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-                <a class="o_fed_portal_link" href="/my/match-day"><i class="fa fa-calendar-check-o" aria-hidden="true"/><span><strong>Upcoming matches</strong><br/><small class="text-muted">Readiness, lineups and duties</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-            </div>
-            <details class="mb-4">
-              <summary class="btn btn-outline-secondary">All club tools</summary>
-              <div class="o_fed_portal_grid mt-3">
-                <section class="o_fed_portal_group" aria-labelledby="portal-teams-heading">
-                    <div class="o_fed_portal_group-header"><h3 id="portal-teams-heading">Teams and players</h3><p>Register squads and keep player information ready.</p></div>
-                    <a class="o_fed_portal_link" href="/my/teams"><i class="fa fa-users" aria-hidden="true"/><span><strong>Teams</strong><br/><small class="text-muted">Manage club teams</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-                    <a class="o_fed_portal_link" href="/my/players"><i class="fa fa-user" aria-hidden="true"/><span><strong>Players</strong><br/><small class="text-muted">Registrations and licences</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-                    <a class="o_fed_portal_link" href="/my/rosters"><i class="fa fa-list" aria-hidden="true"/><span><strong>Rosters</strong><br/><small class="text-muted">Build competition rosters</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-                </section>
-                <section class="o_fed_portal_group" aria-labelledby="portal-competition-heading">
-                    <div class="o_fed_portal_group-header"><h3 id="portal-competition-heading">Competition</h3><p>Prepare matches and complete post-match actions.</p></div>
-                    <a class="o_fed_portal_link" href="/my/match-day"><i class="fa fa-clock-o" aria-hidden="true"/><span><strong>Preparation queue</strong><br/><small class="text-muted">Lineups and readiness</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-                    <a class="o_fed_portal_link" href="/my/match-sheets"><i class="fa fa-list-alt" aria-hidden="true"/><span><strong>Lineups</strong><br/><small class="text-muted">Open match records</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-                    <a class="o_fed_portal_link" href="/my/results"><i class="fa fa-check-circle" aria-hidden="true"/><span><strong>Result follow-up</strong><br/><small class="text-muted">Review, approve or contest</small></span><span t-if="federation_pending_results_count" class="badge bg-warning text-dark"><t t-esc="federation_pending_results_count"/></span><i class="fa fa-chevron-right" aria-hidden="true"/></a>
-                </section>
-                <section class="o_fed_portal_group" aria-labelledby="portal-admin-heading">
-                    <div class="o_fed_portal_group-header"><h3 id="portal-admin-heading">Club administration</h3><p>Registrations, duties and club information.</p></div>
-                    <a class="o_fed_portal_link" href="/my/referee-duties"><i class="fa fa-flag" aria-hidden="true"/><span><strong>Referee duties</strong><br/><small class="text-muted">Nominate club officials</small></span><span t-if="federation_pending_duties_count" class="badge bg-warning text-dark"><t t-esc="federation_pending_duties_count"/></span><i class="fa fa-chevron-right" aria-hidden="true"/></a>
-                    <a class="o_fed_portal_link" href="/my/season-registrations"><i class="fa fa-pencil-square-o" aria-hidden="true"/><span><strong>Season registrations</strong><br/><small class="text-muted">Register teams for a season</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-                    <a class="o_fed_portal_link" href="/my/competition-entries"><i class="fa fa-trophy" aria-hidden="true"/><span><strong>Tournament entries</strong><br/><small class="text-muted">Apply and follow status</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-                    <a class="o_fed_portal_link" href="/my/club"><i class="fa fa-shield" aria-hidden="true"/><span><strong>Club details</strong><br/><small class="text-muted">Contacts and information</small></span><i class="fa fa-chevron-right ms-auto" aria-hidden="true"/></a>
-                </section>
-              </div>
-            </details>
+        <div class="d-flex justify-content-between align-items-center mb-3"><div><h3 class="h4 mb-1">Club overview</h3><p class="text-muted mb-0">Open an area at any time. A red badge means something needs attention there.</p></div></div>
+        <div class="o_fed_club_grid mb-4">
+          <a href="/my/teams" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-users"/></span><span class="o_fed_club_content"><strong>Teams</strong><small><t t-esc="dash.get('teams', 0)"/> active team(s)</small></span><span t-if="badges.get('teams')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('teams')"/></span><i class="fa fa-chevron-right text-muted"/></a>
+          <a href="/my/players" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-user"/></span><span class="o_fed_club_content"><strong>Players</strong><small><t t-esc="dash.get('players', 0)"/> player(s)</small></span><span t-if="badges.get('players')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('players')"/></span><i class="fa fa-chevron-right text-muted"/></a>
+          <a href="/my/rosters" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-list-alt"/></span><span class="o_fed_club_content"><strong>Rosters</strong><small><t t-esc="dash.get('rosters', 0)"/> roster(s)</small></span><span t-if="badges.get('rosters')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('rosters')"/></span><i class="fa fa-chevron-right text-muted"/></a>
+          <a href="/my/competitions" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-trophy"/></span><span class="o_fed_club_content"><strong>Competitions</strong><small><t t-esc="dash.get('competitions', 0)"/> competition(s)</small></span><i class="fa fa-chevron-right text-muted"/></a>
+          <a href="/my/preparation" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-calendar-check-o"/></span><span class="o_fed_club_content"><strong>Game-day preparation</strong><small>Lineups and roster readiness per game day</small></span><span t-if="badges.get('preparation')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('preparation')"/></span><i class="fa fa-chevron-right text-muted"/></a>
+          <a href="/my/referee-duties" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-gavel"/></span><span class="o_fed_club_content"><strong>Officials</strong><small>Club referee duties and nominations</small></span><span t-if="badges.get('officials')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('officials')"/></span><i class="fa fa-chevron-right text-muted"/></a>
+          <a href="/my/results" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-flag-checkered"/></span><span class="o_fed_club_content"><strong>Results</strong><small>Submitted results and follow-up</small></span><span t-if="badges.get('results')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('results')"/></span><i class="fa fa-chevron-right text-muted"/></a>
+          <a href="/my/compliance" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-shield"/></span><span class="o_fed_club_content"><strong>Compliance</strong><small>Documents, approvals and renewals</small></span><i class="fa fa-chevron-right text-muted"/></a>
         </div>
+        <div class="d-flex flex-wrap gap-2"><a href="/my/season-registrations" class="btn btn-outline-secondary"><i class="fa fa-pencil-square-o me-2"/>Registrations</a><a href="/my/match-days" class="btn btn-outline-secondary"><i class="fa fa-calendar me-2"/>Match days</a><a href="/my/match-sheets" class="btn btn-outline-secondary"><i class="fa fa-clipboard me-2"/>Lineups</a><a href="/my/club" class="btn btn-outline-secondary"><i class="fa fa-building me-2"/>Club details</a></div>
+      </div>
 
-        <div t-if="federation_referee and not federation_representative" class="o_fed_portal_shell mb-4">
-            <section class="o_fed_portal_hero">
-                <div class="o_fed_portal_eyebrow">Dodgeball Belgium · Officials portal</div>
-                <h2 class="mt-2">My officiating assignments</h2>
-                <p>Review assigned matches and respond before each confirmation deadline.</p>
-                <div class="o_fed_portal_task">
-                    <div><strong><t t-esc="federation_pending_assignment_count or 0"/> pending assignment(s)</strong><div class="small text-muted"><t t-esc="federation_overdue_assignment_count or 0"/> overdue</div></div>
-                    <a href="/my/referee-assignments" class="btn btn-primary">Review assignments</a>
-                </div>
-            </section>
-        </div>
-
-        <div t-if="not federation_representative and not federation_referee" class="alert alert-info" role="status">
-            <i class="fa fa-info-circle me-2" aria-hidden="true"/>You are not currently assigned as a club representative or match official. Please contact the federation for access.
-        </div>
+      <div t-if="federation_referee and not federation_representative" class="o_fed_portal_shell mb-4"><section class="o_fed_portal_hero"><div class="o_fed_portal_eyebrow">Dodgeball Belgium · Officials portal</div><h2 class="mt-2">My officiating assignments</h2><p>Review assigned matches and respond before each confirmation deadline.</p><div class="o_fed_portal_task"><div><strong><t t-esc="federation_pending_assignment_count or 0"/> pending assignment(s)</strong><div class="small text-muted"><t t-esc="federation_overdue_assignment_count or 0"/> overdue</div></div><a href="/my/referee-assignments" class="btn btn-primary">Review assignments</a></div></section></div>
+      <div t-if="not federation_representative and not federation_referee" class="alert alert-info" role="status"><i class="fa fa-info-circle me-2"/>You are not currently assigned as a club representative or match official. Please contact the federation for access.</div>
     </template>
 
     <template id="portal_my_operation_tasks" name="Club Work Inbox">
