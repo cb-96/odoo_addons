@@ -29,8 +29,18 @@ class FederationCompetitionEditionPublish(models.Model):
             current |= schedule
         return current
 
-    def action_publish_competition_schedule(self):
-        """Submit (and, in Streamlined mode, approve and publish) all game days."""
+    def action_publish_competition_schedule(self, warning_override_reason=False):
+        """Submit (and, in Streamlined mode, approve and publish) all game days.
+
+        ``warning_override_reason`` accepts schedule warnings (for example a
+        team playing twice on one day) with an audited reason; without it, game
+        days with warnings are reported instead of published.
+        """
+        self.ensure_one()
+        summary = self._publish_competition_schedule(warning_override_reason)
+        return self._publish_notification(summary)
+
+    def _publish_competition_schedule(self, warning_override_reason=False):
         self.ensure_one()
         self.check_access("read")
         commands = self.env["federation.schedule.approval.commands"]
@@ -48,7 +58,9 @@ class FederationCompetitionEditionPublish(models.Model):
                                 _("%(count)s match(es) still have no court or time.",
                                   count=schedule.unassigned_fixture_count)
                             )
-                        schedule.action_submit_for_review()
+                        schedule.action_submit_for_review(
+                            warning_override_reason=warning_override_reason
+                        )
                         submitted += 1
                     elif schedule.state == "approved":
                         current = day.current_publication_id
@@ -69,6 +81,18 @@ class FederationCompetitionEditionPublish(models.Model):
             except (AccessError, UserError, ValidationError) as error:
                 skipped.append("%s: %s" % (label, getattr(error, "args", [error])[0]))
 
+        return {
+            "submitted": submitted,
+            "published": published,
+            "waiting": waiting,
+            "skipped": skipped,
+        }
+
+    def _publish_notification(self, summary):
+        submitted = summary["submitted"]
+        published = summary["published"]
+        waiting = summary["waiting"]
+        skipped = summary["skipped"]
         lines = []
         if published:
             lines.append(_("%(count)s game day(s) published.", count=published))

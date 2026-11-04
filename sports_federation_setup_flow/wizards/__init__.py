@@ -4,3 +4,4 @@ from . import competition_clone_wizard
 from . import format_setup_wizard
 from . import quick_result_wizard
 from . import division_setup_wizard
+from . import practice_competition_wizard
