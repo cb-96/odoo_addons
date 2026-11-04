@@ -46,6 +46,7 @@
           <field name="state" widget="statusbar" statusbar_visible="pending,changes_requested,approved"/>
         </header>
         <sheet>
+          <!-- Technical fields kept invisible for view modifiers and domains. -->
           <field name="self_approval_allowed" invisible="1"/>
           <div class="alert alert-info" role="status" invisible="state != 'pending' or self_approval_allowed">Review the immutable submitted snapshot. Add a note, then request changes or approve it. A different assigned person must decide this review.</div>
           <div class="alert alert-info" role="status" invisible="state != 'pending' or not self_approval_allowed">Review the immutable submitted snapshot. This workflow permits the submitting planner to decide it after all checks pass.</div>

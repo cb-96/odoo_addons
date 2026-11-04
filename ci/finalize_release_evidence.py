@@ -19,6 +19,7 @@ DEFAULT_REQUIRED_LANES = (
     "performance",
     "acceptance",
     "focus",
+    "lifecycle",
 )
 
 

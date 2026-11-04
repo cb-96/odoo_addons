@@ -11,6 +11,7 @@
           </div>
           <group>
             <field name="matchday_id"/>
+            <!-- Technical fields kept invisible for view modifiers and domains. -->
             <field name="available_team_ids" invisible="1"/>
             <field name="team_id" options="{'no_create': True}"/>
             <field name="roster_id" options="{'no_create': True}"/>

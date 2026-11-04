@@ -896,3 +896,29 @@ must pass on staging before release.
 Rollback: restore the pre-upgrade database and filestore with the previous
 code. Code-only rollback leaves done matches, linked tables and suspension
 states that the previous code does not expect.
+
+## End-to-end release check: lifecycle lane and walkthrough
+
+The release baseline now requires a `lifecycle` lane. It runs the scenarios
+contracted in `ci/release_confidence/competition_lifecycle.json` from
+`sports_federation_app/tests/test_competition_lifecycle_e2e.py` and fails when the
+file is missing, uses shortcuts (elevation, policy bypass, direct state writes,
+skips), or any required scenario did not run. Until the scenarios are written the
+baseline is red by design.
+
+`scripts/ci/run_end_to_end_release.sh` runs the lanes (and the migration rehearsal
+when an approved backup is supplied), starts a disposable walkthrough server on the
+host loopback, and combines automated, walkthrough and novice-session evidence into
+`end-to-end-summary.json`. See docs/END_TO_END_RELEASE.md and
+docs/END_TO_END_RELEASE_AGENT.md.
+
+View files in accounting, calendar, duty coverage, member services, rosters,
+schedule approval and setup flow only gained XML rationale comments for
+always-invisible fields; no view behaviour changed and no module upgrade is needed
+for them.
+
+Dry-run evidence: shell syntax, the new checker unit tests and the repository
+static checks executed. The Odoo lanes, walkthrough server and seed script were NOT
+executed in this environment.
+
+Rollback: revert the commit. No data or schema change is involved.

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "description": "Required end-to-end coverage of one competition from creation to close. The lifecycle lane, the source check and the walkthrough verifier read this contract; change it only through review, never to make a run pass.",
+  "test": {
+    "path": "sports_federation_app/tests/test_competition_lifecycle_e2e.py",
+    "tag": "sf_competition_lifecycle",
+    "required_tags": ["post_install", "-at_install", "sf_competition_lifecycle", "sf_release_confidence"],
+    "forbidden_patterns": [
+      {"pattern": "\\.sudo\\(\\)", "reason": "Actors must be ordinary role accounts; elevation hides access defects."},
+      {"pattern": "\\bwith_context\\([^)]*workflow_policy_bypass", "reason": "Policy bypass skips the review being tested."},
+      {"pattern": "[\"'](?:state|result_state|graph_state|operational_status)[\"']\\s*:", "reason": "Workflow state must change through commands, not writes."},
+      {"pattern": "\\.(?:state|result_state|graph_state)\\s*=(?!=)", "reason": "Workflow state must change through commands, not assignment."},
+      {"pattern": "\\bskipTest\\(|@unittest\\.skip|SkipTest", "reason": "A skipped scenario is not evidence."}
+    ],
+    "required_methods": [
+      {
+        "name": "test_league_runs_from_creation_to_closed_competition",
+        "covers": "Streamlined league: Create Competition wizard (league preset, 14/12 rule set) -> Select Teams -> Choose Format (single round robin) -> Define Game Days (two days, one venue, two courts) -> Plan Competition -> submit, approve and publish -> competition becomes Open, then In Progress when the first day opens -> one gameday roster per team, players crossed out per match -> court operator saves and submits every result -> approved results mark matches done -> linked league table updates without manual records -> each gameday closes without force -> table frozen -> Hub closes the competition -> public site lists it as Completed."
+      },
+      {
+        "name": "test_independent_review_is_enforced_in_controlled_mode",
+        "covers": "Controlled workflow: the schedule planner cannot approve or publish their own schedule; the result submitter cannot verify or approve their own result; an independent approver can. Database state is unchanged after each denied command."
+      },
+      {
+        "name": "test_tournament_day_runs_groups_then_knockout_from_one_publication",
+        "covers": "Tournament-day preset with groups then knockout: knockout fixtures with unknown teams are scheduled and published once; finishing the groups fills the knockout teams without republication; a tied knockout match progresses via resolution type and advancing team; the final placement is complete."
+      },
+      {
+        "name": "test_correcting_a_progressed_result_rolls_back_the_next_round",
+        "covers": "Correcting a knockout result after the winner moved on withdraws the unplayed follow-up match with an audit event, refills it with the corrected winner, and refuses the correction once the follow-up has started."
+      },
+      {
+        "name": "test_competition_cannot_close_while_work_is_unfinished",
+        "covers": "Closing reports every blocker (unfinished matches, open gamedays, unapproved results, unfrozen tables); the raw Close and Reset to Draft buttons are refused on the server; closing succeeds once the blockers are cleared."
+      },
+      {
+        "name": "test_forfeit_and_bye_points_follow_the_rule_set",
+        "covers": "A forfeit recorded on court and a structural bye award the rule-set points (not the score) in the linked table."
+      },
+      {
+        "name": "test_suspension_dates_and_match_count_control_eligibility",
+        "covers": "A future-dated suspension does not suspend the player until its start date (daily job); a match-count suspension expires after the team plays that many matches; a suspension issued after the gameday roster was approved blocks that player at match start."
+      },
+      {
+        "name": "test_gameday_roster_limits_hold_through_result_submission",
+        "covers": "A 14-player gameday roster is shared by all matches that day; result submission is refused while more than 12 players are left playing; each match keeps its own crossed-out players."
+      }
+    ]
+  },
+  "walkthrough": {
+    "description": "Browser evidence on the disposable walkthrough server. Each step is performed through the real UI by the stated actor; mobile steps use a 390x844 viewport.",
+    "required_steps": [
+      {"id": "create_competition", "actor": "organiser", "viewport": "desktop", "expect": "Create Competition wizard with the league preset creates the competition and opens the Competition Hub with one next action."},
+      {"id": "select_teams", "actor": "organiser", "viewport": "desktop", "expect": "Select Teams finalizes the four seeded teams."},
+      {"id": "choose_format", "actor": "organiser", "viewport": "desktop", "expect": "Choose Format shows the preview, requires confirmation and generates fixtures."},
+      {"id": "define_gamedays", "actor": "organiser", "viewport": "desktop", "expect": "Define Game Days creates two days with event-local times."},
+      {"id": "plan_and_publish", "actor": "organiser", "viewport": "desktop", "expect": "Plan Competition assigns every fixture; submission, approval and publication succeed; the competition shows Open."},
+      {"id": "club_gameday_roster", "actor": "club_representative", "viewport": "mobile", "expect": "Portal shows one gameday roster per team and day, no starter selection, at most 14 players."},
+      {"id": "cross_out_players", "actor": "club_representative", "viewport": "mobile", "expect": "Players for this match accepts crossing out down to 12 and keeps different choices per match."},
+      {"id": "official_assignment", "actor": "official", "viewport": "mobile", "expect": "The official sees and accepts the assignment with event-local time."},
+      {"id": "open_gameday", "actor": "gameday_manager", "viewport": "desktop", "expect": "Opening the first day moves the competition to In Progress."},
+      {"id": "court_scoring", "actor": "court_operator", "viewport": "mobile", "expect": "Court workspace lists only participating players; save draft, submit and next match work; status distinguishes device, server, submitted and approved."},
+      {"id": "result_review", "actor": "result_approver", "viewport": "desktop", "expect": "Approving results marks matches done and updates the public table."},
+      {"id": "close_gamedays", "actor": "gameday_manager", "viewport": "desktop", "expect": "Each finished gameday closes without forcing."},
+      {"id": "freeze_and_close", "actor": "organiser", "viewport": "desktop", "expect": "The Hub leads through freezing the table and closing the competition."},
+      {"id": "public_completed", "actor": "anonymous", "viewport": "mobile", "expect": "The public site lists the competition as Completed with the final table."},
+      {"id": "denied_access", "actor": "club_representative", "viewport": "desktop", "expect": "Crafted URLs for another club's roster, sheet and documents are refused and change nothing."}
+    ]
+  }
+}

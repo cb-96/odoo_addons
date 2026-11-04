@@ -10,6 +10,8 @@ scripts/ci/run_release_baseline.sh
 
 The default output is `${TMPDIR:-/tmp}/sports-federation-release-baseline/<commit>/`. Override it with `RELEASE_BASELINE_EVIDENCE_DIR`, but keep it outside the repository.
 
+The required lanes include `lifecycle`, which runs the contracted end-to-end competition scenarios in `ci/release_confidence/competition_lifecycle.json` and fails when any of them is missing, skipped or did not run. For the full end-to-end check, including the browser walkthrough and the final verdict, see [END_TO_END_RELEASE.md](END_TO_END_RELEASE.md).
+
 ## Validate existing evidence
 
 ```bash

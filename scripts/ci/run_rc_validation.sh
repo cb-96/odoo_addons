@@ -203,6 +203,8 @@ PY
   python3 ci/check_legacy_engine_removed.py
   python3 ci/test_check_odoo_registry_log.py
   python3 ci/test_check_reliability_contract.py
+  python3 ci/test_check_lifecycle_coverage.py
+  python3 ci/test_check_end_to_end_evidence.py
   python3 ci/check_portal_sudo_guard.py
   python3 ci/check_privileged_inventory_quality.py
   python3 ci/check_privileged_mutation_boundaries.py
@@ -292,6 +294,17 @@ assert_retired_engine_uninstalled() {
   fi
 }
 
+run_lifecycle() {
+  # Fail before Odoo starts when the contracted scenarios are missing or use
+  # shortcuts; afterwards prove each one ran, because a tag that selects no test
+  # still exits successfully.
+  python3 ci/check_lifecycle_coverage.py --source || return 1
+  # The scenarios live in sports_federation_app, which depends on every addon.
+  run_odoo "${common[@]}" -d "$db_name" -u "$upgrade_modules" \
+    --test-enable --test-tags "${RC_LIFECYCLE_TEST_TAGS:-sf_competition_lifecycle}" || return 1
+  python3 ci/check_lifecycle_coverage.py --log "${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
+}
+
 run_upgrade() {
   : > "${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
   assert_modules_installed "$upgrade_db_name"
@@ -327,6 +340,7 @@ case "$lane" in
     ;;
   acceptance) run_tags 'sf_operator_acceptance' ;;
   focus) run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus' ;;
+  lifecycle) run_lifecycle ;;
   full) run_tags_on "$upgrade_db_name" "$federation_test_tags" ;;
   upstream) run_tags 'standard' ;;
   all)
@@ -343,6 +357,7 @@ case "$lane" in
     run_tags '/sports_federation_standings:TestStandingsPerformance,/sports_federation_reporting:TestReportSnapshot,/sports_federation_reporting:TestYearFourReporting,/sports_federation_public_site:TestPublicSiteNewEndpoints'
     run_tags 'sf_operator_acceptance'
     run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus'
+    run_lifecycle
     ;;
-  *) echo "Usage: $0 {preflight|static|prepare|install|prepare-upgrade|upgrade|core|portal|public|performance|acceptance|focus|full|upstream|cleanup|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {preflight|static|prepare|install|prepare-upgrade|upgrade|core|portal|public|performance|acceptance|focus|lifecycle|full|upstream|cleanup|all}" >&2; exit 2 ;;
 esac

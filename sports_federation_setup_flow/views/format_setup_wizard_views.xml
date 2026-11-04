@@ -12,6 +12,7 @@
           <group>
             <field name="edition_id"/>
             <field name="division_id" options="{'no_create': True}"/>
+            <!-- Technical fields kept invisible for view modifiers and domains. -->
             <field name="participant_set_id" invisible="1"/>
             <field name="team_count" readonly="1" string="Confirmed teams"/>
           </group>
