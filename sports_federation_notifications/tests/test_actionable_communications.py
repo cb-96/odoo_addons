@@ -282,7 +282,11 @@ class TestCommunicationHttp(CommunicationFixture, HttpCase):
 
     def test_acknowledgement_requires_csrf(self):
         self.authenticate(self.user.login, 'communications-test')
-        response = self.url_open('/my/notifications/%s/acknowledge' % self.receipt.id, data={})
+        response = self.url_open(
+            '/my/notifications/%s/acknowledge' % self.receipt.id,
+            data={},
+            method='POST',
+        )
         self.assertEqual(response.status_code, 400)
 
     def test_direct_link_reaches_document_page(self):

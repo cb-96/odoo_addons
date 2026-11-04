@@ -19,7 +19,8 @@ export class CourtWorkspace extends Component {
         this.action = useService("action");
         this.state = useState({ courts: [], selected: "", board: null, match: null, draft: null,
             pending: [], busy: false, dirty: false, error: "", conflict: false, storageFailed: false,
-            offline: !navigator.onLine, contextUnchecked: false, recoveryNotice: "", journalBlocked: false, queueOpen: false });
+            offline: !navigator.onLine, contextUnchecked: false, recoveryNotice: "", journalBlocked: false,
+            queueOpen: false, courtLoading: false });
         this.storagePrefix = `sf-court:v1:${session.db}:${session.uid}:`;
         this.expectedRaw = null;
         this.releaseLease = null;
@@ -89,19 +90,23 @@ export class CourtWorkspace extends Component {
         });
     }
     async chooseCourt(event, preferredMatch = null) {
+        const selected = event.target.value;
+        if (this.state.courtLoading || (this.state.selected === selected && this.state.board)) return;
         if (this.state.pending.length || this.state.dirty || this.state.storageFailed) {
             this.state.error = _t("Synchronise or export this match before changing courts."); return;
         }
         this.releaseLease?.(); this.releaseLease = null;
-        this.state.selected = event.target.value;
+        this.state.selected = selected;
         this.state.match = null; this.state.board = null;
         if (this.state.selected === "") return;
+        this.state.courtLoading = true;
         try {
             this.state.board = await this.orm.call("federation.court.commands", "load", [this.access.matchday_id, this.access.court_id]);
             const match = this.state.board.queue.find(item => item.id === preferredMatch) || nextMatch(this.state.board.queue);
             if (preferredMatch) await this.openMatch(preferredMatch);
             else if (match) await this.openMatch(match.id);
         } catch (error) { this.state.error = this.message(error); }
+        finally { this.state.courtLoading = false; }
     }
     async openMatch(id) {
         if (this.state.pending.length || this.state.dirty || this.state.storageFailed) {
@@ -327,7 +332,11 @@ export class VisualPlan extends Component {
             (assignment && issue.slot_id === assignment.slot_id) ||
             (!issue.fixture_id && !issue.fixture_ids && !issue.slot_id));
     }
+    selectedFixtureIssues() {
+        return this.state.fixture ? this.fixtureIssues(Number(this.state.fixture)) : [];
+    }
     fixtureName(id) { return this.state.data.fixtures.find(f => f.id === id)?.name || String(id); }
+    fixtureSelected(id) { return this.state.fixture === `${id}`; }
     eventTime(value) { return formatEventTime(value, this.state.data.timezone || 'UTC'); }
     slotName(id) { const s = this.state.data.slots.find(s => s.id === id); return s ? `${s.court_name} / ${this.eventTime(s.start)}` : _t("Unassigned"); }
     constraintName(kind) { return ({team_window: _t('Team unavailable'), court_window: _t('Court unavailable'), minimum_rest: _t('Mandatory minimum rest for all teams')})[kind] || kind; }

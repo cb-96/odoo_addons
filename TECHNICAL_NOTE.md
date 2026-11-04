@@ -1,8 +1,8 @@
 # Sports Federation — Technical Note
 
-Last updated: 2026-10-04
+Last updated: 2026-11-04
 Owner: Federation Platform Team
-Last reviewed: 2026-10-04
+Last reviewed: 2026-11-04
 Review cadence: Every release
 
 ## Canonical terminology and workflow authority (2026-05-27)
@@ -785,3 +785,18 @@ No task system, readiness model, approval state or publication bypass is introdu
 Local source/policy and mocked-service checks were executed. Odoo database upgrade,
 ORM/HTTP/browser runtime and novice acceptance remain unexecuted in this environment.
 Rollback requires the pre-upgrade database and filestore together with previous code.
+
+## Planner and official read boundaries (2026-11-04)
+
+Schedule planners have read-only ACL access to `federation.fixture` because
+working schedules resolve their current match-day allocation during preview,
+submission, and publication checks. Fixture mutation remains in the format
+workflow. Competition administrators have read-only `federation.competition.edition`
+access for the connected planning workspace; edition changes still use the
+owner-module workflow commands.
+
+Official mobile check-in first validates the current user's access to the
+specific assignment, then reads only that assignment's linked match under
+scoped elevation to compute the publication/slot signature. The command returns
+the digest, not match data. An official check-in request remains separate from
+organiser-confirmed attendance.

@@ -12,6 +12,13 @@ Install or upgrade the supported `sports_federation_app` entry point. Its depend
 4. Operators open Match Day > Run this court, select their court, inspect lineups and separate accepted/eligible/present official facts, save drafts, then submit for result review.
 5. Submission is not approval. Existing verification, approval, corrections and standings controls remain authoritative.
 
+Officials can request check-in for their own accepted, eligible assignment from
+the mobile assignment page. The request signature is computed from the current
+publication, slot, match window, and assignment after validating access to that
+assignment; only the resulting digest is returned. A check-in request is not
+attendance. An organiser records attendance separately through the manager
+command.
+
 ## Connectivity contract
 Offline capture is supported in an already loaded, authenticated workspace. This is not a cold-start offline PWA: opening the application or an uncached match requires connectivity. Device drafts and queued commands are stored under database/user/court/match-specific localStorage keys. No birth dates or contact details are cached. Use dedicated trusted devices; localStorage is not encrypted and a shared unlocked browser is not an access boundary.
 
@@ -23,6 +30,10 @@ Interrupted matches retain drafts for resumption. Disputed and abandoned capture
 
 ## Visual planning
 Open a schedule and select Visual planning. The workspace projects existing stages, progression ranks, fixture sources and a court/time grid. Select a fixture and preview a manual move; applying it pins the assignment. Regeneration retains non-automatic assignments. Team/court unavailable windows and hard minimum rest are distinct from fairness preferences.
+
+The court workspace automatically opens the sole assigned court when there is
+exactly one. While that initial load is in progress, further court selection is
+disabled to avoid racing duplicate queue and match requests.
 
 Every preview is stored server-side, belongs to its actor and contains the exact candidate map. Before/after views show changed slots, unallocated fixtures, hard failures, warnings and weighted fairness penalty (lower is better). Apply revalidates the map and signature, performs one governed revision and retains the preview. Rejected-slot explanations do not misrepresent a heuristic solver as a proof of infeasibility.
 

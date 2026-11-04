@@ -160,7 +160,11 @@ class TestMobileHttp(LiveFixture, HttpCase):
 
     def test_checkin_post_requires_csrf(self):
         self.authenticate(self.official_user.login, 'mobile-test-password')
-        response = self.url_open('/my/duty-assignments/%s/checkin' % self.assignment.id, data={})
+        response = self.url_open(
+            '/my/duty-assignments/%s/checkin' % self.assignment.id,
+            data={},
+            method='POST',
+        )
         self.assertEqual(response.status_code, 400)
 
     def test_non_manager_cannot_open_replacement(self):

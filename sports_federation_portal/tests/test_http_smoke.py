@@ -812,7 +812,7 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
             "Portal Smoke Workspace Team vs Portal Smoke Opponent Team",
             match_day_response.text,
         )
-        self.assertIn("Open Sheet", match_day_response.text)
+        self.assertIn("Open lineup", match_day_response.text)
 
     @tagged("-at_install", "post_install", "sf_release_confidence")
     def test_roster_routes_hide_foreign_rosters_and_lines(self):

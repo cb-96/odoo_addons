@@ -51,8 +51,9 @@
                     <a t-attf-href="/my/referee-assignments?filterby=all" t-att-class="'btn btn-sm %s' % ('btn-primary' if filterby == 'all' else 'btn-outline-primary')">All</a>
                 </div>
 
-                <div class="table-responsive" t-if="assignments">
-                    <t t-call="sports_federation_portal.connected_work_groups"/></div>
+                <div t-if="assignments">
+                    <t t-call="sports_federation_portal.connected_work_groups"/>
+                </div>
 
                 <div t-if="not assignments" class="alert alert-info mb-0" role="status">
                     No officiating assignments match the current filter.

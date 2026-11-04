@@ -3,6 +3,11 @@
 The scheduling addon owns working schedules, fixture assignments, schedule
 changes, and the weighted fairness auto-schedule preview.
 
+Schedule planners receive read-only access to logical fixtures so a schedule
+can resolve its current allocation pool during review and submission. Fixture
+changes remain owned by competition-format workflows; schedule edits still go
+through the planner-role checks and governed schedule commands.
+
 The auto-schedule wizard previews deterministic assignments after applying hard
 constraints and weighted fairness penalties. Applying a proposal records the
 automatic assignments and schedule changes while checking the schedule revision

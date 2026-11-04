@@ -349,7 +349,8 @@ class TestJourneyHttp(HttpCase):
         self.assertEqual(self.url_open('/my/work?role=reviewer').status_code, 200)
         response = self.url_open('/my/work')
         self.assertEqual(response.status_code, 200)
-        self.assertIn('value="reviewer" selected=', response.text)
+        self.assertIn('Result review', response.text)
+        self.assertNotIn('id="journey-role"', response.text)
 
     def test_connected_participation_summary(self):
         self.authenticate('journey.club@example.test', 'journey-test-password')

@@ -1,4 +1,4 @@
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -32,6 +32,26 @@ class TestCompetitionCore(TransactionCase):
     def test_invalid_lifecycle_is_rejected(self):
         with self.assertRaises(ValidationError):
             self.edition.transition_competition_state("closed")
+
+    def test_competition_administrator_has_read_only_edition_access(self):
+        user = self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "name": "Competition Planner",
+                "login": "competition.planner.acl@example.test",
+                "group_ids": [
+                    (6, 0, [
+                        self.env.ref("base.group_user").id,
+                        self.env.ref(
+                            "sports_federation_competition_core.group_competition_administrator"
+                        ).id,
+                    ])
+                ],
+            }
+        )
+        edition = self.edition.with_user(user)
+        self.assertEqual(edition.read(["name"])[0]["name"], self.edition.name)
+        with self.assertRaises(AccessError):
+            edition.write({"name": "Unauthorized edition change"})
 
     def test_role_assignment_is_unique(self):
         vals = {

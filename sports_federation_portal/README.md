@@ -173,3 +173,9 @@ Automated role-journey test mapping is recorded in
 `HttpCase` tests exercise ordinary role accounts, but they are not browser
 qualification or real novice sessions. Staging/manual, keyboard/mobile, novice,
 and fresh release-confidence gates remain separate sign-off requirements.
+
+The referee assignment work list uses semantic work cards rather than a data
+table. Portal templates use model-provided human state labels so internal state
+keys are not exposed as user-facing copy. Competition administrators have
+read-only edition access for their planning workspace; edition changes remain
+owned by the existing setup and workflow commands.

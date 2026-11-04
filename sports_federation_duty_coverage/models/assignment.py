@@ -119,9 +119,14 @@ class Assignment(models.Model):
 
     def _coverage_signature(self):
         self.ensure_one()
-        m = self.match_id
+        self.check_access("read")
+        # Portal officials may read their assignment but not the match model.
+        # Elevate only the linked match; callers receive only its digest.
+        m = self.env["federation.match"].sudo().browse(self.match_id.id).exists()
+        if not m:
+            raise ValidationError(_("The assigned match is no longer available."))
         slot = m.operational_slot_id or m.published_slot_id
-        start, end = self._assignment_window()
+        start, end = self._assignment_window(match=m)
         values = [
             m.id,
             m.schedule_publication_id.id,
@@ -139,13 +144,18 @@ class Assignment(models.Model):
 
     def _coverage_current(self):
         self.ensure_one()
-        pub = self.publication_id
+        self.check_access("read")
+        # Keep the same assignment-scoped read boundary as the signature.
+        match = self.env["federation.match"].sudo().browse(self.match_id.id).exists()
+        if not match:
+            return False
+        pub = match.schedule_publication_id
         return bool(
             self.fixture_id
             and pub
             and pub.state == "live"
             and pub.matchday_id.current_publication_id == pub
-            and self.match_id.state != "cancelled"
+            and match.state != "cancelled"
         )
 
     def _coverage_issues(self):

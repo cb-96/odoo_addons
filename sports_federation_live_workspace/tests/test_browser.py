@@ -31,9 +31,6 @@ class TestWorkspaceBrowser(LiveFixture, HttpCase):
     def test_court_save_offline_capture_and_sync(self):
         self.browser_js("/odoo/action-sports_federation_live_workspace.action_run_court", HELPERS + """
 (async () => {
-    await wait(()=>document.querySelector('main.sf-live-workspace select option[value="0"]'));
-    change(document.querySelector('main.sf-live-workspace select'),'0');
-    await wait(()=>document.querySelectorAll('.sf-score').length===2);
     await wait(()=>document.querySelectorAll('.sf-score').length===2);
     change(document.querySelectorAll('.sf-score')[0],2); change(document.querySelectorAll('.sf-score')[1],1);
     const journalKey=Object.keys(localStorage).find(key=>key.startsWith('sf-court:v1:') && !key.endsWith(':last'));
@@ -42,7 +39,7 @@ class TestWorkspaceBrowser(LiveFixture, HttpCase):
     button('Save draft').click();
     await wait(()=>{
         const journal=JSON.parse(localStorage.getItem(journalKey)||'null');
-        return document.querySelector('.sf-status').textContent.includes('Synchronised draft')
+        return document.querySelector('.sf-status').textContent.includes('Saved to server. Not submitted.')
             && !button('Save draft').disabled
             && journal?.pending.length===0
             && journal?.base.revision===startingRevision+1;
@@ -50,15 +47,15 @@ class TestWorkspaceBrowser(LiveFixture, HttpCase):
     setOnline(false);
     if (navigator.onLine) throw new Error('Offline state could not be simulated');
     change(document.querySelectorAll('.sf-score')[0],3);
-    await wait(()=>document.querySelector('.sf-status').textContent.includes('Saved on this device only')
+    await wait(()=>document.querySelector('.sf-status').textContent.includes('Saved on this device. Not submitted.')
         && Number(document.querySelectorAll('.sf-score')[0].value)===3);
     button('Save draft').click();
-    await wait(()=>document.querySelector('.sf-status').textContent.includes('Saved on this device only')
+    await wait(()=>document.querySelector('.sf-status').textContent.includes('Saved on this device. Not submitted.')
         && JSON.parse(localStorage.getItem(journalKey)||'null')?.pending.length===1);
     const entries=Object.keys(localStorage).filter(k=>k.startsWith('sf-court:v1:') && !k.endsWith(':last'));
     if(!entries.some(k=>JSON.parse(localStorage.getItem(k)).pending.length===1)) throw new Error('Journal not persisted');
     setOnline(true); window.dispatchEvent(new Event('online'));
-    await wait(()=>document.querySelector('.sf-status').textContent.includes('Synchronised draft')
+    await wait(()=>document.querySelector('.sf-status').textContent.includes('Saved to server. Not submitted.')
         && !button('Save draft').disabled
         && entries.every(k=>JSON.parse(localStorage.getItem(k)).pending.length===0));
     if(Number(document.querySelectorAll('.sf-score')[0].value)!==3) throw new Error('Synchronised score lost');
@@ -72,7 +69,7 @@ class TestWorkspaceBrowser(LiveFixture, HttpCase):
         self.browser_js("/odoo/action-%s" % action.id, HELPERS + """
 (async () => {
     await wait(()=>document.querySelector('.sf-timeline table'));
-    button('Preview regeneration, retain manual pins').click();
+    button('Preview automatic schedule').click();
     await wait(()=>button('Apply exactly this preview'));
     const section=button('Apply exactly this preview').closest('section');
     change(section.querySelector('textarea'),'Browser-tested proposal');

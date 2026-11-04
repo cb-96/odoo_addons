@@ -177,6 +177,12 @@ class TestScheduleReviewPermissions(TransactionCase):
         with self.assertRaises(AccessError):
             review.write({"review_note": "Unauthorized change"})
 
+    def test_schedule_planner_can_read_fixtures_without_mutating_them(self):
+        fixtures = self.env["federation.fixture"].with_user(self.planner)
+        fixtures.check_access("read")
+        with self.assertRaises(AccessError):
+            fixtures.check_access("write")
+
     def test_direct_writes_to_protected_fields_are_rejected(self):
         review = self.review.with_user(self.approver)
         review.write({"review_note": "Prepared decision note"})

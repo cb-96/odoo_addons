@@ -40,7 +40,7 @@ class TestVisualExperience(LiveFixture, TransactionCase):
         slots = [(slot.id, slot.start_datetime, slot.end_datetime) for slot in day.slot_ids]
         self.env.cr.execute('UPDATE federation_matchday SET event_timezone_reviewed=false WHERE id=%s', [day.id])
         day.invalidate_recordset(['event_timezone_reviewed'])
-        day._review_event_timezone('Europe/Brussels', 'Venue event record confirms Brussels time')
+        day.with_user(self.operator)._review_event_timezone('Europe/Brussels', 'Venue event record confirms Brussels time')
         self.assertTrue(day.event_timezone_reviewed)
         self.assertEqual(day.event_timezone, 'Europe/Brussels')
         self.assertEqual(slots, [(slot.id, slot.start_datetime, slot.end_datetime) for slot in day.slot_ids])
@@ -57,7 +57,7 @@ class TestVisualExperience(LiveFixture, TransactionCase):
 
     def test_timezone_review_requires_evidence(self):
         with self.assertRaises(ValidationError):
-            self.schedule.matchday_id._review_event_timezone('Europe/Brussels', '')
+            self.schedule.matchday_id.with_user(self.operator)._review_event_timezone('Europe/Brussels', '')
 
     def _destinations(self):
         return self.plan.destinations(self.schedule.id, self.fixture.id, self.plan.load(self.schedule.id)['signature'])
@@ -66,11 +66,13 @@ class TestVisualExperience(LiveFixture, TransactionCase):
         return self.plan.preview(self.schedule.id, 'move', self.fixture.id, slot.id)
 
     def _another_fixture(self):
-        return self.env['federation.fixture'].create({
+        fixture = self.env['federation.fixture'].create({
             'structure_id': self.fixture.structure_id.id, 'stage_id': self.fixture.stage_id.id,
             'round_number': self.fixture.round_number, 'sequence': self.fixture.sequence + 100,
             'home_team_id': self.fixture.home_team_id.id, 'away_team_id': self.fixture.away_team_id.id,
             'state': 'ready'})
+        self.planning_matchday.allocation_ids.write({'manual_fixture_ids': [(4, fixture.id)]})
+        return fixture
 
     def test_destinations_are_read_only(self):
         before = self.schedule.revision
@@ -194,7 +196,8 @@ class TestVisualExperience(LiveFixture, TransactionCase):
     def test_published_destinations_denied(self):
         published = self.publication.schedule_id
         with self.assertRaises(ValidationError):
-            self.plan.destinations(published.id, published.assignment_ids[0].fixture_id.id, self.plan.load(published.id)['signature'])
+            fixture_id = self.publication.assignment_snapshot[0]['fixture_id']
+            self.plan.destinations(published.id, fixture_id, self.plan.load(published.id)['signature'])
 
     def test_amendment_keeps_publication_snapshot(self):
         published = self.publication.schedule_id
@@ -228,7 +231,7 @@ class TestVisualBrowser(LiveFixture, HttpCase):
     document.querySelector('[data-destination-button][aria-disabled="false"]').click();
     await wait(()=>document.querySelector('[data-preview-heading]'));
     await wait(()=>document.activeElement===document.querySelector('[data-preview-heading]'));
-    if(!document.querySelector('[data-visual-impact]').textContent.includes('Slot changes'))throw Error('Impact missing');
+    if(!document.querySelector('[data-visual-impact]').textContent.includes('fixtures change slots'))throw Error('Impact missing');
     console.log('test successful');
 })().catch(error=>console.error(error));
 ''', login=self.operator.login, timeout=90)

@@ -169,6 +169,7 @@ class TestFixtureResultOwnership(TransactionCase):
         for fixture in stage.stage_fixture_ids:
             fixture.operational_match_id.sudo().write(
                 {
+                    "state": "done",
                     "home_score": 1,
                     "away_score": 0,
                     "result_state": "approved",

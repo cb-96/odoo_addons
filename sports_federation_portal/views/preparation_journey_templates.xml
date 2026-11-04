@@ -29,7 +29,7 @@
           <a t-if="len(rows) &gt; 1" t-att-href="row['context_url']" class="small" data-journey-open="1">Focus on this team</a>
         </div>
       </section>
-      <details t-if="sheets" class="sf-disclosure"><summary>Lineups</summary><a t-foreach="sheets" t-as="sheet" t-attf-href="/my/match-sheets/#{sheet.id}" class="list-group-item list-group-item-action" data-journey-open="1"><t t-esc="sheet.team_id.display_name"/> · <t t-esc="sheet.match_id.display_name"/> · <t t-esc="dict(sheet._fields['state'].selection).get(sheet.state)"/></a></details>
+      <details t-if="sheets" class="sf-disclosure"><summary>Lineups</summary><a t-foreach="sheets" t-as="sheet" t-attf-href="/my/match-sheets/#{sheet.id}" class="list-group-item list-group-item-action" data-journey-open="1"><t t-esc="sheet.team_id.display_name"/> · <t t-esc="sheet.match_id.display_name"/> · <t t-esc="sheet.get_portal_state_label()"/></a></details>
       <details class="sf-disclosure"><summary>Other team work</summary><nav class="d-flex gap-2 flex-wrap" aria-label="Team work"><a t-att-href="preparation_url('/my/competitions')" data-journey-open="1">Registration</a><a t-att-href="preparation_url('/my/rosters')" data-journey-open="1">Rosters</a><a t-att-href="preparation_url('/my/match-sheets')" data-journey-open="1">Lineups</a></nav></details>
     </main></t>
   </template>
