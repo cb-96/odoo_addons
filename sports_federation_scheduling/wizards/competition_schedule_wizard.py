@@ -197,6 +197,20 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             % (escape(str(repeat_count)), day_table, warning_list)
         )
 
+    @api.model
+    def _planning_stages(self, stages):
+        """Include ready stages and pre-generated schedulable placeholders."""
+        return stages.filtered(
+            lambda stage: stage.graph_state in ("ready", "active")
+            or (
+                stage.graph_state == "waiting"
+                and any(
+                    fixture._is_schedulable()
+                    for fixture in stage.stage_fixture_ids
+                )
+            )
+        )
+
     @api.onchange("edition_id")
     def _onchange_edition_id(self):
         if not self.edition_id:
@@ -218,18 +232,14 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
                 latest |= structure
                 seen.add(structure.division_id.id)
         self.structure_ids = latest
-        self.stage_ids = latest.mapped("stage_ids").filtered(
-            lambda stage: stage.graph_state in ("ready", "active")
-        )
+        self.stage_ids = self._planning_stages(latest.mapped("stage_ids"))
 
     @api.onchange("structure_ids")
     def _onchange_structure_ids(self):
         allowed = self.structure_ids.mapped("stage_ids")
         self.stage_ids = self.stage_ids & allowed
         if not self.stage_ids and allowed:
-            self.stage_ids = allowed.filtered(
-                lambda stage: stage.graph_state in ("ready", "active")
-            ) or allowed
+            self.stage_ids = self._planning_stages(allowed) or allowed
 
     @api.constrains("preferred_rest_minutes", "mode", "rebuild_reason")
     def _check_configuration(self):

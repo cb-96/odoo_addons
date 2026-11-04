@@ -56,7 +56,12 @@ pinned assignments rather than an avoidable greedy choice.
 
 The competition wizard is the single planning entry point after participants and game days are defined. It generates missing supported structures, evaluates every game day's individual capacity, reports feasibility separately from quality warnings, preserves manual pins, rejects stale previews, and creates draft schedules through the existing fairness solver.
 
-Reruns are explicit: fill missing planning, replace automatic assignments, or rebuild mutable unpublished planning with a reason. Reviewed, published, open, or closed game days are never rebuilt. Result-dependent fixtures remain visible as deferred work.
+Reruns are explicit: fill missing planning, replace automatic assignments, or rebuild mutable unpublished planning with a reason. Reviewed, published, open, or closed game days are never rebuilt. Fixtures without schedulable placeholder dependencies remain visible as deferred work.
+
+Pre-generated bracket placeholders are schedulable even while their stage is
+waiting for earlier results. The competition planner includes these fixtures in
+the initial allocation and publication; as teams advance, newly materialized
+matches inherit the already-published slots.
 
 ## Stage- and game-day-scoped generation
 
