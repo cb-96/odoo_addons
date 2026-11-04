@@ -22,3 +22,4 @@ from . import task_projection
 from . import journey_operation_task
 from . import archive_scope
 from . import archive_visibility
+from . import archive_rosters

@@ -275,6 +275,34 @@ If the release changes log retention, staged-delivery cleanup, or generated
 report artifact handling, update `DATA_RETENTION_POLICY.md` in the same branch
 and confirm the affected cleanup crons still match the documented windows.
 
+### Archived rosters, archived-competition list and permanent deletion
+
+Affected upgrades:
+
+- `sports_federation_portal` `19.0.7.11.0` to `19.0.7.12.0`
+- `sports_federation_competition_core` `19.0.1.7.0` to `19.0.1.8.0`
+
+No schema change except the transient deletion wizard. The portal also hides
+rosters, roster lines, season registrations and their tasks when every
+competition the team plays that season (or the roster's own competition) is
+archived. The portal `post-migrate.py` closes those tasks for competitions that
+are already archived. Competition Core adds an Archived filter, a Restore
+button and the system-administrator-only Delete permanently wizard.
+
+Required dry run before promotion:
+
+```bash
+./scripts/upgrade_sports_federation.sh --db odoo \
+  --modules sports_federation_competition_core,sports_federation_portal --dry-run
+bash ./ci/run_tests.sh --module sports_federation_app
+```
+
+Rollback is the standard paired database and filestore backup restore.
+Permanent deletion is irreversible by design; only a backup restore brings
+deleted competitions back. Each deletion is logged at WARNING level and in
+Settings > Technical > Logging under `sports_federation.force_delete`.
+
+
 ## Pre-Release Verification
 
 Run the focused suites that cover the highest-risk federation workflows:
