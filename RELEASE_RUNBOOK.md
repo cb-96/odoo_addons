@@ -233,6 +233,32 @@ backup restore procedure. Without a restore, restoring a competition and its
 divisions makes everything visible again, and the next task sync reopens its
 tasks. Do not reopen tasks manually while the competition stays archived.
 
+### Retiring the legacy competition engine
+
+The legacy `sports_federation_competition_engine` addon is no longer present in
+the source tree and must be removed through Odoo's normal uninstall lifecycle;
+never force its `ir_module_module.state` with SQL. Before removal, upgrade
+`sports_federation_tournament` to `19.0.1.6.0`. Its pre-migration archives any
+non-null legacy planner fields on `federation.tournament` in the
+administrator-only `retired_planner_settings` JSON field. The archive is for
+audit/rollback only and is not read by current scheduling code.
+
+On a disposable clone, run the normal module upgrade helper with
+`--retire-legacy-engine --offline`. The helper first backs up the clone, then
+uses Odoo shell to call `button_uninstall()` and commit the request; Odoo's
+loader performs the actual metadata/field cleanup. Check that the legacy module
+finishes as `uninstalled`, archived settings match the retired values, and
+tournament, edition, event, entry, match, and format records/counts are
+unchanged before repeating against production.
+
+Production procedure: run the helper with `--retire-legacy-engine` and the full
+installed addon set. It takes paired database/filestore backups, stops the live
+Odoo service, queues the uninstall, and upgrades modules while the service is
+offline. If any step fails,
+preserve the failed database and logs for diagnosis; restore the paired backup
+before restarting on the prior code. Do not manually drop legacy columns or
+delete shared records as a workaround.
+
 
 ### Release-candidate readiness review
 

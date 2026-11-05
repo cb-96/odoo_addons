@@ -80,6 +80,12 @@ class FederationTournament(models.Model):
         help="Competition rules to apply. If set on the linked competition, that rule set is used by default.",
     )
     notes = fields.Text(string="Notes")
+    retired_planner_settings = fields.Json(
+        string="Archived planner settings",
+        copy=False,
+        readonly=True,
+        groups="base.group_system",
+    )
 
     stage_ids = fields.One2many(
         "federation.tournament.stage", "tournament_id", string="Stages"

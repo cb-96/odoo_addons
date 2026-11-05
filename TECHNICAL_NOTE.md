@@ -371,7 +371,7 @@ Several new models and scheduling behaviours were added to support more realisti
 
 ### Structure stage graph compatibility
 
-The `sports_federation_format` addon owns the versioned structure graph used by Format Studio. Its stage-to-stage edges are represented by `federation.structure.stage.progression`, with `structure_id`, source-stage, and target-stage relations. This model must not reuse the competition engine's `federation.stage.progression` name: the engine model is tournament-oriented and has a different inverse relation contract (`tournament_id`). The distinction allows both addons to be installed in the same registry without field-resolution collisions.
+The `sports_federation_format` addon owns the versioned structure graph used by Format Studio. Its stage-to-stage edges are represented by `federation.structure.stage.progression`, with `structure_id`, source-stage, and target-stage relations. This intentionally does not reuse the former competition engine's `federation.stage.progression` model name or inverse relation contract (`tournament_id`). The legacy engine is retired; its remaining stored planner settings are archived by the tournament migration before Odoo's standard uninstall removes legacy-owned metadata and columns.
 
 Stage-graph ACLs are loaded through the addon's conventional `security/ir.model.access.csv` file. Format Studio's inherited view selects the stage tab structurally by its `stage_ids` field rather than by the translated page label.
 
@@ -454,7 +454,7 @@ Design goals
 ## High-level architecture and module responsibilities
 
 - `sports_federation_base` — Master data: `federation.club`, `federation.team`, `federation.season`, `federation.season.registration`. Ownership of base security groups and global menus. Holds common `ir.sequence` definitions.
-- `sports_federation_tournament` — Tournament structure: `federation.competition`, `federation.tournament`, `federation.tournament.stage`, `federation.group`, `federation.tournament.participant`, and `federation.match`. Implements match lifecycle and basic match behaviour.
+- `sports_federation_tournament` — Tournament structure: `federation.competition`, `federation.tournament`, `federation.tournament.stage`, `federation.group`, `federation.tournament.participant`, and `federation.match`. Implements match lifecycle and basic match behaviour. The administrator-only `retired_planner_settings` JSON field preserves legacy planner values for audit/rollback; current scheduling does not consume it.
 - `sports_federation_format` and `sports_federation_scheduling` — Structure generation, deterministic fixture assignment, validation, and fairness services. Keep algorithmic code stateless and place transient entrypoints in the owning module's `wizards/` package.
 - `sports_federation_people` — Player and license models used for eligibility checks and rosters.
 - `sports_federation_rosters` — Season rosters and match sheet management.
