@@ -26,21 +26,29 @@ from odoo import api, fields, models
 class EligibilityResult:
     """Lightweight data class for an eligibility check outcome."""
 
-    def __init__(self, eligible=True, reasons=None):
-        """Handle init."""
-        self.eligible = eligible
+    PASS = "pass"
+    FAIL = "fail"
+    REVIEW_REQUIRED = "review_required"
+    NOT_APPLICABLE = "not_applicable"
+
+    def __init__(self, eligible=True, reasons=None, status=None):
+        """Create a deterministic, fail-closed result."""
+        self.status = status or (self.PASS if eligible else self.FAIL)
+        self.eligible = self.status in (self.PASS, self.NOT_APPLICABLE)
         self.reasons = reasons or []
 
     def merge(self, other):
         """Merge another result into this one."""
-        if not other.eligible:
-            self.eligible = False
+        precedence = {self.PASS: 0, self.NOT_APPLICABLE: 0, self.REVIEW_REQUIRED: 1, self.FAIL: 2}
+        if precedence[other.status] > precedence[self.status]:
+            self.status = other.status
+        self.eligible = self.status in (self.PASS, self.NOT_APPLICABLE)
         self.reasons.extend(other.reasons)
         return self
 
     def to_dict(self):
         """Convert the value to dict."""
-        return {"eligible": self.eligible, "reasons": self.reasons}
+        return {"status": self.status, "eligible": self.eligible, "reasons": self.reasons}
 
 
 class FederationEligibilityService(models.AbstractModel):
@@ -85,7 +93,10 @@ class FederationEligibilityService(models.AbstractModel):
         result = EligibilityResult()
 
         if not rule_set:
-            return result.to_dict()
+            return EligibilityResult(
+                status=EligibilityResult.REVIEW_REQUIRED,
+                reasons=["Eligibility cannot be determined because no rule set is configured."],
+            ).to_dict()
 
         rules = self.env["federation.eligibility.rule"].search(
             [
@@ -183,7 +194,7 @@ class FederationEligibilityService(models.AbstractModel):
     def _evaluate_rule(self, rule, player, context):
         """Dispatch to the correct evaluation method for a rule type.
 
-        Unknown rule types return eligible=True (fail-open default).
+        Unknown rule types require explicit review; they never pass silently.
         """
         etype = rule.eligibility_type
         if etype == "age_min":
@@ -198,8 +209,10 @@ class FederationEligibilityService(models.AbstractModel):
             return self._check_suspension(player, context)
         if etype == "registration":
             return self._check_registration(player, context)
-        # "custom" and unknown → pass-through (no enforcement yet)
-        return EligibilityResult(eligible=True)
+        return EligibilityResult(
+            status=EligibilityResult.REVIEW_REQUIRED,
+            reasons=[f"Rule '{rule.name}' requires a configured evaluator."],
+        )
 
     # ------------------------------------------------------------------
     # Individual rule checks

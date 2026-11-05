@@ -257,3 +257,12 @@ docker compose exec -T db pg_dump -U odoo -Fc odoo \
 ```
 
 See [RELEASE_RUNBOOK.md](RELEASE_RUNBOOK.md) for the full backup and restore drill procedure.
+
+## Trusted reverse proxies
+
+Set `federation.trusted_proxy_networks` in `ir.config_parameter` to a comma-separated
+CIDR allowlist containing only the immediate reverse proxies, for example
+`10.24.0.0/16,192.0.2.10/32`. Forwarded client IP headers are ignored when the
+TCP peer is outside this allowlist. Production must also run Odoo with
+`proxy_mode = True` behind the listed proxy and must prevent direct public access
+to the Odoo application port.

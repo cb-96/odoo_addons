@@ -1,3 +1,4 @@
+from ipaddress import ip_address, ip_network
 import json
 from urllib.parse import quote_plus
 
@@ -73,11 +74,22 @@ class PublicRequestInfrastructureMixin:
 
     def _get_rate_limit_subject(self):
         headers = getattr(request.httprequest, "headers", {}) or {}
-        forwarded_for = (headers.get("X-Forwarded-For") or "").split(",", 1)[0].strip()
-        remote_addr = (
-            forwarded_for
-            or (getattr(request.httprequest, "remote_addr", "") or "").strip()
+        remote_addr = (getattr(request.httprequest, "remote_addr", "") or "").strip()
+        configured = request.env["ir.config_parameter"].sudo().get_param(
+            "federation.trusted_proxy_networks", ""
         )
+        trusted = False
+        try:
+            peer = ip_address(remote_addr)
+            trusted = any(peer in ip_network(item.strip(), strict=False) for item in configured.split(",") if item.strip())
+        except ValueError:
+            trusted = False
+        if trusted:
+            forwarded = (headers.get("X-Forwarded-For") or "").split(",", 1)[0].strip()
+            try:
+                remote_addr = str(ip_address(forwarded)) if forwarded else remote_addr
+            except ValueError:
+                pass
         return f"ip:{remote_addr or 'unknown'}"
 
     def _rate_limit_response(self, scope):
