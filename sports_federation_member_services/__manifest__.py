@@ -9,6 +9,7 @@
           'security/rules.xml',
           'views/services.xml',
           'views/growth.xml',
-          'views/lifecycle.xml'],
+          'views/lifecycle.xml',
+          'views/identity_backfill_views.xml'],
  'installable': True,
  'application': False}

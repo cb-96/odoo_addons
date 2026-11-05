@@ -30,6 +30,8 @@
         "views/menu_views.xml",
         "views/communication_views.xml",
         "data/communication_cron.xml",
+        "views/communication_lifecycle_views.xml",
+        "data/lifecycle_cron.xml",
     ],
     "demo": [],
     "installable": True,

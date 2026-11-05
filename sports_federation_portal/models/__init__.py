@@ -26,3 +26,5 @@ from . import journey_operation_task
 from . import archive_scope
 from . import archive_visibility
 from . import archive_rosters
+from . import journey_event
+from . import portal_privilege_instrumentation

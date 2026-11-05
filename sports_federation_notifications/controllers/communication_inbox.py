@@ -44,6 +44,7 @@ class CommunicationInbox(http.Controller):
     @http.route('/my/notifications/<int:receipt_id>', type='http', auth='user', website=True, methods=['GET'])
     def detail(self, receipt_id, **kw):
         receipt, info = self._receipt(receipt_id)
+        receipt.mark_seen(request.env.user)
         return request.render('sports_federation_notifications.communication_detail', {
             'receipt': receipt, 'info': info, 'deliveries': [(d, _(delivery_label(d.state))) for d in receipt.delivery_ids],
             'page_name': 'notification'})

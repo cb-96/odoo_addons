@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="journey_event_list" model="ir.ui.view">
+    <field name="name">federation.journey.event.list</field>
+    <field name="model">federation.journey.event</field>
+    <field name="arch" type="xml">
+      <list create="0" edit="0" delete="0">
+        <field name="occurred_on"/>
+        <field name="journey"/>
+        <field name="event"/>
+        <field name="screen" optional="show"/>
+      </list>
+    </field>
+  </record>
+  <record id="journey_event_search" model="ir.ui.view">
+    <field name="name">federation.journey.event.search</field>
+    <field name="model">federation.journey.event</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="journey"/>
+        <filter name="entries" string="Entered" domain="[('event', '=', 'entry')]"/>
+        <filter name="errors" string="Validation errors" domain="[('event', '=', 'validation_error')]"/>
+        <filter name="retries" string="Retries" domain="[('event', '=', 'retry')]"/>
+        <group>
+          <filter name="group_journey" string="Journey" context="{'group_by': 'journey'}"/>
+          <filter name="group_event" string="Event" context="{'group_by': 'event'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+  <record id="journey_event_pivot" model="ir.ui.view">
+    <field name="name">federation.journey.event.pivot</field>
+    <field name="model">federation.journey.event</field>
+    <field name="arch" type="xml">
+      <pivot>
+        <field name="journey" type="row"/>
+        <field name="event" type="col"/>
+      </pivot>
+    </field>
+  </record>
+  <record id="action_journey_event" model="ir.actions.act_window">
+    <field name="name">Journey instrumentation</field>
+    <field name="res_model">federation.journey.event</field>
+    <field name="view_mode">pivot,list</field>
+    <field name="search_view_id" ref="journey_event_search"/>
+  </record>
+  <menuitem id="menu_journey_event" name="Journey instrumentation"
+            parent="sports_federation_base.menu_federation_administration"
+            action="action_journey_event"
+            groups="sports_federation_base.group_federation_manager" sequence="95"/>
+</odoo>

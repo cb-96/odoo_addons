@@ -10,3 +10,4 @@ from . import communication_service
 from . import communication_triggers
 
 from . import communication_mail
+from . import communication_lifecycle

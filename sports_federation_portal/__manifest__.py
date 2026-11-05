@@ -35,6 +35,7 @@ on top of the federation base modules.
         "security/ir_rule.xml",
         "data/federation_club_role_type.xml",
         "data/operation_task_cron.xml",
+        "data/journey_event_cron.xml",
         "views/federation_club_role_type_views.xml",
         "views/federation_club_representative_views.xml",
         "views/federation_club_views.xml",
@@ -58,6 +59,7 @@ on top of the federation base modules.
         "views/operation_task_views.xml",
         "views/website_menus.xml",
         "views/menu_items.xml",
+        "views/journey_event_views.xml",
     
                 'views/role_journey_templates.xml',
             ],
