@@ -27,6 +27,12 @@ class ClubPreparationJourney(FederationRosterPortalBase):
             registrations = registrations.filtered(lambda r: r.id == selected_registration)
         if (selected_team or selected_registration) and not registrations:
             return self._render_access_denied()
+        if not (selected_team or selected_registration):
+            # Without an explicit team, only current seasons need preparation.
+            current_seasons = set(roster_model._portal_current_season_ids())
+            registrations = registrations.filtered(
+                lambda r: r.season_id.id in current_seasons
+            )
         rows = []
         for registration in registrations:
             roster = roster_model._portal_get_primary_roster_for_registration(registration, user=user)
@@ -37,9 +43,10 @@ class ClubPreparationJourney(FederationRosterPortalBase):
             sheet_domain.append(('team_id.club_id', '=', selected_club))
         if selected_team:
             sheet_domain.append(('team_id', '=', selected_team))
+        gameday = request.env["federation.portal.gameday"]
         sheets = request.env["federation.portal.privilege"].portal_search(
-            sheet_model, sheet_model._portal_get_domain(user=user) + sheet_domain + [("state", "in", ("draft", "submitted")), ("match_id.state", "!=", "cancelled")],
-            user=user, order="id", limit=100,
+            sheet_model, sheet_model._portal_get_domain(user=user) + sheet_domain + [("state", "in", ("draft", "submitted"))] + gameday.upcoming_domain(),
+            user=user, order="match_kickoff asc, id asc", limit=100,
         )
         return request.render("sports_federation_portal.club_preparation_journey", {
             "rows": rows, "sheets": sheets, "page_name": "club_preparation",

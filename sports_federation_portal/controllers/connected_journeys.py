@@ -66,9 +66,19 @@ def review_cards(matches, controller):
 
 
 class ConnectedRoleJourneys(RoleJourneys):
+    @staticmethod
+    def _is_club_representative(user):
+        """Match the persona lookup that renders the club overview on /my."""
+        return bool(request.env['federation.club.representative'].sudo().search_count(
+            [('user_id', '=', user.id)], limit=1))
+
     @http.route()
     def home(self, **kw):
         user = request.env.user
+        if self._is_club_representative(user):
+            # "My account" (/my and /my/home) opens the club overview, the single
+            # page that lists everything a club representative can manage.
+            return super().home(**kw)
         model = request.env['federation.operation.task']
         federation_access = bool(model._portal_club_ids(user)) or bool(
             request.env['federation.referee']._portal_get_for_user(user=user)) or any(
@@ -110,7 +120,8 @@ class ConnectedRoleJourneys(RoleJourneys):
                 remembered = request.session.get(club_key)
                 selected_club = remembered if remembered in clubs.ids else None
             request.session[club_key] = selected_club
-        context.update(journey_clubs=clubs, journey_club=selected_club)
+        context.update(journey_clubs=clubs, journey_club=selected_club,
+                       club_overview_access=self._is_club_representative(request.env.user))
         cards = []
         if selected == 'club':
             model = request.env['federation.operation.task'].with_context(journey_viewer_id=request.env.user.id)
@@ -245,12 +256,12 @@ class ConnectedPreparation(ClubPreparationJourney):
             sheet_model = request.env['federation.match.sheet']
             related = request.env['federation.portal.privilege'].portal_search(
                 sheet_model, sheet_model._portal_get_domain(user=request.env.user) +
-                [('roster_id', '=', roster.id), ('match_id.state', '!=', 'cancelled')],
+                [('roster_id', '=', roster.id)] + request.env['federation.portal.gameday'].upcoming_domain(),
                 user=request.env.user) if roster else sheet_model.browse()
             lineup_state = ('unknown' if not related else 'action' if any(sheet.state == 'draft' for sheet in related)
                             else 'waiting' if any(sheet.state == 'submitted' for sheet in related) else 'complete')
-            checks.append(dict(label=_('Lineups'), state=lineup_state,
-                               detail=_('Submitted lineups await review.') if lineup_state == 'waiting' else _('Inspect the match-day lineup requirements and approval status.'), url='/my/match-sheets'))
+            checks.append(dict(label=_('Game-day line-ups'), state=lineup_state,
+                               detail=_('Submitted line-ups await review.') if lineup_state == 'waiting' else _('No upcoming game days are scheduled yet.') if lineup_state == 'unknown' else _('Open the upcoming game days and check each line-up and its approval status.'), url='/my/match-sheets'))
             consent_issues = [reason for player in roster.line_ids.mapped('player_id')
                               for reason in _get_parental_approval_reasons(player, roster.team_id, roster._get_reference_date())] if roster else []
             checks.append(dict(label=_('Parental consent'), state='unknown' if not roster or not roster.line_ids else 'action' if consent_issues else 'complete',

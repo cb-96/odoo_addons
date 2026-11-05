@@ -344,6 +344,30 @@ class TestJourneyHttp(HttpCase):
         self.assertEqual(generic.status_code, 200)
         self.assertNotIn('data-journey-bucket=', generic.text)
 
+    def test_my_account_opens_club_overview_for_club_representative(self):
+        self.authenticate('journey.club@example.test', 'journey-test-password')
+        for path in ('/my', '/my/home'):
+            with self.subTest(path=path):
+                response = self.url_open(path, allow_redirects=False)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('o_fed_club_grid', response.text)
+                self.assertIn('href="/my/club"', response.text)
+                self.assertIn('href="/my/work"', response.text)
+
+    def test_my_account_still_opens_work_for_non_representatives(self):
+        self.authenticate('journey.reviewer@example.test', 'journey-test-password')
+        response = self.url_open('/my', allow_redirects=False)
+        self.assertIn(response.status_code, (301, 302, 303))
+        self.assertTrue(response.headers['Location'].endswith('/my/work'))
+
+    def test_work_home_links_back_to_club_overview_for_representative(self):
+        self.authenticate('journey.club@example.test', 'journey-test-password')
+        response = self.url_open('/my/work')
+        self.assertIn('Club overview', response.text)
+        self.authenticate('journey.reviewer@example.test', 'journey-test-password')
+        response = self.url_open('/my/work')
+        self.assertNotIn('Club overview', response.text)
+
     def test_connected_role_remembered(self):
         self.authenticate('journey.reviewer@example.test', 'journey-test-password')
         self.assertEqual(self.url_open('/my/work?role=reviewer').status_code, 200)

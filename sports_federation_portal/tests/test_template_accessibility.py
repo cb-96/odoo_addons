@@ -164,9 +164,6 @@ class TestPortalTemplateAccessibility(TransactionCase):
             "portal_roster_templates", "portal_my_match_sheet_detail"
         )
         self._assert_tables_have_captions_and_scoped_headers(
-            "portal_roster_templates", "portal_my_match_day"
-        )
-        self._assert_tables_have_captions_and_scoped_headers(
             "competition_templates",
             "portal_my_competition_detail",
         )

@@ -788,10 +788,20 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
 
         match_sheet_list_response = self.url_open("/my/match-sheets")
         self.assertEqual(match_sheet_list_response.status_code, 200)
-        self.assertIn("Portal Smoke Match Sheet", match_sheet_list_response.text)
+        self.assertIn(
+            "Portal Smoke Workspace Team vs Portal Smoke Opponent Team",
+            match_sheet_list_response.text,
+        )
 
         match_sheet_detail_response = self.url_open(
             f"/my/match-sheets/{data['sheet_id']}"
+        )
+        self.assertEqual(match_sheet_detail_response.status_code, 200)
+        # One form saves roster, staff and players; no separate squad step.
+        self.assertIn("Players for this game day", match_sheet_detail_response.text)
+        self.assertIn(
+            f"/my/match-sheets/{data['sheet_id']}/lineup",
+            match_sheet_detail_response.text,
         )
         match_sheet_prepare_response = self.url_open(
             f"/my/match-sheets/{data['sheet_id']}/prep",
@@ -806,13 +816,77 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         self.assertEqual(match_sheet_prepare_response.status_code, 200)
         self.assertIn("Match-day preparation saved.", match_sheet_prepare_response.text)
 
+        lineup_response = self.url_open(
+            f"/my/match-sheets/{data['sheet_id']}/lineup",
+            data={
+                "csrf_token": _extract_csrf_token(match_sheet_detail_response.text),
+                "roster_id": str(data["roster_id"]),
+                "coach_name": "Portal Smoke Coach",
+                "manager_name": "Portal Smoke Manager",
+                "notes": "Saved through the single line-up form.",
+            },
+            allow_redirects=True,
+        )
+        self.assertEqual(lineup_response.status_code, 200)
+        self.assertIn("Line-up saved.", lineup_response.text)
+
+        # The old preparation queue is the same game-day list now.
         match_day_response = self.url_open("/my/match-day")
         self.assertEqual(match_day_response.status_code, 200)
+        self.assertTrue(match_day_response.url.split("?")[0].endswith("/my/match-sheets"))
         self.assertIn(
             "Portal Smoke Workspace Team vs Portal Smoke Opponent Team",
             match_day_response.text,
         )
-        self.assertIn("Open lineup", match_day_response.text)
+
+    def test_past_season_rosters_are_collapsed_on_the_roster_page(self):
+        from lxml import html
+
+        self._create_roster_workspace_smoke_data()
+        suffix = type(self)._roster_workspace_smoke_seq
+        with self.registry.cursor() as cr:
+            env = api.Environment(cr, SUPERUSER_ID, {})
+            closed_season = env["federation.season"].create(
+                {
+                    "name": "Portal Smoke Closed Season",
+                    "code": f"PSC{suffix}",
+                    "date_start": "2020-01-01",
+                    "date_end": "2020-12-31",
+                    "state": "closed",
+                }
+            )
+            old_team = env["federation.team"].create(
+                {
+                    "name": "Portal Smoke Past Team",
+                    "club_id": self.season_club.id,
+                    "code": f"PSPT{suffix}",
+                    "category": "senior",
+                    "gender": "male",
+                }
+            )
+            env["federation.team.roster"].create(
+                {
+                    "name": "Portal Smoke Past Roster",
+                    "team_id": old_team.id,
+                    "season_id": closed_season.id,
+                }
+            )
+            cr.commit()
+
+        self.authenticate(self.season_user.login, "ignored")
+        response = self.url_open("/my/rosters")
+        self.assertEqual(response.status_code, 200)
+        tree = html.fromstring(response.text)
+        past = tree.xpath(
+            "//details[summary[contains(., 'Past seasons')]]"
+            "//td[contains(., 'Portal Smoke Past Roster')]"
+        )
+        self.assertTrue(past, "The old roster must be listed under Past seasons.")
+        current = tree.xpath(
+            "//table[caption[contains(., 'Current-season')]]"
+            "//td[contains(., 'Portal Smoke Past Roster')]"
+        )
+        self.assertFalse(current, "The old roster must not clutter the current list.")
 
     @tagged("-at_install", "post_install", "sf_release_confidence")
     def test_roster_routes_hide_foreign_rosters_and_lines(self):

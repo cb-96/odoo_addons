@@ -107,6 +107,15 @@ cues. The focused accessibility suite covers these contracts together with
 mobile table and action wrapping.
 
 
+## Club representative home
+
+**My account** (`/my` and `/my/home`) opens the club overview for club
+representatives: one page with teams, players, rosters, competitions,
+game-day preparation, officials, results, compliance and club details.
+**My work** (`/my/work`) stays one click away and links back with
+**Club overview**. Users without a club representative record are still
+redirected to **My work** when they have another federation role.
+
 ## Club competition data tutorial
 
 Club representatives use **My Account > Data API** (`/my/data-api`) for live URLs, curl and JavaScript examples, privacy rules, and caching guidance.
@@ -179,3 +188,33 @@ table. Portal templates use model-provided human state labels so internal state
 keys are not exposed as user-facing copy. Competition administrators have
 read-only edition access for their planning workspace; edition changes remain
 owned by the existing setup and workflow commands.
+
+
+## Rosters, game days and line-ups
+
+Club representatives follow one flow: **team → roster → game days → line-up**.
+
+- A **roster** (`/my/rosters`) is the team's player pool for a season. The
+  page lists the current rosters with the next game day of each, and the roster
+  page lists every game day of the roster's season with the state of its
+  line-up (not started, draft, submitted, approved, locked), how many players
+  are selected, and a **Prepare line-up** button.
+- A **line-up** (`/my/match-sheets/<id>`) is the set of players available on
+  one game day. It is shared by all matches the team plays that day. One form
+  saves the roster, coach, manager and the selected players; **Save and
+  submit** submits it for every match of the game day. At each match the coach
+  only crosses out the players who do not play (**Players for this match**).
+- `/my/match-sheets` is the single game-day list (upcoming first, earlier game
+  days collapsed). `/my/match-day`, the former preparation queue, redirects
+  there.
+
+Clubs only see what is current. `federation.team.roster._portal_current_season_ids`
+defines current seasons: draft or open and not yet ended. Rosters, registrations
+that need a roster and preparation checks of other seasons are listed under a
+collapsed **Past seasons** section or left out. Closing, cancelling or archiving
+a season closes its active rosters. A line-up only offers rosters of the same
+team, season and competition; the choice is skipped when only one roster fits.
+
+`federation.portal.gameday` is the single place that groups match sheets into
+game days and decides what is upcoming or earlier, so the roster page, the
+game-day list and the line-up page always agree.

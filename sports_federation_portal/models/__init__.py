@@ -9,6 +9,8 @@ from . import federation_season_registration
 from . import federation_referee
 from . import federation_match_referee
 from . import federation_team_roster
+from . import federation_season
+from . import gameday_overview
 from . import federation_match_sheet
 from . import federation_player
 from . import portal_status_labels

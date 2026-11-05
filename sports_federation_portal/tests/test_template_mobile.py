@@ -156,9 +156,6 @@ class TestPortalTemplateMobile(TransactionCase):
         self._assert_wide_tables_wrapped_responsive(
             "portal_roster_templates", "portal_my_match_sheet_detail"
         )
-        self._assert_wide_tables_wrapped_responsive(
-            "portal_roster_templates", "portal_my_match_day"
-        )
 
     def test_roster_portal_action_groups_wrap(self):
         self._assert_action_groups_wrap(
@@ -174,9 +171,6 @@ class TestPortalTemplateMobile(TransactionCase):
         )
         self._assert_no_table_fixed_width_overflow(
             "portal_roster_templates", "portal_my_match_sheets"
-        )
-        self._assert_no_table_fixed_width_overflow(
-            "portal_roster_templates", "portal_my_match_day"
         )
 
     # ------------------------------------------------------------------

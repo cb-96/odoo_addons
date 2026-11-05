@@ -29,7 +29,11 @@ class FederationRosterPortal(FederationRosterPortalBase):
         except AccessError:
             return self._render_access_denied()
         domain += context_domain
-        total = Roster.search_count(domain)
+        # Clubs work with the current seasons; older rosters stay reachable in
+        # a collapsed "Past seasons" list instead of cluttering the page.
+        current_domain = Roster._portal_current_domain()
+        past_domain = Roster._portal_past_domain()
+        total = Roster.search_count(domain + current_domain)
         pager = portal_pager(
             url="/my/rosters",
             total=total,
@@ -37,33 +41,50 @@ class FederationRosterPortal(FederationRosterPortalBase):
             step=20,
             url_args=context_query,
         )
+        order = "season_id desc, team_id, id desc"
         rosters = Roster.search(
-            domain,
+            domain + current_domain,
             limit=20,
             offset=pager["offset"],
-            order="season_id desc, team_id, id desc",
+            order=order,
         )
+        past_rosters = Roster.search(domain + past_domain, limit=30, order=order)
+        past_total = Roster.search_count(domain + past_domain)
+        current_season_ids = set(Roster._portal_current_season_ids())
         confirmed_registrations = request.env[
             "federation.team.roster"
         ]._portal_get_confirmed_registrations(user=request.env.user)
+        confirmed_registrations = confirmed_registrations.filtered(
+            lambda r: r.season_id.id in current_season_ids
+        )
         if context_query.get('club'):
             confirmed_registrations = confirmed_registrations.filtered(lambda r: r.team_id.club_id.id == context_query['club'])
         if context_query.get('team'):
             confirmed_registrations = confirmed_registrations.filtered(lambda r: r.team_id.id == context_query['team'])
-        roster_opportunities = [
-            {
-                "registration": registration,
-                "roster": request.env[
-                    "federation.team.roster"
-                ]._portal_get_primary_roster_for_registration(
-                    registration,
-                    user=request.env.user,
-                ),
-            }
-            for registration in confirmed_registrations
-        ]
+        roster_opportunities = []
+        for registration in confirmed_registrations:
+            roster = request.env[
+                "federation.team.roster"
+            ]._portal_get_primary_roster_for_registration(
+                registration,
+                user=request.env.user,
+            )
+            # Only teams that still need a roster are listed here; teams that
+            # have one are in the roster table below.
+            if not roster:
+                roster_opportunities.append({"registration": registration})
+        Gameday = request.env["federation.portal.gameday"]
+        next_gamedays = {}
+        for roster in rosters:
+            rows = Gameday.roster_gamedays(
+                roster, user=request.env.user, upcoming=True, limit=1
+            )
+            next_gamedays[roster.id] = rows[0] if rows else False
         values = {
             "rosters": rosters,
+            "next_gamedays": next_gamedays,
+            "past_rosters": past_rosters,
+            "past_total": past_total,
             "roster_opportunities": roster_opportunities,
             "pager": pager,
             "page_name": "my_rosters",
@@ -135,12 +156,29 @@ class FederationRosterPortal(FederationRosterPortalBase):
         except ValidationError as exc:
             portal_manage_error = str(exc)
 
+        Gameday = request.env["federation.portal.gameday"]
+        gamedays = Gameday.roster_gamedays(roster, user=request.env.user, upcoming=True)
+        earlier_gamedays = Gameday.roster_gamedays(
+            roster, user=request.env.user, upcoming=False, limit=10
+        )
+        next_gameday = gamedays[0] if gamedays else False
+        next_lineup = (
+            {line.player_id.id: line for line in next_gameday["sheet"].line_ids}
+            if next_gameday
+            else {}
+        )
         values = {
             "roster": roster,
             "page_name": "my_rosters",
             "success": kw.get("success"),
             "error": kw.get("error"),
             "error_hint": kw.get("error_hint"),
+            "gamedays": gamedays,
+            "earlier_gamedays": earlier_gamedays,
+            "next_gameday": next_gameday,
+            "next_lineup": next_lineup,
+            "is_past_season": roster.season_id.id
+            not in roster._portal_current_season_ids(),
             "can_manage_roster": can_manage_roster,
             "other_rosters": request.env["federation.team.roster"]
             .sudo()
@@ -289,7 +327,7 @@ class FederationRosterPortal(FederationRosterPortalBase):
             return self._redirect_roster(
                 roster,
                 error=str(exc),
-                error_hint="Ensure the roster has been submitted before closing.",
+                error_hint="The roster could not be closed. Contact the federation if the issue persists.",
             )
 
         return self._redirect_roster(roster, success="Roster closed.")

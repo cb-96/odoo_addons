@@ -23,17 +23,16 @@
                   <p class="sf-task-blocker" t-esc="requirement['detail']"/><a t-att-href="requirement['url']" data-journey-open="1">Review requirement</a>
                 </details>
               </t>
-              <p class="small text-muted">Checks apply to this roster and visible lineups. They do not replace match-day approval.</p>
+              <p class="small text-muted">Checks apply to this roster and its upcoming line-ups. They do not replace match-day approval.</p>
             </details>
           </section>
           <a t-if="len(rows) &gt; 1" t-att-href="row['context_url']" class="small" data-journey-open="1">Focus on this team</a>
         </div>
       </section>
-      <details t-if="sheets" class="sf-disclosure"><summary>Lineups</summary><a t-foreach="sheets" t-as="sheet" t-attf-href="/my/match-sheets/#{sheet.id}" class="list-group-item list-group-item-action" data-journey-open="1"><t t-esc="sheet.team_id.display_name"/> · <t t-esc="sheet.match_id.display_name"/> · <t t-esc="sheet.get_portal_state_label()"/></a></details>
-      <details class="sf-disclosure"><summary>Other team work</summary><nav class="d-flex gap-2 flex-wrap" aria-label="Team work"><a t-att-href="preparation_url('/my/competitions')" data-journey-open="1">Registration</a><a t-att-href="preparation_url('/my/rosters')" data-journey-open="1">Rosters</a><a t-att-href="preparation_url('/my/match-sheets')" data-journey-open="1">Lineups</a></nav></details>
+      <details t-if="sheets" class="sf-disclosure"><summary>Game days</summary><a t-foreach="sheets" t-as="sheet" t-attf-href="/my/match-sheets/#{sheet.id}" class="list-group-item list-group-item-action" data-journey-open="1"><t t-esc="sheet.team_id.display_name"/> · <t t-esc="sheet.match_id.display_name"/> · <t t-esc="sheet.get_portal_state_label()"/></a></details>
+      <details class="sf-disclosure"><summary>Other team work</summary><nav class="d-flex gap-2 flex-wrap" aria-label="Team work"><a t-att-href="preparation_url('/my/competitions')" data-journey-open="1">Registration</a><a t-att-href="preparation_url('/my/rosters')" data-journey-open="1">Rosters</a><a t-att-href="preparation_url('/my/match-sheets')" data-journey-open="1">Game days</a></nav></details>
     </main></t>
   </template>
   <template id="competition_preparation_link" inherit_id="sports_federation_portal.portal_my_competitions"><xpath expr="//div[contains(@class, 'container')]" position="inside"><a href="/my/preparation" class="btn btn-outline-secondary my-3" data-journey-open="1">Prepare your team</a></xpath></template>
   <template id="roster_preparation_link" inherit_id="sports_federation_portal.portal_my_roster_detail"><xpath expr="//t[@t-call='portal.portal_layout']" position="inside"><a href="/my/work?role=club" class="btn btn-outline-secondary m-3" data-journey-return="1">Back to my work</a></xpath></template>
-  <template id="lineup_draft_recovery" inherit_id="sports_federation_portal.portal_my_match_sheet_detail"><xpath expr="//form[contains(@t-attf-action, '/prep')]" position="attributes"><attribute name="data-qol-draft-guard">1</attribute><attribute name="t-att-data-draft-user">request.env.user.id</attribute></xpath><xpath expr="//form[contains(@t-attf-action, '/squad')]" position="attributes"><attribute name="data-qol-draft-guard">1</attribute><attribute name="t-att-data-draft-user">request.env.user.id</attribute></xpath></template>
 </odoo>

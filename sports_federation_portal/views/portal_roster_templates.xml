@@ -6,7 +6,7 @@
             Roster, match-sheet, and match-day links are included directly in the
             parent template's "Season workflow" list-group. No additional cards needed.
         -->
-        <xpath expr="//div[hasclass('o_fed_portal_home')]" position="attributes">
+        <xpath expr="//div[hasclass('o_fed_club_dashboard')]" position="attributes">
             <attribute name="data-has-roster-links">1</attribute>
         </xpath>
     </template>
@@ -14,9 +14,15 @@
     <template id="portal_my_rosters" name="My Rosters">
         <t t-call="portal.portal_layout">
             <div class="container py-4">
-                <div class="row mb-3">
+                <div class="row mb-3 g-2">
                     <div class="col">
-                        <h2><i class="fa fa-id-card me-2"/>My Rosters</h2>
+                        <h2><i class="fa fa-id-card me-2"/>Rosters and game days</h2>
+                        <p class="text-muted mb-0">
+                            A roster is your team's player pool for the season. Open a roster to see its game days and choose the line-up for each one.
+                        </p>
+                    </div>
+                    <div class="col-auto d-flex flex-wrap gap-2 align-items-start">
+                        <a href="/my/match-sheets" class="btn btn-outline-secondary">All game days</a>
                     </div>
                 </div>
 
@@ -32,19 +38,18 @@
                     <div class="col-12">
                         <div class="card">
                             <div class="card-body">
-                                <h5 class="card-title">Confirmed Teams Ready For Rosters</h5>
+                                <h5 class="card-title">Create a roster</h5>
                                 <p class="card-text text-muted">
-                                    Create a draft roster as soon as a season registration has been confirmed, or reopen the roster that already exists.
+                                    These teams have a confirmed season registration but no roster yet.
                                 </p>
                                 <div class="table-responsive">
                                     <table class="table table-sm align-middle mb-0">
-                                        <caption class="visually-hidden">Season registrations that can be converted into portal-managed rosters.</caption>
+                                        <caption class="visually-hidden">Confirmed season registrations that still need a roster.</caption>
                                         <thead>
                                             <tr>
                                                 <th scope="col">Team</th>
                                                 <th scope="col">Season</th>
                                                 <th scope="col">Registration</th>
-                                                <th scope="col">Roster</th>
                                                 <th scope="col" class="text-end">Action</th>
                                             </tr>
                                         </thead>
@@ -54,15 +59,10 @@
                                                     <td><t t-esc="item['registration'].team_id.display_name"/></td>
                                                     <td><t t-esc="item['registration'].season_id.display_name"/></td>
                                                     <td><t t-esc="item['registration'].name"/></td>
-                                                    <td>
-                                                        <span t-if="item['roster']"><t t-esc="item['roster'].name"/></span>
-                                                        <span t-if="not item['roster']" class="text-muted">No roster yet</span>
-                                                    </td>
                                                     <td class="text-end">
-                                                        <a t-if="item['roster']" t-attf-href="/my/rosters/#{item['roster'].id}" class="btn btn-sm btn-outline-primary">Open Roster</a>
-                                                        <form t-if="not item['roster']" t-attf-action="/my/rosters/create/#{item['registration'].id}" method="POST" class="d-inline">
+                                                        <form t-attf-action="/my/rosters/create/#{item['registration'].id}" method="POST" class="d-inline">
                                                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                                            <button type="submit" class="btn btn-sm btn-primary">Create Draft Roster</button>
+                                                            <button type="submit" class="btn btn-sm btn-primary">Create roster</button>
                                                         </form>
                                                     </td>
                                                 </tr>
@@ -75,32 +75,46 @@
                     </div>
                 </div>
 
+                <h3 class="h5">Current rosters</h3>
                 <div class="table-responsive">
-                <table class="table">
-                    <caption class="visually-hidden">Rosters available to the current portal representative.</caption>
+                <table class="table align-middle">
+                    <caption class="visually-hidden">Current-season rosters available to the current portal representative, with their next game day.</caption>
                     <thead>
                         <tr>
                             <th scope="col">Roster</th>
                             <th scope="col">Team</th>
                             <th scope="col">Season</th>
                             <th scope="col">Status</th>
-                            <th scope="col">Locked</th>
-                            <th scope="col">Actions</th>
+                            <th scope="col">Next game day</th>
+                            <th scope="col" class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <t t-foreach="rosters" t-as="roster">
+                            <t t-set="nxt" t-value="next_gamedays.get(roster.id)"/>
                             <tr>
                                 <td><t t-esc="roster.name"/></td>
                                 <td><t t-esc="roster.team_id.display_name"/></td>
                                 <td><t t-esc="roster.season_id.display_name"/></td>
                                 <td><t t-esc="roster.get_portal_status_label()"/></td>
                                 <td>
-                                    <span t-if="roster.match_day_locked" class="badge text-bg-warning">Locked</span>
-                                    <span t-if="not roster.match_day_locked" class="badge text-bg-success">Editable</span>
+                                    <t t-if="nxt">
+                                        <div>
+                                            <t t-if="nxt['kickoff']" t-esc="request.env['federation.event.time'].display(nxt['kickoff'], nxt['first_match'])"/>
+                                            <t t-if="not nxt['kickoff']">Date to be announced</t>
+                                        </div>
+                                        <div class="small">
+                                            <span t-attf-class="badge #{'text-bg-warning' if nxt['needs_action'] else 'text-bg-success'}"><t t-esc="nxt['state_label']"/></span>
+                                            <span class="text-muted ms-1"><t t-esc="nxt['selected']"/><t t-if="nxt['limit']"> of <t t-esc="nxt['limit']"/></t> selected</span>
+                                        </div>
+                                    </t>
+                                    <span t-if="not nxt" class="text-muted">No upcoming game day</span>
                                 </td>
-                                <td>
-                                    <a t-attf-href="/my/rosters/#{roster.id}" class="btn btn-sm btn-outline-primary">Open</a>
+                                <td class="text-end">
+                                    <div class="d-flex flex-wrap gap-2 justify-content-end">
+                                        <a t-if="nxt and nxt['needs_action']" t-att-href="nxt['url']" class="btn btn-sm btn-primary">Prepare line-up</a>
+                                        <a t-attf-href="/my/rosters/#{roster.id}" class="btn btn-sm btn-outline-primary">Open roster</a>
+                                    </div>
                                 </td>
                             </tr>
                         </t>
@@ -109,12 +123,45 @@
                 </div>
 
                 <div t-if="not rosters" class="text-center py-4">
-                    <p class="text-muted">No rosters are available for your club yet.</p>
+                    <p class="text-muted">No current rosters yet. A roster appears here once your team's season registration is confirmed.</p>
                 </div>
 
                 <t t-if="pager">
                     <t t-call="portal.pager"/>
                 </t>
+
+                <details t-if="past_total" class="mt-4">
+                    <summary>Past seasons (<t t-esc="past_total"/>)</summary>
+                    <p class="text-muted small mt-2">Rosters of finished seasons are kept for history only.</p>
+                    <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <caption class="visually-hidden">Rosters of past seasons.</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Roster</th>
+                                <th scope="col">Team</th>
+                                <th scope="col">Season</th>
+                                <th scope="col">Status</th>
+                                <th scope="col" class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="past_rosters" t-as="roster">
+                                <tr>
+                                    <td><t t-esc="roster.name"/></td>
+                                    <td><t t-esc="roster.team_id.display_name"/></td>
+                                    <td><t t-esc="roster.season_id.display_name"/></td>
+                                    <td><t t-esc="roster.get_portal_status_label()"/></td>
+                                    <td class="text-end">
+                                        <a t-attf-href="/my/rosters/#{roster.id}" class="btn btn-sm btn-outline-secondary">View</a>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                    </div>
+                    <p t-if="past_total &gt; len(past_rosters)" class="small text-muted">Showing the <t t-esc="len(past_rosters)"/> most recent of <t t-esc="past_total"/> past rosters.</p>
+                </details>
             </div>
         </t>
     </template>
@@ -127,9 +174,13 @@
                         <h2><i class="fa fa-id-card me-2"/><t t-esc="roster.name"/></h2>
                     </div>
                     <div class="col-auto d-flex flex-wrap gap-2">
-                        <a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/lines/bulk" class="btn btn-primary">Add players</a>
-                        <a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/edit" class="btn btn-outline-secondary">Edit Roster</a>
-                        <a href="/my/rosters" class="btn btn-outline-secondary">Back to Rosters</a>
+                        <a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/lines/bulk" t-attf-class="btn #{'btn-outline-primary' if next_gameday else 'btn-primary'}">Add players</a>
+                        <a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/edit" class="btn btn-outline-secondary">Edit roster</a>
+                        <a t-if="next_gameday" t-att-href="next_gameday['url']" t-attf-class="btn #{'btn-primary' if next_gameday['needs_action'] else 'btn-outline-primary'}">
+                            <t t-if="next_gameday['needs_action']">Prepare next line-up</t>
+                            <t t-if="not next_gameday['needs_action']">Open next line-up</t>
+                        </a>
+                        <a href="/my/rosters" class="btn btn-outline-secondary">Back to rosters</a>
                     </div>
                 </div>
 
@@ -143,12 +194,15 @@
                 <div t-if="portal_manage_error" class="alert alert-warning" role="alert">
                     <t t-esc="portal_manage_error"/>
                 </div>
+                <div t-if="is_past_season" class="alert alert-secondary" role="status">
+                    This roster belongs to a past season. It is kept for history and no longer appears in your current rosters.
+                </div>
 
                 <div class="row g-4">
                     <div class="col-lg-4">
                         <div class="card h-100">
                             <div class="card-body">
-                                <h5 class="card-title">Roster Summary</h5>
+                                <h5 class="card-title">Roster summary</h5>
                                 <table class="table table-sm mb-0">
                                     <tr><th>Team</th><td><t t-esc="roster.team_id.display_name"/></td></tr>
                                     <tr><th>Season</th><td><t t-esc="roster.season_id.display_name"/></td></tr>
@@ -163,13 +217,13 @@
                     <div class="col-lg-8">
                         <div class="card h-100">
                             <div class="card-body">
-                                <h5 class="card-title">Operational Status</h5>
+                                <h5 class="card-title">Roster status</h5>
                                 <div t-if="roster.readiness_feedback" class="alert alert-warning mb-3" role="alert">
                                     <t t-esc="roster.readiness_feedback"/>
                                 </div>
                                 <div t-if="roster.status == 'closed'" class="alert alert-info mb-3" role="status">
                                     <strong>Roster is closed:</strong>
-                                    This roster is excluded from new match-sheet preparation while closed. Reopen it to restore active use.
+                                    A closed roster cannot be used for new game-day line-ups. Reopen it to use it again.
                                 </div>
                                 <div t-if="roster.match_day_lock_feedback" class="alert alert-info mb-0" role="status">
                                     <t t-esc="roster.match_day_lock_feedback"/>
@@ -194,15 +248,110 @@
                     </div>
                 </div>
 
+                <div class="row mt-4" id="game-days">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h4 class="card-title">Game days and line-ups</h4>
+                                <p class="text-muted small mb-3">
+                                    This roster is your season pool. For every game day you choose the players available that day from it. That line-up is shared by all your matches that day; at each match you only cross out the players who do not play.
+                                </p>
+                                <div t-if="gamedays" class="table-responsive">
+                                    <table class="table table-sm align-middle mb-2">
+                                        <caption class="visually-hidden">Upcoming game days of this roster and the state of each line-up.</caption>
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Game day</th>
+                                                <th scope="col">Matches</th>
+                                                <th scope="col">Line-up</th>
+                                                <th scope="col">Selected</th>
+                                                <th scope="col">Playing</th>
+                                                <th scope="col" class="text-end">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="gamedays" t-as="gd">
+                                                <tr>
+                                                    <td>
+                                                        <t t-if="gd['kickoff']" t-esc="request.env['federation.event.time'].display(gd['kickoff'], gd['first_match'])"/>
+                                                        <t t-if="not gd['kickoff']">Date to be announced</t>
+                                                    </td>
+                                                    <td>
+                                                        <t t-esc="gd['matches']"/>
+                                                        <div class="small text-muted"><t t-esc="gd['first_match'].display_name"/></div>
+                                                    </td>
+                                                    <td><span t-attf-class="badge #{'text-bg-warning' if gd['needs_action'] else 'text-bg-success'}"><t t-esc="gd['state_label']"/></span></td>
+                                                    <td><t t-esc="gd['selected']"/><t t-if="gd['limit']"> of <t t-esc="gd['limit']"/></t></td>
+                                                    <td>
+                                                        <t t-if="gd['state'] in ('submitted', 'approved', 'locked')"><t t-esc="gd['playing']"/></t>
+                                                        <t t-if="gd['state'] not in ('submitted', 'approved', 'locked')"><span class="text-muted">-</span></t>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <a t-if="gd['needs_action']" t-att-href="gd['url']" class="btn btn-sm btn-primary">Prepare line-up</a>
+                                                        <a t-if="not gd['needs_action']" t-att-href="gd['url']" class="btn btn-sm btn-outline-primary">Open line-up</a>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p t-if="not gamedays" class="text-muted mb-2">
+                                    No upcoming game days yet. They appear here as soon as your team's matches are scheduled; you can then prepare the line-up from this page.
+                                </p>
+                                <details t-if="earlier_gamedays" class="mt-2">
+                                    <summary>Earlier game days (<t t-esc="len(earlier_gamedays)"/>)</summary>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm align-middle mt-2 mb-0">
+                                            <caption class="visually-hidden">Earlier game days of this roster.</caption>
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">Game day</th>
+                                                    <th scope="col">Matches</th>
+                                                    <th scope="col">Line-up</th>
+                                                    <th scope="col">Selected</th>
+                                                    <th scope="col" class="text-end">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="earlier_gamedays" t-as="gd">
+                                                    <tr>
+                                                        <td>
+                                                            <t t-if="gd['kickoff']" t-esc="request.env['federation.event.time'].display(gd['kickoff'], gd['first_match'])"/>
+                                                            <t t-if="not gd['kickoff']">Date unknown</t>
+                                                        </td>
+                                                        <td><t t-esc="gd['matches']"/></td>
+                                                        <td><t t-esc="gd['state_label']"/></td>
+                                                        <td><t t-esc="gd['selected']"/></td>
+                                                        <td class="text-end"><a t-att-href="gd['url']" class="btn btn-sm btn-outline-secondary">View</a></td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </details>
+                                <details class="mt-3">
+                                    <summary class="small">How the roster and the line-up work together</summary>
+                                    <ol class="small text-muted mt-2 mb-0">
+                                        <li>Add your players to this roster. It becomes active automatically once it meets the competition rules.</li>
+                                        <li>When matches are scheduled, each game day is listed above.</li>
+                                        <li>Open a game day and tick the players available that day. Submit the line-up once.</li>
+                                        <li>At each match, cross out the players who do not play.</li>
+                                    </ol>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="row mt-4">
                     <div class="col-12">
                         <div class="d-flex justify-content-between align-items-center flex-wrap mb-2 gap-2">
-                            <h4 class="mb-0">Roster Lines</h4>
-                            <span class="d-flex gap-2"><a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/lines/bulk" class="btn btn-sm btn-primary">Add players</a><a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/lines/new" class="btn btn-sm btn-outline-secondary">Add one player with details</a></span>
+                            <h4 class="mb-0">Players on this roster</h4>
+                            <span class="d-flex flex-wrap gap-2"><a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/lines/bulk" class="btn btn-sm btn-primary">Add players</a><a t-if="can_edit_roster" t-attf-href="/my/rosters/#{roster.id}/lines/new" class="btn btn-sm btn-outline-secondary">Add one player with details</a></span>
                         </div>
                         <div class="table-responsive">
                         <table class="table table-sm">
-                            <caption class="visually-hidden">Players currently attached to this roster.</caption>
+                            <caption class="visually-hidden">Players currently on this roster and whether they are in the next game-day line-up.</caption>
                             <thead>
                                 <tr>
                                     <th scope="col">Player</th>
@@ -210,6 +359,7 @@
                                     <th scope="col">Status</th>
                                     <th scope="col">Captaincy</th>
                                     <th scope="col">Eligibility</th>
+                                    <th scope="col">Next game day</th>
                                     <th scope="col">Dates</th>
                                     <th scope="col" class="text-end">Actions</th>
                                 </tr>
@@ -230,6 +380,12 @@
                                             <div t-if="line.eligibility_feedback" class="small text-muted mt-1">
                                                 <t t-esc="line.eligibility_feedback"/>
                                             </div>
+                                        </td>
+                                        <td>
+                                            <t t-set="in_lineup" t-value="next_lineup.get(line.player_id.id)"/>
+                                            <span t-if="in_lineup and not in_lineup.crossed_out" class="badge text-bg-success">In line-up</span>
+                                            <span t-if="in_lineup and in_lineup.crossed_out" class="badge text-bg-secondary">Not playing</span>
+                                            <span t-if="next_gameday and not in_lineup" class="text-muted small">Not selected</span>
                                         </td>
                                         <td>
                                             <t t-if="line.date_from" t-esc="line.date_from" t-options="{&quot;widget&quot;: &quot;date&quot;}"/>
@@ -254,8 +410,9 @@
 
                 <div class="row mt-4">
                     <div class="col-12">
-                        <h4>Audit History</h4>
-                        <table class="table table-sm">
+                        <details>
+                        <summary class="h5">History</summary>
+                        <table class="table table-sm mt-2">
                             <caption class="visually-hidden">Audit history entries recorded for this roster.</caption>
                             <thead>
                                 <tr>
@@ -276,6 +433,7 @@
                                 </t>
                             </tbody>
                         </table>
+                        </details>
                     </div>
                 </div>
             </div>
@@ -466,68 +624,130 @@
         </t>
     </template>
 
-    <template id="portal_my_match_sheets" name="My Lineups">
+    <template id="portal_my_match_sheets" name="Game Days">
         <t t-call="portal.portal_layout">
             <div class="container py-4">
-                <div class="row mb-3">
+                <div class="row mb-3 g-2">
                     <div class="col">
-                        <h2><i class="fa fa-list-alt me-2"/>My Lineups</h2>
+                        <h2><i class="fa fa-calendar-check-o me-2"/>Game days</h2>
+                        <p class="text-muted mb-0">
+                            Prepare one line-up per game day from your roster. It is shared by all your matches that day.
+                        </p>
+                    </div>
+                    <div class="col-auto d-flex flex-wrap gap-2 align-items-start">
+                        <a href="/my/rosters" class="btn btn-outline-secondary">Back to rosters</a>
                     </div>
                 </div>
 
-                <div class="table-responsive">
-                <table class="table">
-                    <caption class="visually-hidden">Lineups available for pre-kick-off preparation.</caption>
-                    <thead>
-                        <tr>
-                            <th scope="col">Sheet</th>
-                            <th scope="col">Match</th>
-                            <th scope="col">Team</th>
-                            <th scope="col">State</th>
-                            <th scope="col">Ready</th>
-                            <th scope="col">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <t t-foreach="match_sheets" t-as="sheet">
+                <section aria-labelledby="upcoming-gamedays-title">
+                    <h3 id="upcoming-gamedays-title" class="h5">Upcoming game days</h3>
+                    <div t-if="upcoming_gamedays" class="table-responsive">
+                    <table class="table align-middle">
+                        <caption class="visually-hidden">Upcoming game days with the state of each line-up.</caption>
+                        <thead>
                             <tr>
-                                <td><t t-esc="sheet.name"/></td>
-                                <td><t t-esc="sheet.match_id.display_name"/></td>
-                                <td><t t-esc="sheet.team_id.name"/></td>
-                                <td><t t-esc="sheet.get_portal_state_label()"/></td>
-                                <td>
-                                    <span t-if="sheet.ready_for_submission" class="badge text-bg-success">Ready</span>
-                                    <span t-if="not sheet.ready_for_submission" class="badge text-bg-warning">Attention</span>
-                                </td>
-                                <td>
-                                    <a t-attf-href="/my/match-sheets/#{sheet.id}" class="btn btn-sm btn-outline-primary">Open</a>
-                                </td>
+                                <th scope="col">Game day</th>
+                                <th scope="col">Team</th>
+                                <th scope="col">Matches</th>
+                                <th scope="col">Roster</th>
+                                <th scope="col">Line-up</th>
+                                <th scope="col">Selected</th>
+                                <th scope="col" class="text-end">Action</th>
                             </tr>
-                        </t>
-                    </tbody>
-                </table>
-                </div>
-
-                <div t-if="not match_sheets" class="text-center py-4">
-                    <p class="text-muted">No match sheets are available for your club yet.</p>
-                </div>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="upcoming_gamedays" t-as="gd">
+                                <tr>
+                                    <td>
+                                        <t t-if="gd['kickoff']" t-esc="request.env['federation.event.time'].display(gd['kickoff'], gd['first_match'])"/>
+                                        <t t-if="not gd['kickoff']">Date to be announced</t>
+                                    </td>
+                                    <td><t t-esc="gd['team'].name"/></td>
+                                    <td>
+                                        <t t-esc="gd['first_match'].display_name"/>
+                                        <div t-if="gd['matches'] &gt; 1" class="small text-muted">+ <t t-esc="gd['matches'] - 1"/> more match(es), same line-up</div>
+                                    </td>
+                                    <td>
+                                        <t t-if="gd['roster']"><t t-esc="gd['roster'].name"/></t>
+                                        <span t-if="not gd['roster']" class="text-muted">Not chosen yet</span>
+                                    </td>
+                                    <td><span t-attf-class="badge #{'text-bg-warning' if gd['needs_action'] else 'text-bg-success'}"><t t-esc="gd['state_label']"/></span></td>
+                                    <td><t t-esc="gd['selected']"/><t t-if="gd['limit']"> of <t t-esc="gd['limit']"/></t></td>
+                                    <td class="text-end">
+                                        <a t-if="gd['needs_action']" t-att-href="gd['url']" class="btn btn-sm btn-primary">Prepare line-up</a>
+                                        <a t-if="not gd['needs_action']" t-att-href="gd['url']" class="btn btn-sm btn-outline-primary">Open line-up</a>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                    </div>
+                    <div t-if="not upcoming_gamedays" class="text-center py-4">
+                        <p class="text-muted">No upcoming game days. They appear here as soon as your team's matches are scheduled.</p>
+                    </div>
+                </section>
 
                 <t t-if="pager">
                     <t t-call="portal.pager"/>
                 </t>
+
+                <details t-if="earlier_gamedays" class="mt-4">
+                    <summary>Earlier game days (<t t-esc="earlier_total"/>)</summary>
+                    <div class="table-responsive">
+                    <table class="table table-sm align-middle mt-2">
+                        <caption class="visually-hidden">Earlier game days and their line-ups.</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Game day</th>
+                                <th scope="col">Team</th>
+                                <th scope="col">Matches</th>
+                                <th scope="col">Roster</th>
+                                <th scope="col">Line-up</th>
+                                <th scope="col">Selected</th>
+                                <th scope="col" class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="earlier_gamedays" t-as="gd">
+                                <tr>
+                                    <td>
+                                        <t t-if="gd['kickoff']" t-esc="request.env['federation.event.time'].display(gd['kickoff'], gd['first_match'])"/>
+                                        <t t-if="not gd['kickoff']">Date unknown</t>
+                                    </td>
+                                    <td><t t-esc="gd['team'].name"/></td>
+                                    <td>
+                                        <t t-esc="gd['first_match'].display_name"/>
+                                        <div t-if="gd['matches'] &gt; 1" class="small text-muted">+ <t t-esc="gd['matches'] - 1"/> more match(es)</div>
+                                    </td>
+                                    <td>
+                                        <t t-if="gd['roster']"><t t-esc="gd['roster'].name"/></t>
+                                        <span t-if="not gd['roster']" class="text-muted">-</span>
+                                    </td>
+                                    <td><t t-esc="gd['state_label']"/></td>
+                                    <td><t t-esc="gd['selected']"/></td>
+                                    <td class="text-end"><a t-att-href="gd['url']" class="btn btn-sm btn-outline-secondary">View</a></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                    </div>
+                    <p t-if="earlier_total &gt; len(earlier_gamedays)" class="small text-muted">Showing the <t t-esc="len(earlier_gamedays)"/> most recent of <t t-esc="earlier_total"/> earlier game days.</p>
+                </details>
             </div>
         </t>
     </template>
 
-    <template id="portal_my_match_sheet_detail" name="My Lineup Detail">
+    <template id="portal_my_match_sheet_detail" name="Game-day Line-up">
         <t t-call="portal.portal_layout">
             <div class="container py-4">
-                <div class="row mb-3">
+                <div class="row mb-3 g-2">
                     <div class="col">
-                        <h2><i class="fa fa-list-alt me-2"/><t t-esc="sheet.name"/></h2>
+                        <h2><i class="fa fa-list-alt me-2"/>Game-day line-up</h2>
+                        <p class="text-muted mb-0"><t t-esc="sheet.team_id.name"/> · <t t-esc="sheet.match_id.display_name"/></p>
                     </div>
-                    <div class="col-auto">
-                        <a href="/my/match-sheets" class="btn btn-outline-secondary">Back to Lineups</a>
+                    <div class="col-auto d-flex flex-wrap gap-2 align-items-start">
+                        <a t-att-href="back_url" class="btn btn-outline-secondary">Back to roster</a>
+                        <a href="/my/match-sheets" class="btn btn-outline-secondary">All game days</a>
                     </div>
                 </div>
 
@@ -543,16 +763,16 @@
                     <div class="col-lg-4">
                         <div class="card h-100">
                             <div class="card-body">
-                                <h5 class="card-title">Sheet Summary</h5>
+                                <h5 class="card-title">Line-up summary</h5>
                                 <table class="table table-sm mb-0">
                                     <tr><th>Match</th><td><t t-esc="sheet.match_id.display_name"/></td></tr>
                                     <tr><th>Team</th><td><t t-esc="sheet.team_id.name"/></td></tr>
                                     <tr><th>Roster</th><td>
                                         <t t-if="sheet.roster_id"><t t-esc="sheet.roster_id.name"/></t>
-                                        <span t-if="not sheet.roster_id" class="text-warning">Not linked</span>
+                                        <span t-if="not sheet.roster_id" class="text-warning">Not chosen yet</span>
                                     </td></tr>
-                                    <tr><th>State</th><td><t t-esc="sheet.get_portal_state_label()"/></td></tr>
-                                    <tr><th>Result State</th><td><t t-esc="sheet.match_id.get_portal_result_state_label()"/></td></tr>
+                                    <tr><th>Line-up</th><td><t t-esc="lineup_state_label"/></td></tr>
+                                    <tr><th>Result</th><td><t t-esc="sheet.match_id.get_portal_result_state_label()"/></td></tr>
                                     <tr><th>Substitutions</th><td><t t-esc="sheet.substitution_count"/></td></tr>
                                 </table>
                             </div>
@@ -561,7 +781,7 @@
                     <div class="col-lg-8">
                         <div class="card h-100">
                             <div class="card-body">
-                                <h5 class="card-title">Operational Notes</h5>
+                                <h5 class="card-title">Checks</h5>
                                 <div t-if="sheet.readiness_feedback" class="alert alert-warning mb-3" role="alert">
                                     <t t-esc="sheet.readiness_feedback"/>
                                 </div>
@@ -574,314 +794,319 @@
                                     <t t-esc="sheet.match_id.result_correction_reason"/>
                                 </div>
                                 <div t-if="not sheet.readiness_feedback and not sheet.match_id.result_contest_reason and not sheet.match_id.result_correction_reason" class="text-muted">
-                                    No additional notes are recorded.
+                                    Nothing is blocking this line-up right now.
                                 </div>
-                                <form t-if="can_prepare_sheet" t-attf-action="/my/match-sheets/#{sheet.id}/prep" method="POST" class="mt-4">
-                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                    <div class="row g-3">
-                                        <!-- Roster -->
-                                        <div class="col-12">
-                                            <label class="form-label fw-semibold" for="match_sheet_roster_id">Roster <span class="text-danger">*</span></label>
-                                            <select id="match_sheet_roster_id" name="roster_id" class="form-select">
-                                                <option value="">— Select a roster —</option>
-                                                <t t-foreach="available_rosters" t-as="roster">
-                                                    <option t-att-value="roster.id" t-att-selected="sheet.roster_id and sheet.roster_id.id == roster.id and 'selected' or None">
-                                                        <t t-esc="roster.name"/>
-                                                        (<t t-esc="roster.get_portal_status_label()"/>)
-                                                    </option>
-                                                </t>
-                                            </select>
-                                            <div t-if="not available_rosters" class="form-text text-warning">
-                                                No active or draft rosters found for this team. Please create and activate a roster first.
-                                            </div>
-                                            <div t-if="available_rosters" class="form-text">
-                                                Only active or draft rosters for this team are shown. An active roster is required for submission.
-                                            </div>
-                                        </div>
-                                        <!-- Coach -->
-                                        <div class="col-md-6">
-                                            <label class="form-label" for="match_sheet_coach_id">Coach</label>
-                                            <t t-if="available_coaches">
-                                                <select id="match_sheet_coach_id" name="coach_id" class="form-select">
-                                                    <option value="">— Select a coach —</option>
-                                                    <t t-foreach="available_coaches" t-as="rep">
-                                                        <option t-att-value="rep.id" t-att-selected="sheet.coach_id and sheet.coach_id.id == rep.id and 'selected' or None">
-                                                            <t t-esc="rep.partner_id.name"/>
-                                                        </option>
-                                                    </t>
-                                                </select>
-                                            </t>
-                                            <t t-if="not available_coaches">
-                                                <input id="match_sheet_coach_name" type="text" name="coach_name" class="form-control" placeholder="Coach name" aria-label="Coach name" t-att-value="sheet.coach_name or ''"/>
-                                                <div class="form-text">No registered coaches found for this club.</div>
-                                            </t>
-                                        </div>
-                                        <!-- Manager -->
-                                        <div class="col-md-6">
-                                            <label class="form-label" for="match_sheet_manager_id">Manager / Representative</label>
-                                            <t t-if="available_managers">
-                                                <select id="match_sheet_manager_id" name="manager_id" class="form-select">
-                                                    <option value="">— Select a manager —</option>
-                                                    <t t-foreach="available_managers" t-as="rep">
-                                                        <option t-att-value="rep.id" t-att-selected="sheet.manager_id and sheet.manager_id.id == rep.id and 'selected' or None">
-                                                            <t t-esc="rep.partner_id.name"/>
-                                                        </option>
-                                                    </t>
-                                                </select>
-                                            </t>
-                                            <t t-if="not available_managers">
-                                                <input id="match_sheet_manager_name" type="text" name="manager_name" class="form-control" placeholder="Manager name" aria-label="Manager name" t-att-value="sheet.manager_name or ''"/>
-                                                <div class="form-text">No registered representatives found for this club.</div>
-                                            </t>
-                                        </div>
-                                        <div class="col-12">
-                                            <label class="form-label" for="match_sheet_notes">Preparation Notes</label>
-                                            <textarea id="match_sheet_notes" name="notes" class="form-control" rows="3"><t t-esc="sheet.notes or ''"/></textarea>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex flex-wrap gap-2 mt-3">
-                                        <button type="submit" class="btn btn-primary btn-sm">Save Preparation</button>
-                                        <button t-if="sheet.state == 'draft' and sheet.ready_for_submission" type="submit" name="submit_sheet" value="1" class="btn btn-outline-primary btn-sm">Save And Submit Sheet</button>
-                                    </div>
-                                </form>
+                                <p t-if="sheet.state == 'draft'" class="small text-muted mt-3 mb-0">
+                                    Pick the players available on this game day and press <strong>Save and submit</strong>. The same line-up is used for every match your team plays that day.
+                                </p>
+                                <p t-if="sheet.state == 'approved' or sheet.state == 'locked'" class="small text-muted mt-3 mb-0">
+                                    This line-up is final. Use <strong>Players for this match</strong> below to cross out players who do not play.
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <h4 class="mb-0">Squad</h4>
-                            <span t-if="not sheet.roster_id" class="text-muted small">Select a roster in the preparation form above to manage the squad.</span>
-                        </div>
+                <form t-if="can_prepare_sheet" t-attf-action="/my/match-sheets/#{sheet.id}/lineup" method="POST" class="mt-4" data-qol-draft-guard="1" t-att-data-draft-user="request.env.user.id">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input t-if="can_edit_lineup and selected_roster" type="hidden" name="has_lineup_players" value="1"/>
+                    <input t-if="can_edit_lineup and selected_roster" type="hidden" name="shown_roster_id" t-att-value="selected_roster.id"/>
 
-                        <!-- Editable squad form (draft + roster linked) -->
-                        <div t-if="can_edit_squad and sheet.roster_id" class="card">
-                            <div class="card-body p-3">
-                                <p class="text-muted small mb-3">
-                                    Check each player to include them in the match-day squad. Players come from the linked roster.
-                                </p>
-                                <form t-attf-action="/my/match-sheets/#{sheet.id}/squad" method="POST">
-                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm align-middle mb-2">
-                                            <caption class="visually-hidden">Roster players available for match-day squad selection.</caption>
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th scope="col" style="width:40px">
-                                                        <span class="visually-hidden">Include</span>
-                                                    </th>
-                                                    <th scope="col">Player</th>
-                                                    <th scope="col" style="width:130px">Role</th>
-                                                    <th scope="col" style="width:80px" class="text-center">Captain</th>
-                                                    <th scope="col" style="width:90px">Jersey #</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <t t-foreach="roster_lines" t-as="rline">
-                                                    <t t-set="sl" t-value="sheet_line_by_player.get(rline.player_id.id)"/>
-                                                    <tr t-att-class="'table-success' if sl else ''">
-                                                        <td>
-                                                            <input type="checkbox" name="squad_player_ids" t-att-value="rline.player_id.id" t-att-checked="sl and 'checked' or None" aria-label="Include in squad" class="form-check-input"/>
-                                                        </td>
-                                                        <td>
-                                                            <t t-esc="rline.player_id.display_name"/>
-                                                            <span t-if="rline.jersey_number" class="text-muted ms-1 small">#<t t-esc="rline.jersey_number"/></span>
-                                                        </td>
-                                                        <td>
-                                                            <select t-attf-name="player_#{rline.player_id.id}_role" aria-label="Playing role" class="form-select form-select-sm">
-                                                                <option value="starter" t-att-selected="(sl and sl.is_starter or (not sl and True)) and 'selected' or None">
-                                                                    Starter
-                                                                </option>
-                                                                <option value="substitute" t-att-selected="sl and sl.is_substitute and 'selected' or None">
-                                                                    Substitute
-                                                                </option>
-                                                                <option value="other" t-att-selected="sl and not sl.is_starter and not sl.is_substitute and 'selected' or None">
-                                                                    Other
-                                                                </option>
-                                                            </select>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <input type="checkbox" t-attf-name="player_#{rline.player_id.id}_captain" value="1" t-att-checked="sl and sl.is_captain and 'checked' or None" aria-label="Captain" class="form-check-input"/>
-                                                        </td>
-                                                        <td>
-                                                            <input type="text" t-attf-name="player_#{rline.player_id.id}_jersey" class="form-control form-control-sm" aria-label="Jersey number" style="width:80px" t-att-value="(sl and sl.jersey_number) or rline.jersey_number or ''"/>
-                                                        </td>
-                                                    </tr>
-                                                </t>
-                                            </tbody>
-                                        </table>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Roster and team staff</h5>
+                            <div class="row g-3">
+                                <!-- Roster: only a choice when there is more than one -->
+                                <div t-if="can_edit_lineup" class="col-12">
+                                    <t t-if="len(available_rosters) &gt; 1">
+                                        <label class="form-label fw-semibold" for="match_sheet_roster_id">Roster <span class="text-danger">*</span></label>
+                                        <select id="match_sheet_roster_id" name="roster_id" class="form-select">
+                                            <t t-foreach="available_rosters" t-as="roster">
+                                                <option t-att-value="roster.id" t-att-selected="selected_roster and selected_roster.id == roster.id and 'selected' or None">
+                                                    <t t-esc="roster.name"/>
+                                                    (<t t-esc="roster.get_portal_status_label()"/>)
+                                                </option>
+                                            </t>
+                                        </select>
+                                        <div class="form-text">Only rosters of this team for the same season are shown. Save to load the players of another roster. An active roster is required for submission.</div>
+                                    </t>
+                                    <t t-if="len(available_rosters) == 1">
+                                        <input type="hidden" name="roster_id" t-att-value="selected_roster.id"/>
+                                        <div class="fw-semibold">Roster</div>
+                                        <div><t t-esc="selected_roster.name"/> (<t t-esc="selected_roster.get_portal_status_label()"/>)</div>
+                                        <div t-if="selected_roster.status != 'active'" class="form-text text-warning">This roster is still a draft. It becomes active automatically once it meets the competition rules; an active roster is required for submission.</div>
+                                    </t>
+                                    <div t-if="not available_rosters" class="form-text text-warning">
+                                        This team has no roster for this season yet. Create the roster first, then come back to choose the players.
+                                        <a href="/my/rosters">Go to rosters</a>
                                     </div>
-                                    <div t-if="not roster_lines" class="text-muted small">
-                                        No players on the linked roster yet.
-                                    </div>
-                                    <div t-if="roster_lines" class="d-flex flex-wrap gap-2">
-                                        <button type="submit" class="btn btn-primary btn-sm">Save Squad</button>
-                                    </div>
-                                </form>
+                                </div>
+                                <!-- Coach -->
+                                <div class="col-md-6">
+                                    <label class="form-label" for="match_sheet_coach_id">Coach</label>
+                                    <t t-if="available_coaches">
+                                        <select id="match_sheet_coach_id" name="coach_id" class="form-select">
+                                            <option value="">— Select a coach —</option>
+                                            <t t-foreach="available_coaches" t-as="rep">
+                                                <option t-att-value="rep.id" t-att-selected="sheet.coach_id and sheet.coach_id.id == rep.id and 'selected' or None">
+                                                    <t t-esc="rep.partner_id.name"/>
+                                                </option>
+                                            </t>
+                                        </select>
+                                    </t>
+                                    <t t-if="not available_coaches">
+                                        <input id="match_sheet_coach_id" type="text" name="coach_name" class="form-control" placeholder="Coach name" t-att-value="sheet.coach_name or ''"/>
+                                        <div class="form-text">No registered coaches found for this club.</div>
+                                    </t>
+                                </div>
+                                <!-- Manager -->
+                                <div class="col-md-6">
+                                    <label class="form-label" for="match_sheet_manager_id">Manager / Representative</label>
+                                    <t t-if="available_managers">
+                                        <select id="match_sheet_manager_id" name="manager_id" class="form-select">
+                                            <option value="">— Select a manager —</option>
+                                            <t t-foreach="available_managers" t-as="rep">
+                                                <option t-att-value="rep.id" t-att-selected="sheet.manager_id and sheet.manager_id.id == rep.id and 'selected' or None">
+                                                    <t t-esc="rep.partner_id.name"/>
+                                                </option>
+                                            </t>
+                                        </select>
+                                    </t>
+                                    <t t-if="not available_managers">
+                                        <input id="match_sheet_manager_id" type="text" name="manager_name" class="form-control" placeholder="Manager name" t-att-value="sheet.manager_name or ''"/>
+                                        <div class="form-text">No registered representatives found for this club.</div>
+                                    </t>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="match_sheet_notes">Notes</label>
+                                    <textarea id="match_sheet_notes" name="notes" class="form-control" rows="2"><t t-esc="sheet.notes or ''"/></textarea>
+                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Read-only squad view (submitted / approved / locked, or no roster) -->
-                        <div t-if="not can_edit_squad or not sheet.roster_id">
+                    <!-- Players of the roster: pick the game-day line-up (draft only) -->
+                    <div t-if="can_edit_lineup" class="card mb-3">
+                        <div class="card-body p-3">
+                            <h5 class="card-title">Players for this game day</h5>
+                            <t t-if="selected_roster">
+                                <p class="text-muted small mb-3">
+                                    Tick the players available on this game day<t t-if="sheet.gameday_roster_limit"> (at most <t t-esc="sheet.gameday_roster_limit"/>)</t>. Players come from <strong><t t-esc="selected_roster.name"/></strong>. You do not choose starters: at each match you cross out the players who do not play.
+                                </p>
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-2">
+                                        <caption class="visually-hidden">Roster players available for this game-day line-up.</caption>
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th scope="col"><span class="visually-hidden">Include</span></th>
+                                                <th scope="col">Player</th>
+                                                <th scope="col">Eligibility</th>
+                                                <th scope="col" class="text-center">Captain</th>
+                                                <th scope="col">Jersey #</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="roster_lines" t-as="rline">
+                                                <t t-set="sl" t-value="sheet_line_by_player.get(rline.player_id.id)"/>
+                                                <tr t-att-class="'table-success' if sl else ''">
+                                                    <td>
+                                                        <input type="checkbox" name="squad_player_ids" t-att-value="rline.player_id.id" t-att-checked="sl and 'checked' or None" aria-label="Include player in the line-up" t-attf-aria-label="Include #{rline.player_id.display_name} in the line-up" class="form-check-input"/>
+                                                    </td>
+                                                    <td>
+                                                        <t t-esc="rline.player_id.display_name"/>
+                                                        <span t-if="rline.jersey_number" class="text-muted ms-1 small">#<t t-esc="rline.jersey_number"/></span>
+                                                    </td>
+                                                    <td>
+                                                        <span t-if="rline.eligible" class="badge text-bg-success">Eligible</span>
+                                                        <span t-if="not rline.eligible" class="badge text-bg-danger">Blocked</span>
+                                                        <div t-if="rline.eligibility_feedback" class="small text-muted mt-1"><t t-esc="rline.eligibility_feedback"/></div>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <input type="checkbox" t-attf-name="player_#{rline.player_id.id}_captain" value="1" t-att-checked="sl and sl.is_captain and 'checked' or None" aria-label="Captain" t-attf-aria-label="#{rline.player_id.display_name} is captain" class="form-check-input"/>
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" t-attf-name="player_#{rline.player_id.id}_jersey" class="form-control form-control-sm" aria-label="Jersey number" t-attf-aria-label="Jersey number of #{rline.player_id.display_name}" t-att-value="(sl and sl.jersey_number) or rline.jersey_number or ''"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p t-if="not roster_lines" class="text-muted small">
+                                    No players on this roster yet. <a t-attf-href="/my/rosters/#{selected_roster.id}">Add players to the roster</a> first.
+                                </p>
+                            </t>
+                            <p t-if="not selected_roster" class="text-muted small mb-0">
+                                Players appear here once the team has a roster for this season.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <button type="submit" class="btn btn-outline-primary"><t t-if="can_edit_lineup">Save line-up</t><t t-if="not can_edit_lineup">Save changes</t></button>
+                        <button t-if="sheet.state == 'draft'" type="submit" name="submit_sheet" value="1" class="btn btn-primary">Save and submit</button>
+                    </div>
+                </form>
+
+                <!-- Read-only line-up (submitted, approved, locked, or no roster) -->
+                <div t-if="not can_edit_lineup or not selected_roster" class="row mt-4">
+                    <div class="col-12">
+                        <h4>Game-day line-up</h4>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <caption class="visually-hidden">Players in the game-day line-up of this team.</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Player</th>
+                                        <th scope="col">This match</th>
+                                        <th scope="col">Captain</th>
+                                        <th scope="col">Eligibility</th>
+                                        <th scope="col">Entered</th>
+                                        <th scope="col">Left</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="sheet.line_ids" t-as="line">
+                                        <tr>
+                                            <td><t t-esc="line.player_id.display_name"/></td>
+                                            <td>
+                                                <span t-if="line.crossed_out" class="text-muted text-decoration-line-through">Not playing</span>
+                                                <span t-else="">Playing</span>
+                                            </td>
+                                            <td><t t-esc="'Yes' if line.is_captain else ''"/></td>
+                                            <td>
+                                                <span t-if="line.eligible" class="badge text-bg-success">Eligible</span>
+                                                <span t-if="not line.eligible" class="badge text-bg-danger">Blocked</span>
+                                                <div t-if="line.eligibility_feedback" class="small text-muted mt-1">
+                                                    <t t-esc="line.eligibility_feedback"/>
+                                                </div>
+                                            </td>
+                                            <td><t t-esc="line.entered_minute or ''"/></td>
+                                            <td><t t-esc="line.left_minute or ''"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div t-if="not sheet.line_ids" class="text-muted">No players have been selected for this line-up yet.</div>
+                    </div>
+                </div>
+
+                <!-- Per match: cross out the players who do not play -->
+                <div t-if="sheet.line_ids and sheet.state != 'draft'" class="row mt-4">
+                    <div class="col-12">
+                        <h4>Players for this match</h4>
+                        <p class="text-muted small">
+                            <t t-esc="sheet.participant_count"/> of <t t-esc="len(sheet.line_ids)"/> line-up players play this match<t t-if="sheet.match_participant_limit"> (at most <t t-esc="sheet.match_participant_limit"/>)</t>.
+                            Crossing out a player only affects this match; your other matches that day keep their own choice.
+                        </p>
+                        <div t-if="sheet.participation_feedback" class="alert alert-warning" role="status">
+                            <t t-esc="sheet.participation_feedback"/>
+                        </div>
+                        <form t-if="sheet.can_record_participation" t-attf-action="/my/match-sheets/#{sheet.id}/participation" method="POST">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                             <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <caption class="visually-hidden">Match-day squad submission lines for this sheet.</caption>
-                                    <thead>
+                                <table class="table table-sm align-middle mb-2">
+                                    <caption class="visually-hidden">Cross out line-up players who do not play this match.</caption>
+                                    <thead class="table-light">
                                         <tr>
                                             <th scope="col">Player</th>
-                                            <th scope="col">Role</th>
-                                            <th scope="col">Captain</th>
-                                            <th scope="col">Eligibility</th>
-                                            <th scope="col">Entered</th>
-                                            <th scope="col">Left</th>
+                                            <th scope="col" class="text-center">Not playing</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <t t-foreach="sheet.line_ids" t-as="line">
                                             <tr>
-                                                <td><t t-esc="line.player_id.display_name"/></td>
-                                                <td>
-                                                    <span t-if="line.is_starter">Starter</span>
-                                                    <span t-if="line.is_substitute">Substitute</span>
-                                                    <span t-if="not line.is_starter and not line.is_substitute">Other</span>
+                                                <td t-att-class="'text-muted text-decoration-line-through' if line.crossed_out else ''">
+                                                    <t t-esc="line.player_id.display_name"/>
+                                                    <span t-if="line.jersey_number" class="text-muted ms-1 small">#<t t-esc="line.jersey_number"/></span>
                                                 </td>
-                                                <td><t t-esc="'Yes' if line.is_captain else ''"/></td>
-                                                <td>
-                                                    <span t-if="line.eligible" class="badge text-bg-success">Eligible</span>
-                                                    <span t-if="not line.eligible" class="badge text-bg-danger">Blocked</span>
-                                                    <div t-if="line.eligibility_feedback" class="small text-muted mt-1">
-                                                        <t t-esc="line.eligibility_feedback"/>
-                                                    </div>
+                                                <td class="text-center">
+                                                    <input type="checkbox"
+                                                           name="crossed_out_player_ids"
+                                                           t-att-value="line.player_id.id"
+                                                           t-att-checked="line.crossed_out and 'checked' or None"
+                                                           aria-label="Cross out player for this match"
+                                                           t-attf-aria-label="Cross out #{line.player_id.display_name} for this match"
+                                                           class="form-check-input"/>
                                                 </td>
-                                                <td><t t-esc="line.entered_minute or ''"/></td>
-                                                <td><t t-esc="line.left_minute or ''"/></td>
                                             </tr>
                                         </t>
                                     </tbody>
                                 </table>
                             </div>
-                            <div t-if="not sheet.line_ids" class="text-muted">No players have been added to this match sheet yet.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mt-4">
-                    <div class="col-lg-6">
-                        <h4>Participation Audit</h4>
-                        <table class="table table-sm">
-                            <caption class="visually-hidden">Participation audit events recorded for this match sheet.</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">When</th>
-                                    <th scope="col">Event</th>
-                                    <th scope="col">Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <t t-foreach="sheet.audit_event_ids" t-as="event">
-                                    <tr>
-                                        <td><t t-esc="event.event_on" t-options="{&quot;widget&quot;: &quot;datetime&quot;}"/></td>
-                                        <td><t t-esc="dict(event._fields['event_type'].selection).get(event.event_type)"/></td>
-                                        <td><t t-esc="event.description"/></td>
-                                    </tr>
-                                </t>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="col-lg-6">
-                        <h4>Result Audit</h4>
-                        <table class="table table-sm">
-                            <caption class="visually-hidden">Result audit events linked to this match.</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">When</th>
-                                    <th scope="col">Event</th>
-                                    <th scope="col">Reason</th>
-                                    <th scope="col">Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <t t-foreach="sheet.match_id.result_audit_ids" t-as="event">
-                                    <tr>
-                                        <td><t t-esc="event.created_on" t-options="{&quot;widget&quot;: &quot;datetime&quot;}"/></td>
-                                        <td><t t-esc="dict(event._fields['event_type'].selection).get(event.event_type)"/></td>
-                                        <td><t t-esc="event.reason or ''"/></td>
-                                        <td><t t-esc="event.description"/></td>
-                                    </tr>
-                                </t>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </t>
-    </template>
-
-    <template id="portal_my_match_day" name="Preparation Queue">
-        <t t-call="portal.portal_layout">
-            <div class="container py-4">
-                <div class="row mb-3">
-                    <div class="col">
-                        <h2><i class="fa fa-calendar-check-o me-2"/>Preparation Queue</h2>
-                        <p class="text-muted mb-0">
-                            This is the direct pre-kick-off queue. Start in the Club Operations Workspace when you need tournament context, then use this list to finish remaining squad sheets and readiness checks.
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm">Save players for this match</button>
+                            </div>
+                        </form>
+                        <p t-if="not sheet.can_record_participation" class="text-muted small">
+                            Players can be crossed out after the line-up is submitted, until the match is finished.
                         </p>
-                        <div class="small text-muted mt-2">
-                            <strong>Next action:</strong>
-                            open each sheet with attention status and clear its blocker list before submission.
+                        <div t-if="gameday_sheets and len(gameday_sheets) &gt; 1" class="mt-3">
+                            <h5 class="h6">Other matches on this game day</h5>
+                            <nav class="d-flex flex-wrap gap-2" aria-label="Matches sharing this game-day line-up">
+                                <t t-foreach="gameday_sheets" t-as="other">
+                                    <a t-if="other.id != sheet.id" t-attf-href="/my/match-sheets/#{other.id}" class="btn btn-outline-secondary btn-sm">
+                                        <t t-esc="other.match_id.display_name"/>
+                                        · <t t-esc="other.participant_count"/> playing
+                                    </a>
+                                </t>
+                            </nav>
                         </div>
                     </div>
                 </div>
 
-                <div class="table-responsive">
-                <table class="table">
-                    <caption class="visually-hidden">Preparation queue for the current portal representative.</caption>
-                    <thead>
-                        <tr>
-                            <th scope="col">Kickoff</th>
-                            <th scope="col">Match</th>
-                            <th scope="col">Team</th>
-                            <th scope="col">Sheet State</th>
-                            <th scope="col">Blocker List</th>
-                            <th scope="col">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <t t-foreach="match_day_sheets" t-as="sheet">
-                            <tr>
-                                <td>
-                                    <t t-if="sheet.match_id.date_scheduled" t-esc="request.env['federation.event.time'].display(sheet.match_id.date_scheduled, sheet.match_id)"/>
-                                </td>
-                                <td><t t-esc="sheet.match_id.display_name"/></td>
-                                <td><t t-esc="sheet.team_id.name"/></td>
-                                <td><t t-esc="sheet.get_portal_state_label()"/></td>
-                                <td>
-                                    <span t-if="sheet.ready_for_submission" class="badge text-bg-success">Ready</span>
-                                    <span t-if="not sheet.ready_for_submission" class="badge text-bg-warning">Attention</span>
-                                    <div t-if="sheet.readiness_feedback" class="small text-muted mt-1">
-                                        <strong>Blocker list:</strong>
-                                        <br/>
-                                        <t t-esc="sheet.readiness_feedback"/>
-                                    </div>
-                                </td>
-                                <td>
-                                    <a t-attf-href="/my/match-sheets/#{sheet.id}" class="btn btn-sm btn-outline-primary">Open lineup</a>
-                                </td>
-                            </tr>
-                        </t>
-                    </tbody>
-                </table>
-                </div>
-
-                <div t-if="not match_day_sheets" class="text-center py-4">
-                    <p class="text-muted">No preparation tasks are currently assigned to you.</p>
-                </div>
-
-                <t t-if="pager">
-                    <t t-call="portal.pager"/>
-                </t>
+                <details class="mt-4">
+                    <summary class="h5">History</summary>
+                    <div class="row mt-2">
+                        <div class="col-lg-6">
+                            <h4 class="h6">Line-up history</h4>
+                            <table class="table table-sm">
+                                <caption class="visually-hidden">Line-up audit events recorded for this match.</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">When</th>
+                                        <th scope="col">Event</th>
+                                        <th scope="col">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="sheet.audit_event_ids" t-as="event">
+                                        <tr>
+                                            <td><t t-esc="event.event_on" t-options="{&quot;widget&quot;: &quot;datetime&quot;}"/></td>
+                                            <td><t t-esc="dict(event._fields['event_type'].selection).get(event.event_type)"/></td>
+                                            <td><t t-esc="event.description"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-lg-6">
+                            <h4 class="h6">Result history</h4>
+                            <table class="table table-sm">
+                                <caption class="visually-hidden">Result audit events linked to this match.</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">When</th>
+                                        <th scope="col">Event</th>
+                                        <th scope="col">Reason</th>
+                                        <th scope="col">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="sheet.match_id.result_audit_ids" t-as="event">
+                                        <tr>
+                                            <td><t t-esc="event.created_on" t-options="{&quot;widget&quot;: &quot;datetime&quot;}"/></td>
+                                            <td><t t-esc="dict(event._fields['event_type'].selection).get(event.event_type)"/></td>
+                                            <td><t t-esc="event.reason or ''"/></td>
+                                            <td><t t-esc="event.description"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </details>
             </div>
         </t>
     </template>

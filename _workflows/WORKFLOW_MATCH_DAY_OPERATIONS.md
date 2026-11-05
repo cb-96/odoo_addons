@@ -12,10 +12,10 @@ the operational sequence from pre-match preparation through to the final whistle
 
 Primary surfaces by phase:
 
-- **Preparation** — start from the portal **Club Operations Workspace** or team
-   workspace for squad sheets and roster readiness. The **Preparation Queue** is
-   a direct shortcut when the operator already knows they only need pre-kick-off
-   tasks, and the backend **Gameday Planner** is the staff-only day-level
+- **Preparation** — start from the portal **Rosters** page: open a roster to
+   see its game days and prepare the game-day line-up from it. The **Game days**
+   list (`/my/match-sheets`) is a direct shortcut to every upcoming game day of
+   the club, and the backend **Gameday Planner** is the staff-only day-level
    surface for slot assignment and final one-day adjustments.
 - **Live operations** — use the **Live Operations Board** at
    `/sports/competitions/<edition-slug>/operations` once matches are underway.

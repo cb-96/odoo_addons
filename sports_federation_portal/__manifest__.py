@@ -60,7 +60,6 @@ on top of the federation base modules.
         "views/menu_items.xml",
     
                 'views/role_journey_templates.xml',
-                'views/portal_gameday_participation_templates.xml',
             ],
     "assets": {
         "web.assets_frontend": [

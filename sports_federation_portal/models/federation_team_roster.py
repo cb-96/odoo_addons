@@ -1,4 +1,4 @@
-from odoo import _, api, models
+from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 
 
@@ -27,6 +27,31 @@ class FederationTeamRoster(models.Model):
         if club_scope:
             return [("club_id", "in", club_scope.ids)]
         return [("id", "=", False)]
+
+    @api.model
+    def _portal_current_season_ids(self):
+        """Seasons that still matter to clubs.
+
+        A season is current while it is draft or open and has not ended.
+        Closed, cancelled, ended and archived seasons are history.
+        """
+        today = fields.Date.context_today(self)
+        return (
+            self.env["federation.season"]
+            .sudo()
+            .search([("state", "in", ("draft", "open")), ("date_end", ">=", today)])
+            .ids
+        )
+
+    @api.model
+    def _portal_current_domain(self, season_field="season_id"):
+        """Domain keeping only records of the current seasons."""
+        return [(season_field, "in", self._portal_current_season_ids())]
+
+    @api.model
+    def _portal_past_domain(self, season_field="season_id"):
+        """Domain keeping only records of past seasons."""
+        return [(season_field, "not in", self._portal_current_season_ids())]
 
     @api.model
     def _portal_get_registration_scope_domain(self, user=None):

@@ -55,10 +55,14 @@ console.log(competition.divisions);</code></pre>
     </template>
 
     <template id="portal_home_data_api_link" inherit_id="sports_federation_portal.portal_federation_links" name="Portal API quick link">
-        <xpath expr="//nav[hasclass('o_fed_portal_quicknav')]" position="inside">
-            <a class="o_fed_portal_quicklink" href="/my/data-api">
-                <i class="fa fa-code" aria-hidden="true"/>
-                <strong>Data API</strong>
+        <xpath expr="//div[hasclass('o_fed_club_grid')]" position="inside">
+            <a class="o_fed_club_area" href="/my/data-api">
+                <span class="o_fed_club_icon"><i class="fa fa-code" aria-hidden="true"/></span>
+                <span class="o_fed_club_content">
+                    <strong>Competition Data API</strong>
+                    <small>Published competition data for club websites</small>
+                </span>
+                <i class="fa fa-chevron-right text-muted"/>
             </a>
         </xpath>
     </template>

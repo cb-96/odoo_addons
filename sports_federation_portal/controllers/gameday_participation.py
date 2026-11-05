@@ -1,11 +1,11 @@
-"""Gameday roster and per-match participation in the club portal.
+"""Game-day line-ups and per-match participation in the club portal.
 
-A team prepares one roster per gameday. Every match that day shares it; at
-each match the coach only crosses out the players who do not play.
+A team prepares one line-up per game day, chosen from its season roster. Every
+match that day shares it; at each match the coach only crosses out the players
+who do not play.
 """
 
 from odoo import _, http
-from odoo.addons.portal.controllers.portal import pager as portal_pager
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
 
@@ -21,61 +21,6 @@ class FederationGamedayParticipationPortal(FederationMatchPortal):
             self._portal_match_sheet_domain() + [("id", "in", gameday_ids)],
             order="match_kickoff asc, id asc",
             user=request.env.user,
-        )
-
-    _GAMEDAY_PAGE_SIZE = 20
-    _GAMEDAY_SHEET_LIMIT = 2000
-
-    @http.route()
-    def portal_my_match_sheets(self, page=1, **kw):
-        """One row per team gameday; grouped before paging so a gameday
-        never appears on two pages."""
-        MatchSheet = self._portal_match_sheet_model()
-        Privilege = request.env["federation.portal.privilege"]
-        domain = self._portal_match_sheet_domain()
-        if domain == [("id", "=", False)]:
-            return self._redirect_with_query("/my/club")
-        try:
-            context_domain, context_query = self._journey_list_scope(
-                kw, season_field="roster_id.season_id"
-            )
-        except AccessError:
-            return self._render_access_denied()
-        sheets = Privilege.portal_search(
-            MatchSheet,
-            domain + context_domain,
-            limit=self._GAMEDAY_SHEET_LIMIT,
-            order="match_kickoff desc, id desc",
-            user=request.env.user,
-        )
-        groups = {}
-        for sheet in sheets:
-            key = (sheet.team_id.id, sheet._get_gameday_scope() or ("sheet", sheet.id))
-            groups.setdefault(key, MatchSheet.browse())
-            groups[key] |= sheet
-        ordered = list(groups.values())
-        pager = portal_pager(
-            url="/my/match-sheets",
-            total=len(ordered),
-            page=page,
-            step=self._GAMEDAY_PAGE_SIZE,
-            url_args=context_query,
-        )
-        page_groups = ordered[pager["offset"] : pager["offset"] + self._GAMEDAY_PAGE_SIZE]
-        rows = MatchSheet.browse()
-        match_counts = {}
-        for group in page_groups:
-            lead = group.sorted(lambda item: (item.match_kickoff or item.create_date, item.id))[:1]
-            rows |= lead
-            match_counts[lead.id] = len(group)
-        return request.render(
-            "sports_federation_portal.portal_my_match_sheets",
-            {
-                "match_sheets": rows,
-                "gameday_match_counts": match_counts,
-                "pager": pager,
-                "page_name": "my_match_sheets",
-            },
         )
 
     @http.route()
@@ -107,7 +52,7 @@ class FederationGamedayParticipationPortal(FederationMatchPortal):
             except (TypeError, ValueError):
                 return self._redirect_with_query(
                     f"/my/match-sheets/{sheet_id}",
-                    error=_("Select players from this gameday roster."),
+                    error=_("Select players from this game-day line-up."),
                 )
         try:
             sheet._portal_set_participation(crossed_out, user=request.env.user)
