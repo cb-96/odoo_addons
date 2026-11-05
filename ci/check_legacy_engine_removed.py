@@ -40,6 +40,7 @@ ALLOWED_COMPATIBILITY_REFERENCES = {
         "sports_federation_competition_engine"
     },
     "TECHNICAL_NOTE.md": {"sports_federation_competition_engine"},
+    "ci/release_invariants.json": {"sports_federation_competition_engine"},
 }
 errors = []
 legacy_addon = ROOT / "sports_federation_competition_engine"

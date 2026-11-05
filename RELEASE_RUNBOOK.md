@@ -1027,3 +1027,14 @@ static checks executed. The Odoo lanes, walkthrough server and seed script were 
 executed in this environment.
 
 Rollback: revert the commit. No data or schema change is involved.
+
+#### Retired engine migration decision gate
+
+The invariant contract now records two blocking facts from every restored database:
+`retired_competition_engine_not_upgradeable` and
+`retired_engine_legacy_tables_remaining`. Both must be zero before the normal
+upgrade lane is considered clean. A non-zero value is not auto-repaired: stop,
+retain the restored backup unchanged, inventory the legacy module-owned records,
+and attach the reviewed preserve/map/drop decision to the release evidence before
+running a data-specific migration. This deliberately prevents an uninstall or SQL
+state change from masquerading as a data-preserving migration.
