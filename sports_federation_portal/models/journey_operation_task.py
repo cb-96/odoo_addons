@@ -13,38 +13,6 @@ class OperationTaskJourneys(models.Model):
             task.journey_url = ("/odoo/federation.operation.task/%s" % task.id if task.audience == "manager"
                                 else "/my/work/tasks/%s/open" % task.id)
 
-    @api.model
-    def _sync_specs(self, specs, scope_domain):
-        # Existing broad sync does not own the new registration-derived missing-roster task.
-        dedicated = ("source_model", "=", "federation.season.registration") in scope_domain
-        if not dedicated:
-            scope_domain = list(scope_domain) + [("source_model", "!=", "federation.season.registration")]
-        keys = {spec["source_key"] for spec in specs}
-        existing = self.sudo().search(scope_domain)
-        matching = self.sudo().search([("source_key", "in", list(keys))])
-        by_key = {task.source_key: task for task in matching}
-        for values in specs:
-            values = dict(values)
-            task = by_key.get(values["source_key"])
-            if not task:
-                self.sudo().create(values)
-                continue
-            if task.state == "done":
-                values.update(state="open", completed_on=False, digest_sent_on=False)
-            changes = {}
-            for key, value in values.items():
-                current = task[key]
-                if task._fields[key].type == "many2one":
-                    current = current.id or False
-                if current != value:
-                    changes[key] = value
-            if changes:
-                task.sudo().write(changes)
-        stale = existing.filtered(lambda task: task.source_key not in keys and task.state != "done")
-        if stale:
-            stale.sudo().write({"state": "done", "completed_on": fields.Datetime.now()})
-        self.invalidate_model(["journey_status", "journey_owner"])
-
     journey_team_id = fields.Many2one("federation.team", index=True, readonly=True)
     journey_status = fields.Selection([
         ("actionable", "Action needed"), ("waiting", "Waiting for review"),

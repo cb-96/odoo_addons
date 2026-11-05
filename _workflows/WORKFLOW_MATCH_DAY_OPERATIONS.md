@@ -351,7 +351,7 @@ linking them to the immutable publication.
 2. Select **Open Match Day** to create an execution session pinned to the exact
    live publication and digest.
 3. Use **Update Court** and **Report Incident** for operational conditions.
-4. Use **Operational Schedule Change** for a move, delay, postponement or
+4. Use **Delay or Move Match** for a move, delay, postponement or
    cancellation. A reason is mandatory. The published slot never changes;
    `operational_slot_id` and `operational_status` represent the live reality.
 5. Resolve incidents and complete or cancel every published match.

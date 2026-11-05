@@ -224,7 +224,7 @@ class FederationOperationTaskExtension(models.Model):
 
 
     @api.model
-    def sync_for_user(self, user=None):
+    def _sync_for_user_legacy(self, user=None):
         """Synchronise currently actionable source records for one user."""
         user = user or self.env.user
         is_manager = user.has_group("sports_federation_base.group_federation_manager")
@@ -489,3 +489,25 @@ class FederationOperationTaskExtension(models.Model):
         scope_domain += [("audience", "=", "manager" if is_manager else "club")]
         self._sync_specs(specs, scope_domain)
         return self.sudo().search(scope_domain + [("state", "!=", "done")])
+
+    @api.model
+    def _project_task_specs(self, user=None):
+        """Collect existing domain specs without writing; consumed by the service."""
+        captured = {}
+        original = type(self)._sync_specs
+
+        def capture(recordset, specs, scope_domain):
+            captured["specs"] = specs
+            captured["domain"] = scope_domain
+            return True
+
+        type(self)._sync_specs = capture
+        try:
+            self._sync_for_user_legacy(user=user)
+        finally:
+            type(self)._sync_specs = original
+        return captured.get("specs", []), captured.get("domain", [("id", "=", 0)])
+
+    @api.model
+    def sync_for_user(self, user=None):
+        return self.env["federation.task.projection"].synchronize(user=user or self.env.user)

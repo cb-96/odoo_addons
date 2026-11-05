@@ -123,22 +123,8 @@ class FederationOperationTask(models.Model):
 
     @api.model
     def _sync_specs(self, specs, scope_domain):
-        keys = {spec["source_key"] for spec in specs}
-        existing = self.sudo().search(scope_domain)
-        matching = self.sudo().search([("source_key", "in", list(keys))])
-        by_key = {task.source_key: task for task in matching}
-        for spec in specs:
-            task = by_key.get(spec["source_key"])
-            if task:
-                if task.state == "done":
-                    spec.update(state="open", completed_on=False)
-                task.sudo().write(spec)
-            else:
-                self.sudo().create(spec)
-        stale = existing.filtered(lambda task: task.source_key not in keys)
-        if stale:
-            stale.sudo().write({"state": "done", "completed_on": fields.Datetime.now()})
-
+        """Compatibility boundary; federation.task.projection owns writes."""
+        return self.env["federation.task.projection"]._apply(specs, scope_domain)
 
     @api.model
     def _portal_get_domain(self, user=None):

@@ -56,3 +56,5 @@ roadmap or a standalone review snapshot for routine changes.
 - [Public competition API](PUBLIC_COMPETITION_API.md)
 
 - [`FEDERATION_BACKEND_NAVIGATION.md`](FEDERATION_BACKEND_NAVIGATION.md): canonical backend work areas, menu ownership, and navigation change rules.
+
+- [Competition entity map](COMPETITION_ENTITY_MAP.md): authoritative entities and lifecycle handoffs.

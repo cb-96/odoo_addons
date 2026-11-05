@@ -181,48 +181,6 @@ class FederationPortalArchiveScopeRosters(models.AbstractModel):
         return closed + len(tasks)
 
 
-class OperationTaskHiddenSources(models.Model):
-    _inherit = "federation.operation.task"
-
-    @api.model
-    def _sync_specs(self, specs, scope_domain):
-        """Do not (re)create tasks for rosters or registrations that are hidden.
-
-        Dropped specs fall out of the sync, so their open tasks are closed as
-        stale by the regular synchronisation.
-        """
-        scope = self.env["federation.portal.archive.scope"]
-        hidden = {
-            "federation.team.roster": set(scope.hidden_roster_ids()),
-            "federation.season.registration": set(scope.hidden_registration_ids()),
-        }
-        if any(hidden.values()):
-            line_ids = [
-                spec["source_record_id"]
-                for spec in specs
-                if spec.get("source_model") == "federation.team.roster.line"
-            ]
-            hidden_lines = set()
-            if line_ids and hidden["federation.team.roster"]:
-                hidden_lines = set(
-                    self.env["federation.team.roster.line"].sudo().search(
-                        [
-                            ("id", "in", line_ids),
-                            ("roster_id", "in", list(hidden["federation.team.roster"])),
-                        ]
-                    ).ids
-                )
-            hidden["federation.team.roster.line"] = hidden_lines
-            specs = [
-                spec
-                for spec in specs
-                if spec.get("source_record_id")
-                not in hidden.get(spec.get("source_model"), ())
-                and spec.get("roster_id") not in hidden["federation.team.roster"]
-            ]
-        return super()._sync_specs(specs, scope_domain)
-
-
 class TeamRosterArchiveScope(models.Model):
     _inherit = "federation.team.roster"
 

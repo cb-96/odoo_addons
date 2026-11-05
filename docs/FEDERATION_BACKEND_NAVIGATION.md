@@ -133,3 +133,8 @@ The static navigation contract also verifies that Competitions is the only non-a
 
 **Reports** opens the operational health dashboard. Specialist report menus
 remain under Insights for Advanced Federation Tools.
+
+
+## Competition workflow vocabulary
+
+Ordinary competition work follows: **Competition -> Teams -> Format -> Game days -> Schedule -> Publish -> Play -> Finish**. Participant sets, structure versions, fixtures, schedule publications and execution sessions are engine/audit records. They remain available through Advanced Federation Tools or contextual history, not as primary workflow concepts. See `docs/COMPETITION_ENTITY_MAP.md`.

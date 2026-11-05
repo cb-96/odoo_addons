@@ -4,12 +4,12 @@
     <field name="arch" type="xml"><form string="Run Match Day" create="0" edit="0">
       <header>
         <button name="action_open_matchday_operations" type="object" string="Start Match Day" class="btn-primary" invisible="state == 'open' or readiness_state != 'ready'" confirm="Start this match day using the published schedule?"/>
-        <button name="action_prepare_lineups" type="object" string="Prepare Gameday Rosters" invisible="state not in ('scheduled', 'open')"/>
-        <button name="action_open_focus_results" type="object" string="Enter Results"/>
-        <button name="action_open_court_status_wizard" type="object" string="Update Court" invisible="state != 'open'"/>
+        <button name="action_prepare_lineups" type="object" string="Prepare game-day line-ups" invisible="state not in ('scheduled', 'open')"/>
+        <button name="action_open_focus_results" type="object" string="Enter results"/>
+        <button name="action_open_court_status_wizard" type="object" string="Update court" invisible="state != 'open'"/>
         <button name="action_open_incident_wizard" type="object" string="Report Incident" invisible="state != 'open'"/>
         <button name="action_open_deviation_wizard" type="object" string="Delay or Move Match" invisible="state != 'open'"/>
-        <button name="action_close_matchday_operations" type="object" string="Finish Match Day" invisible="state != 'open'"/>
+        <button name="action_close_matchday_operations" type="object" string="Finish game day" invisible="state != 'open'"/>
         <button name="action_open_focus_history" type="object" string="Details and History"/>
         <field name="state" widget="statusbar"/>
       </header>
