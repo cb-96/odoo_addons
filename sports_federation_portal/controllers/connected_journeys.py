@@ -253,15 +253,28 @@ class ConnectedPreparation(ClubPreparationJourney):
             checks.append(dict(label=_('Player eligibility and licences'), state='unknown' if not roster or not roster.line_ids else 'action' if player_issues else 'complete',
                                detail='\n'.join(player_issues) if player_issues else _('Current roster-date checks passed.') if roster and roster.line_ids else _('Add players before eligibility can be checked.'),
                                url='/my/rosters/%s' % roster.id if roster else '/my/players'))
-            sheet_model = request.env['federation.match.sheet']
-            related = request.env['federation.portal.privilege'].portal_search(
-                sheet_model, sheet_model._portal_get_domain(user=request.env.user) +
-                [('roster_id', '=', roster.id)] + request.env['federation.portal.gameday'].upcoming_domain(),
-                user=request.env.user) if roster else sheet_model.browse()
-            lineup_state = ('unknown' if not related else 'action' if any(sheet.state == 'draft' for sheet in related)
-                            else 'waiting' if any(sheet.state == 'submitted' for sheet in related) else 'complete')
-            checks.append(dict(label=_('Game-day line-ups'), state=lineup_state,
-                               detail=_('Submitted line-ups await review.') if lineup_state == 'waiting' else _('No upcoming game days are scheduled yet.') if lineup_state == 'unknown' else _('Open the upcoming game days and check each line-up and its approval status.'), url='/my/match-sheets'))
+            # Game days come from the team's matches in the registration's
+            # season. A line-up sheet exists as soon as a match does, so it must
+            # not depend on the roster having been linked to it.
+            gameday = request.env['federation.portal.gameday']
+            registration = row['registration']
+            gamedays = gameday.group_gamedays(
+                gameday.team_sheets(registration.team_id, registration.season_id, user=request.env.user))
+            open_gamedays = [item for item in gamedays if item['needs_action']]
+            lineup_state = ('unknown' if not gamedays or not roster
+                            else 'action' if open_gamedays
+                            else 'waiting' if any(item['state'] == 'submitted' for item in gamedays) else 'complete')
+            if not gamedays:
+                lineup_detail = _('No upcoming game days are scheduled yet.')
+            elif not roster:
+                lineup_detail = _('%(count)s upcoming game day(s). Create the roster first, then choose the players for each game day.') % {'count': len(gamedays)}
+            elif open_gamedays:
+                lineup_detail = _('%(open)s of %(total)s upcoming game day(s) still need a line-up.') % {'open': len(open_gamedays), 'total': len(gamedays)}
+            elif lineup_state == 'waiting':
+                lineup_detail = _('Submitted line-ups await review.')
+            else:
+                lineup_detail = _('All upcoming line-ups are submitted and approved.')
+            checks.append(dict(label=_('Game-day line-ups'), state=lineup_state, detail=lineup_detail, url='/my/match-sheets'))
             consent_issues = [reason for player in roster.line_ids.mapped('player_id')
                               for reason in _get_parental_approval_reasons(player, roster.team_id, roster._get_reference_date())] if roster else []
             checks.append(dict(label=_('Parental consent'), state='unknown' if not roster or not roster.line_ids else 'action' if consent_issues else 'complete',

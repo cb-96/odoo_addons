@@ -27,7 +27,12 @@ class FederationPortalBase(CustomerPortal):
         request.session[key] = selected
         return selected, selected_team, selected_registration
 
-    def _journey_list_scope(self, values, season_field=None):
+    def _journey_list_scope(self, values, season_field=None, season_domain=None):
+        """Return the club/team/season list domain and its query values.
+
+        ``season_domain`` is a callable turning the selected season into a
+        domain, for models whose season is not a plain field.
+        """
         club, team, registration = self._journey_scope(
             values.get('club'), values.get('team'), values.get('registration'))
         if team or registration:
@@ -49,7 +54,9 @@ class FederationPortalBase(CustomerPortal):
             domain.append(('team_id.club_id', '=', club))
         if team:
             domain.append(('team_id', '=', team))
-        if registration and season_field:
+        if registration and season_domain:
+            domain += season_domain(records[:1].season_id)
+        elif registration and season_field:
             domain.append((season_field, '=', records[:1].season_id.id))
         query = {key: value for key, value in [('club', club), ('team', team), ('registration', registration)] if value}
         return domain, query

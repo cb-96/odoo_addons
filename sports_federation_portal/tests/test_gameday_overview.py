@@ -252,3 +252,74 @@ class TestGamedayOverview(TransactionCase):
         self.assertEqual(
             gameday.default_lineup_roster(self.first_sheet, rosters), self.old_roster
         )
+
+    # ── sheets created before the team had a roster ──────────────────────
+
+    def test_game_days_do_not_depend_on_the_roster_link(self):
+        """A sheet made with its match has no roster yet but is still a game day."""
+        gameday = self.env["federation.portal.gameday"]
+        self.assertFalse((self.first_sheet | self.second_sheet).mapped("roster_id"))
+        sheets = gameday.team_sheets(self.team, self.season, user=self.env.user)
+        self.assertEqual(sheets, self.first_sheet | self.second_sheet)
+        # The other season's sheet is not part of this season's game days.
+        self.assertNotIn(self.other_season_sheet, sheets)
+        rows = gameday.group_gamedays(sheets)
+        self.assertEqual(len(rows), 1)
+        # The row names the roster the line-up will start from.
+        self.assertEqual(rows[0]["roster"], self.roster)
+        self.assertFalse(rows[0]["roster_linked"])
+
+    def test_season_domain_uses_the_match_division_not_the_roster(self):
+        Sheet = self.env["federation.match.sheet"]
+        gameday = self.env["federation.portal.gameday"]
+        found = Sheet.search(
+            [("id", "in", self.sheets.ids)] + gameday.season_domain(self.season)
+        )
+        self.assertEqual(found, self.first_sheet | self.second_sheet | self.past_sheet)
+
+    def test_new_roster_links_the_open_draft_sheets_of_its_season(self):
+        env = self.env
+        late_team = env["federation.team"].create(
+            {"name": "Overview Late Team", "club_id": self.club.id, "code": "OVL"}
+        )
+        Match = env["federation.match"].with_context(skip_auto_match_sheets=True)
+        Sheet = env["federation.match.sheet"]
+
+        def sheet_for(tournament, offset):
+            match = Match.create(
+                {
+                    "tournament_id": tournament.id,
+                    "home_team_id": late_team.id,
+                    "date_scheduled": "%s 10:00:00" % (self.today + timedelta(days=offset)),
+                }
+            )
+            return Sheet.create({"match_id": match.id, "team_id": late_team.id, "side": "home"})
+
+        # Far enough ahead that the roster deadline has not been reached yet.
+        this_season = sheet_for(self.tournament, 40)
+        other_season = sheet_for(self.ended_tournament, 40)
+        self.assertFalse(this_season.roster_id | other_season.roster_id)
+
+        roster = env["federation.team.roster"].create(
+            {
+                "name": "Overview Late Roster",
+                "team_id": late_team.id,
+                "season_id": self.season.id,
+            }
+        )
+        self.assertEqual(this_season.roster_id, roster)
+        self.assertFalse(other_season.roster_id)
+
+    def test_new_roster_keeps_the_roster_a_sheet_already_has(self):
+        sheet = self.first_sheet
+        sheet.write({"roster_id": self.roster.id})
+        other = self.env["federation.team.roster"].create(
+            {
+                "name": "Overview Second Roster",
+                "team_id": self.team.id,
+                "season_id": self.season.id,
+                "competition_id": False,
+            }
+        )
+        self.assertEqual(sheet.roster_id, self.roster)
+        self.assertNotEqual(other, sheet.roster_id)

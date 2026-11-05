@@ -13,6 +13,12 @@
   },
   {
     "file": "sports_federation_portal/controllers/connected_journeys.py",
+    "function": "_is_club_representative",
+    "reason": "adjacent ownership scope check",
+    "statement": "return bool(request.env['federation.club.representative'].sudo().search_count( [('user_id', '=', user.id)], limit=1))"
+  },
+  {
+    "file": "sports_federation_portal/controllers/connected_journeys.py",
     "function": "role_home",
     "reason": "adjacent ownership scope check",
     "statement": "assignments = request.env['federation.portal.privilege'].portal_search( model, model._portal_get_domain(user=request.env.user) + [('publication_id', 'in', request.env['federation.matchday'].sudo().search([('current_publication_id.state', '=', 'live')]).mapped('current_publication_id').ids)], user=request.env.user, order='id desc', limit=100)"

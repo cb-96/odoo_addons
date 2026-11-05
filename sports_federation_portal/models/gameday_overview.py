@@ -51,6 +51,41 @@ class FederationPortalGameday(models.AbstractModel):
             ("match_id.state", "=", "done"),
         ]
 
+    @api.model
+    def season_domain(self, season):
+        """Match sheets of matches played in ``season``.
+
+        The season comes from the match's division (or its edition) and never
+        from the linked roster: a sheet created before its team had a roster
+        has no roster, yet it still belongs to the season.
+        """
+        season_id = season.id if hasattr(season, "id") else season
+        return [
+            "|",
+            ("match_id.tournament_id.season_id", "=", season_id),
+            "&",
+            ("match_id.tournament_id.season_id", "=", False),
+            ("match_id.tournament_id.edition_id.season_id", "=", season_id),
+        ]
+
+    @api.model
+    def team_sheets(self, team, season, user=None, upcoming=True):
+        """Visible match sheets of one team in one season, linked or not."""
+        user = user or self.env.user
+        Sheet = self.env["federation.match.sheet"]
+        scope = Sheet._portal_get_domain(user=user)
+        if scope == [("id", "=", False)]:
+            return Sheet.browse()
+        domain = scope + [("team_id", "=", team.id)] + self.season_domain(season)
+        domain += self.upcoming_domain() if upcoming else self.past_domain()
+        return self.env["federation.portal.privilege"].portal_search(
+            Sheet,
+            domain,
+            user=user,
+            limit=self._SHEET_LIMIT,
+            order="match_kickoff asc, id asc",
+        )
+
     # ── Season / competition of a match sheet ────────────────────────────
 
     @api.model
@@ -127,6 +162,22 @@ class FederationPortalGameday(models.AbstractModel):
         """The linked roster, or the best choice when the club has not chosen."""
         return sheet.roster_id or rosters[:1]
 
+    @api.model
+    def suggested_roster(self, sheet):
+        """The roster a line-up without a chosen roster will start from.
+
+        Mirrors the choice made when a sheet is created: the active roster of
+        the team for the season (and competition), else the best other one.
+        """
+        season = self.sheet_season(sheet)
+        if not season:
+            return self.env["federation.team.roster"]
+        competition = self.sheet_competition(sheet)
+        team = sheet.team_id.sudo()
+        return team._get_preferred_roster(
+            season, competition=competition, statuses=("active",)
+        ) or team._get_preferred_roster(season, competition=competition)
+
     # ── Game-day rows ────────────────────────────────────────────────────
 
     @staticmethod
@@ -141,6 +192,7 @@ class FederationPortalGameday(models.AbstractModel):
         )
         first = group.sorted(key=self._kickoff_key)[:1]
         state = self.lineup_state(lead)
+        roster = lead.roster_id or self.suggested_roster(lead)
         return {
             "key": (lead.team_id.id, first.id),
             "team": lead.team_id,
@@ -150,7 +202,8 @@ class FederationPortalGameday(models.AbstractModel):
             "kickoff": first.match_kickoff,
             "date": first.match_scheduled_date,
             "matches": len(group),
-            "roster": lead.roster_id,
+            "roster": roster,
+            "roster_linked": bool(lead.roster_id),
             "state": state,
             "state_label": self.state_labels().get(state, state),
             "selected": len(lead.line_ids),
@@ -186,27 +239,17 @@ class FederationPortalGameday(models.AbstractModel):
 
     @api.model
     def roster_gamedays(self, roster, user=None, upcoming=True, limit=None):
-        """Game-day rows of one roster's team within the roster's season."""
+        """Game-day rows of one roster's team within the roster's season.
+
+        Sheets that are linked to another roster of the team are left out;
+        sheets without a roster are included because the coach will pick this
+        one (or its season's only roster) when preparing the line-up.
+        """
         user = user or self.env.user
-        Sheet = self.env["federation.match.sheet"]
-        scope = Sheet._portal_get_domain(user=user)
-        if scope == [("id", "=", False)]:
-            return []
-        domain = scope + [
-            ("team_id", "=", roster.team_id.id),
-            ("roster_id", "in", [False, roster.id]),
-        ]
-        domain += self.upcoming_domain() if upcoming else self.past_domain()
-        sheets = self.env["federation.portal.privilege"].portal_search(
-            Sheet,
-            domain,
-            user=user,
-            limit=self._SHEET_LIMIT,
-            order="match_kickoff asc, id asc",
-        )
+        sheets = self.team_sheets(roster.team_id, roster.season_id, user, upcoming)
         competition = roster.competition_id
         sheets = sheets.filtered(
-            lambda sheet: self.sheet_season(sheet) == roster.season_id
+            lambda sheet: (not sheet.roster_id or sheet.roster_id == roster)
             and (not competition or self.sheet_competition(sheet) == competition)
         )
         rows = self.group_gamedays(sheets, upcoming=upcoming)

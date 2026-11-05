@@ -286,6 +286,57 @@ class TestJourneyHttp(HttpCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertIn(expected, response.text)
 
+    def test_preparation_counts_game_days_of_a_team_without_roster(self):
+        """Matches exist for the team, so its line-up check must not say there are none.
+
+        Match sheets are created together with their matches, before the team has
+        a roster, so they are not linked to any roster yet.
+        """
+        from datetime import timedelta
+        from odoo import fields
+
+        with self.registry.cursor() as cr:
+            env = api.Environment(cr, SUPERUSER_ID, {})
+            today = fields.Date.context_today(env["federation.season"])
+            club = env["federation.club"].search([("code", "=", "JHCL")], limit=1)
+            season = env["federation.season"].create({
+                "name": "Journey Gameday Season", "code": "JGDS",
+                "date_start": today - timedelta(days=30),
+                "date_end": today + timedelta(days=300), "state": "open",
+            })
+            team = env["federation.team"].create({
+                "name": "Journey Gameday Team", "code": "JGDT", "club_id": club.id,
+            })
+            registration = env["federation.season.registration"].create({
+                "team_id": team.id, "season_id": season.id,
+            })
+            registration.action_confirm()
+            tournament = env["federation.tournament"].create({
+                "name": "Journey Gameday Tournament", "code": "JGDTOUR",
+                "season_id": season.id, "date_start": today + timedelta(days=30),
+            })
+            match = env["federation.match"].create({
+                "tournament_id": tournament.id, "home_team_id": team.id,
+                "date_scheduled": "%s 10:00:00" % (today + timedelta(days=30)),
+            })
+            sheet = env["federation.match.sheet"].search([("match_id", "=", match.id)])
+            self.assertTrue(sheet and not sheet.roster_id)
+            registration_id, team_id = registration.id, team.id
+            cr.commit()
+
+        self.authenticate("journey.club@example.test", "journey-test-password")
+        response = self.url_open(
+            "/my/preparation?team=%s&registration=%s" % (team_id, registration_id))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("No upcoming game days are scheduled yet.", response.text)
+        self.assertIn("upcoming game day(s). Create the roster first", response.text)
+
+        games = self.url_open(
+            "/my/match-sheets?team=%s&registration=%s" % (team_id, registration_id))
+        self.assertEqual(games.status_code, 200)
+        self.assertIn("Journey Gameday Team", games.text)
+        self.assertIn("Create roster", games.text)
+
     def test_manager_queue_renders_replacement_template(self):
         self.authenticate("journey.manager@example.test", "journey-test-password")
         response = self.url_open("/federation/operations/action-items")

@@ -1,0 +1,35 @@
+fix(portal): show upcoming game days for teams whose sheets have no roster yet
+
+The team preparation page said "No upcoming game days are scheduled yet" for
+teams that have published matches, and the game-day list behind its
+"Review requirement" link was empty.
+
+Cause: match sheets are created together with their matches, normally before
+the team has a roster, so they carry no roster. Three places only looked at
+sheets already linked to a roster:
+- the "Game-day line-ups" check on /my/preparation matched
+  roster_id = <the team's roster>; teams without a roster could never have
+  game days, and a roster created later never saw its sheets;
+- /my/match-sheets with a team or registration selected filtered on
+  roster_id.season_id, which drops every unlinked sheet.
+
+Changes
+- Game days of a team come from its matches' season (division, else edition),
+  not from the roster link: federation.portal.gameday.season_domain and
+  team_sheets. The preparation check, the game-day list and the roster page
+  all use them.
+- The line-up check now says how many game days still need a line-up, and
+  for a team without a roster that the roster has to be created first.
+- A roster that is created now links itself to the team's draft sheets of the
+  same season (and competition) that have no roster; a sheet that already has
+  a roster keeps it. Existing unlinked sheets keep working: the list shows the
+  roster the line-up will start from and the line-up page preselects it.
+- The game-day list and the line-up page offer "Create roster" for a team
+  without a roster, straight to that team's roster creation.
+- _journey_list_scope accepts a season_domain callable for models whose season
+  is not a plain field.
+- Refresh docs/portal_sudo_inventory.json (also records the existing
+  _is_club_representative lookup).
+- Tests: sheets are game days without a roster link, season domain, roster
+  creation links open sheets and keeps existing links, and an HTTP test for the
+  preparation page and game-day list of a team without a roster.

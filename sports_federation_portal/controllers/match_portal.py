@@ -48,7 +48,7 @@ class FederationMatchPortal(FederationRosterPortalBase):
         if domain == [("id", "=", False)]:
             return self._redirect_with_query("/my/club")
         try:
-            context_domain, context_query = self._journey_list_scope(kw, season_field="roster_id.season_id")
+            context_domain, context_query = self._journey_list_scope(kw, season_domain=Gameday.season_domain)
         except AccessError:
             return self._render_access_denied()
         scope = domain + context_domain

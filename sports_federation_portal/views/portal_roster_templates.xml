@@ -669,13 +669,14 @@
                                     </td>
                                     <td>
                                         <t t-if="gd['roster']"><t t-esc="gd['roster'].name"/></t>
-                                        <span t-if="not gd['roster']" class="text-muted">Not chosen yet</span>
+                                        <span t-if="not gd['roster']" class="text-warning">No roster yet</span>
                                     </td>
                                     <td><span t-attf-class="badge #{'text-bg-warning' if gd['needs_action'] else 'text-bg-success'}"><t t-esc="gd['state_label']"/></span></td>
                                     <td><t t-esc="gd['selected']"/><t t-if="gd['limit']"> of <t t-esc="gd['limit']"/></t></td>
                                     <td class="text-end">
-                                        <a t-if="gd['needs_action']" t-att-href="gd['url']" class="btn btn-sm btn-primary">Prepare line-up</a>
-                                        <a t-if="not gd['needs_action']" t-att-href="gd['url']" class="btn btn-sm btn-outline-primary">Open line-up</a>
+                                        <a t-if="not gd['roster']" t-attf-href="/my/rosters?team=#{gd['team'].id}" class="btn btn-sm btn-primary">Create roster</a>
+                                        <a t-if="gd['roster'] and gd['needs_action']" t-att-href="gd['url']" class="btn btn-sm btn-primary">Prepare line-up</a>
+                                        <a t-if="gd['roster'] and not gd['needs_action']" t-att-href="gd['url']" class="btn btn-sm btn-outline-primary">Open line-up</a>
                                     </td>
                                 </tr>
                             </t>
@@ -838,7 +839,7 @@
                                     </t>
                                     <div t-if="not available_rosters" class="form-text text-warning">
                                         This team has no roster for this season yet. Create the roster first, then come back to choose the players.
-                                        <a href="/my/rosters">Go to rosters</a>
+                                        <a t-attf-href="/my/rosters?team=#{sheet.team_id.id}">Create the roster</a>
                                     </div>
                                 </div>
                                 <!-- Coach -->
