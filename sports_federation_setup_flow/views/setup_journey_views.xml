@@ -23,7 +23,6 @@
             <div><field name="workflow_summary" nolabel="1" readonly="1"/></div>
           </div>
           <group string="Planning defaults" col="4" invisible="not show_additional_settings">
-            <field name="default_format_type"/>
             <field name="default_venue_id"/>
             <field name="default_start_hour" widget="float_time"/>
             <field name="default_end_hour" widget="float_time"/>

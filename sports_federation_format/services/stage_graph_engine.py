@@ -3,6 +3,8 @@ from math import ceil, log2
 from odoo import _, api, models
 from odoo.exceptions import ValidationError
 
+from . import format_presets
+
 
 class FederationStageGraphEngine(models.AbstractModel):
     _name = "federation.stage.graph.engine"
@@ -10,30 +12,43 @@ class FederationStageGraphEngine(models.AbstractModel):
 
     @api.model
     def generate_pool_knockout_stages(self, structure):
-        """Create round-robin pools and a seeded two-qualifier bracket."""
+        """Create round-robin groups and a cross-seeded knockout.
+
+        ``qualifiers_per_pool`` teams of every group advance. Group winners
+        take the best seeds, then runners-up, rotated so teams from one group
+        avoid each other in the first knockout round where possible.
+        """
         pool_count = structure.pool_count
         if pool_count < 1:
             raise ValidationError(_("A pool-knockout format needs at least one pool."))
         lines = structure.participant_set_id.line_ids.sorted(
             lambda line: (line.seed or 9999, line.id)
         )
-        pools = [[] for _index in range(pool_count)]
-        for index, line in enumerate(lines):
-            round_index, pool_index = divmod(index, pool_count)
-            if round_index % 2:
-                pool_index = pool_count - 1 - pool_index
-            pools[pool_index].append(line)
-
+        estimate = format_presets.plan(
+            "pool_knockout", len(lines), **structure._preset_options()
+        )
+        if not estimate["feasible"]:
+            raise ValidationError(estimate["message"])
+        positions = format_presets.snake_pools(len(lines), pool_count)
+        group_format = (
+            "double_round_robin"
+            if structure.first_phase_double
+            else "single_round_robin"
+        )
         stages = self.env["federation.structure.stage"]
         pool_stages = []
-        for index, pool_lines in enumerate(pools, 1):
+        for index, pool_positions in enumerate(positions):
             stage = stages.create(
                 {
-                    "name": "%s - Pool %s" % (structure.name, index),
+                    "name": _(
+                        "%(structure)s - Group %(letter)s",
+                        structure=structure.name,
+                        letter=format_presets.group_letter(index),
+                    ),
                     "structure_id": structure.id,
-                    "sequence": index * 10,
+                    "sequence": (index + 1) * 10,
                     "stage_type": "pool",
-                    "format_type": "single_round_robin",
+                    "format_type": group_format,
                     "source_type": "manual",
                 }
             )
@@ -41,39 +56,132 @@ class FederationStageGraphEngine(models.AbstractModel):
                 [
                     {
                         "stage_id": stage.id,
-                        "team_id": line.team_id.id,
+                        "team_id": lines[position].team_id.id,
                         "seed": seed,
-                        "source_rank": line.seed or seed,
+                        "source_rank": lines[position].seed or seed,
                     }
-                    for seed, line in enumerate(pool_lines, 1)
+                    for seed, position in enumerate(pool_positions, 1)
                 ]
             )
             pool_stages.append(stage)
 
-        qualifiers_per_pool = 2
         final_stage = stages.create(
             {
-                "name": "%s - Knockout" % structure.name,
+                "name": _("%s - Knockout") % structure.name,
                 "structure_id": structure.id,
                 "sequence": (pool_count + 1) * 10,
-                "stage_type": "knockout",
-                "format_type": "knockout",
+                "stage_type": "placement" if structure.knockout_full_placement else "knockout",
+                "format_type": (
+                    "placement_bracket"
+                    if structure.knockout_full_placement
+                    else "knockout"
+                ),
                 "source_type": "progression",
             }
         )
+        sizes = [len(pool_positions) for pool_positions in positions]
         Progression = self.env["federation.structure.stage.progression"]
-        for index, stage in enumerate(pool_stages):
-            Progression.create(
+        Progression.create(
+            [
                 {
-                    "name": _("%s top two to knockout") % stage.name,
-                    "source_stage_id": stage.id,
+                    "name": _(
+                        "#%(rank)s %(group)s to knockout seed %(seed)s",
+                        rank=rank,
+                        group=pool_stages[pool_index].name,
+                        seed=seed,
+                    ),
+                    "source_stage_id": pool_stages[pool_index].id,
                     "target_stage_id": final_stage.id,
-                    "rank_from": 1,
-                    "rank_to": qualifiers_per_pool,
-                    "target_seed_from": index * qualifiers_per_pool + 1,
+                    "rank_from": rank,
+                    "rank_to": rank,
+                    "target_seed_from": seed,
+                }
+                for pool_index, rank, seed in format_presets.cross_seed(
+                    sizes, structure.qualifiers_per_pool
+                )
+            ]
+        )
+        return pool_stages + [final_stage]
+
+    @api.model
+    def generate_split_stages(self, structure):
+        """Regular season, then a top group and (optionally) a bottom group.
+
+        With every team in the top group this is a season played in two
+        halves with a fresh or carried-over table.
+        """
+        teams = len(structure.participant_set_id.line_ids)
+        top = structure._effective_split_rank()
+        estimate = format_presets.plan(
+            "split_pools", teams, **structure._preset_options()
+        )
+        if not estimate["feasible"]:
+            raise ValidationError(estimate["message"])
+        Stage = self.env["federation.structure.stage"]
+        second_format = (
+            "double_round_robin" if structure.second_phase_double else "single_round_robin"
+        )
+        season = Stage.create(
+            {
+                "name": _("%s - Regular season") % structure.name,
+                "structure_id": structure.id,
+                "sequence": 10,
+                "stage_type": "league",
+                "format_type": (
+                    "double_round_robin"
+                    if structure.first_phase_double
+                    else "single_round_robin"
+                ),
+                "source_type": "registration",
+            }
+        )
+        bottom = teams - top
+        groups = [
+            (
+                _("%s - Championship group") % structure.name
+                if bottom
+                else _("%s - Second half") % structure.name,
+                1,
+                top,
+                1,
+            )
+        ]
+        if bottom:
+            groups.append(
+                (_("%s - Relegation group") % structure.name, top + 1, teams, top + 1)
+            )
+        created = [season]
+        for sequence, (name, rank_from, rank_to, final_rank_from) in enumerate(groups, 2):
+            stage = Stage.create(
+                {
+                    "name": name,
+                    "structure_id": structure.id,
+                    "sequence": sequence * 10,
+                    "stage_type": "league",
+                    "format_type": second_format,
+                    "source_type": "progression",
+                    "carryover_policy": structure.second_phase_carryover,
+                    "final_rank_from": final_rank_from,
+                    "final_rank_to": final_rank_from + rank_to - rank_from,
                 }
             )
-        return pool_stages + [final_stage]
+            self.env["federation.structure.stage.progression"].create(
+                {
+                    "name": _(
+                        "Places %(start)s-%(end)s to %(stage)s",
+                        start=rank_from,
+                        end=rank_to,
+                        stage=name,
+                    ),
+                    "source_stage_id": season.id,
+                    "target_stage_id": stage.id,
+                    "rank_from": rank_from,
+                    "rank_to": rank_to,
+                    "target_seed_from": 1,
+                }
+            )
+            created.append(stage)
+        return created
 
     @api.model
     def validate_graph(self, structure):

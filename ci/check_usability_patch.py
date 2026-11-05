@@ -15,15 +15,16 @@ class UsabilityChecks(unittest.TestCase):
                 elif path.suffix == '.xml': ET.parse(path)
 
     def test_preview_behavior(self):
-        tree = ast.parse((ROOT / 'sports_federation_setup_flow/wizards/format_setup_wizard.py').read_text())
-        method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == '_compute_format_preview')
-        method.decorator_list = []
-        namespace = {}
-        exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])), '<preview>', 'exec'), namespace)
-        for n, kind, matches, per_team, byes in [(4,'single_round_robin',6,3,0),(4,'double_round_robin',12,6,0),(5,'knockout',4,0,3),(0,'knockout',0,0,0),(1,'single_round_robin',0,0,0)]:
-            wizard = SimpleNamespace(participant_set_id=SimpleNamespace(line_ids=list(range(n))), format_type=kind)
-            namespace['_compute_format_preview']([wizard])
-            self.assertEqual((wizard.preview_match_count,wizard.preview_matches_per_team,wizard.preview_byes),(matches,per_team,byes))
+        # The format preview counts matches with the shared pure planner.
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            'format_presets', ROOT / 'sports_federation_format/services/format_presets.py')
+        presets = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(presets)
+        text = (ROOT / 'sports_federation_setup_flow/wizards/format_setup_wizard.py').read_text()
+        self.assertIn('format_presets.plan(', text)
+        for n, kind, matches in [(4,'single_round_robin',6),(4,'double_round_robin',12),(5,'knockout',4),(0,'knockout',0),(1,'single_round_robin',0),(4,'pool_knockout',5)]:
+            self.assertEqual(presets.plan(kind, n)['fixture_count'], matches)
 
     def test_no_elevation_or_mutation_in_task_projection(self):
         tree=ast.parse((ROOT/'sports_federation_setup_flow/models/competition_planner.py').read_text())

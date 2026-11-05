@@ -1,0 +1,22 @@
+<odoo>
+  <record id="structure_form_stage_game_days" model="ir.ui.view">
+    <field name="name">competition.structure.stage.game.days</field>
+    <field name="model">federation.competition.structure</field>
+    <field name="inherit_id" ref="sports_federation_format.structure_form_stage_graph"/>
+    <field name="arch" type="xml">
+      <xpath expr="//page[@string='Stage Graph']/field[@name='stage_ids']/list/field[@name='carryover_policy']" position="after">
+        <field name="matchday_ids" widget="many2many_tags" optional="show" placeholder="Any game day" options="{'no_create': True}" domain="[('edition_id', '=', parent.edition_id)]"/>
+      </xpath>
+    </field>
+  </record>
+  <record id="stage_form_game_days" model="ir.ui.view">
+    <field name="name">structure.stage.game.days.form</field>
+    <field name="model">federation.structure.stage</field>
+    <field name="inherit_id" ref="sports_federation_format.stage_form_graph"/>
+    <field name="arch" type="xml">
+      <field name="final_rank_to" position="after">
+        <field name="matchday_ids" widget="many2many_tags" placeholder="Any game day" options="{'no_create': True}"/>
+      </field>
+    </field>
+  </record>
+</odoo>

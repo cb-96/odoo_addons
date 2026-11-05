@@ -9,12 +9,12 @@ are still generated and frozen through ``federation.competition.structure``.
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
-FORMAT_SELECTION = [
-    ("single_round_robin", "League - play each team once"),
-    ("double_round_robin", "Home & away league"),
-    ("knockout", "Knockout cup"),
-    ("pool_knockout", "Groups then knockout"),
-]
+from .format_setup_wizard import FORMAT_CHOICES
+
+# The same guided formats as the format step. Options such as qualifiers per
+# group or the split point keep their current value and are changed with
+# "Format options" in the planner.
+FORMAT_SELECTION = FORMAT_CHOICES
 
 
 class FederationCompetitionDivisionSetupWizard(models.TransientModel):
@@ -75,7 +75,12 @@ class FederationCompetitionDivisionSetupWizard(models.TransientModel):
             order="version desc,id desc",
             limit=1,
         )
-        format_type = structure.format_type if structure else edition.setup_default_format_type
+        if structure:
+            format_type = self.env[
+                "federation.competition.format.setup.wizard"
+            ]._choice_from_structure(structure)["format_type"]
+        else:
+            format_type = edition.setup_default_format_type
         if format_type not in dict(FORMAT_SELECTION):
             format_type = "single_round_robin"
         return {
@@ -114,15 +119,21 @@ class FederationCompetitionDivisionSetupWizard(models.TransientModel):
             [
                 ("division_id", "=", division.id),
                 ("participant_set_id", "=", participant_set.id),
-                ("format_type", "=", format_type),
                 ("state", "=", "frozen"),
             ],
             order="version desc,id desc",
             limit=1,
         )
+        if not structure:
+            return False
+        choice = self.env[
+            "federation.competition.format.setup.wizard"
+        ]._choice_from_structure(structure)
+        if choice["format_type"] != format_type:
+            return False
         if format_type == "pool_knockout":
-            structure = structure.filtered(lambda item: item.pool_count == pool_count)
-        return bool(structure)
+            return structure.pool_count == pool_count
+        return True
 
     def action_apply(self):
         self.ensure_one()
@@ -256,6 +267,10 @@ class FederationCompetitionDivisionSetupLine(models.TransientModel):
             if count < 2:
                 line.match_count = 0
                 line.feasibility_message = _("Select at least two teams") if count else False
+                continue
+            if line.format_type == "custom":
+                line.match_count = 0
+                line.feasibility_message = _("Built in the stage builder")
                 continue
             estimate = feasibility.estimate(line.format_type, count, pool_count=line.pool_count)
             line.match_count = estimate.get("fixture_count", 0)

@@ -75,6 +75,44 @@ class FederationStructureStage(models.Model):
         related="standing_snapshot_id.line_ids", readonly=True
     )
 
+    def _planning_source_stages(self):
+        """Stages whose final table decides the teams of this stage."""
+        self.ensure_one()
+        if self.source_type != "progression":
+            return self.browse()
+        return self.incoming_progression_ids.filtered("active").mapped(
+            "source_stage_id"
+        )
+
+    def _planning_depths(self):
+        """Longest progression path from a first stage, per stage id.
+
+        First stages (groups, regular season) are depth 0, a knockout fed by
+        groups is depth 1, and so on. Planning places lower depths first.
+        """
+        stages = self.mapped("structure_id.stage_ids") | self
+        depths = {}
+
+        def depth(stage, trail=()):
+            if stage.id in depths:
+                return depths[stage.id]
+            if stage.id in trail:
+                return 0
+            sources = stage.incoming_progression_ids.filtered("active").mapped(
+                "source_stage_id"
+            )
+            value = (
+                max(depth(source, trail + (stage.id,)) for source in sources) + 1
+                if sources
+                else 0
+            )
+            depths[stage.id] = value
+            return value
+
+        for stage in stages:
+            depth(stage)
+        return depths
+
     def action_prepare_stage(self):
         for rec in self:
             self.env["federation.stage.graph.engine"].prepare_stage(rec)
@@ -189,6 +227,43 @@ class FederationFixture(models.Model):
             self["%s_team_id" % side] or self._is_placeholder_side(side)
             for side in ("home", "away")
         )
+
+    def _planning_sorted(self):
+        """Fixtures in planning order: earlier stages first, then by round.
+
+        Within one stage depth, rounds of different groups or divisions are
+        interleaved (round 1 of every group before round 2), as before.
+        """
+        depths = self.mapped("stage_id")._planning_depths()
+        return self.sorted(
+            lambda fixture: (
+                depths.get(fixture.stage_id.id, 0),
+                fixture.round_number,
+                fixture.sequence,
+                fixture.stage_id.sequence,
+                fixture.id,
+            )
+        )
+
+    def _planning_keys(self):
+        """Who plays: team ids, or stable tokens for unresolved sides."""
+        self.ensure_one()
+        keys = set()
+        for side in ("home", "away"):
+            team = self["%s_team_id" % side]
+            if team:
+                keys.add(team.id)
+            elif self["%s_source_seed" % side]:
+                keys.add(("seed", self.stage_id.id, self["%s_source_seed" % side]))
+            elif self["%s_source_fixture_id" % side]:
+                keys.add(
+                    (
+                        "fixture",
+                        self["%s_source_fixture_id" % side].id,
+                        self["%s_source_outcome" % side] or "winner",
+                    )
+                )
+        return keys
 
     def action_materialize_match(self):
         """Create or return the single operational match for each playable fixture."""

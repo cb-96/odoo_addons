@@ -12,7 +12,7 @@ class FederationDeterministicSolver(models.AbstractModel):
         fixtures = (
             schedule.matchday_id.allocation_ids.mapped("fixture_ids")
             .filtered(lambda f: f.id not in current)
-            .sorted(lambda f: (f.round_number, f.sequence, f.id))
+            ._planning_sorted()
         )
         slots = schedule.matchday_id.slot_ids.filtered(
             lambda s: s.state == "available" and s.id not in current.values()

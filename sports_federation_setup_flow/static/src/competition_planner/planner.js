@@ -78,6 +78,10 @@ export class CompetitionPlanner extends Component {
         return this.doPlannerAction("action_open_planner_issue", issue.key);
     }
 
+    openDivisionFormat(division) {
+        return this.doPlannerAction("action_open_division_format", division.id);
+    }
+
     openOperation(operation) {
         return this.doPlannerAction("action_open_planner_operation", operation);
     }

@@ -175,7 +175,6 @@ class FederationCompetitionEditionSetup(models.Model):
                 "edition_id": self.id,
                 "division_id": division.id,
                 "participant_set_id": participant_set.id,
-                "format_type": self.setup_default_format_type,
             }
         )
         return {

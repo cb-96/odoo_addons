@@ -1,6 +1,8 @@
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
+from ..services import format_presets
+
 
 class FederationCompetitionStructure(models.Model):
     _name = "federation.competition.structure"
@@ -45,6 +47,41 @@ class FederationCompetitionStructure(models.Model):
         required=True,
     )
     swiss_round_count = fields.Integer(default=5, required=True)
+    qualifiers_per_pool = fields.Integer(
+        string="Qualifiers per group",
+        default=2,
+        required=True,
+        help="Teams per group that reach the knockout. Group winners are seeded "
+        "first, then runners-up, crossed so teams of one group avoid each other early.",
+    )
+    knockout_full_placement = fields.Boolean(
+        string="Play for every place",
+        help="Losers keep playing classification matches so every final place is decided.",
+    )
+    split_rank = fields.Integer(
+        string="Teams in the top group",
+        help="After the regular season, places 1 to this number form the top group "
+        "and the others the bottom group. Use the team count to let every team "
+        "play a second half together. 0 splits the table in half.",
+    )
+    first_phase_double = fields.Boolean(
+        string="First stage home & away",
+        help="Groups or the regular season play every opponent twice.",
+    )
+    second_phase_double = fields.Boolean(
+        string="Second stage home & away",
+        help="The top and bottom groups play every opponent twice.",
+    )
+    second_phase_carryover = fields.Selection(
+        [
+            ("none", "Start from zero"),
+            ("same_group_results", "Keep results between teams of the same group"),
+            ("full_points", "Keep all regular-season points"),
+        ],
+        string="Points after the split",
+        default="none",
+        required=True,
+    )
     estimated_fixture_count = fields.Integer(compute="_compute_feasibility")
     estimated_round_count = fields.Integer(compute="_compute_feasibility")
     generation_feasible = fields.Boolean(compute="_compute_feasibility")
@@ -56,10 +93,26 @@ class FederationCompetitionStructure(models.Model):
         "pool_count",
         "series_length",
         "swiss_round_count",
+        "qualifiers_per_pool",
+        "knockout_full_placement",
+        "split_rank",
+        "first_phase_double",
+        "second_phase_double",
     )
     def _compute_feasibility(self):
         analyzer = self.env["federation.format.feasibility"]
         for record in self:
+            if record.format_type in ("pool_knockout", "split_pools"):
+                result = format_presets.plan(
+                    record.format_type,
+                    len(record.participant_set_id.line_ids),
+                    **record._preset_options(),
+                )
+                record.generation_feasible = result["feasible"]
+                record.estimated_fixture_count = result["fixture_count"]
+                record.estimated_round_count = 0
+                record.feasibility_message = result["message"]
+                continue
             result = analyzer.estimate(
                 record.format_type,
                 len(record.participant_set_id.line_ids),
@@ -71,6 +124,23 @@ class FederationCompetitionStructure(models.Model):
             record.estimated_fixture_count = result["fixture_count"]
             record.estimated_round_count = result["round_count"]
             record.feasibility_message = result["message"]
+
+    def _effective_split_rank(self):
+        self.ensure_one()
+        teams = len(self.participant_set_id.line_ids)
+        return self.split_rank or (teams + 1) // 2
+
+    def _preset_options(self):
+        """Options understood by ``format_presets.plan``."""
+        self.ensure_one()
+        return {
+            "pool_count": self.pool_count,
+            "qualifiers_per_pool": self.qualifiers_per_pool,
+            "knockout_full_placement": self.knockout_full_placement,
+            "split_rank": self._effective_split_rank(),
+            "first_phase_double": self.first_phase_double,
+            "second_phase_double": self.second_phase_double,
+        }
 
     def action_check_feasibility(self):
         self.ensure_one()
@@ -137,6 +207,8 @@ class FederationCompetitionStructure(models.Model):
                 )
             if not rec.stage_ids and rec.format_type == "pool_knockout":
                 engine.generate_pool_knockout_stages(rec)
+            if not rec.stage_ids and rec.format_type == "split_pools":
+                engine.generate_split_stages(rec)
             roots = rec.stage_ids.filtered(
                 lambda stage: not stage.incoming_progression_ids
             )
@@ -145,8 +217,9 @@ class FederationCompetitionStructure(models.Model):
             self.env["federation.stage.graph.engine"].validate_graph(rec)
             for stage in roots:
                 stage.action_prepare_stage()
-            # Brackets fed by an earlier stage get placeholder fixtures now,
-            # so the whole competition can be scheduled before tables are final.
+            # Stages fed by an earlier stage get placeholder fixtures now
+            # ("#1 Group A", "Winner R1 M2"), so every match of the whole
+            # competition exists and can be scheduled before tables are final.
             for stage in (rec.stage_ids - roots).sorted("sequence"):
                 engine.prepare_placeholder_stage(stage)
             rec.state = "generated"

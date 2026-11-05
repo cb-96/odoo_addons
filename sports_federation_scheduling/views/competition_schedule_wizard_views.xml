@@ -9,6 +9,21 @@
      <group string="Game days"><field name="matchday_ids" widget="many2many_tags" string="Game days"/><field name="preferred_rest_minutes" string="Rest between matches (min)"/></group>
      <group string="Advanced" groups="sports_federation_base.group_federation_advanced_operator"><field name="edition_id"/><field name="structure_ids" widget="many2many_tags"/><field name="stage_ids" widget="many2many_tags"/><field name="mode"/><field name="rebuild_reason" invisible="mode != 'rebuild'" required="mode == 'rebuild'"/><field name="generate_missing_fixtures"/></group>
     </group>
+    <!-- Technical modifier relay: the stage game days section only shows for multi-stage formats. -->
+    <field name="has_stage_windows" invisible="1"/>
+    <details class="mb-3" invisible="not has_stage_windows">
+     <summary><strong>Stage game days</strong> <span class="text-muted">(optional)</span></summary>
+     <p class="text-muted mt-2">Later stages are always planned after the stage their teams come from. Pick game days only to fix a stage to part of the calendar, for example the second half or the finals day.</p>
+     <field name="stage_window_ids" nolabel="1">
+      <list editable="bottom" create="0" delete="0">
+       <field name="division_id" optional="show"/>
+       <field name="stage_id" readonly="1"/>
+       <field name="source_summary"/>
+       <field name="edition_id" column_invisible="1"/>
+       <field name="matchday_ids" widget="many2many_tags" placeholder="Any game day" options="{'no_create': True}"/>
+      </list>
+     </field>
+    </details>
     <div class="alert alert-warning" role="alert" invisible="not blocking_issue_count">The schedule cannot be generated yet. Fix the items listed under Feasibility, then generate again.</div>
     <div class="alert alert-warning" role="alert" invisible="blocking_issue_count or not rest_shortfall_html">
      <p><strong>Some teams cannot get the preferred rest between their matches.</strong></p>

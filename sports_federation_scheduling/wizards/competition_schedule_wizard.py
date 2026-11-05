@@ -40,6 +40,15 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         domain="[('structure_id', 'in', structure_ids)]",
         help="Limit generation to these stages. Leave empty only when every stage in the selected formats belongs in this planning run.",
     )
+    stage_window_ids = fields.One2many(
+        "federation.competition.schedule.stage.window",
+        "wizard_id",
+        string="Stage game days",
+        help="Competitions with several stages: choose the game days of each "
+        "stage. Leave a stage empty to let planning use any day after the "
+        "stage it depends on.",
+    )
+    has_stage_windows = fields.Boolean(compute="_compute_has_stage_windows")
     mode = fields.Selection(
         [
             ("fill", "Fill Missing Planning"),
@@ -214,6 +223,43 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             )
         )
 
+    @api.depends("stage_window_ids")
+    def _compute_has_stage_windows(self):
+        for wizard in self:
+            wizard.has_stage_windows = bool(wizard.stage_window_ids)
+
+    def _stage_window_commands(self):
+        """One line per stage of every multi-stage format in scope."""
+        stages = self.structure_ids.mapped("stage_ids").filtered(
+            lambda stage: len(stage.structure_id.stage_ids) > 1
+        )
+        if self.stage_ids:
+            stages &= self.stage_ids
+        depths = stages._planning_depths() if stages else {}
+        ordered = stages.sorted(
+            lambda stage: (
+                stage.structure_id.division_id.name or "",
+                depths.get(stage.id, 0),
+                stage.sequence,
+                stage.id,
+            )
+        )
+        return [fields.Command.clear()] + [
+            fields.Command.create(
+                {"stage_id": stage.id, "matchday_ids": [fields.Command.set(stage.matchday_ids.ids)]}
+            )
+            for stage in ordered
+        ]
+
+    def _sync_stage_windows(self):
+        """Store the chosen stage game days on the stages themselves."""
+        for line in self.stage_window_ids:
+            if set(line.matchday_ids.ids) != set(line.stage_id.matchday_ids.ids):
+                line.stage_id.check_access("read")
+                line.stage_id.sudo().matchday_ids = [
+                    fields.Command.set(line.matchday_ids.ids)
+                ]
+
     @api.onchange("edition_id")
     def _onchange_edition_id(self):
         if not self.edition_id:
@@ -236,6 +282,7 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
                 seen.add(structure.division_id.id)
         self.structure_ids = latest
         self.stage_ids = self._planning_stages(latest.mapped("stage_ids"))
+        self.stage_window_ids = self._stage_window_commands()
 
     @api.onchange("structure_ids")
     def _onchange_structure_ids(self):
@@ -243,6 +290,7 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         self.stage_ids = self.stage_ids & allowed
         if not self.stage_ids and allowed:
             self.stage_ids = self._planning_stages(allowed) or allowed
+        self.stage_window_ids = self._stage_window_commands()
 
     @api.constrains("preferred_rest_minutes", "mode", "rebuild_reason")
     def _check_configuration(self):
@@ -254,6 +302,7 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
 
     def action_preview(self):
         self.ensure_one()
+        self._sync_stage_windows()
         proposal = self._build_proposal()
         self.write(
             {
@@ -357,7 +406,8 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         fixtures, deferred, excluded = self._fixtures()
         capacities = self._capacities(errors)
         distribution = self.env["federation.competition.schedule.distributor"].propose(
-            fixtures, capacities, pinned=self._pinned_fixture_days()
+            fixtures, capacities, pinned=self._pinned_fixture_days(),
+            known_days=self._known_fixture_dates(),
         ) if capacities else {"assignments": {}, "remaining_capacity": {}, "errors": [], "valid": False}
         errors.extend(distribution["errors"])
         duplicate_team_days = self._duplicate_team_days(fixtures, distribution)
@@ -485,6 +535,21 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         deferred = scoped - playable
         excluded = all_fixtures - scoped
         return playable, deferred, excluded
+
+    def _known_fixture_dates(self):
+        """Dates of fixtures of these formats already on other game days."""
+        known = {}
+        selected = self.structure_ids.mapped("fixture_ids")
+        other_days = self.env["federation.matchday"].search(
+            [
+                ("edition_id", "=", self.edition_id.id),
+                ("id", "not in", self.matchday_ids.ids),
+            ]
+        )
+        for day in other_days:
+            for fixture in day.allocation_ids.mapped("fixture_ids") & selected:
+                known[fixture.id] = day.date
+        return known
 
     def _capacities(self, errors):
         capacities = []
@@ -667,9 +732,49 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             "edition": self.edition_id.id,
             "structures": [(item.id, item.state, item.version, item.write_date) for item in self.structure_ids],
             "stages": [(stage.id, stage.graph_state, stage.write_date) for stage in self.stage_ids],
+            "stage_days": [
+                (stage.id, sorted(stage.matchday_ids.ids))
+                for stage in self.structure_ids.mapped("stage_ids")
+            ],
             "days": [(day.id, day.state, day.date, day.default_day_start_hour,
                       day.default_day_end_hour, day.default_slot_duration_minutes,
                       day.planning_court_ids.ids, day.write_date) for day in self.matchday_ids],
             "mode": self.mode,
         }
         return hashlib.sha256(json.dumps(payload, default=str, sort_keys=True).encode()).hexdigest()
+
+
+class FederationCompetitionScheduleStageWindow(models.TransientModel):
+    _name = "federation.competition.schedule.stage.window"
+    _description = "Game Days of a Competition Stage"
+    _order = "id"
+
+    wizard_id = fields.Many2one(
+        "federation.competition.schedule.wizard", required=True, ondelete="cascade"
+    )
+    stage_id = fields.Many2one(
+        "federation.structure.stage", required=True, readonly=True, ondelete="cascade"
+    )
+    division_id = fields.Many2one(
+        related="stage_id.structure_id.division_id", string="Division"
+    )
+    source_summary = fields.Char(
+        string="Teams from", compute="_compute_source_summary"
+    )
+    edition_id = fields.Many2one(related="wizard_id.edition_id")
+    matchday_ids = fields.Many2many(
+        "federation.matchday",
+        "federation_comp_schedule_stage_window_matchday_rel",
+        "window_id",
+        "matchday_id",
+        string="Game days",
+        domain="[('edition_id', '=', edition_id)]",
+    )
+
+    @api.depends("stage_id")
+    def _compute_source_summary(self):
+        for line in self:
+            sources = line.stage_id._planning_source_stages()
+            line.source_summary = (
+                ", ".join(sources.mapped("name")) if sources else _("Registered teams")
+            )

@@ -1,6 +1,6 @@
 {
     "name": "Competition Format",
-    "version": "19.0.6.3.0",
+    "version": "19.0.6.4.0",
     "category": "Sports",
     "summary": "Versioned competition structures, stages, progression and fixtures",
     "author": "Sports Federation",

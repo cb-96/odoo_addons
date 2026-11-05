@@ -8,6 +8,7 @@
           <div class="oe_title">
             <h1>Teams &amp; format</h1>
             <p class="text-muted">Add a row per division, pick its teams and how it plays. Everything is saved in one step.</p>
+            <p class="text-muted small">Need more than the basics, such as 3 qualifiers per group, a different split point, home &amp; away groups or your own stages? Save first, then use <strong>Format options</strong> for that division in the planner.</p>
           </div>
           <field name="line_ids" nolabel="1">
             <list editable="bottom">

@@ -14,6 +14,8 @@
 from odoo import _, api, models
 from odoo.exceptions import ValidationError
 
+from . import format_presets
+
 RANKED_FORMATS = ("single_round_robin", "double_round_robin")
 BRACKET_FORMATS = ("knockout", "placement_bracket")
 
@@ -145,10 +147,14 @@ class FederationStageLifecycle(models.AbstractModel):
 
     @api.model
     def prepare_placeholder_stage(self, stage):
-        """Build a progression bracket before its teams are known."""
+        """Build a progression stage before its teams are known.
+
+        Brackets and round robins both get every fixture now, referencing
+        stage seeds ("#1 Group A") that progression fills in later.
+        """
         if (
             stage.source_type != "progression"
-            or stage.format_type not in BRACKET_FORMATS
+            or stage.format_type not in BRACKET_FORMATS + RANKED_FORMATS
             or stage.stage_fixture_ids
             or stage.stage_participant_ids
         ):
@@ -156,13 +162,38 @@ class FederationStageLifecycle(models.AbstractModel):
         count = self._expected_progression_count(stage)
         if count < 2:
             return False
-        self._knockout(
-            stage,
-            stage.format_type == "placement_bracket",
-            placeholder_count=count,
-        )
+        if stage.format_type in RANKED_FORMATS:
+            self._round_robin_placeholders(
+                stage, count, stage.format_type == "double_round_robin"
+            )
+        else:
+            self._knockout(
+                stage,
+                stage.format_type == "placement_bracket",
+                placeholder_count=count,
+            )
         stage.graph_state = "waiting"
         return True
+
+    @api.model
+    def _round_robin_placeholders(self, stage, count, double):
+        """Round robin between stage seeds 1..count, teams filled later."""
+        return self.env["federation.fixture"].create(
+            [
+                {
+                    "structure_id": stage.structure_id.id,
+                    "stage_id": stage.id,
+                    "round_number": round_number,
+                    "sequence": sequence * 10,
+                    "home_source_seed": home,
+                    "away_source_seed": away,
+                }
+                for round_number, pairs in enumerate(
+                    format_presets.round_robin_pairs(count, double), 1
+                )
+                for sequence, (home, away) in enumerate(pairs, 1)
+            ]
+        )
 
     @api.model
     def _fill_seeded_stage(self, stage):
@@ -206,7 +237,9 @@ class FederationStageLifecycle(models.AbstractModel):
             if len(stage.stage_participant_ids) >= self._expected_progression_count(
                 stage
             ):
-                return self._fill_seeded_stage(stage)
+                result = self._fill_seeded_stage(stage)
+                self._ensure_linked_standing(stage)
+                return result
             stage.graph_state = "waiting"
             return True
         result = super().prepare_stage(stage)

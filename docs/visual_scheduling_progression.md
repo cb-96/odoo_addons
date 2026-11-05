@@ -50,7 +50,7 @@ Use candidate A for application swaps the displayed selection, not the database 
 
 Actual slot changes are exact. Shared-team and downstream groups are review effects, not additional changes. A stage dependency may affect all fixtures in the downstream stage because the eventual qualifier is not yet known. Explicit fixture-source links identify winner/loser dependants more precisely. These groups may overlap, and are labelled separately.
 
-Unresolved knockout participants remain unschedulable under the existing validator. Follow the existing standings-freeze and governed progression workflow to resolve them. This patch does not add placeholder-participant scheduling or a new rule that invents future match times. Verify chronology and rest again when participants resolve.
+Matches of later stages exist from the start as placeholders ("#1 Group A", "Winner R1 M2") and can be scheduled and published before their teams are known; see [Competition formats and stage planning](competition_formats.md). The validator keeps a later stage after the stage that feeds it. Teams are filled in through the existing standings-freeze and governed progression workflow. Verify rest again when participants resolve.
 
 ## Apply and upgrade
 

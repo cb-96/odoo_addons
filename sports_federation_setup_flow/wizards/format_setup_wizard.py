@@ -1,5 +1,39 @@
+from html import escape
+
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+
+from odoo.addons.sports_federation_format.services import format_presets
+
+FORMAT_CHOICES = [
+    ("single_round_robin", "League"),
+    ("double_round_robin", "Home & away league"),
+    ("knockout", "Knockout"),
+    ("pool_knockout", "Groups, then knockout"),
+    ("split_pools", "Regular season, then split"),
+    ("custom", "Custom stages"),
+]
+
+FORMAT_HINTS = {
+    "single_round_robin": "Every team plays every other team once. One table decides the ranking.",
+    "double_round_robin": "Every team plays every other team twice, home and away.",
+    "knockout": "Lose and you are out. Byes are given when the team count is not a power of two.",
+    "pool_knockout": "Teams play a round robin in groups. The best of every group reach a cross-seeded knockout.",
+    "split_pools": "Everyone plays a regular season. The table is then split into a top and bottom group that play a second round robin. Put every team in the top group to play a season in two halves.",
+    "custom": "Build your own stages and links between them, for example a third-place group or extra placement matches.",
+}
+
+# Structure options the guided formats use; a structure is reused only when
+# every option matches.
+OPTION_FIELDS = (
+    "pool_count",
+    "qualifiers_per_pool",
+    "knockout_full_placement",
+    "split_rank",
+    "first_phase_double",
+    "second_phase_double",
+    "second_phase_carryover",
+)
 
 
 class FederationCompetitionFormatSetupWizard(models.TransientModel):
@@ -19,44 +53,152 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
     )
     team_count = fields.Integer(compute="_compute_team_count")
     format_type = fields.Selection(
-        [
-            ("single_round_robin", "League - play each team once"),
-            ("double_round_robin", "Home & away league"),
-            ("knockout", "Knockout cup"),
-            ("pool_knockout", "Groups then knockout"),
-        ],
+        FORMAT_CHOICES,
         required=True,
         default="single_round_robin",
         string="Format",
     )
+    format_hint = fields.Char(compute="_compute_format_hint")
     pool_count = fields.Integer(default=2, required=True, string="Number of groups")
+    qualifiers_per_pool = fields.Integer(
+        default=2, required=True, string="Teams per group to the knockout"
+    )
+    knockout_full_placement = fields.Boolean(
+        string="Play for every place",
+        help="Teams knocked out keep playing classification matches so every final place is decided.",
+    )
+    split_rank = fields.Integer(
+        string="Teams in the top group",
+        help="Places 1 to this number form the top group, the rest the bottom group. "
+        "Use the number of teams to play a second half with everyone.",
+    )
+    first_phase_double = fields.Boolean(
+        string="Home & away in the first stage",
+        help="Groups or the regular season play every opponent twice.",
+    )
+    second_phase_double = fields.Boolean(
+        string="Home & away after the split",
+    )
+    second_phase_carryover = fields.Selection(
+        [
+            ("none", "Start from zero"),
+            ("same_group_results", "Keep results between teams of the same group"),
+            ("full_points", "Keep all regular-season points"),
+        ],
+        string="Points after the split",
+        default="none",
+        required=True,
+    )
 
     preview_match_count = fields.Integer(compute="_compute_format_preview", string="Total matches")
     preview_matches_per_team = fields.Integer(compute="_compute_format_preview", string="Matches per team (league)")
     preview_byes = fields.Integer(compute="_compute_format_preview", string="First-round byes")
+    preview_feasible = fields.Boolean(compute="_compute_format_preview")
+    preview_message = fields.Char(compute="_compute_format_preview", string="Check")
+    preview_outline = fields.Html(
+        compute="_compute_format_preview", string="How it plays", sanitize=True
+    )
     preview_confirmed = fields.Boolean(string="I have reviewed this format")
 
-    @api.depends("participant_set_id.line_ids", "format_type", "pool_count")
+    @api.depends("format_type")
+    def _compute_format_hint(self):
+        for wizard in self:
+            wizard.format_hint = FORMAT_HINTS.get(wizard.format_type, "")
+
+    @api.depends(
+        "participant_set_id.line_ids",
+        "format_type",
+        "pool_count",
+        "qualifiers_per_pool",
+        "knockout_full_placement",
+        "split_rank",
+        "first_phase_double",
+        "second_phase_double",
+    )
     def _compute_format_preview(self):
         for wizard in self:
             n = len(wizard.participant_set_id.line_ids)
-            multiplier = 2 if wizard.format_type == "double_round_robin" else 1
-            estimate = self.env["federation.format.feasibility"].estimate(
-                wizard.format_type, n, pool_count=wizard.pool_count
+            plan = format_presets.plan(
+                wizard.format_type,
+                n,
+                pool_count=wizard.pool_count,
+                qualifiers_per_pool=wizard.qualifiers_per_pool,
+                knockout_full_placement=wizard.knockout_full_placement,
+                split_rank=wizard.split_rank or (n + 1) // 2,
+                first_phase_double=wizard.first_phase_double,
+                second_phase_double=wizard.second_phase_double,
             )
-            wizard.preview_match_count = estimate["fixture_count"]
+            multiplier = 2 if wizard.format_type == "double_round_robin" else 1
+            wizard.preview_feasible = plan["feasible"]
+            wizard.preview_message = plan["message"]
+            wizard.preview_match_count = plan["fixture_count"]
             wizard.preview_matches_per_team = (
-                0
-                if wizard.format_type in ("knockout", "pool_knockout")
-                else max(n - 1, 0) * multiplier
+                max(n - 1, 0) * multiplier
+                if wizard.format_type in ("single_round_robin", "double_round_robin")
+                else 0
             )
             wizard.preview_byes = (
                 (1 << (n - 1).bit_length()) - n
                 if n > 1 and wizard.format_type == "knockout"
                 else 0
             )
+            wizard.preview_outline = wizard._outline_html(plan)
 
-    @api.onchange("format_type", "division_id", "pool_count")
+    def _outline_html(self, plan):
+        if self.format_type == "custom":
+            return (
+                "<p class='mb-0'>%s</p>"
+                % escape(
+                    _(
+                        "Open the stage builder, add stages and link the places "
+                        "that advance. Then reopen Format options for this "
+                        "division and choose Generate All Matches."
+                    )
+                )
+            )
+        if not plan["stages"]:
+            return False
+        chips = []
+        for stage in plan["stages"]:
+            chips.append(
+                "<span class='badge text-bg-light border text-wrap text-start p-2'>"
+                "<strong>%s</strong><br/>%s<br/><small class='text-muted'>%s</small></span>"
+                % (
+                    escape(stage["name"]),
+                    escape(
+                        _(
+                            "%(teams)s teams · %(matches)s matches",
+                            teams=stage["teams"],
+                            matches=stage["matches"],
+                        )
+                    ),
+                    escape(stage["source"]),
+                )
+            )
+        # Parallel groups are one step; the next stage follows an arrow.
+        if self.format_type == "pool_knockout":
+            groups = " ".join(chips[:-1])
+            body = "%s <span aria-hidden='true'>→</span> %s" % (groups, chips[-1])
+        elif self.format_type == "split_pools":
+            body = "%s <span aria-hidden='true'>→</span> %s" % (
+                chips[0],
+                " ".join(chips[1:]),
+            )
+        else:
+            body = chips[0]
+        return "<div class='d-flex flex-wrap align-items-center gap-2'>%s</div>" % body
+
+    @api.onchange(
+        "format_type",
+        "division_id",
+        "pool_count",
+        "qualifiers_per_pool",
+        "knockout_full_placement",
+        "split_rank",
+        "first_phase_double",
+        "second_phase_double",
+        "second_phase_carryover",
+    )
     def _reset_preview_confirmation(self):
         self.preview_confirmed = False
 
@@ -80,6 +222,35 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
             values["division_id"] = division.id
             participant_set = self._latest_participant_set(edition, division)
             values["participant_set_id"] = participant_set.id
+            values.update(self._current_choice(edition, division))
+        return values
+
+    @api.model
+    def _current_choice(self, edition, division):
+        """Reopen the format with the choice the division already has."""
+        structure = self.env["federation.competition.structure"].search(
+            [
+                ("edition_id", "=", edition.id),
+                ("division_id", "=", division.id),
+                ("state", "in", ("draft", "generated", "frozen")),
+            ],
+            order="version desc,id desc",
+            limit=1,
+        )
+        if not structure:
+            return {}
+        return self._choice_from_structure(structure)
+
+    @api.model
+    def _choice_from_structure(self, structure):
+        format_type = structure.format_type
+        values = {name: structure[name] for name in OPTION_FIELDS}
+        if format_type == "placement_bracket":
+            format_type = "knockout"
+            values["knockout_full_placement"] = True
+        if format_type not in dict(FORMAT_CHOICES):
+            format_type = "custom"
+        values["format_type"] = format_type
         return values
 
     @api.model
@@ -111,56 +282,77 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
                 self.edition_id, self.division_id
             )
 
+    def _structure_format_type(self):
+        if self.format_type == "knockout" and self.knockout_full_placement:
+            return "placement_bracket"
+        return self.format_type
+
+    def _structure_options(self):
+        """Options stored on the structure; only what this format uses."""
+        options = {
+            "pool_count": 2,
+            "qualifiers_per_pool": 2,
+            "knockout_full_placement": False,
+            "split_rank": 0,
+            "first_phase_double": False,
+            "second_phase_double": False,
+            "second_phase_carryover": "none",
+        }
+        if self.format_type == "pool_knockout":
+            options.update(
+                pool_count=self.pool_count,
+                qualifiers_per_pool=self.qualifiers_per_pool,
+                knockout_full_placement=self.knockout_full_placement,
+                first_phase_double=self.first_phase_double,
+            )
+        elif self.format_type == "knockout":
+            options["knockout_full_placement"] = self.knockout_full_placement
+        elif self.format_type == "split_pools":
+            options.update(
+                split_rank=self.split_rank or (self.team_count + 1) // 2,
+                first_phase_double=self.first_phase_double,
+                second_phase_double=self.second_phase_double,
+                second_phase_carryover=self.second_phase_carryover,
+            )
+        return options
+
+    def _matching_structure(self, participant_set, format_type, options):
+        candidates = self.env["federation.competition.structure"].search(
+            [
+                ("edition_id", "=", self.edition_id.id),
+                ("division_id", "=", self.division_id.id),
+                ("participant_set_id", "=", participant_set.id),
+                ("format_type", "=", format_type),
+                ("state", "in", ("draft", "generated", "frozen")),
+            ],
+            order="version desc,id desc",
+        )
+        if format_type == "custom":
+            return candidates[:1]
+        return candidates.filtered(
+            lambda item: all(item[name] == value for name, value in options.items())
+        )[:1]
+
     def action_apply(self):
         self.ensure_one()
-        if not self.preview_confirmed:
-            raise ValidationError(_("Review the format preview before confirming."))
         participant_set = self._latest_participant_set(
             self.edition_id, self.division_id
         )
         if participant_set != self.participant_set_id:
             raise ValidationError(_("The participating teams changed. Reopen and review the format."))
-        if self.format_type == "pool_knockout":
-            estimate = self.env["federation.format.feasibility"].estimate(
-                self.format_type,
-                len(participant_set.line_ids),
-                pool_count=self.pool_count,
-            )
-            if not estimate["feasible"]:
-                raise ValidationError(estimate["message"])
-        existing = self.env["federation.competition.structure"].search(
-            [
-                ("edition_id", "=", self.edition_id.id),
-                ("division_id", "=", self.division_id.id),
-                ("participant_set_id", "=", participant_set.id),
-                ("format_type", "=", self.format_type),
-                ("state", "in", ("draft", "generated", "frozen")),
-            ],
-            order="version desc,id desc",
-            limit=1,
-        )
-        if self.format_type == "pool_knockout":
-            existing = existing.filtered(lambda item: item.pool_count == self.pool_count)
-        structure = existing
+        format_type = self._structure_format_type()
+        options = self._structure_options()
+        structure = self._matching_structure(participant_set, format_type, options)
+        if self.format_type == "custom" and not structure.stage_ids:
+            return self._open_stage_builder(structure or self._create_structure(
+                participant_set, format_type, options
+            ))
+        if self.format_type != "custom" and not self.preview_confirmed:
+            raise ValidationError(_("Review the format preview before confirming."))
+        if self.format_type != "custom" and not self.preview_feasible:
+            raise ValidationError(self.preview_message)
         if not structure:
-            latest = self.env["federation.competition.structure"].search(
-                [("division_id", "=", self.division_id.id)],
-                order="version desc,id desc",
-                limit=1,
-            )
-            structure = self.env["federation.competition.structure"].create(
-                {
-                    "name": _(
-                        "%(division)s format", division=self.division_id.display_name
-                    ),
-                    "edition_id": self.edition_id.id,
-                    "division_id": self.division_id.id,
-                    "participant_set_id": participant_set.id,
-                    "version": (latest.version + 1) if latest else 1,
-                    "format_type": self.format_type,
-                    "pool_count": self.pool_count,
-                }
-            )
+            structure = self._create_structure(participant_set, format_type, options)
         if structure.state == "draft":
             structure.action_generate()
         if structure.state == "generated":
@@ -168,3 +360,44 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
         if hasattr(self.edition_id, "action_open_competition_planner"):
             return self.edition_id.action_open_competition_planner()
         return structure.get_formview_action()
+
+    def action_open_stage_builder(self):
+        """Open (or start) the custom stages of this division."""
+        self.ensure_one()
+        participant_set = self._latest_participant_set(
+            self.edition_id, self.division_id
+        )
+        structure = self._matching_structure(participant_set, "custom", {})
+        if not structure:
+            structure = self._create_structure(
+                participant_set, "custom", self._structure_options()
+            )
+        return self._open_stage_builder(structure)
+
+    def _create_structure(self, participant_set, format_type, options):
+        latest = self.env["federation.competition.structure"].search(
+            [("division_id", "=", self.division_id.id)],
+            order="version desc,id desc",
+            limit=1,
+        )
+        return self.env["federation.competition.structure"].create(
+            {
+                "name": _("%(division)s format", division=self.division_id.display_name),
+                "edition_id": self.edition_id.id,
+                "division_id": self.division_id.id,
+                "participant_set_id": participant_set.id,
+                "version": (latest.version + 1) if latest else 1,
+                "format_type": format_type,
+                **options,
+            }
+        )
+
+    def _open_stage_builder(self, structure):
+        action = structure.get_formview_action()
+        action.update(
+            {
+                "name": _("Build stages: %s", self.division_id.display_name),
+                "target": "current",
+            }
+        )
+        return action

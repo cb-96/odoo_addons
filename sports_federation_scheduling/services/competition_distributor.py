@@ -7,15 +7,39 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
     _name = "federation.competition.schedule.distributor"
     _description = "Competition Fixture to Match-Day Distributor"
 
-    def propose(self, fixtures, capacities, pinned=None):
-        """Distribute fixtures deterministically using real per-day capacity."""
+    def propose(self, fixtures, capacities, pinned=None, known_days=None):
+        """Distribute fixtures deterministically using real per-day capacity.
+
+        Besides capacity and the divisions playing on a day, every fixture
+        respects its stage:
+
+        * a stage limited to some game days is only planned on those days;
+        * a stage fed by earlier stages (knockout after groups, second half
+          after the regular season) is planned no earlier than the last day
+          of those stages. When a source stage spans several game days the
+          next stage starts on a later day; a source stage played on a single
+          day (tournament day) may be followed on that same day;
+        * a follow-up match ("Winner R1 M2") is never planned on an earlier
+          day than the match deciding its team.
+
+        ``known_days`` maps fixtures already allocated outside this run to
+        their game-day date, so chronology also holds across runs.
+        """
         pinned = pinned or {}
+        known_days = dict(known_days or {})
         days = sorted(capacities, key=lambda item: (item["date"], item["matchday_id"]))
+        date_by_day = {item["matchday_id"]: item["date"] for item in days}
         remaining = {item["matchday_id"]: item["capacity"] for item in days}
         assignments = defaultdict(list)
         team_days = defaultdict(set)
         errors = []
         fixtures_by_id = {fixture.id: fixture for fixture in fixtures}
+        placed_dates = dict(known_days)
+        stage_dates = defaultdict(set)
+        for fixture_id, date in known_days.items():
+            fixture = fixtures.browse(fixture_id).exists()
+            if fixture:
+                stage_dates[fixture.stage_id.id].add(date)
 
         # Game days may be limited to some divisions ("division_ids"); an
         # empty or missing set means every division may play on that day.
@@ -27,7 +51,61 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
             allowed = allowed_divisions.get(day_id)
             return not allowed or fixture.division_id.id in allowed
 
+        def stage_allows(day_id, fixture):
+            windows = self._stage_day_ids(fixture)
+            return not windows or day_id in windows
+
+        def earliest(fixture):
+            """(date, strictly_after) the fixture must respect, or None."""
+            bound = None
+            for source_stage in self._source_stages(fixture):
+                dates = stage_dates.get(source_stage.id)
+                if not dates:
+                    continue
+                candidate = (max(dates), len(dates) > 1)
+                if bound is None or candidate > bound:
+                    bound = candidate
+            for source in (fixture.home_source_fixture_id, fixture.away_source_fixture_id):
+                date = placed_dates.get(source.id) if source else None
+                if date and (bound is None or (date, False) > bound):
+                    bound = (date, False)
+            return bound
+
+        def chronology_allows(day_id, bound):
+            if not bound:
+                return True
+            date, strictly_after = bound
+            day_date = date_by_day[day_id]
+            return day_date > date if strictly_after else day_date >= date
+
+        bracket_stage_ids = {
+            fixture.stage_id.id
+            for fixture in fixtures
+            if fixture.home_source_fixture_id or fixture.away_source_fixture_id
+        }
+        round_days = defaultdict(set)
+
+        def assign(fixture, day_id):
+            self._assign(fixture, day_id, assignments, team_days, remaining)
+            round_days[day_id].add((fixture.stage_id.id, fixture.round_number))
+            placed_dates[fixture.id] = date_by_day[day_id]
+            stage_dates[fixture.stage_id.id].add(date_by_day[day_id])
+
+        reserve, blocked = self._stage_reservations(fixtures)
+
+        def reservation_allows(day_id, fixture, division_days):
+            """Keep the last game days free for the stages that follow."""
+            stage_id = fixture.stage_id.id
+            if day_id in blocked.get(stage_id, ()):
+                return False
+            keep_free = min(reserve.get(stage_id, 0), max(len(division_days) - 1, 0))
+            if not keep_free:
+                return True
+            usable = [day["matchday_id"] for day in division_days[:-keep_free]]
+            return day_id in usable
+
         unplaced = defaultdict(int)
+        unplaced_stage = defaultdict(int)
 
         for fixture_id, matchday_id in sorted(pinned.items()):
             fixture = fixtures_by_id.get(fixture_id)
@@ -43,37 +121,80 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
             if remaining[matchday_id] <= 0:
                 errors.append("Pinned fixtures exceed a game day's capacity.")
                 continue
-            self._assign(fixture, matchday_id, assignments, team_days, remaining)
+            assign(fixture, matchday_id)
 
         unpinned = fixtures.filtered(lambda fixture: fixture.id not in pinned)
-        unpinned = unpinned.sorted(
-            key=lambda fixture: (fixture.round_number, fixture.sequence, fixture.id)
-        )
-        for fixture in unpinned:
-            team_ids = self._team_ids(fixture)
+        for fixture in self._ordered(unpinned):
+            keys = self._team_ids(fixture)
+            all_division_days = [
+                day for day in days if allows(day["matchday_id"], fixture)
+            ]
+            division_days = [
+                day for day in all_division_days if remaining[day["matchday_id"]] > 0
+            ]
+            bound = earliest(fixture)
             candidates = [
                 day
-                for day in days
-                if remaining[day["matchday_id"]] > 0 and allows(day["matchday_id"], fixture)
+                for day in division_days
+                if stage_allows(day["matchday_id"], fixture)
+                and chronology_allows(day["matchday_id"], bound)
+                and reservation_allows(day["matchday_id"], fixture, all_division_days)
             ]
+            if not candidates and not self._stage_day_ids(fixture):
+                # The reservation is a preference: rather use a reserved day
+                # than leave a match of an earlier stage unplanned.
+                candidates = [
+                    day
+                    for day in division_days
+                    if chronology_allows(day["matchday_id"], bound)
+                    and day["matchday_id"] not in blocked.get(fixture.stage_id.id, ())
+                ]
+            source_dates = {
+                placed_dates.get(source.id)
+                for source in (fixture.home_source_fixture_id, fixture.away_source_fixture_id)
+                if source
+            } - {None}
+            cohort = (fixture.stage_id.id, fixture.round_number)
+            in_bracket = fixture.stage_id.id in bracket_stage_ids
             candidates.sort(
                 key=lambda day: (
-                    len(team_ids & team_days[day["matchday_id"]]),
+                    len(keys & team_days[day["matchday_id"]]),
+                    # Prefer a later day for a follow-up round when one is free.
+                    day["date"] in source_dates,
+                    # Keep a knockout round on one day.
+                    in_bracket and cohort not in round_days[day["matchday_id"]],
                     -remaining[day["matchday_id"]],
                     day["date"],
                     day["matchday_id"],
                 )
             )
             if not candidates:
-                unplaced[fixture.division_id] += 1
+                if division_days:
+                    unplaced_stage[fixture.stage_id] += 1
+                else:
+                    unplaced[fixture.division_id] += 1
                 continue
-            self._assign(
-                fixture,
-                candidates[0]["matchday_id"],
-                assignments,
-                team_days,
-                remaining,
-            )
+            assign(fixture, candidates[0]["matchday_id"])
+        for stage, count in sorted(
+            unplaced_stage.items(), key=lambda item: (item[0].sequence, item[0].id)
+        ):
+            sources = ", ".join(stage._planning_source_stages().mapped("name"))
+            if self._stage_day_ids_for_stage(stage):
+                errors.append(
+                    "%s: %s match(es) do not fit on the game days chosen for this "
+                    "stage%s. Add game days to the stage or free capacity on them."
+                    % (
+                        stage.display_name,
+                        count,
+                        " after %s ends" % sources if sources else "",
+                    )
+                )
+            else:
+                errors.append(
+                    "%s: %s match(es) have no game day left after %s ends. Add game "
+                    "days at the end of the calendar or courts on the last days."
+                    % (stage.display_name, count, sources or "the previous round")
+                )
         for division, count in sorted(
             unplaced.items(), key=lambda item: (item[0].display_name or "", item[0].id)
         ):
@@ -99,6 +220,54 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
             "valid": not errors,
         }
 
+    def _stage_reservations(self, fixtures):
+        """Game days earlier stages leave free for the stages they feed.
+
+        A stage keeps as many of its division's last game days free as the
+        rounds of the stages that follow it (a split season with 5 rounds
+        after the regular season keeps the last 5 days free). Stages that
+        follow on chosen game days keep exactly those days free instead.
+        Returns ``(reserve_by_stage_id, blocked_day_ids_by_stage_id)``.
+        """
+        stages = {}
+        rounds = defaultdict(set)
+        for fixture in fixtures:
+            stages[fixture.stage_id.id] = fixture.stage_id
+            rounds[fixture.stage_id.id].add(fixture.round_number)
+        dependants = defaultdict(list)
+        for stage in stages.values():
+            for source in self._source_stages(stage_fixture_probe(stage)):
+                dependants[source.id].append(stage)
+        reserve, blocked = {}, defaultdict(set)
+
+        def needed(stage_id, trail=()):
+            if stage_id in reserve:
+                return reserve[stage_id]
+            if stage_id in trail:
+                return 0
+            value = 0
+            for target in dependants.get(stage_id, ()):
+                windows = self._stage_day_ids_for_stage(target)
+                if windows:
+                    blocked[stage_id] |= windows
+                    continue
+                value = max(
+                    value,
+                    len(rounds.get(target.id, ())) + needed(target.id, trail + (stage_id,)),
+                )
+            reserve[stage_id] = value
+            return value
+
+        for stage_id in list(stages):
+            needed(stage_id)
+        for stage_id, stage in stages.items():
+            # A stage limited to its own game days may use them all.
+            own = self._stage_day_ids_for_stage(stage)
+            if own:
+                reserve[stage_id] = 0
+                blocked[stage_id] -= own
+        return reserve, blocked
+
     def distribute(self, fixtures, capacities):
         """Compatibility wrapper for the original competition wizard."""
         proposal = self.propose(fixtures, capacities)
@@ -114,7 +283,44 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
         team_days[day_id].update(self._team_ids(fixture))
 
     def _team_ids(self, fixture):
+        """Participants, with stable tokens for not-yet-known teams.
+
+        Placeholder sides ("#1 Group A") count as participants so a stage
+        planned in advance is still spread over its game days by round.
+        """
+        planning_keys = getattr(fixture, "_planning_keys", None)
+        if planning_keys:
+            return planning_keys()
         return {fixture.home_team_id.id, fixture.away_team_id.id} - {False}
+
+    def _ordered(self, fixtures):
+        planning_sorted = getattr(fixtures, "_planning_sorted", None)
+        if planning_sorted:
+            return planning_sorted()
+        return fixtures.sorted(
+            key=lambda fixture: (fixture.round_number, fixture.sequence, fixture.id)
+        )
+
+    def _source_stages(self, fixture):
+        stage = fixture.stage_id
+        getter = getattr(stage, "_planning_source_stages", None)
+        return getter() if getter else stage.browse()
+
+    def _stage_day_ids_for_stage(self, stage):
+        return set(stage.matchday_ids.ids) if "matchday_ids" in stage._fields else set()
+
+    def _stage_day_ids(self, fixture):
+        return self._stage_day_ids_for_stage(fixture.stage_id)
+
+
+def stage_fixture_probe(stage):
+    """Minimal fixture stand-in to ask a stage for its source stages."""
+    return _StageProbe(stage)
+
+
+class _StageProbe:
+    def __init__(self, stage):
+        self.stage_id = stage
 
 
 class _DivisionProbe:

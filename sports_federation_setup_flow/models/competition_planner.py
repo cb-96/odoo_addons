@@ -214,7 +214,6 @@ class FederationCompetitionEditionPlanner(models.Model):
                 "edition_id": self.id,
                 "division_id": division.id,
                 "participant_set_id": participant_set.id,
-                "format_type": self.setup_default_format_type,
             }
         )
         return {
@@ -226,6 +225,15 @@ class FederationCompetitionEditionPlanner(models.Model):
             "views": [(False, "form")],
             "target": "new",
         }
+
+    def action_open_division_format(self, division_id):
+        """Format options of one division: groups, qualifiers, split, stages."""
+        self.ensure_one()
+        self.check_access("read")
+        division = self.tournament_ids.filtered(lambda item: item.id == int(division_id))
+        if not division:
+            raise ValidationError(_("Select a division from this competition."))
+        return self._action_open_format_selection(division)
 
     def action_open_planner_issue(self, issue_key):
         self.ensure_one()

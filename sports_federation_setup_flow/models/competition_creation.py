@@ -112,6 +112,8 @@ class FederationCreateCompetitionWizardJourney(models.TransientModel):
     )
     workflow_summary = fields.Text(compute="_compute_workflow_summary", readonly=True)
     default_venue_id = fields.Many2one("federation.venue", string="Default Venue")
+    # Kept for drafts and practice competitions; the format itself is chosen
+    # per division in the format step, once the teams are known.
     default_format_type = fields.Selection(
         [
             ("single_round_robin", "League"),
