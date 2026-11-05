@@ -69,7 +69,7 @@ class FamilySummary(models.AbstractModel):
                     'state': row.state, 'membership': _(membership_label(row.state)), 'note': row.review_note or '',
                     'licence': _('Active for this club/season/date') if valid else _('Request awaiting federation activation') if licence and licence.state == 'draft' else _('Missing, expired, cancelled or different club'),
                     'payment': payment, 'invoice_url': invoice_url,
-                    'eligibility': _('Action needed') if blockers else _('Not fully checked: choose the relevant roster and competition') if not lines else _('Current roster checks passed; match-day approval remains separate'),
+                    'eligibility': _('Action needed') if blockers else _('Action needed: choose the relevant roster and competition so eligibility can be checked') if not lines else _('Current roster checks passed; match-day approval remains separate'),
                     'blockers': list(dict.fromkeys(blockers)), 'can_licence': row.state == 'active' and row.role == 'player' and bool(player) and not licence,
                     'owner': _('Federation membership reviewer') if row.state == 'draft' else _('Member or guardian for requests; club/federation for sporting requirements'),
                     'changes': [{'kind': change.kind, 'state': change.state, 'note': change.decision_note or '',

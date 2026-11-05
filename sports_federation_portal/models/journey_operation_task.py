@@ -47,12 +47,12 @@ class OperationTaskJourneys(models.Model):
 
     journey_team_id = fields.Many2one("federation.team", index=True, readonly=True)
     journey_status = fields.Selection([
-        ("actionable", "Action needed"), ("waiting", "Waiting for federation"),
-        ("completed", "Completed"), ("unavailable", "Source unavailable"),
+        ("actionable", "Action needed"), ("waiting", "Waiting for review"),
+        ("completed", "Complete"), ("unavailable", "Source unavailable"),
     ], compute="_compute_journey_presentation")
     journey_owner = fields.Selection([
         ("club", "Club"), ("federation", "Federation"), ("none", "No action needed"),
-        ("unknown", "Not checked"),
+        ("unknown", "Owner not determined"),
     ], compute="_compute_journey_presentation")
 
     @api.model

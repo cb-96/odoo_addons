@@ -52,6 +52,22 @@
           <span class="ms-2 small"><t t-esc="state.data.readiness.setup_blocker_count"/> planning blocker(s) · <t t-esc="state.data.readiness.operational_action_count"/> operational action(s)</span>
         </section>
 
+        <section t-if="state.matchday and state.matchday.available and state.matchday.readiness" class="card mt-3" aria-label="Next game day readiness" data-planner-matchday-readiness="true">
+          <div class="card-body">
+            <h2 class="h5 mb-1">Can <t t-esc="state.matchday.readiness.matchday_name"/> run?
+              <span class="badge ms-2" t-att-class="{'text-bg-success': ['ready', 'complete'].includes(state.matchday.readiness.overall), 'text-bg-warning': ['action_needed'].includes(state.matchday.readiness.overall), 'text-bg-info': ['waiting_review'].includes(state.matchday.readiness.overall), 'text-bg-danger': state.matchday.readiness.overall === 'blocked', 'text-bg-secondary': state.matchday.readiness.overall === 'not_applicable'}" t-esc="state.matchday.readiness.overall_label"/>
+            </h2>
+            <p class="mb-2" t-esc="state.matchday.readiness.headline"/>
+            <ul class="list-unstyled mb-2">
+              <li t-foreach="state.matchday.readiness.components" t-as="component" t-key="component.key"><strong t-esc="component.label"/>: <span t-esc="component.status_label"/> <span class="text-muted">(<t t-esc="component.summary"/>)</span></li>
+            </ul>
+            <ol t-if="state.matchday.readiness.blockers.length" class="mb-0">
+              <li t-foreach="state.matchday.readiness.blockers.slice(0, 3)" t-as="blocker" t-key="blocker.key"><strong t-esc="blocker.problem"/> <t t-esc="blocker.action"/> <span class="small text-muted">Owner: <t t-esc="blocker.owner_label"/> · Deadline: <t t-esc="blocker.deadline_label"/></span></li>
+            </ol>
+          </div>
+        </section>
+        <p t-if="state.matchday and !state.matchday.available" class="small text-muted mt-3">Game-day readiness is unavailable to your role.</p>
+
         <details t-if="state.data.operations.roster_action_count || state.data.operations.lineup_action_count || state.data.operations.official_action_count || state.data.operations.result_action_count" class="sf-disclosure"><summary>Other work</summary><section class="card mt-3" aria-label="Operational tasks"><div class="card-body d-flex flex-wrap gap-2">
           <button t-if="state.data.operations.rosters_available &amp;&amp; state.data.operations.roster_action_count &gt; 0" class="btn btn-outline-primary" t-att-disabled="state.busy || state.loading || !!state.error || (state.data.operations.roster_action_count === 0)" t-on-click="() =&gt; this.openOperation('rosters')">Teams needing rosters: <t t-esc="state.data.operations.roster_action_count"/></button>
           <button t-if="state.data.operations.lineups_available &amp;&amp; state.data.operations.lineup_action_count &gt; 0" class="btn btn-outline-primary" t-att-disabled="state.busy || state.loading || !!state.error || (state.data.operations.lineup_action_count === 0)" t-on-click="() =&gt; this.openOperation('lineups')">Game days needing lineups: <t t-esc="state.data.operations.lineup_action_count"/></button>
@@ -64,7 +80,7 @@
                 <thead><tr><th>Division</th><th>Teams</th><th>Format</th><th>Status</th></tr></thead>
                 <tbody><tr t-foreach="state.data.divisions" t-as="division" t-key="division.id">
                   <td t-esc="division.name"/><td t-esc="division.team_count"/><td t-esc="division.format_name || division.format_status"/>
-                  <td><span t-att-class="division.ready ? 'badge text-bg-success' : 'badge text-bg-warning'" t-esc="division.ready ? 'Ready' : 'Needs action'"/></td>
+                  <td><span t-att-class="division.ready ? 'badge text-bg-success' : 'badge text-bg-warning'" t-esc="division.ready ? 'Ready' : 'Action needed'"/></td>
                 </tr></tbody>
               </table></div>
               <div t-else="" class="card-body text-center py-5"><h3 class="h5">No divisions yet</h3><button class="btn btn-outline-secondary" t-on-click="openBasics" t-att-disabled="state.busy || state.loading || !!state.error">Define competition divisions</button></div>

@@ -5,3 +5,4 @@ from . import test_setup_journey
 from . import test_competition_planner
 from . import test_practice_competition
 from . import test_division_scope
+from . import test_planner_matchday_readiness

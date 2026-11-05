@@ -13,7 +13,7 @@ game-day list and the line-up page always agree.
 """
 from datetime import datetime
 
-from odoo import _, api, fields, models
+from odoo import api, fields, models
 
 # Least advanced first; a game day shows its least advanced match sheet.
 STATE_RANK = {"draft": 1, "submitted": 2, "approved": 3, "locked": 4}
@@ -102,12 +102,10 @@ class FederationPortalGameday(models.AbstractModel):
 
     @api.model
     def state_labels(self):
+        words = self.env["federation.readiness.vocabulary"]
         return {
-            "not_started": _("Not started"),
-            "draft": _("Draft"),
-            "submitted": _("Submitted"),
-            "approved": _("Approved"),
-            "locked": _("Locked"),
+            state: words.label_for("lineup", state)
+            for state in ("not_started", "draft", "submitted", "approved", "locked")
         }
 
     @api.model

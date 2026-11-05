@@ -12,9 +12,9 @@ export class CompetitionPlanner extends Component {
         this.action = useService("action");
         this.notification = useService("notification");
         this.orm = useService("orm");
-        this.state = useState({loading: true, data: null, error: "", busy: false});
+        this.state = useState({loading: true, data: null, error: "", busy: false, matchday: null});
         this.editionId = Number(this.props.action.params?.edition_id);
-        onWillStart(() => this.load());
+        onWillStart(() => this.reload());
     }
 
     async load() {
@@ -38,13 +38,31 @@ export class CompetitionPlanner extends Component {
         }
     }
 
+    async reload() {
+        await this.load();
+        await this.loadMatchdayReadiness();
+    }
+
+    async loadMatchdayReadiness() {
+        // The game-day answer is secondary: a failure must not hide the planner.
+        try {
+            this.state.matchday = await this.orm.call(
+                "federation.competition.edition",
+                "get_planner_matchday_readiness",
+                [[this.editionId]]
+            );
+        } catch (error) {
+            this.state.matchday = null;
+        }
+    }
+
     async doPlannerAction(method, argument) {
         if (this.state.busy || this.state.error || this.state.loading) return;
         this.state.busy = true;
         try {
             const args = argument === undefined ? [[this.editionId]] : [[this.editionId], argument];
             const result = await this.orm.call("federation.competition.edition", method, args);
-            return await this.action.doAction(result, {onClose: () => this.load()});
+            return await this.action.doAction(result, {onClose: () => this.reload()});
         } catch (error) {
             this.notification.add(error?.data?.message || _t("Could not open this action. Try again."), {type: "danger"});
         } finally {

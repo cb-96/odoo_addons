@@ -283,7 +283,8 @@ class CourtCommands(models.AbstractModel):
         return {"queue": queue, "session": session.id, "publication": session.publication_digest,
                 "court": access.court_id.display_name, "matchday": access.matchday_id.display_name,
                 "venue": access.matchday_id.venue_id.display_name,
-                "timezone": access.matchday_id.event_timezone or "UTC"}
+                "timezone": access.matchday_id.event_timezone or "UTC",
+                "readiness": self.env["federation.matchday.readiness"].sudo().brief(access.matchday_id)}
 
     @api.model
     def open_match(self, matchday_id, court_id, match_id):

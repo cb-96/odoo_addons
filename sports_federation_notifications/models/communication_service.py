@@ -119,7 +119,7 @@ class ActionableCommunicationService(models.AbstractModel):
             return {'title': source.name, 'detail': source.blocking_reason or _('Review the deadline and next action.'),
                     'next_action': source.next_step or _('Open task'),
                     'owner': source.assigned_user_id.display_name or _('Responsible club') if source.audience == 'club' else _('Federation manager'),
-                    'url': source.journey_url, 'deadline': source.deadline, 'task_state': _('Completed') if (source.state == 'done' or source.journey_status == 'completed') else _('Waiting') if source.journey_status == 'waiting' else _('Action needed'), 'complete': (source.state == 'done' or source.journey_status == 'completed'), 'actionable': source.state != 'done' and source.journey_status == 'actionable'}
+                    'url': source.journey_url, 'deadline': source.deadline, 'task_state': _('Complete') if (source.state == 'done' or source.journey_status == 'completed') else _('Waiting for review') if source.journey_status == 'waiting' else _('Action needed'), 'complete': (source.state == 'done' or source.journey_status == 'completed'), 'actionable': source.state != 'done' and source.journey_status == 'actionable'}
         if not user.has_group('sports_federation_base.group_federation_manager'):
             raise AccessError(_('Delivery recovery is restricted to managers.'))
         return {'title': _('Failed delivery needs recovery'), 'detail': _('Inspect this delivery and correct the contact or mail configuration. Do not repeat the business action.'),

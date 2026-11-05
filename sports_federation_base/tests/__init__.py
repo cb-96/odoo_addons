@@ -8,3 +8,5 @@ from . import test_retention_evidence
 from . import test_operation_job
 
 from . import test_job_claiming
+
+from . import test_readiness_vocabulary

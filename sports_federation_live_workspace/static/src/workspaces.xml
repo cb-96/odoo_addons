@@ -3,6 +3,7 @@
 <t t-name="sports_federation_live_workspace.Court">
  <main class="sf-live-workspace sf-court-mobile" t-att-data-current-match="state.match ? state.match.match_id : null">
   <h1>Run this court</h1><p t-if="state.board">Venue: <t t-esc="state.board.venue"/> | Court: <t t-esc="state.board.court"/> | <t t-esc="state.board.timezone || 'UTC'"/></p>
+  <section t-if="state.board &amp;&amp; state.board.readiness" class="sf-card" aria-label="Game-day readiness" data-court-readiness="true"><p><strong>Game day: <t t-esc="state.board.readiness.overall_label"/></strong> <t t-esc="state.board.readiness.headline"/></p><ul t-if="state.board.readiness.blockers.length"><li t-foreach="state.board.readiness.blockers" t-as="blocker" t-key="blocker_index"><t t-esc="blocker.problem"/> <t t-esc="blocker.action"/></li></ul></section>
   <label>Assigned court <select class="form-select" t-on-change="chooseCourt" t-att-value="state.selected" t-att-disabled="state.courtLoading || state.busy">
    <option value="">Choose your court</option><t t-foreach="state.courts" t-as="court" t-key="court_index"><option t-att-value="court_index"><t t-esc="court.name"/></option></t>
   </select></label>
@@ -12,7 +13,7 @@
    <aside aria-label="Next-match queue" t-if="!state.match || state.queueOpen"><h2>Next matches</h2>
     <t t-foreach="state.board.queue" t-as="m" t-key="m.id"><div class="sf-card">
      <strong><t t-esc="eventTime(m.start)"/></strong><p><t t-esc="m.home"/> vs <t t-esc="m.away"/></p>
-     <p>Result: <t t-esc="m.result_state"/> | Officials: <t t-esc="m.coverage.state"/></p>
+     <p>Result: <t t-esc="m.result_state"/> | Officials: <t t-esc="m.coverage.readiness_label"/></p>
      <button class="btn btn-outline-primary" t-on-click="() =&gt; this.openMatch(m.id)" t-att-disabled="state.busy" type="button" t-att-data-match-id="m.id">Open match</button>
     </div></t>
    </aside>
@@ -20,10 +21,10 @@
     <button t-if="locked" type="button" class="btn btn-outline-primary mb-2" t-on-click="openResultReview" t-att-disabled="state.pending.length || state.dirty">Review or correct result</button><p class="small text-muted">Edit scores before submitting. After submission, request a correction; the official result cannot be overwritten here.</p><h2><t t-esc="state.match.home_team"/> vs <t t-esc="state.match.away_team"/></h2>
     <div class="sf-status" role="status" aria-live="polite" t-att-data-save-state="statusCode"><t t-esc="status"/></div>
     <button type="button" class="btn btn-outline-primary mb-2" t-on-click="refreshStatus" t-att-disabled="state.busy || !state.match">Check server result status</button><p t-if="state.match.review_required" class="alert alert-warning">Coordinator hold: disputed or abandoned evidence must be resolved before submission.</p><p t-if="state.match.closed" class="alert alert-info">Abandonment confirmed. No official score was created.</p><details class="sf-card"><summary>Lineups and officials</summary>
-     <p t-if="!state.match.lineups.length">Lineups not checked: no match sheets available. Contact the coordinator.</p>
+     <p t-if="!state.match.lineups.length">Line-ups: action needed. No match sheets are available; contact the coordinator.</p>
      <t t-foreach="state.match.lineups" t-as="sheet" t-key="sheet.id"><details><summary><t t-esc="sheet.name"/>: <t t-esc="sheet.state"/></summary><ul><t t-foreach="sheet.players" t-as="player" t-key="player_index"><li><t t-esc="player"/></li></t></ul></details></t>
      <t t-foreach="state.board.queue.filter(m =&gt; m.id === state.match.match_id)" t-as="current" t-key="current.id">
-      <p t-if="current.deviation &amp;&amp; current.operational_state !== 'as_published'" class="alert alert-warning" role="status"><strong><t t-esc="current.deviation.type"/></strong>: <t t-esc="current.deviation.reason"/></p><p>Official readiness: <t t-esc="current.coverage.state"/></p>
+      <p t-if="current.deviation &amp;&amp; current.operational_state !== 'as_published'" class="alert alert-warning" role="status"><strong><t t-esc="current.deviation.type"/></strong>: <t t-esc="current.deviation.reason"/></p><p>Officials: <t t-esc="current.coverage.readiness_label"/></p>
       <t t-foreach="current.officials" t-as="official" t-key="official_index"><p><t t-esc="official.role"/>: <t t-esc="official.name"/> | Accepted: <t t-esc="official.accepted"/> | Eligible: <t t-esc="official.eligible"/> | Present: <t t-esc="official.present"/></p></t>
      </t>
     </details>

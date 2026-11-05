@@ -20,7 +20,7 @@ def match_candidate(first, last, birthdate, candidate):
 
 def membership_label(state):
     return {'draft': 'Requested: federation review required', 'active': 'Active membership',
-            'cancelled': 'Cancelled membership'}.get(state, 'Not checked')
+            'cancelled': 'Cancelled membership'}.get(state, 'Action needed: membership state not recognised')
 
 
 def licence_valid(licence, today, club_id, season_id):

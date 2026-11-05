@@ -44,7 +44,10 @@ def participation_status(checks):
         return 'action'
     if 'waiting' in states:
         return 'waiting'
-    if not states or 'unknown' in states:
+    # A check that does not apply (for example line-ups before any game day is
+    # scheduled) neither blocks nor certifies; it is simply left out.
+    applicable = [state for state in states if state != 'not_applicable']
+    if not applicable or 'unknown' in applicable:
         return 'unknown'
     return 'complete'
 

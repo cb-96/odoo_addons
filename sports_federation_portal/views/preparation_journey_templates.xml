@@ -11,7 +11,7 @@
           <h2 class="h5"><t t-esc="row['registration'].team_id.display_name"/></h2>
           <p class="small text-muted"><t t-esc="row['registration'].team_id.club_id.display_name"/> · <t t-esc="row['registration'].season_id.display_name"/></p>
           <section data-journey-participation="1">
-            <p><strong t-esc="{'action':'Action needed','waiting':'Waiting for review','unknown':'Not fully checked','complete':'Current checks complete'}.get(row['participation_status'])"/></p>
+            <p><strong t-esc="request.env['federation.readiness.vocabulary'].label_for('journey', row['participation_status'])"/></p>
             <t t-set="check" t-value="row['next_check']"/>
             <div t-if="check"><h3 class="h6" t-esc="check['label']"/><p class="sf-task-blocker" t-esc="check['detail']"/><a t-att-href="check['url']" data-journey-open="1" class="btn btn-primary">Continue <t t-esc="check['label']"/></a></div>
             <p t-elif="row['participation_status'] == 'waiting'" class="text-muted">Your submission is waiting for review. No resubmission is needed.</p>
@@ -19,7 +19,7 @@
             <details class="sf-disclosure"><summary>Requirements and status</summary>
               <t t-foreach="row['participation_checks']" t-as="requirement">
                 <details class="sf-disclosure" t-att-open="requirement == row['next_check']">
-                  <summary><t t-esc="requirement['label']"/>: <t t-esc="{'action':'Action needed','waiting':'Waiting','unknown':'Not checked','complete':'Checked'}.get(requirement['state'])"/></summary>
+                  <summary><t t-esc="requirement['label']"/>: <t t-esc="request.env['federation.readiness.vocabulary'].label_for('journey', requirement['state'])"/></summary>
                   <p class="sf-task-blocker" t-esc="requirement['detail']"/><a t-att-href="requirement['url']" data-journey-open="1">Review requirement</a>
                 </details>
               </t>

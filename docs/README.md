@@ -46,6 +46,7 @@ roadmap or a standalone review snapshot for routine changes.
 
 - [Delivery roadmap](DELIVERY_ROADMAP.md): executable post-stabilization milestones and exit criteria.
 
+- [Readiness vocabulary and game-day readiness](READINESS_VOCABULARY.md): the six shared readiness words and the single "can this game day run?" service.
 - [Competition UI workflow](COMPETITION_UI_WORKFLOW.md)
 - [Release candidate roadmap](RELEASE_CANDIDATE_ROADMAP.md)
 - [Competition engine roadmap](COMPETITION_ENGINE_ROADMAP.md)

@@ -13,3 +13,4 @@ from . import competition_finish
 from . import competition_publish
 from . import matchday_automation
 from . import practice_competition
+from . import planner_matchday_readiness

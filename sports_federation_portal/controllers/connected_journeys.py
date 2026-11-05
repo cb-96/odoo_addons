@@ -261,11 +261,12 @@ class ConnectedPreparation(ClubPreparationJourney):
             gamedays = gameday.group_gamedays(
                 gameday.team_sheets(registration.team_id, registration.season_id, user=request.env.user))
             open_gamedays = [item for item in gamedays if item['needs_action']]
-            lineup_state = ('unknown' if not gamedays or not roster
+            lineup_state = ('not_applicable' if not gamedays
+                            else 'unknown' if not roster
                             else 'action' if open_gamedays
                             else 'waiting' if any(item['state'] == 'submitted' for item in gamedays) else 'complete')
             if not gamedays:
-                lineup_detail = _('No upcoming game days are scheduled yet.')
+                lineup_detail = _('No upcoming game days are scheduled yet. Line-ups open when a schedule is published.')
             elif not roster:
                 lineup_detail = _('%(count)s upcoming game day(s). Create the roster first, then choose the players for each game day.') % {'count': len(gamedays)}
             elif open_gamedays:

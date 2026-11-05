@@ -2,6 +2,7 @@ from datetime import timedelta
 import hashlib
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
+from odoo.addons.sports_federation_base import readiness_vocabulary as vocabulary
 from ..coverage_policy import project
 from .assignment import MANAGER
 
@@ -32,14 +33,21 @@ class Match(models.Model):
     coverage_response_deadline = fields.Datetime(compute="_compute_coverage")
     coverage_state = fields.Selection(
         [
-            ("unchecked", "Not checked"),
-            ("not_required", "Not required"),
-            ("uncovered", "Uncovered"),
-            ("needs_action", "Needs action"),
-            ("ready", "Accepted and eligible"),
+            ("unchecked", "Requirements unconfirmed"),
+            ("not_required", "No officials required"),
+            ("uncovered", "Positions open"),
+            ("needs_action", "Awaiting acceptance or eligibility"),
+            ("ready", "All officials accepted and eligible"),
         ],
         compute="_compute_coverage",
         search="_search_coverage_state",
+        string="Coverage detail",
+    )
+    coverage_readiness = fields.Selection(
+        vocabulary.SELECTION,
+        compute="_compute_coverage",
+        string="Officials",
+        help="Federation-wide readiness derived from the detailed coverage state.",
     )
     coverage_required = fields.Integer(compute="_compute_coverage")
     coverage_assigned = fields.Integer(compute="_compute_coverage")
@@ -216,6 +224,11 @@ class Match(models.Model):
         if not self.coverage_owner_id:
             blockers.append(_("Assign a coverage coordinator for escalation."))
         snapshot["blockers"] = "\n".join(blockers)
+        status = vocabulary.status_for("coverage", snapshot["state"])
+        snapshot["readiness"] = status
+        snapshot["readiness_label"] = self.env[
+            "federation.readiness.vocabulary"
+        ].label(status)
         return snapshot
 
     @api.depends(
@@ -250,6 +263,7 @@ class Match(models.Model):
         for m in self:
             snapshot = m._coverage_snapshot()
             m.coverage_state = snapshot["state"]
+            m.coverage_readiness = snapshot["readiness"]
             for key in (
                 "required",
                 "assigned",

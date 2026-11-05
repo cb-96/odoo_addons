@@ -84,8 +84,8 @@ class FederationMatch(models.Model):
 
     _PORTAL_RESULT_STATE_LABELS = {
         "draft": "Not sent",
-        "submitted": "Sent for check",
-        "verified": "Checked",
+        "submitted": "Waiting for review",
+        "verified": "Waiting for review",
         "approved": "Official",
         "contested": "Under review",
         "corrected": "Corrected - resend",
@@ -108,17 +108,10 @@ class FederationMatchSheet(models.Model):
     _name = "federation.match.sheet"
     _inherit = ["federation.match.sheet", "federation.portal.label.mixin"]
 
-    _PORTAL_MATCH_SHEET_STATE_LABELS = {
-        "draft": "Draft",
-        "submitted": "Submitted",
-        "approved": "Approved",
-        "rejected": "Needs update",
-    }
-
     def get_portal_state_label(self):
         self.ensure_one()
-        return self._PORTAL_MATCH_SHEET_STATE_LABELS.get(
-            self.state, self._portal_label_from_selection("state")
+        return self.env["federation.readiness.vocabulary"].label_for(
+            "lineup", self.state
         )
 
 
@@ -126,16 +119,10 @@ class FederationTeamRoster(models.Model):
     _name = "federation.team.roster"
     _inherit = ["federation.team.roster", "federation.portal.label.mixin"]
 
-    _PORTAL_ROSTER_STATUS_LABELS = {
-        "draft": "Draft",
-        "active": "Active",
-        "closed": "Closed",
-    }
-
     def get_portal_status_label(self):
         self.ensure_one()
-        return self._PORTAL_ROSTER_STATUS_LABELS.get(
-            self.status, self._portal_label_from_selection("status")
+        return self.env["federation.readiness.vocabulary"].label_for(
+            "roster", self.status
         )
 
 

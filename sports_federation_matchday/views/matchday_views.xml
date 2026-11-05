@@ -20,6 +20,10 @@
         <button name="action_close_matchday_operations" type="object" string="Close Match Day" class="btn-primary" invisible="state != 'open'"/>
       </xpath>
       <xpath expr="//group[1]" position="after">
+        <group string="Can this game day run?" name="game_day_readiness">
+          <field name="readiness_overall" widget="badge" readonly="1" decoration-success="readiness_overall in ('ready', 'complete')" decoration-warning="readiness_overall in ('action_needed', 'waiting_review')" decoration-danger="readiness_overall == 'blocked'"/>
+          <field name="readiness_summary" nolabel="1" colspan="2" readonly="1"/>
+        </group>
         <group string="Operational readiness">
           <field name="readiness_state" widget="badge" readonly="1"/>
           <field name="readiness_message" readonly="1"/>
