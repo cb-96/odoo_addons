@@ -254,3 +254,15 @@ release checks reject direct controller `sudo()` mutations.
 The match-day **Prepare Lineups** action opens one team/day wizard. It starts from the active roster or an existing declaration and writes through the existing match-sheet models. The declared roster, players, starter/substitute/captain roles, and jersey numbers are synchronized across every match for that team on the explicit published match day. Substitution timing stays match-specific.
 
 **Save & Submit Lineup** keeps all readiness and parental-consent checks. Streamlined competition policy executes the existing approval command automatically; Independent Review leaves the synchronized sheets submitted. Legacy tournaments without a competition edition retain explicit approval.
+
+## Rosters follow participants (19.0.1.12.0)
+
+A team that becomes a tournament participant gets its roster, and the roster is
+linked to the team's confirmed season registration. The portal finds a club's
+roster through that link, so a roster without it looked like "no roster yet" and
+the club was offered a second one. `federation.team.roster._pick_season_baseline`
+is the rule for which roster is "the" season roster of a team when none is linked
+to the registration (not closed, then without competition scope, then active,
+then newest); the portal's registration lookup uses it. Upgrading prepares the
+roster of every participant in a running season and links existing rosters to
+their registration.

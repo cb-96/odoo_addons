@@ -197,3 +197,7 @@ standings. Overview pages show the next published matches and latest approved
 results. Match-day changes use spectator-facing labels rather than operational
 state values. Existing team profile, schedule, and results pages remain the
 team-first path for supporters.
+
+The tournament schedule calendar export (ICS) gives each match the length of its
+slot (one hour only when it has none), and its location now includes the venue
+and playing area that publication fills in.

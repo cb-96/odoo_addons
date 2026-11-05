@@ -192,3 +192,11 @@ upgrade to create the new fields and updated views.
 Finance events now store an inferred `season_id`, and the module adds the new
 `federation.season.budget` planning model and views. Run
 `-u sports_federation_finance_bridge` after upgrade.
+
+### Automatic venue booking charge
+
+A scheduled match with a venue gets an automatic "venue_booking" charge only when
+the federation has configured a `venue_booking` fee type with an amount. Without
+one nothing is created: the fee type is no longer created implicitly, and no
+zero-value charge appears for every published match. Manual
+"Create venue finance event" is unchanged.

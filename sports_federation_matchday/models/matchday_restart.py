@@ -174,6 +174,12 @@ class FederationMatchdayRestart(models.Model):
                 "operational_slot_id": False,
             }
         )
+        # Without a publication these matches are no longer scheduled in a slot.
+        unscheduled = matches.filtered(lambda match: match.state == "scheduled")
+        if unscheduled:
+            unscheduled.write({"state": "draft"})
+        if "playing_area_id" in matches._fields:
+            matches.filtered("playing_area_id").write({"playing_area_id": False})
         self.env["federation.matchday.deviation"].sudo().with_context(
             **{
                 MATCHDAY_DESTRUCTIVE_DELETE_CONTEXT_KEY: MATCHDAY_DESTRUCTIVE_DELETE_TOKEN

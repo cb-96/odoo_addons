@@ -221,3 +221,20 @@ game-day list and the line-up page always agree.
 
 Upgrade 19.0.7.14.0 disables obsolete inherited game-day and line-up views
 before their replacement pages are loaded. It changes no roster or match data.
+
+## Task deadlines and the season roster
+
+Work that depends on a team's roster carries the date it becomes blocking as its
+deadline: the roster-readiness, missing-roster and parental-consent tasks use the
+roster deadline (seven days before the team's first match in the season, or the
+tournament start while no match is scheduled, as the match roster-deadline rule
+computes it), the game-day line-up task is due at the first kick-off of the game
+day, and competition-entry tasks when their registration window closes. The
+work inbox sorts by it, overdue work is marked, and the due-soon reminder covers
+it. `federation.operation.task._prefetch_roster_deadlines` resolves all rosters
+of a refresh with a fixed number of queries.
+
+The portal's primary-roster lookup falls back to the team's season baseline
+roster (`federation.team.roster._pick_season_baseline`) when no roster is linked
+to the registration, so a roster created for a competition is found and adopted
+instead of a second roster being offered.

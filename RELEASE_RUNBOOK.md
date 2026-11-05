@@ -603,6 +603,50 @@ has release-review evidence.
 **Rollback**: Revert the controller change and redeploy the prior application
 revision. No database restore or data backfill is required.
 
+### Registration, publication and club-duty automation
+
+**DB migrations**: three data migrations, all idempotent and logged.
+
+| Module | Version | What it does |
+|---|---|---|
+| `sports_federation_registration` | 19.0.1.4.0 | Creates the missing confirmed participants of finalised team lists (one savepoint per set; ineligible teams are logged and skipped). |
+| `sports_federation_rosters` | 19.0.1.12.0 | Prepares the roster of every participant in a running season and links existing rosters to the team's confirmed registration (one savepoint per participant). |
+| `sports_federation_schedule_approval` | 19.0.2.6.0 | Sets playing area and venue from the published slot and moves published `draft` matches to `scheduled` (set-based SQL; no constraints re-run, no finance events created). |
+
+Run the registration migration before the rosters one; the module order of an
+upgrade already does this, and the rosters migration also covers participants
+created before it.
+
+**Behaviour changes**:
+
+- Finalising a team list creates participants; participants create rosters.
+- Publishing schedules matches, copies the slot's venue and playing area and, for
+  rule sets with **Referees required per match** above 0 and **Ask clubs for
+  officials on publication** on (default), creates the open club duties.
+  Existing published schedules are not given duties retroactively; run
+  **Plan Match-Day Officials** for them if wanted.
+- The automatic venue-booking charge needs a configured `venue_booking` fee type
+  with an amount; otherwise no charge and no implicit fee type.
+- Roster, missing-roster, parental-consent, line-up and entry tasks now carry
+  deadlines, so they sort, show as overdue and are covered by the due-soon reminder.
+
+**Dry-run evidence**: `python ci/check_migration_review.py --files
+sports_federation_rosters/migrations/19.0.1.12.0/post-migrate.py
+sports_federation_registration/migrations/19.0.1.4.0/post-migrate.py
+sports_federation_schedule_approval/migrations/19.0.2.6.0/post-migrate.py
+RELEASE_RUNBOOK.md` exits with code 0. The Odoo database upgrade, ORM and HTTP
+tests were not executed in the authoring environment; run the tagged tests
+(`sf_participant_rosters`, `sf_task_deadlines`, `sf_auto_club_duties`,
+`sf_publication`) and the migration rehearsal before promotion.
+
+**Rollback**: restore the paired database and filestore taken before the upgrade
+and deploy the previous code. Participants, rosters, duties and match states
+created by the migrations or by publication are ordinary records; if only the
+data must be undone, withdraw or delete the participants created for the
+affected division, close the draft rosters, and set `state = 'draft'` and clear
+`playing_area_id` for matches whose publication is removed. No schema change is
+made, so no index or column needs dropping.
+
 ## Release train convention
 
 This runbook and `ROADMAP.md` are the two authoritative release-train

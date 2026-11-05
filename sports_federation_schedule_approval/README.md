@@ -75,3 +75,15 @@ publication handoff use `federation.workflow.transition`. Review decision fields
 remain protected by their private writer tokens. The shared service owns state,
 reason, revision, separation-of-duty, command-result, and audit mechanics while
 `federation.schedule.approval.commands` retains schedule-specific validation.
+
+## Published matches know their slot (19.0.2.6.0)
+
+Publishing links a match to its slot and now also schedules it (draft matches
+become scheduled) and copies the slot's playing area and venue to the match.
+Matches built from fixtures have no round, so the round's venue defaults never
+applied and venue-dependent features (finance, exports, the public schedule
+location) could not see published matches. An operational move to another slot
+updates the playing area and venue as well; deleting a match day's publication
+history returns its scheduled matches to draft. Upgrading applies the same to
+matches that are already published, as a data update that does not re-run match
+constraints or create finance events.

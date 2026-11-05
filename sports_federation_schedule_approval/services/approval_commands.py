@@ -50,12 +50,35 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             self.env["federation.fixture.materializer"].sudo().materialize(missing)
 
     @api.model
+    def _slot_location_values(self, match, slot):
+        """Venue and playing area of the slot a match is played in.
+
+        The venue and playing area used to come from the match's round. Matches
+        built from fixtures have no round, so the slot (a time on one playing
+        area of the match-day venue) is the only place the location lives; it
+        is copied to the match so finance, exports and the public schedule see it.
+        """
+        values = {}
+        court = slot.court_id
+        if "playing_area_id" in match._fields and court:
+            values["playing_area_id"] = court.id
+        if "venue_id" in match._fields:
+            venue = court.venue_id or slot.matchday_id.venue_id
+            if venue:
+                values["venue_id"] = venue.id
+        return values
+
+    @api.model
     def _link_match_to_publication(self, match, assignment, publication):
         match_values = {
             "published_slot_id": assignment.slot_id.id,
             "schedule_publication_id": publication.id,
             "date_scheduled": assignment.slot_id.start_datetime,
         }
+        match_values.update(self._slot_location_values(match, assignment.slot_id))
+        if match.state == "draft":
+            # A published match is scheduled; only draft matches move forward.
+            match_values["state"] = "scheduled"
         if "operational_slot_id" in match._fields:
             match_values.update(
                 {

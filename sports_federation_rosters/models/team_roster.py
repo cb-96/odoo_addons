@@ -554,6 +554,25 @@ class FederationTeamRoster(models.Model):
             return self.season_id.date_start
         return today
 
+    @api.model
+    def _pick_season_baseline(self, rosters):
+        """Pick the roster a season registration is built around.
+
+        Teams can hold several rosters for one season (a season roster plus
+        competition-specific ones). Registration, the portal and the line-up
+        pages must all agree on which one is "the" roster, otherwise a club
+        edits one roster while its line-ups use another. Preference: not
+        closed, then without competition scope, then active, then newest.
+        """
+        return rosters.sorted(
+            key=lambda roster: (
+                roster.status == "closed",
+                bool(roster.competition_id),
+                roster.status != "active",
+                -roster.id,
+            )
+        )[:1]
+
     def _get_required_player_bounds(self):
         """Return required player bounds."""
         self.ensure_one()

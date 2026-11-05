@@ -142,6 +142,11 @@ class OperationTaskJourneys(models.Model):
         roster_model = self.env["federation.team.roster"]
         registrations = roster_model._portal_get_confirmed_registrations(user=user)
         specs = []
+        deadline_cache = {}
+        self._prefetch_roster_deadlines(
+            deadline_cache,
+            [(reg.team_id.id, reg.season_id.id, 0) for reg in registrations],
+        )
         for registration in registrations:
             roster = roster_model._portal_get_primary_roster_for_registration(registration, user=user)
             if not roster:
@@ -149,7 +154,9 @@ class OperationTaskJourneys(models.Model):
                     registration, "roster_readiness", "club",
                     _("Create roster: %(team)s", team=registration.team_id.display_name),
                     _("This confirmed registration has no roster."),
-                    _("Create the roster, add eligible players and activate it.")))
+                    _("Create the roster, add eligible players and activate it."),
+                    deadline=self._roster_deadline(
+                        registration.team_id, registration.season_id, None, deadline_cache)))
         # Narrow cleanup: do not close other sources or another club's valid task.
         scope = self._portal_get_domain(user) + [
             ("source_model", "=", "federation.season.registration"),

@@ -251,8 +251,10 @@ class FederationTeamRoster(models.Model):
         """Reuse an existing portal roster before creating a new season baseline.
 
         The portal first looks for a roster already linked to the confirmed
-        registration, then falls back to the latest generic roster for the same
-        team and season.
+        registration, then falls back to the team's season baseline roster
+        (see ``_pick_season_baseline``), so a roster created for a competition
+        rather than for the season is still found and the club is never offered
+        a second roster for the same season.
         """
         user = user or self.env.user
         season_registration = self._portal_assert_registration_access(
@@ -270,18 +272,17 @@ class FederationTeamRoster(models.Model):
         )
         if roster:
             return roster
-        return self.env["federation.portal.privilege"].portal_search(
+        season_rosters = self.env["federation.portal.privilege"].portal_search(
             self.env["federation.team.roster"],
             roster_scope_domain
             + [
                 ("team_id", "=", season_registration.team_id.id),
                 ("season_id", "=", season_registration.season_id.id),
-                ("competition_id", "=", False),
             ],
             user=user,
             order="id desc",
-            limit=1,
         )
+        return self._pick_season_baseline(season_rosters)
 
     @api.model
     def _portal_create_roster_for_registration(self, season_registration, user=None):

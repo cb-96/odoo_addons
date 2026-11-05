@@ -1,5 +1,9 @@
+import logging
+
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+
+_logger = logging.getLogger(__name__)
 
 
 class FederationRegistrationWindow(models.Model):
@@ -90,10 +94,77 @@ class FederationRegistrationWindow(models.Model):
             ]
         )
         self.write({"state": "finalized", "participant_set_id": pset.id})
+        self._sync_tournament_participants(pset)
         self.env["federation.competition.event"].emit(
             pset, "participant_set_finalized", {"team_count": len(approved_entries)}
         )
         return pset
+
+    def _sync_tournament_participants(self, participant_set, skip_ineligible=False):
+        """Keep the division's participant records in line with its team list.
+
+        Finalising registration used to leave only a participant set behind;
+        ``federation.tournament.participant`` rows appeared only when a ranked
+        stage was built. Divisions without such a stage (knockout formats) had
+        no participants at all, although the public tournament page, the
+        "tournament published" notification, the roster hooks, the standings
+        coverage and the planning and KPI reports all read them. Teams in the
+        finalised list now become confirmed participants (their seed is kept),
+        and teams taken out by a later selection are withdrawn. Repeating the
+        call changes nothing. ``skip_ineligible`` (used when upgrading existing
+        data) logs and skips a team that fails the division's eligibility check
+        instead of stopping the whole list.
+        """
+        self.ensure_one()
+        division = participant_set.division_id.sudo()
+        Participant = self.env["federation.tournament.participant"].sudo()
+        existing = {
+            participant.team_id.id: participant
+            for participant in Participant.search([("tournament_id", "=", division.id)])
+        }
+        wanted = {line.team_id.id: line for line in participant_set.line_ids}
+        for team_id, line in wanted.items():
+            participant = existing.get(team_id)
+            values = {"state": "confirmed"}
+            if line.seed:
+                values["seed"] = line.seed
+            if participant:
+                changes = {
+                    name: value
+                    for name, value in values.items()
+                    if participant[name] != value
+                }
+                if changes:
+                    participant.write(changes)
+            elif skip_ineligible:
+                try:
+                    with self.env.cr.savepoint():
+                        Participant.create(
+                            {"tournament_id": division.id, "team_id": team_id, **values}
+                        )
+                except ValidationError as error:
+                    _logger.warning(
+                        "No participant created for team %s in division %s: %s",
+                        team_id,
+                        division.id,
+                        error,
+                    )
+            else:
+                Participant.create(
+                    {"tournament_id": division.id, "team_id": team_id, **values}
+                )
+        earlier_sets = self.env["federation.participant.set"].sudo().search(
+            [
+                ("division_id", "=", division.id),
+                ("id", "!=", participant_set.id),
+                ("state", "=", "superseded"),
+            ]
+        )
+        removed = set(earlier_sets.mapped("line_ids.team_id").ids) - set(wanted)
+        for team_id in removed:
+            participant = existing.get(team_id)
+            if participant and participant.state != "withdrawn":
+                participant.write({"state": "withdrawn"})
 
     def materialize_direct_team_selection(self, teams):
         """Synchronize a direct selection into governed registration records.

@@ -269,10 +269,15 @@ class FederationMatchdayCommands(models.AbstractModel):
                 raise ValidationError(
                     _("The selected operational slot is already occupied.")
                 )
+            location_values = self.env[
+                "federation.schedule.approval.commands"
+            ]._slot_location_values(match, new_slot)
             values = {
                 "operational_slot_id": new_slot.id,
                 "operational_status": "moved",
                 "date_scheduled": new_slot.start_datetime,
+                # The match plays on the new slot's playing area.
+                **location_values,
             }
         elif deviation_type == "delay":
             minutes = int(delay_minutes or 0)

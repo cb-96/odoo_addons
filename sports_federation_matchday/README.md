@@ -62,3 +62,6 @@ remains immutable and deviations alter operational fields only.
 
 Transition failures roll back sessions, court statuses, operational match
 changes, incidents, and audit rows as one unit.
+
+Operational moves keep the match's playing area and venue in step with its new
+slot.

@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
@@ -18,6 +18,121 @@ class FederationOperationTaskExtension(models.Model):
             .ids
         )
 
+
+    ROSTER_DEADLINE_DAYS = 7
+
+    @api.model
+    def _prefetch_roster_deadlines(self, cache, keys):
+        """Fill ``cache`` with the roster deadline of each (team, season, competition).
+
+        The deadline is the date from which matches of the team can no longer be
+        scheduled or finished without an active, ready roster: seven days before
+        the team's first match in the season (or the tournament start when no
+        match is scheduled yet), exactly as the match roster-deadline rule
+        computes it. Tasks that depend on the roster carry it as their deadline,
+        so clubs see it, the work inbox sorts by it and the due-soon reminder
+        covers it. A key is ``(team_id, season_id, competition_id or 0)``; its
+        value is ``False`` when the team has no tournament in that season yet.
+        All keys are resolved with a fixed number of queries because the work
+        inbox is refreshed on every page load.
+        """
+        keys = {key for key in keys if key[0] and key[1]} - set(cache)
+        if not keys:
+            return cache
+        team_ids = {key[0] for key in keys}
+        season_ids = {key[1] for key in keys}
+        tournaments = self.env["federation.tournament"].sudo().search(
+            [
+                "|",
+                ("season_id", "in", list(season_ids)),
+                "&",
+                ("season_id", "=", False),
+                ("edition_id.season_id", "in", list(season_ids)),
+            ]
+        )
+        season_of = {
+            tournament.id: (tournament.season_id or tournament.edition_id.season_id).id
+            for tournament in tournaments
+        }
+        # Teams take part in a tournament through a participant record or a match.
+        involved = set()
+        for participant in (
+            self.env["federation.tournament.participant"]
+            .sudo()
+            .search(
+                [
+                    ("team_id", "in", list(team_ids)),
+                    ("tournament_id", "in", tournaments.ids),
+                    ("state", "!=", "withdrawn"),
+                ]
+            )
+        ):
+            involved.add((participant.team_id.id, participant.tournament_id.id))
+        first_match = {}
+        matches = (
+            self.env["federation.match"]
+            .sudo()
+            .search(
+                [
+                    ("tournament_id", "in", tournaments.ids),
+                    ("state", "!=", "cancelled"),
+                    "|",
+                    ("home_team_id", "in", list(team_ids)),
+                    ("away_team_id", "in", list(team_ids)),
+                ],
+                order="date_scheduled asc, id asc",
+            )
+        )
+        for match in matches:
+            for team in match.home_team_id | match.away_team_id:
+                if team.id not in team_ids:
+                    continue
+                involved.add((team.id, match.tournament_id.id))
+                if match.date_scheduled:
+                    first_match.setdefault(
+                        (team.id, match.tournament_id.id),
+                        fields.Datetime.to_datetime(match.date_scheduled).date(),
+                    )
+        by_team = {}
+        for team_id, tournament_id in involved:
+            by_team.setdefault(team_id, []).append(tournaments.browse(tournament_id))
+        for team_id, season_id, competition_id in keys:
+            days = []
+            for tournament in by_team.get(team_id, []):
+                if season_of.get(tournament.id) != season_id:
+                    continue
+                if competition_id and tournament.competition_id.id != competition_id:
+                    continue
+                day = first_match.get((team_id, tournament.id)) or tournament.date_start
+                if day:
+                    days.append(day)
+            cache[(team_id, season_id, competition_id)] = (
+                datetime.combine(
+                    min(days) - timedelta(days=self.ROSTER_DEADLINE_DAYS), time.min
+                )
+                if days
+                else False
+            )
+        return cache
+
+    @api.model
+    def _roster_deadline(self, team, season, competition=None, cache=None):
+        """Return the roster deadline of one team in one season (see above)."""
+        if not team or not season:
+            return False
+        key = (team.id, season.id, competition.id if competition else 0)
+        if cache is None:
+            cache = {}
+        if key not in cache:
+            self._prefetch_roster_deadlines(cache, [key])
+        return cache[key]
+
+    @staticmethod
+    def _roster_deadline_keys(rosters):
+        return [
+            (roster.team_id.id, roster.season_id.id, roster.competition_id.id or 0)
+            for roster in rosters
+        ]
 
     @api.model
     def _task_spec(
@@ -146,6 +261,7 @@ class FederationOperationTaskExtension(models.Model):
                         else _("Correct and submit competition entry")
                     ),
                     priority="1" if entry.state == "rejected" else "0",
+                    deadline=entry.window_id.date_close or False,
                 )
             )
 
@@ -156,6 +272,10 @@ class FederationOperationTaskExtension(models.Model):
                 ([] if is_manager else [("club_id", "in", club_ids)])
                 + [("status", "!=", "closed"), ("ready_for_activation", "=", False)]
             )
+        )
+        deadline_cache = {}
+        self._prefetch_roster_deadlines(
+            deadline_cache, self._roster_deadline_keys(rosters)
         )
         for roster in rosters:
             specs.append(
@@ -168,6 +288,12 @@ class FederationOperationTaskExtension(models.Model):
                     roster.readiness_feedback
                     or _("The roster is not ready for activation."),
                     _("Complete roster readiness"),
+                    deadline=self._roster_deadline(
+                        roster.team_id,
+                        roster.season_id,
+                        roster.competition_id,
+                        deadline_cache,
+                    ),
                 )
             )
 
@@ -189,6 +315,9 @@ class FederationOperationTaskExtension(models.Model):
                 line.roster_id._get_reference_date()
             )
         )
+        self._prefetch_roster_deadlines(
+            deadline_cache, self._roster_deadline_keys(roster_lines.mapped("roster_id"))
+        )
         for line in roster_lines:
             specs.append(
                 self._task_spec(
@@ -202,6 +331,12 @@ class FederationOperationTaskExtension(models.Model):
                     ),
                     _("Upload and verify parental approval"),
                     priority="2",
+                    deadline=self._roster_deadline(
+                        line.roster_id.team_id,
+                        line.roster_id.season_id,
+                        line.roster_id.competition_id,
+                        deadline_cache,
+                    ),
                 )
             )
 
@@ -245,6 +380,8 @@ class FederationOperationTaskExtension(models.Model):
                 status,
                 _("Prepare game-day lineup"),
                 priority="1",
+                # The line-up is due when the game day starts.
+                deadline=sheet.match_kickoff or False,
             )
             spec["source_key"] = "gameday-lineup:%s:%s" % (team_id, repr(scope))
             specs.append(spec)

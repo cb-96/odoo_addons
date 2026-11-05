@@ -395,6 +395,57 @@ class TestRosterPortalAccess(TransactionCase):
         self.assertEqual(roster.season_registration_id, registration_c)
         self.assertEqual(roster.create_uid, self.user_a)
 
+    def test_portal_finds_a_competition_roster_instead_of_offering_a_second_one(self):
+        """A roster made for a competition is the season roster of its team.
+
+        Rosters created when a team became a participant carry a competition and
+        were not found by the registration lookup, so the club was offered a
+        second, empty roster for the same season.
+        """
+        team = self.env["federation.team"].create(
+            {
+                "name": "Portal Competition Roster Team",
+                "club_id": self.club_a.id,
+                "code": "PCRT",
+            }
+        )
+        registration = self.env["federation.season.registration"].create(
+            {
+                "season_id": self.season.id,
+                "team_id": team.id,
+                "user_id": self.user_a.id,
+            }
+        )
+        registration.action_confirm()
+        competition = self.env["federation.competition"].create(
+            {"name": "Portal Competition Roster League", "code": "PCRL"}
+        )
+        competition_roster = self.env["federation.team.roster"].create(
+            {
+                "team_id": team.id,
+                "season_id": self.season.id,
+                "competition_id": competition.id,
+            }
+        )
+        Roster = self.env["federation.team.roster"]
+
+        found = Roster._portal_get_primary_roster_for_registration(
+            registration, user=self.user_a
+        )
+        reused = Roster._portal_create_roster_for_registration(
+            registration, user=self.user_a
+        )
+
+        self.assertEqual(found, competition_roster)
+        self.assertEqual(reused, competition_roster)
+        self.assertEqual(competition_roster.season_registration_id, registration)
+        self.assertEqual(
+            Roster.search_count(
+                [("team_id", "=", team.id), ("season_id", "=", self.season.id)]
+            ),
+            1,
+        )
+
     def test_team_scoped_coach_reuses_primary_roster_only_for_assigned_team(self):
         """Team-scoped portal helpers must stay pinned to the assigned team."""
         roster = self.env[

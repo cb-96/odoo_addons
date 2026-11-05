@@ -52,3 +52,16 @@ Federation managers can open this picker from the Competition Planner without
 receiving general registration-window access. The picker reads only the window
 and existing team selection for its validated edition and division; applying
 changes still runs through the registration command's role check.
+
+## Participants follow the finalised team list (19.0.1.4.0)
+
+Finalising a division's team list (registration desk or direct selection) now
+creates a confirmed `federation.tournament.participant` for every team in the
+list, with its seed, and withdraws teams that an earlier selection contained and
+a later one removed. Before, only the participant set existed unless a ranked
+stage was built, so divisions with a knockout format had no participants: the
+public tournament page, the "tournament published" notification, the roster
+hooks and the standings, planning and KPI reports found nobody. Repeating the
+selection changes nothing. Upgrading creates the missing participants of
+finalised lists; a team that fails the division's eligibility check is logged and
+skipped.

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_federation_rule_set_form_inherit_officiating" model="ir.ui.view">
+        <field name="name">federation.rule.set.form.inherit.officiating</field>
+        <field name="model">federation.rule.set</field>
+        <field name="inherit_id" ref="sports_federation_rules.view_federation_rule_set_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='referee_required_count']" position="after">
+                <field name="club_duties_on_publication"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

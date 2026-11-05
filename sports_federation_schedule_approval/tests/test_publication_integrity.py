@@ -295,6 +295,39 @@ class TestPhase511Integrity(TransactionCase):
         self.assertFalse(self.days[0].current_publication_id)
         self.assertEqual(review.state, "pending")
 
+    def test_publication_schedules_the_match_in_its_slot(self):
+        """A published match is scheduled and knows its venue and playing area.
+
+        Matches built from fixtures have no round, so nothing else ever filled
+        in the venue; finance, exports and the public schedule read it from the
+        match.
+        """
+        schedule, review = self._valid_schedule_review(self.days[0], "slot-location")
+        self.env["federation.competition.role.assignment"].sudo().create(
+            {
+                "edition_id": self.edition.id,
+                "role": "schedule_approver",
+                "user_id": self.env.user.id,
+            }
+        )
+        review._write_decision(
+            {"state": "approved", "reviewer_id": self.env.user.id}
+        )
+
+        publication = self.env["federation.schedule.approval.commands"].publish(
+            schedule.id
+        )
+
+        slot = schedule.assignment_ids.slot_id
+        match = self.env["federation.match"].search(
+            [("schedule_publication_id", "=", publication.id)]
+        )
+        self.assertEqual(len(match), 1)
+        self.assertEqual(match.state, "scheduled")
+        self.assertEqual(match.playing_area_id, slot.court_id)
+        self.assertEqual(match.venue_id, self.venue)
+        self.assertEqual(match.date_scheduled, slot.start_datetime)
+
     def test_review_decision_fields_reject_direct_writes(self):
         schedule, review = self._schedule_review(self.days[0], "guard")
         with self.assertRaises(ValidationError):
