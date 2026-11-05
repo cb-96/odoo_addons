@@ -367,12 +367,13 @@ Before upgrading a database that previously installed the legacy engine:
 1. Take the database and filestore backups described above.
 2. Run the upgrade script with `--dry-run` and confirm that the resolved module
    list contains the chain and does not contain the removed addon.
-3. Separately inspect the target database's module state for
-   `sports_federation_competition_engine`; absence from the dry-run list does
-   not uninstall a module that remains registered in the database. If its
-   state is not `uninstalled`, stop for the reviewed legacy-data migration.
-   Do not force its state with SQL or uninstall it without reviewing the
-   module-owned operational records.
+3. Inspect the target database's state for
+   `sports_federation_competition_engine`; absence from the dry-run module list
+   does not uninstall a module that remains registered in the database. The
+   upgrade helper reports this state during dry runs and refuses a real upgrade
+   unless it is `uninstalled`. If it is not, stop for the reviewed legacy-data
+   migration. Do not force its state with SQL or uninstall it without reviewing
+   the module-owned operational records.
 4. Run the upgrade in a disposable restore of the backup first, then verify
    registration, format freeze, calendar capacity, scheduling, approval
    publication, and match-day operations. Review Odoo's upgrade output for
@@ -448,8 +449,11 @@ bash addons/ci/restore_backup_drill.sh --backup-dir 2026-04-15_191410 --target-d
 
 ## Production Upgrade
 
-Run the upgrade and let the script restart the live Odoo service afterward so
-Python changes are loaded by the running web container:
+Run the upgrade during a maintenance window. The script backs up the database
+and filestore, stops the live Odoo service so requests cannot hold locks needed
+by schema updates, runs the upgrade in a one-off container, then starts the
+service with the updated code. If the upgrade fails, it attempts to restore the
+service automatically:
 
 ```bash
 ./scripts/upgrade_sports_federation.sh --db odoo
@@ -458,11 +462,16 @@ Python changes are loaded by the running web container:
 For a non-interactive upgrade that excludes demo data, use `--yes`. To include
 the demo addon non-interactively, add `--install-demo`.
 
-The script installs modules that are missing or uninstalled, upgrades modules
-that are already installed, and restarts the Odoo service. It runs:
+The script installs modules that are missing or uninstalled and upgrades
+modules that are already installed. The upgrade command runs as a one-off
+container while the live Odoo service is stopped, then Compose starts the live
+service again:
 
-- `odoo -c /etc/odoo/odoo.conf -d <db> -i <install_module_csv> -u <upgrade_module_csv> --stop-after-init`
-- `docker compose restart odoo`
+- `docker compose run --rm --no-deps odoo odoo -c /etc/odoo/odoo.conf -d <db> -i <install_module_csv> -u <upgrade_module_csv> --stop-after-init`
+- `docker compose up -d odoo`
+
+`--skip-restart` leaves the service stopped after a successful upgrade; on a
+failed upgrade the script still attempts to restore service availability.
 
 The demo addon is excluded by default. Interactive runs ask whether
 `sports_federation_demo` should be installed. Use `--install-demo` when that

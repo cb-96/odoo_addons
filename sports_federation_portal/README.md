@@ -218,3 +218,6 @@ team, season and competition; the choice is skipped when only one roster fits.
 `federation.portal.gameday` is the single place that groups match sheets into
 game days and decides what is upcoming or earlier, so the roster page, the
 game-day list and the line-up page always agree.
+
+Upgrade 19.0.7.14.0 disables obsolete inherited game-day and line-up views
+before their replacement pages are loaded. It changes no roster or match data.
