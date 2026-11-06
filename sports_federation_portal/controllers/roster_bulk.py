@@ -4,6 +4,7 @@ Clubs used to add players one form at a time and then press "Activate".  The
 checklist below reuses the governed single-line path for every player and
 activates the roster automatically once it satisfies the rules.
 """
+
 from odoo import _, http
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
@@ -23,9 +24,9 @@ class FederationRosterBulkPortal(FederationRosterPortal):
         try:
             roster = self._get_portal_roster(roster_id)
             roster._portal_assert_manage_access(user=request.env.user)
-            players = request.env["federation.team.roster.line"]._portal_get_available_players(
-                roster, user=request.env.user
-            )
+            players = request.env[
+                "federation.team.roster.line"
+            ]._portal_get_available_players(roster, user=request.env.user)
         except (AccessError, ValidationError):
             return self._render_access_denied()
         return request.render(
@@ -70,7 +71,9 @@ class FederationRosterBulkPortal(FederationRosterPortal):
     def portal_my_roster_line_create(self, roster_id, **kw):
         response = super().portal_my_roster_line_create(roster_id, **kw)
         try:
-            self._get_portal_roster(roster_id)._portal_auto_activate(user=request.env.user)
+            self._get_portal_roster(roster_id)._portal_auto_activate(
+                user=request.env.user
+            )
         except (AccessError, ValidationError):
             pass
         return response

@@ -28,11 +28,15 @@ class FederationPortalcurrent(FederationPortalBase):
         if context_query:
             scoped_cards = []
             for card in cards:
-                teams = card['teams']
-                if context_query.get('club'):
-                    teams = teams.filtered(lambda team: team.club_id.id == context_query['club'])
-                if context_query.get('team'):
-                    teams = teams.filtered(lambda team: team.id == context_query['team'])
+                teams = card["teams"]
+                if context_query.get("club"):
+                    teams = teams.filtered(
+                        lambda team: team.club_id.id == context_query["club"]
+                    )
+                if context_query.get("team"):
+                    teams = teams.filtered(
+                        lambda team: team.id == context_query["team"]
+                    )
                 if teams:
                     scoped_cards.append(dict(card, teams=teams))
             cards = scoped_cards
@@ -98,8 +102,7 @@ class FederationPortalcurrent(FederationPortalBase):
                 extra_domain=[("active", "=", True)]
             )
             active_entries = entries.filtered(
-                lambda entry: entry.window_id == window
-                and entry.state != "withdrawn"
+                lambda entry: entry.window_id == window and entry.state != "withdrawn"
             )
             available_teams = eligible_teams - active_entries.mapped("team_id")
             capacity_count = privilege.portal_search_count(
@@ -162,7 +165,15 @@ class FederationPortalcurrent(FederationPortalBase):
                 "/my/competition-entries?" + urlencode({"error": str(exc)}),
                 code=302,
             )
-        return redirect("/my/competition-entries?" + urlencode({"success": "Entry submitted. The federation registration reviewer owns the next decision. No resubmission is needed while review is pending."}), code=302)
+        return redirect(
+            "/my/competition-entries?"
+            + urlencode(
+                {
+                    "success": "Entry submitted. The federation registration reviewer owns the next decision. No resubmission is needed while review is pending."
+                }
+            ),
+            code=302,
+        )
 
     def _portal_find_competition_entry(self, entry_id):
         user = request.env.user
@@ -211,13 +222,16 @@ class FederationPortalcurrent(FederationPortalBase):
             entry.portal_resubmit(submission_note, user=request.env.user)
         except (AccessError, ValidationError, ValueError, TypeError) as exc:
             return redirect(
-                f"/my/competition-entries/{entry.id}?"
-                + urlencode({"error": str(exc)}),
+                f"/my/competition-entries/{entry.id}?" + urlencode({"error": str(exc)}),
                 code=302,
             )
         return redirect(
             f"/my/competition-entries/{entry.id}?"
-            + urlencode({"success": "Entry resubmitted. The federation registration reviewer owns the next decision."}),
+            + urlencode(
+                {
+                    "success": "Entry resubmitted. The federation registration reviewer owns the next decision."
+                }
+            ),
             code=302,
         )
 
@@ -237,8 +251,7 @@ class FederationPortalcurrent(FederationPortalBase):
             entry.portal_withdraw(user=request.env.user)
         except (AccessError, ValidationError, ValueError, TypeError) as exc:
             return redirect(
-                f"/my/competition-entries/{entry.id}?"
-                + urlencode({"error": str(exc)}),
+                f"/my/competition-entries/{entry.id}?" + urlencode({"error": str(exc)}),
                 code=302,
             )
         return redirect(

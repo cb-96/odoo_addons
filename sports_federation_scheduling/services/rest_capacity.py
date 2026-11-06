@@ -6,13 +6,16 @@ first, then the first row starting at least ``rest_minutes`` after it, and so
 on, gives the maximum number of matches (classic interval scheduling with the
 rest added to each interval).
 """
+
 from datetime import timedelta
 
 
 def time_rows(slots):
     """Return the distinct (start, end) windows of the given slot values."""
-    return sorted({(slot["start_datetime"], slot["end_datetime"]) for slot in slots},
-                  key=lambda row: (row[1], row[0]))
+    return sorted(
+        {(slot["start_datetime"], slot["end_datetime"]) for slot in slots},
+        key=lambda row: (row[1], row[0]),
+    )
 
 
 def max_matches_with_rest(rows, rest_minutes):

@@ -685,8 +685,8 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         if "coverage_playing_checked" not in self.env["federation.referee"]._fields:
             self.skipTest("sports_federation_duty_coverage is not installed")
 
-        assignment = self.env["federation.match.referee"].sudo().browse(
-            self.assignment.id
+        assignment = (
+            self.env["federation.match.referee"].sudo().browse(self.assignment.id)
         )
         self.assertTrue(
             assignment.fixture_id, "Assignment must reference its logical fixture"
@@ -706,13 +706,17 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
             .mapped("current_publication_id")
         )
         self.assertIn(assignment.publication_id, current_publications)
-        listed_assignments = self.env["federation.match.referee"].sudo().search(
-            [
-                ("referee_id.user_id", "=", self.official_user.id),
-                ("fixture_id", "!=", False),
-                ("publication_id", "in", current_publications.ids),
-                ("state", "not in", ["done", "cancelled"]),
-            ]
+        listed_assignments = (
+            self.env["federation.match.referee"]
+            .sudo()
+            .search(
+                [
+                    ("referee_id.user_id", "=", self.official_user.id),
+                    ("fixture_id", "!=", False),
+                    ("publication_id", "in", current_publications.ids),
+                    ("state", "not in", ["done", "cancelled"]),
+                ]
+            )
         )
         self.assertIn(assignment, listed_assignments)
         self.authenticate(self.official_user.login, "ignored")
@@ -725,9 +729,7 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
             list_response.text,
         )
 
-        detail_response = self.url_open(
-            f"/my/duty-assignments/{self.assignment.id}"
-        )
+        detail_response = self.url_open(f"/my/duty-assignments/{self.assignment.id}")
         signature = re.search(
             r'name="signature"[^>]*value="([^"]+)"',
             detail_response.text,
@@ -833,7 +835,9 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         # The old preparation queue is the same game-day list now.
         match_day_response = self.url_open("/my/match-day")
         self.assertEqual(match_day_response.status_code, 200)
-        self.assertTrue(match_day_response.url.split("?")[0].endswith("/my/match-sheets"))
+        self.assertTrue(
+            match_day_response.url.split("?")[0].endswith("/my/match-sheets")
+        )
         self.assertIn(
             "Portal Smoke Workspace Team vs Portal Smoke Opponent Team",
             match_day_response.text,
@@ -900,8 +904,8 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
 
         self.authenticate(self.team_user.login, "ignored")
 
-        foreign_roster = self.env["federation.team.roster"].sudo().browse(
-            data["foreign_roster_id"]
+        foreign_roster = (
+            self.env["federation.team.roster"].sudo().browse(data["foreign_roster_id"])
         )
         original_notes = foreign_roster.notes
         rpc_response = self.url_open(

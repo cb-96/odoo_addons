@@ -166,27 +166,33 @@ class TestMatchdayOperatorHandoff(TransactionCase):
         self.assertEqual(result["current_state"], "open")
         self.assertEqual(self.matchday.state, "open")
 
-    def test_assigned_matchday_manager_can_open_and_close_without_publication_access(self):
+    def test_assigned_matchday_manager_can_open_and_close_without_publication_access(
+        self,
+    ):
         manager_group = self.env.ref(
             "sports_federation_matchday.group_matchday_manager"
         )
         calendar_planner_group = self.env.ref(
             "sports_federation_calendar.group_calendar_planner"
         )
-        manager = self.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Assigned Match-Day Manager",
-                "login": "assigned.matchday.manager@example.invalid",
-                "group_ids": [
-                    Command.set(
-                        [
-                            self.env.ref("base.group_user").id,
-                            manager_group.id,
-                            calendar_planner_group.id,
-                        ]
-                    )
-                ],
-            }
+        manager = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Assigned Match-Day Manager",
+                    "login": "assigned.matchday.manager@example.invalid",
+                    "group_ids": [
+                        Command.set(
+                            [
+                                self.env.ref("base.group_user").id,
+                                manager_group.id,
+                                calendar_planner_group.id,
+                            ]
+                        )
+                    ],
+                }
+            )
         )
         self.env["federation.competition.role.assignment"].create(
             {

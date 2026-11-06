@@ -64,7 +64,10 @@ class FederationSeasonRegistrationFinanceHooks(models.Model):
         self.ensure_one()
         fee_type_model = self.env["federation.fee.type"].sudo()
         fee_type = fee_type_model.search(
-            [("code", "=", "season_registration"), ("company_id", "=", self.env.company.id)],
+            [
+                ("code", "=", "season_registration"),
+                ("company_id", "=", self.env.company.id),
+            ],
             limit=1,
         )
         if fee_type:

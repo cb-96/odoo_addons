@@ -7,8 +7,8 @@ class FederationReportFinance(models.Model):
     _auto = False
     _order = "fee_type_id, state"
 
-    company_id = fields.Many2one('res.company', readonly=True)
-    currency_id = fields.Many2one('res.currency', readonly=True)
+    company_id = fields.Many2one("res.company", readonly=True)
+    currency_id = fields.Many2one("res.currency", readonly=True)
     fee_type_id = fields.Many2one(
         "federation.fee.type", string="Fee Type", readonly=True
     )

@@ -8,8 +8,12 @@
     "license": "LGPL-3",
     "depends": ["base", "mail", "base_setup"],
     "assets": {
-        "web.assets_backend": ["sports_federation_base/static/src/scss/minimal_ux.scss"],
-        "web.assets_frontend": ["sports_federation_base/static/src/scss/minimal_ux.scss"],
+        "web.assets_backend": [
+            "sports_federation_base/static/src/scss/minimal_ux.scss"
+        ],
+        "web.assets_frontend": [
+            "sports_federation_base/static/src/scss/minimal_ux.scss"
+        ],
     },
     "data": [
         "security/res_groups.xml",

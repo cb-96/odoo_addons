@@ -24,35 +24,55 @@ def write(path: Path, data) -> None:
 
 def evidence(walk_status: str = "passed", human: bool = False) -> Path:
     root = Path(tempfile.mkdtemp())
-    write(root / "summary.json", {
-        "commit": COMMIT, "complete": True, "failed_lanes": [], "missing_lanes": [],
-        "skipped_lanes": [], "invalid_records": [], "commit_mismatches": [],
-        "lanes": [{"lane": "lifecycle"}, {"lane": "full"}],
-    })
+    write(
+        root / "summary.json",
+        {
+            "commit": COMMIT,
+            "complete": True,
+            "failed_lanes": [],
+            "missing_lanes": [],
+            "skipped_lanes": [],
+            "invalid_records": [],
+            "commit_mismatches": [],
+            "lanes": [{"lane": "lifecycle"}, {"lane": "full"}],
+        },
+    )
     shot = root / "walkthrough" / "screenshots" / "shot.png"
     shot.parent.mkdir(parents=True)
     shot.write_bytes(b"png")
     digest = hashlib.sha256(b"png").hexdigest()
     steps = [
-        {"id": step["id"], "status": walk_status, "viewport": step["viewport"],
-         "actor_login": "user@walkthrough.invalid",
-         "screenshots": [{"path": "screenshots/shot.png", "sha256": digest}]}
+        {
+            "id": step["id"],
+            "status": walk_status,
+            "viewport": step["viewport"],
+            "actor_login": "user@walkthrough.invalid",
+            "screenshots": [{"path": "screenshots/shot.png", "sha256": digest}],
+        }
         for step in CONTRACT["walkthrough"]["required_steps"]
     ]
-    write(root / "walkthrough" / "walkthrough.json",
-          {"schema_version": 1, "commit": COMMIT, "steps": steps, "defects": []})
+    write(
+        root / "walkthrough" / "walkthrough.json",
+        {"schema_version": 1, "commit": COMMIT, "steps": steps, "defects": []},
+    )
     if human:
-        sessions = [{"role": role, "completed": True}
-                    for role in ("club_representative", "organiser", "court_operator")
-                    for _ in range(5)]
-        write(root / "human-acceptance.json",
-              {"commit": COMMIT, "sessions": sessions, "critical_incidents": []})
+        sessions = [
+            {"role": role, "completed": True}
+            for role in ("club_representative", "organiser", "court_operator")
+            for _ in range(5)
+        ]
+        write(
+            root / "human-acceptance.json",
+            {"commit": COMMIT, "sessions": sessions, "critical_incidents": []},
+        )
     return root
 
 
 def run(root: Path, level: str) -> tuple[int, dict]:
     code = e2e.main(["--evidence-dir", str(root), "--commit", COMMIT, "--level", level])
-    return code, json.loads((root / "end-to-end-summary.json").read_text(encoding="utf-8"))
+    return code, json.loads(
+        (root / "end-to-end-summary.json").read_text(encoding="utf-8")
+    )
 
 
 class EvidenceTests(unittest.TestCase):
@@ -85,13 +105,22 @@ class EvidenceTests(unittest.TestCase):
         write(root / "summary.json", summary)
         code, result = run(root, "technical")
         self.assertEqual(code, 1)
-        self.assertTrue(any("lifecycle" in issue for issue in result["automated"]["issues"]))
+        self.assertTrue(
+            any("lifecycle" in issue for issue in result["automated"]["issues"])
+        )
 
     def test_unresolved_blocker_defect_is_rejected(self):
         root = evidence()
         path = root / "walkthrough" / "walkthrough.json"
         data = json.loads(path.read_text())
-        data["defects"] = [{"id": "D1", "severity": "blocker", "classification": "product", "status": "open"}]
+        data["defects"] = [
+            {
+                "id": "D1",
+                "severity": "blocker",
+                "classification": "product",
+                "status": "open",
+            }
+        ]
         write(path, data)
         self.assertEqual(run(root, "technical")[0], 1)
 

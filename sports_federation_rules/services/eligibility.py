@@ -39,7 +39,12 @@ class EligibilityResult:
 
     def merge(self, other):
         """Merge another result into this one."""
-        precedence = {self.PASS: 0, self.NOT_APPLICABLE: 0, self.REVIEW_REQUIRED: 1, self.FAIL: 2}
+        precedence = {
+            self.PASS: 0,
+            self.NOT_APPLICABLE: 0,
+            self.REVIEW_REQUIRED: 1,
+            self.FAIL: 2,
+        }
         if precedence[other.status] > precedence[self.status]:
             self.status = other.status
         self.eligible = self.status in (self.PASS, self.NOT_APPLICABLE)
@@ -48,7 +53,11 @@ class EligibilityResult:
 
     def to_dict(self):
         """Convert the value to dict."""
-        return {"status": self.status, "eligible": self.eligible, "reasons": self.reasons}
+        return {
+            "status": self.status,
+            "eligible": self.eligible,
+            "reasons": self.reasons,
+        }
 
 
 class FederationEligibilityService(models.AbstractModel):
@@ -95,7 +104,9 @@ class FederationEligibilityService(models.AbstractModel):
         if not rule_set:
             return EligibilityResult(
                 status=EligibilityResult.REVIEW_REQUIRED,
-                reasons=["Eligibility cannot be determined because no rule set is configured."],
+                reasons=[
+                    "Eligibility cannot be determined because no rule set is configured."
+                ],
             ).to_dict()
 
         rules = self.env["federation.eligibility.rule"].search(

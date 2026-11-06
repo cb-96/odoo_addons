@@ -40,9 +40,11 @@ class FederationStageBuilder(models.AbstractModel):
     # ------------------------------------------------------------------
     @api.model
     def _structure(self, structure_id, editable=False):
-        structure = self.env["federation.competition.structure"].browse(
-            int(structure_id or 0)
-        ).exists()
+        structure = (
+            self.env["federation.competition.structure"]
+            .browse(int(structure_id or 0))
+            .exists()
+        )
         if not structure:
             raise ValidationError(_("This format no longer exists."))
         structure.check_access("read")
@@ -63,9 +65,11 @@ class FederationStageBuilder(models.AbstractModel):
 
     @api.model
     def _link(self, structure, link_id):
-        link = self.env["federation.structure.stage.progression"].browse(
-            int(link_id or 0)
-        ).exists()
+        link = (
+            self.env["federation.structure.stage.progression"]
+            .browse(int(link_id or 0))
+            .exists()
+        )
         if not link or link.structure_id != structure:
             raise ValidationError(_("Choose a link of this format."))
         return link
@@ -76,7 +80,9 @@ class FederationStageBuilder(models.AbstractModel):
         if not name:
             raise ValidationError(_("Give the stage a name."))
         if len(name) > MAX_NAME:
-            raise ValidationError(_("Use a stage name of at most %s characters.", MAX_NAME))
+            raise ValidationError(
+                _("Use a stage name of at most %s characters.", MAX_NAME)
+            )
         return name
 
     @api.model
@@ -131,7 +137,9 @@ class FederationStageBuilder(models.AbstractModel):
     def _link_sentence(self, link):
         start, end = link.rank_from, link.rank_to
         places = (
-            _("Place %s", start) if start == end else _("Places %(start)s–%(end)s", start=start, end=end)
+            _("Place %s", start)
+            if start == end
+            else _("Places %(start)s–%(end)s", start=start, end=end)
         )
         sentence = _(
             "%(places)s of %(source)s → %(target)s",
@@ -141,7 +149,9 @@ class FederationStageBuilder(models.AbstractModel):
         )
         seed_end = link.target_seed_from + end - start
         if link.target_seed_from != start or seed_end != end:
-            sentence += _(" as seeds %(start)s–%(end)s", start=link.target_seed_from, end=seed_end)
+            sentence += _(
+                " as seeds %(start)s–%(end)s", start=link.target_seed_from, end=seed_end
+            )
         carry = CARRYOVER_LABELS.get(link.target_stage_id.carryover_policy)
         if carry:
             sentence += ", " + _(carry)
@@ -152,42 +162,88 @@ class FederationStageBuilder(models.AbstractModel):
         issues = []
         stages = structure.stage_ids
         if not stages:
-            return [{"message": _("Add a first stage. It plays with all registered teams.")}]
+            return [
+                {"message": _("Add a first stage. It plays with all registered teams.")}
+            ]
         try:
             self.env["federation.stage.graph.validator"].validate(structure)
         except ValidationError:
             issues.append(
-                {"message": _("The links go round in a circle. Remove one link so teams flow forward.")}
+                {
+                    "message": _(
+                        "The links go round in a circle. Remove one link so teams flow forward."
+                    )
+                }
             )
-        if not stages.filtered(lambda stage: not stage.incoming_progression_ids.filtered("active")):
-            issues.append({"message": _("Every stage receives teams from another stage. One stage must start with the registered teams.")})
+        if not stages.filtered(
+            lambda stage: not stage.incoming_progression_ids.filtered("active")
+        ):
+            issues.append(
+                {
+                    "message": _(
+                        "Every stage receives teams from another stage. One stage must start with the registered teams."
+                    )
+                }
+            )
         for stage in stages:
             incoming = stage.incoming_progression_ids.filtered("active")
             size = sizes[stage.id]
             if stage.source_type == "progression" and not incoming:
                 issues.append(
-                    {"stage_id": stage.id, "message": _("No teams flow into %s yet. Link places of an earlier stage to it.", stage.name)}
+                    {
+                        "stage_id": stage.id,
+                        "message": _(
+                            "No teams flow into %s yet. Link places of an earlier stage to it.",
+                            stage.name,
+                        ),
+                    }
                 )
             elif stage.source_type != "progression" and incoming:
                 issues.append(
-                    {"stage_id": stage.id, "message": _("%s starts with registered teams but also receives teams from another stage.", stage.name)}
+                    {
+                        "stage_id": stage.id,
+                        "message": _(
+                            "%s starts with registered teams but also receives teams from another stage.",
+                            stage.name,
+                        ),
+                    }
                 )
             elif stage.source_type == "manual" and size < 2:
                 issues.append(
-                    {"stage_id": stage.id, "message": _("Assign at least two teams to %s on its stage form.", stage.name)}
+                    {
+                        "stage_id": stage.id,
+                        "message": _(
+                            "Assign at least two teams to %s on its stage form.",
+                            stage.name,
+                        ),
+                    }
                 )
             elif size and size < 2:
                 issues.append(
-                    {"stage_id": stage.id, "message": _("%s needs at least two teams.", stage.name)}
+                    {
+                        "stage_id": stage.id,
+                        "message": _("%s needs at least two teams.", stage.name),
+                    }
                 )
-            if stage.format_type not in dict(BUILDER_FORMATS) and stage.format_type != "manual":
+            if (
+                stage.format_type not in dict(BUILDER_FORMATS)
+                and stage.format_type != "manual"
+            ):
                 issues.append(
-                    {"stage_id": stage.id, "message": _("%s uses a format the builder cannot generate.", stage.name)}
+                    {
+                        "stage_id": stage.id,
+                        "message": _(
+                            "%s uses a format the builder cannot generate.", stage.name
+                        ),
+                    }
                 )
             seeds = []
             for link in incoming:
                 seeds.extend(
-                    range(link.target_seed_from, link.target_seed_from + link.rank_to - link.rank_from + 1)
+                    range(
+                        link.target_seed_from,
+                        link.target_seed_from + link.rank_to - link.rank_from + 1,
+                    )
                 )
                 source_size = sizes.get(link.source_stage_id.id, 0)
                 if source_size and link.rank_to > source_size:
@@ -210,7 +266,10 @@ class FederationStageBuilder(models.AbstractModel):
                         "message": (
                             _("Two links give teams the same seed in %s.", stage.name)
                             if duplicate
-                            else _("Seeds in %s should run from 1 without gaps.", stage.name)
+                            else _(
+                                "Seeds in %s should run from 1 without gaps.",
+                                stage.name,
+                            )
                         ),
                     }
                 )
@@ -220,7 +279,12 @@ class FederationStageBuilder(models.AbstractModel):
                 taken.extend(range(link.rank_from, link.rank_to + 1))
             if len(set(taken)) != len(taken):
                 issues.append(
-                    {"stage_id": source.id, "message": _("A place of %s is sent to two stages.", source.name)}
+                    {
+                        "stage_id": source.id,
+                        "message": _(
+                            "A place of %s is sent to two stages.", source.name
+                        ),
+                    }
                 )
         return issues
 
@@ -257,27 +321,37 @@ class FederationStageBuilder(models.AbstractModel):
                     "name": stage.name,
                     "column": depths.get(stage.id, 0),
                     "format_type": stage.format_type,
-                    "format_label": format_labels.get(stage.format_type, stage.format_type),
+                    "format_label": format_labels.get(
+                        stage.format_type, stage.format_type
+                    ),
                     "source_type": stage.source_type,
                     "source_label": (
                         _("Registered teams")
                         if stage.source_type == "registration"
-                        else _("Teams set by hand")
-                        if stage.source_type == "manual"
-                        else _("From earlier stages")
+                        else (
+                            _("Teams set by hand")
+                            if stage.source_type == "manual"
+                            else _("From earlier stages")
+                        )
                     ),
                     "teams": sizes[stage.id],
                     "matches": self._match_estimate(stage, sizes[stage.id]),
                     "places_free": max(sizes[stage.id] - used, 0),
-                    "next_free_place": self._next_free(stage.outgoing_progression_ids.filtered("active"), "rank"),
-                    "next_free_seed": self._next_free(stage.incoming_progression_ids.filtered("active"), "seed"),
+                    "next_free_place": self._next_free(
+                        stage.outgoing_progression_ids.filtered("active"), "rank"
+                    ),
+                    "next_free_seed": self._next_free(
+                        stage.incoming_progression_ids.filtered("active"), "seed"
+                    ),
                     "carryover_policy": stage.carryover_policy,
                     "game_days": (
                         ", ".join(stage.matchday_ids.mapped("display_name"))
                         if "matchday_ids" in stage._fields
                         else ""
                     ),
-                    "has_issue": any(issue.get("stage_id") == stage.id for issue in issues),
+                    "has_issue": any(
+                        issue.get("stage_id") == stage.id for issue in issues
+                    ),
                 }
             )
         columns = max((row["column"] for row in stage_rows), default=-1) + 1
@@ -292,7 +366,8 @@ class FederationStageBuilder(models.AbstractModel):
                 "team_count": self._team_count(structure),
                 "editable": editable,
                 "match_count": sum(row["matches"] for row in stage_rows),
-                "can_new_version": structure.state != "draft" and not structure._has_planned_history(),
+                "can_new_version": structure.state != "draft"
+                and not structure._has_planned_history(),
                 "can_confirm": can_write and structure.state == "generated",
             },
             "columns": columns,
@@ -306,12 +381,16 @@ class FederationStageBuilder(models.AbstractModel):
                     "rank_to": link.rank_to,
                     "target_seed_from": link.target_seed_from,
                     "sentence": self._link_sentence(link),
-                    "has_issue": any(issue.get("link_id") == link.id for issue in issues),
+                    "has_issue": any(
+                        issue.get("link_id") == link.id for issue in issues
+                    ),
                 }
                 for link in links
             ],
             "issues": issues,
-            "formats": [{"key": key, "label": _(label)} for key, label in BUILDER_FORMATS],
+            "formats": [
+                {"key": key, "label": _(label)} for key, label in BUILDER_FORMATS
+            ],
             "carryover": [
                 {"key": key, "label": label} for key, label in carry_labels.items()
             ],
@@ -337,7 +416,11 @@ class FederationStageBuilder(models.AbstractModel):
         values = values or {}
         format_type = self._clean_format(values.get("format_type"))
         after = values.get("after_stage_id")
-        source = self._stage(structure, after) if after else self.env["federation.structure.stage"]
+        source = (
+            self._stage(structure, after)
+            if after
+            else self.env["federation.structure.stage"]
+        )
         sequence = max(structure.stage_ids.mapped("sequence") or [0]) + 10
         stage = self.env["federation.structure.stage"].create(
             {
@@ -351,8 +434,12 @@ class FederationStageBuilder(models.AbstractModel):
         )
         if source:
             size = self._stage_size(structure, source)
-            start = self._next_free(source.outgoing_progression_ids.filtered("active"), "rank")
-            count = self._positive(values.get("places") or max(size - start + 1, 2), _("Places"))
+            start = self._next_free(
+                source.outgoing_progression_ids.filtered("active"), "rank"
+            )
+            count = self._positive(
+                values.get("places") or max(size - start + 1, 2), _("Places")
+            )
             self._create_link(structure, source, stage, start, start + count - 1, 1)
         return self.load(structure.id)
 
@@ -366,9 +453,13 @@ class FederationStageBuilder(models.AbstractModel):
             update["name"] = self._clean_name(values["name"])
         if "format_type" in values:
             format_type = self._clean_format(values["format_type"])
-            update.update(format_type=format_type, stage_type=STAGE_TYPE_BY_FORMAT[format_type])
+            update.update(
+                format_type=format_type, stage_type=STAGE_TYPE_BY_FORMAT[format_type]
+            )
         if "carryover_policy" in values:
-            if values["carryover_policy"] not in dict(stage._fields["carryover_policy"].selection):
+            if values["carryover_policy"] not in dict(
+                stage._fields["carryover_policy"].selection
+            ):
                 raise ValidationError(_("Choose how points carry over."))
             update["carryover_policy"] = values["carryover_policy"]
         if update:
@@ -397,7 +488,9 @@ class FederationStageBuilder(models.AbstractModel):
             raise
 
     @api.model
-    def _create_checked_link(self, structure, source, target, rank_from, rank_to, seed_from):
+    def _create_checked_link(
+        self, structure, source, target, rank_from, rank_to, seed_from
+    ):
         link = self.env["federation.structure.stage.progression"].create(
             {
                 "name": _(
@@ -420,7 +513,9 @@ class FederationStageBuilder(models.AbstractModel):
             self.env["federation.stage.graph.validator"].validate(structure)
         except ValidationError:
             raise ValidationError(
-                _("This link would send teams back to an earlier stage. Choose a later stage.")
+                _(
+                    "This link would send teams back to an earlier stage. Choose a later stage."
+                )
             ) from None
         return link
 
@@ -433,12 +528,19 @@ class FederationStageBuilder(models.AbstractModel):
         rank_from = self._positive(values.get("rank_from"), _("First place"))
         rank_to = self._positive(values.get("rank_to") or rank_from, _("Last place"))
         if rank_to < rank_from:
-            raise ValidationError(_("The last place must not be before the first place."))
+            raise ValidationError(
+                _("The last place must not be before the first place.")
+            )
         seed_from = values.get("target_seed_from") or self._next_free(
             target.incoming_progression_ids.filtered("active"), "seed"
         )
         self._create_link(
-            structure, source, target, rank_from, rank_to, self._positive(seed_from, _("First seed"))
+            structure,
+            source,
+            target,
+            rank_from,
+            rank_to,
+            self._positive(seed_from, _("First seed")),
         )
         return self.load(structure.id)
 
@@ -458,7 +560,10 @@ class FederationStageBuilder(models.AbstractModel):
         structure = self._structure(structure_id)
         structure.check_access("write")
         if structure.state == "draft":
-            sizes = {stage.id: self._stage_size(structure, stage) for stage in structure.stage_ids}
+            sizes = {
+                stage.id: self._stage_size(structure, stage)
+                for stage in structure.stage_ids
+            }
             issues = self._issues(structure, sizes)
             if issues:
                 raise ValidationError(issues[0]["message"])
@@ -511,7 +616,8 @@ class FederationCompetitionScheduleWizardStages(models.TransientModel):
             lambda item: item.state == "draft" and item.format_type == "custom"
         ):
             sizes = {
-                stage.id: builder._stage_size(structure, stage) for stage in structure.stage_ids
+                stage.id: builder._stage_size(structure, stage)
+                for stage in structure.stage_ids
             }
             issues = builder._issues(structure, sizes)
             if issues:

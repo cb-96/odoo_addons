@@ -295,7 +295,9 @@ def plan(
             return _invalid("The top group needs between 2 and %s teams." % teams)
         bottom = teams - top
         if bottom == 1:
-            return _invalid("The bottom group would have one team. Move it to the top group.")
+            return _invalid(
+                "The bottom group would have one team. Move it to the top group."
+            )
         stages.append(
             {
                 "name": "Regular season",

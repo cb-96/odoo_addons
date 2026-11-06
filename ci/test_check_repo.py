@@ -12,7 +12,9 @@ SPEC.loader.exec_module(CHECK_REPO)
 
 class CheckRepoTest(unittest.TestCase):
     def test_categories_are_small_and_unique(self):
-        all_checks = [check for checks in CHECK_REPO.CHECKS.values() for check in checks]
+        all_checks = [
+            check for checks in CHECK_REPO.CHECKS.values() for check in checks
+        ]
         self.assertEqual(len(all_checks), len(set(all_checks)))
         self.assertEqual(
             set(CHECK_REPO.CHECKS),

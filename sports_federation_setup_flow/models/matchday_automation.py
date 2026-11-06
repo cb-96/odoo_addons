@@ -7,6 +7,7 @@ the transition, integrity checks and audit; only the trigger is automatic.
 Anything unusual (missing publication, open incidents, unplayed matches) keeps
 the day as it is and remains visible in the planner and match-day readiness.
 """
+
 import logging
 
 from odoo import _, api, fields, models
@@ -66,8 +67,10 @@ class FederationMatchdayAutomation(models.Model):
         publication = day.current_publication_id
         if not publication:
             return False
-        matches = self.env["federation.match"].sudo().search(
-            [("schedule_publication_id", "=", publication.id)]
+        matches = (
+            self.env["federation.match"]
+            .sudo()
+            .search([("schedule_publication_id", "=", publication.id)])
         )
         if not matches:
             return False
@@ -76,8 +79,10 @@ class FederationMatchdayAutomation(models.Model):
                 continue
             if match.state != "done" or match.result_state != "approved":
                 return False
-        return not self.env["federation.matchday.incident"].sudo().search_count(
-            [("matchday_id", "=", day.id), ("resolved", "=", False)]
+        return (
+            not self.env["federation.matchday.incident"]
+            .sudo()
+            .search_count([("matchday_id", "=", day.id), ("resolved", "=", False)])
         )
 
     def _auto_close_if_complete(self):
@@ -90,7 +95,9 @@ class FederationMatchdayAutomation(models.Model):
                 with self.env.cr.savepoint():
                     day._automation_commands().close_matchday(
                         day.id,
-                        close_note=_("Closed automatically: every match has an official result."),
+                        close_note=_(
+                            "Closed automatically: every match has an official result."
+                        ),
                     )
                 closed |= day
             except (AccessError, UserError, ValidationError) as error:
@@ -100,7 +107,9 @@ class FederationMatchdayAutomation(models.Model):
     @api.model
     def _cron_matchday_automation(self):
         today = fields.Date.context_today(self)
-        self.search([("state", "=", "scheduled"), ("date", "<=", today)])._auto_open_if_due()
+        self.search(
+            [("state", "=", "scheduled"), ("date", "<=", today)]
+        )._auto_open_if_due()
         self.search([("state", "=", "open")])._auto_close_if_complete()
         return True
 

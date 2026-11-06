@@ -348,9 +348,7 @@ class FederationTeamRosterLine(models.Model):
                     }
                 )
 
-        reasons.extend(
-            _get_parental_approval_reasons(player, team, reference_date)
-        )
+        reasons.extend(_get_parental_approval_reasons(player, team, reference_date))
 
         Service = self.env.get("federation.eligibility.service")
         rule_set = roster._get_effective_rule_set()

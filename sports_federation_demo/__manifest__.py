@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Demo Data",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.3.0",
     "category": "Sports",
     "summary": "Deterministic demo-data pack for end-to-end federation walkthroughs",
     "description": """
@@ -36,6 +36,7 @@ demonstration database with realistic walkthrough content.
         "sports_federation_result_control",
         "sports_federation_portal",
         "sports_federation_public_site",
+        "sports_federation_setup_flow",
         "web_tour",
     ],
     "data": [],

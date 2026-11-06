@@ -12,18 +12,26 @@ class TestTaskDeadlines(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         env = cls.env
-        cls.user = env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Deadline representative",
-                "login": "deadline_rep_test",
-                "group_ids": [
-                    (
-                        6,
-                        0,
-                        [env.ref("sports_federation_portal.group_federation_portal_club").id],
-                    )
-                ],
-            }
+        cls.user = (
+            env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Deadline representative",
+                    "login": "deadline_rep_test",
+                    "group_ids": [
+                        (
+                            6,
+                            0,
+                            [
+                                env.ref(
+                                    "sports_federation_portal.group_federation_portal_club"
+                                ).id
+                            ],
+                        )
+                    ],
+                }
+            )
         )
         cls.club = env["federation.club"].create(
             {"name": "Deadline club", "code": "DLC"}

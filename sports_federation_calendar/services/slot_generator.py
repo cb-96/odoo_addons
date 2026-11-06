@@ -25,7 +25,9 @@ class FederationSlotGenerator(models.AbstractModel):
         try:
             return local_to_utc(local_value, matchday.event_timezone)
         except ValueError as exc:
-            raise ValidationError(_("Choose a valid, unambiguous time in the event timezone.")) from exc
+            raise ValidationError(
+                _("Choose a valid, unambiguous time in the event timezone.")
+            ) from exc
 
     @staticmethod
     def _overlaps(start_a, end_a, start_b, end_b):

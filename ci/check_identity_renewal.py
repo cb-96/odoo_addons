@@ -29,26 +29,38 @@ def check_backfill():
         if isinstance(node, ast.Dict):
             keys = {k.value for k in node.keys if isinstance(k, ast.Constant)}
             if "family_duplicate_of_id" in keys:
-                errors.append("The candidate queue may not retire a duplicate; use the reviewed decision.")
+                errors.append(
+                    "The candidate queue may not retire a duplicate; use the reviewed decision."
+                )
             if "person_id" in keys and "player_id" not in keys:
                 errors.append("The candidate queue may not relink a person.")
     if "command(" not in text or "family_match_key" not in text:
-        errors.append("The backfill must write the match key through the lifecycle command.")
+        errors.append(
+            "The backfill must write the match key through the lifecycle command."
+        )
     if "federation.identity.review" not in text:
-        errors.append("Candidates must be resolved through the reviewed identity decision.")
+        errors.append(
+            "Candidates must be resolved through the reviewed identity decision."
+        )
     if "federation.identity.decision" in text:
         errors.append("Only the reviewed identity merge may create identity decisions.")
     if "manager(self.env)" not in text:
-        errors.append("Backfill actions must require membership administration permission.")
+        errors.append(
+            "Backfill actions must require membership administration permission."
+        )
     if text.count("manager(self.env)") < 3:
-        errors.append("run_backfill, action_review and action_dismiss must each check the permission.")
+        errors.append(
+            "run_backfill, action_review and action_dismiss must each check the permission."
+        )
 
 
 def check_renewal():
     text = read("models/renewal_progress.py")
     for forbidden in (".write(", ".create(", ".unlink(", "action_activate"):
         if forbidden in text:
-            errors.append("renewal_progress.py is a projection and may not use %s." % forbidden)
+            errors.append(
+                "renewal_progress.py is a projection and may not use %s." % forbidden
+            )
     policy = read("renewal_policy.py")
     if "payment" not in policy.lower():
         errors.append("The renewal policy must state how payment is treated.")
@@ -59,9 +71,19 @@ def check_renewal():
 
 def check_security_and_views():
     csv = read("security/ir.model.access.csv")
-    rows = [line for line in csv.splitlines() if "model_federation_identity_candidate" in line]
-    if len(rows) != 1 or "group_federation_manager" not in rows[0] or not rows[0].endswith(",1,1,1,0"):
-        errors.append("The identity candidate queue must be manager-only and not deletable.")
+    rows = [
+        line
+        for line in csv.splitlines()
+        if "model_federation_identity_candidate" in line
+    ]
+    if (
+        len(rows) != 1
+        or "group_federation_manager" not in rows[0]
+        or not rows[0].endswith(",1,1,1,0")
+    ):
+        errors.append(
+            "The identity candidate queue must be manager-only and not deletable."
+        )
     manifest = read("__manifest__.py")
     if "views/identity_backfill_views.xml" not in manifest:
         errors.append("The identity backfill views are not in the manifest.")

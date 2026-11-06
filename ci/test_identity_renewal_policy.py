@@ -1,4 +1,5 @@
 """Pure tests for the identity backfill plan and the renewal progress policy."""
+
 import importlib.util
 from pathlib import Path
 import subprocess
@@ -22,7 +23,9 @@ lifecycle = load("lifecycle_policy", MODULE / "lifecycle_policy.py")
 
 
 def key_for(first, last, birth):
-    return lifecycle.fingerprint((lifecycle.normal_name(first), lifecycle.normal_name(last), str(birth)))
+    return lifecycle.fingerprint(
+        (lifecycle.normal_name(first), lifecycle.normal_name(last), str(birth))
+    )
 
 
 def player(pid, first, last, birth="2012-01-01"):
@@ -36,18 +39,24 @@ class BackfillPlanTests(unittest.TestCase):
         self.assertEqual(result["candidates"], {})
 
     def test_players_that_look_the_same_are_never_keyed(self):
-        result = backfill.plan([player(1, "Ann", "Lee"), player(2, "ANN", "lee")], {}, key_for)
+        result = backfill.plan(
+            [player(1, "Ann", "Lee"), player(2, "ANN", "lee")], {}, key_for
+        )
         self.assertEqual(result["to_key"], [])
         self.assertEqual(list(result["candidates"].values()), [[1, 2]])
 
     def test_case_and_spacing_still_match(self):
-        result = backfill.plan([player(1, "Zoe", "Van  Lee"), player(2, "ZOE", "van lee")], {}, key_for)
+        result = backfill.plan(
+            [player(1, "Zoe", "Van  Lee"), player(2, "ZOE", "van lee")], {}, key_for
+        )
         self.assertEqual(len(result["candidates"]), 1)
 
     def test_accent_variants_are_not_matched_by_the_existing_normaliser(self):
         # Documented limitation: the shared duplicate guard casefolds but does not
         # strip accents, and the backfill deliberately uses the very same key.
-        result = backfill.plan([player(1, "Zo\u00eb", "Lee"), player(2, "Zoe", "Lee")], {}, key_for)
+        result = backfill.plan(
+            [player(1, "Zo\u00eb", "Lee"), player(2, "Zoe", "Lee")], {}, key_for
+        )
         self.assertEqual(len(result["to_key"]), 2)
         self.assertEqual(result["candidates"], {})
 
@@ -59,19 +68,29 @@ class BackfillPlanTests(unittest.TestCase):
 
     def test_different_birth_dates_are_different_people(self):
         result = backfill.plan(
-            [player(1, "Ann", "Lee", "2012-01-01"), player(2, "Ann", "Lee", "2013-02-02")], {}, key_for
+            [
+                player(1, "Ann", "Lee", "2012-01-01"),
+                player(2, "Ann", "Lee", "2013-02-02"),
+            ],
+            {},
+            key_for,
         )
         self.assertEqual(len(result["to_key"]), 2)
         self.assertEqual(result["candidates"], {})
 
     def test_players_without_a_birth_date_are_only_counted(self):
-        result = backfill.plan([player(1, "Ann", "Lee", None), player(2, "Bob", "Roe", False)], {}, key_for)
+        result = backfill.plan(
+            [player(1, "Ann", "Lee", None), player(2, "Bob", "Roe", False)], {}, key_for
+        )
         self.assertEqual(result["needs_birth_date"], [1, 2])
         self.assertEqual(result["to_key"], [])
         self.assertEqual(result["candidates"], {})
 
     def test_the_plan_never_merges_anything(self):
-        self.assertEqual(set(backfill.plan([], {}, key_for)), {"to_key", "candidates", "needs_birth_date"})
+        self.assertEqual(
+            set(backfill.plan([], {}, key_for)),
+            {"to_key", "candidates", "needs_birth_date"},
+        )
 
 
 class RenewalProgressTests(unittest.TestCase):
@@ -87,19 +106,25 @@ class RenewalProgressTests(unittest.TestCase):
         step, blockers = renewal.progress(True, "draft", True, 2)
         self.assertEqual(step, "compliance")
         self.assertEqual(blockers, ["2 required documents are still to verify."])
-        self.assertIn("1 required document is", renewal.progress(True, "draft", True, 1)[1][0])
+        self.assertIn(
+            "1 required document is", renewal.progress(True, "draft", True, 1)[1][0]
+        )
 
     def test_everything_in_place_is_ready_to_approve(self):
         self.assertEqual(renewal.progress(True, "draft", True, 0), ("ready", []))
 
     def test_a_merged_identity_blocks_the_renewal(self):
-        step, blockers = renewal.progress(True, "draft", True, 0, identity_current=False)
+        step, blockers = renewal.progress(
+            True, "draft", True, 0, identity_current=False
+        )
         self.assertEqual(step, "initiated")
         self.assertIn("canonical identity", blockers[0])
 
     def test_finished_renewals(self):
         self.assertEqual(renewal.progress(True, "active", False, 5), ("approved", []))
-        self.assertEqual(renewal.progress(True, "cancelled", False, 5), ("cancelled", []))
+        self.assertEqual(
+            renewal.progress(True, "cancelled", False, 5), ("cancelled", [])
+        )
 
     def test_payment_never_blocks_approval(self):
         self.assertFalse(renewal.payment_note(False))
@@ -112,7 +137,9 @@ class RenewalProgressTests(unittest.TestCase):
 class ContractTests(unittest.TestCase):
     def test_repository_honours_the_identity_and_renewal_contract(self):
         result = subprocess.run(
-            [sys.executable, str(ROOT / "ci/check_identity_renewal.py")], capture_output=True, text=True
+            [sys.executable, str(ROOT / "ci/check_identity_renewal.py")],
+            capture_output=True,
+            text=True,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 

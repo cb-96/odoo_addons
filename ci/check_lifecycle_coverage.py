@@ -21,9 +21,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "ci" / "release_confidence" / "competition_lifecycle.json"
-START = re.compile(r"Starting\s+(?:[\w.]+\.)?(?P<cls>\w+)\.(?P<method>test_\w+)\s+\.\.\.")
-FAILURE = re.compile(r"\b(?:FAIL|ERROR):\s*(?:[\w.]+\.)?(?P<cls>\w+)\.(?P<method>test_\w+)")
-RESULT = re.compile(r"(?P<failed>\d+)\s+failed,\s+(?P<errors>\d+)\s+error\(s\)\s+of\s+(?P<total>\d+)\s+tests")
+START = re.compile(
+    r"Starting\s+(?:[\w.]+\.)?(?P<cls>\w+)\.(?P<method>test_\w+)\s+\.\.\."
+)
+FAILURE = re.compile(
+    r"\b(?:FAIL|ERROR):\s*(?:[\w.]+\.)?(?P<cls>\w+)\.(?P<method>test_\w+)"
+)
+RESULT = re.compile(
+    r"(?P<failed>\d+)\s+failed,\s+(?P<errors>\d+)\s+error\(s\)\s+of\s+(?P<total>\d+)\s+tests"
+)
 
 
 def load_contract(path: Path = CONTRACT) -> dict:
@@ -36,9 +42,13 @@ def load_contract(path: Path = CONTRACT) -> dict:
 def _tag_values(node: ast.AST) -> set[str]:
     values = set()
     for decorator in getattr(node, "decorator_list", []):
-        if isinstance(decorator, ast.Call) and getattr(decorator.func, "id", "") == "tagged":
+        if (
+            isinstance(decorator, ast.Call)
+            and getattr(decorator.func, "id", "") == "tagged"
+        ):
             values.update(
-                arg.value for arg in decorator.args
+                arg.value
+                for arg in decorator.args
                 if isinstance(arg, ast.Constant) and isinstance(arg.value, str)
             )
     return values
@@ -48,7 +58,9 @@ def check_source(contract: dict, root: Path = ROOT) -> list[str]:
     spec = contract["test"]
     path = root / spec["path"]
     if not path.is_file():
-        return [f"{spec['path']}: missing; the lifecycle scenarios have not been implemented"]
+        return [
+            f"{spec['path']}: missing; the lifecycle scenarios have not been implemented"
+        ]
     errors: list[str] = []
     text = path.read_text(encoding="utf-8")
     tree = ast.parse(text, filename=str(path))
@@ -74,7 +86,9 @@ def check_source(contract: dict, root: Path = ROOT) -> list[str]:
     init = path.parent / "__init__.py"
     module = path.stem
     if not init.is_file() or not re.search(
-        rf"^from \. import {re.escape(module)}\b", init.read_text(encoding="utf-8"), re.M
+        rf"^from \. import {re.escape(module)}\b",
+        init.read_text(encoding="utf-8"),
+        re.M,
     ):
         errors.append(f"{init.relative_to(root)}: does not import {module}")
     return errors

@@ -1,14 +1,17 @@
 from datetime import datetime, time, timedelta
 
 from odoo import _, api, fields, models
+<<<<<<< HEAD
 from odoo.osv import expression
 
 from .. import task_policy
 
+=======
+>>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
 
 
 class FederationOperationTaskExtension(models.Model):
-    _inherit = 'federation.operation.task'
+    _inherit = "federation.operation.task"
 
     @api.model
     def _portal_club_ids(self, user):
@@ -19,7 +22,6 @@ class FederationOperationTaskExtension(models.Model):
             .mapped("club_id")
             .ids
         )
-
 
     ROSTER_DEADLINE_DAYS = 7
 
@@ -43,14 +45,18 @@ class FederationOperationTaskExtension(models.Model):
             return cache
         team_ids = {key[0] for key in keys}
         season_ids = {key[1] for key in keys}
-        tournaments = self.env["federation.tournament"].sudo().search(
-            [
-                "|",
-                ("season_id", "in", list(season_ids)),
-                "&",
-                ("season_id", "=", False),
-                ("edition_id.season_id", "in", list(season_ids)),
-            ]
+        tournaments = (
+            self.env["federation.tournament"]
+            .sudo()
+            .search(
+                [
+                    "|",
+                    ("season_id", "in", list(season_ids)),
+                    "&",
+                    ("season_id", "=", False),
+                    ("edition_id.season_id", "in", list(season_ids)),
+                ]
+            )
         )
         season_of = {
             tournament.id: (tournament.season_id or tournament.edition_id.season_id).id
@@ -224,7 +230,6 @@ class FederationOperationTaskExtension(models.Model):
             )
         return values
 
-
     @api.model
     def _task_team_scope(self, user, team_field="team_id"):
         """Restrict sources and cleanup to effective whole-club or team scope."""
@@ -321,9 +326,7 @@ class FederationOperationTaskExtension(models.Model):
         roster_lines = parental_rosters.mapped("line_ids").filtered(
             lambda line: line.status == "active"
             and line.roster_id.team_id.category == "senior"
-            and line.player_id._is_under_age(
-                16, line.roster_id._get_reference_date()
-            )
+            and line.player_id._is_under_age(16, line.roster_id._get_reference_date())
             and not line.player_id._has_verified_parental_approval(
                 line.roster_id._get_reference_date()
             )
@@ -386,6 +389,7 @@ class FederationOperationTaskExtension(models.Model):
             reviewing = audience == "manager"
             spec = self._task_spec(
                 sheet,
+<<<<<<< HEAD
                 task_type,
                 audience,
                 (_("Review game-day line-up: %(team)s") if reviewing
@@ -395,6 +399,13 @@ class FederationOperationTaskExtension(models.Model):
                  if reviewing else _("Submit the shared lineup for this game day.")),
                 (_("Approve or return the line-up") if reviewing
                  else _("Prepare game-day lineup")),
+=======
+                "gameday_lineup",
+                "club",
+                _("Game-day lineup: %(team)s") % {"team": sheet.team_id.display_name},
+                status,
+                _("Prepare game-day lineup"),
+>>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
                 priority="1",
                 deadline=sheet.match_kickoff or False,
             )
@@ -531,4 +542,6 @@ class FederationOperationTaskExtension(models.Model):
 
     @api.model
     def sync_for_user(self, user=None):
-        return self.env["federation.task.projection"].synchronize(user=user or self.env.user)
+        return self.env["federation.task.projection"].synchronize(
+            user=user or self.env.user
+        )

@@ -21,10 +21,13 @@ CONTRACT = {
             {"pattern": "\\.sudo\\(\\)", "reason": "no elevation"},
             {"pattern": "[\"'](?:state)[\"']\\s*:", "reason": "no state writes"},
         ],
-        "required_methods": [{"name": "test_a", "covers": "a"}, {"name": "test_b", "covers": "b"}],
+        "required_methods": [
+            {"name": "test_a", "covers": "a"},
+            {"name": "test_b", "covers": "b"},
+        ],
     },
 }
-GOOD = '''from odoo.tests import tagged
+GOOD = """from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 
@@ -35,7 +38,7 @@ class TestLife(TransactionCase):
 
     def test_b(self):
         pass
-'''
+"""
 
 
 class SourceTests(unittest.TestCase):
@@ -44,7 +47,9 @@ class SourceTests(unittest.TestCase):
         tests = root / "addon" / "tests"
         tests.mkdir(parents=True)
         (tests / "test_life.py").write_text(text, encoding="utf-8")
-        (tests / "__init__.py").write_text("from . import test_life\n" if register else "", encoding="utf-8")
+        (tests / "__init__.py").write_text(
+            "from . import test_life\n" if register else "", encoding="utf-8"
+        )
         return root
 
     def test_complete_source_passes(self):
@@ -55,7 +60,9 @@ class SourceTests(unittest.TestCase):
         self.assertIn("missing", coverage.check_source(CONTRACT, root)[0])
 
     def test_missing_method_and_tag_are_reported(self):
-        text = GOOD.replace("def test_b", "def helper").replace(', "sf_competition_lifecycle"', "")
+        text = GOOD.replace("def test_b", "def helper").replace(
+            ', "sf_competition_lifecycle"', ""
+        )
         errors = coverage.check_source(CONTRACT, self.tree(text))
         self.assertTrue(any("missing required test test_b" in e for e in errors))
         self.assertTrue(any("lacks tags" in e for e in errors))

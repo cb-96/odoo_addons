@@ -8,6 +8,7 @@ def atomic_command(method):
     def wrapped(self, *args, **kwargs):
         with self.env.cr.savepoint():
             return method(self, *args, **kwargs)
+
     return wrapped
 
 
@@ -15,26 +16,47 @@ class FederationScheduleCommands(models.AbstractModel):
     _name = "federation.schedule.commands"
     _description = "Schedule Command Service"
 
-    def _find_replay(self, schedule_id, idempotency_key, command, fixture_id, slot_id=False, reason=False):
+    def _find_replay(
+        self,
+        schedule_id,
+        idempotency_key,
+        command,
+        fixture_id,
+        slot_id=False,
+        reason=False,
+    ):
         schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
         if not schedule:
             raise ValidationError(_("The schedule no longer exists."))
         schedule.check_access("read")
         self.env["federation.competition.role.assignment"].assert_role(
-            schedule.edition_id, "schedule_planner", "competition_director")
+            schedule.edition_id, "schedule_planner", "competition_director"
+        )
         if not idempotency_key:
             return False
         if not isinstance(idempotency_key, str) or len(idempotency_key) > 128:
             raise ValidationError(_("Use a bounded idempotency key."))
         # Serialize duplicate retries, including those arriving concurrently.
-        self.env.cr.execute("SELECT id FROM federation_schedule WHERE id=%s FOR UPDATE", (schedule.id,))
-        replay = self.env["federation.schedule.change"].search([
-            ("schedule_id", "=", schedule.id), ("idempotency_key", "=", idempotency_key)], limit=1)
-        if replay and (replay.actor_id != self.env.user or replay.command != command or
-                       replay.fixture_id.id != int(fixture_id) or
-                       (command == "assign" and replay.new_slot_id.id != int(slot_id)) or
-                       (replay.reason or "") != (reason or "")):
-            raise ValidationError(_("Idempotency key was reused for different content or actor."))
+        self.env.cr.execute(
+            "SELECT id FROM federation_schedule WHERE id=%s FOR UPDATE", (schedule.id,)
+        )
+        replay = self.env["federation.schedule.change"].search(
+            [
+                ("schedule_id", "=", schedule.id),
+                ("idempotency_key", "=", idempotency_key),
+            ],
+            limit=1,
+        )
+        if replay and (
+            replay.actor_id != self.env.user
+            or replay.command != command
+            or replay.fixture_id.id != int(fixture_id)
+            or (command == "assign" and replay.new_slot_id.id != int(slot_id))
+            or (replay.reason or "") != (reason or "")
+        ):
+            raise ValidationError(
+                _("Idempotency key was reused for different content or actor.")
+            )
         return replay
 
     def _resolve(self, schedule_id, expected_revision):
@@ -72,7 +94,9 @@ class FederationScheduleCommands(models.AbstractModel):
         reason=False,
         idempotency_key=False,
     ):
-        replay = self._find_replay(schedule_id, idempotency_key, "assign", fixture_id, slot_id, reason)
+        replay = self._find_replay(
+            schedule_id, idempotency_key, "assign", fixture_id, slot_id, reason
+        )
         if replay:
             return self.env["federation.schedule.queries"].delta(replay.schedule_id, [])
         schedule, new_revision = self._resolve(schedule_id, expected_revision)
@@ -124,7 +148,9 @@ class FederationScheduleCommands(models.AbstractModel):
         reason=False,
         idempotency_key=False,
     ):
-        replay = self._find_replay(schedule_id, idempotency_key, "unassign", fixture_id, reason=reason)
+        replay = self._find_replay(
+            schedule_id, idempotency_key, "unassign", fixture_id, reason=reason
+        )
         if replay:
             return self.env["federation.schedule.queries"].delta(replay.schedule_id, [])
         schedule, new_revision = self._resolve(schedule_id, expected_revision)

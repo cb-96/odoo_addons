@@ -76,7 +76,9 @@ class TestReleasePilotReadiness(TransactionCase):
             / "static/tests/tours/full_competition_lifecycle_tour.js"
         )
         source = path.read_text(encoding="utf-8")
-        self.assertIn("sports_federation_setup_flow.action_competition_setup_home", source)
+        self.assertIn(
+            "sports_federation_setup_flow.action_competition_setup_home", source
+        )
         self.assertIn("data-planner-primary-action", source)
         self.assertIn("data-planner-unified-readiness", source)
         self.assertIn('window.location.assign("/competitions")', source)
@@ -89,4 +91,6 @@ class TestReleasePilotReadiness(TransactionCase):
         source = path.read_text(encoding="utf-8")
         self.assertIn('key: "Enter"', source)
         self.assertIn("document.activeElement", source)
-        self.assertIn("sports_federation_setup_flow.action_competition_setup_home", source)
+        self.assertIn(
+            "sports_federation_setup_flow.action_competition_setup_home", source
+        )

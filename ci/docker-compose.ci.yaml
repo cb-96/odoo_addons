@@ -26,6 +26,8 @@ services:
     build:
       context: ..
       dockerfile: ci/Dockerfile.odoo-ci
+      args:
+        CI_SKIP_BROWSER_BOOTSTRAP: ${CI_SKIP_BROWSER_BOOTSTRAP:-0}
     user: root
     init: true
     shm_size: "2gb"

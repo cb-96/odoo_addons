@@ -7,6 +7,7 @@ through every screen worth checking.  Anything that could not be completed
 automatically becomes a "fix" activity instead of an error, so the creator
 always ends up with a usable competition and an honest checklist.
 """
+
 import logging
 from datetime import timedelta
 from html import escape
@@ -19,8 +20,18 @@ from ..models.practice_competition import PRACTICE_CODE_PREFIX, PRACTICE_PREFIX
 _logger = logging.getLogger(__name__)
 
 SAMPLE_CLUB_NAMES = [
-    "Falcons", "Otters", "Comets", "Wolves", "Hornets", "Pandas",
-    "Ravens", "Lynx", "Sharks", "Bisons", "Herons", "Foxes",
+    "Falcons",
+    "Otters",
+    "Comets",
+    "Wolves",
+    "Hornets",
+    "Pandas",
+    "Ravens",
+    "Lynx",
+    "Sharks",
+    "Bisons",
+    "Herons",
+    "Foxes",
 ]
 FORMAT_BY_TYPE = {
     "league": "single_round_robin",
@@ -53,7 +64,9 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
         help="Independent Review also lets you try the review and approval screens.",
     )
     division_count = fields.Integer(default=2, required=True, string="Divisions")
-    teams_per_division = fields.Integer(default=6, required=True, string="Teams per division")
+    teams_per_division = fields.Integer(
+        default=6, required=True, string="Teams per division"
+    )
     gameday_count = fields.Integer(default=3, required=True, string="Game days")
     first_gameday_today = fields.Boolean(
         default=True,
@@ -86,7 +99,9 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
 
     def _practice_venue(self):
         Venue = self.env["federation.venue"].with_context(active_test=False)
-        venue = Venue.search([("name", "=", "%s Sports Hall" % PRACTICE_PREFIX)], limit=1)
+        venue = Venue.search(
+            [("name", "=", "%s Sports Hall" % PRACTICE_PREFIX)], limit=1
+        )
         if not venue:
             venue = Venue.create({"name": "%s Sports Hall" % PRACTICE_PREFIX})
         if "active" in venue._fields and not venue.active:
@@ -97,9 +112,9 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
             courts |= Court.create(
                 {"name": _("Court %(number)s", number=index), "venue_id": venue.id}
             )
-        courts.filtered(lambda court: "active" in court._fields and not court.active).write(
-            {"active": True}
-        )
+        courts.filtered(
+            lambda court: "active" in court._fields and not court.active
+        ).write({"active": True})
         return venue
 
     def _practice_season(self, date_start, date_end):
@@ -107,8 +122,16 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
         code = "%sSEASON" % PRACTICE_CODE_PREFIX
         season = Season.search([("code", "=", code)], limit=1)
         values = {
-            "date_start": min(date_start, season.date_start) if season else date_start - timedelta(days=1),
-            "date_end": max(date_end, season.date_end) if season else date_end + timedelta(days=1),
+            "date_start": (
+                min(date_start, season.date_start)
+                if season
+                else date_start - timedelta(days=1)
+            ),
+            "date_end": (
+                max(date_end, season.date_end)
+                if season
+                else date_end + timedelta(days=1)
+            ),
         }
         if values["date_end"] <= values["date_start"]:
             values["date_end"] = values["date_start"] + timedelta(days=1)
@@ -135,7 +158,11 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
             if not club:
                 club = Club.create(
                     {
-                        "name": "%s %s" % (PRACTICE_PREFIX, SAMPLE_CLUB_NAMES[index % len(SAMPLE_CLUB_NAMES)]),
+                        "name": "%s %s"
+                        % (
+                            PRACTICE_PREFIX,
+                            SAMPLE_CLUB_NAMES[index % len(SAMPLE_CLUB_NAMES)],
+                        ),
                         "code": code,
                     }
                 )
@@ -148,7 +175,10 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
         Team = self.env["federation.team"].with_context(active_test=False)
         code = "%s-D%s" % (club.code, division_index + 1)
         team = Team.search([("code", "=", code)], limit=1)
-        name = "%s %s" % (club.name.replace(PRACTICE_PREFIX, "").strip(), division_index + 1)
+        name = "%s %s" % (
+            club.name.replace(PRACTICE_PREFIX, "").strip(),
+            division_index + 1,
+        )
         if not team:
             team = Team.create(
                 {"name": name, "code": code, "club_id": club.id, "category": "senior"}
@@ -172,7 +202,8 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
 
     def _create_competition(self, venue, season, dates):
         division_names = [
-            _("Division %(number)s", number=index + 1) for index in range(self.division_count)
+            _("Division %(number)s", number=index + 1)
+            for index in range(self.division_count)
         ]
         creation = self.env["federation.create.competition.wizard"].create(
             {
@@ -199,7 +230,11 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
                 ],
                 "role_line_ids": [
                     fields.Command.create({"role": role, "user_id": self.env.user.id})
-                    for role in ("competition_director", "matchday_manager", "results_officer")
+                    for role in (
+                        "competition_director",
+                        "matchday_manager",
+                        "results_officer",
+                    )
                 ],
             }
         )
@@ -252,7 +287,59 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
             }
         )
         wizard.action_apply()
+        self._prepare_practice_rosters(edition, teams_by_division)
         return True
+
+    def _prepare_practice_rosters(self, edition, teams_by_division):
+        Player = self.env["federation.player"]
+        RosterLine = self.env["federation.team.roster.line"]
+        License = self.env["federation.player.license"]
+        today = fields.Date.context_today(self)
+        license_expiry = max(edition.season_id.date_end, today + timedelta(days=365))
+        for division, teams in teams_by_division.items():
+            for team in teams:
+                roster = team._ensure_tournament_roster(division)
+                active_lines = roster.line_ids.filtered(
+                    lambda line: line.status == "active"
+                )
+                min_players, _max_players = roster._get_required_player_bounds()
+                players_to_add = max(1, min_players) - len(active_lines)
+                if players_to_add <= 0:
+                    continue
+                if roster.status == "active":
+                    roster.action_set_draft()
+                for index in range(players_to_add):
+                    player = Player.create(
+                        {
+                            "first_name": team.name,
+                            "last_name": _("Practice Player %s") % (index + 1),
+                            "gender": team.gender or "male",
+                            "birth_date": today - timedelta(days=365 * 25),
+                            "club_id": team.club_id.id,
+                            "team_ids": [fields.Command.link(team.id)],
+                        }
+                    )
+                    license_record = License.create(
+                        {
+                            "name": "PRACTICE-%s-%s" % (edition.id, player.id),
+                            "player_id": player.id,
+                            "season_id": edition.season_id.id,
+                            "club_id": team.club_id.id,
+                            "issue_date": today,
+                            "expiry_date": license_expiry,
+                        }
+                    )
+                    license_record.action_activate()
+                    RosterLine.create(
+                        {
+                            "roster_id": roster.id,
+                            "player_id": player.id,
+                            "license_id": license_record.id,
+                            "status": "active",
+                        }
+                    )
+                if roster.status == "draft":
+                    roster.action_activate()
 
     def _setup_gamedays(self, edition, venue, dates):
         GamedayWizard = self.env["federation.competition.gameday.setup.wizard"]
@@ -281,8 +368,10 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
         wizard.action_preview()
         if wizard.blocking_issue_count:
             raise ValidationError(
-                _("The schedule has %(count)s blocking issue(s); open Generate schedule to see them.",
-                  count=wizard.blocking_issue_count)
+                _(
+                    "The schedule has %(count)s blocking issue(s); open Generate schedule to see them.",
+                    count=wizard.blocking_issue_count,
+                )
             )
         wizard.action_apply()
         return True
@@ -300,7 +389,9 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
     # ------------------------------------------------------------------
 
     def _todo(self, record, summary, note, sequence):
-        activity_type = self.env.ref("mail.mail_activity_data_todo", raise_if_not_found=False)
+        activity_type = self.env.ref(
+            "mail.mail_activity_data_todo", raise_if_not_found=False
+        )
         today = fields.Date.context_today(self)
         record.activity_schedule(
             activity_type_id=activity_type.id if activity_type else False,
@@ -318,45 +409,87 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
         division = edition.tournament_ids.sorted("id")[:1]
         review = edition.workflow_mode == "controlled"
         items = [
-            (edition, _("Open the competition workspace"),
-             _("<p>Click <b>Open Workspace</b>. Every step should be complete; check that "
-               "the next action and messages are clear.</p>")),
-            (edition, _("Review teams and format"),
-             _("<p>Open <b>Teams &amp; format</b>. Check the teams per division and the "
-               "number of matches. Try changing a format and saving.</p>")),
-            (first_day or edition, _("Check the game days and schedule"),
-             _("<p>Open <b>Game Days</b>. Check dates, courts and times, and look at the "
-               "schedule of each game day.</p>")),
+            (
+                edition,
+                _("Open the competition workspace"),
+                _(
+                    "<p>Click <b>Open Workspace</b>. Every step should be complete; check that "
+                    "the next action and messages are clear.</p>"
+                ),
+            ),
+            (
+                edition,
+                _("Review teams and format"),
+                _(
+                    "<p>Open <b>Teams &amp; format</b>. Check the teams per division and the "
+                    "number of matches. Try changing a format and saving.</p>"
+                ),
+            ),
+            (
+                first_day or edition,
+                _("Check the game days and schedule"),
+                _(
+                    "<p>Open <b>Game Days</b>. Check dates, courts and times, and look at the "
+                    "schedule of each game day.</p>"
+                ),
+            ),
         ]
         if review:
             items.append(
-                (edition, _("Try the independent review"),
-                 _("<p>This competition uses Independent Review. Open <b>Publish</b> in the "
-                   "workspace, then approve the schedules in the review queue. Separation of "
-                   "duties may require a second user.</p>"))
+                (
+                    edition,
+                    _("Try the independent review"),
+                    _(
+                        "<p>This competition uses Independent Review. Open <b>Publish</b> in the "
+                        "workspace, then approve the schedules in the review queue. Separation of "
+                        "duties may require a second user.</p>"
+                    ),
+                )
             )
         items += [
-            (first_day or edition, _("Enter results on the first game day"),
-             _("<p>Open the first game day and enter a few scores with <b>Save result</b>. "
-               "If the day is today, also try <b>Run this court</b>.</p>")),
-            (division or edition, _("Check standings"),
-             _("<p>After entering results, open the division standings and check that "
-               "points and order are correct.</p>")),
-            (edition, _("Check the club view"),
-             _("<p>Ask a colleague with a club representative account, or use a test portal "
-               "user linked to a <i>[Practice]</i> club, to look at rosters, lineups and "
-               "results in the portal.</p>")),
-            (edition, _("Look at the public preview"),
-             _("<p>Use <b>Public preview</b>. Practice competitions can be previewed but never "
-               "published on the website.</p>")),
+            (
+                first_day or edition,
+                _("Enter results on the first game day"),
+                _(
+                    "<p>Open the first game day and enter a few scores with <b>Save result</b>. "
+                    "If the day is today, also try <b>Run this court</b>.</p>"
+                ),
+            ),
+            (
+                division or edition,
+                _("Check standings"),
+                _(
+                    "<p>After entering results, open the division standings and check that "
+                    "points and order are correct.</p>"
+                ),
+            ),
+            (
+                edition,
+                _("Check the club view"),
+                _(
+                    "<p>Ask a colleague with a club representative account, or use a test portal "
+                    "user linked to a <i>[Practice]</i> club, to look at rosters, lineups and "
+                    "results in the portal.</p>"
+                ),
+            ),
+            (
+                edition,
+                _("Look at the public preview"),
+                _(
+                    "<p>Use <b>Public preview</b>. Practice competitions can be previewed but never "
+                    "published on the website.</p>"
+                ),
+            ),
         ]
         sequence = 1
         for label, message in issues:
             self._todo(
                 edition,
                 _("Fix: %(step)s", step=label),
-                _("<p>This step could not be completed automatically:</p><p>%(message)s</p>",
-                  message=escape(str(message))),
+                _(
+                    "<p>This step could not be completed automatically:</p><p>%(message)s</p>",
+                    message=escape(str(message)),
+                ),
                 sequence,
             )
             sequence += 1
@@ -366,15 +499,21 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
         self._todo(
             edition,
             _("Remove the practice competition"),
-            _("<p>When you are done, use <b>Remove practice competition</b> on the "
-              "competition. It archives the competition and its sample clubs.</p>"),
+            _(
+                "<p>When you are done, use <b>Remove practice competition</b> on the "
+                "competition. It archives the competition and its sample clubs.</p>"
+            ),
             sequence,
         )
 
     def action_create(self):
         self.ensure_one()
-        if not self.env.user.has_group("sports_federation_base.group_federation_manager"):
-            raise AccessError(_("Only federation managers can create practice competitions."))
+        if not self.env.user.has_group(
+            "sports_federation_base.group_federation_manager"
+        ):
+            raise AccessError(
+                _("Only federation managers can create practice competitions.")
+            )
         dates = self._gameday_dates()
         venue = self._practice_venue()
         season = self._practice_season(dates[0], dates[-1])
@@ -384,12 +523,25 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
 
         issues = []
         summary = {"published": 0, "waiting": [], "skipped": []}
-        if self._run_step(issues, _("Teams & format"), self._setup_teams_and_format, edition, clubs):
-            if self._run_step(issues, _("Game days"), self._setup_gamedays, edition, venue, dates):
-                if self._run_step(issues, _("Generate schedule"), self._generate_schedule, edition):
-                    summary = self._run_step(
-                        issues, _("Publish schedule"), self._publish, edition, issues
-                    ) or summary
+        if self._run_step(
+            issues, _("Teams & format"), self._setup_teams_and_format, edition, clubs
+        ):
+            if self._run_step(
+                issues, _("Game days"), self._setup_gamedays, edition, venue, dates
+            ):
+                if self._run_step(
+                    issues, _("Generate schedule"), self._generate_schedule, edition
+                ):
+                    summary = (
+                        self._run_step(
+                            issues,
+                            _("Publish schedule"),
+                            self._publish,
+                            edition,
+                            issues,
+                        )
+                        or summary
+                    )
         self._assign_checklist(edition, issues, summary)
 
         message = _(
@@ -400,7 +552,9 @@ class FederationPracticeCompetitionWizard(models.TransientModel):
             days=len(dates),
         )
         if issues:
-            message += " " + _("%(count)s step(s) need your attention.", count=len(issues))
+            message += " " + _(
+                "%(count)s step(s) need your attention.", count=len(issues)
+            )
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",

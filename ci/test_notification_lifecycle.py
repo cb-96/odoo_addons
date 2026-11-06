@@ -1,11 +1,13 @@
 """Pure tests for the actionable-notification lifecycle."""
+
 import importlib.util
 from pathlib import Path
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location(
-    "communication_policy", ROOT / "sports_federation_notifications/communication_policy.py"
+    "communication_policy",
+    ROOT / "sports_federation_notifications/communication_policy.py",
 )
 policy = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(policy)
@@ -16,7 +18,16 @@ class LifecycleTests(unittest.TestCase):
     def test_all_eight_states_exist(self):
         self.assertEqual(
             [code for code, _label in policy.LIFECYCLE],
-            ["created", "queued", "delivered", "failed", "seen", "acted", "expired", "superseded"],
+            [
+                "created",
+                "queued",
+                "delivered",
+                "failed",
+                "seen",
+                "acted",
+                "expired",
+                "superseded",
+            ],
         )
 
     def test_nothing_recorded_is_created(self):
@@ -46,7 +57,9 @@ class LifecycleTests(unittest.TestCase):
         self.assertNotEqual(state(seen=True, delivery_states=["sent"]), "acted")
 
     def test_closed_states_are_terminal_in_the_policy(self):
-        self.assertEqual(set(policy.CLOSED_LIFECYCLE), {"acted", "expired", "superseded"})
+        self.assertEqual(
+            set(policy.CLOSED_LIFECYCLE), {"acted", "expired", "superseded"}
+        )
 
 
 class ReportTests(unittest.TestCase):
@@ -64,7 +77,9 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(report["totals"]["queued"], 40)
 
     def test_no_finished_items_means_no_rate(self):
-        self.assertIsNone(policy.summarize_lifecycle([("due_soon", "queued", 3)])["resolution_rate"])
+        self.assertIsNone(
+            policy.summarize_lifecycle([("due_soon", "queued", 3)])["resolution_rate"]
+        )
         self.assertIsNone(policy.summarize_lifecycle([])["resolution_rate"])
 
     def test_kinds_are_kept_apart(self):

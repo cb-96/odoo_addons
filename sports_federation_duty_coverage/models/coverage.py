@@ -226,9 +226,9 @@ class Match(models.Model):
         snapshot["blockers"] = "\n".join(blockers)
         status = vocabulary.status_for("coverage", snapshot["state"])
         snapshot["readiness"] = status
-        snapshot["readiness_label"] = self.env[
-            "federation.readiness.vocabulary"
-        ].label(status)
+        snapshot["readiness_label"] = self.env["federation.readiness.vocabulary"].label(
+            status
+        )
         return snapshot
 
     @api.depends(

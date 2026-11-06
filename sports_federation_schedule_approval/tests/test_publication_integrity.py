@@ -241,7 +241,9 @@ class TestPhase511Integrity(TransactionCase):
             )
 
     def test_review_and_publication_snapshots_render_readable_assignments(self):
-        schedule, review = self._valid_schedule_review(self.days[0], "readable-snapshot")
+        schedule, review = self._valid_schedule_review(
+            self.days[0], "readable-snapshot"
+        )
         fixture = schedule.assignment_ids.fixture_id
         slot = schedule.assignment_ids.slot_id
         review_summary = str(review.assignment_summary_html)
@@ -250,15 +252,19 @@ class TestPhase511Integrity(TransactionCase):
         self.assertIn(slot.court_id.display_name, review_summary)
         self.assertIn("2026-10-03 09:00:00", review_summary)
 
-        publication = self.env["federation.schedule.publication"].sudo().create(
-            {
-                "schedule_id": schedule.id,
-                "version": 1,
-                "assignment_snapshot": review.assignment_snapshot,
-                "snapshot_digest": review.snapshot_digest,
-                "source_revision": schedule.revision,
-                "review_id": review.id,
-            }
+        publication = (
+            self.env["federation.schedule.publication"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "version": 1,
+                    "assignment_snapshot": review.assignment_snapshot,
+                    "snapshot_digest": review.snapshot_digest,
+                    "source_revision": schedule.revision,
+                    "review_id": review.id,
+                }
+            )
         )
 
         self.assertIn(fixture.display_name, str(publication.assignment_summary_html))
@@ -310,9 +316,7 @@ class TestPhase511Integrity(TransactionCase):
                 "user_id": self.env.user.id,
             }
         )
-        review._write_decision(
-            {"state": "approved", "reviewer_id": self.env.user.id}
-        )
+        review._write_decision({"state": "approved", "reviewer_id": self.env.user.id})
 
         publication = self.env["federation.schedule.approval.commands"].publish(
             schedule.id

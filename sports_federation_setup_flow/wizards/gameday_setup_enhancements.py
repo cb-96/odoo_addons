@@ -38,7 +38,10 @@ class FederationCompetitionGamedaySetupWizardEnhancements(models.TransientModel)
                     continue
             if not parsed:
                 raise ValidationError(
-                    _("Could not read the skip date '%(value)s'. Use dd/mm/yyyy.", value=raw)
+                    _(
+                        "Could not read the skip date '%(value)s'. Use dd/mm/yyyy.",
+                        value=raw,
+                    )
                 )
             dates.add(parsed)
         return dates
@@ -49,7 +52,11 @@ class FederationCompetitionGamedaySetupWizardEnhancements(models.TransientModel)
             raise ValidationError(_("Select a venue before adding game days."))
         if self.repeat_every_weeks < 1 or self.repeat_count < 1:
             raise ValidationError(_("Repeat values must be positive."))
-        date = self.new_date or self.edition_id.date_start or fields.Date.context_today(self)
+        date = (
+            self.new_date
+            or self.edition_id.date_start
+            or fields.Date.context_today(self)
+        )
         commands = []
         courts = self.default_venue_id.playing_area_ids.filtered("active")
         skipped = self._parsed_skip_dates()
@@ -70,8 +77,12 @@ class FederationCompetitionGamedaySetupWizardEnhancements(models.TransientModel)
             commands.append(
                 fields.Command.create(
                     {
-                        "name": self._gameday_name(day_date_value, self.default_division_ids),
-                        "division_ids": [fields.Command.set(self.default_division_ids.ids)],
+                        "name": self._gameday_name(
+                            day_date_value, self.default_division_ids
+                        ),
+                        "division_ids": [
+                            fields.Command.set(self.default_division_ids.ids)
+                        ],
                         "date": day_date_value,
                         "venue_id": self.default_venue_id.id,
                         "start_hour": self.default_start_hour,

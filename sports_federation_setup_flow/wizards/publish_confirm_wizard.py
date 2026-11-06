@@ -1,4 +1,5 @@
 """Confirm publication when some game days have short rest between matches."""
+
 from odoo import _, fields, models
 from odoo.exceptions import ValidationError
 
@@ -7,7 +8,9 @@ class FederationSchedulePublishConfirmWizard(models.TransientModel):
     _name = "federation.schedule.publish.confirm.wizard"
     _description = "Confirm Schedule Publication"
 
-    edition_id = fields.Many2one("federation.competition.edition", required=True, readonly=True)
+    edition_id = fields.Many2one(
+        "federation.competition.edition", required=True, readonly=True
+    )
     details_html = fields.Html(readonly=True, sanitize=True)
     warning_day_count = fields.Integer(readonly=True)
     reason = fields.Char(

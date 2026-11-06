@@ -147,8 +147,13 @@ class FederationScheduleValidator(models.AbstractModel):
             fixture, slot = fixture_by_id.get(fixture_id), slot_by_id.get(slot_id)
             if not fixture or not slot:
                 continue
-            for source in (fixture.home_source_fixture_id, fixture.away_source_fixture_id):
-                source_slot = slot_by_id.get(assignment_map.get(source.id)) if source else None
+            for source in (
+                fixture.home_source_fixture_id,
+                fixture.away_source_fixture_id,
+            ):
+                source_slot = (
+                    slot_by_id.get(assignment_map.get(source.id)) if source else None
+                )
                 if source_slot and source_slot.end_datetime > slot.start_datetime:
                     errors.append(
                         {
@@ -159,7 +164,9 @@ class FederationScheduleValidator(models.AbstractModel):
                         }
                     )
         errors.extend(
-            self._stage_order_errors(schedule, assignment_map, fixture_by_id, slot_by_id)
+            self._stage_order_errors(
+                schedule, assignment_map, fixture_by_id, slot_by_id
+            )
         )
         stale = sorted(set(assignment_map) - set(fixture_by_id))
         for fixture_id in stale:

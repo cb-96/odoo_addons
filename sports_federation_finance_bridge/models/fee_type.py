@@ -6,7 +6,9 @@ class FederationFeeType(models.Model):
     _description = "Federation Fee Type"
 
     _check_company_auto = True
-    company_id = fields.Many2one('res.company', required=True, index=True, default=lambda self: self.env.company)
+    company_id = fields.Many2one(
+        "res.company", required=True, index=True, default=lambda self: self.env.company
+    )
     name = fields.Char(required=True)
     code = fields.Char(required=True)
     category = fields.Selection(
@@ -28,4 +30,6 @@ class FederationFeeType(models.Model):
     active = fields.Boolean(default=True)
     notes = fields.Text()
 
-    _code_unique = models.Constraint("unique (company_id, code)", "Fee type code must be unique.")
+    _code_unique = models.Constraint(
+        "unique (company_id, code)", "Fee type code must be unique."
+    )

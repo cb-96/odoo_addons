@@ -6,6 +6,7 @@ the competition's match-day manager (or competition director, or the person who
 opened the day).  Managers can still deactivate and reassign operators; every
 assignment stays a named, internal, auditable record.
 """
+
 from odoo import models
 
 
@@ -48,8 +49,10 @@ class CourtDefaultOperators(models.AbstractModel):
             .sudo()
             .with_context(court_default_operator=True, active_test=False)
         )
-        courts = matchday.sudo().slot_ids.mapped("court_id").filtered(
-            lambda court: court.venue_id == matchday.venue_id
+        courts = (
+            matchday.sudo()
+            .slot_ids.mapped("court_id")
+            .filtered(lambda court: court.venue_id == matchday.venue_id)
         )
         existing = Access.search([("matchday_id", "=", matchday.id)])
         covered = existing.filtered("active").mapped("court_id")

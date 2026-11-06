@@ -39,7 +39,11 @@ def sha256(path: Path) -> str:
 
 def head_commit() -> str:
     return subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, text=True, capture_output=True
+        ["git", "rev-parse", "HEAD"],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
     ).stdout.strip()
 
 
@@ -58,10 +62,18 @@ def check_baseline(evidence_dir: Path, commit: str) -> list[str]:
         return [error]
     issues = []
     if summary.get("commit") != commit:
-        issues.append(f"summary.json: commit {summary.get('commit')} is not the candidate {commit}")
+        issues.append(
+            f"summary.json: commit {summary.get('commit')} is not the candidate {commit}"
+        )
     if not summary.get("complete"):
         issues.append("summary.json: evidence set is incomplete")
-    for key in ("failed_lanes", "missing_lanes", "skipped_lanes", "invalid_records", "commit_mismatches"):
+    for key in (
+        "failed_lanes",
+        "missing_lanes",
+        "skipped_lanes",
+        "invalid_records",
+        "commit_mismatches",
+    ):
         if summary.get(key):
             issues.append(f"summary.json: {key} = {summary[key]}")
     lanes = {lane.get("lane") for lane in summary.get("lanes", [])}
@@ -70,7 +82,9 @@ def check_baseline(evidence_dir: Path, commit: str) -> list[str]:
     return issues
 
 
-def check_walkthrough(evidence_dir: Path, commit: str, contract: dict) -> tuple[list[str], list[dict]]:
+def check_walkthrough(
+    evidence_dir: Path, commit: str, contract: dict
+) -> tuple[list[str], list[dict]]:
     walk_dir = evidence_dir / "walkthrough"
     data, error = read_json(walk_dir / "walkthrough.json")
     if error:
@@ -79,8 +93,12 @@ def check_walkthrough(evidence_dir: Path, commit: str, contract: dict) -> tuple[
     if data.get("schema_version") != 1:
         issues.append("walkthrough.json: schema_version must be 1")
     if data.get("commit") != commit:
-        issues.append(f"walkthrough.json: commit {data.get('commit')} is not the candidate {commit}")
-    steps = {step.get("id"): step for step in data.get("steps", []) if isinstance(step, dict)}
+        issues.append(
+            f"walkthrough.json: commit {data.get('commit')} is not the candidate {commit}"
+        )
+    steps = {
+        step.get("id"): step for step in data.get("steps", []) if isinstance(step, dict)
+    }
     for required in contract["walkthrough"]["required_steps"]:
         step = steps.get(required["id"])
         if not step:
@@ -88,7 +106,9 @@ def check_walkthrough(evidence_dir: Path, commit: str, contract: dict) -> tuple[
             continue
         status = step.get("status")
         if status not in STEP_STATUSES:
-            issues.append(f"walkthrough step {required['id']}: invalid status {status!r}")
+            issues.append(
+                f"walkthrough step {required['id']}: invalid status {status!r}"
+            )
         elif status != "passed":
             issues.append(f"walkthrough step {required['id']}: {status}")
         if step.get("viewport") != required["viewport"]:
@@ -103,13 +123,22 @@ def check_walkthrough(evidence_dir: Path, commit: str, contract: dict) -> tuple[
         for shot in shots:
             path = (walk_dir / str(shot.get("path", ""))).resolve()
             if walk_dir.resolve() not in path.parents or not path.is_file():
-                issues.append(f"walkthrough step {required['id']}: screenshot {shot.get('path')} missing")
+                issues.append(
+                    f"walkthrough step {required['id']}: screenshot {shot.get('path')} missing"
+                )
             elif sha256(path) != shot.get("sha256"):
-                issues.append(f"walkthrough step {required['id']}: screenshot {shot.get('path')} checksum mismatch")
+                issues.append(
+                    f"walkthrough step {required['id']}: screenshot {shot.get('path')} checksum mismatch"
+                )
     defects = data.get("defects", [])
     for defect in defects:
-        if defect.get("severity") not in SEVERITIES or defect.get("classification") not in CLASSIFICATIONS:
-            issues.append(f"defect {defect.get('id')}: needs a valid severity and classification")
+        if (
+            defect.get("severity") not in SEVERITIES
+            or defect.get("classification") not in CLASSIFICATIONS
+        ):
+            issues.append(
+                f"defect {defect.get('id')}: needs a valid severity and classification"
+            )
         if defect.get("severity") == "blocker" and defect.get("status") != "resolved":
             issues.append(f"defect {defect.get('id')}: unresolved blocker")
     return issues, defects
@@ -129,7 +158,13 @@ def check_human(evidence_dir: Path, commit: str) -> tuple[str, list[str]]:
     for role in ("club_representative", "organiser", "court_operator"):
         count = sum(1 for s in sessions if s.get("role") == role and s.get("completed") is True)
         if count < 5:
+<<<<<<< HEAD
             issues.append(f"human-acceptance.json: {count} {role} completed sessions, need at least 5")
+=======
+            issues.append(
+                f"human-acceptance.json: {count} {role} sessions, need at least 5"
+            )
+>>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
     if not roles:
         issues.append("human-acceptance.json: no completed sessions")
     if data.get("critical_incidents"):
@@ -152,8 +187,10 @@ def main(argv: list[str] | None = None) -> int:
     human_status, human_issues = check_human(evidence_dir, commit)
     technical_ok = not baseline_issues and not walkthrough_issues
     release_ok = technical_ok and human_status == "completed"
-    verdict = "release-qualified" if release_ok else (
-        "technically-qualified" if technical_ok else "not-qualified"
+    verdict = (
+        "release-qualified"
+        if release_ok
+        else ("technically-qualified" if technical_ok else "not-qualified")
     )
     summary = {
         "schema_version": 1,
@@ -161,7 +198,11 @@ def main(argv: list[str] | None = None) -> int:
         "checked_at": datetime.now(timezone.utc).isoformat(),
         "verdict": verdict,
         "automated": {"ok": not baseline_issues, "issues": baseline_issues},
-        "walkthrough": {"ok": not walkthrough_issues, "issues": walkthrough_issues, "defects": defects},
+        "walkthrough": {
+            "ok": not walkthrough_issues,
+            "issues": walkthrough_issues,
+            "defects": defects,
+        },
         "human_acceptance": {"status": human_status, "issues": human_issues},
     }
     (evidence_dir / "end-to-end-summary.json").write_text(

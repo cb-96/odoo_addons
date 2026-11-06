@@ -1,8 +1,9 @@
 """Read-only presentation policy shared by existing role workspaces."""
+
 from datetime import datetime, timedelta, timezone
 
-ROLE_ORDER = ('club', 'official', 'planner', 'reviewer', 'manager')
-BUCKETS = ('now', 'soon', 'waiting', 'recent')
+ROLE_ORDER = ("club", "official", "planner", "reviewer", "manager")
+BUCKETS = ("now", "soon", "waiting", "recent")
 
 
 def choose_role(allowed, requested=None, remembered=None):
@@ -13,50 +14,58 @@ def choose_role(allowed, requested=None, remembered=None):
     return None
 
 
-def bucket_for(*, complete=False, waiting=False, unavailable=False,
-               deadline=None, now=None, blocking=False):
+def bucket_for(
+    *,
+    complete=False,
+    waiting=False,
+    unavailable=False,
+    deadline=None,
+    now=None,
+    blocking=False
+):
     if complete:
-        return 'recent'
+        return "recent"
     if waiting or unavailable:
-        return 'waiting'
+        return "waiting"
     if blocking or not deadline or not now or deadline <= now:
-        return 'now'
+        return "now"
     # All open work remains visible; only the next seven days are "due soon".
-    return 'soon' if deadline <= now + timedelta(days=7) else 'now'
+    return "soon" if deadline <= now + timedelta(days=7) else "now"
 
 
 def group_cards(cards):
     groups = {key: [] for key in BUCKETS}
     seen = set()
     for card in cards:
-        key = card['key']
+        key = card["key"]
         if key in seen:
             continue
         seen.add(key)
-        groups[card['bucket']].append(card)
+        groups[card["bucket"]].append(card)
     return groups
 
 
 def participation_status(checks):
     """Unknown or waiting checks never become a green readiness certificate."""
-    states = [check['state'] for check in checks]
-    if 'action' in states:
-        return 'action'
-    if 'waiting' in states:
-        return 'waiting'
+    states = [check["state"] for check in checks]
+    if "action" in states:
+        return "action"
+    if "waiting" in states:
+        return "waiting"
     # A check that does not apply (for example line-ups before any game day is
     # scheduled) neither blocks nor certifies; it is simply left out.
-    applicable = [state for state in states if state != 'not_applicable']
-    if not applicable or 'unknown' in applicable:
-        return 'unknown'
-    return 'complete'
+    applicable = [state for state in states if state != "not_applicable"]
+    if not applicable or "unknown" in applicable:
+        return "unknown"
+    return "complete"
 
 
 def actionable_cards(groups, now=None):
     """Blocking/overdue work first, then deadline; deterministic within ties."""
     now = now or datetime.now(timezone.utc).replace(tzinfo=None)
+
     def priority(card):
-        deadline = card.get('deadline')
+        deadline = card.get("deadline")
         if isinstance(deadline, str):
             try:
                 deadline = datetime.fromisoformat(deadline)
@@ -64,6 +73,12 @@ def actionable_cards(groups, now=None):
                 deadline = None
         if deadline and deadline.tzinfo is not None:
             deadline = deadline.astimezone(timezone.utc).replace(tzinfo=None)
-        urgent = bool(card.get('blocking')) or bool(deadline and deadline <= now)
-        return (not urgent, deadline is None, deadline or datetime.max, str(card['key']))
-    return sorted(groups.get('now', []) + groups.get('soon', []), key=priority)
+        urgent = bool(card.get("blocking")) or bool(deadline and deadline <= now)
+        return (
+            not urgent,
+            deadline is None,
+            deadline or datetime.max,
+            str(card["key"]),
+        )
+
+    return sorted(groups.get("now", []) + groups.get("soon", []), key=priority)

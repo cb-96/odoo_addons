@@ -8,7 +8,9 @@ class FederationDisciplinaryCase(models.Model):
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "opened_on desc, id desc"
 
-    company_id = fields.Many2one('res.company', required=True, index=True, default=lambda self: self.env.company)
+    company_id = fields.Many2one(
+        "res.company", required=True, index=True, default=lambda self: self.env.company
+    )
     name = fields.Char(required=True, tracking=True)
     reference = fields.Char(
         string="Reference",
@@ -92,8 +94,12 @@ class FederationDisciplinaryCase(models.Model):
             record.suspension_count = len(record.suspension_ids)
 
     def write(self, vals):
-        if 'company_id' in vals and any(row.company_id.id != vals['company_id'] for row in self):
-            raise ValidationError('Case company ownership is immutable. Use an audited migration.')
+        if "company_id" in vals and any(
+            row.company_id.id != vals["company_id"] for row in self
+        ):
+            raise ValidationError(
+                "Case company ownership is immutable. Use an audited migration."
+            )
         return super().write(vals)
 
     @api.model_create_multi

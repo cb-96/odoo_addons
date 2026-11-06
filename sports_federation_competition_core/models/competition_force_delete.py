@@ -21,6 +21,7 @@ The guards are bypassed the same way Odoo bypasses them when a module is
 uninstalled: ``BaseModel.unlink`` with the module-uninstall flag.  Chatter,
 followers, activities and attachments of the deleted records are removed too.
 """
+
 import logging
 from collections import defaultdict
 
@@ -86,7 +87,9 @@ class FederationCompetitionForceDelete(models.AbstractModel):
 
     @api.model
     def _is_owned_model(self, model_name):
-        return model_name.startswith("federation.") and model_name not in PROTECTED_MODELS
+        return (
+            model_name.startswith("federation.") and model_name not in PROTECTED_MODELS
+        )
 
     @api.model
     def collect(self, editions, include_parent=False):
@@ -96,9 +99,11 @@ class FederationCompetitionForceDelete(models.AbstractModel):
         "blockers": [str], "parents": recordset}``.
         """
         env = self.env(su=True)
-        editions = env["federation.competition.edition"].with_context(
-            active_test=False
-        ).browse(editions.ids)
+        editions = (
+            env["federation.competition.edition"]
+            .with_context(active_test=False)
+            .browse(editions.ids)
+        )
         index = self._reference_index()
         records = defaultdict(set)
         depth = {}
@@ -137,21 +142,38 @@ class FederationCompetitionForceDelete(models.AbstractModel):
         parents = env["federation.competition"]
         if include_parent:
             for parent in editions.mapped("competition_id"):
-                other_editions = env["federation.competition.edition"].with_context(
-                    active_test=False
-                ).search_count(
-                    [("competition_id", "=", parent.id),
-                     ("id", "not in", list(records["federation.competition.edition"]))]
+                other_editions = (
+                    env["federation.competition.edition"]
+                    .with_context(active_test=False)
+                    .search_count(
+                        [
+                            ("competition_id", "=", parent.id),
+                            (
+                                "id",
+                                "not in",
+                                list(records["federation.competition.edition"]),
+                            ),
+                        ]
+                    )
                 )
-                other_divisions = env["federation.tournament"].with_context(
-                    active_test=False
-                ).search_count(
-                    [("competition_id", "=", parent.id),
-                     ("id", "not in", list(records["federation.tournament"]))]
+                other_divisions = (
+                    env["federation.tournament"]
+                    .with_context(active_test=False)
+                    .search_count(
+                        [
+                            ("competition_id", "=", parent.id),
+                            ("id", "not in", list(records["federation.tournament"])),
+                        ]
+                    )
                 )
                 if not other_editions and not other_divisions:
                     parents |= parent
-        return {"records": records, "depth": depth, "blockers": blockers, "parents": parents}
+        return {
+            "records": records,
+            "depth": depth,
+            "blockers": blockers,
+            "parents": parents,
+        }
 
     @api.model
     def summary(self, scope):
@@ -165,7 +187,9 @@ class FederationCompetitionForceDelete(models.AbstractModel):
                 continue
             rows.append((Model._description or model_name, len(ids)))
         if scope["parents"]:
-            rows.append((self.env["federation.competition"]._description, len(scope["parents"])))
+            rows.append(
+                (self.env["federation.competition"]._description, len(scope["parents"]))
+            )
         return sorted(rows, key=lambda row: (-row[1], row[0]))
 
     @api.model
@@ -178,10 +202,14 @@ class FederationCompetitionForceDelete(models.AbstractModel):
                 [("id", "in", match_ids), ("result_state", "=", "approved")]
             )
             if approved:
-                notes.append(_("%(count)s official (approved) match result(s).", count=approved))
+                notes.append(
+                    _("%(count)s official (approved) match result(s).", count=approved)
+                )
         publication_ids = scope["records"].get("federation.schedule.publication", ())
         if publication_ids:
-            notes.append(_("%(count)s published schedule(s).", count=len(publication_ids)))
+            notes.append(
+                _("%(count)s published schedule(s).", count=len(publication_ids))
+            )
         return notes
 
     # ------------------------------------------------------------------
@@ -247,7 +275,8 @@ class FederationCompetitionForceDelete(models.AbstractModel):
         if not editions:
             raise UserError(_("Select at least one competition."))
         published = editions.filtered(
-            lambda edition: "website_published" in edition._fields and edition.website_published
+            lambda edition: "website_published" in edition._fields
+            and edition.website_published
         )
         if published:
             raise UserError(
@@ -259,15 +288,21 @@ class FederationCompetitionForceDelete(models.AbstractModel):
         scope = self.collect(editions, include_parent=include_parent)
         if scope["blockers"]:
             raise UserError(
-                _("Nothing was deleted because other data depends on it:\n- %(items)s",
-                  items="\n- ".join(scope["blockers"]))
+                _(
+                    "Nothing was deleted because other data depends on it:\n- %(items)s",
+                    items="\n- ".join(scope["blockers"]),
+                )
             )
         names = editions.mapped("display_name")
         summary = self.summary(scope)
         env = self.env(
             su=True,
-            context=dict(self.env.context, active_test=False, tracking_disable=True,
-                         **{MODULE_UNINSTALL_FLAG: True}),
+            context=dict(
+                self.env.context,
+                active_test=False,
+                tracking_disable=True,
+                **{MODULE_UNINSTALL_FLAG: True}
+            ),
         )
         records = {name: set(ids) for name, ids in scope["records"].items() if ids}
         self._break_internal_links(env, records)
@@ -289,11 +324,13 @@ class FederationCompetitionForceDelete(models.AbstractModel):
                 break
         if remaining:
             raise UserError(
-                _("The competition could not be deleted completely:\n- %(items)s",
-                  items="\n- ".join(
-                      "%s: %s" % (env[name]._description, errors.get(name, ""))
-                      for name in remaining
-                  ))
+                _(
+                    "The competition could not be deleted completely:\n- %(items)s",
+                    items="\n- ".join(
+                        "%s: %s" % (env[name]._description, errors.get(name, ""))
+                        for name in remaining
+                    ),
+                )
             )
         if scope["parents"]:
             try:

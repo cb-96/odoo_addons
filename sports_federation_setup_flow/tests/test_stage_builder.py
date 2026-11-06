@@ -11,10 +11,18 @@ class TestStageBuilderAndReuse(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.season = cls.env["federation.season"].create(
-            {"name": "Builder 26-27", "date_start": "2026-09-01", "date_end": "2027-06-30"}
+            {
+                "name": "Builder 26-27",
+                "date_start": "2026-09-01",
+                "date_end": "2027-06-30",
+            }
         )
         cls.next_season = cls.env["federation.season"].create(
-            {"name": "Builder 27-28", "date_start": "2027-09-01", "date_end": "2028-06-30"}
+            {
+                "name": "Builder 27-28",
+                "date_start": "2027-09-01",
+                "date_end": "2028-06-30",
+            }
         )
         competition = cls.env["federation.competition"].create(
             {"name": "Builder League", "competition_type": "league"}
@@ -63,14 +71,18 @@ class TestStageBuilderAndReuse(TransactionCase):
         return pset
 
     def _custom(self):
-        action = self.env["federation.competition.format.setup.wizard"].create(
-            {
-                "edition_id": self.edition.id,
-                "division_id": self.division.id,
-                "participant_set_id": self.pset.id,
-                "format_type": "custom",
-            }
-        ).action_open_stage_builder()
+        action = (
+            self.env["federation.competition.format.setup.wizard"]
+            .create(
+                {
+                    "edition_id": self.edition.id,
+                    "division_id": self.division.id,
+                    "participant_set_id": self.pset.id,
+                    "format_type": "custom",
+                }
+            )
+            .action_open_stage_builder()
+        )
         return action["params"]["structure_id"]
 
     def _stage(self, data, name):
@@ -78,12 +90,19 @@ class TestStageBuilderAndReuse(TransactionCase):
 
     def _build_top_four_final(self):
         structure_id = self._custom()
-        data = self.builder.add_stage(structure_id, {"name": "League", "format_type": "single_round_robin"})
+        data = self.builder.add_stage(
+            structure_id, {"name": "League", "format_type": "single_round_robin"}
+        )
         league = self._stage(data, "League")
         self.assertEqual((league["teams"], league["matches"]), (8, 28))
         data = self.builder.add_stage(
             structure_id,
-            {"name": "Final four", "format_type": "knockout", "after_stage_id": league["id"], "places": 4},
+            {
+                "name": "Final four",
+                "format_type": "knockout",
+                "after_stage_id": league["id"],
+                "places": 4,
+            },
         )
         final = self._stage(data, "Final four")
         self.assertEqual((final["column"], final["teams"], final["matches"]), (1, 4, 3))
@@ -97,9 +116,20 @@ class TestStageBuilderAndReuse(TransactionCase):
         final = self._stage(data, "Final four")
         # A place that does not exist is reported on the link.
         data = self.builder.add_link(
-            structure_id, {"source_id": league["id"], "target_id": final["id"], "rank_from": 9, "rank_to": 10}
+            structure_id,
+            {
+                "source_id": league["id"],
+                "target_id": final["id"],
+                "rank_from": 9,
+                "rank_to": 10,
+            },
         )
-        self.assertTrue(any("place 10 does not exist" in issue["message"] for issue in data["issues"]))
+        self.assertTrue(
+            any(
+                "place 10 does not exist" in issue["message"]
+                for issue in data["issues"]
+            )
+        )
         with self.assertRaises(ValidationError):
             self.builder.generate(structure_id)
         bad = next(link for link in data["links"] if link["rank_from"] == 9)
@@ -108,25 +138,39 @@ class TestStageBuilderAndReuse(TransactionCase):
         # Links cannot point backwards.
         with self.assertRaises(ValidationError):
             self.builder.add_link(
-                structure_id, {"source_id": final["id"], "target_id": league["id"], "rank_from": 1, "rank_to": 2}
+                structure_id,
+                {
+                    "source_id": final["id"],
+                    "target_id": league["id"],
+                    "rank_from": 1,
+                    "rank_to": 2,
+                },
             )
-        self.builder.update_stage(structure_id, final["id"], {"carryover_policy": "full_points"})
+        self.builder.update_stage(
+            structure_id, final["id"], {"carryover_policy": "full_points"}
+        )
         self.builder.generate(structure_id)
         structure = self.env["federation.competition.structure"].browse(structure_id)
         self.assertEqual(structure.state, "frozen")
-        self.assertEqual(len(structure.fixture_ids.filtered(lambda f: not f.bye_team_id)), 28 + 3)
+        self.assertEqual(
+            len(structure.fixture_ids.filtered(lambda f: not f.bye_team_id)), 28 + 3
+        )
         data = self.builder.load(structure_id)
         self.assertFalse(data["structure"]["editable"])
         self.assertTrue(data["structure"]["can_new_version"])
         draft = self.builder.new_version(structure_id)
         self.assertTrue(draft["structure"]["editable"])
-        self.assertEqual([stage["name"] for stage in draft["stages"]], ["League", "Final four"])
+        self.assertEqual(
+            [stage["name"] for stage in draft["stages"]], ["League", "Final four"]
+        )
         self.assertEqual(len(draft["links"]), 1)
 
     def test_template_round_trip(self):
         structure_id, _data = self._build_top_four_final()
         template = self.builder.save_template(structure_id, "League and final four")
-        template = self.env["federation.competition.format.template"].browse(template["id"])
+        template = self.env["federation.competition.format.template"].browse(
+            template["id"]
+        )
         self.assertEqual(template.format_type, "custom")
         self.assertIn("League → Final four", template.stage_summary)
         other = self.env["federation.tournament"].create(
@@ -139,14 +183,20 @@ class TestStageBuilderAndReuse(TransactionCase):
             }
         )
         pset = self._participants(self.edition, other, self.teams)
-        wizard = self.env["federation.competition.format.setup.wizard"].with_context(
-            default_edition_id=self.edition.id, default_division_id=other.id
-        ).create({"participant_set_id": pset.id})
+        wizard = (
+            self.env["federation.competition.format.setup.wizard"]
+            .with_context(
+                default_edition_id=self.edition.id, default_division_id=other.id
+            )
+            .create({"participant_set_id": pset.id})
+        )
         wizard.template_id = template
         wizard._onchange_template_id()
         self.assertEqual(wizard.format_type, "custom")
         action = wizard.action_apply()
-        copied = self.env["federation.competition.structure"].browse(action["params"]["structure_id"])
+        copied = self.env["federation.competition.structure"].browse(
+            action["params"]["structure_id"]
+        )
         self.assertEqual(copied.template_id, template)
         self.assertEqual(copied.stage_ids.mapped("name"), ["League", "Final four"])
         self.assertEqual(copied.stage_ids[1].incoming_progression_ids.rank_to, 4)
@@ -177,7 +227,9 @@ class TestStageBuilderAndReuse(TransactionCase):
         )
         wizard.template_id = template
         wizard._onchange_template_id()
-        self.assertEqual((wizard.format_type, wizard.qualifiers_per_pool), ("pool_knockout", 3))
+        self.assertEqual(
+            (wizard.format_type, wizard.qualifiers_per_pool), ("pool_knockout", 3)
+        )
 
     def test_copy_to_next_season_reuses_format_and_game_days(self):
         self.env["federation.competition.format.setup.wizard"].create(
@@ -201,26 +253,38 @@ class TestStageBuilderAndReuse(TransactionCase):
         )
         if "division_ids" in day._fields:
             day.division_ids = self.division
-        action = self.env["federation.competition.clone.setup.wizard"].create(
-            {
-                "source_edition_id": self.edition.id,
-                "name": "Builder Edition next",
-                "season_id": self.next_season.id,
-                "date_start": "2027-10-03",
-                "date_end": "2028-05-29",
-            }
-        ).action_copy_setup()
+        action = (
+            self.env["federation.competition.clone.setup.wizard"]
+            .create(
+                {
+                    "source_edition_id": self.edition.id,
+                    "name": "Builder Edition next",
+                    "season_id": self.next_season.id,
+                    "date_start": "2027-10-03",
+                    "date_end": "2028-05-29",
+                }
+            )
+            .action_copy_setup()
+        )
         copied = self.env["federation.competition.edition"].browse(action["res_id"])
         new_division = copied.tournament_ids
-        self.assertEqual(new_division.format_source_structure_id.format_type, "split_pools")
-        new_day = self.env["federation.matchday"].search([("edition_id", "=", copied.id)])
+        self.assertEqual(
+            new_division.format_source_structure_id.format_type, "split_pools"
+        )
+        new_day = self.env["federation.matchday"].search(
+            [("edition_id", "=", copied.id)]
+        )
         self.assertEqual(new_day.date.weekday(), day.date.weekday())
         if "division_ids" in new_day._fields:
             self.assertEqual(new_day.division_ids, new_division)
         pset = self._participants(copied, new_division, self.teams[:6])
-        wizard = self.env["federation.competition.format.setup.wizard"].with_context(
-            default_edition_id=copied.id, default_division_id=new_division.id
-        ).create({"participant_set_id": pset.id})
+        wizard = (
+            self.env["federation.competition.format.setup.wizard"]
+            .with_context(
+                default_edition_id=copied.id, default_division_id=new_division.id
+            )
+            .create({"participant_set_id": pset.id})
+        )
         self.assertEqual(wizard.format_type, "split_pools")
         self.assertEqual(wizard.split_rank, 4)
         self.assertTrue(wizard.source_structure_id)

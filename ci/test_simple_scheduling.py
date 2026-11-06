@@ -15,15 +15,23 @@ spec.loader.exec_module(status)
 class MessageTests(unittest.TestCase):
     def test_repeated_messages_collapse_with_a_count(self):
         items = [{"message": "Slot taken"}] * 3 + [{"message": "No court"}]
-        self.assertEqual(status.group_messages(items, "x"), ["Slot taken (x3)", "No court"])
+        self.assertEqual(
+            status.group_messages(items, "x"), ["Slot taken (x3)", "No court"]
+        )
 
     def test_missing_message_falls_back_to_code_then_text(self):
         self.assertEqual(status.group_messages([{"code": "scope"}], "x"), ["scope"])
-        self.assertEqual(status.group_messages([{}], "Schedule conflict"), ["Schedule conflict"])
+        self.assertEqual(
+            status.group_messages([{}], "Schedule conflict"), ["Schedule conflict"]
+        )
 
     def test_errors_and_warnings_never_mix(self):
         must, could = status.split_validation(
-            {"errors": [{"message": "Hard"}], "warnings": [{"message": "Soft"}], "unassigned_fixture_ids": []}
+            {
+                "errors": [{"message": "Hard"}],
+                "warnings": [{"message": "Soft"}],
+                "unassigned_fixture_ids": [],
+            }
         )
         self.assertEqual(must, ["Hard"])
         self.assertEqual(could, ["Soft"])
@@ -37,7 +45,13 @@ class MessageTests(unittest.TestCase):
 
     def test_counts_include_unassigned(self):
         self.assertEqual(
-            status.counts({"errors": [{}, {}], "warnings": [{}], "unassigned_fixture_ids": [1, 2, 3]}),
+            status.counts(
+                {
+                    "errors": [{}, {}],
+                    "warnings": [{}],
+                    "unassigned_fixture_ids": [1, 2, 3],
+                }
+            ),
             (5, 1),
         )
 

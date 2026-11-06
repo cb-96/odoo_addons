@@ -78,7 +78,11 @@ else:
     missing_modules = sorted(manifest_modules - set(configured_modules))
     unknown_modules = sorted(set(configured_modules) - manifest_modules)
     duplicates = sorted(
-        {module for module in configured_modules if configured_modules.count(module) > 1}
+        {
+            module
+            for module in configured_modules
+            if configured_modules.count(module) > 1
+        }
     )
     if missing_modules:
         errors.append(
@@ -97,17 +101,30 @@ else:
         )
 
 if not re.search(r"^REQUIRE_POST_TESTS=1$", runner_source, re.MULTILINE):
-    errors.append("ci/run_tests.sh: CI runs must require at least one post-test by default")
+    errors.append(
+        "ci/run_tests.sh: CI runs must require at least one post-test by default"
+    )
 if '--addons-path="$ADDONS_PATH"' not in runner_source:
     errors.append("ci/run_tests.sh: Odoo must receive the explicit custom addons path")
-if 'odoo --addons-path="$ADDONS_PATH" server --config=/etc/odoo/odoo.conf' not in runner_source:
-    errors.append("ci/run_tests.sh: Odoo server options must follow the Odoo 19 server subcommand")
+if (
+    'odoo --addons-path="$ADDONS_PATH" server --config=/etc/odoo/odoo.conf'
+    not in runner_source
+):
+    errors.append(
+        "ci/run_tests.sh: Odoo server options must follow the Odoo 19 server subcommand"
+    )
 if ' --stop-after-init "\\$@"' not in runner_source:
-    errors.append("ci/run_tests.sh: generated Odoo shell must forward install/test arguments")
+    errors.append(
+        "ci/run_tests.sh: generated Odoo shell must forward install/test arguments"
+    )
 if r'run_odoo "\${DEMO_ARGS[@]}"' not in runner_source:
-    errors.append("ci/run_tests.sh: generated Odoo shell must preserve optional demo arguments")
+    errors.append(
+        "ci/run_tests.sh: generated Odoo shell must preserve optional demo arguments"
+    )
 if "--entrypoint bash" not in runner_source:
-    errors.append("ci/run_tests.sh: CI shell script must override the Odoo image entrypoint")
+    errors.append(
+        "ci/run_tests.sh: CI shell script must override the Odoo image entrypoint"
+    )
 required_install_phases = (
     r'run_odoo "\${DEMO_ARGS[@]}" -d "$CI_ODOO_DB_NAME" -i "$MODULE_CSV"',
     r'run_odoo "\${DEMO_ARGS[@]}" --test-enable --test-tags="$TEST_TAGS" '

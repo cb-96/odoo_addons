@@ -70,7 +70,9 @@ class FederationStageGraphEngine(models.AbstractModel):
                 "name": _("%s - Knockout") % structure.name,
                 "structure_id": structure.id,
                 "sequence": (pool_count + 1) * 10,
-                "stage_type": "placement" if structure.knockout_full_placement else "knockout",
+                "stage_type": (
+                    "placement" if structure.knockout_full_placement else "knockout"
+                ),
                 "format_type": (
                     "placement_bracket"
                     if structure.knockout_full_placement
@@ -119,7 +121,9 @@ class FederationStageGraphEngine(models.AbstractModel):
             raise ValidationError(estimate["message"])
         Stage = self.env["federation.structure.stage"]
         second_format = (
-            "double_round_robin" if structure.second_phase_double else "single_round_robin"
+            "double_round_robin"
+            if structure.second_phase_double
+            else "single_round_robin"
         )
         season = Stage.create(
             {
@@ -138,9 +142,11 @@ class FederationStageGraphEngine(models.AbstractModel):
         bottom = teams - top
         groups = [
             (
-                _("%s - Championship group") % structure.name
-                if bottom
-                else _("%s - Second half") % structure.name,
+                (
+                    _("%s - Championship group") % structure.name
+                    if bottom
+                    else _("%s - Second half") % structure.name
+                ),
                 1,
                 top,
                 1,
@@ -151,7 +157,9 @@ class FederationStageGraphEngine(models.AbstractModel):
                 (_("%s - Relegation group") % structure.name, top + 1, teams, top + 1)
             )
         created = [season]
-        for sequence, (name, rank_from, rank_to, final_rank_from) in enumerate(groups, 2):
+        for sequence, (name, rank_from, rank_to, final_rank_from) in enumerate(
+            groups, 2
+        ):
             stage = Stage.create(
                 {
                     "name": name,
@@ -194,7 +202,9 @@ class FederationStageGraphEngine(models.AbstractModel):
     def _expected_stage_teams(self, stage):
         """Teams a stage should hold now, or None when it waits for a table."""
         if stage.source_type == "registration":
-            return set(stage.structure_id.participant_set_id.line_ids.mapped("team_id").ids)
+            return set(
+                stage.structure_id.participant_set_id.line_ids.mapped("team_id").ids
+            )
         if stage.stage_participant_ids:
             return set(stage.stage_participant_ids.mapped("team_id").ids)
         return None
@@ -213,8 +223,11 @@ class FederationStageGraphEngine(models.AbstractModel):
             return False
         expected = self._expected_stage_teams(stage)
         current = set(
-            (fixtures.mapped("home_team_id") | fixtures.mapped("away_team_id")
-             | fixtures.mapped("bye_team_id")).ids
+            (
+                fixtures.mapped("home_team_id")
+                | fixtures.mapped("away_team_id")
+                | fixtures.mapped("bye_team_id")
+            ).ids
         )
         if expected is not None and expected != current:
             raise ValidationError(

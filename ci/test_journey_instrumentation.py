@@ -1,4 +1,5 @@
 """Pure tests for journey instrumentation."""
+
 from datetime import datetime, timedelta
 import importlib.util
 from pathlib import Path
@@ -8,7 +9,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location(
-    "journey_instrumentation", ROOT / "sports_federation_portal/journey_instrumentation.py"
+    "journey_instrumentation",
+    ROOT / "sports_federation_portal/journey_instrumentation.py",
 )
 instr = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(instr)
@@ -18,8 +20,11 @@ NOW = datetime(2026, 11, 5, 12, 0)
 
 def event(journey, kind, session, minutes_ago=0, screen=None):
     return {
-        "journey": journey, "event": kind, "session_key": session,
-        "screen": screen, "occurred_on": NOW - timedelta(minutes=minutes_ago),
+        "journey": journey,
+        "event": kind,
+        "session_key": session,
+        "screen": screen,
+        "occurred_on": NOW - timedelta(minutes=minutes_ago),
     }
 
 
@@ -59,7 +64,9 @@ class CountTests(unittest.TestCase):
         self.assertIsNone(result["by_journey"]["work"]["validation_error_rate"])
 
     def test_unknown_event_kinds_are_ignored(self):
-        self.assertEqual(instr.summarize([event("w", "banana", "a")], NOW)["by_journey"], {})
+        self.assertEqual(
+            instr.summarize([event("w", "banana", "a")], NOW)["by_journey"], {}
+        )
 
 
 class SessionTests(unittest.TestCase):
@@ -109,7 +116,8 @@ class ContractTests(unittest.TestCase):
     def test_repository_honours_the_instrumentation_contract(self):
         result = subprocess.run(
             [sys.executable, str(ROOT / "ci/check_journey_instrumentation.py")],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 

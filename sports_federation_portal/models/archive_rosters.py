@@ -10,6 +10,7 @@ division itself, or its whole competition).  A roster linked to a competition
 only looks at that competition's divisions.  A team that still plays in an
 active competition that season keeps its roster.
 """
+
 from collections import defaultdict
 
 from odoo import api, fields, models
@@ -29,19 +30,35 @@ class FederationPortalArchiveScopeRosters(models.AbstractModel):
         env = self.env
         Division = env["federation.tournament"].sudo().with_context(active_test=False)
         pairs = set()
-        participants = env["federation.tournament.participant"].sudo().with_context(
-            active_test=False
-        ).search([("team_id", "in", team_ids)])
+        participants = (
+            env["federation.tournament.participant"]
+            .sudo()
+            .with_context(active_test=False)
+            .search([("team_id", "in", team_ids)])
+        )
         pairs.update((p.team_id.id, p.tournament_id.id) for p in participants)
-        entries = env["federation.competition.entry"].sudo().search(
-            [("team_id", "in", team_ids), ("state", "!=", "withdrawn")]
+        entries = (
+            env["federation.competition.entry"]
+            .sudo()
+            .search([("team_id", "in", team_ids), ("state", "!=", "withdrawn")])
         )
         pairs.update((e.team_id.id, e.window_id.division_id.id) for e in entries)
-        lines = env["federation.participant.set.line"].sudo().search(
-            [("team_id", "in", team_ids), ("participant_set_id.state", "=", "finalized")]
+        lines = (
+            env["federation.participant.set.line"]
+            .sudo()
+            .search(
+                [
+                    ("team_id", "in", team_ids),
+                    ("participant_set_id.state", "=", "finalized"),
+                ]
+            )
         )
-        pairs.update((l.team_id.id, l.participant_set_id.division_id.id) for l in lines)
-        divisions = Division.browse({division_id for _team, division_id in pairs if division_id})
+        pairs.update(
+            (line.team_id.id, line.participant_set_id.division_id.id) for line in lines
+        )
+        divisions = Division.browse(
+            {division_id for _team, division_id in pairs if division_id}
+        )
         info = {
             division.id: (
                 division.season_id.id or division.edition_id.season_id.id,
@@ -74,18 +91,26 @@ class FederationPortalArchiveScopeRosters(models.AbstractModel):
             .ids
         )
         team_ids.update(
-            self.env["federation.competition.entry"].sudo().search(
-                [("window_id.division_id", "in", list(hidden_divisions))]
-            ).mapped("team_id").ids
+            self.env["federation.competition.entry"]
+            .sudo()
+            .search([("window_id.division_id", "in", list(hidden_divisions))])
+            .mapped("team_id")
+            .ids
         )
         team_ids.update(
-            self.env["federation.participant.set.line"].sudo().search(
-                [("participant_set_id.division_id", "in", list(hidden_divisions))]
-            ).mapped("team_id").ids
+            self.env["federation.participant.set.line"]
+            .sudo()
+            .search([("participant_set_id.division_id", "in", list(hidden_divisions))])
+            .mapped("team_id")
+            .ids
         )
         if not team_ids:
             return [], {}, hidden_divisions
-        return list(team_ids), self._team_participations(list(team_ids)), hidden_divisions
+        return (
+            list(team_ids),
+            self._team_participations(list(team_ids)),
+            hidden_divisions,
+        )
 
     @staticmethod
     def _all_hidden(divisions, hidden_divisions):
@@ -96,9 +121,12 @@ class FederationPortalArchiveScopeRosters(models.AbstractModel):
         team_ids, participations, hidden_divisions = self._hidden_team_season_scope()
         if not team_ids:
             return []
-        rosters = self.env["federation.team.roster"].sudo().with_context(
-            active_test=False
-        ).search([("team_id", "in", team_ids)])
+        rosters = (
+            self.env["federation.team.roster"]
+            .sudo()
+            .with_context(active_test=False)
+            .search([("team_id", "in", team_ids)])
+        )
         hidden = []
         for roster in rosters:
             divisions = participations.get((roster.team_id.id, roster.season_id.id), {})
@@ -118,14 +146,18 @@ class FederationPortalArchiveScopeRosters(models.AbstractModel):
         team_ids, participations, hidden_divisions = self._hidden_team_season_scope()
         if not team_ids:
             return []
-        registrations = self.env["federation.season.registration"].sudo().search(
-            [("team_id", "in", team_ids)]
+        registrations = (
+            self.env["federation.season.registration"]
+            .sudo()
+            .search([("team_id", "in", team_ids)])
         )
         return [
             registration.id
             for registration in registrations
             if self._all_hidden(
-                participations.get((registration.team_id.id, registration.season_id.id), {}),
+                participations.get(
+                    (registration.team_id.id, registration.season_id.id), {}
+                ),
                 hidden_divisions,
             )
         ]
@@ -172,9 +204,15 @@ class FederationPortalArchiveScopeRosters(models.AbstractModel):
                 ("source_model", "=", "federation.season.registration"),
                 ("source_record_id", "in", registration_ids),
             ]
-            domain = (["|"] + domain + registration_domain) if domain else registration_domain
-        tasks = self.env["federation.operation.task"].sudo().search(
-            [("state", "!=", "done")] + domain
+            domain = (
+                (["|"] + domain + registration_domain)
+                if domain
+                else registration_domain
+            )
+        tasks = (
+            self.env["federation.operation.task"]
+            .sudo()
+            .search([("state", "!=", "done")] + domain)
         )
         if tasks:
             tasks.write({"state": "done", "completed_on": fields.Datetime.now()})

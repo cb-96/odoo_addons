@@ -345,7 +345,15 @@ class TestKpiCsvExport(TransactionCase):
         self.assertTrue(rows, "CSV should not be empty.")
         self.assertEqual(
             rows[0],
-            ["Fee Type", "Category", "State", "Event Count", "Total Amount", "Company", "Currency"],
+            [
+                "Fee Type",
+                "Category",
+                "State",
+                "Event Count",
+                "Total Amount",
+                "Company",
+                "Currency",
+            ],
         )
 
     def test_finance_csv_includes_confirmed_and_draft_rows(self):

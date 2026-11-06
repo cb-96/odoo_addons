@@ -36,13 +36,21 @@ class FederationIntegrationApiAuthMixin:
         """Return the best-effort caller IP for integration throttling."""
         request_proxy = self._request_proxy
         headers = getattr(request_proxy.httprequest, "headers", {}) or {}
-        remote_addr = (getattr(request_proxy.httprequest, "remote_addr", "") or "").strip()
-        configured = request_proxy.env["ir.config_parameter"].sudo().get_param(
-            "federation.trusted_proxy_networks", ""
+        remote_addr = (
+            getattr(request_proxy.httprequest, "remote_addr", "") or ""
+        ).strip()
+        configured = (
+            request_proxy.env["ir.config_parameter"]
+            .sudo()
+            .get_param("federation.trusted_proxy_networks", "")
         )
         try:
             peer = ip_address(remote_addr)
-            trusted = any(peer in ip_network(item.strip(), strict=False) for item in configured.split(",") if item.strip())
+            trusted = any(
+                peer in ip_network(item.strip(), strict=False)
+                for item in configured.split(",")
+                if item.strip()
+            )
         except ValueError:
             trusted = False
         if trusted:

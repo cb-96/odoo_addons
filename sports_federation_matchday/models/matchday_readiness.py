@@ -202,9 +202,7 @@ class FederationMatchdayReadiness(models.AbstractModel):
         if day.state == "closed" and key != "schedule":
             return self._ready_component(key, _("Closed"), vocabulary.COMPLETE)
         if day.state == "cancelled":
-            return self._ready_component(
-                key, _("Cancelled"), vocabulary.NOT_APPLICABLE
-            )
+            return self._ready_component(key, _("Cancelled"), vocabulary.NOT_APPLICABLE)
         try:
             with self.env.cr.savepoint():
                 return getattr(self, method)(scope)
@@ -382,9 +380,7 @@ class FederationMatchdayReadiness(models.AbstractModel):
                     owner=_("Match-day manager"),
                     deadline=deadline,
                     count=len(unavailable),
-                    details=self._details(
-                        unavailable.mapped("court_id.display_name")
-                    ),
+                    details=self._details(unavailable.mapped("court_id.display_name")),
                 )
             )
         if without_court:

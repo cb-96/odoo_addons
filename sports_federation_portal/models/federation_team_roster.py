@@ -400,7 +400,9 @@ class FederationTeamRoster(models.Model):
         user = user or self.env.user
         activated = self.browse()
         for roster in self:
-            elevated = self.env["federation.portal.privilege"].elevate(roster, user=user)
+            elevated = self.env["federation.portal.privilege"].elevate(
+                roster, user=user
+            )
             if elevated.status != "draft" or elevated._get_readiness_issues():
                 continue
             try:
@@ -710,7 +712,10 @@ class FederationTeamRosterLine(models.Model):
             )
             created |= self._portal_create_line(
                 roster,
-                values={"player_id": player.id, "license_id": license_record.id or False},
+                values={
+                    "player_id": player.id,
+                    "license_id": license_record.id or False,
+                },
                 user=user,
             )
         roster._portal_auto_activate(user=user)

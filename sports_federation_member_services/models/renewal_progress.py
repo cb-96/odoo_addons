@@ -11,11 +11,19 @@ class MembershipRenewalProgress(models.Model):
     renewal_step = fields.Selection(
         renewal_policy.STEPS, compute="_compute_renewal_progress", string="Renewal step"
     )
-    renewal_blockers = fields.Text(compute="_compute_renewal_progress", string="Still to do")
-    renewal_payment_note = fields.Char(compute="_compute_renewal_progress", string="Payment")
+    renewal_blockers = fields.Text(
+        compute="_compute_renewal_progress", string="Still to do"
+    )
+    renewal_payment_note = fields.Char(
+        compute="_compute_renewal_progress", string="Payment"
+    )
 
     @api.depends(
-        "previous_id", "state", "review_note", "person_id.family_canonical_id", "finance_event_id.state"
+        "previous_id",
+        "state",
+        "review_note",
+        "person_id.family_canonical_id",
+        "finance_event_id.state",
     )
     def _compute_renewal_progress(self):
         persisted = self.filtered("id")
@@ -40,7 +48,8 @@ class MembershipRenewalProgress(models.Model):
             unverified = sum(
                 1
                 for request in documents.get(membership.id, [])
-                if not request._current_verified() or (request.valid_until and request.valid_until < today)
+                if not request._current_verified()
+                or (request.valid_until and request.valid_until < today)
             )
             step, blockers = renewal_policy.progress(
                 is_renewal=bool(row.previous_id),
@@ -52,5 +61,7 @@ class MembershipRenewalProgress(models.Model):
             membership.renewal_step = step
             membership.renewal_blockers = "\n".join(blockers) or False
             membership.renewal_payment_note = (
-                renewal_policy.payment_note(row.finance_event_id.state) if row.previous_id else False
+                renewal_policy.payment_note(row.finance_event_id.state)
+                if row.previous_id
+                else False
             )

@@ -7,7 +7,7 @@ competition is open. Closing is refused while anything is unfinished.
 """
 
 from odoo import _, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 
 PENDING_RESULT_STATES = ("submitted", "verified", "contested", "corrected")
 
@@ -25,7 +25,10 @@ class FederationCompetitionEditionFinish(models.Model):
 
     def _finish_open_gamedays(self):
         return self.env["federation.matchday"].search(
-            [("edition_id", "=", self.id), ("state", "not in", ("closed", "cancelled"))],
+            [
+                ("edition_id", "=", self.id),
+                ("state", "not in", ("closed", "cancelled")),
+            ],
             order="date,id",
         )
 
@@ -67,7 +70,9 @@ class FederationCompetitionEditionFinish(models.Model):
                 _("%(count)s match(es) are not finished.", count=len(unfinished))
             )
         if "result_state" in matches._fields:
-            pending = matches.filtered(lambda m: m.result_state in PENDING_RESULT_STATES)
+            pending = matches.filtered(
+                lambda m: m.result_state in PENDING_RESULT_STATES
+            )
             if pending:
                 blockers.append(
                     _("%(count)s result(s) still need approval.", count=len(pending))
@@ -88,12 +93,18 @@ class FederationCompetitionEditionFinish(models.Model):
             )
             if open_incidents:
                 blockers.append(
-                    _("%(count)s gameday incident(s) are unresolved.", count=open_incidents)
+                    _(
+                        "%(count)s gameday incident(s) are unresolved.",
+                        count=open_incidents,
+                    )
                 )
         waiting = self._finish_unplaced_fixtures()
         if waiting:
             blockers.append(
-                _("%(count)s fixture(s) still wait for their teams.", count=len(waiting))
+                _(
+                    "%(count)s fixture(s) still wait for their teams.",
+                    count=len(waiting),
+                )
             )
         unfrozen = self._finish_tables().filtered(lambda table: table.state != "frozen")
         if unfrozen:
@@ -120,20 +131,51 @@ class FederationCompetitionEditionFinish(models.Model):
                     _("Publish the competition on the website"),
                 )
             )
-        actions.append(
-            (
-                "finish_matchdays",
-                len(self._finish_closable_gamedays()),
-                _("Close finished gamedays"),
+        can_read = self._usability_model_can_read
+        if can_read(self.env.get("federation.matchday")) and can_read(
+            self.env.get("federation.match")
+        ):
+            actions.append(
+                (
+                    "finish_matchdays",
+                    len(self._finish_closable_gamedays()),
+                    _("Close finished gamedays"),
+                )
             )
+        if can_read(self.env.get("federation.standing")):
+            actions.append(
+                (
+                    "finish_tables",
+                    len(self._finish_freezable_tables()),
+                    _("Freeze final tables"),
+                )
+            )
+        close_models = (
+            "federation.match",
+            "federation.matchday",
+            "federation.matchday.incident",
+            "federation.fixture",
+            "federation.standing",
         )
-        actions.append(
-            ("finish_tables", len(self._finish_freezable_tables()), _("Freeze final tables"))
+        can_close = all(
+            can_read(self.env.get(model_name)) for model_name in close_models
         )
-        ready_to_close = self.state == "in_progress" and not self._get_close_blockers()
-        actions.append(
-            ("close_competition", 1 if ready_to_close else 0, _("Close the competition"))
-        )
+        if can_close:
+            try:
+                self.check_access("write")
+            except AccessError:
+                can_close = False
+        if can_close:
+            ready_to_close = (
+                self.state == "in_progress" and not self._get_close_blockers()
+            )
+            actions.append(
+                (
+                    "close_competition",
+                    1 if ready_to_close else 0,
+                    _("Close the competition"),
+                )
+            )
         return actions
 
     def action_open_planner_operation(self, operation):

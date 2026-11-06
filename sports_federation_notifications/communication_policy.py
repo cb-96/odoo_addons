@@ -1,12 +1,19 @@
 """Pure communication policy. Delivery never establishes task completion."""
+
 import hashlib
 
-KINDS = ('schedule_change', 'official_response', 'document_returned', 'due_soon', 'delivery_failure')
-MODES = ('immediate', 'digest', 'inbox')
+KINDS = (
+    "schedule_change",
+    "official_response",
+    "document_returned",
+    "due_soon",
+    "delivery_failure",
+)
+MODES = ("immediate", "digest", "inbox")
 
 
 def identity(event_key, user_id):
-    return hashlib.sha256(('%s:%s' % (event_key, user_id)).encode()).hexdigest()
+    return hashlib.sha256(("%s:%s" % (event_key, user_id)).encode()).hexdigest()
 
 
 def merge_roles(routes):
@@ -21,9 +28,14 @@ def retry_delay(attempt):
 
 
 def delivery_label(state):
-    return {'pending': 'Waiting to queue', 'queued': 'Queued for email',
-            'sent': 'Accepted by outbound mail server', 'failed': 'Delivery failed',
-            'cancelled': 'Delivery cancelled', 'suppressed': 'Inbox only'}.get(state, 'Not checked')
+    return {
+        "pending": "Waiting to queue",
+        "queued": "Queued for email",
+        "sent": "Accepted by outbound mail server",
+        "failed": "Delivery failed",
+        "cancelled": "Delivery cancelled",
+        "suppressed": "Inbox only",
+    }.get(state, "Not checked")
 
 
 # ---------------------------------------------------------------------------
@@ -38,32 +50,39 @@ def delivery_label(state):
 # only "acted upon" does, and only when the underlying requirement is complete.
 # ---------------------------------------------------------------------------
 LIFECYCLE = (
-    ('created', 'Created'), ('queued', 'Queued'), ('delivered', 'Delivered'),
-    ('failed', 'Failed'), ('seen', 'Seen'), ('acted', 'Acted upon'),
-    ('expired', 'Expired'), ('superseded', 'Superseded'),
+    ("created", "Created"),
+    ("queued", "Queued"),
+    ("delivered", "Delivered"),
+    ("failed", "Failed"),
+    ("seen", "Seen"),
+    ("acted", "Acted upon"),
+    ("expired", "Expired"),
+    ("superseded", "Superseded"),
 )
-CLOSED_LIFECYCLE = ('acted', 'expired', 'superseded')
+CLOSED_LIFECYCLE = ("acted", "expired", "superseded")
 DEFAULT_EXPIRY_DAYS = 30
 
 
-def lifecycle_state(superseded=False, acted=False, expired=False, seen=False, delivery_states=()):
+def lifecycle_state(
+    superseded=False, acted=False, expired=False, seen=False, delivery_states=()
+):
     """Return the one lifecycle state of a notification from its recorded facts."""
     states = set(delivery_states)
     if superseded:
-        return 'superseded'
+        return "superseded"
     if acted:
-        return 'acted'
+        return "acted"
     if expired:
-        return 'expired'
+        return "expired"
     if seen:
-        return 'seen'
-    if states & {'sent', 'suppressed'}:
-        return 'delivered'
-    if 'failed' in states:
-        return 'failed'
-    if states & {'pending', 'queued'}:
-        return 'queued'
-    return 'created'
+        return "seen"
+    if states & {"sent", "suppressed"}:
+        return "delivered"
+    if "failed" in states:
+        return "failed"
+    if states & {"pending", "queued"}:
+        return "queued"
+    return "created"
 
 
 def summarize_lifecycle(rows):
@@ -76,13 +95,15 @@ def summarize_lifecycle(rows):
     totals, by_kind = {}, {}
     for kind, state, count in rows:
         totals[state] = totals.get(state, 0) + count
-        by_kind.setdefault(kind, {})[state] = by_kind.get(kind, {}).get(state, 0) + count
-    acted = totals.get('acted', 0)
-    stalled = totals.get('expired', 0) + totals.get('seen', 0)
+        by_kind.setdefault(kind, {})[state] = (
+            by_kind.get(kind, {}).get(state, 0) + count
+        )
+    acted = totals.get("acted", 0)
+    stalled = totals.get("expired", 0) + totals.get("seen", 0)
     denominator = acted + stalled
     return {
-        'totals': totals,
-        'by_kind': by_kind,
-        'seen_unresolved': totals.get('seen', 0),
-        'resolution_rate': (acted / denominator) if denominator else None,
+        "totals": totals,
+        "by_kind": by_kind,
+        "seen_unresolved": totals.get("seen", 0),
+        "resolution_rate": (acted / denominator) if denominator else None,
     }

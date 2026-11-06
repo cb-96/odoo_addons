@@ -76,14 +76,18 @@ class FederationSuspension(models.Model):
         if not teams or not self.date_start:
             return self.env["federation.match"]
         start = fields.Datetime.to_datetime(self.date_start)
-        return self.env["federation.match"].sudo().search(
-            [
-                ("state", "=", "done"),
-                ("date_scheduled", ">=", start),
-                "|",
-                ("home_team_id", "in", teams.ids),
-                ("away_team_id", "in", teams.ids),
-            ]
+        return (
+            self.env["federation.match"]
+            .sudo()
+            .search(
+                [
+                    ("state", "=", "done"),
+                    ("date_scheduled", ">=", start),
+                    "|",
+                    ("home_team_id", "in", teams.ids),
+                    ("away_team_id", "in", teams.ids),
+                ]
+            )
         )
 
     def _compute_matches_served(self):
@@ -108,7 +112,9 @@ class FederationSuspension(models.Model):
             return
 
         today = fields.Date.context_today(self)
-        upcoming = records_to_activate.filtered(lambda record: record.date_start > today)
+        upcoming = records_to_activate.filtered(
+            lambda record: record.date_start > today
+        )
         started = records_to_activate - upcoming
         upcoming.write({"state": "scheduled"})
         started.write({"state": "active"})

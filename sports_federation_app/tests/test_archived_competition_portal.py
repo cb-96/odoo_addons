@@ -18,7 +18,8 @@ class TestArchivedCompetitionPortal(TransactionCase):
                 "teams_per_division": 4,
                 "gameday_count": 1,
                 "first_gameday_today": False,
-                "first_gameday": fields.Date.context_today(cls.env.user) + timedelta(days=30),
+                "first_gameday": fields.Date.context_today(cls.env.user)
+                + timedelta(days=30),
             }
         )
         wizard.action_create()
@@ -42,7 +43,10 @@ class TestArchivedCompetitionPortal(TransactionCase):
 
     def _duty_tasks(self):
         return self.Task.search(
-            [("source_model", "=", self.duty._name), ("source_record_id", "=", self.duty.id)]
+            [
+                ("source_model", "=", self.duty._name),
+                ("source_record_id", "=", self.duty.id),
+            ]
         )
 
     def test_archiving_closes_tasks_and_sync_does_not_recreate_them(self):
@@ -70,7 +74,9 @@ class TestArchivedCompetitionPortal(TransactionCase):
         )
         records = [self.match, self.duty, day]
         for record in records:
-            self.assertTrue(self.privilege.portal_search(record, [("id", "=", record.id)]))
+            self.assertTrue(
+                self.privilege.portal_search(record, [("id", "=", record.id)])
+            )
 
         self.edition.write({"active": False})
         for record in records:
@@ -110,7 +116,8 @@ class TestArchivedCompetitionRosters(TransactionCase):
                 "teams_per_division": 4,
                 "gameday_count": 1,
                 "first_gameday_today": False,
-                "first_gameday": fields.Date.context_today(cls.env.user) + timedelta(days=30),
+                "first_gameday": fields.Date.context_today(cls.env.user)
+                + timedelta(days=30),
             }
         )
         wizard.action_create()
@@ -118,12 +125,18 @@ class TestArchivedCompetitionRosters(TransactionCase):
             [("name", "=", "[Practice] Archive rosters")], limit=1
         )
         cls.division = cls.edition.tournament_ids[:1]
-        cls.team = cls.env["federation.match"].search(
-            [("tournament_id", "=", cls.division.id)], limit=1
-        ).home_team_id
+        cls.team = (
+            cls.env["federation.match"]
+            .search([("tournament_id", "=", cls.division.id)], limit=1)
+            .home_team_id
+        )
         cls.season = cls.division.season_id or cls.edition.season_id
         cls.roster = cls.env["federation.team.roster"].create(
-            {"name": "Archive roster", "team_id": cls.team.id, "season_id": cls.season.id}
+            {
+                "name": "Archive roster",
+                "team_id": cls.team.id,
+                "season_id": cls.season.id,
+            }
         )
         cls.scope = cls.env["federation.portal.archive.scope"]
         cls.privilege = cls.env["federation.portal.privilege"]
@@ -179,7 +192,8 @@ class TestCompetitionForceDelete(TransactionCase):
                 "teams_per_division": 4,
                 "gameday_count": 1,
                 "first_gameday_today": False,
-                "first_gameday": fields.Date.context_today(self.env.user) + timedelta(days=30),
+                "first_gameday": fields.Date.context_today(self.env.user)
+                + timedelta(days=30),
             }
         )
         wizard.action_create()
@@ -190,18 +204,22 @@ class TestCompetitionForceDelete(TransactionCase):
     def test_force_delete_removes_protected_history_but_keeps_master_data(self):
         edition = self._competition("Force delete")
         division = edition.tournament_ids
-        teams = self.env["federation.match"].search(
-            [("tournament_id", "in", division.ids)]
-        ).mapped("home_team_id")
+        teams = (
+            self.env["federation.match"]
+            .search([("tournament_id", "in", division.ids)])
+            .mapped("home_team_id")
+        )
         publications = self.env["federation.schedule.publication"].search(
             [("schedule_id.edition_id", "=", edition.id)]
         )
         self.assertTrue(publications, "the practice competition is published")
         self.assertTrue(teams)
 
-        wizard = self.env["federation.competition.force.delete.wizard"].with_context(
-            active_model=edition._name, active_ids=edition.ids
-        ).create({})
+        wizard = (
+            self.env["federation.competition.force.delete.wizard"]
+            .with_context(active_model=edition._name, active_ids=edition.ids)
+            .create({})
+        )
         self.assertFalse(wizard.blocked)
         self.assertIn("Will be deleted", wizard.preview_html)
         with self.assertRaises(UserError):
@@ -227,8 +245,20 @@ class TestCompetitionForceDelete(TransactionCase):
             {
                 "name": "Force delete manager",
                 "login": "force-delete-manager",
-                "group_ids": [(6, 0, [self.env.ref("sports_federation_base.group_federation_manager").id])],
+                "group_ids": [
+                    (
+                        6,
+                        0,
+                        [
+                            self.env.ref(
+                                "sports_federation_base.group_federation_manager"
+                            ).id
+                        ],
+                    )
+                ],
             }
         )
         with self.assertRaises(AccessError):
-            self.env["federation.competition.force.delete"].with_user(manager).execute(edition)
+            self.env["federation.competition.force.delete"].with_user(manager).execute(
+                edition
+            )

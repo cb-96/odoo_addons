@@ -15,6 +15,7 @@ from datetime import date, timedelta
 
 from odoo import Command
 
+env = globals()["env"]
 LOGIN_DOMAIN = "walkthrough.invalid"
 report = {"accounts": {}, "data": {}, "failed_steps": []}
 
@@ -28,27 +29,41 @@ def step(name, func):
         with env.cr.savepoint():  # noqa: F821
             report["data"][name] = func()
     except Exception as exc:  # noqa: BLE001 - report and continue
-        report["failed_steps"].append({"step": name, "error": f"{type(exc).__name__}: {exc}"})
+        report["failed_steps"].append(
+            {"step": name, "error": f"{type(exc).__name__}: {exc}"}
+        )
 
 
 def make_user(role, name, groups):
     login = f"{role}@{LOGIN_DOMAIN}"
     password = secrets.token_urlsafe(18)
-    user = env["res.users"].with_context(no_reset_password=True).create(  # noqa: F821
-        {
-            "name": name,
-            "login": login,
-            "email": login,
-            "password": password,
-            "group_ids": [Command.set([ref(xmlid) for xmlid in groups])],
-        }
+    user = (
+        env["res.users"]
+        .with_context(no_reset_password=True)
+        .create(  # noqa: F821
+            {
+                "name": name,
+                "login": login,
+                "email": login,
+                "password": password,
+                "group_ids": [Command.set([ref(xmlid) for xmlid in groups])],
+            }
+        )
     )
-    report["accounts"][role] = {"login": login, "password": password, "user_id": user.id}
+    report["accounts"][role] = {
+        "login": login,
+        "password": password,
+        "user_id": user.id,
+    }
     return user
 
 
-if env["res.users"].search_count([("login", "=like", f"%@{LOGIN_DOMAIN}")]):  # noqa: F821
-    raise SystemExit("Walkthrough accounts already exist; use a fresh disposable database.")
+if env["res.users"].search_count(
+    [("login", "=like", f"%@{LOGIN_DOMAIN}")]
+):  # noqa: F821
+    raise SystemExit(
+        "Walkthrough accounts already exist; use a fresh disposable database."
+    )
 
 INTERNAL = ["base.group_user", "sports_federation_base.group_federation_user"]
 users = {}
@@ -79,7 +94,9 @@ def seed_internal_users():
         "Walkthrough Gameday Manager",
         INTERNAL + ["sports_federation_matchday.group_matchday_manager"],
     )
-    users["court_operator"] = make_user("court_operator", "Walkthrough Court Operator", INTERNAL)
+    users["court_operator"] = make_user(
+        "court_operator", "Walkthrough Court Operator", INTERNAL
+    )
     users["result_validator"] = make_user(
         "result_validator",
         "Walkthrough Result Validator",
@@ -110,9 +127,15 @@ def seed_reference_data():
         }
     )
     competition = env["federation.competition"].create(  # noqa: F821
-        {"name": "Walkthrough League", "competition_type": "league", "rule_set_id": rule_set.id}
+        {
+            "name": "Walkthrough League",
+            "competition_type": "league",
+            "rule_set_id": rule_set.id,
+        }
     )
-    venue = env["federation.venue"].create({"name": "Walkthrough Sports Hall"})  # noqa: F821
+    venue = env["federation.venue"].create(
+        {"name": "Walkthrough Sports Hall"}
+    )  # noqa: F821
     courts = env["federation.playing.area"].create(  # noqa: F821
         [{"name": f"Court {number}", "venue_id": venue.id} for number in (1, 2)]
     )
@@ -161,23 +184,36 @@ def seed_portal_accounts():
     clubs = env["federation.club"].search(  # noqa: F821
         [("name", "like", "Walkthrough Club")], order="name"
     )
-    portal = ["base.group_portal", "sports_federation_portal.group_federation_portal_club"]
-    for role, club in (("club_representative", clubs[0]), ("other_club_representative", clubs[1])):
+    portal = [
+        "base.group_portal",
+        "sports_federation_portal.group_federation_portal_club",
+    ]
+    for role, club in (
+        ("club_representative", clubs[0]),
+        ("other_club_representative", clubs[1]),
+    ):
         user = make_user(role, f"Walkthrough {club.name} Contact", portal)
         env["federation.club.representative"].create(  # noqa: F821
             {
                 "club_id": club.id,
                 "partner_id": user.partner_id.id,
                 "user_id": user.id,
-                "role_type_id": ref("sports_federation_portal.role_type_competition_contact"),
+                "role_type_id": ref(
+                    "sports_federation_portal.role_type_competition_contact"
+                ),
             }
         )
     official = make_user(
         "official",
         "Walkthrough Official",
-        ["base.group_portal", "sports_federation_portal.group_federation_portal_official"],
+        [
+            "base.group_portal",
+            "sports_federation_portal.group_federation_portal_official",
+        ],
     )
-    env["federation.referee"].create({"name": official.name, "user_id": official.id})  # noqa: F821
+    env["federation.referee"].create(
+        {"name": official.name, "user_id": official.id}
+    )  # noqa: F821
     return ["club_representative", "other_club_representative", "official"]
 
 

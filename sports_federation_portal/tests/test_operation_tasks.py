@@ -125,9 +125,7 @@ class TestFederationOperationTasks(TransactionCase):
         )
 
     def test_resolved_task_stops_daily_digest_reminders(self):
-        away_club = self.env["federation.club"].create(
-            {"name": "Digest Away Club"}
-        )
+        away_club = self.env["federation.club"].create({"name": "Digest Away Club"})
         away_team = self.env["federation.team"].create(
             {"name": "Digest Away Team", "club_id": away_club.id}
         )
