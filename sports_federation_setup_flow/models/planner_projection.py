@@ -1,18 +1,11 @@
-<<<<<<< HEAD
-
-from odoo import _, fields, models
-=======
 from collections import defaultdict
 
 from odoo import _, api, fields, models
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
 
 
 class FederationCompetitionEditionPlannerExtension(models.Model):
     _inherit = "federation.competition.edition"
 
-<<<<<<< HEAD
-=======
     def _planner_enrich_issues(self, issues):
         owners = {
             "basics": _("Competition director"),
@@ -419,7 +412,6 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                 }
             )
         return result
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
 
     def get_competition_planner_data(self):
         self.ensure_one()

@@ -180,14 +180,7 @@ class OperationTaskJourneys(models.Model):
             ("source_model", "=", "federation.season.registration"),
             ("task_type", "=", "roster_readiness"),
         ]
-<<<<<<< HEAD
         return specs, scope
-=======
-        self._sync_specs(specs, scope)
-        return self.sudo().search(
-            self._portal_get_domain(user) + [("state", "!=", "done")]
-        )
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
 
     @api.depends("state", "audience", "source_model", "source_record_id")
     def _compute_journey_presentation(self):

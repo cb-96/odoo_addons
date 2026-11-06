@@ -1,3 +1,5 @@
+from datetime import datetime, time, timedelta
+
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
@@ -393,8 +395,6 @@ class FederationMatchSheet(models.Model):
             ]
         return []
 
-<<<<<<< HEAD
-=======
     def _get_gameday_scope(self):
         """Return the explicit match-day scope, or a tournament/date fallback."""
         self.ensure_one()
@@ -566,7 +566,6 @@ class FederationMatchSheet(models.Model):
                 continue
             seen.add(scope)
             yield record, record._get_gameday_sheets()
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
 
     def _get_submission_issues(self):
         """Return submission issues."""

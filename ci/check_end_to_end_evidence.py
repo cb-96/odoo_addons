@@ -158,13 +158,7 @@ def check_human(evidence_dir: Path, commit: str) -> tuple[str, list[str]]:
     for role in ("club_representative", "organiser", "court_operator"):
         count = sum(1 for s in sessions if s.get("role") == role and s.get("completed") is True)
         if count < 5:
-<<<<<<< HEAD
             issues.append(f"human-acceptance.json: {count} {role} completed sessions, need at least 5")
-=======
-            issues.append(
-                f"human-acceptance.json: {count} {role} sessions, need at least 5"
-            )
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
     if not roles:
         issues.append("human-acceptance.json: no completed sessions")
     if data.get("critical_incidents"):

@@ -1,13 +1,8 @@
 """Single owner of operation-task projection and synchronization."""
-<<<<<<< HEAD
 import logging
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
-=======
-
-from odoo import api, fields, models
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
 
 from .. import task_policy
 
@@ -27,27 +22,11 @@ class FederationTaskProjection(models.AbstractModel):
         """
         user = user or self.env.user
         task_model = self.env["federation.operation.task"]
-<<<<<<< HEAD
         specs, scope_domain = task_model._project_task_specs(user=user)
-=======
-        specs, scope_domain = self.env["federation.operation.task"]._project_task_specs(
-            user=user
-        )
-        specs = [spec for spec in specs if not task_policy.validate_spec(spec)]
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
         scope = self.env["federation.portal.archive.scope"]
         hidden_rosters = set(scope.hidden_roster_ids())
         hidden_registrations = set(scope.hidden_registration_ids())
         specs = [
-<<<<<<< HEAD
-            spec for spec in specs
-            if not (
-                (spec.get("source_model") == "federation.team.roster"
-                 and spec.get("source_record_id") in hidden_rosters)
-                or spec.get("roster_id") in hidden_rosters
-                or (spec.get("source_model") == "federation.season.registration"
-                    and spec.get("source_record_id") in hidden_registrations)
-=======
             spec
             for spec in specs
             if not (
@@ -60,7 +39,6 @@ class FederationTaskProjection(models.AbstractModel):
                     spec.get("source_model") == "federation.season.registration"
                     and spec.get("source_record_id") in hidden_registrations
                 )
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
             )
         ]
         self._apply(specs, scope_domain)
@@ -95,28 +73,19 @@ class FederationTaskProjection(models.AbstractModel):
             task.source_key: task
             for task in Task.search([("source_key", "in", list(wanted))])
         }
-<<<<<<< HEAD
         creates = []
         for key, values in by_spec.items():
             task = by_key.get(key)
-=======
-        for values in specs:
-            task = by_key.get(values["source_key"])
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
             if not task:
                 creates.append(values)
                 continue
             changes = self._changed_values(task, values)
             if task.state == "done":
                 changes.update(state="open", completed_on=False, digest_sent_on=False)
-<<<<<<< HEAD
             if changes:
                 task.write(changes)
         if creates:
             Task.create(creates)
-=======
-            task.write(changes)
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
         stale = existing.filtered(
             lambda task: task.source_key not in wanted and task.state != "done"
         )
@@ -125,7 +94,6 @@ class FederationTaskProjection(models.AbstractModel):
         return True
 
     @api.model
-<<<<<<< HEAD
     def _changed_values(self, task, values):
         """Compare ORM values without treating serialized dates/relations as changes."""
         changes = {}
@@ -146,48 +114,3 @@ class FederationTaskProjection(models.AbstractModel):
             if current != value:
                 changes[name] = values[name]
         return changes
-=======
-    def _provide_existing_domain_tasks(self, user=None):
-        """Compatibility/provider marker: specs are produced by owning domains."""
-        return True
-
-    @api.model
-    def _provide_review_handoffs(self, user=None):
-        """Review work is explicit; approved/complete records create no task."""
-        return True
-
-    @api.model
-    def _sync_review_handoffs(self, user):
-        """Move submitted line-ups to reviewer work; close approved line-up work."""
-        Task = self.env["federation.operation.task"].sudo()
-        sheets = (
-            self.env["federation.match.sheet"]
-            .sudo()
-            .search([("state", "in", ("submitted", "approved", "locked"))])
-        )
-        for sheet in sheets:
-            source_key = "gameday-lineup:%s:%s" % (
-                sheet.team_id.id,
-                repr(sheet._get_gameday_scope() or ("sheet", sheet.id)),
-            )
-            current = Task.search([("source_key", "=", source_key)], limit=1)
-            if sheet.state in ("approved", "locked"):
-                if current and current.state != "done":
-                    current.write(
-                        {"state": "done", "completed_on": fields.Datetime.now()}
-                    )
-                continue
-            if not current:
-                continue
-            current.write(
-                {
-                    "task_type": "lineup_review",
-                    "audience": "manager",
-                    "name": "Review game-day line-up: %s" % sheet.team_id.display_name,
-                    "blocking_reason": "The game-day line-up was submitted and needs approval.",
-                    "next_step": "Approve or return the line-up",
-                    "source_model": sheet._name,
-                    "source_record_id": sheet.id,
-                }
-            )
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91

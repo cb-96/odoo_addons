@@ -421,8 +421,6 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             "domain": [("id", "in", schedules.ids)],
         }
 
-<<<<<<< HEAD
-=======
     def _build_proposal(self, require_generated=False):
         errors, warnings = self._validate_scope(require_generated)
         fixtures, deferred, excluded = self._fixtures()
@@ -793,7 +791,6 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
                         counts[team.id] = counts.get(team.id, 0) + 1
             total += sum(1 for count in counts.values() if count > 1)
         return total
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
 
     def _prepare_existing_planning(self):
         if self.mode == "fill":
@@ -875,8 +872,6 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             }
         )
 
-<<<<<<< HEAD
-=======
     def _input_signature(self):
         payload = {
             "edition": self.edition_id.id,
@@ -910,8 +905,6 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         return hashlib.sha256(
             json.dumps(payload, default=str, sort_keys=True).encode()
         ).hexdigest()
-
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
 
 class FederationCompetitionScheduleStageWindow(models.TransientModel):
     _name = "federation.competition.schedule.stage.window"

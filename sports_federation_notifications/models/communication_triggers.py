@@ -18,7 +18,6 @@ class MatchdayCommunication(models.Model):
             else {}
         )
         result = super().write(vals)
-<<<<<<< HEAD
         def notify():
             service = self.env['federation.notification.service']
             for day in self if watched else self.browse():
@@ -33,30 +32,6 @@ class MatchdayCommunication(models.Model):
         self.env["federation.notification.service"]._run_notification_effect(
             notify, source=self, name="MatchdayCommunication",
         )
-=======
-        service = self.env["federation.notification.service"]
-        for day in self if watched else self.browse():
-            after = (day.venue_id.id, day.current_publication_id.id)
-            if (
-                before[day.id] == after
-                or not day.current_publication_id
-                or day.current_publication_id.state != "live"
-            ):
-                continue
-            # Publishing a new immutable snapshot is the authoritative schedule-change boundary.
-            revision = day.communication_revision + 1
-            super(MatchdayCommunication, day).write(
-                {"communication_revision": revision}
-            )
-            service._publish_action(
-                day,
-                "schedule_change",
-                "schedule:%s:%s" % (day.id, revision),
-                service._day_routes(day),
-                urgent=True,
-                occurred_on=occurred_on,
-            )
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
         return result
 
 
@@ -68,7 +43,6 @@ class OfficialResponseCommunication(models.Model):
         occurred_on = fields.Datetime.now()
         before = {record.id: record.state for record in self} if "state" in vals else {}
         result = super().write(vals)
-<<<<<<< HEAD
         def notify():
             for assignment in self if before else self.browse():
                 if assignment.state != 'cancelled' or before[assignment.id] == 'cancelled':
@@ -82,25 +56,6 @@ class OfficialResponseCommunication(models.Model):
         self.env["federation.notification.service"]._run_notification_effect(
             notify, source=self, name="OfficialResponseCommunication",
         )
-=======
-        for assignment in self if before else self.browse():
-            if assignment.state != "cancelled" or before[assignment.id] == "cancelled":
-                continue
-            revision = assignment.communication_revision + 1
-            super(OfficialResponseCommunication, assignment).write(
-                {"communication_revision": revision}
-            )
-            service = self.env["federation.notification.service"]
-            edition = assignment.match_id._competition_workflow_edition()
-            service._publish_action(
-                assignment,
-                "official_response",
-                "coverage:%s:%s" % (assignment.id, revision),
-                service._organiser_routes(edition),
-                urgent=True,
-                occurred_on=occurred_on,
-            )
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
         return result
 
 
@@ -153,7 +108,6 @@ class DocumentReturnCommunication(models.Model):
         occurred_on = fields.Datetime.now()
         before = {record.id: record.state for record in self} if "state" in vals else {}
         result = super().write(vals)
-<<<<<<< HEAD
         def notify():
             for document in self if before else self.browse():
                 if document.state != 'replacement_requested' or before[document.id] == 'replacement_requested':
@@ -169,44 +123,6 @@ class DocumentReturnCommunication(models.Model):
         self.env["federation.notification.service"]._run_notification_effect(
             notify, source=self, name="DocumentReturnCommunication",
         )
-=======
-        for document in self if before else self.browse():
-            if (
-                document.state != "replacement_requested"
-                or before[document.id] == "replacement_requested"
-            ):
-                continue
-            revision = document.communication_revision + 1
-            super(DocumentReturnCommunication, document).write(
-                {"communication_revision": revision}
-            )
-            service = self.env["federation.notification.service"]
-            routes = (
-                [(document.submitted_by_id.id, "submitter")]
-                if document.submitted_by_id
-                else []
-            )
-            reps = (
-                self.env["federation.club.representative"]
-                .sudo()
-                .search(
-                    [
-                        ("is_current", "=", True),
-                        ("club_id", "=", document.player_id.club_id.id),
-                    ]
-                )
-            )
-            routes += [
-                (rep.effective_user_id.id or rep.user_id.id, "club") for rep in reps
-            ]
-            service._publish_action(
-                document,
-                "document_returned",
-                "document:%s:%s" % (document.id, revision),
-                routes,
-                occurred_on=occurred_on,
-            )
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
         return result
 
 

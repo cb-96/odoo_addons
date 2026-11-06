@@ -67,7 +67,6 @@ class CommunicationMail(models.Model):
                 }
             )
         sendable = self - blocked
-<<<<<<< HEAD
         logs = self.env["federation.notification.log"].sudo().search([
             ("mail_id", "in", sendable.ids),
             ("mail_id.state", "=", "outgoing"),
@@ -85,14 +84,6 @@ class CommunicationMail(models.Model):
             # Mail state is the evidence; queuing is never reported as sent.
             for log in logs:
                 log._reconcile_mail()
-
-=======
-        result = (
-            super(CommunicationMail, sendable).send(*args, **kwargs)
-            if sendable
-            else True
-        )
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
         for delivery in deliveries:
             delivery.mail_id.invalidate_recordset(["state"])
             if delivery.mail_id.state == "sent":

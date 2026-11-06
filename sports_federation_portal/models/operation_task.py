@@ -23,22 +23,16 @@ class FederationOperationTask(models.Model):
 
     name = fields.Char(required=True, tracking=True)
     task_type = fields.Selection(
-        [
-            ("registration", "Competition entry"),
-            ("roster_readiness", "Roster readiness"),
-            ("parental_consent", "Parental consent"),
-            ("gameday_lineup", "Game-day lineup"),
-<<<<<<< HEAD
-            ("lineup_review", "Review game-day line-up"),
-=======
-            ("lineup_review", "Game-day lineup review"),
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
-            ("referee_duty", "Club referee duty"),
-            ("result_review", "Result follow-up"),
-        ],
+        selection=lambda self: self._task_type_selection(),
         required=True,
         index=True,
     )
+    @api.model
+    def _task_type_selection(self):
+        from .. import task_policy
+
+        return task_policy.TASK_TYPE_SELECTION
+
     audience = fields.Selection(
         [("club", "Club"), ("manager", "Tournament manager")],
         required=True,

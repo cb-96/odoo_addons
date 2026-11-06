@@ -1,13 +1,10 @@
 from datetime import datetime, time, timedelta
 
 from odoo import _, api, fields, models
-<<<<<<< HEAD
 from odoo.osv import expression
 
 from .. import task_policy
 
-=======
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
 
 
 class FederationOperationTaskExtension(models.Model):
@@ -389,7 +386,6 @@ class FederationOperationTaskExtension(models.Model):
             reviewing = audience == "manager"
             spec = self._task_spec(
                 sheet,
-<<<<<<< HEAD
                 task_type,
                 audience,
                 (_("Review game-day line-up: %(team)s") if reviewing
@@ -399,13 +395,6 @@ class FederationOperationTaskExtension(models.Model):
                  if reviewing else _("Submit the shared lineup for this game day.")),
                 (_("Approve or return the line-up") if reviewing
                  else _("Prepare game-day lineup")),
-=======
-                "gameday_lineup",
-                "club",
-                _("Game-day lineup: %(team)s") % {"team": sheet.team_id.display_name},
-                status,
-                _("Prepare game-day lineup"),
->>>>>>> 0ff2b7d30395e1fc5c1c8797249cc9cb632d2a91
                 priority="1",
                 deadline=sheet.match_kickoff or False,
             )
