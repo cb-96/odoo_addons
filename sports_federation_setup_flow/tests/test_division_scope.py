@@ -112,6 +112,8 @@ class TestDivisionScope(TransactionCase):
             }
         )
         creation.action_create_competition()
+        self.assertTrue(creation.competition_id)
+        self.assertTrue(creation.season_id)
         edition = self.env["federation.competition.edition"].search(
             [("name", "=", "Scope gendered league")], limit=1
         )

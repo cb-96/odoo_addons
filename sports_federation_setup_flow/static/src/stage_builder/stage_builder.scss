@@ -1,0 +1,46 @@
+.o_stage_builder {
+    background: var(--body-bg, #f6f7f9);
+
+    .sf-builder-panel {
+        background: var(--o-view-background-color, #fff);
+        border: 1px solid var(--border-color, #dee2e6);
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+
+    .sf-builder-columns {
+        display: grid;
+        grid-template-columns: repeat(var(--sf-columns, 1), minmax(15rem, 1fr));
+        gap: 2.5rem;
+        overflow-x: auto;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .sf-builder-column {
+        position: relative;
+        min-width: 15rem;
+    }
+
+    // A simple arrow between columns: teams flow left to right.
+    .sf-builder-column + .sf-builder-column::before {
+        content: "→";
+        position: absolute;
+        left: -1.9rem;
+        top: 2.5rem;
+        font-size: 1.5rem;
+        color: var(--bs-secondary-color, #6c757d);
+    }
+
+    .sf-stage-card.sf-focus {
+        outline: 3px solid #0078d4;
+        outline-offset: 2px;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+        outline: 3px solid #0078d4;
+        outline-offset: 2px;
+    }
+}

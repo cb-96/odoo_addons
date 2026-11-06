@@ -79,6 +79,12 @@ class FederationCompetitionDivisionSetupWizard(models.TransientModel):
             format_type = self.env[
                 "federation.competition.format.setup.wizard"
             ]._choice_from_structure(structure)["format_type"]
+        elif "format_source_structure_id" in division._fields and division.format_source_structure_id:
+            # Copied from last season: start from the format it played.
+            structure = division.format_source_structure_id
+            format_type = self.env[
+                "federation.competition.format.setup.wizard"
+            ]._choice_from_structure(structure)["format_type"]
         else:
             format_type = edition.setup_default_format_type
         if format_type not in dict(FORMAT_SELECTION):

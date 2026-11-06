@@ -72,11 +72,19 @@ class TestCompetitionPlanner(TransactionCase):
         self.assertEqual(action["views"], [(False, "form")])
 
         schedule_action = self.edition.action_open_planner_step("schedule")
-        self.assertEqual(
-            schedule_action["res_model"], "federation.competition.schedule.wizard"
-        )
-        self.assertEqual(schedule_action["views"], [(False, "form")])
-        self.assertTrue(schedule_action["context"]["return_to_competition_workspace"])
+        if hasattr(self.edition, "action_open_season_board"):
+            # With the match board installed, the Schedule step opens it.
+            self.assertEqual(schedule_action["tag"], "federation_season_board")
+            self.assertEqual(schedule_action["params"]["edition_id"], self.edition.id)
+        else:
+            self.assertEqual(
+                schedule_action["res_model"], "federation.competition.schedule.wizard"
+            )
+            self.assertEqual(schedule_action["views"], [(False, "form")])
+            self.assertTrue(schedule_action["context"]["return_to_competition_workspace"])
+        wizard_action = self.edition.action_setup_schedule()
+        self.assertEqual(wizard_action["res_model"], "federation.competition.schedule.wizard")
+        self.assertTrue(wizard_action["context"]["return_to_competition_workspace"])
 
     def _prepare_two_day_competition(self):
         division = self.env["federation.tournament"].create(

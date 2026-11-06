@@ -67,7 +67,10 @@ class TestFormatOptions(TransactionCase):
         )
 
     def _wizard(self, **values):
-        return self.env["federation.competition.format.setup.wizard"].create(
+        # Defaults come from the context, exactly like the planner opens it.
+        return self.env["federation.competition.format.setup.wizard"].with_context(
+            default_edition_id=self.edition.id, default_division_id=self.division.id
+        ).create(
             {
                 "edition_id": self.edition.id,
                 "division_id": self.division.id,
@@ -122,7 +125,8 @@ class TestFormatOptions(TransactionCase):
         action = self._wizard(format_type="custom").action_open_stage_builder()
         structure = self._structure()
         self.assertEqual(structure.format_type, "custom")
-        self.assertEqual(action["res_id"], structure.id)
+        self.assertEqual(action["tag"], "federation_stage_builder")
+        self.assertEqual(action["params"]["structure_id"], structure.id)
         self.assertEqual(structure.state, "draft")
         self.env["federation.structure.stage"].create(
             {

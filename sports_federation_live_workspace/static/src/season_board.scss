@@ -1,0 +1,47 @@
+.sf-season-board {
+    background: var(--body-bg, #f6f7f9);
+
+    .sf-board-day { min-width: 7.5rem; line-height: 1.2; }
+    .sf-board-list { width: 20rem; min-width: 16rem; background: var(--o-view-background-color, #fff); }
+
+    .sf-board-card {
+        display: block; width: 100%; text-align: left; cursor: grab;
+        border: 1px solid var(--border-color, #ced4da); border-left: 4px solid #6c757d;
+        border-radius: .375rem; background: var(--o-view-background-color, #fff);
+        padding: .35rem .5rem; position: relative;
+        &[draggable="false"] { cursor: default; }
+    }
+    .sf-board-card-placeholder { border-left-color: #8e7cc3; font-style: italic; }
+    .sf-board-card-warning { border-left-color: #b58105; }
+    .sf-board-card-error { border-left-color: #b42318; background: #fdf1f0; }
+    .sf-board-card-picked { outline: 3px solid #0078d4; outline-offset: 1px; }
+    .sf-board-card-actions { position: absolute; top: .2rem; right: .35rem; }
+    .sf-board-unpinned { opacity: .35; }
+
+    .sf-board-table {
+        border-collapse: separate; border-spacing: .35rem;
+        th { font-weight: 600; white-space: nowrap; }
+        td { min-width: 12rem; vertical-align: top; padding: 0; }
+    }
+    .sf-board-time { width: 4.5rem; text-align: right; }
+
+    .sf-board-slot {
+        min-height: 4.2rem; border: 1px dashed var(--border-color, #ced4da);
+        border-radius: .375rem; padding: .2rem; cursor: pointer;
+    }
+    .sf-board-slot-off { background: repeating-linear-gradient(45deg, #f1f1f1, #f1f1f1 6px, #fafafa 6px, #fafafa 12px); cursor: not-allowed; }
+    .sf-board-empty { display: block; padding: .9rem .3rem; text-align: center; }
+    .sf-board-hint-free { border-color: #2e7d32; }
+    .sf-board-hint-clash { border-color: #b42318; background: #fdf1f0; }
+    .sf-board-hint-blocked { opacity: .45; }
+    .sf-board-over { outline: 3px solid #0078d4; outline-offset: 1px; }
+
+    button:focus-visible, input:focus-visible, select:focus-visible, .sf-board-slot:focus-visible {
+        outline: 3px solid #0078d4; outline-offset: 2px;
+    }
+
+    @media (max-width: 900px) {
+        .sf-board-body { flex-direction: column; overflow: auto; }
+        .sf-board-list { width: 100%; max-height: 40vh; }
+    }
+}

@@ -6,13 +6,18 @@
     <field name="arch" type="xml">
       <field name="setup_template" position="attributes">
         <attribute name="string">Competition Type</attribute>
+        <attribute name="nolabel">1</attribute>
       </field>
+      <field name="setup_template" position="before"><label for="setup_template" string="Competition Type"/></field>
       <field name="competition_id" position="attributes"><attribute name="string">Parent competition</attribute><attribute name="invisible">not show_additional_settings</attribute><attribute name="placeholder">Created from the name</attribute></field>
       <field name="season_id" position="attributes"><attribute name="string">Season</attribute><attribute name="invisible">not show_additional_settings</attribute><attribute name="placeholder">Derived from the start date</attribute></field>
-      <field name="name" position="attributes"><attribute name="string">Competition name</attribute></field>
+      <field name="name" position="attributes"><attribute name="string">Competition name</attribute><attribute name="nolabel">1</attribute></field>
+      <field name="name" position="before"><label for="name" string="Competition name"/></field>
       <field name="rule_set_id" position="attributes"><attribute name="string">Rule set</attribute><attribute name="invisible">not show_additional_settings</attribute></field>
-      <field name="date_start" position="attributes"><attribute name="string">First game day</attribute></field>
-      <field name="date_end" position="attributes"><attribute name="string">Last game day</attribute></field>
+      <field name="date_start" position="attributes"><attribute name="string">First game day</attribute><attribute name="nolabel">1</attribute></field>
+      <field name="date_start" position="before"><label for="date_start" string="First game day"/></field>
+      <field name="date_end" position="attributes"><attribute name="string">Last game day</attribute><attribute name="nolabel">1</attribute></field>
+      <field name="date_end" position="before"><label for="date_end" string="Last game day"/></field>
       <field name="setup_template" position="after">
         <field name="show_additional_settings" string="Show additional settings"/>
 

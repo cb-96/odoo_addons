@@ -82,6 +82,13 @@ class TestCompetitionSetupJourney(TransactionCase):
         fields = self.env["federation.create.competition.wizard"]._fields
         self.assertIn("workflow_mode", fields)
         self.assertIn("default_venue_id", fields)
+        self.assertFalse(fields["competition_id"].required)
+
+        view = self.env.ref(
+            "sports_federation_setup_flow.create_competition_wizard_journey"
+        )
+        for field_name in ("setup_template", "name", "date_start", "date_end"):
+            self.assertIn(f'<label for="{field_name}"', view.arch_db)
 
     def test_gameday_setup_supports_recurring_days(self):
         fields = self.env["federation.competition.gameday.setup.wizard"]._fields

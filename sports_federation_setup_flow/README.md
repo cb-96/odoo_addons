@@ -96,9 +96,11 @@ The former owner-module router remains callable as `action_open_advanced_workspa
 
 The end-to-end setup walkthrough found and corrected the following friction:
 
-- The creation form labels its basic fields explicitly. Changing the season
-	realigns a start date that falls outside the newly selected season, while
-	preserving a start date already inside its range.
+- The creation form labels competition type, competition name, and first/last
+	game day explicitly. Parent competition and season are derived from the
+	entered name and start date when advanced settings are hidden. Changing the
+	season realigns an out-of-range start date while preserving a date already
+	inside its range.
 - The Competition Hub has one **Next Action** column. Planner guidance
 	distinguishes the responsible competition role from the required
 	federation-wide access groups and per-competition responsibility assignment.
@@ -122,3 +124,19 @@ The game-day wizard opens in a dialog so its **Save & Plan Schedule**, **Save
 and Close**, and **Discard** footer actions stay visible. A full-page form hid
 those controls in the browser walkthrough. The supported continuation remains
 the wizard's save-and-continue command.
+
+## Stage builder and format reuse
+
+`federation.stage.builder` is the command service behind the
+`federation_stage_builder` client action. It reads and edits the stage graph of
+one draft structure (stages and progressions only), reports problems per stage
+or link, and generates and freezes the structure. Linking is checked in a
+savepoint, so a link that creates a cycle is never stored. Generated
+structures are read-only. *Edit as new version* copies them into a new draft.
+
+The format wizard can start from a saved template or from the division's
+`format_source_structure_id`. When it is created for a division without a
+format type, it starts from the current choice, and the same format type keeps
+its stored options. *Copy competition setup* can reuse formats. It moves game
+days by whole weeks and maps their divisions to the copied divisions. Before
+this change, copying a game day that was limited to divisions failed.

@@ -99,6 +99,39 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
         compute="_compute_format_preview", string="How it plays", sanitize=True
     )
     preview_confirmed = fields.Boolean(string="I have reviewed this format")
+    template_id = fields.Many2one(
+        "federation.competition.format.template",
+        string="Start from a saved format",
+        domain="[('active', '=', True)]",
+        help="Fill in a format saved earlier. You can still change every option.",
+    )
+    has_templates = fields.Boolean(compute="_compute_has_templates")
+    source_structure_id = fields.Many2one(
+        "federation.competition.structure",
+        string="Last season's format",
+        readonly=True,
+        help="This division was copied from an earlier season; its format is filled in.",
+    )
+
+    def _compute_has_templates(self):
+        has_templates = bool(
+            self.env["federation.competition.format.template"].search_count([], limit=1)
+        )
+        for wizard in self:
+            wizard.has_templates = has_templates
+
+    @api.onchange("template_id")
+    def _onchange_template_id(self):
+        if not self.template_id:
+            return
+        snapshot = self.template_id._snapshot()
+        values = self._choice_from_values(
+            snapshot.get("format_type"), snapshot.get("options") or {}
+        )
+        for name, value in values.items():
+            self[name] = value
+        self.source_structure_id = False
+        self.preview_confirmed = False
 
     @api.depends("format_type")
     def _compute_format_hint(self):
@@ -222,8 +255,39 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
             values["division_id"] = division.id
             participant_set = self._latest_participant_set(edition, division)
             values["participant_set_id"] = participant_set.id
-            values.update(self._current_choice(edition, division))
+            values.update(self._starting_choice(edition, division))
         return values
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Opened for a division without a chosen format: start from its
+        current format, or from last season's when it was copied."""
+        prepared = []
+        for vals in vals_list:
+            if vals.get("edition_id") and vals.get("division_id"):
+                edition = self.env["federation.competition.edition"].browse(vals["edition_id"])
+                division = self.env["federation.tournament"].browse(vals["division_id"])
+                start = self._starting_choice(edition, division)
+                # The same format keeps its options (qualifiers, split point…)
+                # even when only the format type is passed, as Teams & format does.
+                if "format_type" not in vals or start.get("format_type") == vals["format_type"]:
+                    vals = {**start, **vals}
+            prepared.append(vals)
+        return super().create(prepared)
+
+    @api.model
+    def _starting_choice(self, edition, division):
+        current = self._current_choice(edition, division)
+        if current:
+            return current
+        source = (
+            division.format_source_structure_id
+            if "format_source_structure_id" in division._fields
+            else False
+        )
+        if source:
+            return {**self._choice_from_structure(source), "source_structure_id": source.id}
+        return {}
 
     @api.model
     def _current_choice(self, edition, division):
@@ -243,8 +307,18 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
 
     @api.model
     def _choice_from_structure(self, structure):
-        format_type = structure.format_type
-        values = {name: structure[name] for name in OPTION_FIELDS}
+        return self._choice_from_values(
+            structure.format_type, {name: structure[name] for name in OPTION_FIELDS}
+        )
+
+    @api.model
+    def _choice_from_values(self, format_type, options):
+        """Wizard values for a stored format type and its options."""
+        values = {
+            name: options[name]
+            for name in OPTION_FIELDS
+            if name in options and options[name] is not None
+        }
         if format_type == "placement_bracket":
             format_type = "knockout"
             values["knockout_full_placement"] = True
@@ -343,10 +417,13 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
         format_type = self._structure_format_type()
         options = self._structure_options()
         structure = self._matching_structure(participant_set, format_type, options)
-        if self.format_type == "custom" and not structure.stage_ids:
-            return self._open_stage_builder(structure or self._create_structure(
-                participant_set, format_type, options
-            ))
+        if self.format_type == "custom":
+            if self._wants_new_custom(structure) or not structure.stage_ids:
+                return self._open_stage_builder(
+                    structure
+                    if structure and not self._wants_new_custom(structure)
+                    else self._create_structure(participant_set, format_type, options)
+                )
         if self.format_type != "custom" and not self.preview_confirmed:
             raise ValidationError(_("Review the format preview before confirming."))
         if self.format_type != "custom" and not self.preview_feasible:
@@ -368,11 +445,30 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
             self.edition_id, self.division_id
         )
         structure = self._matching_structure(participant_set, "custom", {})
-        if not structure:
+        if not structure or self._wants_new_custom(structure):
             structure = self._create_structure(
                 participant_set, "custom", self._structure_options()
             )
         return self._open_stage_builder(structure)
+
+    def _wants_new_custom(self, structure):
+        """A chosen custom template starts a new format unless already used."""
+        return bool(
+            self.template_id
+            and self.template_id.format_type == "custom"
+            and (not structure or structure.template_id != self.template_id)
+        )
+
+    def _reuse_snapshot(self):
+        """Stages to copy into a new custom format: saved template or last season."""
+        if self.format_type != "custom":
+            return False
+        if self.template_id and self.template_id.format_type == "custom":
+            return self.template_id._snapshot()
+        source = self.source_structure_id
+        if source and self._choice_from_structure(source)["format_type"] == "custom":
+            return source._format_snapshot()
+        return False
 
     def _create_structure(self, participant_set, format_type, options):
         latest = self.env["federation.competition.structure"].search(
@@ -380,7 +476,7 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
             order="version desc,id desc",
             limit=1,
         )
-        return self.env["federation.competition.structure"].create(
+        structure = self.env["federation.competition.structure"].create(
             {
                 "name": _("%(division)s format", division=self.division_id.display_name),
                 "edition_id": self.edition_id.id,
@@ -388,16 +484,14 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
                 "participant_set_id": participant_set.id,
                 "version": (latest.version + 1) if latest else 1,
                 "format_type": format_type,
+                "template_id": self.template_id.id,
                 **options,
             }
         )
+        snapshot = self._reuse_snapshot()
+        if snapshot:
+            structure._apply_format_snapshot(snapshot)
+        return structure
 
     def _open_stage_builder(self, structure):
-        action = structure.get_formview_action()
-        action.update(
-            {
-                "name": _("Build stages: %s", self.division_id.display_name),
-                "target": "current",
-            }
-        )
-        return action
+        return structure.action_open_stage_builder()

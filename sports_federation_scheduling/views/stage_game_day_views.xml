@@ -4,7 +4,7 @@
     <field name="model">federation.competition.structure</field>
     <field name="inherit_id" ref="sports_federation_format.structure_form_stage_graph"/>
     <field name="arch" type="xml">
-      <xpath expr="//page[@string='Stage Graph']/field[@name='stage_ids']/list/field[@name='carryover_policy']" position="after">
+      <xpath expr="//field[@name='stage_ids']/list/field[@name='carryover_policy']" position="after">
         <field name="matchday_ids" widget="many2many_tags" optional="show" placeholder="Any game day" options="{'no_create': True}" domain="[('edition_id', '=', parent.edition_id)]"/>
       </xpath>
     </field>

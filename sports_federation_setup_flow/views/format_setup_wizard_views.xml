@@ -17,6 +17,12 @@
             <field name="preview_feasible" invisible="1"/>
             <field name="team_count" readonly="1" string="Confirmed teams"/>
           </group>
+          <!-- Technical modifier relay: the saved-format picker only shows when templates exist. -->
+          <field name="has_templates" invisible="1"/>
+          <div class="alert alert-info" role="status" invisible="not source_structure_id">Filled in with last season's format: <field name="source_structure_id" nolabel="1" class="d-inline"/>. Change anything you like before confirming.</div>
+          <group invisible="not has_templates">
+            <field name="template_id" options="{'no_create': True, 'no_open': True}" placeholder="Choose a saved format (optional)"/>
+          </group>
           <field name="format_type" widget="radio"/>
           <div class="alert alert-light border" role="note"><field name="format_hint" nolabel="1" readonly="1"/></div>
           <group string="Options" invisible="format_type not in ('knockout', 'pool_knockout', 'split_pools')">

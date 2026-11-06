@@ -1028,6 +1028,44 @@ Rollback: restore the pre-upgrade database and filestore with the previous
 code. Code-only rollback leaves done matches, linked tables and suspension
 states that the previous code does not expect.
 
+## Stage builder, match board and format reuse: upgrade review
+
+Scope: the stage builder for custom formats, the season match board as the
+planner's Schedule step, saved format templates, and reusing formats and game
+days when a competition is copied to a new season.
+
+Data changes (no migration scripts; upgrading installs the new columns and access rules):
+- format 19.0.6.5.0: `federation.tournament.format_source_structure_id`
+  (nullable). Templates accept the `custom` format type. Competition designers
+  get create/write on stage progressions and create/write on format templates.
+- setup_flow 19.0.4.11.0 and live_workspace 19.0.1.6.0: no stored fields. New
+  client actions `federation_stage_builder` and `federation_season_board`, plus
+  a "Match board" button on the competition.
+
+Behaviour changes to verify on staging:
+- The planner's Schedule step opens the match board. *Plan Competition* stays
+  available as *Auto-plan the rest*.
+- On the board, moves between game days update allocations and working
+  schedules. They are logged as `board_move` and refused when the validator
+  reports a new error. Published days stay locked.
+- Custom formats open in the stage builder, and *Generate all matches* freezes
+  them.
+- *Copy competition setup* moves game days by whole weeks and keeps their
+  divisions. Before this change, a game day limited to divisions could not be
+  copied.
+
+Dry-run evidence: Python/XML syntax checks, JavaScript syntax checks, the
+board helper smoke test and repository static checks (access CSV, always-invisible
+fields, privileged mutation boundaries, dependency drift, competition
+workflow and usability checks) were executed on the patched tree. Odoo upgrade, ORM tests
+(`sf_competition_formats`, `sf_live_workspace`) and browser checks of both
+client actions were NOT executed in this environment and must pass on staging
+before release.
+
+Rollback: restore the previous code and upgrade the three modules. The
+nullable field and the template rows can stay. Templates saved with the
+`custom` type must be archived before a code-only rollback.
+
 ## End-to-end release check: lifecycle lane and walkthrough
 
 The release baseline now requires a `lifecycle` lane. It runs the scenarios

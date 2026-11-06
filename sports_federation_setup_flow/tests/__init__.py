@@ -7,3 +7,4 @@ from . import test_practice_competition
 from . import test_division_scope
 from . import test_planner_matchday_readiness
 from . import test_format_options
+from . import test_stage_builder

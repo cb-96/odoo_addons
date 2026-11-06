@@ -12,8 +12,10 @@ class FederationCreateCompetitionWizardJourney(models.TransientModel):
     creation_draft_id = fields.Many2one("federation.competition.creation.draft", readonly=True)
     # Only name, type, dates and divisions are asked up front.  The parent
     # competition and the season are derived when left empty.
-    competition_id = fields.Many2one(required=False)
-    season_id = fields.Many2one(required=False)
+    competition_id = fields.Many2one(
+        required=False, string="Parent competition"
+    )
+    season_id = fields.Many2one(required=False, string="Season")
 
     _COMPETITION_TYPE_BY_PRESET = {
         "league": "league",

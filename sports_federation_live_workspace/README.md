@@ -51,3 +51,23 @@ Version 19.0.1.0.1 registers the unchanged ACL rows through the standard
 security/ir.model.access.csv filename. The former access.csv is removed.
 Existing ACL external IDs and permissions are preserved. Upgrade this addon
 on staging so the corrected data registration is loaded.
+
+## Season match board
+
+`federation.season.board` backs the `federation_season_board` client action:
+every planable fixture of the competition's latest generated formats, every
+active game day and its slots. The planner's Schedule step opens it.
+
+- Commands (`move`, `unplan`, `place_on_day`, `restore`, `set_pinned`,
+  `generate_slots`) need the schedule planner or competition director role. They
+  also need the board signature, so a change made from a stale screen is
+  refused.
+- A move updates the day allocation (moving between days included) and the
+  working schedule, bumps each affected schedule's revision through
+  `federation.schedule.commands._resolve`, and logs `board_move` changes. All
+  of this runs in one savepoint. When the schedule validator reports a new
+  error, the whole move is rolled back and the errors are returned.
+- Only open game days with a draft or changes-requested schedule can change.
+  Published schedules remain protected by the existing amendment flow.
+- Undo is client-side: each result returns the previous slot of every moved
+  fixture, and `restore` puts them back through the same checks.

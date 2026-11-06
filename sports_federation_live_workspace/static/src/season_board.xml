@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="sports_federation_live_workspace.SeasonBoard">
+    <div class="sf-season-board h-100 overflow-hidden d-flex flex-column">
+      <div t-if="state.loading and !state.data" class="p-5 text-center" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"/> Loading the match board…</div>
+      <section t-elif="state.error" class="alert alert-danger m-3" role="alert">
+        <p t-esc="state.error"/>
+        <button type="button" class="btn btn-outline-danger" t-on-click="load">Retry</button>
+      </section>
+      <t t-else="">
+        <header class="sf-board-header d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom">
+          <button type="button" class="btn btn-link px-0" t-on-click="backToPlanner">← Planner</button>
+          <h1 class="h4 mb-0 me-auto">Match board · <t t-esc="data.edition.name"/></h1>
+          <span class="badge text-bg-light border" role="status"><t t-esc="data.unplanned_count"/> to plan</span>
+          <span t-if="data.error_count" class="badge text-bg-danger" role="status"><t t-esc="data.error_count"/> with problems</span>
+          <button type="button" class="btn btn-outline-secondary" t-on-click="undoLast" t-att-disabled="!canUndo" title="Undo the last change on this board"><i class="fa fa-undo" aria-hidden="true"/> Undo</button>
+          <button t-if="data.editable" type="button" class="btn btn-outline-primary" t-on-click="autoPlan" t-att-disabled="state.busy || !data.unplanned_count">Auto-plan the rest</button>
+          <button type="button" class="btn btn-outline-secondary" t-on-click="load" t-att-disabled="state.busy" aria-label="Refresh"><i class="fa fa-refresh" aria-hidden="true"/></button>
+        </header>
+
+        <div t-if="data.general_errors.length" class="alert alert-danger mx-3 mt-2 mb-0" role="alert">
+          <div t-foreach="data.general_errors" t-as="message" t-key="message_index" t-esc="message"/>
+        </div>
+        <p t-if="state.picked" class="alert alert-info mx-3 mt-2 mb-0 py-2" role="status">
+          Moving <strong t-esc="label(fixture(state.picked))"/>: click a time slot or a game day. Press Esc to cancel.
+        </p>
+
+        <nav class="sf-board-days d-flex gap-2 px-3 py-2 overflow-auto border-bottom" aria-label="Game days">
+          <button t-foreach="data.days" t-as="day" t-key="day.id" type="button"
+                  t-attf-class="sf-board-day btn {{ day.id === state.dayId ? 'btn-primary' : 'btn-outline-secondary' }} {{ state.dropTarget === 'day-' + day.id ? 'sf-board-over' : '' }}"
+                  t-att-aria-pressed="day.id === state.dayId ? 'true' : 'false'"
+                  t-on-click="() =&gt; this.chooseDay(day)"
+                  t-on-dragover="(ev) =&gt; this.dragOver('day-' + day.id, ev, !day.locked)"
+                  t-on-dragleave="() =&gt; this.dragLeave('day-' + day.id)"
+                  t-on-drop="(ev) =&gt; this.dropOnDay(day, ev)">
+            <span class="d-block fw-bold"><i t-if="day.locked" class="fa fa-lock me-1" aria-hidden="true"/><t t-esc="dayName(day)"/></span>
+            <span class="d-block small"><t t-esc="dayUsage(day).used"/>/<t t-esc="dayUsage(day).total"/> slots</span>
+          </button>
+          <p t-if="!data.days.length" class="text-muted mb-0">No game days yet. Add game days in the planner first.</p>
+        </nav>
+
+        <div class="sf-board-body flex-grow-1 d-flex overflow-hidden">
+          <aside aria-labelledby="sf-board-list-title"
+                 t-attf-class="sf-board-list border-end d-flex flex-column {{ state.dropTarget === 'list' ? 'sf-board-over' : '' }}"
+                 t-on-dragover="(ev) =&gt; this.dragOver('list', ev)"
+                 t-on-dragleave="() =&gt; this.dragLeave('list')"
+                 t-on-drop="dropOnList">
+            <div class="p-2 border-bottom">
+              <h2 id="sf-board-list-title" class="h6 mb-2">Matches to plan (<t t-esc="unplanned.length"/>)</h2>
+              <input class="form-control form-control-sm mb-1" type="search" placeholder="Search team" aria-label="Search team" t-model="state.filters.text"/>
+              <div class="d-flex gap-1">
+                <select class="form-select form-select-sm" aria-label="Division" t-model="state.filters.division">
+                  <option value="">All divisions</option>
+                  <option t-foreach="data.divisions" t-as="division" t-key="division.id" t-att-value="division.id" t-esc="division.name"/>
+                </select>
+                <select class="form-select form-select-sm" aria-label="Stage" t-model="state.filters.stage">
+                  <option value="">All stages</option>
+                  <option t-foreach="stages" t-as="stage" t-key="stage.id" t-att-value="stage.id" t-esc="stage.name"/>
+                </select>
+                <select class="form-select form-select-sm" aria-label="Round" t-model="state.filters.round">
+                  <option value="">All rounds</option>
+                  <option t-foreach="rounds" t-as="round" t-key="round" t-att-value="round">R<t t-esc="round"/></option>
+                </select>
+              </div>
+              <div t-if="data.editable &amp;&amp; unplanned.length" class="d-flex align-items-center gap-2 mt-2">
+                <label class="small mb-0"><input type="checkbox" class="form-check-input me-1" t-on-change="selectAllVisible" t-att-checked="state.selected.length &amp;&amp; state.selected.length === unplanned.length"/>All</label>
+                <button type="button" class="btn btn-sm btn-primary ms-auto" t-on-click="placeSelected" t-att-disabled="state.busy || !state.selected.length || !day || day.locked">
+                  Place <t t-esc="state.selected.length"/> on <t t-esc="day ? dayName(day) : '…'"/>
+                </button>
+              </div>
+            </div>
+            <ul class="list-unstyled overflow-auto flex-grow-1 p-2 mb-0">
+              <li t-foreach="unplanned" t-as="fixture" t-key="fixture.id" class="d-flex align-items-start gap-1 mb-1">
+                <input t-if="data.editable" type="checkbox" class="form-check-input mt-2" t-att-aria-label="'Select ' + label(fixture)" t-att-checked="state.selected.includes(fixture.id)" t-on-change="(ev) =&gt; this.toggleSelected(fixture, ev)"/>
+                <button type="button" t-att-class="cardClass(fixture)" t-att-draggable="canMove(fixture) ? 'true' : 'false'" t-att-title="cardTitle(fixture)"
+                        t-att-aria-pressed="state.picked === fixture.id ? 'true' : 'false'"
+                        t-on-click="() =&gt; this.pick(fixture)" t-on-dragstart="(ev) =&gt; this.dragStart(fixture, ev)" t-on-dragend="dragEnd">
+                  <span class="d-block fw-semibold text-truncate" t-esc="label(fixture)"/>
+                  <span class="d-block small text-muted text-truncate" t-esc="detail(fixture)"/>
+                  <span t-if="fixture.day_id" class="d-block small">On a game day, no slot yet</span>
+                </button>
+              </li>
+              <li t-if="!unplanned.length" class="text-muted small p-2">Every match has a time slot.</li>
+            </ul>
+            <p class="small text-muted p-2 mb-0 border-top">Drop a match here to take it off its game day.</p>
+          </aside>
+
+          <main class="sf-board-grid flex-grow-1 overflow-auto p-3" aria-live="polite">
+            <t t-if="day">
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <h2 class="h5 mb-0"><t t-esc="day.name"/> <small class="text-muted" t-esc="day.venue"/></h2>
+                <span t-if="day.schedule_state" class="badge text-bg-light border" t-esc="scheduleLabel(day.schedule_state)"/>
+                <button type="button" class="btn btn-sm btn-link ms-auto" t-on-click="() =&gt; this.openSchedule(day)">Open schedule</button>
+              </div>
+              <div t-if="day.lock_reason" class="alert alert-secondary py-2" role="status"><i class="fa fa-lock me-1" aria-hidden="true"/><t t-esc="day.lock_reason"/></div>
+              <div t-if="!day.slots.length" class="alert alert-info" role="status">
+                <t t-if="day.needs_courts">Choose courts for this game day in the planner to create its time slots.</t>
+                <t t-else="">This game day has no time slots yet.</t>
+                <button t-if="day.can_generate_slots" type="button" class="btn btn-sm btn-primary ms-2" t-on-click="() =&gt; this.generateSlots(day)" t-att-disabled="state.busy">Create time slots</button>
+              </div>
+              <div t-if="waitingOnDay.length" class="mb-2">
+                <span class="small text-muted me-2">On this day without a slot:</span>
+                <button t-foreach="waitingOnDay" t-as="fixture" t-key="fixture.id" type="button" t-att-class="cardClass(fixture) + ' d-inline-block me-1'"
+                        t-att-draggable="canMove(fixture) ? 'true' : 'false'" t-on-click="() =&gt; this.pick(fixture)"
+                        t-on-dragstart="(ev) =&gt; this.dragStart(fixture, ev)" t-on-dragend="dragEnd" t-esc="label(fixture)"/>
+              </div>
+              <table t-if="day.slots.length" class="sf-board-table">
+                <thead>
+                  <tr><th scope="col" class="sf-board-time">Time</th><th t-foreach="courts" t-as="court" t-key="court.id" scope="col" t-esc="court.name"/></tr>
+                </thead>
+                <tbody>
+                  <tr t-foreach="rows" t-as="row" t-key="row.start">
+                    <th scope="row" class="sf-board-time"><t t-esc="time(row.start)"/></th>
+                    <td t-foreach="courts" t-as="court" t-key="court.id">
+                      <t t-set="slot" t-value="row.cells[court.id]"/>
+                      <div t-if="slot" t-att-class="slotClass(slot)" role="button" tabindex="0"
+                           t-att-aria-label="slotAria(slot, court)"
+                           t-on-click="() =&gt; this.clickSlot(slot)"
+                           t-on-keydown="(ev) =&gt; this.slotKey(slot, ev)"
+                           t-on-dragover="(ev) =&gt; this.dragOver('slot-' + slot.id, ev, !day.locked &amp;&amp; slot.state === 'available')"
+                           t-on-dragleave="() =&gt; this.dragLeave('slot-' + slot.id)"
+                           t-on-drop="(ev) =&gt; this.dropOnSlot(slot, ev)">
+                        <t t-set="occupant" t-value="fixtureOnSlot(slot)"/>
+                        <div t-if="occupant" t-att-class="cardClass(occupant)" t-att-draggable="canMove(occupant) ? 'true' : 'false'"
+                             t-att-title="cardTitle(occupant)" t-on-dragstart="(ev) =&gt; this.dragStart(occupant, ev)" t-on-dragend="dragEnd">
+                          <span class="d-block fw-semibold" t-esc="label(occupant)"/>
+                          <span class="d-block small text-muted" t-esc="detail(occupant)"/>
+                          <span t-if="occupant.errors.length" class="d-block small text-danger" t-esc="occupant.errors[0]"/>
+                          <span t-elif="occupant.warnings.length" class="d-block small text-warning-emphasis" t-esc="occupant.warnings[0]"/>
+                          <span t-if="canMove(occupant)" class="sf-board-card-actions">
+                            <button type="button" class="btn btn-sm btn-link p-0" t-att-title="occupant.pinned ? 'Pinned: automatic planning keeps it here. Click to unpin.' : 'Pin this slot'"
+                                    t-att-aria-label="occupant.pinned ? 'Unpin ' + label(occupant) : 'Pin ' + label(occupant)"
+                                    t-on-click.stop="() =&gt; this.togglePin(occupant)"><i t-attf-class="fa {{ occupant.pinned ? 'fa-thumb-tack' : 'fa-thumb-tack sf-board-unpinned' }}" aria-hidden="true"/></button>
+                            <button type="button" class="btn btn-sm btn-link p-0 ms-2" t-att-aria-label="'Take ' + label(occupant) + ' off this day'" title="Back to the list"
+                                    t-on-click.stop="() =&gt; this.unplan(occupant)"><i class="fa fa-times" aria-hidden="true"/></button>
+                          </span>
+                        </div>
+                        <span t-elif="slot.state !== 'available'" class="small text-muted" t-esc="slot.state === 'break' ? 'Break' : 'Blocked'"/>
+                        <span t-else="" class="sf-board-empty small text-muted">Free</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </t>
+            <p t-else="" class="text-muted">Choose a game day.</p>
+            <ul t-if="state.rejected.length" class="alert alert-warning mt-3 mb-0" role="alert">
+              <li t-foreach="state.rejected" t-as="message" t-key="message_index" t-esc="message"/>
+            </ul>
+          </main>
+        </div>
+      </t>
+    </div>
+  </t>
+</templates>
