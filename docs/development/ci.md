@@ -87,3 +87,51 @@ Prune old logs with `bash ci/prune_ci_logs.sh 30`.
 Odoo lanes write `odoo-rc.log`. On a non-zero exit the runner prints an error
 summary and the last 200 lines. gettext `Empty msgid` warnings alone do not
 explain exit code 1; look for the first test failure or module-load traceback.
+
+## Release orchestration entrypoint
+
+`python ci/run_release.py <profile>` owns candidate, readiness and qualification
+sequencing. The existing candidate/readiness/qualification shell commands are
+compatibility adapters, not separate implementations. CI release-candidate and
+upstream workflows call the same runner's `rc --lane` profile.
+
+- `candidate`: product/readiness checks and the complete baseline. Without a
+  backup it explicitly reports that migration and qualification were not run.
+- `readiness`: reliability checks, baseline, exact-commit evidence validation
+  and browser-log validation. It is not migration sign-off or human acceptance.
+- `qualification`: readiness plus approved-backup migration/rollback rehearsal
+  and exact-commit sign-off. Backup, rollback owner and trigger are mandatory
+  before any expensive command executes.
+- `rc --lane <name>`: existing Docker RC lane, including cleanup and upstream.
+- `baseline`, `migration`, `walkthrough`, `confidence`: direct access to the
+  specialized backends. Use `--` before backend arguments.
+
+Examples:
+
+```bash
+python ci/run_release.py rc --lane static
+python ci/run_release.py candidate
+python ci/run_release.py readiness --evidence-dir /tmp/federation-evidence
+python ci/run_release.py qualification --backup-dir /approved/backup \
+  --rollback-owner "Release owner" --rollback-trigger "Failed invariants"
+python ci/run_release.py walkthrough -- verify
+python ci/run_release.py confidence -- verify --evidence-dir /tmp/confidence
+```
+
+The baseline backend remains the owner of lane logs, failure classification,
+exact-commit manifests and Docker cleanup. Migration, walkthrough and confidence
+backends retain their distinct data-preservation, browser and human acceptance
+gates. The runner forwards argument arrays without shell interpolation and
+preserves backend failure codes. It does not invent a combined passing verdict
+from missing evidence or a skipped rehearsal.
+
+Evidence defaults are outside the repository and shared across the profile's
+commands. Candidate/readiness migration requests now require rollback owner and
+trigger as well as the backup; an incomplete request fails before baseline work.
+Existing qualification environment variables remain supported. RC environment
+and retention settings pass through unchanged.
+
+The public-competition structural check now runs in repository lint. Its dead
+invocation after `exit` in the Odoo test script was removed. Test orchestration
+with `python -m unittest ci.test_release_runner`; these tests use subprocess
+doubles and do not run Docker, migration, Odoo or human acceptance.

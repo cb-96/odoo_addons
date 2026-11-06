@@ -29,10 +29,10 @@ checks = {
     "RC container cleanup lane": "cleanup)" in rc_script,
     "upgrade database isolation": "UPGRADE_DB_NAME" in rc_script,
     "upgrade precondition": "assert_modules_installed" in rc_script,
-    "workflow upgrade execution": "run_rc_validation.sh upgrade" in workflow,
-    "workflow federation full execution": "run_rc_validation.sh full" in workflow,
+    "workflow upgrade execution": "run_release.py rc --lane upgrade" in workflow,
+    "workflow federation full execution": "run_release.py rc --lane full" in workflow,
     "workflow uses Compose RC runtime": "RC_COMPOSE_PROJECT" in workflow,
-    "workflow cleans Compose RC runtime": "run_rc_validation.sh cleanup" in workflow,
+    "workflow cleans Compose RC runtime": "run_release.py rc --lane cleanup" in workflow,
     "workflow does not require host Odoo": "ODOO_BIN" not in workflow,
     "baseline records every required lane": all(
         f"  {lane}\n" in baseline_script

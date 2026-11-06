@@ -26,9 +26,9 @@ jobs:
         with:
           node-version: '22'
       - name: Verify clean release workspace
-        run: scripts/ci/run_rc_validation.sh preflight
+        run: python3 ci/run_release.py rc --lane preflight
       - name: Run authoritative static release validation
-        run: scripts/ci/run_rc_validation.sh static
+        run: python3 ci/run_release.py rc --lane static
 
   odoo-rc:
     name: Odoo RC gates
@@ -50,18 +50,18 @@ jobs:
         run: |
           docker compose version
       - name: Fresh install and federation test suite
-        run: scripts/ci/run_rc_validation.sh install
+        run: python3 ci/run_release.py rc --lane install
       - name: Prepare upgrade database without duplicate tests
-        run: scripts/ci/run_rc_validation.sh prepare-upgrade
+        run: python3 ci/run_release.py rc --lane prepare-upgrade
       - name: Idempotent same-version upgrade smoke
-        run: scripts/ci/run_rc_validation.sh upgrade
+        run: python3 ci/run_release.py rc --lane upgrade
       - name: Complete federation suite after upgrade
-        run: scripts/ci/run_rc_validation.sh full
+        run: python3 ci/run_release.py rc --lane full
       - name: Release performance and acceptance surfaces
         run: |
-          scripts/ci/run_rc_validation.sh performance
-          scripts/ci/run_rc_validation.sh acceptance
-          scripts/ci/run_rc_validation.sh focus
+          python3 ci/run_release.py rc --lane performance
+          python3 ci/run_release.py rc --lane acceptance
+          python3 ci/run_release.py rc --lane focus
       - name: Upload Odoo logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -73,7 +73,7 @@ jobs:
           if-no-files-found: ignore
       - name: Clean RC Compose project
         if: always()
-        run: RC_COMPOSE_RETAIN=1 scripts/ci/run_rc_validation.sh cleanup
+        run: RC_COMPOSE_RETAIN=1 python3 ci/run_release.py rc --lane cleanup
 
   approval-gate:
     name: RC approval gate

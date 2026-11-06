@@ -31,9 +31,9 @@ jobs:
       - name: Verify Docker Compose runtime
         run: docker compose version
       - name: Install federation platform without tests
-        run: scripts/ci/run_rc_validation.sh prepare
+        run: python3 ci/run_release.py rc --lane prepare
       - name: Run broad upstream standard tests
-        run: scripts/ci/run_rc_validation.sh upstream
+        run: python3 ci/run_release.py rc --lane upstream
       - name: Upload Odoo log
         if: always()
         uses: actions/upload-artifact@v4
@@ -43,4 +43,4 @@ jobs:
           if-no-files-found: ignore
       - name: Clean Compose project
         if: always()
-        run: RC_COMPOSE_RETAIN=1 scripts/ci/run_rc_validation.sh cleanup
+        run: RC_COMPOSE_RETAIN=1 python3 ci/run_release.py rc --lane cleanup

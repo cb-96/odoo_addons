@@ -155,7 +155,8 @@ else
     echo "[lint] Repository-wide report is clean."
 fi
 
+python3 ci/check_public_competition_contract.py || exit 1
 python3 ci/run_behavioral_contracts.py || exit 1
-python3 -m unittest ci.test_minimal_ux ci.test_complete_ux ci.test_behavioral_gate || exit 1
+python3 -m unittest ci.test_minimal_ux ci.test_complete_ux ci.test_behavioral_gate ci.test_release_runner || exit 1
 
 exit 0
