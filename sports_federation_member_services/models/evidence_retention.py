@@ -244,6 +244,9 @@ class EvidenceGovernanceWizard(models.TransientModel):
 
     revision_ids = fields.Many2many(
         "federation.member.evidence.revision",
+        "federation_member_evidence_governance_revision_rel",
+        "wizard_id",
+        "revision_id",
         string="Evidence revisions",
         required=True,
     )
