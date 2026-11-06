@@ -46,13 +46,15 @@ class FederationPortalPrivilege(models.AbstractModel):
             "issue_date",
             "expiry_date",
         },
+        # Must match the fields _portal_sync_squad sends for a newly selected
+        # player; an unknown key turns the whole line-up save into an
+        # AccessError (rendered as "Access Denied").
         "federation.match.sheet.line": {
             "match_sheet_id",
             "player_id",
             "roster_line_id",
-            "shirt_number",
             "is_captain",
-            "is_goalkeeper",
+            "jersey_number",
             "crossed_out",
         },
         "federation.player.parental.approval": {

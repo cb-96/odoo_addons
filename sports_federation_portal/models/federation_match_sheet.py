@@ -225,10 +225,9 @@ class FederationMatchSheet(models.Model):
                     user=user,
                 )
 
-            # Add or update selected players (no advance starter/substitute roles)
+            # Add or update selected players. Starting roles are not declared
+            # in advance: existing lines are reset, new lines use the defaults.
             for player_id, data in submitted.items():
-                is_starter = False
-                is_substitute = False
                 is_captain = bool(data.get("is_captain"))
                 jersey_number = data.get("jersey_number") or False
                 roster_line = sheet.roster_id.line_ids.filtered(
@@ -239,8 +238,8 @@ class FederationMatchSheet(models.Model):
                     Privilege.portal_write(
                         existing_lines[player_id],
                         {
-                            "is_starter": is_starter,
-                            "is_substitute": is_substitute,
+                            "is_starter": False,
+                            "is_substitute": False,
                             "is_captain": is_captain,
                             "jersey_number": jersey_number,
                         },
@@ -254,8 +253,6 @@ class FederationMatchSheet(models.Model):
                             "match_sheet_id": sheet.id,
                             "player_id": player_id,
                             "roster_line_id": roster_line.id if roster_line else False,
-                            "is_starter": is_starter,
-                            "is_substitute": is_substitute,
                             "is_captain": is_captain,
                             "jersey_number": jersey_number,
                         },

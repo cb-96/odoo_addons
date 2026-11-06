@@ -1,6 +1,8 @@
 """Fast source contracts for the Priority A security boundary."""
 
+import ast
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -22,6 +24,32 @@ def test_portal_capabilities_are_explicit():
     assert "PORTAL_ACTION_ALLOWLIST" in source
     assert "method_name not in allowed_actions" in source
     assert "set(values) - effective" in source
+
+
+def _portal_create_fields():
+    tree = ast.parse(read("sports_federation_portal/models/portal_privilege.py"))
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Assign)
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == "PORTAL_CREATE_FIELDS"
+        ):
+            return ast.literal_eval(node.value)
+    raise AssertionError("PORTAL_CREATE_FIELDS not found")
+
+
+def test_lineup_line_create_allowlist_matches_model_and_payload():
+    """A key outside the allowlist turns a line-up save into Access Denied."""
+    allowed = _portal_create_fields()["federation.match.sheet.line"]
+    model = read("sports_federation_rosters/models/match_sheet_line.py")
+    model_fields = set(re.findall(r"^    (\w+) = fields\.", model, re.M))
+    assert allowed <= model_fields, sorted(allowed - model_fields)
+
+    source = read("sports_federation_portal/models/federation_match_sheet.py")
+    start = source.index('self.env["federation.match.sheet.line"],')
+    payload = source[start : source.index("},", start)]
+    sent = set(re.findall(r'"(\w+)":', payload))
+    assert sent and sent <= allowed, sorted(sent - allowed)
 
 
 def test_forwarded_headers_require_trusted_proxy():

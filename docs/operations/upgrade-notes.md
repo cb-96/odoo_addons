@@ -36,6 +36,28 @@ passed unless they ran.
 
 ## Entries
 
+### Portal line-up save no longer fails with Access Denied
+
+Affected modules: `sports_federation_portal` 19.0.7.14.4 → 19.0.7.14.5.
+
+**Data changes**: none. The portal create allowlist for
+`federation.match.sheet.line` named fields that do not exist (`shirt_number`,
+`is_goalkeeper`) and missed fields the line-up form sends (`jersey_number`,
+`is_starter`, `is_substitute`). Selecting a player who was not yet on the
+line-up raised an `AccessError`, which the portal shows as **Access Denied**.
+The allowlist now lists the real fields, and new lines no longer send the
+starting-role flags; they use the model defaults.
+
+**Behaviour to verify**: as a club representative, open a draft game-day
+line-up, select players with jersey numbers and a captain, and use **Save** and
+**Save and submit**. The players are saved and the line-up is submitted.
+
+**Dry-run evidence**: `python -m pytest ci/test_security_hardening_contracts.py`
+passes; its new allowlist check fails on the previous code. The extended
+portal HTTP smoke test and the Odoo upgrade were not run in this change.
+
+**Rollback**: code-only rollback; no data needs reversing.
+
 ### Competition Hub as the Federation landing page
 
 Affected modules: `sports_federation_navigation` 19.0.1.2.0 → 19.0.1.3.0,

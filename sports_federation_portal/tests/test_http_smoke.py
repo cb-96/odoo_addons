@@ -531,6 +531,7 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
             "sheet_id": sheet.id,
             "roster_id": roster.id,
             "roster_line_id": roster_line.id,
+            "player_id": player.id,
             "foreign_roster_id": foreign_roster.id,
             "foreign_line_id": foreign_line.id,
         }
@@ -831,6 +832,38 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         )
         self.assertEqual(lineup_response.status_code, 200)
         self.assertIn("Line-up saved.", lineup_response.text)
+
+        # Deselecting and reselecting a player removes and re-creates the
+        # line through the portal create allowlist, as a first line-up does.
+        for selected in (False, True):
+            form = {
+                "csrf_token": _extract_csrf_token(lineup_response.text),
+                "roster_id": str(data["roster_id"]),
+                "shown_roster_id": str(data["roster_id"]),
+                "has_lineup_players": "1",
+            }
+            if selected:
+                form.update(
+                    {
+                        "squad_player_ids": str(data["player_id"]),
+                        "player_%s_jersey" % data["player_id"]: "7",
+                        "player_%s_captain" % data["player_id"]: "1",
+                    }
+                )
+            lineup_response = self.url_open(
+                f"/my/match-sheets/{data['sheet_id']}/lineup",
+                data=form,
+                allow_redirects=True,
+            )
+            self.assertEqual(lineup_response.status_code, 200)
+            self.assertNotIn("Access Denied", lineup_response.text)
+            self.assertIn("Line-up saved.", lineup_response.text)
+        with self.registry.cursor() as cr:
+            env = api.Environment(cr, SUPERUSER_ID, {})
+            line = env["federation.match.sheet"].browse(data["sheet_id"]).line_ids
+            self.assertEqual(line.player_id.id, data["player_id"])
+            self.assertEqual(line.jersey_number, "7")
+            self.assertTrue(line.is_captain)
 
         # The old preparation queue is the same game-day list now.
         match_day_response = self.url_open("/my/match-day")
