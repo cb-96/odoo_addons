@@ -191,12 +191,12 @@ class CommunicationDelivery(models.Model):
                 'name': self.name, 'target_model': self._name, 'target_res_id': self.id,
                 'notification_type': 'email', 'recipient_partner_id': user.partner_id.id,
                 'recipient_email': user.partner_id.email, 'state': 'pending',
-                'correlation_id': self.delivery_key,
+                'correlation_id': self.delivery_key, 'mail_id': self.mail_id.id,
             })
             self.write({'log_id': log.id})
         self.write({'state': 'queued', 'attempts': self.attempts + 1, 'failure_note': False,
                     'next_attempt_on': False})
-        self.log_id.write({'state': 'pending', 'attempt_count': self.attempts,
+        self.log_id.write({'mail_id': self.mail_id.id, 'state': 'pending', 'attempt_count': self.attempts,
                            'last_attempt_on': fields.Datetime.now(), 'operator_message': False})
 
     def _accepted(self):

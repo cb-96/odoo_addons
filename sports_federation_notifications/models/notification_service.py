@@ -23,107 +23,63 @@ class FederationNotificationService(models.AbstractModel):
     def send_email_template(
         self, record, template_xmlid, partner=None, email_to=None, log_name=None
     ):
-        """Send an email using a mail.template and create a log entry.
-
-        Args:
-            record: The target record for the template.
-            template_xmlid: The XML ID of the mail.template (e.g., 'module_name.template_xxx').
-            partner: Optional res.partner record for recipient.
-            email_to: Optional email address string if no partner.
-            log_name: Optional name for the log entry.
-
-        Returns:
-            The created notification log record.
-        """
-        Log = self.env["federation.notification.log"].sudo()
-        correlation_id = ensure_correlation_id(self.env)
+        """Persist a delivery intent and queue mail; never contact SMTP here."""
         if isinstance(email_to, (list, tuple, set)):
             email_to = ",".join(dict.fromkeys(email for email in email_to if email))
-
-        log_vals = {
-            "name": log_name or f"Email: {template_xmlid}",
-            "target_model": record._name,
-            "target_res_id": record.id,
-            "notification_type": "email",
-            "template_xmlid": template_xmlid,
-            "state": "pending",
-            "correlation_id": correlation_id,
-        }
-        if partner:
-            log_vals["recipient_partner_id"] = partner.id
-            log_vals["recipient_email"] = partner.email
-        elif email_to:
-            log_vals["recipient_email"] = email_to
-
-        log = Log.create(log_vals)
-
-        # Pre-flight: ensure partner still exists before attempting delivery.
-        # A deleted partner causes MissingError deep inside send_mail which
-        # would surface as an untyped failure with no actionable category.
+        log = self.env["federation.notification.log"].sudo().create({
+            "name": log_name or "Email: %s" % template_xmlid,
+            "target_model": record._name, "target_res_id": record.id,
+            "notification_type": "email", "template_xmlid": template_xmlid,
+            "recipient_partner_id": partner.id if partner and partner.exists() else False,
+            "recipient_email": partner.email if partner and partner.exists() else email_to,
+            "correlation_id": ensure_correlation_id(self.env),
+        })
         if partner and not partner.exists():
-            log.write(
-                {
-                    "state": "failed",
-                    "failure_category": "data_validation",
-                    "operator_message": (
-                        f"Recipient partner (ID {partner.id}) has been deleted. "
-                        "Recreate or reassign the contact and retry."
-                    ),
-                }
-            )
+            log._queue_failed(ValueError("Recipient partner is missing or has been deleted."))
             return log
+        return self._queue_template(log, record, partner=partner, email_to=email_to)
 
+    def _queue_template(self, log, record, partner=None, email_to=None):
+        """Render in a savepoint; a render failure must not undo the decision."""
         try:
-            template = self.env.ref(template_xmlid, raise_if_not_found=False)
-            if not template:
-                log.write(
-                    {
-                        "state": "failed",
-                        "failure_category": "configuration_error",
-                        "operator_message": f"Template '{template_xmlid}' is not available in this database.",
-                        "message": False,
-                    }
+            with self.env.cr.savepoint():
+                template = self.env.ref(log.template_xmlid, raise_if_not_found=False)
+                if not template:
+                    raise ValueError("Template '%s' is not available in this database." % log.template_xmlid)
+                values = {"auto_delete": False}
+                if partner:
+                    values.update(recipient_ids=[(6, 0, [partner.id])], email_to=False)
+                elif email_to:
+                    values.update(email_to=email_to, recipient_ids=[(5, 0, 0)])
+                mail_id = template.sudo().send_mail(
+                    record.id, force_send=False, email_values=values,
                 )
-                return log
-            template = template.sudo()
+                mail = self.env["mail.mail"].sudo().browse(mail_id).exists()
+                if not mail:
+                    raise ValueError("Template did not create an outbound mail record.")
+                log._queued(mail)
+        except Exception as error:
+            log._queue_failed(error)
+        return log
 
-            if partner:
-                template.send_mail(
-                    record.id,
-                    force_send=True,
-                    email_values={"recipient_ids": [(6, 0, [partner.id])]},
-                )
-            elif email_to:
-                template.send_mail(
-                    record.id, force_send=True, email_values={"email_to": email_to}
-                )
-            else:
-                template.send_mail(record.id, force_send=True)
-
-            log.write(
-                {
-                    "state": "sent",
-                    "sent_on": fields.Datetime.now(),
-                    "failure_category": False,
-                    "operator_message": False,
-                }
-            )
-        except Exception as e:
-            failure_category, operator_message = build_failure_feedback(error=e)
-            _logger.exception(
-                "Notification email delivery failed for %s (correlation_id=%s)",
-                log.display_name,
-                correlation_id,
-            )
-            log.write(
-                {
-                    "state": "failed",
-                    "failure_category": failure_category,
-                    "operator_message": operator_message,
-                    "message": False,
-                }
-            )
-
+    def queue_direct_email(self, record, subject, body_html, email_to, log_name=None):
+        """Direct-content fallback uses the same mail queue and delivery evidence."""
+        log = self.env["federation.notification.log"].sudo().create({
+            "name": log_name or subject, "target_model": record._name,
+            "target_res_id": record.id, "notification_type": "email",
+            "recipient_email": email_to, "correlation_id": ensure_correlation_id(self.env),
+        })
+        try:
+            with self.env.cr.savepoint():
+                mail = self.env["mail.mail"].sudo().create({
+                    "subject": subject, "body_html": body_html, "email_to": email_to,
+                    "email_from": (self.env.company.partner_id.email_formatted
+                                   or self.env.user.email_formatted or False),
+                    "auto_delete": False,
+                })
+                log._queued(mail)
+        except Exception as error:
+            log._queue_failed(error)
         return log
 
     def create_activity(
@@ -162,24 +118,25 @@ class FederationNotificationService(models.AbstractModel):
         log = Log.create(log_vals)
 
         try:
-            self.env["mail.activity"].sudo().create(
-                {
-                    "res_model_id": self.env["ir.model"]._get_id(record._name),
-                    "res_id": record.id,
-                    "activity_type_id": activity_type.id if activity_type else False,
-                    "summary": summary,
-                    "note": note or "",
-                    "user_id": user_id,
-                }
-            )
-            log.write(
-                {
-                    "state": "sent",
-                    "sent_on": fields.Datetime.now(),
-                    "failure_category": False,
-                    "operator_message": False,
-                }
-            )
+            with self.env.cr.savepoint():
+                self.env["mail.activity"].sudo().create(
+                    {
+                        "res_model_id": self.env["ir.model"]._get_id(record._name),
+                        "res_id": record.id,
+                        "activity_type_id": activity_type.id if activity_type else False,
+                        "summary": summary,
+                        "note": note or "",
+                        "user_id": user_id,
+                    }
+                )
+                log.write(
+                    {
+                        "state": "sent",
+                        "sent_on": fields.Datetime.now(),
+                        "failure_category": False,
+                        "operator_message": False,
+                    }
+                )
         except Exception as e:
             failure_category, operator_message = build_failure_feedback(error=e)
             _logger.exception(

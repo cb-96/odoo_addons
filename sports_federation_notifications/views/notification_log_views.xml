@@ -28,6 +28,10 @@
                             <field name="correlation_id" readonly="1"/>
                             <field name="failure_category" readonly="1"/>
                             <field name="sent_on"/>
+                            <field name="mail_id" readonly="1"/>
+                            <field name="next_attempt_on" readonly="1"/>
+                            <field name="attempt_count" readonly="1"/>
+                            <field name="last_attempt_on" readonly="1"/>
                         </group>
                         <group string="Target">
                             <field name="target_model"/>

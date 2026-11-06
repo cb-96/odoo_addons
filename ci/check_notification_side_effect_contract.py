@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Protect the non-blocking result-notification contract."""
 
+import ast
 from pathlib import Path
 import sys
 
@@ -28,6 +29,17 @@ def violations(root=ROOT):
         )
     if "failure_category" not in service or "operator_message" not in service:
         failures.append("notification failures do not persist operator feedback")
+    for name, text in (("dispatcher", dispatcher), ("service", service)):
+        tree = ast.parse(text)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+                continue
+            if node.func.attr == "send":
+                failures.append(f"{name} sends SMTP inside a business action")
+            if node.func.attr == "send_mail":
+                flag = next((kw.value for kw in node.keywords if kw.arg == "force_send"), None)
+                if not isinstance(flag, ast.Constant) or flag.value is not False:
+                    failures.append(f"{name} must explicitly queue template mail")
     return failures
 
 

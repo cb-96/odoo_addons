@@ -50,7 +50,7 @@ class TestNotifications(TransactionCase):
         self.assertEqual(log.recipient_email, "test@example.com")
         self.assertEqual(log.notification_type, "email")
         self.assertTrue(log.correlation_id)
-        self.assertIn(log.state, ("sent", "failed"))
+        self.assertIn(log.state, ("pending", "sent", "failed"))
 
     def test_missing_template_failure_is_typed_for_operators(self):
         """Missing templates should create a configuration failure with safe operator feedback."""
@@ -82,7 +82,7 @@ class TestNotifications(TransactionCase):
         self.assertEqual(log.name, "Test Activity Summary")
         self.assertEqual(log.notification_type, "activity")
         self.assertTrue(log.correlation_id)
-        self.assertIn(log.state, ("sent", "failed"))
+        self.assertIn(log.state, ("pending", "sent", "failed"))
 
     def test_cron_method_runs_without_error(self):
         """Test that cron method runs without error."""
@@ -168,7 +168,7 @@ class TestNotifications(TransactionCase):
             limit=1,
         )
         self.assertTrue(log)
-        self.assertIn(log.state, ("sent", "failed"))
+        self.assertIn(log.state, ("pending", "sent", "failed"))
         self.assertNotIn("[stub]", log.name)
         self.assertIn("suspended.player@example.com", log.recipient_email)
         self.assertIn("test@example.com", log.recipient_email)
@@ -243,7 +243,7 @@ class TestNotifications(TransactionCase):
             limit=1,
         )
         self.assertTrue(log)
-        self.assertIn(log.state, ("sent", "failed"))
+        self.assertIn(log.state, ("pending", "sent", "failed"))
 
     def test_action_view_target_returns_act_window_for_match_log(self):
         """action_view_target returns a valid act_window for a log targeting a federation.match."""
@@ -369,7 +369,7 @@ class TestNotifications(TransactionCase):
             limit=1,
         )
         self.assertTrue(log)
-        self.assertIn(log.state, ("sent", "failed"))
+        self.assertIn(log.state, ("pending", "sent", "failed"))
         self.assertEqual(registration.rejection_reason, "Missing supporting document")
 
     def test_referee_shortage_alert_creates_notification_log(self):
@@ -430,4 +430,4 @@ class TestNotifications(TransactionCase):
             limit=1,
         )
         self.assertTrue(log)
-        self.assertIn(log.state, ("sent", "failed"))
+        self.assertIn(log.state, ("pending", "sent", "failed"))

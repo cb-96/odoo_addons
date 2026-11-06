@@ -132,6 +132,7 @@ class FederationNotificationLog(models.Model):
             logs = self.sudo().search(
                 [
                     ("state", "=", state),
+                    *([("mail_id", "=", False)] if state == "pending" else []),
                     ("create_date", "!=", False),
                     ("create_date", "<", cutoff),
                 ]
@@ -149,6 +150,7 @@ class FederationNotificationLog(models.Model):
             self.sudo().search_count(
                 [
                     ("state", "=", state),
+                    *([("mail_id", "=", False)] if state == "pending" else []),
                     ("create_date", "!=", False),
                     (
                         "create_date",

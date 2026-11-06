@@ -15,10 +15,7 @@ Usage (from any model override):
         Dispatcher.send_result_approved(self)
 """
 
-from odoo import fields, models
-from odoo.addons.sports_federation_base.models.failure_feedback import (
-    build_failure_feedback,
-)
+from odoo import models
 
 
 class FederationNotificationDispatcher(models.AbstractModel):
@@ -87,63 +84,9 @@ class FederationNotificationDispatcher(models.AbstractModel):
                 "No recipient email available for this notification.",
             )
 
-        log = (
-            self.env["federation.notification.log"]
-            .sudo()
-            .create(
-                {
-                    "name": log_name,
-                    "target_model": record._name,
-                    "target_res_id": record.id,
-                    "recipient_email": ",".join(unique_emails),
-                    "notification_type": "email",
-                    "state": "pending",
-                }
-            )
+        return self.queue_direct_email(
+            record, subject, body_html, ",".join(unique_emails), log_name=log_name,
         )
-        email_from = (
-            self.env.user.company_id.email_formatted
-            or self.env.user.email_formatted
-            or self.env.company.email
-            or self.env.user.email
-            or False
-        )
-
-        try:
-            mail = (
-                self.env["mail.mail"]
-                .sudo()
-                .create(
-                    {
-                        "subject": subject,
-                        "body_html": body_html,
-                        "email_to": ",".join(unique_emails),
-                        "email_from": email_from,
-                        "auto_delete": False,
-                    }
-                )
-            )
-            mail.send()
-            log.write(
-                {
-                    "state": "sent",
-                    "sent_on": fields.Datetime.now(),
-                    "failure_category": False,
-                    "operator_message": False,
-                }
-            )
-        except Exception as exc:
-            failure_category, operator_message = build_failure_feedback(error=exc)
-            log.write(
-                {
-                    "state": "failed",
-                    "failure_category": failure_category,
-                    "operator_message": operator_message,
-                    "message": False,
-                }
-            )
-
-        return log
 
     def _create_group_activities(self, record, group_xmlid, summary, note=None):
         """Handle create group activities."""

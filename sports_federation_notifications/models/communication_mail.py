@@ -1,5 +1,5 @@
 from markupsafe import Markup, escape
-from odoo import _, models
+from odoo import _, fields, models
 from odoo.exceptions import AccessError
 from .actionable_communications import _lock
 
@@ -37,7 +37,24 @@ class CommunicationMail(models.Model):
             delivery.mail_id.write({'email_to': user.partner_id.email, 'recipient_ids': [(5, 0, 0)],
                                     'body_html': Markup('<p>Review your current federation work:</p><ul>%s</ul>') % links})
         sendable = self - blocked
-        result = super(CommunicationMail, sendable).send(*args, **kwargs) if sendable else True
+        logs = self.env["federation.notification.log"].sudo().search([
+            ("mail_id", "in", sendable.ids),
+            ("mail_id.state", "=", "outgoing"),
+            ("target_model", "!=", "federation.communication.delivery"),
+        ])
+        if logs:
+            self.env.cr.execute("SELECT id FROM mail_mail WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                                [sendable.ids])
+        for log in logs:
+            log.write({"attempt_count": log.attempt_count + 1,
+                       "last_attempt_on": fields.Datetime.now()})
+        try:
+            result = super(CommunicationMail, sendable).send(*args, **kwargs) if sendable else True
+        finally:
+            # Mail state is the evidence; queuing is never reported as sent.
+            for log in logs:
+                log._reconcile_mail()
+
         for delivery in deliveries:
             delivery.mail_id.invalidate_recordset(['state'])
             if delivery.mail_id.state == 'sent':
