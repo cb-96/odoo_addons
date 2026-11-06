@@ -21,10 +21,10 @@ that only has the Federation **Manager** group.
 
 ## Work areas
 
-The **Federation** application has these top-level work areas, in this order:
+The **Federation** application opens on **Competitions > Competitions**, the
+Competition Hub. It has these top-level work areas, in this order:
 
-- **Needs Attention**: one inbox of manager tasks and referee duties that need a person.
-- **Competitions**: the Competition Hub, plus planning tools and raw records (advanced).
+- **Competitions**: the Competition Hub and the Review Queue, plus planning tools and raw records (advanced).
 - **Clubs & People**: clubs, teams, players, club representatives and membership work.
 - **Match Operations**: game days and court operation; courts and venues, officiating and discipline (advanced).
 - **Publishing**: schedule review, publication and public editorial content.
@@ -38,9 +38,9 @@ A Federation Manager without specialist groups sees eleven entries:
 
 ```text
 Federation
-├── Needs Attention
 ├── Competitions
-│   └── Competitions
+│   ├── Competitions            (landing page)
+│   └── Review Queue
 ├── Clubs & People
 │   ├── Clubs
 │   ├── Teams
@@ -55,6 +55,12 @@ Federation
 └── Reporting
     └── Operational Health
 ```
+
+The **Review Queue** lists decisions that are waiting for the federation
+across all competitions: submitted competition entries, submitted game-day
+line-ups and results to verify or approve. It refreshes the task projection
+when opened. Club work, such as referee nominations, stays in the club portal
+and the **Duty Coverage Board**.
 
 The Competition Hub provides contextual actions for creating competitions,
 teams, format, game days, schedule generation, publication, rosters, game-day
@@ -139,7 +145,7 @@ Federation
     │   ├── Delivery History
     │   └── Notification Outcomes
     └── System                              (developer mode)
-        ├── All Tasks, Operational Jobs, Standings Recompute Queue
+        ├── Operational Jobs, Standings Recompute Queue
         ├── Retention Policies, Retention Evidence
         ├── Competition Role Assignments, Game-Day Incidents, Operational Deviations
         ├── Member Changes, Duplicate Person Decisions, Member Evidence History
@@ -155,7 +161,6 @@ Federation > Competitions > Planning Tools > Calendar Planner
 Federation > Competitions > Planning Tools > Schedule Planner
 Federation > Publishing > Schedules to Review
 Federation > Administration > Configuration > Rule Sets
-Federation > Administration > System > All Tasks
 Federation > Administration > System > Operational Jobs
 Federation > Administration > System > Competition Role Assignments
 ```
@@ -164,6 +169,7 @@ Federation > Administration > System > Competition Role Assignments
 
 ```text
 Federation > Competitions > Competitions
+Federation > Competitions > Review Queue
 Federation > Clubs & People > Clubs
 Federation > Clubs & People > Teams
 Federation > Match Operations > Game Days
@@ -199,8 +205,9 @@ enforces these rules:
 - A menu with child menus has no action; Odoo cannot open it from the menu bar.
 - No empty menu folders, no duplicate names in one dropdown, and no action
   exposed by more than one menu.
-- An ordinary manager sees at most twelve entries, and **Competitions** is the
-  only ordinary entry under Competitions.
+- The app opens on the Competition Hub for every role.
+- An ordinary manager sees at most twelve entries, and **Competitions** and
+  **Review Queue** are the only ordinary entries under Competitions.
 - The top-level order and the path contracts above.
 
 In addition:

@@ -177,7 +177,6 @@ Federation > Competitions > Planning Tools > Calendar Planner
 Federation > Competitions > Planning Tools > Schedule Planner
 Federation > Publishing > Schedules to Review
 Federation > Administration > Configuration > Rule Sets
-Federation > Administration > System > All Tasks
 Federation > Administration > System > Operational Jobs
 Federation > Administration > System > Competition Role Assignments
 ```

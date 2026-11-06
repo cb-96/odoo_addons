@@ -33,6 +33,9 @@ RETIRED_MENU_XMLIDS = (
     "sports_federation_reporting.menu_federation_reporting",
     "sports_federation_reporting.menu_federation_report_workflow_exception",
     "sports_federation_navigation.menu_reports",
+    "sports_federation_navigation.menu_needs_attention",
+    "sports_federation_navigation.action_needs_attention",
+    "sports_federation_portal.menu_federation_operation_task",
 )
 
 
@@ -83,3 +86,27 @@ class TestFederationNavigation(TransactionCase):
                     self.assertFalse(
                         menu.action, "a menu with children cannot open its action"
                     )
+
+    def test_app_opens_on_competition_hub(self):
+        root = self.env.ref("sports_federation_base.menu_federation_root")
+        hub = self.env.ref("sports_federation_setup_flow.menu_competition_setup_home")
+
+        def first_action(menu):
+            for child in menu.child_id.sorted(lambda item: (item.sequence, item.id)):
+                if child.action:
+                    return child
+                found = first_action(child)
+                if found:
+                    return found
+            return self.env["ir.ui.menu"]
+
+        self.assertEqual(first_action(root), hub)
+
+    def test_review_queue_is_manager_only(self):
+        action = self.env["federation.operation.task"].action_open_review_queue()
+        self.assertEqual(action["res_model"], "federation.operation.task")
+        self.assertIn("('audience', '=', 'manager')", str(action["domain"]))
+        menu = self.env.ref("sports_federation_navigation.menu_review_queue")
+        self.assertEqual(
+            menu.group_ids, self.env.ref("sports_federation_base.group_federation_manager")
+        )

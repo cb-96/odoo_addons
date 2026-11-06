@@ -224,6 +224,21 @@ class FederationOperationTask(models.Model):
             )
             user_tasks.write({"digest_sent_on": today})
 
+    @api.model
+    def action_open_review_queue(self):
+        """Open the manager review queue after refreshing the projection.
+
+        Tasks are a projection of source records and are otherwise only
+        regenerated when a portal page is loaded, so the backend list would
+        show stale work without this refresh.
+        """
+        if not self.env.user.has_group("sports_federation_base.group_federation_manager"):
+            raise ValidationError(_("Federation manager access is required."))
+        self.sudo().sync_for_user(user=self.env.user)
+        return self.env["ir.actions.act_window"]._for_xml_id(
+            "sports_federation_portal.action_federation_operation_task"
+        )
+
     def action_open_source(self):
         self.ensure_one()
         source = self.env.get(self.source_model)

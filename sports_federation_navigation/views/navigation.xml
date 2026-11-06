@@ -21,30 +21,29 @@
     of accumulating groups linked by earlier versions.
   -->
 
-  <!-- ===== Federation > Needs Attention ================================== -->
-  <record id="action_needs_attention" model="ir.actions.act_window">
-    <field name="name">Needs Attention</field>
-    <field name="res_model">federation.operation.task</field>
-    <field name="view_mode">list,form</field>
-    <field name="search_view_id" ref="sports_federation_portal.view_federation_operation_task_search"/>
-    <field name="domain">['|', ('audience', '=', 'manager'), ('task_type', '=', 'referee_duty'), ('state', '!=', 'done')]</field>
-    <field name="context">{'search_default_open': 1}</field>
-    <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Nothing needs your attention right now.</p></field>
-  </record>
-  <menuitem id="menu_needs_attention" name="Needs Attention" parent="sports_federation_base.menu_federation_root" action="action_needs_attention" sequence="1" groups="sports_federation_base.group_federation_manager"/>
-
   <!-- ===== Federation > Competitions ===================================== -->
   <record id="sports_federation_base.menu_federation_competitions" model="ir.ui.menu">
     <field name="name">Competitions</field>
     <field name="sequence">10</field>
     <field name="group_ids" eval="[(6, 0, [])]"/>
   </record>
+  <!-- The app opens on the first menu with an action: the Competition Hub. -->
   <record id="sports_federation_setup_flow.menu_competition_setup_home" model="ir.ui.menu">
     <field name="name">Competitions</field>
     <field name="parent_id" ref="sports_federation_base.menu_federation_competitions"/>
     <field name="sequence">1</field>
     <field name="group_ids" eval="[(6, 0, [])]"/>
   </record>
+
+  <!-- Cross-competition decisions: submitted entries, line-ups and results.
+       The server action refreshes the task projection before opening it. -->
+  <record id="action_review_queue" model="ir.actions.server">
+    <field name="name">Review Queue</field>
+    <field name="model_id" ref="sports_federation_portal.model_federation_operation_task"/>
+    <field name="state">code</field>
+    <field name="code">action = model.action_open_review_queue()</field>
+  </record>
+  <menuitem id="menu_review_queue" name="Review Queue" parent="sports_federation_base.menu_federation_competitions" action="action_review_queue" sequence="5" groups="sports_federation_base.group_federation_manager"/>
 
   <!-- Section: cross-competition planning workspaces. -->
   <record id="sports_federation_competition_core.menu_competition_engine_competition_root" model="ir.ui.menu">
@@ -478,16 +477,10 @@
     <field name="sequence">90</field>
     <field name="group_ids" eval="[(6, 0, [ref('base.group_no_one')])]"/>
   </record>
-  <record id="sports_federation_portal.menu_federation_operation_task" model="ir.ui.menu">
-    <field name="name">All Tasks</field>
-    <field name="parent_id" ref="sports_federation_base.menu_federation_system_health"/>
-    <field name="sequence">10</field>
-    <field name="group_ids" eval="[(6, 0, [])]"/>
-  </record>
   <record id="sports_federation_base.menu_federation_operation_job" model="ir.ui.menu">
     <field name="name">Operational Jobs</field>
     <field name="parent_id" ref="sports_federation_base.menu_federation_system_health"/>
-    <field name="sequence">20</field>
+    <field name="sequence">10</field>
     <field name="group_ids" eval="[(6, 0, [])]"/>
   </record>
   <record id="sports_federation_standings.menu_federation_standing_recompute_jobs" model="ir.ui.menu">

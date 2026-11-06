@@ -11,7 +11,6 @@ WORKFLOW = ROOT / "docs/user-guide/competition-workflow.md"
 ROOT_MENU = "sports_federation_base.menu_federation_root"
 ADVANCED_GROUP = "sports_federation_base.group_federation_advanced_operator"
 TOP_LEVEL = (
-    "Needs Attention",
     "Competitions",
     "Clubs & People",
     "Match Operations",
@@ -20,8 +19,12 @@ TOP_LEVEL = (
     "Reporting",
     "Administration",
 )
+# Odoo opens the app on the first menu with an action (depth-first by
+# sequence). Operators must land in the Competition Hub.
+LANDING_MENU = "sports_federation_setup_flow.menu_competition_setup_home"
 REQUIRED_OPERATOR_PATHS = (
     ("Federation", "Competitions", "Competitions"),
+    ("Federation", "Competitions", "Review Queue"),
     ("Federation", "Clubs & People", "Clubs"),
     ("Federation", "Clubs & People", "Teams"),
     ("Federation", "Match Operations", "Game Days"),
@@ -34,7 +37,6 @@ REQUIRED_ADVANCED_PATHS = (
     ("Federation", "Competitions", "Planning Tools", "Schedule Planner"),
     ("Federation", "Publishing", "Schedules to Review"),
     ("Federation", "Administration", "Configuration", "Rule Sets"),
-    ("Federation", "Administration", "System", "All Tasks"),
     ("Federation", "Administration", "System", "Operational Jobs"),
     ("Federation", "Administration", "System", "Competition Role Assignments"),
 )
@@ -46,6 +48,7 @@ FORBIDDEN_TOP_LEVEL = {
     "Publication",
     "Insights",
     "Reports",
+    "Needs Attention",
 }
 # Area > section > item. Odoo renders deeper levels as flattened headers.
 MAX_DEPTH_BELOW_ROOT = 3
@@ -211,6 +214,30 @@ def structure_errors(records):
     return errors
 
 
+def landing_menu(records, groups=None):
+    """First menu with an action the given groups can see, as Odoo resolves it."""
+    def visible(xmlid):
+        assigned = records[xmlid]["groups"]
+        return groups is None or not assigned or bool(assigned & groups)
+
+    def first(parent):
+        children = sorted(
+            (xmlid for xmlid, record in records.items() if record["parent"] == parent),
+            key=lambda xmlid: (records[xmlid]["sequence"], xmlid),
+        )
+        for xmlid in children:
+            if not visible(xmlid):
+                continue
+            if records[xmlid]["action"]:
+                return xmlid
+            found = first(xmlid)
+            if found:
+                return found
+        return None
+
+    return first(ROOT_MENU)
+
+
 def path_exists(records, labels):
     for record in records.values():
         if record["name"] != labels[-1]:
@@ -260,11 +287,15 @@ def main():
         for record in records.values()
         if record["parent"] == competition_root and not record["advanced"]
     )
-    if ordinary_competition_entries not in (["Competition Hub"], ["Competitions"]):
+    if ordinary_competition_entries != ["Competitions", "Review Queue"]:
         errors.append(
             "ordinary competition entries are "
-            f"{ordinary_competition_entries!r}, expected only Competition Hub"
+            f"{ordinary_competition_entries!r}, expected Competitions and Review Queue"
         )
+    for label, groups in (("ordinary manager", ORDINARY_GROUPS), ("advanced operator", None)):
+        landing = landing_menu(records, groups)
+        if landing != LANDING_MENU:
+            errors.append(f"the Federation app opens on {landing} for an {label}, expected {LANDING_MENU}")
 
     for label in TOP_LEVEL:
         if f"**{label}**" not in navigation:

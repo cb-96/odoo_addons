@@ -56,8 +56,9 @@ idempotent; resolving a source closes its task, while a newly blocking source
 state reopens the same task by its stable source key.
 
 Club representatives receive only tasks for clubs they represent. Federation
-managers use the backend Operational Action Queue to filter blocking work by
-club, tournament, type, priority, deadline, and state. A task acknowledgement
+managers use **Federation > Competitions > Review Queue**, which refreshes the
+projection when opened, to filter blocking work by club, tournament, type,
+priority, deadline, and state. A task acknowledgement
 does not override a sporting blocker; the linked domain action remains the
 required resolution path.
 

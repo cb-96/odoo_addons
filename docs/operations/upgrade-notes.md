@@ -36,6 +36,31 @@ passed unless they ran.
 
 ## Entries
 
+### Competition Hub as the Federation landing page
+
+Affected modules: `sports_federation_navigation` 19.0.1.2.0 → 19.0.1.3.0,
+`sports_federation_portal` 19.0.7.14.3 → 19.0.7.14.4.
+
+**Data changes**: no schema change and no migration script. The
+`Needs Attention` menu and its window action, and the `Action Queue`/`All
+Tasks` menu, are no longer loaded and are deleted by the module update.
+`sports_federation_portal.action_federation_operation_task` is renamed
+**Review Queue**, limited to manager tasks and no longer lists club referee
+nominations. A new server action, `sports_federation_navigation.action_review_queue`,
+refreshes the task projection and opens it.
+
+**Behaviour to verify**: opening the Federation app lands on the Competition
+Hub for managers and advanced operators. **Competitions > Review Queue** shows
+current submitted entries, line-ups and results without first visiting a
+portal page. Referee nominations stay visible on the Duty Coverage Board.
+
+**Dry-run evidence**: `python3 ci/check_competition_ui_workflow.py` passes,
+including the new landing-page rule. The Odoo upgrade and module tests were
+not run in this change.
+
+**Rollback**: code-only rollback followed by a module update restores the
+previous menus; no data needs reversing.
+
 ### Backend menu clean-up
 
 Affected modules (menu data only): `sports_federation_navigation` 19.0.1.1.1 → 19.0.1.2.0;

@@ -14,11 +14,4 @@
               action="action_federation_club_representative"
               sequence="20"/>
 
-    <menuitem id="menu_federation_operation_task"
-              name="Action Queue"
-              parent="sports_federation_base.menu_federation_system_health"
-              action="action_federation_operation_task"
-              groups="sports_federation_base.group_federation_manager"
-              sequence="10"/>
-
 </odoo>
