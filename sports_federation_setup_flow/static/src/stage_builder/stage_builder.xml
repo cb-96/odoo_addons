@@ -21,6 +21,7 @@
             <button type="button" class="btn btn-outline-secondary" t-on-click="() =&gt; this.state.templateOpen = !this.state.templateOpen" t-att-disabled="state.busy || !data.stages.length" t-att-aria-expanded="state.templateOpen ? 'true' : 'false'">Save as template</button>
             <button t-if="!data.structure.editable &amp;&amp; data.structure.can_new_version" type="button" class="btn btn-outline-primary" t-on-click="newVersion" t-att-disabled="state.busy">Edit as new version</button>
             <button t-if="data.structure.editable" type="button" class="btn btn-primary" t-on-click="generate" t-att-disabled="state.busy || data.issues.length || !data.stages.length">Generate all matches</button>
+            <button t-if="data.structure.can_confirm" type="button" class="btn btn-primary" t-on-click="generate" t-att-disabled="state.busy">Confirm these matches</button>
           </div>
         </header>
 
@@ -33,7 +34,8 @@
         </form>
 
         <div t-if="!data.structure.editable" class="alert alert-info" role="status">
-          <t t-if="data.structure.state !== 'draft'">These matches are generated. <t t-if="data.structure.can_new_version">Use <strong>Edit as new version</strong> to change the stages.</t><t t-else="">Some matches are already planned or played, so the stages are locked.</t></t>
+          <t t-if="data.structure.can_confirm">These matches are generated but not confirmed yet. Choose <strong>Confirm these matches</strong> to plan them.</t>
+          <t t-elif="data.structure.state !== 'draft'">These matches are generated. <t t-if="data.structure.can_new_version">Use <strong>Edit as new version</strong> to change the stages.</t><t t-else="">Some matches are already planned or played, so the stages are locked.</t></t>
           <t t-else="">You can view these stages but not change them.</t>
         </div>
 

@@ -191,8 +191,56 @@ class FederationStageGraphEngine(models.AbstractModel):
         return stage.stage_participant_ids.sorted(lambda p: (p.seed, p.id))
 
     @api.model
+    def _expected_stage_teams(self, stage):
+        """Teams a stage should hold now, or None when it waits for a table."""
+        if stage.source_type == "registration":
+            return set(stage.structure_id.participant_set_id.line_ids.mapped("team_id").ids)
+        if stage.stage_participant_ids:
+            return set(stage.stage_participant_ids.mapped("team_id").ids)
+        return None
+
+    @api.model
+    def _keep_existing_fixtures(self, stage):
+        """True when a prepared stage already has the right matches.
+
+        Preparing again (for example when planning generates a format that
+        was prepared stage by stage) must not delete matches that already
+        have an operational match. They are kept when the teams did not
+        change; otherwise the user is told to make a new version.
+        """
+        fixtures = stage.stage_fixture_ids
+        if not fixtures.filtered("operational_match_id"):
+            return False
+        expected = self._expected_stage_teams(stage)
+        current = set(
+            (fixtures.mapped("home_team_id") | fixtures.mapped("away_team_id")
+             | fixtures.mapped("bye_team_id")).ids
+        )
+        if expected is not None and expected != current:
+            raise ValidationError(
+                _(
+                    "The matches of %(stage)s already exist for other teams. Make a new "
+                    "version of this format to play with the current teams.",
+                    stage=stage.display_name,
+                )
+            )
+        if stage.graph_state in ("draft", "waiting"):
+            stage.graph_state = "ready"
+        missing = fixtures.filtered(
+            lambda fixture: fixture.state == "ready"
+            and fixture.home_team_id
+            and fixture.away_team_id
+            and not fixture.operational_match_id
+        )
+        if missing:
+            self.env["federation.fixture.materializer"].materialize(missing)
+        return True
+
+    @api.model
     def prepare_stage(self, stage):
         self.validate_graph(stage.structure_id)
+        if self._keep_existing_fixtures(stage):
+            return True
         if stage.source_type == "registration":
             stage.stage_participant_ids.unlink()
             self.env["federation.stage.participant"].create(

@@ -1,4 +1,5 @@
-from collections import defaultdict
+from collections import Counter, defaultdict
+from math import ceil
 
 from odoo import models
 
@@ -24,6 +25,15 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
 
         ``known_days`` maps fixtures already allocated outside this run to
         their game-day date, so chronology also holds across runs.
+
+        Each team's matches are spread over the game days its division plays:
+
+        * a day may carry ``team_limit`` (the most matches one team can play
+          there with the required rest); a team is not given more matches on
+          that day while another fitting day has room;
+        * every team gets a fair share per day (its matches divided by the
+          division's game days), and days where it is still under that share
+          are preferred.
         """
         pinned = pinned or {}
         known_days = dict(known_days or {})
@@ -87,11 +97,32 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
 
         def assign(fixture, day_id):
             self._assign(fixture, day_id, assignments, team_days, remaining)
+            team_load[day_id].update(self._team_ids(fixture))
             round_days[day_id].add((fixture.stage_id.id, fixture.round_number))
             placed_dates[fixture.id] = date_by_day[day_id]
             stage_dates[fixture.stage_id.id].add(date_by_day[day_id])
 
         reserve, blocked = self._stage_reservations(fixtures)
+
+        # Per-team load per day, the rest limit per day and each team's fair
+        # share per day, so no team piles up matches on one day.
+        team_load = defaultdict(Counter)
+        team_limit = {day["matchday_id"]: day.get("team_limit") or 0 for day in days}
+        key_total = Counter()
+        key_days = {}
+        for fixture in fixtures:
+            playable = sum(1 for day in days if allows(day["matchday_id"], fixture)) or 1
+            for key in self._team_ids(fixture):
+                key_total[key] += 1
+                key_days[key] = max(key_days.get(key, 0), playable)
+        share = {key: ceil(total / key_days[key]) for key, total in key_total.items()}
+
+        def over_limit(day_id, keys):
+            limit = team_limit.get(day_id)
+            return bool(limit) and any(team_load[day_id][key] + 1 > limit for key in keys)
+
+        def over_share(day_id, keys):
+            return any(team_load[day_id][key] + 1 > share.get(key, 1) for key in keys)
 
         def reservation_allows(day_id, fixture, division_days):
             """Keep the last game days free for the stages that follow."""
@@ -149,6 +180,11 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
                     if chronology_allows(day["matchday_id"], bound)
                     and day["matchday_id"] not in blocked.get(fixture.stage_id.id, ())
                 ]
+            # Rest is a hard preference: only days where every team of this
+            # match still fits with the required rest, when there are any.
+            rested = [day for day in candidates if not over_limit(day["matchday_id"], keys)]
+            if rested:
+                candidates = rested
             source_dates = {
                 placed_dates.get(source.id)
                 for source in (fixture.home_source_fixture_id, fixture.away_source_fixture_id)
@@ -158,6 +194,11 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
             in_bracket = fixture.stage_id.id in bracket_stage_ids
             candidates.sort(
                 key=lambda day: (
+                    # Spread each team's matches evenly over its game days:
+                    # first stay within each team's fair share, then use the
+                    # day where the busiest team of this match plays least.
+                    over_share(day["matchday_id"], keys),
+                    max((team_load[day["matchday_id"]][key] for key in keys), default=0),
                     len(keys & team_days[day["matchday_id"]]),
                     # Prefer a later day for a follow-up round when one is free.
                     day["date"] in source_dates,
@@ -175,6 +216,10 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
                     unplaced[fixture.division_id] += 1
                 continue
             assign(fixture, candidates[0]["matchday_id"])
+        self._repair_rest(
+            fixtures, pinned, days, assignments, team_load, team_limit, remaining,
+            allows, stage_allows, placed_dates, date_by_day,
+        )
         for stage, count in sorted(
             unplaced_stage.items(), key=lambda item: (item[0].sequence, item[0].id)
         ):
@@ -219,6 +264,103 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
             "errors": errors,
             "valid": not errors,
         }
+
+    def _repair_rest(
+        self, fixtures, pinned, days, assignments, team_load, team_limit, remaining,
+        allows, stage_allows, placed_dates, date_by_day,
+    ):
+        """Move single matches off days where a team has more than rest allows.
+
+        The greedy pass can leave a team one match over its limit on a day
+        while another day still has room for both teams. Only matches that no
+        other match depends on, and that depend on nothing, are moved, so
+        stage order and knockout chronology stay untouched.
+        """
+        by_id = {fixture.id: fixture for fixture in fixtures}
+        linked_stage_ids = set()
+        depending_fixture_ids = set()
+        for fixture in fixtures:
+            sources = self._source_stages(fixture)
+            if sources:
+                linked_stage_ids.add(fixture.stage_id.id)
+                linked_stage_ids.update(sources.ids)
+            for source in (fixture.home_source_fixture_id, fixture.away_source_fixture_id):
+                if source:
+                    depending_fixture_ids.update((fixture.id, source.id))
+
+        def movable(fixture):
+            return (
+                fixture.id not in pinned
+                and fixture.id not in depending_fixture_ids
+                and fixture.stage_id.id not in linked_stage_ids
+            )
+
+        def excess(day_id, keys):
+            limit = team_limit.get(day_id)
+            if not limit:
+                return 0
+            return sum(max(0, team_load[day_id][key] - limit) for key in keys)
+
+        def fits(day_id, fixture):
+            return allows(day_id, fixture) and stage_allows(day_id, fixture)
+
+        def relocate(fixture_id, keys, source_id, target_id):
+            assignments[source_id].remove(fixture_id)
+            assignments[target_id].append(fixture_id)
+            remaining[source_id] += 1
+            remaining[target_id] -= 1
+            team_load[source_id].subtract(keys)
+            team_load[target_id].update(keys)
+            placed_dates[fixture_id] = date_by_day[target_id]
+
+        def try_improve(fixture, keys, day_id):
+            """Move the match, or swap it with one on another day, when that
+            lowers the number of matches over the rest limit."""
+            for other in days:
+                other_id = other["matchday_id"]
+                if other_id == day_id or not fits(other_id, fixture):
+                    continue
+                touched = keys
+                before = excess(day_id, touched) + excess(other_id, touched)
+                if remaining[other_id] > 0:
+                    relocate(fixture.id, keys, day_id, other_id)
+                    if excess(day_id, touched) + excess(other_id, touched) < before:
+                        return True
+                    relocate(fixture.id, keys, other_id, day_id)
+                for partner_id in list(assignments.get(other_id, [])):
+                    partner = by_id.get(partner_id)
+                    if not partner or not movable(partner) or not fits(day_id, partner):
+                        continue
+                    partner_keys = self._team_ids(partner)
+                    touched = keys | partner_keys
+                    before = excess(day_id, touched) + excess(other_id, touched)
+                    relocate(fixture.id, keys, day_id, other_id)
+                    relocate(partner_id, partner_keys, other_id, day_id)
+                    if excess(day_id, touched) + excess(other_id, touched) < before:
+                        return True
+                    relocate(partner_id, partner_keys, day_id, other_id)
+                    relocate(fixture.id, keys, other_id, day_id)
+            return False
+
+        for _round in range(4):
+            moved = False
+            for day in days:
+                day_id = day["matchday_id"]
+                if not team_limit.get(day_id):
+                    continue
+                for fixture_id in list(assignments.get(day_id, [])):
+                    fixture = by_id.get(fixture_id)
+                    if (
+                        not fixture
+                        or fixture_id not in assignments.get(day_id, [])
+                        or not movable(fixture)
+                    ):
+                        continue
+                    keys = self._team_ids(fixture)
+                    if excess(day_id, keys) and try_improve(fixture, keys, day_id):
+                        moved = True
+            if not moved:
+                break
 
     def _stage_reservations(self, fixtures):
         """Game days earlier stages leave free for the stages they feed.

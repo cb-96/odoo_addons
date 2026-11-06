@@ -244,5 +244,78 @@ class DistributorTests(unittest.TestCase):
         self.assertGreater(self._day_of(result, final), self._day_of(result, semi_one))
 
 
+    def _league(self, teams, double=True):
+        stage = Stage(1, "League")
+        fixtures, number = [], 0
+        for round_number, pairs in enumerate(presets.round_robin_pairs(teams, double), 1):
+            for home, away in pairs:
+                number += 1
+                fixtures.append(Fixture(number, stage, round_number, {home, away}))
+        return Records(fixtures)
+
+    def _loads(self, result, fixtures):
+        by_id = {fixture.id: fixture for fixture in fixtures}
+        loads = {}
+        for day, ids in result["assignments"].items():
+            for fixture_id in ids:
+                for key in by_id[fixture_id]._keys:
+                    loads.setdefault((day, key), 0)
+                    loads[(day, key)] += 1
+        return loads
+
+    def test_team_matches_are_spread_within_the_rest_limit(self):
+        # 9 teams home & away: 16 matches per team over 3 tournament days,
+        # 7 per team per day with the rest. Spread evenly: at most 6 per day.
+        fixtures = self._league(9)
+        days = [
+            {"matchday_id": index, "date": date(2027, 1, index * 7), "capacity": 40,
+             "division_ids": [], "team_limit": 7}
+            for index in (1, 2, 3)
+        ]
+        result = self.Distributor().propose(fixtures, days)
+        self.assertFalse(result["errors"])
+        loads = self._loads(result, fixtures)
+        self.assertLessEqual(max(loads.values()), 6)
+
+    def test_rest_limit_is_respected_when_capacity_is_uneven(self):
+        # A huge first day used to attract most matches; the rest limit now
+        # sends the overflow to the other days.
+        fixtures = self._league(6)
+        days = [
+            {"matchday_id": 1, "date": date(2027, 1, 7), "capacity": 60, "division_ids": [], "team_limit": 4},
+            {"matchday_id": 2, "date": date(2027, 1, 14), "capacity": 10, "division_ids": [], "team_limit": 4},
+            {"matchday_id": 3, "date": date(2027, 1, 21), "capacity": 10, "division_ids": [], "team_limit": 4},
+        ]
+        result = self.Distributor().propose(fixtures, days)
+        self.assertFalse(result["errors"])
+        self.assertLessEqual(max(self._loads(result, fixtures).values()), 4)
+
+    def test_two_tournament_days_fit_exactly(self):
+        # 8 teams home & away: 14 matches each, exactly 7 + 7 with the rest.
+        fixtures = self._league(8)
+        days = [
+            {"matchday_id": index, "date": date(2027, 1, index * 7), "capacity": 60,
+             "division_ids": [], "team_limit": 7}
+            for index in (1, 2)
+        ]
+        result = self.Distributor().propose(fixtures, days)
+        self.assertFalse(result["errors"])
+        self.assertEqual(max(self._loads(result, fixtures).values()), 7)
+
+    def test_more_matches_than_rest_allows_still_plans_everything(self):
+        fixtures = self._league(9)
+        days = [
+            {"matchday_id": index, "date": date(2027, 1, index * 7), "capacity": 40,
+             "division_ids": [], "team_limit": 7}
+            for index in (1, 2)
+        ]
+        result = self.Distributor().propose(fixtures, days)
+        self.assertFalse(result["errors"])
+        self.assertEqual(sum(len(ids) for ids in result["assignments"].values()), len(fixtures))
+        # 16 matches over two days of at most 7 cannot fit: everything is still
+        # planned and the planner reports the shortfall with the numbers.
+        self.assertLessEqual(max(self._loads(result, fixtures).values()), 9)
+
+
 if __name__ == "__main__":
     unittest.main()

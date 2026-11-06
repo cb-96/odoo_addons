@@ -85,3 +85,14 @@ days. Fixtures already allocated to another day are excluded from a partial
 planning run, and the preview blocks any existing cross-day duplicate before
 generation. Allocation, capacity, and quality details are rendered as readable
 tables and summaries; the underlying JSON remains machine-readable source data.
+
+## Team spread in competition planning
+
+`federation.competition.schedule.distributor.propose` accepts a `team_limit`
+per game day: the most matches one team fits with the wizard's preferred rest
+(`rest_capacity.max_matches_with_rest`). Days within every team's limit are
+preferred. Each team's matches are kept within a fair share per day (its
+matches divided by its division's game days). A final repair pass moves or
+swaps independent matches (no stage links, no knockout sources, not pinned)
+when that lowers the number of matches over the limit. The rest warning
+reports a team's total against the capacity of its game days.

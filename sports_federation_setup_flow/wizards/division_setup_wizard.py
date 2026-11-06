@@ -70,7 +70,9 @@ class FederationCompetitionDivisionSetupWizard(models.TransientModel):
             [
                 ("edition_id", "=", edition.id),
                 ("division_id", "=", division.id),
-                ("state", "in", ("generated", "frozen")),
+                # Drafts count too: a custom format is a draft while its
+                # stages are being built and must not fall back to a league.
+                ("state", "in", ("draft", "generated", "frozen")),
             ],
             order="version desc,id desc",
             limit=1,
@@ -152,6 +154,7 @@ class FederationCompetitionDivisionSetupWizard(models.TransientModel):
             raise ValidationError(_("Each division needs a different name."))
         selection = self.env["federation.competition.team.selection.wizard"]
         format_wizard = self.env["federation.competition.format.setup.wizard"]
+        builder_actions = []
         for line in self.line_ids:
             if not (line.name or "").strip():
                 raise ValidationError(_("Every division needs a name."))
@@ -183,6 +186,19 @@ class FederationCompetitionDivisionSetupWizard(models.TransientModel):
                     division, participant_set, line.format_type, line.pool_count
                 ):
                     continue
+                if line.format_type == "custom":
+                    # Custom stages are designed in the stage builder, never
+                    # generated blindly from this list. Open it after saving.
+                    builder = format_wizard.create(
+                        {
+                            "edition_id": edition.id,
+                            "division_id": division.id,
+                            "participant_set_id": participant_set.id,
+                            "format_type": "custom",
+                        }
+                    ).action_open_stage_builder()
+                    builder_actions.append(builder)
+                    continue
                 format_wizard.create(
                     {
                         "edition_id": edition.id,
@@ -197,6 +213,8 @@ class FederationCompetitionDivisionSetupWizard(models.TransientModel):
                 raise ValidationError(
                     "%s: %s" % (line.name, error.args[0] if error.args else error)
                 ) from error
+        if builder_actions:
+            return builder_actions[0]
         return edition.action_open_competition_planner()
 
 

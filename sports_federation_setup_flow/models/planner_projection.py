@@ -118,6 +118,19 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                         "message": _("Choose how this division plays."),
                     }
                 )
+            elif current_structure.state == "draft" and current_structure.format_type == "custom":
+                issues.append(
+                    {
+                        "key": "division-%s-stages" % division.id,
+                        "step": "format",
+                        "severity": "blocking",
+                        "title": division.display_name,
+                        "message": _(
+                            "Finish the stages of this division in the stage builder "
+                            "and choose Generate all matches."
+                        ),
+                    }
+                )
             elif current_structure.state != "frozen":
                 issues.append(
                     {
@@ -160,7 +173,12 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                     "team_count": team_count,
                     "teams_status": teams_status,
                     "format_status": format_status,
-                    "format_name": current_structure.display_name or False,
+                    "format_name": (
+                        _("Custom stages (not generated yet)")
+                        if current_structure.format_type == "custom"
+                        and current_structure.state != "frozen"
+                        else current_structure.display_name or False
+                    ),
                     "ready": teams_ready and format_ready,
                 }
             )

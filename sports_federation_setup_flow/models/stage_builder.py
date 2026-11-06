@@ -241,9 +241,10 @@ class FederationStageBuilder(models.AbstractModel):
         try:
             structure.check_access("write")
         except AccessError:
-            editable = False
+            can_write = False
         else:
-            editable = structure.state == "draft"
+            can_write = True
+        editable = can_write and structure.state == "draft"
         stage_rows = []
         for stage in stages:
             used = sum(
@@ -292,6 +293,7 @@ class FederationStageBuilder(models.AbstractModel):
                 "editable": editable,
                 "match_count": sum(row["matches"] for row in stage_rows),
                 "can_new_version": structure.state != "draft" and not structure._has_planned_history(),
+                "can_confirm": can_write and structure.state == "generated",
             },
             "columns": columns,
             "stages": stage_rows,
@@ -448,14 +450,23 @@ class FederationStageBuilder(models.AbstractModel):
 
     @api.model
     def generate(self, structure_id):
-        """Generate every match and continue in the competition planner."""
-        structure = self._structure(structure_id, editable=True)
-        sizes = {stage.id: self._stage_size(structure, stage) for stage in structure.stage_ids}
-        issues = self._issues(structure, sizes)
-        if issues:
-            raise ValidationError(issues[0]["message"])
-        structure.action_generate()
-        structure.action_freeze()
+        """Generate every match and continue in the competition planner.
+
+        A format generated elsewhere but not yet confirmed (frozen) is only
+        confirmed here, so it never ends in a dead end.
+        """
+        structure = self._structure(structure_id)
+        structure.check_access("write")
+        if structure.state == "draft":
+            sizes = {stage.id: self._stage_size(structure, stage) for stage in structure.stage_ids}
+            issues = self._issues(structure, sizes)
+            if issues:
+                raise ValidationError(issues[0]["message"])
+            structure.action_generate()
+        if structure.state == "generated":
+            structure.action_freeze()
+        elif structure.state != "frozen":
+            raise ValidationError(_("This format can no longer be generated."))
         edition = structure.edition_id
         if hasattr(edition, "action_open_competition_planner"):
             return edition.action_open_competition_planner()
@@ -487,3 +498,43 @@ class FederationCompetitionStructureBuilder(models.Model):
             "params": {"structure_id": self.id},
             "target": "current",
         }
+
+
+class FederationCompetitionScheduleWizardStages(models.TransientModel):
+    _inherit = "federation.competition.schedule.wizard"
+
+    def _unfinished_custom_formats(self):
+        """Messages for custom drafts whose stages are not complete yet."""
+        builder = self.env["federation.stage.builder"]
+        messages = []
+        for structure in self.structure_ids.filtered(
+            lambda item: item.state == "draft" and item.format_type == "custom"
+        ):
+            sizes = {
+                stage.id: builder._stage_size(structure, stage) for stage in structure.stage_ids
+            }
+            issues = builder._issues(structure, sizes)
+            if issues:
+                messages.append(
+                    _(
+                        "%(division)s: finish its stages in the stage builder first. %(issue)s",
+                        division=structure.division_id.display_name,
+                        issue=issues[0]["message"],
+                    )
+                )
+        return messages
+
+    def _validate_scope(self, require_generated=False):
+        errors, warnings = super()._validate_scope(require_generated)
+        return errors + self._unfinished_custom_formats(), warnings
+
+    def _prepare_structures(self):
+        """Planning never generates an unfinished custom format.
+
+        A custom format is generated from the stage builder, which checks its
+        stages first. Planning only finishes one whose stages are complete.
+        """
+        messages = self._unfinished_custom_formats()
+        if messages:
+            raise ValidationError("\n".join(messages))
+        return super()._prepare_structures()

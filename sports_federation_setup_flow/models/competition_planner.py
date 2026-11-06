@@ -127,6 +127,12 @@ class FederationCompetitionEditionPlanner(models.Model):
                 [("edition_id", "=", self.id), ("division_id", "=", division.id)],
                 order="version desc,id desc", limit=1,
             )
+            if structure.format_type == "custom" and hasattr(
+                structure, "action_open_stage_builder"
+            ):
+                # Custom formats are finished in the stage builder, for every
+                # user: the raw structure form generates without freezing.
+                return structure.action_open_stage_builder()
             return (
                 self._planner_record_action(structure)
                 if structure and self.env.user.has_group(

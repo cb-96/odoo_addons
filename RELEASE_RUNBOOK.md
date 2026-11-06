@@ -1066,6 +1066,36 @@ Rollback: restore the previous code and upgrade the three modules. The
 nullable field and the template rows can stay. Templates saved with the
 `custom` type must be archived before a code-only rollback.
 
+## Custom format setup and team spread: upgrade review
+
+Scope: custom formats in the guided setup, safe re-generation of prepared
+stages, and spreading each team's matches over its game days within the rest
+limit.
+
+Data changes: none. Upgrade sports_federation_format,
+sports_federation_scheduling and sports_federation_setup_flow for the new code
+and assets.
+
+Behaviour changes to verify on staging:
+- *Teams & format* keeps a draft custom format and opens the stage builder.
+  The planner's format action for custom drafts opens the stage builder for
+  every user.
+- Generating a format whose stages were already prepared keeps their matches.
+  Before this change it failed with "Fixtures with operational matches cannot
+  be deleted". Different teams give a clear "make a new version" message.
+- Plan Competition reports unfinished custom stages as a blocking issue.
+- Plan Competition keeps each team within the rest limit per game day when the
+  game days allow it. Rest warnings state the team's match total and its
+  capacity.
+
+Dry-run evidence: Python/XML/JavaScript syntax checks, the dependency-free
+distributor tests (including team-spread cases) and repository static checks
+were executed on the patched tree. Odoo upgrade and ORM tests
+(`sf_competition_formats`) were NOT executed in this environment and must pass
+on staging before release.
+
+Rollback: restore the previous code. No data needs to be reverted.
+
 ## End-to-end release check: lifecycle lane and walkthrough
 
 The release baseline now requires a `lifecycle` lane. It runs the scenarios

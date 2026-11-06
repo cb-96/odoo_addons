@@ -40,6 +40,7 @@ Placeholders get their teams when the source stage's standings are frozen, and f
 - To leave room, earlier stages keep the last game days of the division free: one day for each round of the stages that follow.
 - The matches of one knockout round stay on one day, and follow-up rounds prefer a later day.
 - **Stage game days** (optional, folded away in the wizard and also on the stage) fix a stage to chosen game days, for example a finals day.
+- **Team spread:** each team's matches are spread over the game days its division plays. A day never gets more matches for one team than fit with the required rest, as long as another day has room. A last pass moves or swaps single matches to remove any remaining excess. A rest warning therefore means the matches really do not fit. It shows the numbers, for example "Bisons 3 has 16 matches, but with 40 minutes rest its 2 game day(s) fit at most 14". Lower the rest, add time or courts, or add game days.
 
 The schedule validator enforces the same rules for automatic and drag-and-drop changes:
 
@@ -61,6 +62,12 @@ The stage builder (*Format options → Custom stages → Open Stage Builder*, or
 - A generated format is read-only. **Edit as new version** copies its stages and links into a new draft, but only while none of its matches are on game days or played.
 
 The builder edits the same stages and links as the stage graph; it stores nothing of its own. It needs the division's teams to be confirmed.
+
+Custom formats in the guided setup:
+
+- *Teams & format* shows *Custom stages* for a division whose stages are still being built, and never replaces them with a league. Saving with *Custom stages* opens the stage builder.
+- While the stages are a draft, the planner shows *Custom stages (not generated yet)* and its action opens the stage builder. A format generated elsewhere but not confirmed is finished there with **Confirm these matches**.
+- Planning never generates unfinished custom stages. It reports what is missing and points to the stage builder. Preparing a stage again keeps matches that already exist when the teams are the same, instead of failing on their operational matches.
 
 ## Match board
 

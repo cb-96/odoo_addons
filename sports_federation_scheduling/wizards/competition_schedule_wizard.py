@@ -568,10 +568,13 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
                 errors.append("%s: %s" % (day.display_name, exc))
                 continue
             retained = len(day.slot_ids.filtered(lambda slot: slot.state == "available")) if self.mode == "fill" else 0
+            rows = self._day_time_rows(day)
             capacities.append(
                 {"matchday_id": day.id, "date": day.date,
                  "capacity": retained or len(plan["available"]), "blocked": plan["blocked_count"],
-                 "division_ids": day.division_ids.ids}
+                 "division_ids": day.division_ids.ids,
+                 # Most matches one team can play on this day with the rest.
+                 "team_limit": max_matches_with_rest(rows, self.preferred_rest_minutes) if rows else 0}
             )
         return capacities
 
@@ -605,13 +608,34 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
     def _rest_shortfalls(self, fixtures, distribution):
         """Explain game days where a team has more matches than rest allows.
 
-        Such a day can only be published by accepting short rest, so it is
-        reported here, while the operator can still add time, courts or game
-        days, or lower the rest.
+        Matches are already spread over the game days, so a shortfall left
+        here means a team simply has more matches than its game days can hold
+        with the required rest. The message says so, with the numbers, while
+        the operator can still add time, courts or game days, or lower the rest.
         """
         by_id = {fixture.id: fixture for fixture in fixtures}
+        days = self.matchday_ids.sorted(lambda item: (item.date, item.id))
+        limits = {}
+        for day in days:
+            rows = self._day_time_rows(day)
+            limits[day.id] = max_matches_with_rest(rows, self.preferred_rest_minutes) if rows else 0
+        team_total, team_division = {}, {}
+        for fixture in fixtures:
+            for team in (fixture.home_team_id, fixture.away_team_id):
+                if team:
+                    team_total[team] = team_total.get(team, 0) + 1
+                    team_division[team] = fixture.division_id
+
+        def season_room(team):
+            division = team_division.get(team)
+            playing = [
+                day for day in days
+                if not division or not hasattr(day, "_allows_division") or day._allows_division(division)
+            ]
+            return len(playing), sum(limits.get(day.id, 0) for day in playing)
+
         messages = []
-        for day in self.matchday_ids.sorted(lambda item: (item.date, item.id)):
+        for day in days:
             fixture_ids = distribution["assignments"].get(day.id, [])
             if not fixture_ids:
                 continue
@@ -623,12 +647,9 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
                 for team in (fixture.home_team_id, fixture.away_team_id):
                     if team:
                         counts[team] = counts.get(team, 0) + 1
-            if not counts:
+            limit = limits.get(day.id)
+            if not counts or not limit:
                 continue
-            rows = self._day_time_rows(day)
-            if not rows:
-                continue
-            limit = max_matches_with_rest(rows, self.preferred_rest_minutes)
             crowded = sorted(
                 (team for team, count in counts.items() if count > limit),
                 key=lambda team: (-counts[team], team.display_name or ""),
@@ -639,13 +660,35 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             names = ", ".join(team.display_name for team in crowded[:3])
             if len(crowded) > 3:
                 names += _(" and %(count)s more", count=len(crowded) - 3)
+            day_count, room = season_room(crowded[0])
+            total = team_total.get(crowded[0], 0)
+            if total > room:
+                messages.append(
+                    _(
+                        "%(day)s: %(teams)s play up to %(most)s matches here. %(team)s has "
+                        "%(total)s matches, but with %(rest)s minutes rest its %(days)s "
+                        "game day(s) fit at most %(room)s. Lower the rest, add time or "
+                        "courts, or add game days for this division; otherwise short "
+                        "rest must be accepted when publishing.",
+                        day=day.display_name,
+                        teams=names,
+                        most=most,
+                        team=crowded[0].display_name,
+                        total=total,
+                        rest=self.preferred_rest_minutes,
+                        days=day_count,
+                        room=room,
+                    )
+                )
+                continue
             messages.append(
                 _(
                     "%(day)s: %(teams)s play up to %(most)s matches, but with "
                     "%(rest)s minutes rest a team fits at most %(limit)s matches in "
-                    "this day. Lower the rest, add time or courts, or let these "
-                    "divisions play on more game days; otherwise short rest must "
-                    "be accepted when publishing.",
+                    "this day, even with their matches spread over every game day "
+                    "they can play on. Lower the rest, add time or courts, or add "
+                    "game days for these divisions; otherwise short rest must be "
+                    "accepted when publishing.",
                     day=day.display_name,
                     teams=names,
                     most=most,
