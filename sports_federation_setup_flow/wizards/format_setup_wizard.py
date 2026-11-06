@@ -90,9 +90,15 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
         required=True,
     )
 
-    preview_match_count = fields.Integer(compute="_compute_format_preview", string="Total matches")
-    preview_matches_per_team = fields.Integer(compute="_compute_format_preview", string="Matches per team (league)")
-    preview_byes = fields.Integer(compute="_compute_format_preview", string="First-round byes")
+    preview_match_count = fields.Integer(
+        compute="_compute_format_preview", string="Total matches"
+    )
+    preview_matches_per_team = fields.Integer(
+        compute="_compute_format_preview", string="Matches per team (league)"
+    )
+    preview_byes = fields.Integer(
+        compute="_compute_format_preview", string="First-round byes"
+    )
     preview_feasible = fields.Boolean(compute="_compute_format_preview")
     preview_message = fields.Char(compute="_compute_format_preview", string="Check")
     preview_outline = fields.Html(
@@ -179,14 +185,11 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
 
     def _outline_html(self, plan):
         if self.format_type == "custom":
-            return (
-                "<p class='mb-0'>%s</p>"
-                % escape(
-                    _(
-                        "Open the stage builder, add stages and link the places "
-                        "that advance. Then reopen Format options for this "
-                        "division and choose Generate All Matches."
-                    )
+            return "<p class='mb-0'>%s</p>" % escape(
+                _(
+                    "Open the stage builder, add stages and link the places "
+                    "that advance. Then reopen Format options for this "
+                    "division and choose Generate All Matches."
                 )
             )
         if not plan["stages"]:
@@ -238,12 +241,20 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
     @api.model
     def default_get(self, field_list):
         values = super().default_get(field_list)
-        edition = self.env["federation.competition.edition"].browse(
-            values.get("edition_id") or self.env.context.get("default_edition_id")
-        ).exists()
-        division = self.env["federation.tournament"].browse(
-            values.get("division_id") or self.env.context.get("default_division_id")
-        ).exists()
+        edition = (
+            self.env["federation.competition.edition"]
+            .browse(
+                values.get("edition_id") or self.env.context.get("default_edition_id")
+            )
+            .exists()
+        )
+        division = (
+            self.env["federation.tournament"]
+            .browse(
+                values.get("division_id") or self.env.context.get("default_division_id")
+            )
+            .exists()
+        )
         if edition and not division:
             division = edition.tournament_ids.sorted(
                 lambda item: (item.name or "", item.id)
@@ -265,12 +276,17 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
         prepared = []
         for vals in vals_list:
             if vals.get("edition_id") and vals.get("division_id"):
-                edition = self.env["federation.competition.edition"].browse(vals["edition_id"])
+                edition = self.env["federation.competition.edition"].browse(
+                    vals["edition_id"]
+                )
                 division = self.env["federation.tournament"].browse(vals["division_id"])
                 start = self._starting_choice(edition, division)
                 # The same format keeps its options (qualifiers, split point…)
                 # even when only the format type is passed, as Teams & format does.
-                if "format_type" not in vals or start.get("format_type") == vals["format_type"]:
+                if (
+                    "format_type" not in vals
+                    or start.get("format_type") == vals["format_type"]
+                ):
                     vals = {**start, **vals}
             prepared.append(vals)
         return super().create(prepared)
@@ -286,7 +302,10 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
             else False
         )
         if source:
-            return {**self._choice_from_structure(source), "source_structure_id": source.id}
+            return {
+                **self._choice_from_structure(source),
+                "source_structure_id": source.id,
+            }
         return {}
 
     @api.model
@@ -413,7 +432,9 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
             self.edition_id, self.division_id
         )
         if participant_set != self.participant_set_id:
-            raise ValidationError(_("The participating teams changed. Reopen and review the format."))
+            raise ValidationError(
+                _("The participating teams changed. Reopen and review the format.")
+            )
         format_type = self._structure_format_type()
         options = self._structure_options()
         structure = self._matching_structure(participant_set, format_type, options)
@@ -478,7 +499,9 @@ class FederationCompetitionFormatSetupWizard(models.TransientModel):
         )
         structure = self.env["federation.competition.structure"].create(
             {
-                "name": _("%(division)s format", division=self.division_id.display_name),
+                "name": _(
+                    "%(division)s format", division=self.division_id.display_name
+                ),
                 "edition_id": self.edition_id.id,
                 "division_id": self.division_id.id,
                 "participant_set_id": participant_set.id,

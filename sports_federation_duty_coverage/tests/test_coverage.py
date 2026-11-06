@@ -3,6 +3,7 @@
 These tests exercise persisted models, not mocked readiness calculations.
 They do not replace independent-transaction concurrency or HTTP/CSRF tests.
 """
+
 from unittest.mock import patch
 
 from odoo import fields
@@ -238,9 +239,7 @@ class TestCoverage(CoverageFixture, TransactionCase):
         original_timestamp = self.assignment.accepted_on
         self.match.date_scheduled = "2026-06-15 19:00:00"
         snapshot = self._snapshot()
-        self.assertNotEqual(
-            original_signature, self.assignment._coverage_signature()
-        )
+        self.assertNotEqual(original_signature, self.assignment._coverage_signature())
         self.assertFalse(self.assignment.coverage_accepted)
         self.assertEqual(self.assignment.accepted_on, original_timestamp)
         self.assertEqual(snapshot["accepted"], 0)
@@ -254,8 +253,10 @@ class TestCoverage(CoverageFixture, TransactionCase):
     def test_stale_preview_rejected(self):
         """A resolution cannot apply after its previewed match changes."""
         wizard = self._wizard(
-            operation="replace", assignment_id=self.assignment.id,
-            referee_id=self.other_referee.id, reason="Unavailable",
+            operation="replace",
+            assignment_id=self.assignment.id,
+            referee_id=self.other_referee.id,
+            reason="Unavailable",
         )
         before_ids = self._assignments().ids
         self.match.date_scheduled = "2026-06-15 19:00:00"
@@ -271,8 +272,10 @@ class TestCoverage(CoverageFixture, TransactionCase):
         original_acceptance = self.assignment.accepted_on
         unrelated = self.other_assignment.read(["state", "referee_id", "role"])[0]
         wizard = self._wizard(
-            operation="replace", assignment_id=self.assignment.id,
-            referee_id=self.other_referee.id, reason="Unavailable",
+            operation="replace",
+            assignment_id=self.assignment.id,
+            referee_id=self.other_referee.id,
+            reason="Unavailable",
         )
         action = wizard.action_apply()
         successor = wizard.result_assignment_id
@@ -297,8 +300,10 @@ class TestCoverage(CoverageFixture, TransactionCase):
     def test_failed_replacement_rolls_back(self):
         """A failure after cancellation and successor creation rolls back both."""
         wizard = self._wizard(
-            operation="replace", assignment_id=self.assignment.id,
-            referee_id=self.other_referee.id, reason="Unavailable",
+            operation="replace",
+            assignment_id=self.assignment.id,
+            referee_id=self.other_referee.id,
+            reason="Unavailable",
         )
         before_ids = self._assignments().ids
         match_class = type(self.env["federation.match"])
@@ -308,15 +313,19 @@ class TestCoverage(CoverageFixture, TransactionCase):
         def fail_after_apply(records):
             if wizard.applied:
                 # Prove we reached the post-mutation hook before injecting failure.
-                observed.append((
-                    self.assignment.state,
-                    wizard.result_assignment_id.replaces_id.id,
-                ))
+                observed.append(
+                    (
+                        self.assignment.state,
+                        wizard.result_assignment_id.replaces_id.id,
+                    )
+                )
                 raise ValidationError("Injected post-mutation failure")
             return original_sync(records)
 
         with patch.object(
-            match_class, "_coverage_sync_escalations", autospec=True,
+            match_class,
+            "_coverage_sync_escalations",
+            autospec=True,
             side_effect=fail_after_apply,
         ):
             self._assert_rejected(ValidationError, wizard.action_apply)
@@ -388,8 +397,10 @@ class TestCoverage(CoverageFixture, TransactionCase):
     def test_cross_match_resolution_rejected(self):
         """An assignment ID from another match cannot be replaced here."""
         wizard = self._wizard(
-            operation="replace", assignment_id=self.other_assignment.id,
-            referee_id=self.referee.id, reason="Wrong match",
+            operation="replace",
+            assignment_id=self.other_assignment.id,
+            referee_id=self.referee.id,
+            reason="Wrong match",
         )
         before_ids = self._assignments().ids
         self._assert_rejected(ValidationError, wizard.action_apply)

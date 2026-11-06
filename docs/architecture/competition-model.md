@@ -30,7 +30,7 @@ define the normal workflow.
 - **Match**: the game actually played, including live state and result. Materialized from a resolved fixture and linked to publication.
 
 Every lifecycle handoff has explicit postconditions in
-`federation.lifecycle.postconditions` (`sports_federation_app/models/lifecycle_postconditions.py`):
+`federation.lifecycle.postconditions` (`sports_federation_setup_flow/models/lifecycle_postconditions.py`):
 registration finalized, format frozen, schedule generated, schedule
 published, match day opened, match day closed, competition finished and
 competition archived.

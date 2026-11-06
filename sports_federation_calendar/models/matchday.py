@@ -20,46 +20,91 @@ class FederationMatchday(models.Model):
 
     def action_open_timezone_review(self):
         self.ensure_one()
-        if not self.env.user.has_group('sports_federation_calendar.group_calendar_planner'):
+        if not self.env.user.has_group(
+            "sports_federation_calendar.group_calendar_planner"
+        ):
             from odoo.exceptions import AccessError
-            raise AccessError('Timezone review requires a calendar planner.')
-        return {'type': 'ir.actions.act_window', 'res_model': 'federation.event.timezone.review',
-                'view_mode': 'form', 'target': 'new', 'context': {'default_matchday_id': self.id}}
+
+            raise AccessError("Timezone review requires a calendar planner.")
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": "federation.event.timezone.review",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_matchday_id": self.id},
+        }
 
     def _review_event_timezone(self, timezone, reason):
         self.ensure_one()
-        if not self.env.user.has_group('sports_federation_calendar.group_calendar_planner'):
+        if not self.env.user.has_group(
+            "sports_federation_calendar.group_calendar_planner"
+        ):
             from odoo.exceptions import AccessError
-            raise AccessError('Timezone review requires a calendar planner.')
-        self.check_access('write')
-        self.env.cr.execute('SELECT id FROM federation_matchday WHERE id = %s FOR UPDATE', [self.id])
-        self.invalidate_recordset(['event_timezone', 'event_timezone_reviewed', 'state'])
+
+            raise AccessError("Timezone review requires a calendar planner.")
+        self.check_access("write")
+        self.env.cr.execute(
+            "SELECT id FROM federation_matchday WHERE id = %s FOR UPDATE", [self.id]
+        )
+        self.invalidate_recordset(
+            ["event_timezone", "event_timezone_reviewed", "state"]
+        )
         if timezone not in pytz.all_timezones or not reason or not reason.strip():
-            raise ValidationError(_('Choose a timezone and explain the evidence used.'))
-        if self.event_timezone_reviewed and self.state not in ('draft', 'capacity_ready'):
-            raise ValidationError(_('A reviewed scheduled event timezone cannot be changed.'))
+            raise ValidationError(_("Choose a timezone and explain the evidence used."))
+        if self.event_timezone_reviewed and self.state not in (
+            "draft",
+            "capacity_ready",
+        ):
+            raise ValidationError(
+                _("A reviewed scheduled event timezone cannot be changed.")
+            )
         old = self.event_timezone
-        super(FederationMatchday, self).write({'event_timezone': timezone, 'event_timezone_reviewed': True,
-                                             'event_timezone_review_note': reason.strip()})
-        self.env['federation.match'].invalidate_model(['event_timezone_display', 'event_timezone_display_reviewed'])
-        self.message_post(body=_('Event timezone reviewed: %s to %s. Stored slot times were not moved. Evidence: %s') % (old, timezone, reason.strip()))
+        super(FederationMatchday, self).write(
+            {
+                "event_timezone": timezone,
+                "event_timezone_reviewed": True,
+                "event_timezone_review_note": reason.strip(),
+            }
+        )
+        self.env["federation.match"].invalidate_model(
+            ["event_timezone_display", "event_timezone_display_reviewed"]
+        )
+        self.message_post(
+            body=_(
+                "Event timezone reviewed: %s to %s. Stored slot times were not moved. Evidence: %s"
+            )
+            % (old, timezone, reason.strip())
+        )
         return True
 
     event_timezone = fields.Selection(
-        [(tz, tz) for tz in pytz.all_timezones], string="Event timezone",
-        default=lambda self: self.env.user.tz or "UTC", required=True,
-        help="Shared timezone for game-day planning. Existing UTC slots are not moved.")
+        [(tz, tz) for tz in pytz.all_timezones],
+        string="Event timezone",
+        default=lambda self: self.env.user.tz or "UTC",
+        required=True,
+        help="Shared timezone for game-day planning. Existing UTC slots are not moved.",
+    )
 
     def write(self, values):
-        if 'event_timezone_reviewed' in values or 'event_timezone_review_note' in values:
-            raise ValidationError(_('Use the timezone review action.'))
+        if (
+            "event_timezone_reviewed" in values
+            or "event_timezone_review_note" in values
+        ):
+            raise ValidationError(_("Use the timezone review action."))
         if "event_timezone" in values:
             for day in self:
-                if day.event_timezone != values["event_timezone"] and day.state not in ("draft", "capacity_ready"):
-                    raise ValidationError(_("The event timezone cannot change after scheduling starts."))
+                if day.event_timezone != values["event_timezone"] and day.state not in (
+                    "draft",
+                    "capacity_ready",
+                ):
+                    raise ValidationError(
+                        _("The event timezone cannot change after scheduling starts.")
+                    )
         result = super().write(values)
-        if 'event_timezone' in values:
-            self.env['federation.match'].invalidate_model(['event_timezone_display', 'event_timezone_display_reviewed'])
+        if "event_timezone" in values:
+            self.env["federation.match"].invalidate_model(
+                ["event_timezone_display", "event_timezone_display_reviewed"]
+            )
         return result
 
     date = fields.Date(required=True, index=True)
@@ -99,7 +144,9 @@ class FederationMatchday(models.Model):
     )
 
     default_day_end_hour = fields.Float(
-        string="Default slot end", default=18.0, required=True,
+        string="Default slot end",
+        default=18.0,
+        required=True,
         help="Local end time; every generated slot must finish by this time.",
     )
     default_noon_pause = fields.Boolean(string="Default noon pause", default=False)
@@ -109,14 +156,19 @@ class FederationMatchday(models.Model):
     planning_court_ids = fields.Many2many(
         "federation.playing.area",
         "federation_matchday_planning_court_rel",
-        "matchday_id", "court_id", string="Planning courts",
+        "matchday_id",
+        "court_id",
+        string="Planning courts",
         domain="[('venue_id', '=', venue_id), ('active', '=', True)]",
     )
 
     @api.constrains(
-        "default_day_start_hour", "default_day_end_hour",
-        "default_slot_duration_minutes", "default_noon_pause_minutes",
-        "planning_court_ids", "venue_id",
+        "default_day_start_hour",
+        "default_day_end_hour",
+        "default_slot_duration_minutes",
+        "default_noon_pause_minutes",
+        "planning_court_ids",
+        "venue_id",
     )
     def _check_slot_defaults(self):
         for rec in self:
@@ -127,13 +179,17 @@ class FederationMatchday(models.Model):
             if rec.default_slot_duration_minutes <= 0:
                 raise ValidationError(_("The default slot duration must be positive."))
             if rec.default_day_end_hour <= rec.default_day_start_hour:
-                raise ValidationError(_("The default slot end must be after its start."))
+                raise ValidationError(
+                    _("The default slot end must be after its start.")
+                )
             if rec.default_day_end_hour > 24:
                 raise ValidationError(_("The default slot end must not exceed 24:00."))
             if rec.default_noon_pause_minutes <= 0:
                 raise ValidationError(_("The noon pause duration must be positive."))
             if rec.planning_court_ids.filtered(lambda c: c.venue_id != rec.venue_id):
-                raise ValidationError(_("Planning courts must belong to the match-day venue."))
+                raise ValidationError(
+                    _("Planning courts must belong to the match-day venue.")
+                )
 
     @api.depends("allocation_ids.fixture_ids", "slot_ids.state")
     def _compute_capacity(self):
@@ -340,7 +396,9 @@ class FederationScheduleSlot(models.Model):
         try:
             return local_to_utc(local_value, timezone or self.env.user.tz or "UTC")
         except ValueError as exc:
-            raise ValidationError(_("Choose a valid, unambiguous time in the event timezone.")) from exc
+            raise ValidationError(
+                _("Choose a valid, unambiguous time in the event timezone.")
+            ) from exc
 
     @api.model
     def _first_start_for_matchday(self, matchday):

@@ -6,6 +6,7 @@ the governed commands of the existing pickers, so team lists are still
 materialized into approved entries and finalized participant sets, and formats
 are still generated and frozen through ``federation.competition.structure``.
 """
+
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
@@ -39,9 +40,13 @@ class FederationCompetitionDivisionSetupWizard(models.TransientModel):
     @api.model
     def default_get(self, field_list):
         values = super().default_get(field_list)
-        edition = self.env["federation.competition.edition"].browse(
-            values.get("edition_id") or self.env.context.get("default_edition_id")
-        ).exists()
+        edition = (
+            self.env["federation.competition.edition"]
+            .browse(
+                values.get("edition_id") or self.env.context.get("default_edition_id")
+            )
+            .exists()
+        )
         if not edition:
             return values
         values["edition_id"] = edition.id
@@ -66,22 +71,29 @@ class FederationCompetitionDivisionSetupWizard(models.TransientModel):
             teams = window.entry_ids.filtered(
                 lambda entry: entry.state != "withdrawn"
             ).mapped("team_id")
-        structure = self.env["federation.competition.structure"].sudo().search(
-            [
-                ("edition_id", "=", edition.id),
-                ("division_id", "=", division.id),
-                # Drafts count too: a custom format is a draft while its
-                # stages are being built and must not fall back to a league.
-                ("state", "in", ("draft", "generated", "frozen")),
-            ],
-            order="version desc,id desc",
-            limit=1,
+        structure = (
+            self.env["federation.competition.structure"]
+            .sudo()
+            .search(
+                [
+                    ("edition_id", "=", edition.id),
+                    ("division_id", "=", division.id),
+                    # Drafts count too: a custom format is a draft while its
+                    # stages are being built and must not fall back to a league.
+                    ("state", "in", ("draft", "generated", "frozen")),
+                ],
+                order="version desc,id desc",
+                limit=1,
+            )
         )
         if structure:
             format_type = self.env[
                 "federation.competition.format.setup.wizard"
             ]._choice_from_structure(structure)["format_type"]
-        elif "format_source_structure_id" in division._fields and division.format_source_structure_id:
+        elif (
+            "format_source_structure_id" in division._fields
+            and division.format_source_structure_id
+        ):
             # Copied from last season: start from the format it played.
             structure = division.format_source_structure_id
             format_type = self.env[
@@ -115,7 +127,9 @@ class FederationCompetitionDivisionSetupWizard(models.TransientModel):
                 "rule_set_id": edition.rule_set_id.id,
                 "date_start": edition.date_start,
                 "date_end": edition.date_end,
-                "tournament_type": "single_day" if preset == "tournament_day" else "multi_day",
+                "tournament_type": (
+                    "single_day" if preset == "tournament_day" else "multi_day"
+                ),
             }
         )
         line.division_id = division
@@ -224,16 +238,22 @@ class FederationCompetitionDivisionSetupLine(models.TransientModel):
     _order = "id"
 
     wizard_id = fields.Many2one(
-        "federation.competition.division.setup.wizard", required=True, ondelete="cascade"
+        "federation.competition.division.setup.wizard",
+        required=True,
+        ondelete="cascade",
     )
     division_id = fields.Many2one("federation.tournament", readonly=True)
     name = fields.Char(string="Division", required=True)
     category = fields.Selection(
-        selection=lambda self: self.env["federation.tournament"]._fields["category"].selection,
+        selection=lambda self: self.env["federation.tournament"]
+        ._fields["category"]
+        .selection,
         string="Category",
     )
     gender = fields.Selection(
-        selection=lambda self: self.env["federation.tournament"]._fields["gender"].selection,
+        selection=lambda self: self.env["federation.tournament"]
+        ._fields["gender"]
+        .selection,
         string="Gender",
     )
     eligible_team_ids = fields.Many2many(
@@ -290,13 +310,17 @@ class FederationCompetitionDivisionSetupLine(models.TransientModel):
             line.team_count = count
             if count < 2:
                 line.match_count = 0
-                line.feasibility_message = _("Select at least two teams") if count else False
+                line.feasibility_message = (
+                    _("Select at least two teams") if count else False
+                )
                 continue
             if line.format_type == "custom":
                 line.match_count = 0
                 line.feasibility_message = _("Built in the stage builder")
                 continue
-            estimate = feasibility.estimate(line.format_type, count, pool_count=line.pool_count)
+            estimate = feasibility.estimate(
+                line.format_type, count, pool_count=line.pool_count
+            )
             line.match_count = estimate.get("fixture_count", 0)
             line.feasibility_message = (
                 False if estimate.get("feasible", True) else estimate.get("message")

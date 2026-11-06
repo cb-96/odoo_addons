@@ -23,7 +23,6 @@ class FederationParentalApprovalPortal(FederationPortalBase):
             user=request.env.user,
         )
 
-
     def _get_owned_approval(self, player, approval_id):
         try:
             approval_id = int(approval_id)
@@ -38,7 +37,10 @@ class FederationParentalApprovalPortal(FederationPortalBase):
 
     @http.route(
         "/my/players/<int:player_id>/parental-approvals",
-        type="http", auth="user", website=True, methods=["GET"],
+        type="http",
+        auth="user",
+        website=True,
+        methods=["GET"],
     )
     def portal_player_parental_approvals(self, player_id, **kw):
         player = self._get_owned_player(player_id)
@@ -61,10 +63,12 @@ class FederationParentalApprovalPortal(FederationPortalBase):
             },
         )
 
-
     @http.route(
         "/my/players/<int:player_id>/parental-approvals/<int:approval_id>/download",
-        type="http", auth="user", website=True, methods=["GET"],
+        type="http",
+        auth="user",
+        website=True,
+        methods=["GET"],
     )
     def portal_player_parental_approval_download(self, player_id, approval_id, **kw):
         player = self._get_owned_player(player_id)
@@ -73,12 +77,19 @@ class FederationParentalApprovalPortal(FederationPortalBase):
         approval = self._get_owned_approval(player, approval_id)
         if not approval or not approval.approval_document:
             return request.not_found()
-        filename = (approval.approval_document_filename or "parental-approval.pdf").replace("\r", "").replace("\n", "")
+        filename = (
+            (approval.approval_document_filename or "parental-approval.pdf")
+            .replace("\r", "")
+            .replace("\n", "")
+        )
         return request.make_response(
             base64.b64decode(approval.approval_document),
             headers=[
                 ("Content-Type", "application/octet-stream"),
-                ("Content-Disposition", 'attachment; filename="%s"' % filename.replace('"', "")),
+                (
+                    "Content-Disposition",
+                    'attachment; filename="%s"' % filename.replace('"', ""),
+                ),
                 ("X-Content-Type-Options", "nosniff"),
                 ("Cache-Control", "private, no-store"),
             ],
@@ -86,7 +97,11 @@ class FederationParentalApprovalPortal(FederationPortalBase):
 
     @http.route(
         "/my/players/<int:player_id>/parental-approvals/upload",
-        type="http", auth="user", website=True, methods=["POST"], csrf=True,
+        type="http",
+        auth="user",
+        website=True,
+        methods=["POST"],
+        csrf=True,
     )
     def portal_player_parental_approval_upload(self, player_id, **post):
         player = self._get_owned_player(player_id)

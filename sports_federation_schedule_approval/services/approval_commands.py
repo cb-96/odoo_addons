@@ -285,7 +285,9 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             ),
             writer=review._write_decision,
             event_type="schedule_review_approved",
-            description=_("Schedule approval recorded according to the competition workflow policy."),
+            description=_(
+                "Schedule approval recorded according to the competition workflow policy."
+            ),
         )
         transition.execute(
             review.schedule_id.sudo(),

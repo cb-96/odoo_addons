@@ -5,43 +5,79 @@ from .actionable_communications import _lock
 
 
 class CommunicationMail(models.Model):
-    _inherit = 'mail.mail'
+    _inherit = "mail.mail"
 
     def send(self, *args, **kwargs):
         # Last responsible moment: queue creation does not freeze permissions or preferences.
-        deliveries = self.env['federation.communication.delivery'].sudo().search([('mail_id', 'in', self.ids)])
+        deliveries = (
+            self.env["federation.communication.delivery"]
+            .sudo()
+            .search([("mail_id", "in", self.ids)])
+        )
         blocked = self.browse()
         for delivery in deliveries:
-            _lock(self.env, 'delivery:%s' % delivery.id)
+            _lock(self.env, "delivery:%s" % delivery.id)
             user = delivery.recipient_id
             valid = delivery.receipt_ids.browse()
             for receipt in delivery.receipt_ids:
                 try:
                     info = receipt._presentation(user)
-                    mode = self.env['federation.communication.preference']._mode_for(user, receipt.kind)
-                    if mode == 'digest' and not delivery.delivery_key.startswith('digest:'):
-                        delivery.write({'receipt_ids': [(3, receipt.id)]})
+                    mode = self.env["federation.communication.preference"]._mode_for(
+                        user, receipt.kind
+                    )
+                    if mode == "digest" and not delivery.delivery_key.startswith(
+                        "digest:"
+                    ):
+                        delivery.write({"receipt_ids": [(3, receipt.id)]})
                         continue
-                    if mode != 'inbox' and not info.get('complete') and not (receipt.kind == 'due_soon' and receipt.acknowledged_on):
+                    if (
+                        mode != "inbox"
+                        and not info.get("complete")
+                        and not (receipt.kind == "due_soon" and receipt.acknowledged_on)
+                    ):
                         valid |= receipt
                 except AccessError:
                     continue
             if not user.active or not valid or not user.partner_id.email:
-                delivery.mail_id.write({'state': 'cancel'})
-                delivery.write({'state': 'cancelled'})
+                delivery.mail_id.write({"state": "cancel"})
+                delivery.write({"state": "cancelled"})
                 blocked |= delivery.mail_id
                 continue
-            base = self.env['ir.config_parameter'].sudo().get_param('web.base.url', '').rstrip('/')
-            links = Markup('').join(Markup('<li><a href="%s/my/notifications/%s">%s</a></li>') %
-                                   (escape(base), receipt.id, escape(receipt.name)) for receipt in valid)
-            delivery.mail_id.write({'email_to': user.partner_id.email, 'recipient_ids': [(5, 0, 0)],
-                                    'body_html': Markup('<p>Review your current federation work:</p><ul>%s</ul>') % links})
+            base = (
+                self.env["ir.config_parameter"]
+                .sudo()
+                .get_param("web.base.url", "")
+                .rstrip("/")
+            )
+            links = Markup("").join(
+                Markup('<li><a href="%s/my/notifications/%s">%s</a></li>')
+                % (escape(base), receipt.id, escape(receipt.name))
+                for receipt in valid
+            )
+            delivery.mail_id.write(
+                {
+                    "email_to": user.partner_id.email,
+                    "recipient_ids": [(5, 0, 0)],
+                    "body_html": Markup(
+                        "<p>Review your current federation work:</p><ul>%s</ul>"
+                    )
+                    % links,
+                }
+            )
         sendable = self - blocked
-        result = super(CommunicationMail, sendable).send(*args, **kwargs) if sendable else True
+        result = (
+            super(CommunicationMail, sendable).send(*args, **kwargs)
+            if sendable
+            else True
+        )
         for delivery in deliveries:
-            delivery.mail_id.invalidate_recordset(['state'])
-            if delivery.mail_id.state == 'sent':
+            delivery.mail_id.invalidate_recordset(["state"])
+            if delivery.mail_id.state == "sent":
                 delivery._accepted()
-            elif delivery.mail_id.state == 'exception':
-                delivery._fail(_('Outbound mail failed. Inspect the mail server error in the backend.'))
+            elif delivery.mail_id.state == "exception":
+                delivery._fail(
+                    _(
+                        "Outbound mail failed. Inspect the mail server error in the backend."
+                    )
+                )
         return result

@@ -11,7 +11,9 @@ from .membership import manager
 
 def match_key(first_name, last_name, birth_date):
     """The same key the duplicate guard computes when a player is created."""
-    return fingerprint((normal_name(first_name), normal_name(last_name), str(birth_date)))
+    return fingerprint(
+        (normal_name(first_name), normal_name(last_name), str(birth_date))
+    )
 
 
 class IdentityCandidate(models.Model):
@@ -40,7 +42,11 @@ class IdentityCandidate(models.Model):
     )
     dismissed = fields.Boolean(readonly=True, copy=False)
     status = fields.Selection(
-        [("open", "To review"), ("dismissed", "Not a duplicate"), ("resolved", "Resolved")],
+        [
+            ("open", "To review"),
+            ("dismissed", "Not a duplicate"),
+            ("resolved", "Resolved"),
+        ],
         compute="_compute_status",
         store=True,
         index=True,
@@ -103,7 +109,9 @@ class IdentityCandidate(models.Model):
         }
         holders = {}
         if keys:
-            for held in Player.search_read([("family_match_key", "in", list(keys))], ["family_match_key"]):
+            for held in Player.search_read(
+                [("family_match_key", "in", list(keys))], ["family_match_key"]
+            ):
                 holders.setdefault(held["family_match_key"], []).append(held["id"])
         result = plan(rows, holders, match_key)
         keyed, candidates = 0, dict(result["candidates"])
@@ -155,7 +163,11 @@ class IdentityCandidate(models.Model):
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
-            "params": {"title": _("Identity backfill"), "message": message, "sticky": False},
+            "params": {
+                "title": _("Identity backfill"),
+                "message": message,
+                "sticky": False,
+            },
         }
 
     # ------------------------------------------------------------------
@@ -166,7 +178,11 @@ class IdentityCandidate(models.Model):
         """Open the reviewed identity merge for the next pair of this group."""
         manager(self.env)
         self.ensure_one()
-        players = self.player_ids.sudo().filtered(lambda p: not p.family_duplicate_of_id).sorted("id")
+        players = (
+            self.player_ids.sudo()
+            .filtered(lambda p: not p.family_duplicate_of_id)
+            .sorted("id")
+        )
         if len(players) < 2:
             raise ValidationError(_("Nothing left to review: one identity remains."))
         canonical = players.filtered("person_id")[:1] or players[:1]
@@ -191,7 +207,9 @@ class IdentityCandidate(models.Model):
         manager(self.env)
         for candidate in self:
             if not (candidate.note or "").strip():
-                raise ValidationError(_("Explain why these players are different people."))
+                raise ValidationError(
+                    _("Explain why these players are different people.")
+                )
             candidate.write(
                 {
                     "dismissed": True,

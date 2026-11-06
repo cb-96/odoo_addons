@@ -32,4 +32,8 @@ def plan(players, key_holders, key_for):
             to_key.append((ids[0], key))
         else:
             candidates[key] = sorted(set(ids) | set(holders))
-    return {"to_key": to_key, "candidates": candidates, "needs_birth_date": needs_birth_date}
+    return {
+        "to_key": to_key,
+        "candidates": candidates,
+        "needs_birth_date": needs_birth_date,
+    }

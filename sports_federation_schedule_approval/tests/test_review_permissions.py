@@ -231,9 +231,7 @@ class TestScheduleReviewPermissions(TransactionCase):
 
     def test_streamlined_submission_opens_the_auto_published_schedule(self):
         self.edition.write({"workflow_mode": "simple"})
-        federation_user = self.env.ref(
-            "sports_federation_base.group_federation_user"
-        )
+        federation_user = self.env.ref("sports_federation_base.group_federation_user")
         self.planner.write({"group_ids": [Command.link(federation_user.id)]})
         matchday = self.env["federation.matchday"].create(
             {

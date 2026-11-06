@@ -1,12 +1,10 @@
 from datetime import datetime, time, timedelta
 
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
-
 
 
 class FederationOperationTaskExtension(models.Model):
-    _inherit = 'federation.operation.task'
+    _inherit = "federation.operation.task"
 
     @api.model
     def _portal_club_ids(self, user):
@@ -17,7 +15,6 @@ class FederationOperationTaskExtension(models.Model):
             .mapped("club_id")
             .ids
         )
-
 
     ROSTER_DEADLINE_DAYS = 7
 
@@ -41,14 +38,18 @@ class FederationOperationTaskExtension(models.Model):
             return cache
         team_ids = {key[0] for key in keys}
         season_ids = {key[1] for key in keys}
-        tournaments = self.env["federation.tournament"].sudo().search(
-            [
-                "|",
-                ("season_id", "in", list(season_ids)),
-                "&",
-                ("season_id", "=", False),
-                ("edition_id.season_id", "in", list(season_ids)),
-            ]
+        tournaments = (
+            self.env["federation.tournament"]
+            .sudo()
+            .search(
+                [
+                    "|",
+                    ("season_id", "in", list(season_ids)),
+                    "&",
+                    ("season_id", "=", False),
+                    ("edition_id.season_id", "in", list(season_ids)),
+                ]
+            )
         )
         season_of = {
             tournament.id: (tournament.season_id or tournament.edition_id.season_id).id
@@ -222,7 +223,6 @@ class FederationOperationTaskExtension(models.Model):
             )
         return values
 
-
     @api.model
     def _sync_for_user_legacy(self, user=None):
         """Synchronise currently actionable source records for one user."""
@@ -308,9 +308,7 @@ class FederationOperationTaskExtension(models.Model):
         roster_lines = parental_rosters.mapped("line_ids").filtered(
             lambda line: line.status == "active"
             and line.roster_id.team_id.category == "senior"
-            and line.player_id._is_under_age(
-                16, line.roster_id._get_reference_date()
-            )
+            and line.player_id._is_under_age(16, line.roster_id._get_reference_date())
             and not line.player_id._has_verified_parental_approval(
                 line.roster_id._get_reference_date()
             )
@@ -375,8 +373,7 @@ class FederationOperationTaskExtension(models.Model):
                 sheet,
                 "gameday_lineup",
                 "club",
-                _("Game-day lineup: %(team)s")
-                % {"team": sheet.team_id.display_name},
+                _("Game-day lineup: %(team)s") % {"team": sheet.team_id.display_name},
                 status,
                 _("Prepare game-day lineup"),
                 priority="1",
@@ -510,4 +507,6 @@ class FederationOperationTaskExtension(models.Model):
 
     @api.model
     def sync_for_user(self, user=None):
-        return self.env["federation.task.projection"].synchronize(user=user or self.env.user)
+        return self.env["federation.task.projection"].synchronize(
+            user=user or self.env.user
+        )

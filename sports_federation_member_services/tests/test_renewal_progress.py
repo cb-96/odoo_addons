@@ -6,7 +6,9 @@ from .test_lifecycle import FamilyFixture
 @tagged("post_install", "-at_install", "sf_member_services")
 class TestRenewalProgress(FamilyFixture, TransactionCase):
     def _renewal(self):
-        result = self.memberships[0].with_user(self.guardian)._renew(self.next_season.id)
+        result = (
+            self.memberships[0].with_user(self.guardian)._renew(self.next_season.id)
+        )
         return self.env["federation.person.membership"].browse(result)
 
     def test_an_original_membership_is_not_a_renewal(self):
@@ -25,7 +27,9 @@ class TestRenewalProgress(FamilyFixture, TransactionCase):
         self.assertFalse(renewal.renewal_blockers)
 
     def test_an_unverified_required_document_is_a_compliance_blocker(self):
-        self.document(membership_id=self.memberships[0].id, required_for_activation=True)
+        self.document(
+            membership_id=self.memberships[0].id, required_for_activation=True
+        )
         renewal = self._renewal()
         renewal.with_user(self.reviewer).write({"review_note": "Changes reviewed"})
         self.assertEqual(renewal.renewal_step, "compliance")
@@ -47,4 +51,6 @@ class TestRenewalProgress(FamilyFixture, TransactionCase):
         renewal.renewal_step  # noqa: B018 - reading the projection
         renewal.renewal_blockers  # noqa: B018
         renewal.invalidate_recordset()
-        self.assertEqual((renewal.state, renewal.review_note, renewal.lifecycle_revision), before)
+        self.assertEqual(
+            (renewal.state, renewal.review_note, renewal.lifecycle_revision), before
+        )

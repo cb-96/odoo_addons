@@ -14,9 +14,7 @@ class FederationCompetitionTeamSelectionWizard(models.TransientModel):
         required=True,
         domain="[('edition_id', '=', edition_id)]",
     )
-    window_id = fields.Many2one(
-        "federation.registration.window", readonly=True
-    )
+    window_id = fields.Many2one("federation.registration.window", readonly=True)
     eligible_team_ids = fields.Many2many(
         "federation.team", compute="_compute_eligible_team_ids"
     )
@@ -33,14 +31,24 @@ class FederationCompetitionTeamSelectionWizard(models.TransientModel):
     @api.model
     def default_get(self, field_list):
         values = super().default_get(field_list)
-        edition = self.env["federation.competition.edition"].browse(
-            values.get("edition_id") or self.env.context.get("default_edition_id")
-        ).exists()
-        division = self.env["federation.tournament"].browse(
-            values.get("division_id") or self.env.context.get("default_division_id")
-        ).exists()
+        edition = (
+            self.env["federation.competition.edition"]
+            .browse(
+                values.get("edition_id") or self.env.context.get("default_edition_id")
+            )
+            .exists()
+        )
+        division = (
+            self.env["federation.tournament"]
+            .browse(
+                values.get("division_id") or self.env.context.get("default_division_id")
+            )
+            .exists()
+        )
         if edition and not division:
-            division = edition.tournament_ids.sorted(lambda item: (item.name or "", item.id))[:1]
+            division = edition.tournament_ids.sorted(
+                lambda item: (item.name or "", item.id)
+            )[:1]
         if edition:
             values["edition_id"] = edition.id
         if division:
@@ -49,14 +57,18 @@ class FederationCompetitionTeamSelectionWizard(models.TransientModel):
             values["window_id"] = window.id if window else False
             if window and window.participant_set_id:
                 values["team_ids"] = [
-                    fields.Command.set(window.participant_set_id.line_ids.mapped("team_id").ids)
+                    fields.Command.set(
+                        window.participant_set_id.line_ids.mapped("team_id").ids
+                    )
                 ]
             elif window and window.entry_ids:
                 values["team_ids"] = [
                     fields.Command.set(
                         window.entry_ids.filtered(
                             lambda entry: entry.state != "withdrawn"
-                        ).mapped("team_id").ids
+                        )
+                        .mapped("team_id")
+                        .ids
                     )
                 ]
         return values

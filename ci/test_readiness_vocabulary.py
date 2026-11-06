@@ -125,9 +125,7 @@ class AggregateTests(unittest.TestCase):
             vocabulary.aggregate(["complete", "not_applicable"]),
             vocabulary.COMPLETE,
         )
-        self.assertEqual(
-            vocabulary.aggregate(["complete", "ready"]), vocabulary.READY
-        )
+        self.assertEqual(vocabulary.aggregate(["complete", "ready"]), vocabulary.READY)
 
     def test_unknown_status_is_rejected(self):
         with self.assertRaises(ValueError):
@@ -139,9 +137,7 @@ class AggregateTests(unittest.TestCase):
         self.assertEqual(
             vocabulary.ratio_status(7, 8, waiting=1), vocabulary.WAITING_REVIEW
         )
-        self.assertEqual(
-            vocabulary.ratio_status(7, 8, blocked=1), vocabulary.BLOCKED
-        )
+        self.assertEqual(vocabulary.ratio_status(7, 8, blocked=1), vocabulary.BLOCKED)
         self.assertEqual(vocabulary.ratio_status(0, 0), vocabulary.NOT_APPLICABLE)
         self.assertEqual(vocabulary.format_ratio(7, 8), "7 / 8 ready")
 

@@ -276,9 +276,7 @@ class TestIntegrationApi(TransactionCase):
             },
         )
         deliveries = self.env["federation.integration.delivery"]
-        initial_count = deliveries.search_count(
-            [("partner_id", "=", self.partner.id)]
-        )
+        initial_count = deliveries.search_count([("partner_id", "=", self.partner.id)])
 
         with patch(
             "odoo.addons.sports_federation_import_tools.controllers.integration_api.request",

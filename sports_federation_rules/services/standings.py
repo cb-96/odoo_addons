@@ -59,7 +59,11 @@ class FederationStandingsRules(models.AbstractModel):
     @api.model
     def match_forfeit_side(self, match):
         """Return "home"/"away" for the team that won a forfeited match."""
-        winner = match._get_forfeit_winner() if hasattr(match, "_get_forfeit_winner") else False
+        winner = (
+            match._get_forfeit_winner()
+            if hasattr(match, "_get_forfeit_winner")
+            else False
+        )
         if not winner:
             return None
         if winner == match.home_team_id:

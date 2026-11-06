@@ -81,9 +81,13 @@ class TestCompetitionPlanner(TransactionCase):
                 schedule_action["res_model"], "federation.competition.schedule.wizard"
             )
             self.assertEqual(schedule_action["views"], [(False, "form")])
-            self.assertTrue(schedule_action["context"]["return_to_competition_workspace"])
+            self.assertTrue(
+                schedule_action["context"]["return_to_competition_workspace"]
+            )
         wizard_action = self.edition.action_setup_schedule()
-        self.assertEqual(wizard_action["res_model"], "federation.competition.schedule.wizard")
+        self.assertEqual(
+            wizard_action["res_model"], "federation.competition.schedule.wizard"
+        )
         self.assertTrue(wizard_action["context"]["return_to_competition_workspace"])
 
     def _prepare_two_day_competition(self):
@@ -123,7 +127,7 @@ class TestCompetitionPlanner(TransactionCase):
                 for seed, team in enumerate(teams, start=1)
             ]
         )
-        window = self.env["federation.registration.window"].create(
+        self.env["federation.registration.window"].create(
             {
                 "name": "Planner Registration",
                 "edition_id": self.edition.id,
@@ -241,25 +245,33 @@ class TestCompetitionPlanner(TransactionCase):
         digest = hashlib.sha256(
             json.dumps(snapshot, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
-        review = self.env["federation.schedule.review"].sudo().create(
-            {
-                "schedule_id": schedule.id,
-                "submitted_revision": schedule.revision,
-                "state": "approved",
-                "assignment_snapshot": snapshot,
-                "snapshot_digest": digest,
-                "submitted_by_id": self.env.user.id,
-            }
+        review = (
+            self.env["federation.schedule.review"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "submitted_revision": schedule.revision,
+                    "state": "approved",
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": digest,
+                    "submitted_by_id": self.env.user.id,
+                }
+            )
         )
-        publication = self.env["federation.schedule.publication"].sudo().create(
-            {
-                "schedule_id": schedule.id,
-                "version": 1,
-                "assignment_snapshot": snapshot,
-                "snapshot_digest": digest,
-                "source_revision": schedule.revision,
-                "review_id": review.id,
-            }
+        publication = (
+            self.env["federation.schedule.publication"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "version": 1,
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": digest,
+                    "source_revision": schedule.revision,
+                    "review_id": review.id,
+                }
+            )
         )
         schedule.state = "published"
         day.current_publication_id = publication
@@ -385,41 +397,49 @@ class TestCompetitionPlanner(TransactionCase):
         schedule.state = "ready_for_review"
         commands = self.env["federation.schedule.approval.commands"]
         snapshot = commands._snapshot(schedule)
-        review = self.env["federation.schedule.review"].sudo().create(
-            {
-                "schedule_id": schedule.id,
-                "submitted_revision": schedule.revision,
-                "state": "pending",
-                "assignment_snapshot": snapshot,
-                "snapshot_digest": commands._digest(snapshot),
-                "submitted_by_id": self.env.user.id,
-            }
+        review = (
+            self.env["federation.schedule.review"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "submitted_revision": schedule.revision,
+                    "state": "pending",
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": commands._digest(snapshot),
+                    "submitted_by_id": self.env.user.id,
+                }
+            )
         )
         issue_key = "gameday-%s-missing-publication" % days[0].id
-        planner = self.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Planner Review Reader",
-                "login": "planner.review.reader",
-                "group_ids": [
-                    Command.set(
-                        [
-                            self.env.ref("base.group_user").id,
-                            self.env.ref(
-                                "sports_federation_base.group_federation_user"
-                            ).id,
-                            self.env.ref(
-                                "sports_federation_scheduling.group_schedule_planner"
-                            ).id,
-                            self.env.ref(
-                                "sports_federation_calendar.group_calendar_planner"
-                            ).id,
-                            self.env.ref(
-                                "sports_federation_registration.group_registration_manager"
-                            ).id,
-                        ]
-                    )
-                ],
-            }
+        planner = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Planner Review Reader",
+                    "login": "planner.review.reader",
+                    "group_ids": [
+                        Command.set(
+                            [
+                                self.env.ref("base.group_user").id,
+                                self.env.ref(
+                                    "sports_federation_base.group_federation_user"
+                                ).id,
+                                self.env.ref(
+                                    "sports_federation_scheduling.group_schedule_planner"
+                                ).id,
+                                self.env.ref(
+                                    "sports_federation_calendar.group_calendar_planner"
+                                ).id,
+                                self.env.ref(
+                                    "sports_federation_registration.group_registration_manager"
+                                ).id,
+                            ]
+                        )
+                    ],
+                }
+            )
         )
         self.env["federation.competition.role.assignment"].create(
             {
@@ -431,13 +451,17 @@ class TestCompetitionPlanner(TransactionCase):
         review.with_user(planner).check_access("read")
         self.assertEqual(review.state, "pending")
         self.assertEqual(review.submitted_revision, schedule.revision)
-        matching_review = self.env["federation.schedule.review"].sudo().search(
-            [
-                ("schedule_id", "=", schedule.id),
-                ("submitted_revision", "=", schedule.revision),
-                ("state", "in", ("pending", "approved")),
-            ],
-            limit=1,
+        matching_review = (
+            self.env["federation.schedule.review"]
+            .sudo()
+            .search(
+                [
+                    ("schedule_id", "=", schedule.id),
+                    ("submitted_revision", "=", schedule.revision),
+                    ("state", "in", ("pending", "approved")),
+                ],
+                limit=1,
+            )
         )
         self.assertEqual(matching_review, review)
 
@@ -451,14 +475,18 @@ class TestCompetitionPlanner(TransactionCase):
             limit=1,
         )
         self.assertEqual(planner_schedule, schedule)
-        planner_review = planner_edition.env.get("federation.schedule.review").sudo().search(
-            [
-                ("schedule_id", "=", planner_schedule.id),
-                ("submitted_revision", "=", planner_schedule.revision),
-                ("state", "in", ("pending", "approved")),
-            ],
-            order="id desc",
-            limit=1,
+        planner_review = (
+            planner_edition.env.get("federation.schedule.review")
+            .sudo()
+            .search(
+                [
+                    ("schedule_id", "=", planner_schedule.id),
+                    ("submitted_revision", "=", planner_schedule.revision),
+                    ("state", "in", ("pending", "approved")),
+                ],
+                order="id desc",
+                limit=1,
+            )
         )
         self.assertEqual(planner_review, review)
         issue = next(
@@ -490,23 +518,27 @@ class TestCompetitionPlanner(TransactionCase):
                 "division_id": division.id,
             }
         )
-        manager = self.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Ordinary Competition Manager",
-                "login": "ordinary.competition.manager",
-                "group_ids": [
-                    (
-                        6,
-                        0,
-                        [
-                            self.env.ref("base.group_user").id,
-                            self.env.ref(
-                                "sports_federation_base.group_federation_manager"
-                            ).id,
-                        ],
-                    )
-                ],
-            }
+        manager = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Ordinary Competition Manager",
+                    "login": "ordinary.competition.manager",
+                    "group_ids": [
+                        (
+                            6,
+                            0,
+                            [
+                                self.env.ref("base.group_user").id,
+                                self.env.ref(
+                                    "sports_federation_base.group_federation_manager"
+                                ).id,
+                            ],
+                        )
+                    ],
+                }
+            )
         )
         self.assertFalse(
             manager.has_group(
@@ -535,11 +567,24 @@ class TestCompetitionPlanner(TransactionCase):
 
     def test_operation_actions_remain_competition_scoped(self):
         action = self.edition.action_open_planner_operation("matchdays")
-        self.assertEqual(action["domain"], [("edition_id", "=", self.edition.id), ("state", "not in", ("closed", "cancelled"))])
+        self.assertEqual(
+            action["domain"],
+            [
+                ("edition_id", "=", self.edition.id),
+                ("state", "not in", ("closed", "cancelled")),
+            ],
+        )
         self.assertEqual(action["context"]["default_edition_id"], self.edition.id)
         self.assertEqual(
             action["views"],
-            [(False, "calendar"), (False, "list"), (self.env.ref("sports_federation_setup_flow.matchday_focus_form").id, "form")],
+            [
+                (False, "calendar"),
+                (False, "list"),
+                (
+                    self.env.ref("sports_federation_setup_flow.matchday_focus_form").id,
+                    "form",
+                ),
+            ],
         )
 
     def test_missing_rosters_are_counted_and_created_only_on_action(self):
@@ -582,10 +627,15 @@ class TestCompetitionPlanner(TransactionCase):
 
     @tagged("at_install", "sf_release_confidence")
     def test_creation_draft_round_trip(self):
-        wizard = self.env["federation.create.competition.wizard"].create({
-            "name": "Recoverable competition", "competition_id": self.competition.id,
-            "season_id": self.season.id, "date_start": "2027-02-01", "workflow_mode": "controlled",
-        })
+        wizard = self.env["federation.create.competition.wizard"].create(
+            {
+                "name": "Recoverable competition",
+                "competition_id": self.competition.id,
+                "season_id": self.season.id,
+                "date_start": "2027-02-01",
+                "workflow_mode": "controlled",
+            }
+        )
         wizard.action_save_creation_draft()
         draft = wizard.creation_draft_id
         self.assertEqual(draft.owner_id, self.env.user)

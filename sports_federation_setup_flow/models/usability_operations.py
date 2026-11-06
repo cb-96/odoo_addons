@@ -8,10 +8,26 @@ class MatchdayUsability(models.Model):
         self.ensure_one()
         self.check_access("read")
         return {
-            "type": "ir.actions.act_window", "name": _("Results for this match day"),
-            "res_model": "federation.match", "view_mode": "list,form",
-            "views": [(self.env.ref("sports_federation_setup_flow.result_focus_list").id, "list"), (False, "form")],
-            "domain": [("id", "in", self.published_match_ids.filtered(lambda m: m.state == "done" and m.result_state != "approved").ids)],
+            "type": "ir.actions.act_window",
+            "name": _("Results for this match day"),
+            "res_model": "federation.match",
+            "view_mode": "list,form",
+            "views": [
+                (
+                    self.env.ref("sports_federation_setup_flow.result_focus_list").id,
+                    "list",
+                ),
+                (False, "form"),
+            ],
+            "domain": [
+                (
+                    "id",
+                    "in",
+                    self.published_match_ids.filtered(
+                        lambda m: m.state == "done" and m.result_state != "approved"
+                    ).ids,
+                )
+            ],
         }
 
     def action_open_focus_history(self):
@@ -27,7 +43,14 @@ class MatchUsability(models.Model):
         self.ensure_one()
         self.check_access("read")
         return {
-            "type": "ir.actions.act_window", "name": _("Enter result"),
-            "res_model": "federation.quick.result.wizard", "view_mode": "form", "target": "new",
-            "context": {"default_match_id": self.id, "default_home_score": self.home_score, "default_away_score": self.away_score},
+            "type": "ir.actions.act_window",
+            "name": _("Enter result"),
+            "res_model": "federation.quick.result.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {
+                "default_match_id": self.id,
+                "default_home_score": self.home_score,
+                "default_away_score": self.away_score,
+            },
         }

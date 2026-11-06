@@ -172,7 +172,9 @@ class TestCompetitionEntryPortal(TransactionCase):
 
         response = self._controller_call("portal_my_competition_entries")
 
-        self.assertEqual(response.template, "sports_federation_portal.portal_my_competition_entries")
+        self.assertEqual(
+            response.template, "sports_federation_portal.portal_my_competition_entries"
+        )
         self.assertEqual(response.values["entries"].ids, own_entry.ids)
         self.assertEqual(response.values["windows"].ids, available_window.ids)
 
@@ -242,8 +244,10 @@ class TestCompetitionEntryPortal(TransactionCase):
         self.assertEqual(entry.review_note, "Add the missing competition contact.")
 
     def test_entry_recovery_rejects_foreign_team_scope(self):
-        entry = self.env["federation.competition.entry"].sudo().create(
-            {"window_id": self.window.id, "team_id": self.other_team.id}
+        entry = (
+            self.env["federation.competition.entry"]
+            .sudo()
+            .create({"window_id": self.window.id, "team_id": self.other_team.id})
         )
 
         with self.assertRaises(AccessError):

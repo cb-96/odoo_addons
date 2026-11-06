@@ -248,7 +248,9 @@ class TestCompetitionScheduleScope(TransactionCase):
 
         errors, _warnings = wizard._validate_scope()
 
-        self.assertTrue(any("allocated to multiple game days" in error for error in errors))
+        self.assertTrue(
+            any("allocated to multiple game days" in error for error in errors)
+        )
 
     def test_preview_reports_are_presented_as_readable_summaries(self):
         wizard = self.env["federation.competition.schedule.wizard"].create(

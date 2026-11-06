@@ -5,6 +5,7 @@ through ``action_submit_for_review`` and therefore through the schedule
 validator, the review record, the policy-driven approval and the immutable
 publication snapshot.  It only removes the per-game-day clicking.
 """
+
 from html import escape
 
 from odoo import _, fields, models
@@ -39,7 +40,9 @@ class FederationCompetitionEditionPublish(models.Model):
         days with warnings are reported instead of published.
         """
         self.ensure_one()
-        if not warning_override_reason and not self.env.context.get("skip_warning_days"):
+        if not warning_override_reason and not self.env.context.get(
+            "skip_warning_days"
+        ):
             details = self._schedule_warning_details()
             if details:
                 return self._open_publish_confirmation(details)
@@ -75,19 +78,30 @@ class FederationCompetitionEditionPublish(models.Model):
                 if not first or not second:
                     lines.append(warning.get("message") or _("Schedule warning"))
                     continue
-                early, late = sorted((first, second), key=lambda slot: slot.start_datetime)
+                early, late = sorted(
+                    (first, second), key=lambda slot: slot.start_datetime
+                )
                 team = (warning.get("message") or "").split(" has ")[0]
                 key = (team, early.id, late.id)
                 if key in seen:
                     continue
                 seen.add(key)
-                gap = max(0, int((late.start_datetime - early.end_datetime).total_seconds() // 60))
+                gap = max(
+                    0,
+                    int(
+                        (late.start_datetime - early.end_datetime).total_seconds() // 60
+                    ),
+                )
                 lines.append(
                     _(
                         "%(team)s: %(first)s and %(second)s (%(gap)s min rest)",
                         team=team,
-                        first=fields.Datetime.context_timestamp(self, early.start_datetime).strftime("%H:%M"),
-                        second=fields.Datetime.context_timestamp(self, late.start_datetime).strftime("%H:%M"),
+                        first=fields.Datetime.context_timestamp(
+                            self, early.start_datetime
+                        ).strftime("%H:%M"),
+                        second=fields.Datetime.context_timestamp(
+                            self, late.start_datetime
+                        ).strftime("%H:%M"),
                         gap=gap,
                     )
                 )
@@ -113,8 +127,10 @@ class FederationCompetitionEditionPublish(models.Model):
                 "edition_id": self.id,
                 "details_html": "".join(sections),
                 "warning_day_count": len(details),
-                "reason": _("Short rest between matches accepted by %(user)s.",
-                            user=self.env.user.name),
+                "reason": _(
+                    "Short rest between matches accepted by %(user)s.",
+                    user=self.env.user.name,
+                ),
             }
         )
         return {
@@ -156,8 +172,10 @@ class FederationCompetitionEditionPublish(models.Model):
                     if schedule.state in ("draft", "changes_requested"):
                         if schedule.unassigned_fixture_count:
                             raise ValidationError(
-                                _("%(count)s match(es) still have no court or time.",
-                                  count=schedule.unassigned_fixture_count)
+                                _(
+                                    "%(count)s match(es) still have no court or time.",
+                                    count=schedule.unassigned_fixture_count,
+                                )
                             )
                         schedule.action_submit_for_review(
                             warning_override_reason=warning_override_reason
@@ -199,7 +217,10 @@ class FederationCompetitionEditionPublish(models.Model):
             lines.append(_("%(count)s game day(s) published.", count=published))
         if waiting:
             lines.append(
-                _("%(count)s game day(s) wait for independent review.", count=len(waiting))
+                _(
+                    "%(count)s game day(s) wait for independent review.",
+                    count=len(waiting),
+                )
             )
         if skipped:
             lines.append(_("Not published:") + "\n" + "\n".join(skipped))

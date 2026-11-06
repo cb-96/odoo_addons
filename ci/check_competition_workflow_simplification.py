@@ -24,7 +24,7 @@ for entity in (
     if ("**%s**" % entity) not in mapfile:
         errors.append("entity map lacks " + entity)
 service = (
-    ROOT / "sports_federation_app/models/lifecycle_postconditions.py"
+    ROOT / "sports_federation_setup_flow/models/lifecycle_postconditions.py"
 ).read_text()
 for handoff in (
     "registration_finalized",

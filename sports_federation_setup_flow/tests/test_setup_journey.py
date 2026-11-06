@@ -44,7 +44,9 @@ class TestCompetitionSetupJourney(TransactionCase):
         )
 
     def test_readiness_explains_next_blocker(self):
-        result = self.env["federation.competition.setup.readiness"].evaluate(self.edition)
+        result = self.env["federation.competition.setup.readiness"].evaluate(
+            self.edition
+        )
         self.assertEqual(result["step"], "basics")
         self.assertTrue(result["blocker_hint"])
 
@@ -101,29 +103,37 @@ class TestCompetitionSetupJourney(TransactionCase):
             self.env.ref("sports_federation_base.group_federation_user"),
             self.env.ref("sports_federation_calendar.group_calendar_planner"),
         ]
-        planner = self.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Calendar Planner Setup Test",
-                "login": "calendar.planner.setup@example.invalid",
-                "group_ids": [Command.set([group.id for group in groups])],
-            }
+        planner = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Calendar Planner Setup Test",
+                    "login": "calendar.planner.setup@example.invalid",
+                    "group_ids": [Command.set([group.id for group in groups])],
+                }
+            )
         )
 
-        wizard = self.env["federation.competition.gameday.setup.wizard"].with_user(
-            planner
-        ).create(
-            {
-                "edition_id": self.edition.id,
-                "new_date": "2026-10-03",
-                "default_venue_id": self.venue.id,
-            }
+        wizard = (
+            self.env["federation.competition.gameday.setup.wizard"]
+            .with_user(planner)
+            .create(
+                {
+                    "edition_id": self.edition.id,
+                    "new_date": "2026-10-03",
+                    "default_venue_id": self.venue.id,
+                }
+            )
         )
 
         self.assertEqual(wizard.edition_id, self.edition)
 
     def test_competition_can_open_clone_setup(self):
         self.assertTrue(
-            hasattr(self.env["federation.competition.edition"], "action_open_clone_setup")
+            hasattr(
+                self.env["federation.competition.edition"], "action_open_clone_setup"
+            )
         )
 
     def test_clone_shortcut_opens_wizard_without_creating_incomplete_record(self):
@@ -234,4 +244,6 @@ class TestCompetitionSetupJourney(TransactionCase):
         action = self.edition.action_setup_gamedays()
 
         self.assertEqual(action["target"], "new")
-        self.assertEqual(action["res_model"], "federation.competition.gameday.setup.wizard")
+        self.assertEqual(
+            action["res_model"], "federation.competition.gameday.setup.wizard"
+        )

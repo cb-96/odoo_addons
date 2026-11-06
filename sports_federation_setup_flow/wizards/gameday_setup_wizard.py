@@ -8,7 +8,9 @@ class FederationCompetitionGamedaySetupWizard(models.TransientModel):
     _name = "federation.competition.gameday.setup.wizard"
     _description = "Define Competition Game Days"
 
-    edition_id = fields.Many2one("federation.competition.edition", required=True, readonly=True)
+    edition_id = fields.Many2one(
+        "federation.competition.edition", required=True, readonly=True
+    )
     line_ids = fields.One2many("federation.competition.gameday.setup.line", "wizard_id")
     new_date = fields.Date(default=fields.Date.context_today)
     default_venue_id = fields.Many2one("federation.venue")
@@ -69,7 +71,9 @@ class FederationCompetitionGamedaySetupWizard(models.TransientModel):
                     "venue_id": self.default_venue_id.id,
                     "court_ids": [
                         fields.Command.set(
-                            self.default_venue_id.playing_area_ids.filtered("active").ids
+                            self.default_venue_id.playing_area_ids.filtered(
+                                "active"
+                            ).ids
                         )
                     ],
                     "start_hour": self.default_start_hour,
@@ -121,7 +125,9 @@ class FederationCompetitionGamedaySetupLine(models.TransientModel):
     _description = "Competition Game Day Setup Line"
     _order = "date,id"
 
-    wizard_id = fields.Many2one("federation.competition.gameday.setup.wizard", required=True, ondelete="cascade")
+    wizard_id = fields.Many2one(
+        "federation.competition.gameday.setup.wizard", required=True, ondelete="cascade"
+    )
     matchday_id = fields.Many2one("federation.matchday", readonly=True)
     name = fields.Char(required=True)
     date = fields.Date(required=True)
@@ -150,7 +156,14 @@ class FederationCompetitionGamedaySetupLine(models.TransientModel):
     )
     estimated_capacity = fields.Integer(compute="_compute_estimated_capacity")
 
-    @api.depends("court_ids", "start_hour", "end_hour", "slot_duration_minutes", "noon_pause", "noon_pause_minutes")
+    @api.depends(
+        "court_ids",
+        "start_hour",
+        "end_hour",
+        "slot_duration_minutes",
+        "noon_pause",
+        "noon_pause_minutes",
+    )
     def _compute_estimated_capacity(self):
         for line in self:
             minutes = max(0, int((line.end_hour - line.start_hour) * 60))

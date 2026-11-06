@@ -23,11 +23,15 @@ class TestJourneyEvent(TransactionCase):
 
     def test_anonymous_visitors_are_never_recorded(self):
         public = self.env.ref("base.public_user")
-        self.assertFalse(self.Event.with_user(public).record("j.public", "entry", session="s"))
+        self.assertFalse(
+            self.Event.with_user(public).record("j.public", "entry", session="s")
+        )
         self.assertFalse(self.Event.search([("journey", "=", "j.public")]))
 
     def test_the_raw_session_is_never_stored(self):
-        event_id = self.Event.with_user(self.user).record("j.session", "entry", session="raw-sid-123")
+        event_id = self.Event.with_user(self.user).record(
+            "j.session", "entry", session="raw-sid-123"
+        )
         event = self.Event.browse(event_id)
         self.assertTrue(event.session_key)
         self.assertNotIn("raw-sid-123", event.session_key)
@@ -46,7 +50,10 @@ class TestJourneyEvent(TransactionCase):
         user_events.record("j.retry", "validation_error")
         self.assertTrue(user_events.record_attempt("j.retry"))
         self.assertEqual(
-            self.Event.search_count([("journey", "=", "j.retry"), ("event", "=", "retry")]), 1
+            self.Event.search_count(
+                [("journey", "=", "j.retry"), ("event", "=", "retry")]
+            ),
+            1,
         )
         self.assertFalse(user_events.record_attempt("j.other"))
 
@@ -61,14 +68,25 @@ class TestJourneyEvent(TransactionCase):
         user_events.record("j.report.cmd", "validation_error", session="rep-1")
         report = self.Event.report(days=1)
         self.assertEqual(report["by_journey"]["j.report"]["entries"], 1)
-        self.assertEqual(report["by_journey"]["j.report.cmd"]["validation_error_rate"], 0.5)
-        task_types = set(dict(self.env["federation.operation.task"]._fields["task_type"]._description_selection(self.env)))
+        self.assertEqual(
+            report["by_journey"]["j.report.cmd"]["validation_error_rate"], 0.5
+        )
+        task_types = set(
+            dict(
+                self.env["federation.operation.task"]
+                ._fields["task_type"]
+                ._description_selection(self.env)
+            )
+        )
         self.assertEqual(set(report["task_closure"]), task_types)
 
     def test_old_events_are_pruned_and_recent_ones_kept(self):
         old = self.Event.sudo().create(
-            {"journey": "j.old", "event": "entry",
-             "occurred_on": fields.Datetime.now() - timedelta(days=400)}
+            {
+                "journey": "j.old",
+                "event": "entry",
+                "occurred_on": fields.Datetime.now() - timedelta(days=400),
+            }
         )
         recent = self.Event.sudo().create({"journey": "j.recent", "event": "entry"})
         self.Event._cron_prune(batch=100000)
@@ -83,7 +101,17 @@ class TestJourneyEvent(TransactionCase):
                 {
                     "name": "Journey Manager",
                     "login": "journey.manager@example.test",
-                    "group_ids": [(6, 0, [self.env.ref("sports_federation_base.group_federation_manager").id])],
+                    "group_ids": [
+                        (
+                            6,
+                            0,
+                            [
+                                self.env.ref(
+                                    "sports_federation_base.group_federation_manager"
+                                ).id
+                            ],
+                        )
+                    ],
                 }
             )
         )

@@ -17,10 +17,17 @@ class QuickResultWizard(models.TransientModel):
     @api.depends("match_id")
     def _compute_requires_review(self):
         for wizard in self:
-            edition = wizard.match_id._competition_workflow_edition() if wizard.match_id else False
+            edition = (
+                wizard.match_id._competition_workflow_edition()
+                if wizard.match_id
+                else False
+            )
             wizard.requires_review = bool(
                 edition
-                and (edition.result_verification_required or edition.result_approval_required)
+                and (
+                    edition.result_verification_required
+                    or edition.result_approval_required
+                )
             )
 
     def _save_result(self, submit=False):
@@ -29,10 +36,21 @@ class QuickResultWizard(models.TransientModel):
         match.check_access("write")
         match._lock_result_transition()
         if match.state != "done" or match.result_state not in ("draft", "corrected"):
-            raise ValidationError(_("Only completed matches awaiting score entry can be edited here. Use the correction workflow for official results."))
+            raise ValidationError(
+                _(
+                    "Only completed matches awaiting score entry can be edited here. Use the correction workflow for official results."
+                )
+            )
         if min(self.home_score, self.away_score) < 0:
             raise ValidationError(_("Scores cannot be negative."))
-        match.write({"home_score": self.home_score, "away_score": self.away_score, "score_entry_confirmed": self.score_entry_confirmed, "zero_zero_confirmed": self.zero_zero_confirmed})
+        match.write(
+            {
+                "home_score": self.home_score,
+                "away_score": self.away_score,
+                "score_entry_confirmed": self.score_entry_confirmed,
+                "zero_zero_confirmed": self.zero_zero_confirmed,
+            }
+        )
         if submit:
             match.action_submit_result()
         return {"type": "ir.actions.act_window_close"}

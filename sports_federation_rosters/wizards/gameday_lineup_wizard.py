@@ -30,15 +30,22 @@ class FederationGamedayLineupWizard(models.TransientModel):
     @api.model
     def default_get(self, field_list):
         values = super().default_get(field_list)
-        matchday = self.env["federation.matchday"].browse(
-            values.get("matchday_id") or self.env.context.get("default_matchday_id")
-        ).exists()
+        matchday = (
+            self.env["federation.matchday"]
+            .browse(
+                values.get("matchday_id") or self.env.context.get("default_matchday_id")
+            )
+            .exists()
+        )
         if matchday:
             values["matchday_id"] = matchday.id
             teams = self._teams_for_matchday(matchday)
-            team = self.env["federation.team"].browse(
-                self.env.context.get("default_team_id")
-            ).exists() or teams[:1]
+            team = (
+                self.env["federation.team"]
+                .browse(self.env.context.get("default_team_id"))
+                .exists()
+                or teams[:1]
+            )
             if team:
                 values["team_id"] = team.id
                 roster, commands = self._lineup_defaults(matchday, team)
@@ -115,7 +122,9 @@ class FederationGamedayLineupWizard(models.TransientModel):
                         "jersey_number": line.jersey_number,
                     }
                 )
-                for line in roster.line_ids.filtered(lambda item: item.status == "active")
+                for line in roster.line_ids.filtered(
+                    lambda item: item.status == "active"
+                )
             ]
         return roster, commands
 
@@ -134,9 +143,8 @@ class FederationGamedayLineupWizard(models.TransientModel):
     def _limits_for(self, roster):
         """Gameday and per-match limits from the roster's effective rules."""
         rule_set = roster._get_effective_rule_set() if roster else False
-        gameday = (
-            (rule_set.gameday_roster_max_size if rule_set else 0)
-            or (roster._get_required_player_bounds()[1] if roster else 0)
+        gameday = (rule_set.gameday_roster_max_size if rule_set else 0) or (
+            roster._get_required_player_bounds()[1] if roster else 0
         )
         per_match = rule_set.match_player_max_size if rule_set else 0
         return gameday, per_match
@@ -192,7 +200,9 @@ class FederationGamedayLineupWizard(models.TransientModel):
         sheets = self._sheets_for(self.matchday_id, self.team_id)
         if not sheets:
             raise ValidationError(
-                _("Publish the schedule so operational matches and lineup sheets exist.")
+                _(
+                    "Publish the schedule so operational matches and lineup sheets exist."
+                )
             )
         source = sheets.filtered(lambda sheet: sheet.state == "draft")[:1]
         if not source:

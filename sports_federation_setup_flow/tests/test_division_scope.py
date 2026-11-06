@@ -16,7 +16,8 @@ class TestDivisionScope(TransactionCase):
                     "teams_per_division": 4,
                     "gameday_count": 3,
                     "first_gameday_today": False,
-                    "first_gameday": fields.Date.context_today(self.env.user) + timedelta(days=30),
+                    "first_gameday": fields.Date.context_today(self.env.user)
+                    + timedelta(days=30),
                 },
                 **values,
             )
@@ -54,10 +55,18 @@ class TestDivisionScope(TransactionCase):
             [("edition_id", "=", edition.id), ("state", "!=", "cancelled")]
         )
         capacities = [
-            {"matchday_id": days[0].id, "date": days[0].date, "capacity": 100,
-             "division_ids": first.ids},
-            {"matchday_id": days[1].id, "date": days[1].date, "capacity": 100,
-             "division_ids": second.ids},
+            {
+                "matchday_id": days[0].id,
+                "date": days[0].date,
+                "capacity": 100,
+                "division_ids": first.ids,
+            },
+            {
+                "matchday_id": days[1].id,
+                "date": days[1].date,
+                "capacity": 100,
+                "division_ids": second.ids,
+            },
         ]
         proposal = self.env["federation.competition.schedule.distributor"].propose(
             fixtures, capacities
@@ -75,18 +84,30 @@ class TestDivisionScope(TransactionCase):
         day = self.env["federation.matchday"].search(
             [("edition_id", "=", edition.id)], order="date,id", limit=1
         )
-        fixtures = self.env["federation.fixture"].search([("edition_id", "=", edition.id)])
+        fixtures = self.env["federation.fixture"].search(
+            [("edition_id", "=", edition.id)]
+        )
         proposal = self.env["federation.competition.schedule.distributor"].propose(
             fixtures,
-            [{"matchday_id": day.id, "date": day.date, "capacity": 100,
-              "division_ids": first.ids}],
+            [
+                {
+                    "matchday_id": day.id,
+                    "date": day.date,
+                    "capacity": 100,
+                    "division_ids": first.ids,
+                }
+            ],
         )
-        self.assertTrue(any(second.display_name in error for error in proposal["errors"]))
+        self.assertTrue(
+            any(second.display_name in error for error in proposal["errors"])
+        )
 
     def test_teams_and_format_sets_category_and_gender_and_filters_teams(self):
         edition = self._practice(division_count=1)
-        wizard = self.env["federation.competition.division.setup.wizard"].create(
-            {"edition_id": edition.id}
+        wizard = (
+            self.env["federation.competition.division.setup.wizard"]
+            .with_context(default_edition_id=edition.id)
+            .create({})
         )
         line = wizard.line_ids[:1]
         self.assertTrue(line)
@@ -97,7 +118,11 @@ class TestDivisionScope(TransactionCase):
 
     def test_creation_wizard_keeps_division_category_and_gender(self):
         season = self.env["federation.season"].create(
-            {"name": "Scope season", "date_start": "2030-07-01", "date_end": "2031-06-30"}
+            {
+                "name": "Scope season",
+                "date_start": "2030-07-01",
+                "date_end": "2031-06-30",
+            }
         )
         creation = self.env["federation.create.competition.wizard"].create(
             {

@@ -5,6 +5,11 @@ The Competition Planner is a read model and router: registration, format,
 calendar, scheduling, approval, and publication commands remain in their
 respective owner addons.
 
+This addon also owns the cross-addon lifecycle postconditions and derived-record
+reconciliation services. They validate handoffs and report or repair materialized
+records through their owning commands; the `sports_federation_app` aggregate
+remains dependency-only.
+
 ## Planner readiness
 
 The planner and the season-competition form use the same readiness projection.
@@ -25,8 +30,10 @@ sets with their lines; match-day, lineup, official, and result counts require
 read access to their source records. An edition reader without those domain
 permissions can still use the planner's setup routes; unavailable operations
 are marked unavailable instead of bypassing access controls or presenting an
-incomplete count as zero. Availability probes use model-level `check_access`
-and treat `AccessError` as unavailable without broadening the caller's rights.
+incomplete count as zero. End-of-competition action counts require access to
+their source records, and the close action also requires edition write access.
+Availability probes use model-level `check_access` and treat `AccessError` as
+unavailable without broadening the caller's rights.
 Calendar Planners can create and edit the guided game-day setup wizard. A
 Competition Designer can read finalized participant sets and their lines, but
 cannot change registration data; this is the read-only input needed to review
@@ -71,6 +78,10 @@ Advanced / Custom workflow policies before the competition is created.
 The `competition_planner_intent` browser tour qualifies discoverability of the
 current action, direct blocker routing affordance, waiting-step terminology, and
 keyboard focus. Model tests cover exact-target routing and competition scoping.
+
+The practice competition generator creates an active, licensed sample roster
+for each team so its schedules can be published and explored without an
+immediate roster-readiness blocker.
 
 ## Direct action contract
 

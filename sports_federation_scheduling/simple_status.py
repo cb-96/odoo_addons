@@ -21,7 +21,10 @@ def group_messages(items, fallback):
             order.append(text)
             counts[text] = 0
         counts[text] += 1
-    return [text if counts[text] == 1 else "%s (x%s)" % (text, counts[text]) for text in order]
+    return [
+        text if counts[text] == 1 else "%s (x%s)" % (text, counts[text])
+        for text in order
+    ]
 
 
 def plural(count, singular, many):
@@ -40,7 +43,9 @@ def split_validation(validation):
                 plural(unassigned, "match still needs", "matches still need"),
             )
         )
-    could_improve = group_messages(validation.get("warnings", []), "Schedule preference")
+    could_improve = group_messages(
+        validation.get("warnings", []), "Schedule preference"
+    )
     return must_fix, could_improve
 
 
@@ -55,7 +60,10 @@ def counts(validation):
 def summary(scheduled, warnings, blockers):
     """The one sentence of the default scheduling screen."""
     return "%s %s scheduled \u00b7 %s preference %s \u00b7 %s blocking %s" % (
-        scheduled, plural(scheduled, "match", "matches"),
-        warnings, plural(warnings, "warning", "warnings"),
-        blockers, plural(blockers, "conflict", "conflicts"),
+        scheduled,
+        plural(scheduled, "match", "matches"),
+        warnings,
+        plural(warnings, "warning", "warnings"),
+        blockers,
+        plural(blockers, "conflict", "conflicts"),
     )

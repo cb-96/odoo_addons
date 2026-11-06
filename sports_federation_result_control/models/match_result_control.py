@@ -328,10 +328,14 @@ class FederationMatchResultControl(models.Model):
                 if dispatcher is not None:
                     dispatcher.send_result_submitted(record)
             editions = self.mapped(lambda match: match._competition_workflow_edition())
-            if editions and not any(edition.result_verification_required for edition in editions):
+            if editions and not any(
+                edition.result_verification_required for edition in editions
+            ):
                 self.with_context(workflow_policy_bypass=True).action_verify_result()
                 if not any(edition.result_approval_required for edition in editions):
-                    self.with_context(workflow_policy_bypass=True).action_approve_result()
+                    self.with_context(
+                        workflow_policy_bypass=True
+                    ).action_approve_result()
             return result
 
     def _lock_result_transition(self):
@@ -360,7 +364,10 @@ class FederationMatchResultControl(models.Model):
                     "Only result validators can verify submitted results.",
                 )
             allow_self = bypass or (
-                editions and all(edition.result_self_verification_allowed for edition in editions)
+                editions
+                and all(
+                    edition.result_self_verification_allowed for edition in editions
+                )
             )
             self._lock_result_transition()
             return self._result_transition(
@@ -370,7 +377,9 @@ class FederationMatchResultControl(models.Model):
                     "result_verified_by_id": self.env.user.id,
                     "result_verified_on": fields.Datetime.now(),
                 },
-                forbidden_actor_fields=() if allow_self else ("result_submitted_by_id",),
+                forbidden_actor_fields=(
+                    () if allow_self else ("result_submitted_by_id",)
+                ),
                 event_type="verified",
                 description="Result verified.",
             )
@@ -386,7 +395,8 @@ class FederationMatchResultControl(models.Model):
                     "Only result approvers can approve verified results.",
                 )
             allow_self = bypass or (
-                editions and all(edition.result_self_approval_allowed for edition in editions)
+                editions
+                and all(edition.result_self_approval_allowed for edition in editions)
             )
             self._lock_result_transition()
             result = self._result_transition(
@@ -397,9 +407,13 @@ class FederationMatchResultControl(models.Model):
                     "result_approved_on": fields.Datetime.now(),
                     "include_in_official_standings": True,
                 },
-                forbidden_actor_fields=() if allow_self else (
-                    "result_submitted_by_id",
-                    "result_verified_by_id",
+                forbidden_actor_fields=(
+                    ()
+                    if allow_self
+                    else (
+                        "result_submitted_by_id",
+                        "result_verified_by_id",
+                    )
                 ),
                 event_type="approved",
                 description="Result approved and included in official standings.",
@@ -507,8 +521,10 @@ class FederationMatchResultPeriod(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         match_ids = [vals.get("match_id") for vals in vals_list if vals.get("match_id")]
-        if self.env["federation.match"].browse(match_ids).filtered(
-            lambda match: match.result_state == "approved"
+        if (
+            self.env["federation.match"]
+            .browse(match_ids)
+            .filtered(lambda match: match.result_state == "approved")
         ):
             raise ValidationError(
                 _(

@@ -160,7 +160,8 @@ class FederationMatch(models.Model):
                 schedule_date,
                 self._float_to_time(schedule_time),
             )
-            prepared_vals["scheduled_time"] = schedule_time
+            if "scheduled_time" in prepared_vals:
+                prepared_vals["scheduled_time"] = schedule_time
             return prepared_vals
 
         if schedule_dt:

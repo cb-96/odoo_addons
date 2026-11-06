@@ -1,12 +1,10 @@
 from collections import defaultdict
 
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, ValidationError
-
 
 
 class FederationCompetitionEditionPlannerExtension(models.Model):
-    _inherit = 'federation.competition.edition'
+    _inherit = "federation.competition.edition"
 
     def _planner_enrich_issues(self, issues):
         owners = {
@@ -34,7 +32,6 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
             issue["action_label"] = labels[issue["step"]]
         return issues
 
-
     @api.model
     def _planner_step_label(self, step):
         return {
@@ -46,12 +43,13 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
             "publication": _("Publish"),
         }[step]
 
-
     def _planner_division_rows(self, windows, structures):
         rows = []
         issues = []
         current_structures = self.env["federation.competition.structure"]
-        windows_by_division = defaultdict(lambda: self.env["federation.registration.window"])
+        windows_by_division = defaultdict(
+            lambda: self.env["federation.registration.window"]
+        )
         structures_by_division = defaultdict(
             lambda: self.env["federation.competition.structure"]
         )
@@ -60,11 +58,15 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
         for structure in structures:
             structures_by_division[structure.division_id.id] |= structure
 
-        for division in self.tournament_ids.sorted(lambda item: (item.name or "", item.id)):
+        for division in self.tournament_ids.sorted(
+            lambda item: (item.name or "", item.id)
+        ):
             division_windows = windows_by_division[division.id]
-            participant_sets = division_windows.mapped("participant_set_id").filtered(
-                lambda item: item.state == "finalized"
-            ).sorted(lambda item: item.id, reverse=True)
+            participant_sets = (
+                division_windows.mapped("participant_set_id")
+                .filtered(lambda item: item.state == "finalized")
+                .sorted(lambda item: item.id, reverse=True)
+            )
             participant_set = participant_sets[:1]
             team_count = len(participant_set.mapped("line_ids.team_id"))
             division_structures = structures_by_division[division.id]
@@ -118,7 +120,10 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                         "message": _("Choose how this division plays."),
                     }
                 )
-            elif current_structure.state == "draft" and current_structure.format_type == "custom":
+            elif (
+                current_structure.state == "draft"
+                and current_structure.format_type == "custom"
+            ):
                 issues.append(
                     {
                         "key": "division-%s-stages" % division.id,
@@ -162,7 +167,9 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                         "step": "format",
                         "severity": "blocking",
                         "title": division.display_name,
-                        "message": _("This format produces no matches. Check the teams and format."),
+                        "message": _(
+                            "This format produces no matches. Check the teams and format."
+                        ),
                     }
                 )
 
@@ -182,10 +189,11 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                     "ready": teams_ready and format_ready,
                 }
             )
-        return rows, issues, current_structures.filtered(
-            lambda item: item.state == "frozen"
+        return (
+            rows,
+            issues,
+            current_structures.filtered(lambda item: item.state == "frozen"),
         )
-
 
     def _planner_global_issues(self, gamedays, schedules, expected_fixtures):
         issues = []
@@ -317,9 +325,7 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                         "step": "publication",
                         "severity": "blocking",
                         "title": gameday.display_name,
-                        "message": _(
-                            "Publish this game day's schedule."
-                        ),
+                        "message": _("Publish this game day's schedule."),
                     }
                 )
             elif (
@@ -352,7 +358,6 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                 }
             )
         return issues
-
 
     def _planner_steps(self, counts, division_rows, issues, expected_fixtures):
         divisions_ready = bool(counts["divisions"])
@@ -408,7 +413,6 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
             )
         return result
 
-
     def get_competition_planner_data(self):
         self.ensure_one()
         self.check_access("read")
@@ -430,9 +434,13 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
         schedules = projection.env["federation.schedule"].search(
             [("edition_id", "=", self.id)]
         )
-        division_count, participant_count, gameday_count, schedule_count, publication_count = (
-            projection._setup_counts()
-        )
+        (
+            division_count,
+            participant_count,
+            gameday_count,
+            schedule_count,
+            publication_count,
+        ) = projection._setup_counts()
         counts = {
             "divisions": division_count,
             "participants": participant_count,
@@ -470,15 +478,18 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
             )
         )
         steps = self._planner_steps(counts, division_rows, issues, expected_fixtures)
-        current = next((step for step in steps if step["status"] == "current"), steps[-1])
+        current = next(
+            (step for step in steps if step["status"] == "current"), steps[-1]
+        )
         current_issue = next(
             (issue for issue in issues if issue["step"] == current["key"]),
             issues[0] if issues else None,
         )
-        next_matchday = gamedays.filtered(lambda day: day.state not in ("cancelled", "closed")).sorted(
-            lambda day: (day.date or fields.Date.to_date("9999-12-31"), day.id)
-        )[:1]
-        division_ids = projection.tournament_ids.ids
+        next_matchday = gamedays.filtered(
+            lambda day: day.state not in ("cancelled", "closed")
+        ).sorted(lambda day: (day.date or fields.Date.to_date("9999-12-31"), day.id))[
+            :1
+        ]
         operation_access = self._usability_operation_access()
         roster_available = operation_access["rosters"]
         lineups_available = operation_access["lineups"]
@@ -499,11 +510,18 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
             ("officials", official_action_count, _("Resolve official coverage")),
         ]
         day_blockers = (
-            len(gamedays.filtered(lambda d: d.state in ("scheduled", "open") and d.readiness_state != "ready"))
+            len(
+                gamedays.filtered(
+                    lambda d: d.state in ("scheduled", "open")
+                    and d.readiness_state != "ready"
+                )
+            )
             if operation_access["matchdays"]
             else 0
         )
-        operation_actions.append(("matchdays", day_blockers, _("Resolve match-day readiness")))
+        operation_actions.append(
+            ("matchdays", day_blockers, _("Resolve match-day readiness"))
+        )
         operation_actions.extend(
             item for item in finish_actions if item[0] != "publish_website"
         )
@@ -539,7 +557,9 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                     "key": "final_tables",
                     "label": _("View final tables"),
                     "title": _("Competition finished"),
-                    "message": _("All results are approved and the final tables are frozen."),
+                    "message": _(
+                        "All results are approved and the final tables are frozen."
+                    ),
                     "owner": _("Competition organiser"),
                 }
             else:
@@ -548,7 +568,9 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                     "key": "matchdays",
                     "label": _("Open match-day operations"),
                     "title": _("Planning is complete"),
-                    "message": _("Open the match day to check readiness. Checks only include records available to your role."),
+                    "message": _(
+                        "Open the match day to check readiness. Checks only include records available to your role."
+                    ),
                     "owner": _("Match-day manager"),
                 }
         operational_blockers = sum(item[1] for item in operation_actions)
@@ -557,16 +579,22 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
             "edition": {
                 "id": self.id,
                 "name": self.display_name,
-                "season": self.season_id.display_name,
+                "season": projection.season_id.display_name,
                 "date_start": self.date_start,
                 "date_end": self.date_end,
                 "workflow_mode": self.workflow_mode,
                 "state": self.state,
             },
             "steps": steps,
-            "show_setup_progress": not all(step["complete"] for step in steps) and not gamedays.filtered(
-                lambda day: day.state in ("scheduled", "open", "closed")),
-            "remaining_issues": [issue for issue in issues if issue.get("key") != primary_action.get("key")],
+            "show_setup_progress": not all(step["complete"] for step in steps)
+            and not gamedays.filtered(
+                lambda day: day.state in ("scheduled", "open", "closed")
+            ),
+            "remaining_issues": [
+                issue
+                for issue in issues
+                if issue.get("key") != primary_action.get("key")
+            ],
             "current_step": current["key"],
             "current_label": current["label"],
             "current_issue": current_issue,
@@ -588,7 +616,11 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                     else (
                         _("Planning is complete; operational follow-up remains.")
                         if operational_blockers
-                        else (_("Some operational checks are unavailable to your role.") if unchecked else _("Planning and current operational checks are ready."))
+                        else (
+                            _("Some operational checks are unavailable to your role.")
+                            if unchecked
+                            else _("Planning and current operational checks are ready.")
+                        )
                     )
                 ),
             },
@@ -596,12 +628,16 @@ class FederationCompetitionEditionPlannerExtension(models.Model):
                 "sports_federation_base.group_federation_advanced_operator"
             ),
             "operations": {
-                "next_matchday": {
-                    "id": next_matchday.id,
-                    "name": next_matchday.display_name,
-                    "date": next_matchday.date,
-                    "state": next_matchday.state,
-                } if next_matchday else False,
+                "next_matchday": (
+                    {
+                        "id": next_matchday.id,
+                        "name": next_matchday.display_name,
+                        "date": next_matchday.date,
+                        "state": next_matchday.state,
+                    }
+                    if next_matchday
+                    else False
+                ),
                 "matchday_count": len(gamedays),
                 "schedule_count": len(schedules),
                 "roster_action_count": roster_action_count,

@@ -65,10 +65,16 @@ class FederationMatchdaySlotGenerationWizard(models.TransientModel):
             values.update(
                 {
                     "matchday_id": matchday.id,
-                    "court_ids": [(6, 0, (
-                        matchday.planning_court_ids
-                        or matchday.venue_id.playing_area_ids.filtered("active")
-                    ).ids)],
+                    "court_ids": [
+                        (
+                            6,
+                            0,
+                            (
+                                matchday.planning_court_ids
+                                or matchday.venue_id.playing_area_ids.filtered("active")
+                            ).ids,
+                        )
+                    ],
                     "start_hour": matchday.default_day_start_hour,
                     "end_hour": matchday.default_day_end_hour,
                     "slot_duration_minutes": matchday.default_slot_duration_minutes,

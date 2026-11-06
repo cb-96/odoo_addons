@@ -217,7 +217,6 @@ class TestStageGraphEngine(TransactionCase):
                 }
             )
 
-
     def test_manager_can_freeze_stage_standing_lines_but_not_modify_them(self):
         stage = self.env["federation.structure.stage"].create(
             {
@@ -238,9 +237,7 @@ class TestStageGraphEngine(TransactionCase):
                 "include_in_official_standings": True,
             }
         )
-        manager_group = self.env.ref(
-            "sports_federation_base.group_federation_manager"
-        )
+        manager_group = self.env.ref("sports_federation_base.group_federation_manager")
         designer_group = self.env.ref(
             "sports_federation_format.group_competition_designer"
         )
@@ -275,12 +272,16 @@ class TestStageGraphEngine(TransactionCase):
             self.env.ref("sports_federation_base.group_federation_user"),
             self.env.ref("sports_federation_format.group_competition_designer"),
         ]
-        designer = self.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Competition Designer Read Test",
-                "login": "competition.designer.read@example.invalid",
-                "group_ids": [(6, 0, [group.id for group in groups])],
-            }
+        designer = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Competition Designer Read Test",
+                    "login": "competition.designer.read@example.invalid",
+                    "group_ids": [(6, 0, [group.id for group in groups])],
+                }
+            )
         )
 
         for model_name in (

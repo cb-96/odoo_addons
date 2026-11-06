@@ -1,7 +1,7 @@
 import base64
 
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import ValidationError
 
 
 class FederationPlayerParentalApprovalPortal(models.Model):
@@ -53,7 +53,9 @@ class FederationPlayerParentalApprovalPortal(models.Model):
         )
         if pending:
             raise ValidationError(
-                _("A parental approval for this player is already awaiting federation review.")
+                _(
+                    "A parental approval for this player is already awaiting federation review."
+                )
             )
 
         approval_values = {

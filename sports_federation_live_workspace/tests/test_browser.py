@@ -1,4 +1,5 @@
 """Real backend client journeys, executed only on an installed Odoo database."""
+
 from odoo.tests.common import HttpCase, tagged
 from .test_commands import LiveFixture
 
@@ -26,10 +27,14 @@ class TestWorkspaceBrowser(LiveFixture, HttpCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.match._competition_workflow_edition().write({"court_scoring_mode": "aggregate"})
+        cls.match._competition_workflow_edition().write(
+            {"court_scoring_mode": "aggregate"}
+        )
 
     def test_court_save_offline_capture_and_sync(self):
-        self.browser_js("/odoo/action-sports_federation_live_workspace.action_run_court", HELPERS + """
+        self.browser_js(
+            "/odoo/action-sports_federation_live_workspace.action_run_court",
+            HELPERS + """
 (async () => {
     await wait(()=>document.querySelectorAll('.sf-score').length===2);
     change(document.querySelectorAll('.sf-score')[0],2); change(document.querySelectorAll('.sf-score')[1],1);
@@ -61,12 +66,22 @@ class TestWorkspaceBrowser(LiveFixture, HttpCase):
     if(Number(document.querySelectorAll('.sf-score')[0].value)!==3) throw new Error('Synchronised score lost');
     console.log('test successful');
 })().catch(error=>console.error(error));
-""", login=self.operator.login, timeout=90)
+""",
+            login=self.operator.login,
+            timeout=90,
+        )
 
     def test_visual_preview_and_apply(self):
-        action = self.env["ir.actions.client"].create({"name": "Visual test", "tag": "federation_visual_plan",
-            "context": repr({"active_id": self.schedule.id})})
-        self.browser_js("/odoo/action-%s" % action.id, HELPERS + """
+        action = self.env["ir.actions.client"].create(
+            {
+                "name": "Visual test",
+                "tag": "federation_visual_plan",
+                "context": repr({"active_id": self.schedule.id}),
+            }
+        )
+        self.browser_js(
+            "/odoo/action-%s" % action.id,
+            HELPERS + """
 (async () => {
     await wait(()=>document.querySelector('.sf-timeline table'));
     button('Preview automatic schedule').click();
@@ -79,4 +94,7 @@ class TestWorkspaceBrowser(LiveFixture, HttpCase):
     if(!document.querySelector('.sf-timeline table').textContent.includes('vs')) throw new Error('Applied fixtures not displayed');
     console.log('test successful');
 })().catch(error=>console.error(error));
-""", login=self.operator.login, timeout=90)
+""",
+            login=self.operator.login,
+            timeout=90,
+        )

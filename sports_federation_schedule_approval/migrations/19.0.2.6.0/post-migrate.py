@@ -10,8 +10,7 @@ retroactively. Matches that already have a playing area keep it.
 
 
 def migrate(cr, version):
-    cr.execute(
-        """
+    cr.execute("""
         UPDATE federation_match m
            SET playing_area_id = a.id,
                venue_id = a.venue_id
@@ -20,14 +19,11 @@ def migrate(cr, version):
          WHERE s.id = COALESCE(m.operational_slot_id, m.published_slot_id)
            AND m.schedule_publication_id IS NOT NULL
            AND m.playing_area_id IS NULL
-        """
-    )
-    cr.execute(
-        """
+        """)
+    cr.execute("""
         UPDATE federation_match
            SET state = 'scheduled'
          WHERE state = 'draft'
            AND schedule_publication_id IS NOT NULL
            AND published_slot_id IS NOT NULL
-        """
-    )
+        """)

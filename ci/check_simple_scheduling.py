@@ -33,7 +33,9 @@ def check_default_screen():
             errors.append("simple_scheduling_views.xml lacks %r." % needle)
     if re.search(r"<xpath[^>]*//notebook[^>]*>\s*<attribute name=\"groups\"", text):
         errors.append("The schedule notebook itself must never be group gated.")
-    if re.search(r"page\[@name=.assignments.\][^<]*>\s*<attribute name=\"groups\"", text):
+    if re.search(
+        r"page\[@name=.assignments.\][^<]*>\s*<attribute name=\"groups\"", text
+    ):
         errors.append("The Assignments page must stay available to every planner.")
     if ADVANCED not in text:
         errors.append("Calendar fixtures must be gated to advanced operators.")

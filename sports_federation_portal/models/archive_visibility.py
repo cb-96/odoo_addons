@@ -1,4 +1,5 @@
 """Apply the archived-competition exclusion to tasks and archive actions."""
+
 from odoo import api, models
 
 
@@ -32,5 +33,7 @@ class TournamentArchiveTasks(models.Model):
     def write(self, values):
         result = super().write(values)
         if "active" in values and not values["active"]:
-            self.env["federation.portal.archive.scope"].close_tasks_for_divisions(self.ids)
+            self.env["federation.portal.archive.scope"].close_tasks_for_divisions(
+                self.ids
+            )
         return result

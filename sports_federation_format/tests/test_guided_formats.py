@@ -15,13 +15,21 @@ class TestGuidedFormats(TransactionCase):
             [{"name": "Format Team %s" % i, "club_id": club.id} for i in range(1, 11)]
         )
         season = cls.env["federation.season"].create(
-            {"name": "Format 26-27", "date_start": "2026-09-01", "date_end": "2027-06-30"}
+            {
+                "name": "Format 26-27",
+                "date_start": "2026-09-01",
+                "date_end": "2027-06-30",
+            }
         )
         competition = cls.env["federation.competition"].create(
             {"name": "Format League", "competition_type": "league"}
         )
         cls.edition = cls.env["federation.competition.edition"].create(
-            {"name": "Format Edition", "competition_id": competition.id, "season_id": season.id}
+            {
+                "name": "Format Edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+            }
         )
         cls.division = cls.env["federation.tournament"].create(
             {
@@ -76,11 +84,17 @@ class TestGuidedFormats(TransactionCase):
             [1, 2, 3, 4, 5, 6],
         )
         # Group winners take seeds 1 and 2.
-        winners = knockout.incoming_progression_ids.filtered(lambda edge: edge.rank_from == 1)
+        winners = knockout.incoming_progression_ids.filtered(
+            lambda edge: edge.rank_from == 1
+        )
         self.assertEqual(sorted(winners.mapped("target_seed_from")), [1, 2])
-        playable = structure.fixture_ids.filtered(lambda fixture: fixture._is_schedulable())
+        playable = structure.fixture_ids.filtered(
+            lambda fixture: fixture._is_schedulable()
+        )
         self.assertEqual(len(playable), structure.estimated_fixture_count)
-        self.assertTrue(any("Group" in name for name in knockout.stage_fixture_ids.mapped("name")))
+        self.assertTrue(
+            any("Group" in name for name in knockout.stage_fixture_ids.mapped("name"))
+        )
 
     def test_split_season_creates_placeholder_round_robins(self):
         structure = self._structure(
@@ -96,7 +110,9 @@ class TestGuidedFormats(TransactionCase):
         self.assertEqual(len(bottom.stage_fixture_ids), 6)
         self.assertEqual(top.carryover_policy, "full_points")
         self.assertEqual((bottom.final_rank_from, bottom.final_rank_to), (7, 10))
-        self.assertTrue(all(fixture._is_schedulable() for fixture in top.stage_fixture_ids))
+        self.assertTrue(
+            all(fixture._is_schedulable() for fixture in top.stage_fixture_ids)
+        )
         self.assertIn("#1", " ".join(top.stage_fixture_ids.mapped("name")))
         self.assertEqual(top.graph_state, "waiting")
         self.assertEqual(structure.estimated_fixture_count, 66)

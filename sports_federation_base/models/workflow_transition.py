@@ -66,9 +66,7 @@ class FederationWorkflowTransition(models.AbstractModel):
                     _("Separation of duties prevents this transition.")
                 )
 
-        previous_states = {
-            str(record.id): record[state_field] for record in records
-        }
+        previous_states = {str(record.id): record[state_field] for record in records}
         transition_values = dict(values or {})
         transition_values[state_field] = target_state
         if writer:

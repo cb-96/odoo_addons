@@ -75,7 +75,10 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
                 candidate = (max(dates), len(dates) > 1)
                 if bound is None or candidate > bound:
                     bound = candidate
-            for source in (fixture.home_source_fixture_id, fixture.away_source_fixture_id):
+            for source in (
+                fixture.home_source_fixture_id,
+                fixture.away_source_fixture_id,
+            ):
                 date = placed_dates.get(source.id) if source else None
                 if date and (bound is None or (date, False) > bound):
                     bound = (date, False)
@@ -88,11 +91,6 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
             day_date = date_by_day[day_id]
             return day_date > date if strictly_after else day_date >= date
 
-        bracket_stage_ids = {
-            fixture.stage_id.id
-            for fixture in fixtures
-            if fixture.home_source_fixture_id or fixture.away_source_fixture_id
-        }
         round_days = defaultdict(set)
 
         def assign(fixture, day_id):
@@ -111,7 +109,9 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
         key_total = Counter()
         key_days = {}
         for fixture in fixtures:
-            playable = sum(1 for day in days if allows(day["matchday_id"], fixture)) or 1
+            playable = (
+                sum(1 for day in days if allows(day["matchday_id"], fixture)) or 1
+            )
             for key in self._team_ids(fixture):
                 key_total[key] += 1
                 key_days[key] = max(key_days.get(key, 0), playable)
@@ -119,7 +119,9 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
 
         def over_limit(day_id, keys):
             limit = team_limit.get(day_id)
-            return bool(limit) and any(team_load[day_id][key] + 1 > limit for key in keys)
+            return bool(limit) and any(
+                team_load[day_id][key] + 1 > limit for key in keys
+            )
 
         def over_share(day_id, keys):
             return any(team_load[day_id][key] + 1 > share.get(key, 1) for key in keys)
@@ -141,7 +143,9 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
         for fixture_id, matchday_id in sorted(pinned.items()):
             fixture = fixtures_by_id.get(fixture_id)
             if not fixture or matchday_id not in remaining:
-                errors.append("A pinned fixture or game day is outside the selected scope.")
+                errors.append(
+                    "A pinned fixture or game day is outside the selected scope."
+                )
                 continue
             if not allows(matchday_id, fixture):
                 errors.append(
@@ -182,28 +186,34 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
                 ]
             # Rest is a hard preference: only days where every team of this
             # match still fits with the required rest, when there are any.
-            rested = [day for day in candidates if not over_limit(day["matchday_id"], keys)]
+            rested = [
+                day for day in candidates if not over_limit(day["matchday_id"], keys)
+            ]
             if rested:
                 candidates = rested
             source_dates = {
                 placed_dates.get(source.id)
-                for source in (fixture.home_source_fixture_id, fixture.away_source_fixture_id)
+                for source in (
+                    fixture.home_source_fixture_id,
+                    fixture.away_source_fixture_id,
+                )
                 if source
             } - {None}
             cohort = (fixture.stage_id.id, fixture.round_number)
-            in_bracket = fixture.stage_id.id in bracket_stage_ids
             candidates.sort(
                 key=lambda day: (
                     # Spread each team's matches evenly over its game days:
                     # first stay within each team's fair share, then use the
                     # day where the busiest team of this match plays least.
                     over_share(day["matchday_id"], keys),
-                    max((team_load[day["matchday_id"]][key] for key in keys), default=0),
+                    max(
+                        (team_load[day["matchday_id"]][key] for key in keys), default=0
+                    ),
                     len(keys & team_days[day["matchday_id"]]),
                     # Prefer a later day for a follow-up round when one is free.
                     day["date"] in source_dates,
-                    # Keep a knockout round on one day.
-                    in_bracket and cohort not in round_days[day["matchday_id"]],
+                    # Keep matches in the same round together when capacity allows.
+                    cohort not in round_days[day["matchday_id"]],
                     -remaining[day["matchday_id"]],
                     day["date"],
                     day["matchday_id"],
@@ -217,8 +227,17 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
                 continue
             assign(fixture, candidates[0]["matchday_id"])
         self._repair_rest(
-            fixtures, pinned, days, assignments, team_load, team_limit, remaining,
-            allows, stage_allows, placed_dates, date_by_day,
+            fixtures,
+            pinned,
+            days,
+            assignments,
+            team_load,
+            team_limit,
+            remaining,
+            allows,
+            stage_allows,
+            placed_dates,
+            date_by_day,
         )
         for stage, count in sorted(
             unplaced_stage.items(), key=lambda item: (item[0].sequence, item[0].id)
@@ -244,7 +263,9 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
             unplaced.items(), key=lambda item: (item[0].display_name or "", item[0].id)
         ):
             playing_days = [
-                day for day in days if allows(day["matchday_id"], _DivisionProbe(division))
+                day
+                for day in days
+                if allows(day["matchday_id"], _DivisionProbe(division))
             ]
             name = division.display_name or "Division"
             if not playing_days:
@@ -266,8 +287,18 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
         }
 
     def _repair_rest(
-        self, fixtures, pinned, days, assignments, team_load, team_limit, remaining,
-        allows, stage_allows, placed_dates, date_by_day,
+        self,
+        fixtures,
+        pinned,
+        days,
+        assignments,
+        team_load,
+        team_limit,
+        remaining,
+        allows,
+        stage_allows,
+        placed_dates,
+        date_by_day,
     ):
         """Move single matches off days where a team has more than rest allows.
 
@@ -284,7 +315,10 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
             if sources:
                 linked_stage_ids.add(fixture.stage_id.id)
                 linked_stage_ids.update(sources.ids)
-            for source in (fixture.home_source_fixture_id, fixture.away_source_fixture_id):
+            for source in (
+                fixture.home_source_fixture_id,
+                fixture.away_source_fixture_id,
+            ):
                 if source:
                     depending_fixture_ids.update((fixture.id, source.id))
 
@@ -395,7 +429,8 @@ class FederationCompetitionScheduleDistributor(models.AbstractModel):
                     continue
                 value = max(
                     value,
-                    len(rounds.get(target.id, ())) + needed(target.id, trail + (stage_id,)),
+                    len(rounds.get(target.id, ()))
+                    + needed(target.id, trail + (stage_id,)),
                 )
             reserve[stage_id] = value
             return value

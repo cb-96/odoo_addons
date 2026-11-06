@@ -12,32 +12,53 @@ class FederationScheduleIntegrity(models.Model):
 
     amendment_impact = fields.Text(compute="_compute_amendment_impact")
 
-    @api.depends("supersedes_id", "assignment_ids.slot_id",
-                 "supersedes_id.assignment_ids.slot_id")
+    @api.depends(
+        "supersedes_id",
+        "assignment_ids.slot_id",
+        "supersedes_id.assignment_ids.slot_id",
+    )
     def _compute_amendment_impact(self):
         for schedule in self:
             if not schedule.supersedes_id:
                 schedule.amendment_impact = False
                 continue
-            before = {a.fixture_id.id: a.slot_id for a in schedule.supersedes_id.assignment_ids}
+            before = {
+                a.fixture_id.id: a.slot_id
+                for a in schedule.supersedes_id.assignment_ids
+            }
             after = {a.fixture_id.id: a.slot_id for a in schedule.assignment_ids}
-            moved = sorted(fid for fid in before.keys() & after.keys()
-                           if before[fid].id != after[fid].id)
+            moved = sorted(
+                fid
+                for fid in before.keys() & after.keys()
+                if before[fid].id != after[fid].id
+            )
             added = sorted(after.keys() - before.keys())
             removed = sorted(before.keys() - after.keys())
-            summary = _("Compared with the original schedule: %(moved)s moved, "
-                        "%(added)s added, %(removed)s removed. "
-                        "The live publication remains unchanged until approval and publication.",
-                        moved=len(moved), added=len(added), removed=len(removed))
+            summary = _(
+                "Compared with the original schedule: %(moved)s moved, "
+                "%(added)s added, %(removed)s removed. "
+                "The live publication remains unchanged until approval and publication.",
+                moved=len(moved),
+                added=len(added),
+                removed=len(removed),
+            )
             fixtures = self.env["federation.fixture"]
-            details = [_("%(fixture)s: %(old)s -> %(new)s",
-                         fixture=fixtures.browse(fid).display_name,
-                         old=before[fid].display_name, new=after[fid].display_name)
-                       for fid in moved[:5]]
-            details += [_("Added: %s", fixtures.browse(fid).display_name)
-                        for fid in added[:5]]
-            details += [_("Removed: %s", fixtures.browse(fid).display_name)
-                        for fid in removed[:5]]
+            details = [
+                _(
+                    "%(fixture)s: %(old)s -> %(new)s",
+                    fixture=fixtures.browse(fid).display_name,
+                    old=before[fid].display_name,
+                    new=after[fid].display_name,
+                )
+                for fid in moved[:5]
+            ]
+            details += [
+                _("Added: %s", fixtures.browse(fid).display_name) for fid in added[:5]
+            ]
+            details += [
+                _("Removed: %s", fixtures.browse(fid).display_name)
+                for fid in removed[:5]
+            ]
             schedule.amendment_impact = "\n".join([summary] + details)
 
     _MUTABLE_STATES = ("draft", "changes_requested")

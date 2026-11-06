@@ -1,4 +1,5 @@
 """Confirm a permanent competition deletion after seeing exactly what goes."""
+
 from html import escape
 
 from odoo import _, api, fields, models
@@ -47,7 +48,9 @@ class FederationCompetitionForceDeleteWizard(models.TransientModel):
                 wizard.preview_html = False
                 wizard.blocked = True
                 continue
-            scope = service.collect(wizard.edition_ids, include_parent=wizard.include_parent)
+            scope = service.collect(
+                wizard.edition_ids, include_parent=wizard.include_parent
+            )
             parts = []
             published = wizard.edition_ids.filtered(
                 lambda edition: "website_published" in edition._fields
@@ -56,15 +59,25 @@ class FederationCompetitionForceDeleteWizard(models.TransientModel):
             if published:
                 parts.append(
                     "<div class='alert alert-danger' role='alert'>%s</div>"
-                    % escape(_("Unpublish from the website first: %(names)s",
-                               names=", ".join(published.mapped("display_name"))))
+                    % escape(
+                        _(
+                            "Unpublish from the website first: %(names)s",
+                            names=", ".join(published.mapped("display_name")),
+                        )
+                    )
                 )
             if scope["blockers"]:
                 parts.append(
                     "<div class='alert alert-danger' role='alert'><p>%s</p><ul>%s</ul></div>"
                     % (
-                        escape(_("Nothing can be deleted because other data depends on it:")),
-                        "".join("<li>%s</li>" % escape(item) for item in scope["blockers"]),
+                        escape(
+                            _(
+                                "Nothing can be deleted because other data depends on it:"
+                            )
+                        ),
+                        "".join(
+                            "<li>%s</li>" % escape(item) for item in scope["blockers"]
+                        ),
                     )
                 )
             warnings = service.warnings(scope)
@@ -72,12 +85,17 @@ class FederationCompetitionForceDeleteWizard(models.TransientModel):
                 parts.append(
                     "<div class='alert alert-warning' role='alert'><p>%s</p><ul>%s</ul></div>"
                     % (
-                        escape(_("This also removes history that is normally kept as evidence:")),
+                        escape(
+                            _(
+                                "This also removes history that is normally kept as evidence:"
+                            )
+                        ),
                         "".join("<li>%s</li>" % escape(item) for item in warnings),
                     )
                 )
             rows = "".join(
-                "<tr><td>%s</td><td class='text-end'>%s</td></tr>" % (escape(label), count)
+                "<tr><td>%s</td><td class='text-end'>%s</td></tr>"
+                % (escape(label), count)
                 for label, count in service.summary(scope)
             )
             parts.append(
@@ -87,8 +105,12 @@ class FederationCompetitionForceDeleteWizard(models.TransientModel):
             )
             parts.append(
                 "<p class='text-muted small'>%s</p>"
-                % escape(_("Clubs, teams, players, licences, seasons, registrations, rosters, "
-                           "venues and referees are kept."))
+                % escape(
+                    _(
+                        "Clubs, teams, players, licences, seasons, registrations, rosters, "
+                        "venues and referees are kept."
+                    )
+                )
             )
             wizard.preview_html = "".join(parts)
             wizard.blocked = bool(scope["blockers"] or published)
@@ -115,7 +137,9 @@ class FederationCompetitionForceDeleteWizard(models.TransientModel):
             "tag": "display_notification",
             "params": {
                 "title": _("Deleted permanently"),
-                "message": _("%(names)s and everything in it were deleted.", names=names),
+                "message": _(
+                    "%(names)s and everything in it were deleted.", names=names
+                ),
                 "type": "success",
                 "next": self._competitions_action(),
             },

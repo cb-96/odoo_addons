@@ -19,17 +19,13 @@ def migrate(cr, version):
     if not cr.fetchone()[0]:
         return
 
-    cr.execute(
-        """
+    cr.execute("""
         SELECT column_name
           FROM information_schema.columns
          WHERE table_schema = 'public'
            AND table_name = 'federation_tournament'
-        """
-    )
-    available_fields = {
-        row[0] for row in cr.fetchall() if row[0] in PLANNER_FIELDS
-    }
+        """)
+    available_fields = {row[0] for row in cr.fetchall() if row[0] in PLANNER_FIELDS}
     if not available_fields:
         return
 
@@ -47,14 +43,12 @@ def migrate(cr, version):
         for field_name in PLANNER_FIELDS
         if field_name in available_fields
     )
-    cr.execute(
-        f"""
+    cr.execute(f"""
         UPDATE federation_tournament
            SET retired_planner_settings =
                COALESCE(retired_planner_settings, '{{}}'::jsonb)
                || jsonb_build_object({json_pairs})
          WHERE {populated_filter}
-        """
-    )
+        """)
     if cr.rowcount:
         _logger.info("Archived planner settings for %s tournament(s).", cr.rowcount)
