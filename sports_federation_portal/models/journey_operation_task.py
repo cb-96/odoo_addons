@@ -103,9 +103,15 @@ class OperationTaskJourneys(models.Model):
         return values
 
     @api.model
-    def sync_for_user(self, user=None):
+    def _task_projection_collectors(self):
+        return super()._task_projection_collectors() + (
+            "_collect_missing_roster_task_specs",
+        )
+
+    @api.model
+    def _collect_missing_roster_task_specs(self, user=None):
+        """Project missing-roster work without creating rosters or tasks."""
         user = user or self.env.user
-        super().sync_for_user(user=user)
         # Missing rosters are sourced from confirmed registration, never created by sync.
         roster_model = self.env["federation.team.roster"]
         registrations = roster_model._portal_get_confirmed_registrations(user=user)
@@ -130,8 +136,7 @@ class OperationTaskJourneys(models.Model):
             ("source_model", "=", "federation.season.registration"),
             ("task_type", "=", "roster_readiness"),
         ]
-        self._sync_specs(specs, scope)
-        return self.sudo().search(self._portal_get_domain(user) + [("state", "!=", "done")])
+        return specs, scope
 
     @api.depends("state", "audience", "source_model", "source_record_id")
     def _compute_journey_presentation(self):

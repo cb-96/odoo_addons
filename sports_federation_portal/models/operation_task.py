@@ -27,6 +27,7 @@ class FederationOperationTask(models.Model):
             ("roster_readiness", "Roster readiness"),
             ("parental_consent", "Parental consent"),
             ("gameday_lineup", "Game-day lineup"),
+            ("lineup_review", "Review game-day line-up"),
             ("referee_duty", "Club referee duty"),
             ("result_review", "Result follow-up"),
         ],
@@ -120,11 +121,6 @@ class FederationOperationTask(models.Model):
     )
 
 
-
-    @api.model
-    def _sync_specs(self, specs, scope_domain):
-        """Compatibility boundary; federation.task.projection owns writes."""
-        return self.env["federation.task.projection"]._apply(specs, scope_domain)
 
     @api.model
     def _portal_get_domain(self, user=None):

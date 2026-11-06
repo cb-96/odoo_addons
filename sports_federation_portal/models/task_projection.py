@@ -1,7 +1,9 @@
 from datetime import datetime, time, timedelta
 
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.osv import expression
+
+from .. import task_policy
 
 
 
@@ -224,13 +226,13 @@ class FederationOperationTaskExtension(models.Model):
 
 
     @api.model
-    def _sync_for_user_legacy(self, user=None):
-        """Synchronise currently actionable source records for one user."""
+    def _collect_domain_task_specs(self, user=None):
+        """Return domain specifications and cleanup scope without writing records."""
         user = user or self.env.user
         is_manager = user.has_group("sports_federation_base.group_federation_manager")
         club_ids = self._portal_club_ids(user) if not is_manager else []
         if not is_manager and not club_ids:
-            return self.browse([])
+            return [], [("id", "=", 0)]
         specs = []
         # Archived competitions produce no work: their sources are skipped,
         # so their existing tasks fall out of the specs and are closed below.
@@ -364,23 +366,25 @@ class FederationOperationTaskExtension(models.Model):
                     fields.Datetime.to_datetime(sheet.match_kickoff).date(),
                 )
             scope = scope or ("sheet", sheet.id)
-            lineup_groups.setdefault((sheet.team_id.id, scope), sheet)
+            key = (sheet.team_id.id, scope)
+            current = lineup_groups.get(key)
+            if not current or (current.state == "submitted" and sheet.state == "draft"):
+                lineup_groups[key] = sheet
         for (team_id, scope), sheet in lineup_groups.items():
-            status = (
-                _("Submit the shared lineup for this game day.")
-                if sheet.state == "draft"
-                else _("The shared lineup is waiting for federation approval.")
-            )
+            task_type, audience = task_policy.lineup_task(sheet.state)
+            reviewing = audience == "manager"
             spec = self._task_spec(
                 sheet,
-                "gameday_lineup",
-                "club",
-                _("Game-day lineup: %(team)s")
+                task_type,
+                audience,
+                (_("Review game-day line-up: %(team)s") if reviewing
+                 else _("Game-day lineup: %(team)s"))
                 % {"team": sheet.team_id.display_name},
-                status,
-                _("Prepare game-day lineup"),
+                (_("The game-day line-up was submitted and needs approval.")
+                 if reviewing else _("Submit the shared lineup for this game day.")),
+                (_("Approve or return the line-up") if reviewing
+                 else _("Prepare game-day lineup")),
                 priority="1",
-                # The line-up is due when the game day starts.
                 deadline=sheet.match_kickoff or False,
             )
             spec["source_key"] = "gameday-lineup:%s:%s" % (team_id, repr(scope))
@@ -487,26 +491,28 @@ class FederationOperationTaskExtension(models.Model):
 
         scope_domain = [] if is_manager else [("responsible_club_id", "in", club_ids)]
         scope_domain += [("audience", "=", "manager" if is_manager else "club")]
-        self._sync_specs(specs, scope_domain)
-        return self.sudo().search(scope_domain + [("state", "!=", "done")])
+        # A handoff changes audience on the same key. Include both audiences
+        # for line-ups so approval/locking also closes existing reviewer work.
+        lineup_scope = [("task_type", "in", ("gameday_lineup", "lineup_review"))]
+        if not is_manager:
+            lineup_scope += [("responsible_club_id", "in", club_ids)]
+        return specs, expression.OR([scope_domain, lineup_scope])
+
+    @api.model
+    def _task_projection_collectors(self):
+        """Owning addons extend this list with read-only collectors via super()."""
+        return ("_collect_domain_task_specs",)
 
     @api.model
     def _project_task_specs(self, user=None):
-        """Collect existing domain specs without writing; consumed by the service."""
-        captured = {}
-        original = type(self)._sync_specs
-
-        def capture(recordset, specs, scope_domain):
-            captured["specs"] = specs
-            captured["domain"] = scope_domain
-            return True
-
-        type(self)._sync_specs = capture
-        try:
-            self._sync_for_user_legacy(user=user)
-        finally:
-            type(self)._sync_specs = original
-        return captured.get("specs", []), captured.get("domain", [("id", "=", 0)])
+        """Collect all specifications before the synchronization service writes."""
+        user = user or self.env.user
+        specs, scopes = [], []
+        for name in self._task_projection_collectors():
+            collected, scope = getattr(self, name)(user=user)
+            specs.extend(collected)
+            scopes.append(scope)
+        return specs, expression.OR(scopes) if scopes else [("id", "=", 0)]
 
     @api.model
     def sync_for_user(self, user=None):

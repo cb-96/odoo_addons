@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
@@ -315,3 +316,61 @@ class TestFederationOperationTasks(TransactionCase):
         task_model.sync_for_user(user=self.manager)
 
         self.assertEqual(task_model.search_count([("source_key", "=", source_key)]), 1)
+
+    def test_task_collection_does_not_mutate_tasks_or_shared_methods(self):
+        Task = self.env["federation.operation.task"]
+        collector = type(Task)._project_task_specs
+        with patch.object(type(Task), "create", side_effect=AssertionError("collector created task")), \
+                patch.object(type(Task), "write", side_effect=AssertionError("collector wrote task")), \
+                patch.object(type(Task), "unlink", side_effect=AssertionError("collector deleted task")):
+            first, first_scope = Task._project_task_specs(user=self.manager)
+            second, second_scope = Task._project_task_specs(user=self.manager)
+        self.assertIs(type(Task)._project_task_specs, collector)
+        self.assertEqual(first, second)
+        self.assertEqual(first_scope, second_scope)
+        self.assertFalse(hasattr(Task, "_sync_for_user_legacy"))
+        self.assertFalse(hasattr(Task, "_sync_specs"))
+
+    def test_lineup_handoff_uses_one_writer_and_preserves_task_identity(self):
+        away = self.env["federation.team"].create({
+            "name": "Projection opponent", "club_id": self.club.id,
+        })
+        match = self.env["federation.match"].create({
+            "tournament_id": self.tournament.id,
+            "home_team_id": self.team.id, "away_team_id": away.id,
+            "date_scheduled": "2026-06-01 10:00:00", "state": "scheduled",
+        })
+        Task = self.env["federation.operation.task"]
+        Service = self.env["federation.task.projection"]
+        sheets = self.env["federation.match.sheet"].search([
+            ("match_id", "=", match.id), ("team_id", "=", self.team.id),
+        ])
+        self.assertTrue(sheets)
+        Task.sync_for_user(user=self.manager)
+        task = Task.search([
+            ("match_id", "=", match.id), ("journey_team_id", "=", self.team.id),
+            ("task_type", "=", "gameday_lineup"), ("state", "!=", "done"),
+        ])
+        self.assertEqual(len(task), 1)
+        identity, key = task.id, task.source_key
+        # Seed lifecycle states to isolate projection from eligibility commands.
+        sheets.write({"state": "submitted"})
+        original = type(Service)._apply
+        calls = []
+
+        def apply_once(recordset, specs, scope):
+            calls.append([item["source_key"] for item in specs])
+            return original(recordset, specs, scope)
+
+        with patch.object(type(Service), "_apply", apply_once):
+            Task.sync_for_user(user=self.manager)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(task.id, identity)
+        self.assertEqual(task.source_key, key)
+        self.assertEqual(task.task_type, "lineup_review")
+        self.assertEqual(task.audience, "manager")
+        Task.sync_for_user(user=self.manager)
+        self.assertEqual(Task.search_count([("source_key", "=", key)]), 1)
+        sheets.write({"state": "approved"})
+        Task.sync_for_user(user=self.manager)
+        self.assertEqual(task.state, "done")

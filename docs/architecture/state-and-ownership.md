@@ -72,3 +72,32 @@ Use the model enums below in code, docs, and tests:
 - Portal roster detail, roster-line edit, and roster-line license paths must resolve ids through the shared portal privilege boundary instead of raw elevated browse calls.
 - Public website routes must enforce `website_published` and the relevant visibility toggle before reading data with `sudo()`, and compatibility redirects must resolve records through those publication-scoped domains up front.
 - State transitions referenced in docs and workflows must match the real selection values in the models.
+
+## Operation-task projection boundary
+
+`federation.operation.task.sync_for_user()` delegates once to
+`federation.task.projection.synchronize()`. The service collects all domain
+specifications before calling `_apply()`, the only synchronization writer.
+Explicit user commands such as acknowledgement remain separate from projection.
+
+Owning addons extend `_task_projection_collectors()` with `super()` and return
+collector method names. Each collector returns `(specs, cleanup_domain)` and
+must not create, update or delete tasks or source records. Cleanup domains are
+combined with OR; an empty result must still return its narrow cleanup domain.
+An unscoped collector returns `[("id", "=", 0)]`, never an unrestricted domain.
+
+Missing-roster tasks are collected from confirmed registrations alongside other
+work. Line-up handoffs use the same team/game-day source key: draft sheets
+produce club work, submitted sheets produce manager review work, and approved
+or locked sheets produce no task. Cleanup includes both line-up audiences.
+Archived roster and registration specifications are excluded before applying.
+
+The writer validates the complete specification set before any mutation.
+Invalid or conflicting specifications fail explicitly instead of silently
+closing existing work. Identical duplicate specifications are applied once.
+No collector temporarily replaces methods on the shared Odoo model class.
+
+Run `python ci/check_task_projection.py` and
+`python -m unittest ci.test_task_projection` for structural and isolated
+behavioral checks. Portal ORM regressions in `test_operation_tasks` and
+`test_role_journeys` must also run in an installed Odoo test database.

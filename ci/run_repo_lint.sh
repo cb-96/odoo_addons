@@ -155,6 +155,7 @@ else
     echo "[lint] Repository-wide report is clean."
 fi
 
-python3 -m unittest ci.test_minimal_ux ci.test_complete_ux || exit 1
+python3 ci/check_task_projection.py || exit 1
+python3 -m unittest ci.test_minimal_ux ci.test_complete_ux ci.test_task_projection || exit 1
 
 exit 0

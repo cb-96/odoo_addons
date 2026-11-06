@@ -33,6 +33,31 @@ class TestJourneyTasks(TransactionCase):
         })
         self.rep.write({"role_type_id": scoped_role.id, "team_id": self.team.id})
 
+    def test_missing_roster_collector_joins_single_write_pass(self):
+        from unittest.mock import patch
+        Task = self.env["federation.operation.task"]
+        Service = self.env["federation.task.projection"]
+        specs, scope = Task._project_task_specs(user=self.user)
+        self.assertTrue(scope)
+        self.assertTrue(any(
+            item["source_model"] == self.registration._name
+            and item["source_record_id"] == self.registration.id for item in specs
+        ))
+        original = type(Service)._apply
+        calls = []
+
+        def apply_once(recordset, specs, scope):
+            calls.append(specs)
+            return original(recordset, specs, scope)
+
+        with patch.object(type(Service), "_apply", apply_once):
+            Task.sync_for_user(user=self.user)
+        self.assertEqual(len(calls), 1)
+        self.assertTrue(any(
+            item["source_model"] == self.registration._name
+            and item["source_record_id"] == self.registration.id for item in calls[0]
+        ))
+
     def test_missing_roster_sync_does_not_create_source(self):
         Task = self.env["federation.operation.task"]
         before = self.env["federation.team.roster"].search_count([("team_id", "=", self.team.id)])
