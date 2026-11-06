@@ -159,7 +159,7 @@ class TestFinanceBridge(TransactionCase):
             {
                 "name": "Test Fee",
                 "code": "TESTFEE",
-                "category": "registration",
+                "category": "reimbursement",
                 "default_amount": 100.00,
             }
         )
@@ -167,7 +167,7 @@ class TestFinanceBridge(TransactionCase):
             {
                 "name": "Test Event",
                 "fee_type_id": fee_type.id,
-                "event_type": "charge",
+                "event_type": "reimbursement",
                 "amount": 100.00,
                 "source_model": "federation.club",
                 "source_res_id": self.club.id,
@@ -210,7 +210,7 @@ class TestFinanceBridge(TransactionCase):
             {
                 "name": "Handoff Fee",
                 "code": "HANDOFF",
-                "category": "registration",
+                "category": "reimbursement",
                 "default_amount": 125.00,
             }
         )
@@ -218,7 +218,7 @@ class TestFinanceBridge(TransactionCase):
             {
                 "name": "Handoff Event",
                 "fee_type_id": fee_type.id,
-                "event_type": "charge",
+                "event_type": "reimbursement",
                 "amount": 125.00,
                 "source_model": "federation.club",
                 "source_res_id": self.club.id,
@@ -333,25 +333,30 @@ class TestFinanceBridge(TransactionCase):
             }
         )
 
-        first_batch = self.env["federation.finance.event"].get_handoff_export_batch(
-            limit=2
-        )
+        finance_events = self.env["federation.finance.event"]
+        expected_ids = finance_events.search(
+            [], order="create_date desc, id desc"
+        ).ids
+        first_batch = finance_events.get_handoff_export_batch(limit=2)
 
-        self.assertEqual(first_batch["events"].ids, [third.id, second.id])
+        self.assertEqual(first_batch["events"].ids, expected_ids[:2])
+        self.assertEqual(expected_ids[:3], [third.id, second.id, first.id])
         self.assertEqual(
             first_batch["next_cursor"],
             f"{fields.Datetime.to_string(second.create_date)}|{second.id}",
         )
-        self.assertTrue(first_batch["has_more"])
+        self.assertEqual(first_batch["has_more"], len(expected_ids) > 2)
 
-        second_batch = self.env["federation.finance.event"].get_handoff_export_batch(
-            cursor=first_batch["next_cursor"],
-            limit=2,
-        )
+        exported_ids = first_batch["events"].ids[:]
+        cursor = first_batch["next_cursor"]
+        while cursor:
+            batch = finance_events.get_handoff_export_batch(cursor=cursor, limit=2)
+            exported_ids.extend(batch["events"].ids)
+            cursor = batch["next_cursor"]
+            if not batch["has_more"]:
+                self.assertFalse(cursor)
 
-        self.assertEqual(second_batch["events"].ids, [first.id])
-        self.assertFalse(second_batch["has_more"])
-        self.assertFalse(second_batch["next_cursor"])
+        self.assertEqual(exported_ids, expected_ids)
 
     def test_handoff_export_batch_rejects_invalid_limit(self):
         """Test that cursor exports reject invalid limits."""
@@ -398,9 +403,15 @@ class TestFinanceBridge(TransactionCase):
             }
         )
 
-        event = self.env["federation.finance.event"].create_from_source(
-            source_record=registration,
-            fee_type=fee_type,
+        event = self.env["federation.finance.event"].create(
+            {
+                "name": "Manual Registration Fee",
+                "fee_type_id": fee_type.id,
+                "event_type": "charge",
+                "amount": 80.0,
+                "source_model": registration._name,
+                "source_res_id": registration.id,
+            }
         )
 
         self.assertEqual(event.season_id, self.season)

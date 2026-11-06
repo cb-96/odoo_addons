@@ -32,6 +32,8 @@ class FederationResultPortal(FederationPortalBase):
         """Return True if *user* has portal access to *match*; False otherwise."""
         user = user or request.env.user
         clubs = user.portal_club_scope_ids
+        if not request.env["federation.portal.archive.scope"].filter_visible(match):
+            return False
         return (
             match.home_team_id.club_id in clubs or match.away_team_id.club_id in clubs
         )

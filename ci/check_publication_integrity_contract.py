@@ -32,8 +32,8 @@ CHECKS = {
     ],
     "sports_federation_matchday/views/matchday_views.xml": [
         "Open Match Day",
-        "Operational Schedule Change",
-        "Operational Deviations",
+        "Delay or Move Match",
+        "Changes on the day",
         "Close Match Day",
     ],
 }

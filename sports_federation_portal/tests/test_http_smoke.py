@@ -1,7 +1,10 @@
+from datetime import timedelta
+import json
 import re
+import uuid
 from urllib.parse import parse_qs, urlparse
 
-from odoo import SUPERUSER_ID, api
+from odoo import SUPERUSER_ID, api, fields
 from odoo.addons.sports_federation_base.tests.route_inventory import (
     load_route_inventory,
 )
@@ -56,7 +59,7 @@ class TestPortalHttpSmoke(HttpCase):
         self.assertIn(login, response.text)
 
 
-@tagged("-at_install", "post_install")
+@tagged("-at_install", "post_install", "sf_release_confidence")
 class TestPortalWorkflowHttpSmoke(HttpCase):
     @classmethod
     def setUpClass(cls):
@@ -249,12 +252,20 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     }
                 )
             )
-            referee = env["federation.referee"].create(
+            referee_values = {
+                "name": "Portal Official Smoke Referee",
+                "email": "portal.official.smoke@example.com",
+                "certification_level": "national",
+                "user_id": official_user.id,
+            }
+            if "coverage_playing_checked" in env["federation.referee"]._fields:
+                referee_values["coverage_playing_checked"] = True
+            referee = env["federation.referee"].create(referee_values)
+            env["federation.referee.availability"].create(
                 {
-                    "name": "Portal Official Smoke Referee",
-                    "email": "portal.official.smoke@example.com",
-                    "certification_level": "national",
-                    "user_id": official_user.id,
+                    "referee_id": referee.id,
+                    "date_start": "2026-01-01 00:00:00",
+                    "date_end": "2027-01-01 00:00:00",
                 }
             )
             assignment_match = fixture.action_materialize_match()
@@ -268,6 +279,17 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                     "edition_id": edition.id,
                     "date": "2026-12-12",
                     "venue_id": venue.id,
+                }
+            )
+            court = env["federation.playing.area"].create(
+                {"name": "Portal Officiating Smoke Court", "venue_id": venue.id}
+            )
+            slot = env["federation.schedule.slot"].create(
+                {
+                    "matchday_id": matchday.id,
+                    "court_id": court.id,
+                    "start_datetime": "2026-12-12 18:00:00",
+                    "end_datetime": "2026-12-12 18:30:00",
                 }
             )
             schedule = env["federation.schedule"].create(
@@ -308,7 +330,12 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
                 }
             )
             matchday.sudo().write({"current_publication_id": publication.id})
-            assignment_match.write({"schedule_publication_id": publication.id})
+            assignment_match.write(
+                {
+                    "schedule_publication_id": publication.id,
+                    "published_slot_id": slot.id,
+                }
+            )
             assignment = env["federation.match.referee"].create(
                 {
                     "match_id": assignment_match.id,
@@ -504,8 +531,36 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
             "sheet_id": sheet.id,
             "roster_id": roster.id,
             "roster_line_id": roster_line.id,
+            "foreign_roster_id": foreign_roster.id,
             "foreign_line_id": foreign_line.id,
         }
+
+    def test_action_items_recent_task_renders_overdue_status(self):
+        task_name = "Portal action-items overdue status smoke"
+        with self.registry.cursor() as cr:
+            env = api.Environment(cr, SUPERUSER_ID, {})
+            env["federation.operation.task"].create(
+                {
+                    "name": task_name,
+                    "task_type": "roster_readiness",
+                    "audience": "club",
+                    "state": "done",
+                    "completed_on": fields.Datetime.now(),
+                    "deadline": fields.Datetime.now() - timedelta(days=1),
+                    "responsible_club_id": self.team_club.id,
+                    "source_model": "test.portal.http.smoke",
+                    "source_record_id": 1,
+                    "source_key": f"test.portal.http.smoke:{uuid.uuid4().hex}",
+                }
+            )
+            cr.commit()
+
+        self.authenticate(self.team_user.login, "ignored")
+        response = self.url_open("/my/action-items?scope=club&status=recent")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("Internal Server Error", response.text)
+        self.assertIn(task_name, response.text)
 
     def test_my_teams_empty_state_and_create_flow(self):
         self.authenticate(self.team_user.login, "ignored")
@@ -627,18 +682,64 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         self.assertNotIn("Internal Server Error", submit_response.text)
 
     def test_officiating_response_flow_renders_success(self):
+        if "coverage_playing_checked" not in self.env["federation.referee"]._fields:
+            self.skipTest("sports_federation_duty_coverage is not installed")
+
+        assignment = self.env["federation.match.referee"].sudo().browse(
+            self.assignment.id
+        )
+        self.assertTrue(
+            assignment.fixture_id, "Assignment must reference its logical fixture"
+        )
+        self.assertTrue(
+            assignment.publication_id, "Assignment must reference its publication"
+        )
+        self.assertTrue(
+            assignment.is_current_publication,
+            "Assignment publication must be current",
+        )
+        self.assertEqual(assignment.referee_id.user_id, self.official_user)
+        current_publications = (
+            self.env["federation.matchday"]
+            .sudo()
+            .search([("current_publication_id.state", "=", "live")])
+            .mapped("current_publication_id")
+        )
+        self.assertIn(assignment.publication_id, current_publications)
+        listed_assignments = self.env["federation.match.referee"].sudo().search(
+            [
+                ("referee_id.user_id", "=", self.official_user.id),
+                ("fixture_id", "!=", False),
+                ("publication_id", "in", current_publications.ids),
+                ("state", "not in", ["done", "cancelled"]),
+            ]
+        )
+        self.assertIn(assignment, listed_assignments)
         self.authenticate(self.official_user.login, "ignored")
 
-        list_response = self.url_open("/my/referee-assignments")
+        list_response = self.url_open("/my/duty-assignments")
         self.assertEqual(list_response.status_code, 200)
-        self.assertIn("Next step:", list_response.text)
-        self.assertIn("Respond now", list_response.text)
+        self.assertIn("My assignments", list_response.text)
+        self.assertIn(
+            f'href="/my/duty-assignments/{self.assignment.id}?filterby=current"',
+            list_response.text,
+        )
 
-        detail_response = self.url_open(f"/my/referee-assignments/{self.assignment.id}")
+        detail_response = self.url_open(
+            f"/my/duty-assignments/{self.assignment.id}"
+        )
+        signature = re.search(
+            r'name="signature"[^>]*value="([^"]+)"',
+            detail_response.text,
+            re.IGNORECASE | re.DOTALL,
+        )
+        self.assertIsNotNone(signature)
         submit_response = self.url_open(
-            f"/my/referee-assignments/{self.assignment.id}/respond",
+            f"/my/duty-assignments/{self.assignment.id}/respond",
             data={
                 "csrf_token": _extract_csrf_token(detail_response.text),
+                "signature": signature.group(1),
+                "filterby": "current",
                 "action": "confirm",
                 "response_note": "Confirmed from smoke test.",
             },
@@ -646,8 +747,10 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         )
 
         self.assertEqual(submit_response.status_code, 200)
-        self.assertIn("Assignment confirmed.", submit_response.text)
-        self.assertIn("Confirmed from smoke test.", submit_response.text)
+        self.assertIn("Response recorded.", submit_response.text)
+        assignment.invalidate_recordset(["state", "response_note"])
+        self.assertEqual(assignment.state, "confirmed")
+        self.assertEqual(assignment.response_note, "Confirmed from smoke test.")
 
     def test_route_inventory_lists_smoke_covered_portal_routes(self):
         inventory_routes = {
@@ -685,10 +788,20 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
 
         match_sheet_list_response = self.url_open("/my/match-sheets")
         self.assertEqual(match_sheet_list_response.status_code, 200)
-        self.assertIn("Portal Smoke Match Sheet", match_sheet_list_response.text)
+        self.assertIn(
+            "Portal Smoke Workspace Team vs Portal Smoke Opponent Team",
+            match_sheet_list_response.text,
+        )
 
         match_sheet_detail_response = self.url_open(
             f"/my/match-sheets/{data['sheet_id']}"
+        )
+        self.assertEqual(match_sheet_detail_response.status_code, 200)
+        # One form saves roster, staff and players; no separate squad step.
+        self.assertIn("Players for this game day", match_sheet_detail_response.text)
+        self.assertIn(
+            f"/my/match-sheets/{data['sheet_id']}/lineup",
+            match_sheet_detail_response.text,
         )
         match_sheet_prepare_response = self.url_open(
             f"/my/match-sheets/{data['sheet_id']}/prep",
@@ -703,14 +816,79 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         self.assertEqual(match_sheet_prepare_response.status_code, 200)
         self.assertIn("Match-day preparation saved.", match_sheet_prepare_response.text)
 
+        lineup_response = self.url_open(
+            f"/my/match-sheets/{data['sheet_id']}/lineup",
+            data={
+                "csrf_token": _extract_csrf_token(match_sheet_detail_response.text),
+                "roster_id": str(data["roster_id"]),
+                "coach_name": "Portal Smoke Coach",
+                "manager_name": "Portal Smoke Manager",
+                "notes": "Saved through the single line-up form.",
+            },
+            allow_redirects=True,
+        )
+        self.assertEqual(lineup_response.status_code, 200)
+        self.assertIn("Line-up saved.", lineup_response.text)
+
+        # The old preparation queue is the same game-day list now.
         match_day_response = self.url_open("/my/match-day")
         self.assertEqual(match_day_response.status_code, 200)
+        self.assertTrue(match_day_response.url.split("?")[0].endswith("/my/match-sheets"))
         self.assertIn(
             "Portal Smoke Workspace Team vs Portal Smoke Opponent Team",
             match_day_response.text,
         )
-        self.assertIn("Open Sheet", match_day_response.text)
 
+    def test_past_season_rosters_are_collapsed_on_the_roster_page(self):
+        from lxml import html
+
+        self._create_roster_workspace_smoke_data()
+        suffix = type(self)._roster_workspace_smoke_seq
+        with self.registry.cursor() as cr:
+            env = api.Environment(cr, SUPERUSER_ID, {})
+            closed_season = env["federation.season"].create(
+                {
+                    "name": "Portal Smoke Closed Season",
+                    "code": f"PSC{suffix}",
+                    "date_start": "2020-01-01",
+                    "date_end": "2020-12-31",
+                    "state": "closed",
+                }
+            )
+            old_team = env["federation.team"].create(
+                {
+                    "name": "Portal Smoke Past Team",
+                    "club_id": self.season_club.id,
+                    "code": f"PSPT{suffix}",
+                    "category": "senior",
+                    "gender": "male",
+                }
+            )
+            env["federation.team.roster"].create(
+                {
+                    "name": "Portal Smoke Past Roster",
+                    "team_id": old_team.id,
+                    "season_id": closed_season.id,
+                }
+            )
+            cr.commit()
+
+        self.authenticate(self.season_user.login, "ignored")
+        response = self.url_open("/my/rosters")
+        self.assertEqual(response.status_code, 200)
+        tree = html.fromstring(response.text)
+        past = tree.xpath(
+            "//details[summary[contains(., 'Past seasons')]]"
+            "//td[contains(., 'Portal Smoke Past Roster')]"
+        )
+        self.assertTrue(past, "The old roster must be listed under Past seasons.")
+        current = tree.xpath(
+            "//table[caption[contains(., 'Current-season')]]"
+            "//td[contains(., 'Portal Smoke Past Roster')]"
+        )
+        self.assertFalse(current, "The old roster must not clutter the current list.")
+
+    @tagged("-at_install", "post_install", "sf_release_confidence")
     def test_roster_routes_hide_foreign_rosters_and_lines(self):
         data = self._create_roster_workspace_smoke_data()
 
@@ -720,7 +898,33 @@ class TestPortalWorkflowHttpSmoke(HttpCase):
         # Cross-club access now returns 403 Access Denied (not a generic 404)
         self.assertEqual(foreign_roster_response.status_code, 403)
 
-        self.authenticate(self.season_user.login, "ignored")
+        self.authenticate(self.team_user.login, "ignored")
+
+        foreign_roster = self.env["federation.team.roster"].sudo().browse(
+            data["foreign_roster_id"]
+        )
+        original_notes = foreign_roster.notes
+        rpc_response = self.url_open(
+            "/web/dataset/call_kw/federation.team.roster/write",
+            data=json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "method": "call",
+                    "params": {
+                        "model": "federation.team.roster",
+                        "method": "write",
+                        "args": [[data["foreign_roster_id"]], {"notes": "forged"}],
+                        "kwargs": {},
+                    },
+                }
+            ),
+            headers={"Content-Type": "application/json"},
+        )
+        rpc_payload = json.loads(rpc_response.text)
+        self.assertIn("error", rpc_payload)
+        self.assertIn("AccessError", str(rpc_payload["error"]))
+        foreign_roster.invalidate_recordset()
+        self.assertEqual(foreign_roster.notes, original_notes)
 
         foreign_line_response = self.url_open(
             f"/my/rosters/{data['roster_id']}/lines/{data['foreign_line_id']}/edit"

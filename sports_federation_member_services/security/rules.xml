@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+  <record id="rule_person_relationship_company" model="ir.rule">
+    <field name="name">Personal service company scope</field>
+    <field name="model_id" ref="model_federation_person_relationship"/>
+    <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+  </record>
+  <record id="rule_person_membership_company" model="ir.rule">
+    <field name="name">Personal service company scope</field>
+    <field name="model_id" ref="model_federation_person_membership"/>
+    <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+  </record>
+  <record id="rule_person_request_company" model="ir.rule">
+    <field name="name">Personal service company scope</field>
+    <field name="model_id" ref="model_federation_person_request"/>
+    <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+  </record>
+  <record id="request_review_company_rule" model="ir.rule">
+    <field name="name">Review snapshot company scope</field>
+    <field name="model_id" ref="model_federation_person_request_review"/>
+    <field name="domain_force">[('request_id.company_id', 'in', company_ids)]</field>
+  </record>
+  <record id="member_change_company_rule" model="ir.rule">
+    <field name="name">Lifecycle company scope</field>
+    <field name="model_id" ref="model_federation_member_change"/>
+    <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+  </record>
+  <record id="guardian_claim_company_rule" model="ir.rule">
+    <field name="name">Lifecycle company scope</field>
+    <field name="model_id" ref="model_federation_guardian_claim"/>
+    <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+  </record>
+  <record id="identity_decision_company_rule" model="ir.rule">
+    <field name="name">Lifecycle company scope</field>
+    <field name="model_id" ref="model_federation_identity_decision"/>
+    <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+  </record>
+<record id="member_evidence_revision_company_rule" model="ir.rule"><field name="name">Evidence company scope</field><field name="model_id" ref="model_federation_member_evidence_revision"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record></odoo>

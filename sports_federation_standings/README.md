@@ -96,8 +96,9 @@ Key Behaviours
    counted.
 - **Freeze behavior**: frozen standings reject recomputation unless
    ``force_recompute`` is provided in context.
-- **Auto-advance hook**: freezing a standing can trigger pending
-   ``federation.stage.progression`` rules with ``auto_advance = True``.
+- **Stage progression**: this addon does not advance teams. A table linked to a
+   competition stage is frozen through ``sports_federation_format``, which
+   freezes the stage snapshot and applies its progression edges.
 - **Publication is separate**: public visibility is handled by
    ``sports_federation_public_site`` through ``website_published``, not by a
    dedicated published standings state.
@@ -118,3 +119,7 @@ Key Behaviours
 ## Recompute job recovery
 
 Standing recompute jobs use bounded exponential retry. Exhausted jobs move to `Needs operator action`, preserve the correlation ID and error evidence, and can be explicitly returned to the queue by a manager. The queue cron also recovers jobs left in `running` after a worker interruption.
+
+## Finish this stage
+
+The standings form shows the number of approved results included and the number of remaining result blockers. Operators recompute, review the table and tie-break notes, freeze it, and then enable website publication. Freezing is blocked while scoped matches still need completion or approval.

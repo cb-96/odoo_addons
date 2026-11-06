@@ -3,6 +3,27 @@ from odoo.exceptions import AccessError
 
 
 class FederationPortalPrivilege(models.AbstractModel):
+    PORTAL_ACTION_ALLOWLIST = {
+        "federation.competition.entry": {"action_submit", "action_withdraw"},
+        "federation.document.submission": {"action_submit"},
+        "federation.match": {"action_start", "action_done"},
+        "federation.match.club.referee.duty": {"action_nominate"},
+        "federation.match.referee": {"action_confirm", "action_cancel"},
+        "federation.match.sheet": {"action_sync_gameday_roster", "action_set_crossed_out", "action_submit", "unlink"},
+        "federation.season.registration": {"action_submit", "action_cancel"},
+        "federation.team.roster": {"action_activate", "action_set_draft", "action_close", "action_reopen", "unlink"},
+    }
+    PORTAL_CREATE_FIELDS = {
+        "federation.competition.entry": {"registration_window_id", "team_id", "club_id", "notes"},
+        "federation.document.submission": {"requirement_id", "partner_id", "club_id", "player_id", "official_id", "attachment_id", "name", "notes"},
+        "federation.match.sheet.line": {"match_sheet_id", "player_id", "roster_line_id", "shirt_number", "is_captain", "is_goalkeeper", "crossed_out"},
+        "federation.parental.approval": {"player_id", "guardian_id", "guardian_name", "guardian_email", "state", "notes"},
+        "federation.player": {"partner_id", "first_name", "last_name", "birth_date", "gender", "club_id", "public_visible"},
+        "federation.season.registration": {"season_id", "club_id", "team_id", "state", "notes"},
+        "federation.team": {"name", "club_id", "season_id", "category_id", "gender"},
+        "federation.team.roster": {"team_id", "club_id", "season_id", "competition_id", "game_day_id", "state", "name"},
+        "federation.team.roster.line": {"roster_id", "player_id", "license_id", "shirt_number", "is_captain"},
+    }
     _name = "federation.portal.privilege"
     _description = "Federation Portal Privilege Boundary"
 
@@ -38,9 +59,18 @@ class FederationPortalPrivilege(models.AbstractModel):
         return records.with_user(user).sudo()
 
     @api.model
-    def portal_create(self, model_env, values, user=None):
-        """Create a record through the shared portal privilege boundary."""
+    def portal_create(self, model_env, values, user=None, allowed_fields=None, scope_domain=None):
+        """Create through a deny-by-default model and field capability."""
+        policy = self.PORTAL_CREATE_FIELDS.get(model_env._name)
+        if not policy:
+            raise AccessError(_("Portal creation is not allowed for this model."))
+        effective = policy & set(allowed_fields or policy)
+        rejected = set(values) - effective
+        if rejected:
+            raise AccessError(_("Portal creation rejected unsupported fields: %(fields)s", fields=", ".join(sorted(rejected))))
         created_records = self.elevate(model_env, user=user).create(values)
+        if scope_domain:
+            self._assert_portal_owns(created_records, scope_domain, user=user)
         self._log_portal_audit(
             event_type="portal_create",
             description=_("Created through the portal privilege boundary."),
@@ -91,10 +121,9 @@ class FederationPortalPrivilege(models.AbstractModel):
                     "Portal call operations must provide an explicit ownership scope domain."
                 )
             )
-        if not method_name or method_name.startswith("_"):
-            raise AccessError(
-                _("Private model methods cannot be invoked through the portal.")
-            )
+        allowed_actions = self.PORTAL_ACTION_ALLOWLIST.get(records._name, set())
+        if method_name not in allowed_actions:
+            raise AccessError(_("This action is not permitted through the portal privilege boundary."))
         self._assert_portal_owns(records, scope_domain, user=user)
         privileged_records = self.elevate(records, user=user)
         method = getattr(privileged_records, method_name, None)
@@ -111,8 +140,17 @@ class FederationPortalPrivilege(models.AbstractModel):
         return result
 
     @api.model
+    def _without_archived_competitions(self, model_env, domain):
+        """Records of archived competitions are never part of a portal scope."""
+        exclusion = self.env["federation.portal.archive.scope"].exclusion_domain(
+            model_env._name
+        )
+        return list(domain or []) + exclusion
+
+    @api.model
     def portal_search(self, model_env, domain, user=None, **kwargs):
         """Search through the shared portal privilege boundary."""
+        domain = self._without_archived_competitions(model_env, domain)
         return self.elevate(model_env, user=user).search(domain, **kwargs)
 
     @api.model
@@ -127,6 +165,7 @@ class FederationPortalPrivilege(models.AbstractModel):
     @api.model
     def portal_search_count(self, model_env, domain, user=None, **kwargs):
         """Count records through the shared portal privilege boundary."""
+        domain = self._without_archived_competitions(model_env, domain)
         return self.elevate(model_env, user=user).search_count(domain, **kwargs)
 
     @api.model
@@ -138,7 +177,8 @@ class FederationPortalPrivilege(models.AbstractModel):
 
         privileged_records = self.elevate(records, user=user)
         allowed_count = privileged_records.search_count(
-            list(domain) + [("id", "in", records.ids)]
+            self._without_archived_competitions(records, domain)
+            + [("id", "in", records.ids)]
         )
         if allowed_count != len(records):
             raise AccessError(access_message)

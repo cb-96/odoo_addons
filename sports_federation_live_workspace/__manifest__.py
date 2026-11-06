@@ -1,0 +1,38 @@
+{
+    "name": "Court Operations and Visual Planning",
+    "version": "19.0.1.6.2",
+    "license": "LGPL-3",
+    "depends": [
+        "web",
+        "sports_federation_duty_coverage",
+        "sports_federation_result_control",
+        "sports_federation_matchday",
+        "sports_federation_scheduling",
+    ],
+    "data": [
+        "security/ir.model.access.csv",
+        "security/rules.xml",
+        "views/workspaces.xml",
+        "views/mobile_matchday.xml",
+        "views/season_board_views.xml",
+    ],
+    "assets": {
+        "web.assets_frontend": [
+            "sports_federation_live_workspace/static/src/workspaces.scss"
+        ],
+        "web.assets_backend": [
+            "sports_federation_live_workspace/static/src/court_cache.js",
+            "sports_federation_live_workspace/static/src/mobile_recovery.js",
+            "sports_federation_live_workspace/static/src/visual_helpers.js",
+            "sports_federation_live_workspace/static/src/workspaces.js",
+            "sports_federation_live_workspace/static/src/workspaces.xml",
+            "sports_federation_live_workspace/static/src/workspaces.scss",
+            "sports_federation_live_workspace/static/src/season_board_helpers.js",
+            "sports_federation_live_workspace/static/src/season_board.js",
+            "sports_federation_live_workspace/static/src/season_board.xml",
+            "sports_federation_live_workspace/static/src/season_board.scss",
+        ],
+    },
+    "installable": True,
+    "application": False,
+}

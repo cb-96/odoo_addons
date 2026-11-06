@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_federation_suspension_update" model="ir.cron">
+        <field name="name">Discipline: Start and End Suspensions</field>
+        <field name="model_id" ref="model_federation_suspension"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_update_suspensions()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

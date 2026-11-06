@@ -1,0 +1,4 @@
+<odoo>
+<record id="disciplinary_case_company_rule" model="ir.rule"><field name="name">disciplinary_case company isolation</field><field name="model_id" ref="model_federation_disciplinary_case"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
+<record id="sanction_company_rule" model="ir.rule"><field name="name">sanction company isolation</field><field name="model_id" ref="model_federation_sanction"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
+</odoo>

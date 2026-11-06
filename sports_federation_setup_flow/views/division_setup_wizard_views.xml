@@ -1,0 +1,42 @@
+<odoo>
+  <record id="competition_division_setup_wizard_form" model="ir.ui.view">
+    <field name="name">federation.competition.division.setup.wizard.form</field>
+    <field name="model">federation.competition.division.setup.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Teams &amp; Format">
+        <sheet>
+          <div class="oe_title">
+            <h1>Teams &amp; format</h1>
+            <p class="text-muted">Add a row per division, pick its teams and how it plays. Everything is saved in one step.</p>
+            <p class="text-muted small">Need more than the basics, such as 3 qualifiers per group, a different split point, home &amp; away groups or your own stages? Save first, then use <strong>Format options</strong> for that division in the planner.</p>
+          </div>
+          <field name="line_ids" nolabel="1">
+            <list editable="bottom">
+              <field name="name"/>
+              <field name="category"/>
+              <field name="gender"/>
+              <field name="team_ids" widget="many2many_tags" options="{'no_create': True}"/>
+              <field name="format_type"/>
+              <field name="pool_count" invisible="format_type != 'pool_knockout'"/>
+              <field name="team_count" readonly="1"/>
+              <field name="match_count" readonly="1"/>
+              <field name="feasibility_message" readonly="1" decoration-danger="feasibility_message"/>
+              <!-- Technical domain relay: eligible teams depend on the division rules. -->
+              <field name="eligible_team_ids" column_invisible="1"/>
+              <field name="division_id" column_invisible="1"/>
+            </list>
+          </field>
+          <group>
+            <field name="total_match_count" readonly="1"/>
+          </group>
+          <!-- Technical relay: the edition scopes every line. -->
+          <field name="edition_id" invisible="1"/>
+        </sheet>
+        <footer>
+          <button name="action_apply" type="object" string="Save" class="btn-primary"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

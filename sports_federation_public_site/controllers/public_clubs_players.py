@@ -144,7 +144,7 @@ class PublicPlayersController(http.Controller):
             return request.redirect(player.get_public_path())
 
         licenses = player.license_ids.filtered(
-            lambda lic: hasattr(lic, "state") and lic.state in ("active", "draft")
+            lambda lic: hasattr(lic, "state") and lic.state == "active"
         )
 
         return request.render(

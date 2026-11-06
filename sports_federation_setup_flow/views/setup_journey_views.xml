@@ -6,61 +6,49 @@
     <field name="arch" type="xml">
       <field name="setup_template" position="attributes">
         <attribute name="string">Competition Type</attribute>
+        <attribute name="nolabel">1</attribute>
       </field>
+      <field name="setup_template" position="before"><label for="setup_template" string="Competition Type"/></field>
+      <field name="competition_id" position="attributes"><attribute name="string">Parent competition</attribute><attribute name="invisible">not show_additional_settings</attribute><attribute name="placeholder">Created from the name</attribute></field>
+      <field name="season_id" position="attributes"><attribute name="string">Season</attribute><attribute name="invisible">not show_additional_settings</attribute><attribute name="placeholder">Derived from the start date</attribute></field>
+      <field name="name" position="attributes"><attribute name="string">Competition name</attribute><attribute name="nolabel">1</attribute></field>
+      <field name="name" position="before"><label for="name" string="Competition name"/></field>
+      <field name="rule_set_id" position="attributes"><attribute name="string">Rule set</attribute><attribute name="invisible">not show_additional_settings</attribute></field>
+      <field name="date_start" position="attributes"><attribute name="string">First game day</attribute><attribute name="nolabel">1</attribute></field>
+      <field name="date_start" position="before"><label for="date_start" string="First game day"/></field>
+      <field name="date_end" position="attributes"><attribute name="string">Last game day</attribute><attribute name="nolabel">1</attribute></field>
+      <field name="date_end" position="before"><label for="date_end" string="Last game day"/></field>
       <field name="setup_template" position="after">
-        <field name="workflow_mode"/>
-        <field name="default_venue_id"/>
+        <field name="show_additional_settings" string="Show additional settings"/>
+
+        <group string="Workflow and responsibility" invisible="not show_additional_settings">
+          <field name="workflow_mode" widget="radio" options="{'horizontal': true}"/>
+          <div class="alert alert-info" role="status">
+            <strong>What this changes</strong>
+            <div><field name="workflow_summary" nolabel="1" readonly="1"/></div>
+          </div>
+          <group string="Planning defaults" col="4" invisible="not show_additional_settings">
+            <field name="default_venue_id"/>
+            <field name="default_start_hour" widget="float_time"/>
+            <field name="default_end_hour" widget="float_time"/>
+            <field name="default_slot_duration_minutes"/>
+          </group>
+        </group>
       </field>
+      <xpath expr="//group[field[@name='registration_open']]" position="attributes"><attribute name="invisible">not show_additional_settings</attribute></xpath>
+      <xpath expr="//page[field[@name='role_line_ids']]" position="attributes"><attribute name="invisible">not show_additional_settings</attribute></xpath>
+      <xpath expr="//page[field[@name='role_line_ids']]" position="inside">
+        <div class="alert alert-info" role="status">These assignments route responsibility within this competition; they do not grant record access. In Settings &gt; Users &amp; Companies &gt; Users, grant the needed global groups too: Federation User as the base, Registration Manager for team and participant setup, Calendar Planner for game days, Schedule Planner for working schedules, and Schedule Approver for independent review.</div>
+      </xpath>
+      <field name="code" position="attributes"><attribute name="column_invisible">not parent.show_additional_settings</attribute></field>
+      <field name="category" position="attributes"><attribute name="string">Category</attribute><attribute name="optional">show</attribute></field>
+      <field name="gender" position="attributes"><attribute name="string">Gender</attribute><attribute name="optional">show</attribute></field>
+      <field name="tournament_type" position="attributes"><attribute name="column_invisible">not parent.show_additional_settings</attribute></field>
+      <!-- Technical fields kept invisible for view modifiers and domains. -->
+      <xpath expr="//footer" position="inside"><button name="action_save_creation_draft" type="object" string="Save Draft"/><field name="creation_draft_id" invisible="1"/></xpath>
       <button name="action_create_competition" position="attributes">
         <attribute name="string">Create and Continue</attribute>
       </button>
-    </field>
-  </record>
-
-  <record id="competition_edition_form_setup_journey" model="ir.ui.view">
-    <field name="name">federation.competition.edition.form.setup.journey</field>
-    <field name="model">federation.competition.edition</field>
-    <field name="inherit_id" ref="sports_federation_setup_flow.competition_edition_form_setup_flow"/>
-    <field name="arch" type="xml">
-      <xpath expr="//form/header" position="inside">
-        <button name="action_open_clone_setup" type="object" string="Copy Setup" class="btn-secondary" groups="sports_federation_base.group_federation_manager"/>
-      </xpath>
-    </field>
-  </record>
-
-  <record id="competition_gameday_setup_setup_journey" model="ir.ui.view">
-    <field name="name">federation.competition.gameday.setup.setup.journey</field>
-    <field name="model">federation.competition.gameday.setup.wizard</field>
-    <field name="inherit_id" ref="sports_federation_setup_flow.competition_gameday_setup_form"/>
-    <field name="arch" type="xml">
-      <field name="default_slot_duration_minutes" position="after">
-        <field name="repeat_every_weeks"/>
-        <field name="repeat_count"/>
-        <button name="action_add_recurring_days" type="object" string="Add Recurring Game Days" class="btn-secondary"/>
-        <button name="action_copy_last_day" type="object" string="Copy Last Game Day" class="btn-secondary"/>
-      </field>
-    </field>
-  </record>
-
-  <record id="competition_clone_setup_form" model="ir.ui.view">
-    <field name="name">federation.competition.clone.setup.form</field>
-    <field name="model">federation.competition.clone.setup.wizard</field>
-    <field name="arch" type="xml">
-      <form string="Copy Competition Setup">
-        <group>
-          <field name="source_edition_id"/>
-          <field name="name"/>
-          <field name="season_id"/>
-          <field name="date_start"/>
-          <field name="date_end"/>
-          <field name="copy_gameday_pattern"/>
-          <field name="copy_responsibilities"/>
-        </group>
-        <footer>
-          <button name="action_copy_setup" type="object" string="Copy and Continue" class="btn-primary"/>
-          <button string="Cancel" special="cancel" class="btn-secondary"/>
-        </footer>
-      </form>
     </field>
   </record>
 </odoo>

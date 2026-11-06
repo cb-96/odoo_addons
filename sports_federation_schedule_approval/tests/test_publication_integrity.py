@@ -6,7 +6,7 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 
-@tagged("post_install", "-at_install", "sf_publication")
+@tagged("post_install", "-at_install", "sf_publication", "sf_release_confidence")
 class TestPhase511Integrity(TransactionCase):
     @classmethod
     def setUpClass(cls):
@@ -112,6 +112,12 @@ class TestPhase511Integrity(TransactionCase):
         return schedule, review
 
     def _create_ready_roster(self, team, suffix):
+        if not self.env.get("federation.player") or not self.env.get(
+            "federation.team.roster"
+        ):
+            self.skipTest(
+                "Roster publication checks require the optional people and rosters addons."
+            )
         player = self.env["federation.player"].create(
             {
                 "first_name": f"{suffix} {team.name}",
@@ -234,6 +240,30 @@ class TestPhase511Integrity(TransactionCase):
                 roster._get_readiness_issues(reference_date=self.days[0].date)
             )
 
+    def test_review_and_publication_snapshots_render_readable_assignments(self):
+        schedule, review = self._valid_schedule_review(self.days[0], "readable-snapshot")
+        fixture = schedule.assignment_ids.fixture_id
+        slot = schedule.assignment_ids.slot_id
+        review_summary = str(review.assignment_summary_html)
+
+        self.assertIn(fixture.display_name, review_summary)
+        self.assertIn(slot.court_id.display_name, review_summary)
+        self.assertIn("2026-10-03 09:00:00", review_summary)
+
+        publication = self.env["federation.schedule.publication"].sudo().create(
+            {
+                "schedule_id": schedule.id,
+                "version": 1,
+                "assignment_snapshot": review.assignment_snapshot,
+                "snapshot_digest": review.snapshot_digest,
+                "source_revision": schedule.revision,
+                "review_id": review.id,
+            }
+        )
+
+        self.assertIn(fixture.display_name, str(publication.assignment_summary_html))
+
+    @tagged("post_install", "-at_install", "sf_release_confidence")
     def test_publication_rejects_fixture_added_after_review(self):
         schedule, review = self._valid_schedule_review(
             self.days[0], "expanded-after-review"
@@ -264,6 +294,39 @@ class TestPhase511Integrity(TransactionCase):
 
         self.assertFalse(self.days[0].current_publication_id)
         self.assertEqual(review.state, "pending")
+
+    def test_publication_schedules_the_match_in_its_slot(self):
+        """A published match is scheduled and knows its venue and playing area.
+
+        Matches built from fixtures have no round, so nothing else ever filled
+        in the venue; finance, exports and the public schedule read it from the
+        match.
+        """
+        schedule, review = self._valid_schedule_review(self.days[0], "slot-location")
+        self.env["federation.competition.role.assignment"].sudo().create(
+            {
+                "edition_id": self.edition.id,
+                "role": "schedule_approver",
+                "user_id": self.env.user.id,
+            }
+        )
+        review._write_decision(
+            {"state": "approved", "reviewer_id": self.env.user.id}
+        )
+
+        publication = self.env["federation.schedule.approval.commands"].publish(
+            schedule.id
+        )
+
+        slot = schedule.assignment_ids.slot_id
+        match = self.env["federation.match"].search(
+            [("schedule_publication_id", "=", publication.id)]
+        )
+        self.assertEqual(len(match), 1)
+        self.assertEqual(match.state, "scheduled")
+        self.assertEqual(match.playing_area_id, slot.court_id)
+        self.assertEqual(match.venue_id, self.venue)
+        self.assertEqual(match.date_scheduled, slot.start_datetime)
 
     def test_review_decision_fields_reject_direct_writes(self):
         schedule, review = self._schedule_review(self.days[0], "guard")

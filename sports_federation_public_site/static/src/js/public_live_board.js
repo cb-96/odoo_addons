@@ -25,6 +25,6 @@ for (const button of document.querySelectorAll(".sf-jump-now")) {
 }
 const clock = document.querySelector("#sf-display-clock");
 if (clock) {
-    const tick = () => { clock.textContent = new Intl.DateTimeFormat(undefined, {hour: "2-digit", minute: "2-digit", second: "2-digit"}).format(new Date()); };
+    const tick = () => { clock.textContent = new Intl.DateTimeFormat(undefined, {timeZone: clock.dataset.eventTimezone || "UTC", hour: "2-digit", minute: "2-digit", second: "2-digit"}).format(new Date()); };
     tick(); window.setInterval(tick, 1000);
 }

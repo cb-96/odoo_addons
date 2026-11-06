@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+  <record id="retention_policy_member_evidence" model="federation.retention.policy">
+    <field name="name">Member Evidence Revisions</field>
+    <field name="code">member_evidence_revisions</field>
+    <field name="source_model">federation.member.evidence.revision</field>
+    <field name="expected_interval_hours">24</field>
+  </record>
+  <record id="ir_cron_member_evidence_retention" model="ir.cron">
+    <field name="name">Federation: Member evidence retention</field>
+    <field name="model_id" ref="model_federation_member_evidence_revision"/>
+    <field name="state">code</field>
+    <field name="code">model._cron_purge_evidence()</field>
+    <field name="user_id" ref="base.user_root"/>
+    <field name="interval_number">1</field>
+    <field name="interval_type">days</field>
+    <field name="active" eval="True"/>
+  </record>
+</odoo>

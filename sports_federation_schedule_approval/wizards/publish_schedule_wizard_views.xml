@@ -18,7 +18,7 @@
             <field name="expected_publication_id" invisible="1"/>
           </group>
           <group string="Publication decision">
-            <field name="reason" required="replacement_required" placeholder="Why is the live schedule being replaced?"/>
+            <field name="reason" required="replacement_required" placeholder="Optional note for this publication; required when replacing a live schedule."/>
           </group>
         </sheet>
         <footer>

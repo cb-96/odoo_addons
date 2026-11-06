@@ -1,3 +1,6 @@
+from unittest import mock
+
+from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -236,3 +239,104 @@ class TestAutoClubDutyAssignment(TransactionCase):
             [("match_id", "=", self.matches[0].id)]
         )
         self.assertEqual(first_match_duties.mapped("club_id"), self.clubs[4])
+
+    # ── duties are created when a schedule is published ──────────────────
+
+    def _require_officials(self, count, ask_clubs=True):
+        rule_set = self.env["federation.rule.set"].create(
+            {
+                "name": "Duty Rules %s" % count,
+                "code": "DUTY-RULES-%s-%s" % (count, int(ask_clubs)),
+                "referee_required_count": count,
+                "club_duties_on_publication": ask_clubs,
+            }
+        )
+        self.matches.mapped("tournament_id").write({"rule_set_id": rule_set.id})
+        return rule_set
+
+    def _duties(self):
+        return self.env["federation.match.club.referee.duty"].search(
+            [("match_id", "in", self.matches.ids)]
+        )
+
+    def test_publication_creates_the_required_club_duties(self):
+        self._require_officials(2)
+        commands = self.env["federation.schedule.approval.commands"]
+
+        created = commands._ensure_club_duties(self.matches)
+
+        self.assertEqual(len(created), 2 * len(self.matches))
+        self.assertEqual(set(created.mapped("role")), {"head", "assistant_1"})
+        self.assertTrue(all(duty.state == "open" for duty in created))
+        first = created.filtered(lambda duty: duty.match_id == self.matches[0])
+        self.assertEqual(first.mapped("club_id"), self.clubs[4])
+
+    def test_creating_the_duties_again_adds_nothing(self):
+        self._require_officials(2)
+        commands = self.env["federation.schedule.approval.commands"]
+        commands._ensure_club_duties(self.matches)
+        before = self._duties()
+
+        again = commands._ensure_club_duties(self.matches)
+
+        self.assertFalse(again)
+        self.assertEqual(self._duties(), before)
+
+    def test_late_linked_matches_get_their_duties_too(self):
+        self._require_officials(1)
+        commands = self.env["federation.schedule.approval.commands"]
+
+        commands.link_placeholder_matches(self.matches)
+
+        self.assertEqual(set(self._duties().mapped("role")), {"head"})
+        self.assertEqual(len(self._duties()), len(self.matches))
+
+    def test_an_existing_federation_referee_counts_towards_the_requirement(self):
+        self._require_officials(2)
+        volunteer = self.env["federation.referee"].create({"name": "Counted Head"})
+        self.env["federation.match.referee"].create(
+            {"match_id": self.matches[0].id, "referee_id": volunteer.id, "role": "head"}
+        )
+
+        self.env["federation.schedule.approval.commands"]._ensure_club_duties(
+            self.matches
+        )
+
+        first = self._duties().filtered(lambda duty: duty.match_id == self.matches[0])
+        self.assertEqual(first.mapped("role"), ["assistant_1"])
+
+    def test_no_requirement_means_no_duties(self):
+        self._require_officials(0)
+
+        created = self.env["federation.schedule.approval.commands"]._ensure_club_duties(
+            self.matches
+        )
+
+        self.assertFalse(created)
+        self.assertFalse(self._duties())
+
+    def test_a_rule_set_can_keep_officials_with_the_federation(self):
+        self._require_officials(2, ask_clubs=False)
+
+        created = self.env["federation.schedule.approval.commands"]._ensure_club_duties(
+            self.matches
+        )
+
+        self.assertFalse(created)
+
+    def test_a_problem_never_blocks_publication_and_is_noted_on_the_match_day(self):
+        self._require_officials(2)
+        wizard_model = self.env.registry["federation.matchday.assign.official.wizard"]
+
+        with mock.patch.object(
+            wizard_model,
+            "_auto_assign_club_duties",
+            side_effect=ValidationError("No club can cover this match."),
+        ):
+            created = self.env[
+                "federation.schedule.approval.commands"
+            ]._ensure_club_duties(self.matches)
+
+        self.assertFalse(created)
+        note = self.matchday.message_ids[:1]
+        self.assertIn("No club can cover this match.", str(note.body))

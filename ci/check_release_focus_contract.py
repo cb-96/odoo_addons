@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail fast when the P0-P3 release-focus qualification becomes disconnected."""
+"""Fail fast when the release-focus qualification becomes disconnected."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ REQUIRED_FILES = (
     "sports_federation_portal/tests/test_production_security_matrix.py",
     "sports_federation_compliance/tests/test_compliance.py",
     "sports_federation_demo/tests/test_release_pilot_readiness.py",
-    "docs/RELEASE_PILOT_SCENARIO.md",
+    "docs/release/pilot-scenario.md",
 )
 
 REQUIRED_SNIPPETS = {

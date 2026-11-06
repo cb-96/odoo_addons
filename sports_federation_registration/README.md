@@ -20,9 +20,47 @@ Eligibility uses the tournament module's existing `search_eligible_teams()` and
 rewritten by this filtering; it only affects new selections and invalid direct
 writes.
 
+## Submission and recovery
+
+The club portal and public competition registration page submit through the
+same portal command. It checks that the selected window belongs to the division,
+is open now (including its open/close timestamps), that the team is in the
+current representative's scope and eligible, that the team has no active entry,
+and that the division has remaining capacity.
+
+Entries progress through `draft`, `submitted`, and `approved`, or are marked
+`rejected`/`withdrawn`. A returned entry is restored to `draft` with the
+federation's review note. Representatives may update the submission note and
+resubmit draft, rejected, or withdrawn entries while the original window is
+open. Resubmitting a withdrawn entry reuses the existing row; the database
+constraint remains one entry per team and window. Approved entries cannot be
+withdrawn directly. Only federation registration roles can approve, return, or
+reject entries; club representatives cannot finalize participant sets.
+
 ## Regression tests
 
 The regression coverage is in
 `tests/test_registration_team_selection.py`. Run it with the repository's
 module-level Odoo test workflow after installing the registration addon and its
 declared dependencies.
+
+## Direct team selection
+
+`federation.competition.team.selection.wizard` is the streamlined workspace command. It does not introduce a second participant model: it creates or reuses the division registration window, validates team eligibility, synchronizes approved entries and seeds, and materializes the canonical finalized participant set. Repeating the same team set is idempotent. A finalized set already referenced by a competition structure cannot be replaced through the picker; use the governed successor format workflow.
+
+Federation managers can open this picker from the Competition Planner without
+receiving general registration-window access. The picker reads only the window
+and existing team selection for its validated edition and division; applying
+changes still runs through the registration command's role check.
+
+## Participants follow the finalised team list
+Finalising a division's team list (registration desk or direct selection) now
+creates a confirmed `federation.tournament.participant` for every team in the
+list, with its seed, and withdraws teams that an earlier selection contained and
+a later one removed. Before, only the participant set existed unless a ranked
+stage was built, so divisions with a knockout format had no participants: the
+public tournament page, the "tournament published" notification, the roster
+hooks and the standings, planning and KPI reports found nobody. Repeating the
+selection changes nothing. Upgrading creates the missing participants of
+finalised lists; a team that fails the division's eligibility check is logged and
+skipped.

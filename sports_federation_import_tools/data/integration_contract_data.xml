@@ -49,7 +49,7 @@
     <record id="federation_integration_contract_players_csv" model="federation.integration.contract">
         <field name="name">Players CSV Inbound</field>
         <field name="code">players_csv</field>
-        <field name="version">csv_v1</field>
+        <field name="version">csv_codes</field>
         <field name="direction">inbound</field>
         <field name="transport">file</field>
         <field name="route_hint">/integration/v1/inbound/players_csv/deliveries</field>
@@ -73,7 +73,7 @@
     <record id="federation_integration_contract_teams_csv" model="federation.integration.contract">
         <field name="name">Teams CSV Inbound</field>
         <field name="code">teams_csv</field>
-        <field name="version">csv_v1</field>
+        <field name="version">csv_codes</field>
         <field name="direction">inbound</field>
         <field name="transport">file</field>
         <field name="route_hint">/integration/v1/inbound/teams_csv/deliveries</field>
@@ -85,7 +85,7 @@
     <record id="federation_integration_contract_tournament_participants_csv" model="federation.integration.contract">
         <field name="name">Tournament Participants CSV Inbound</field>
         <field name="code">tournament_participants_csv</field>
-        <field name="version">csv_v1</field>
+        <field name="version">csv_codes</field>
         <field name="direction">inbound</field>
         <field name="transport">file</field>
         <field name="route_hint">/integration/v1/inbound/tournament_participants_csv/deliveries</field>

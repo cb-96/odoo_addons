@@ -1,0 +1,74 @@
+# Court Operations and Visual Planning
+
+Court score capture with offline recovery, mobile match-day pages for officials
+and managers, the visual schedule planner and the season match board.
+
+## Installation
+Installed through the supported `sports_federation_app` entry point.
+
+## Court operation
+1. Configure aggregate, period-total or sets-won scoring on the competition edition. Configure a winning set target where applicable.
+2. Publish through the existing independent schedule review and publication workflow.
+3. Open the canonical match-day session and assign named internal court operators.
+4. Operators open Match Day > Run this court, select their court, inspect lineups and separate accepted/eligible/present official facts, save drafts, then submit for result review.
+5. Submission is not approval. Existing verification, approval, corrections and standings controls remain authoritative.
+
+Officials can request check-in for their own accepted, eligible assignment from
+the mobile assignment page. The request signature is computed from the current
+publication, slot, match window, and assignment after validating access to that
+assignment; only the resulting digest is returned. A check-in request is not
+attendance. An organiser records attendance separately through the manager
+command.
+
+## Connectivity contract
+Offline capture is supported in an already loaded, authenticated workspace. This is not a cold-start offline PWA: opening the application or an uncached match requires connectivity. Device drafts and queued commands are stored under database/user/court/match-specific localStorage keys. No birth dates or contact details are cached. Use dedicated trusted devices; localStorage is not encrypted and a shared unlocked browser is not an access boundary.
+
+Score edits are written to the device draft as they are entered. **Save draft** queues the signed command for synchronization; queued work is sent when connectivity returns. A local draft is not an official result.
+
+Each command carries an actor-bound content receipt, expected draft revision and schedule/result signature. Retry exactly the same key and payload after a lost response. A batch is atomic. A stale draft, changed publication, changed score, revoked operator or closed session stops synchronisation. No automatic score merging occurs. Export evidence before explicitly discarding the local queue or acknowledging a changed context. Exported evidence is not an authoritative result and is never automatically imported.
+
+Interrupted matches retain drafts for resumption. Disputed and abandoned captures raise linked incidents and retain a coordinator hold, even if an operator later changes the outcome back to normal. Match-day managers use Court recovery and exceptions > Resolve exception to record a reasoned resume or abandonment decision. Confirmed abandonment creates no official score. Forfeits require a reason and a score favouring the non-forfeiting team, then follow ordinary independent result review.
+
+## Visual planning
+Open a schedule and select Visual planning. The workspace projects existing stages, progression ranks, fixture sources and a court/time grid. Select a fixture and preview a manual move; applying it pins the assignment. Regeneration retains non-automatic assignments. Team/court unavailable windows and hard minimum rest are distinct from fairness preferences.
+
+The court workspace automatically opens the sole assigned court when there is
+exactly one. While that initial load is in progress, further court selection is
+disabled to avoid racing duplicate queue and match requests.
+
+Every preview is stored server-side, belongs to its actor and contains the exact candidate map. Before/after views show changed slots, unallocated fixtures, hard failures, warnings and weighted fairness penalty (lower is better). Apply revalidates the map and signature, performs one governed revision and retains the preview. Rejected-slot explanations do not misrepresent a heuristic solver as a proof of infeasibility.
+
+Published schedules cannot be edited here. Create a governed amendment, then return to the existing independent review/publication controls. Live operations must be closed before replacement publication. Practical constraints copy to amendment revisions.
+
+## Tests
+Standalone: `python -m unittest discover -s ci -p test_live_workspace_policy.py`.
+Installed application: Odoo tests tagged `sf_live_workspace`,
+`sf_mobile_matchday` and `sf_visual_scheduling`, plus the `sf_release_confidence`
+suite, on fresh and upgraded databases. The addon includes persisted command
+tests and backend browser journeys.
+
+Staging acceptance (browser journeys, independent-transaction races, device
+interruptions and novice observations) is described in the
+[mobile match-day](../docs/release/acceptance/mobile-match-day.md) and
+[visual scheduling](../docs/release/acceptance/visual-scheduling.md) acceptance
+suites.
+
+## Season match board
+
+`federation.season.board` backs the `federation_season_board` client action:
+every planable fixture of the competition's latest generated formats, every
+active game day and its slots. The planner's Schedule step opens it.
+
+- Commands (`move`, `unplan`, `place_on_day`, `restore`, `set_pinned`,
+  `generate_slots`) need the schedule planner or competition director role. They
+  also need the board signature, so a change made from a stale screen is
+  refused.
+- A move updates the day allocation (moving between days included) and the
+  working schedule, bumps each affected schedule's revision through
+  `federation.schedule.commands._resolve`, and logs `board_move` changes. All
+  of this runs in one savepoint. When the schedule validator reports a new
+  error, the whole move is rolled back and the errors are returned.
+- Only open game days with a draft or changes-requested schedule can change.
+  Published schedules remain protected by the existing amendment flow.
+- Undo is client-side: each result returns the previous slot of every moved
+  fixture, and `restore` puts them back through the same checks.

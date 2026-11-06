@@ -1,0 +1,50 @@
+{
+  "commit": null,
+  "checks": {
+    "install": {
+      "status": "pending",
+      "executed_at": null,
+      "artifacts": []
+    },
+    "upgrade": {
+      "status": "pending",
+      "executed_at": null,
+      "artifacts": []
+    },
+    "migration": {
+      "status": "pending",
+      "executed_at": null,
+      "artifacts": []
+    },
+    "rollback": {
+      "status": "pending",
+      "executed_at": null,
+      "artifacts": []
+    },
+    "concurrency": {
+      "status": "pending",
+      "executed_at": null,
+      "artifacts": []
+    },
+    "browser": {
+      "status": "pending",
+      "executed_at": null,
+      "artifacts": []
+    },
+    "novice": {
+      "status": "pending",
+      "executed_at": null,
+      "artifacts": []
+    },
+    "mobile": {
+      "status": "pending",
+      "executed_at": null,
+      "artifacts": []
+    },
+    "keyboard": {
+      "status": "pending",
+      "executed_at": null,
+      "artifacts": []
+    }
+  }
+}

@@ -200,8 +200,50 @@ class TestCreateInvoice(TransactionCase):
         cls.club = cls.env["federation.club"].create(
             {"name": "Invoice Club", "code": "IVC"}
         )
+        cls.partner = cls.env["res.partner"].create(
+            {"name": "Invoice Test Customer"}
+        )
+        native_accounting = (
+            "account.move" in cls.env
+            and "invoice_product_id"
+            in cls.env["federation.finance.event"]._fields
+        )
+        if native_accounting:
+            journal_model = cls.env["account.journal"]
+            company = cls.env.company
+            income_account = cls.env["account.account"].create(
+                {
+                    "name": "Finance Bridge Test Income",
+                    "code": "FBT100",
+                    "account_type": "income",
+                    "company_ids": [(6, 0, [company.id])],
+                }
+            )
+            if not journal_model.search(
+                [("type", "=", "sale"), ("company_id", "=", company.id)],
+                limit=1,
+            ):
+                journal_model.create(
+                    {
+                        "name": "Finance Bridge Test Sales",
+                        "code": "FBT",
+                        "type": "sale",
+                        "company_id": company.id,
+                    }
+                )
+        cls.invoice_product = (
+            cls.env["product.product"].create(
+                {
+                    "name": "Invoice Test Service",
+                    "type": "service",
+                    "property_account_income_id": income_account.id,
+                }
+            )
+            if native_accounting
+            else False
+        )
 
-    def _make_event(self, amount=200.0, source_res_id=None):
+    def _make_event(self, amount=200.0, source_res_id=None, partner_id=None):
         return self.env["federation.finance.event"].create(
             {
                 "name": "Test Invoice Event",
@@ -212,53 +254,105 @@ class TestCreateInvoice(TransactionCase):
                 "source_model": "federation.season",
                 "source_res_id": source_res_id or self.season.id,
                 "club_id": self.club.id,
+                "partner_id": (
+                    self.partner.id if partner_id is None else partner_id
+                ),
+                "state": "confirmed",
+                **(
+                    {"invoice_product_id": self.invoice_product.id}
+                    if "invoice_product_id"
+                    in self.env["federation.finance.event"]._fields
+                    else {}
+                ),
             }
         )
 
-    def test_create_invoice_skips_when_accounting_not_installed(self):
-        """action_create_invoice returns False gracefully without account module."""
-        if "account.move" in self.env:
-            self.skipTest("account module is installed; skipping guard test")
-        event = self._make_event()
+    def _create_invoice(self, event):
         result = event.action_create_invoice()
-        self.assertFalse(result)
+        if "account_move_id" in event._fields:
+            return event.account_move_id
+        return result
+
+    def test_create_invoice_requires_native_accounting_addon(self):
+        """The bridge must not create invoices without the opt-in accounting addon."""
+        if "invoice_product_id" in self.env["federation.finance.event"]._fields:
+            self.skipTest("native accounting extension is installed")
+        event = self._make_event()
+        with self.assertRaises(UserError):
+            event.action_create_invoice()
         self.assertFalse(event.invoice_ref)
 
     def test_create_invoice_succeeds_when_accounting_installed(self):
         """action_create_invoice creates one account.move with the correct amount."""
-        if "account.move" not in self.env:
+        if (
+            "account.move" not in self.env
+            or "invoice_product_id"
+            not in self.env["federation.finance.event"]._fields
+        ):
             self.skipTest(
-                "account module not installed; skipping invoice creation test"
+                "configured-product accounting integration is not installed"
             )
         event = self._make_event(amount=150.0)
-        invoice = event.action_create_invoice()
+        invoice = self._create_invoice(event)
         self.assertTrue(invoice)
-        self.assertEqual(event.invoice_ref, str(invoice.id))
         lines = invoice.invoice_line_ids
         self.assertEqual(len(lines), 1)
         self.assertEqual(lines.price_unit, 150.0)
+        self.assertEqual(lines.product_id, self.invoice_product)
+        self.assertTrue(
+            lines.account_id, "Invoice line must resolve an income account"
+        )
+        if "account_move_id" in event._fields:
+            self.assertEqual(event.account_move_id, invoice)
+            self.assertEqual(invoice.partner_id, self.partner)
+        else:
+            self.assertEqual(event.invoice_ref, str(invoice.id))
 
-    def test_create_invoice_twice_raises(self):
-        """Calling action_create_invoice twice raises ValidationError."""
-        if "account.move" not in self.env:
-            self.skipTest("account module not installed; skipping duplicate test")
-        event = self._make_event()
-        event.action_create_invoice()
+    def test_create_invoice_requires_an_explicit_payer(self):
+        if "invoice_product_id" not in self.env["federation.finance.event"]._fields:
+            self.skipTest("native accounting extension is not installed")
+        event = self._make_event(partner_id=False)
         with self.assertRaises(ValidationError):
             event.action_create_invoice()
 
+    def test_create_invoice_requires_a_configured_product(self):
+        if "invoice_product_id" not in self.env["federation.finance.event"]._fields:
+            self.skipTest("native accounting extension is not installed")
+        event = self._make_event()
+        if "invoice_product_id" in event._fields:
+            event.invoice_product_id = False
+        with self.assertRaises(ValidationError):
+            event.action_create_invoice()
+
+    def test_create_invoice_twice_raises(self):
+        """Calling action_create_invoice twice raises ValidationError."""
+        if (
+            "account.move" not in self.env
+            or "invoice_product_id"
+            not in self.env["federation.finance.event"]._fields
+        ):
+            self.skipTest(
+                "configured-product accounting integration is not installed"
+            )
+        event = self._make_event()
+        invoice = self._create_invoice(event)
+        if "account_move_id" in event._fields:
+            event.action_create_invoice()
+            self.assertEqual(event.account_move_id, invoice)
+            self.assertEqual(
+                self.env["account.move"].search_count(
+                    [("invoice_origin", "=", event.name)]
+                ),
+                1,
+            )
+        else:
+            with self.assertRaises(ValidationError):
+                event.action_create_invoice()
+
     def test_create_invoice_on_cancelled_raises(self):
         """Calling action_create_invoice on a cancelled event raises ValidationError."""
-        if "account.move" not in self.env:
-            # Even without account.move, method returns False before the cancelled check;
-            # test the guard path directly by temporarily patching env.
-            event = self._make_event()
-            # Manually add a stub so the account.move guard passes
-            event.state = "cancelled"
-            # Without account.move the method short-circuits — just assert no crash
-            result = event.action_create_invoice()
-            self.assertFalse(result)
-            return
+        if "invoice_product_id" not in self.env["federation.finance.event"]._fields:
+            self.skipTest("native accounting extension is not installed")
         event = self._make_event()
         event.action_cancel()
         with self.assertRaises(ValidationError):

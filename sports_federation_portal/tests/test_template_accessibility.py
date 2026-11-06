@@ -164,14 +164,23 @@ class TestPortalTemplateAccessibility(TransactionCase):
             "portal_roster_templates", "portal_my_match_sheet_detail"
         )
         self._assert_tables_have_captions_and_scoped_headers(
-            "portal_roster_templates", "portal_my_match_day"
-        )
-        self._assert_tables_have_captions_and_scoped_headers(
-            "portal_officiating_templates", "portal_my_referee_assignments"
-        )
-        self._assert_tables_have_captions_and_scoped_headers(
             "competition_templates",
             "portal_my_competition_detail",
+        )
+
+    def test_officiating_assignments_use_semantic_work_cards(self):
+        template = self._template(
+            "portal_officiating_templates", "portal_my_referee_assignments"
+        )
+        self.assertTrue(
+            template.xpath(
+                ".//t[@t-call='sports_federation_portal.connected_work_groups']"
+            )
+        )
+        self.assertFalse(
+            template.xpath(
+                ".//div[contains(concat(' ', normalize-space(@class), ' '), ' table-responsive ')]"
+            )
         )
 
     def test_portal_templates_use_human_state_labels(self):

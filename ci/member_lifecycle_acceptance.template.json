@@ -1,0 +1,78 @@
+{
+  "candidate_commit": null,
+  "observed_on": null,
+  "users": [],
+  "routine_renewals": [],
+  "adversarial": {
+    "two_dependants": {
+      "executed": 0,
+      "wrong_person_actions": null,
+      "stale_approvals": null,
+      "unauthorised_document_access": null,
+      "duplicate_identities": null
+    },
+    "wrong_person_post": {
+      "executed": 0,
+      "wrong_person_actions": null,
+      "stale_approvals": null,
+      "unauthorised_document_access": null,
+      "duplicate_identities": null
+    },
+    "stale_document": {
+      "executed": 0,
+      "wrong_person_actions": null,
+      "stale_approvals": null,
+      "unauthorised_document_access": null,
+      "duplicate_identities": null
+    },
+    "revoked_session": {
+      "executed": 0,
+      "wrong_person_actions": null,
+      "stale_approvals": null,
+      "unauthorised_document_access": null,
+      "duplicate_identities": null
+    },
+    "payer_scope": {
+      "executed": 0,
+      "wrong_person_actions": null,
+      "stale_approvals": null,
+      "unauthorised_document_access": null,
+      "duplicate_identities": null
+    },
+    "cross_company": {
+      "executed": 0,
+      "wrong_person_actions": null,
+      "stale_approvals": null,
+      "unauthorised_document_access": null,
+      "duplicate_identities": null
+    },
+    "duplicate_matching": {
+      "executed": 0,
+      "wrong_person_actions": null,
+      "stale_approvals": null,
+      "unauthorised_document_access": null,
+      "duplicate_identities": null
+    },
+    "concurrent_matching": {
+      "executed": 0,
+      "wrong_person_actions": null,
+      "stale_approvals": null,
+      "unauthorised_document_access": null,
+      "duplicate_identities": null
+    },
+    "renewal_replay": {
+      "executed": 0,
+      "wrong_person_actions": null,
+      "stale_approvals": null,
+      "unauthorised_document_access": null,
+      "duplicate_identities": null
+    },
+    "concurrent_renewal": {
+      "executed": 0,
+      "wrong_person_actions": null,
+      "stale_approvals": null,
+      "unauthorised_document_access": null,
+      "duplicate_identities": null
+    }
+  }
+}

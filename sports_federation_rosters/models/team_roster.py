@@ -311,6 +311,7 @@ class FederationTeamRoster(models.Model):
                 vals["name"] = self._get_generated_name(vals=vals)
         records = super().create(vals_list)
         for record in records:
+            record._link_open_match_sheets()
             record._log_audit_event(
                 "roster_created",
                 _(
@@ -323,6 +324,45 @@ class FederationTeamRoster(models.Model):
                 },
             )
         return records
+
+    def _link_open_match_sheets(self):
+        """Attach this roster to the team's draft sheets that have no roster.
+
+        Match sheets are created together with their match, usually long before
+        the team has a roster. Without this link the line-up of every such
+        sheet starts empty and the club has to pick the roster again on each
+        one. Only draft sheets of the same season (and competition, when the
+        roster is competition-specific) of matches still to be played are
+        touched, and a sheet that already has a roster keeps it.
+        """
+        self.ensure_one()
+        if self.status == "closed" or not self.season_id:
+            return self.env["federation.match.sheet"]
+        sheets = (
+            self.env["federation.match.sheet"]
+            .sudo()
+            .search(
+                [
+                    ("team_id", "=", self.team_id.id),
+                    ("roster_id", "=", False),
+                    ("state", "=", "draft"),
+                    ("match_id.state", "not in", ("done", "cancelled")),
+                ]
+            )
+        )
+
+        def _same_scope(sheet):
+            division = sheet.match_id.tournament_id
+            season = division.season_id or division.edition_id.season_id
+            competition = division.competition_id or division.edition_id.competition_id
+            return season == self.season_id and (
+                not self.competition_id or competition == self.competition_id
+            )
+
+        sheets = sheets.filtered(_same_scope)
+        if sheets:
+            sheets.write({"roster_id": self.id})
+        return sheets
 
     def write(self, vals):
         """Update records with module-specific side effects."""
@@ -513,6 +553,25 @@ class FederationTeamRoster(models.Model):
         ):
             return self.season_id.date_start
         return today
+
+    @api.model
+    def _pick_season_baseline(self, rosters):
+        """Pick the roster a season registration is built around.
+
+        Teams can hold several rosters for one season (a season roster plus
+        competition-specific ones). Registration, the portal and the line-up
+        pages must all agree on which one is "the" roster, otherwise a club
+        edits one roster while its line-ups use another. Preference: not
+        closed, then without competition scope, then active, then newest.
+        """
+        return rosters.sorted(
+            key=lambda roster: (
+                roster.status == "closed",
+                bool(roster.competition_id),
+                roster.status != "active",
+                -roster.id,
+            )
+        )[:1]
 
     def _get_required_player_bounds(self):
         """Return required player bounds."""

@@ -30,6 +30,8 @@
                         <group string="Squad Limits">
                             <field name="squad_min_size"/>
                             <field name="squad_max_size"/>
+                            <field name="gameday_roster_max_size"/>
+                            <field name="match_player_max_size"/>
                         </group>
                         <group string="Officiating">
                             <field name="referee_required_count"/>

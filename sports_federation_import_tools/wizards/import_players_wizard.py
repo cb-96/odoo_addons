@@ -16,7 +16,7 @@ class FederationImportPlayersWizard(models.TransientModel):
     def _get_mapping_guide(self):
         """Return mapping guide."""
         return (
-            "Required columns: first_name and last_name. Legacy full-name imports may use name.\n"
+            "Required columns: first_name and last_name.\n"
             "Recommended columns: birth_date (YYYY-MM-DD), club_code (preferred) or club_name, gender, email, phone, state.\n"
             "Duplicate detection uses first_name + last_name + birth_date, matching the player uniqueness rule."
         )
@@ -26,10 +26,17 @@ class FederationImportPlayersWizard(models.TransientModel):
         self.ensure_one()
         baseline_count = self._prepare_import_execution()
         reader = self._get_csv_reader()
-        if not any(column in reader.fieldnames for column in ("first_name", "name")):
-            raise ValidationError("Missing required columns: first_name or name")
-        if not any(column in reader.fieldnames for column in ("last_name", "name")):
-            raise ValidationError("Missing required columns: last_name or name")
+        missing = [
+            column
+            for column in ("first_name", "last_name")
+            if column not in (reader.fieldnames or [])
+        ]
+        if missing:
+            raise ValidationError(
+                "Missing required columns: %s. The single name column is no "
+                "longer accepted; split it into first_name and last_name."
+                % ", ".join(missing)
+            )
 
         line_count = 0
         success_count = 0
@@ -44,13 +51,6 @@ class FederationImportPlayersWizard(models.TransientModel):
             line_count += 1
             first_name = self._get_row_value(row, "first_name")
             last_name = self._get_row_value(row, "last_name")
-            full_name = self._get_row_value(row, "name")
-
-            if full_name and not (first_name and last_name):
-                parts = full_name.split(None, 1)
-                if len(parts) == 2:
-                    first_name = first_name or parts[0]
-                    last_name = last_name or parts[1]
 
             if not first_name or not last_name:
                 self._record_error(
@@ -58,7 +58,7 @@ class FederationImportPlayersWizard(models.TransientModel):
                     error_categories,
                     row_num,
                     "missing_required_field",
-                    "Player first_name and last_name are required (or provide a full name with two parts).",
+                    "Player first_name and last_name are required.",
                 )
                 error_count += 1
                 continue

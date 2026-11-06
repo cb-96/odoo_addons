@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONTRACT = ROOT / "ci/contracts/reliability_contract.json"
-SQL = re.compile(r"\.execute\s*\(")
+SQL = re.compile(r"\b(?:[A-Za-z_]\w*\.)*cr\.execute\s*\(")
 MIGRATION_PARTS = {"migrations", "tests"}
 
 
@@ -56,6 +56,17 @@ def violations(root: Path, contract: dict) -> list[str]:
         failures += source_contains(capability_files[name], tokens)
 
     allowed = set(contract["sql_boundaries"]["allowed_runtime_files"])
+    reviews = contract["sql_boundaries"].get("runtime_reviews", {})
+    for relative_name, rationale in reviews.items():
+        path = root / relative_name
+        if relative_name not in allowed:
+            failures.append(
+                f"runtime SQL review is not allowlisted: {relative_name}"
+            )
+        if not isinstance(rationale, str) or not rationale.strip():
+            failures.append(f"runtime SQL review has no rationale: {relative_name}")
+        if not path.is_file() or not SQL.search(path.read_text(encoding="utf-8")):
+            failures.append(f"runtime SQL review has no cursor execution: {relative_name}")
     prefixes = tuple(contract["sql_boundaries"].get("allowed_runtime_prefixes", []))
     for addon in sorted(root.glob("sports_federation_*")):
         for path in sorted(addon.rglob("*.py")):

@@ -31,7 +31,7 @@ Validation checklist
 ## Release-pilot qualification
 
 The integrated P0-P3 release path is documented in
-`docs/RELEASE_PILOT_SCENARIO.md`. Run
+`docs/release/pilot-scenario.md`. Run
 `scripts/ci/run_rc_validation.sh focus` before promoting a release candidate.
 
 ## Accessible operator training walkthrough
@@ -63,9 +63,17 @@ labels, error semantics, status text, responsive tables, and action wrapping.
 
 ## Verified operator menu guide
 
-Use [`docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md) during training and acceptance. Addon names are not always visible as menus.
+Use [`docs/user-guide/competition-workflow.md`](../docs/user-guide/competition-workflow.md) during training and acceptance. Addon names are not always visible as menus.
 
 
 ## Full competition lifecycle browser tour
 
 The `full_competition_lifecycle` browser tour follows the maintained operator handoffs from Competition Overview through registration, format, calendar, scheduling, independent review, match-day control, officiating assignment, standings, and the canonical public competition index. It opens actions by XML ID so navigation remains stable when menu sections are collapsed or role-filtered.
+
+## AI-agent competition simulations
+
+For custom competition simulations, use
+[`docs/development/agent-competition-simulation.md`](../docs/development/agent-competition-simulation.md).
+The Playwright helper confirms a repeated action through the real UI once or
+twice, then completes equivalent records through public Odoo actions and records
+verifiable evidence.

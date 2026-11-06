@@ -1,6 +1,6 @@
 from datetime import datetime, time, timedelta
 
-import pytz
+from ..time_policy import local_to_utc
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
@@ -22,8 +22,10 @@ class FederationSlotGenerator(models.AbstractModel):
             local_value = datetime.combine(day + timedelta(days=1), time.min)
         else:
             local_value = datetime.combine(day, time(hour=hour, minute=minute))
-        timezone = pytz.timezone(self.env.user.tz or "UTC")
-        return timezone.localize(local_value).astimezone(pytz.UTC).replace(tzinfo=None)
+        try:
+            return local_to_utc(local_value, matchday.event_timezone)
+        except ValueError as exc:
+            raise ValidationError(_("Choose a valid, unambiguous time in the event timezone.")) from exc
 
     @staticmethod
     def _overlaps(start_a, end_a, start_b, end_b):

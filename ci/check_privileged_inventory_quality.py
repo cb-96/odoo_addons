@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import sys
 
-INVENTORY = Path("docs/portal_sudo_inventory.json")
+INVENTORY = Path("ci/contracts/portal_sudo_inventory.json")
 VAGUE = {"", "sudo required", "needed", "temporary", "legacy"}
 
 

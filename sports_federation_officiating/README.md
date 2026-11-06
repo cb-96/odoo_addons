@@ -1,6 +1,5 @@
 # Sports Federation Officiating
 
-Version: 19.0.1.6.0
 Owner: Federation Platform Team
 Last reviewed: 2026-09-11
 Review cadence: Every release
@@ -47,3 +46,20 @@ The allocator is deterministic and balances the accumulated duty count across el
 The `(match, club, role)` duty key is validated before insertion and is also
 protected by a database uniqueness constraint. Duplicate submissions therefore
 return a normal validation message without exposing a database constraint error.
+
+## Club duties on publication
+Publishing a schedule now asks the clubs for officials itself, so a published
+match day no longer waits for someone to run the wizard. For every published,
+fixture-backed match the rule set decides what is needed: **Referees required
+per match** (0 means nothing is requested) gives the number of roles, taken in
+the wizard's order (head, assistant 1, assistant 2, fourth, table). The missing
+roles become open club duties, allocated with the same fair-load, non-playing-
+club-first rules as **Auto-assign Club Duties**; existing referee assignments
+and duties satisfy their role and are never duplicated. Matches linked to a
+publication later (placeholder fixtures) get their duties when they are linked.
+
+A rule set can opt out with **Ask clubs for officials on publication** when
+officials are assigned by the federation only. Publication is never blocked by
+officiating: if duties cannot be created (for example no other club can cover a
+match) the reason is written on the match day and the wizard remains available.
+Duties are not created retroactively for schedules published earlier.

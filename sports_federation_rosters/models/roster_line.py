@@ -4,6 +4,27 @@ from odoo.exceptions import ValidationError
 from .team_roster import _dedupe_reasons
 
 
+def _get_parental_approval_reasons(player, team, reference_date, tournament=False):
+    """Return the safeguarding blocker for a minor entering an adult league."""
+    adult_league = bool(
+        (team and team.category == "senior")
+        or (tournament and tournament.category == "senior")
+    )
+    if (
+        adult_league
+        and player
+        and player._is_under_age(16, reference_date)
+        and not player._has_verified_parental_approval(reference_date)
+    ):
+        return [
+            _(
+                "Players under 16 need a verified parental approval linked to "
+                "their player account before participating in an adult league."
+            )
+        ]
+    return []
+
+
 class FederationTeamRosterLine(models.Model):
     _name = "federation.team.roster.line"
     _description = "Team Roster Line"
@@ -153,6 +174,9 @@ class FederationTeamRosterLine(models.Model):
         "player_id.gender",
         "player_id.state",
         "player_id.birth_date",
+        "player_id.parental_approval_ids.state",
+        "player_id.parental_approval_ids.approval_date",
+        "player_id.parental_approval_ids.valid_until",
         "license_id",
         "license_id.state",
         "license_id.issue_date",
@@ -323,6 +347,10 @@ class FederationTeamRosterLine(models.Model):
                         "team_gender": team.gender,
                     }
                 )
+
+        reasons.extend(
+            _get_parental_approval_reasons(player, team, reference_date)
+        )
 
         Service = self.env.get("federation.eligibility.service")
         rule_set = roster._get_effective_rule_set()

@@ -2,13 +2,14 @@ from datetime import timedelta
 
 from odoo import fields
 from odoo.exceptions import ValidationError
-from odoo.tests.common import TransactionCase
+from odoo.tests import TransactionCase, tagged
 
 
+@tagged("sf_release_confidence")
 class TestOperationJob(TransactionCase):
     def setUp(self):
         super().setUp()
-        source = self.env["res.partner"].create({"name": "Job Source"})
+        source = self.env.ref("base.main_partner")
         self.job = self.env["federation.operation.job"].create(
             {
                 "name": "Test Job",
@@ -48,6 +49,30 @@ class TestOperationJob(TransactionCase):
         )
         self.assertEqual(self.job.state, "retry")
 
+    def test_recovering_the_same_stale_job_twice_does_not_duplicate_work(self):
+        self.job.write(
+            {
+                "state": "running",
+                "attempt_count": 1,
+                "started_on": fields.Datetime.now() - timedelta(hours=1),
+            }
+        )
+        jobs = self.env["federation.operation.job"]
+
+        self.assertEqual(jobs._recover_stale(), 1)
+        self.assertEqual(jobs._recover_stale(), 0)
+        self.assertEqual(self.job.state, "retry")
+        self.assertEqual(
+            jobs.search_count(
+                [
+                    ("source_model", "=", self.job.source_model),
+                    ("source_res_id", "=", self.job.source_res_id),
+                    ("correlation_id", "=", self.job.correlation_id),
+                ]
+            ),
+            1,
+        )
+
     def test_ensure_job_is_idempotent_for_source_correlation(self):
         source = self.job._source()
         duplicate = self.env["federation.operation.job"].ensure_job(
@@ -68,3 +93,33 @@ class TestOperationJob(TransactionCase):
     def test_manual_retry_rejects_non_failed_job(self):
         with self.assertRaises(ValidationError):
             self.job.action_retry()
+
+    def test_callback_failure_rolls_back_business_mutation(self):
+        from unittest.mock import patch
+        source = self.job._source()
+        original_name = source.name
+        def failing(record, job):
+            record.write({'name': 'MUST ROLL BACK'})
+            raise RuntimeError('Injected callback failure')
+        with patch.object(type(source), '_retry_operational_job', failing, create=True):
+            self.assertFalse(self.job._execute())
+        source.invalidate_recordset()
+        self.assertEqual(source.name, original_name)
+        self.assertEqual(self.job.attempt_count, 1)
+        self.assertEqual(self.job.state, 'retry')
+
+    def test_completed_recovery_can_be_replayed(self):
+        from unittest.mock import patch
+        source = self.job._source()
+        self.job.write({'state': 'done', 'attempt_count': 2})
+        with patch.object(type(source), '_retry_operational_job', lambda record, job: True, create=True):
+            self.job.action_retry()
+            self.assertEqual(self.job.state, 'pending')
+            self.assertEqual(self.job.attempt_count, 0)
+            self.assertTrue(self.job._execute())
+        self.assertEqual(self.job.state, 'done')
+        self.assertEqual(self.job.attempt_count, 1)
+
+    def test_terminal_job_is_not_claimed_by_cron(self):
+        self.job.write({'state': 'done'})
+        self.assertFalse(self.job._execute())

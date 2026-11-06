@@ -10,9 +10,10 @@ from odoo.addons.sports_federation_import_tools.workflow_states import (
 )
 from odoo.exceptions import AccessError
 from odoo.exceptions import ValidationError
-from odoo.tests import TransactionCase
+from odoo.tests import TransactionCase, tagged
 
 
+@tagged("sf_release_confidence")
 class TestImportTools(TransactionCase):
     """Test cases for import tools wizards."""
 
@@ -585,6 +586,38 @@ class TestImportTools(TransactionCase):
             self.env["federation.club"].search([("code", "=", "DC001")], limit=1)
         )
 
+    def test_invalid_delivery_preview_records_errors_without_partial_import(self):
+        contract = self.env.ref(
+            "sports_federation_import_tools.federation_integration_contract_clubs_csv"
+        )
+        partner, _subscription = self._create_integration_partner(contract)
+        payload = self._create_csv_file(
+            "name;code\nPreview Only Club;RC_PREVIEW_ONLY\n;RC_INVALID"
+        ).decode("utf-8")
+        delivery = self.env["federation.integration.delivery"].stage_partner_delivery(
+            partner=partner,
+            contract=contract,
+            filename="mixed-clubs.csv",
+            payload_base64=payload,
+            content_type="text/csv",
+        )
+        action = delivery.action_open_import_wizard()
+        wizard = self.env[action["res_model"]].browse(action["res_id"])
+
+        wizard.action_parse_and_import()
+        delivery.invalidate_recordset()
+
+        self.assertEqual(delivery.state, "previewed")
+        self.assertEqual(wizard.line_count, 2)
+        self.assertEqual(wizard.success_count, 1)
+        self.assertEqual(wizard.error_count, 1)
+        self.assertIn("Name is required", wizard.result_message)
+        self.assertFalse(
+            self.env["federation.club"].search(
+                [("code", "=", "RC_PREVIEW_ONLY")], limit=1
+            )
+        )
+
     def test_inbound_delivery_rejects_disallowed_payload_extension(self):
         """Inbound staging should reject payloads outside the shared extension allowlist."""
         contract = self.env.ref(
@@ -624,6 +657,42 @@ class TestImportTools(TransactionCase):
         self.assertEqual(delivery.failure_category, "data_validation")
         self.assertEqual(delivery.operator_message, "Preview checksum failed")
         self.assertEqual(delivery.result_message, "Preview checksum failed")
+
+    def test_recovery_job_for_failed_delivery_requires_operator_action(self):
+        contract = self.env.ref(
+            "sports_federation_import_tools.federation_integration_contract_clubs_csv"
+        )
+        partner, _subscription = self._create_integration_partner(contract)
+        delivery = self.env["federation.integration.delivery"].stage_partner_delivery(
+            partner=partner,
+            contract=contract,
+            filename="recovery-clubs.csv",
+            payload_base64=self._create_csv_file(
+                "name;code\nRecovery Club;RCV001"
+            ).decode("utf-8"),
+        )
+        delivery.action_mark_failed(
+            "The import preview needs operator review.", category="data_validation"
+        )
+
+        delivery.action_create_recovery_job()
+
+        job = self.env["federation.operation.job"].search(
+            [
+                ("source_model", "=", delivery._name),
+                ("source_res_id", "=", delivery.id),
+            ],
+            limit=1,
+        )
+        self.assertTrue(job)
+        self.assertEqual(job.state, "operator_action")
+        self.assertIn("replay it through the import wizard", job.last_error)
+        delivery.invalidate_recordset()
+        self.assertEqual(delivery.state, "failed")
+        self.assertEqual(
+            delivery.operator_message,
+            "The import preview needs operator review.",
+        )
 
     def test_delivery_retention_purges_old_processed_records_and_payloads(self):
         """Retention should delete old terminal deliveries and their payload attachments."""
@@ -734,9 +803,12 @@ class TestImportTools(TransactionCase):
         self.assertEqual(team.category, "youth")
         self.assertEqual(team.gender, "mixed")
 
-    def test_import_players_splits_legacy_name_and_sets_club(self):
-        """Players import should translate legacy full-name CSVs into first and last names."""
-        csv_content = "name,birth_date,club_code,gender,state\nAlice Example,2005-04-06,TC001,female,active"
+    def test_import_players_uses_first_and_last_name_and_sets_club(self):
+        """Players import should create players from first_name and last_name."""
+        csv_content = (
+            "first_name,last_name,birth_date,club_code,gender,state\n"
+            "Alice,Example,2005-04-06,TC001,female,active"
+        )
         wizard = self._approve_wizard_import(
             self.env["federation.import.players.wizard"].create(
                 {
@@ -762,6 +834,96 @@ class TestImportTools(TransactionCase):
         self.assertTrue(player)
         self.assertEqual(player.club_id, self.club)
         self.assertEqual(player.gender, "female")
+
+    def test_import_players_rejects_single_name_column(self):
+        """The retired single name column must fail before any row is read."""
+        csv_content = "name,birth_date,club_code\nAlice Example,2005-04-06,TC001"
+        wizard = self.env["federation.import.players.wizard"].create(
+            {"upload_file": self._create_csv_file(csv_content), "dry_run": True}
+        )
+
+        with self.assertRaisesRegex(ValidationError, "first_name, last_name"):
+            wizard.action_parse_and_import()
+
+    def test_import_teams_rejects_club_name_reference(self):
+        """Teams must reference clubs by club_code; club_name is retired."""
+        csv_content = "club_name,team_name\nTest Club,Name Matched Team"
+        wizard = self.env["federation.import.teams.wizard"].create(
+            {"upload_file": self._create_csv_file(csv_content), "dry_run": True}
+        )
+
+        with self.assertRaisesRegex(ValidationError, "club_code"):
+            wizard.action_parse_and_import()
+
+    def test_import_teams_rejects_name_alias_for_team_name(self):
+        """The generic name column is no longer an alias for team_name."""
+        csv_content = "club_code,name\nTC001,Alias Team"
+        wizard = self.env["federation.import.teams.wizard"].create(
+            {"upload_file": self._create_csv_file(csv_content), "dry_run": True}
+        )
+
+        with self.assertRaisesRegex(ValidationError, "team_name"):
+            wizard.action_parse_and_import()
+
+    def test_import_tournament_participants_rejects_name_references(self):
+        """Participants must reference divisions and teams by code."""
+        csv_content = (
+            f"tournament_name,team_name\n{self.tournament.name},{self.team.name}"
+        )
+        wizard = self.env["federation.import.tournament.participants.wizard"].create(
+            {"upload_file": self._create_csv_file(csv_content), "dry_run": True}
+        )
+
+        with self.assertRaisesRegex(ValidationError, "tournament_code, team_code"):
+            wizard.action_parse_and_import()
+
+    def test_import_tournament_participants_reports_unknown_code(self):
+        """A row whose team code does not exist is a missing reference."""
+        csv_content = f"tournament_code,team_code\n{self.tournament.code},NO_SUCH_TEAM"
+        wizard = self.env["federation.import.tournament.participants.wizard"].create(
+            {"upload_file": self._create_csv_file(csv_content), "dry_run": True}
+        )
+
+        wizard.action_parse_and_import()
+
+        self.assertEqual(wizard.error_count, 1)
+        self.assertIn("Team 'NO_SUCH_TEAM' not found.", wizard.result_message)
+        self.assertIn("missing_reference", wizard.result_message)
+
+    def test_code_based_import_templates_use_code_contract_version(self):
+        """Templates whose name fallbacks were retired advertise the new version."""
+        for xmlid in (
+            "federation_import_template_players",
+            "federation_import_template_teams",
+            "federation_import_template_tournament_participants",
+        ):
+            template = self.env.ref(f"sports_federation_import_tools.{xmlid}")
+            self.assertEqual(template.contract_version, "csv_codes", xmlid)
+        for xmlid in (
+            "federation_integration_contract_players_csv",
+            "federation_integration_contract_teams_csv",
+            "federation_integration_contract_tournament_participants_csv",
+        ):
+            contract = self.env.ref(f"sports_federation_import_tools.{xmlid}")
+            self.assertEqual(contract.version, "csv_codes", xmlid)
+
+    def test_live_import_rejects_job_approved_under_previous_version(self):
+        """An approval recorded for an older template version must be renewed."""
+        csv_content = "name;code\nVersioned Club;VC001"
+        wizard = self.env["federation.import.clubs.wizard"].create(
+            {"upload_file": self._create_csv_file(csv_content), "dry_run": True}
+        )
+        wizard.action_parse_and_import()
+        wizard.action_request_approval()
+        wizard.action_approve_import()
+        wizard.governance_job_id.schema_version = "csv_v0"
+        wizard.dry_run = False
+
+        with self.assertRaisesRegex(ValidationError, "request approval again"):
+            wizard.action_parse_and_import()
+        self.assertFalse(
+            self.env["federation.club"].search([("code", "=", "VC001")], limit=1)
+        )
 
     def test_import_seasons_reports_format_errors_by_category(self):
         """Season import should create valid rows and classify invalid date rows."""

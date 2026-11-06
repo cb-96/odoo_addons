@@ -31,7 +31,10 @@ class FederationMatchdayCommands(models.AbstractModel):
     @api.model
     def _open_matchday(self, matchday_id):
         matchday = self._resolve(matchday_id)
-        publication = matchday.current_publication_id
+        # _resolve has already verified the caller's match-day role. Read only
+        # this exact immutable publication elevated: match-day managers must
+        # validate the live snapshot without gaining broad publication access.
+        publication = matchday.sudo().current_publication_id
         if (
             matchday.state != "scheduled"
             or not publication
@@ -80,6 +83,9 @@ class FederationMatchdayCommands(models.AbstractModel):
             matchday,
             "matchday_opened",
             {"session_id": session.id, "publication_id": publication.id},
+        )
+        matchday.edition_id._advance_lifecycle(
+            "in_progress", reason=_("First gameday opened.")
         )
         result.update({"session_id": session.id, "publication_id": publication.id})
         return result
@@ -263,10 +269,15 @@ class FederationMatchdayCommands(models.AbstractModel):
                 raise ValidationError(
                     _("The selected operational slot is already occupied.")
                 )
+            location_values = self.env[
+                "federation.schedule.approval.commands"
+            ]._slot_location_values(match, new_slot)
             values = {
                 "operational_slot_id": new_slot.id,
                 "operational_status": "moved",
                 "date_scheduled": new_slot.start_datetime,
+                # The match plays on the new slot's playing area.
+                **location_values,
             }
         elif deviation_type == "delay":
             minutes = int(delay_minutes or 0)
@@ -360,6 +371,20 @@ class FederationMatchdayCommands(models.AbstractModel):
         return result
 
     @api.model
+    def _unresolved_placeholders(self, matchday):
+        """Published placeholder fixtures that never got their match."""
+        # The caller has passed _resolve; keep this internal integrity check
+        # scoped to the authorized match day's current publication.
+        publication = matchday.sudo().current_publication_id
+        if not publication:
+            return self.env["federation.fixture"]
+        return publication.schedule_id.assignment_ids.mapped("fixture_id").filtered(
+            lambda fixture: not fixture.operational_match_id
+            and not fixture.bye_team_id
+            and fixture.state != "cancelled"
+        )
+
+    @api.model
     def close_matchday(self, matchday_id, close_note=False, force=False):
         with self.env.cr.savepoint():
             return self._close_matchday(matchday_id, close_note, force)
@@ -371,18 +396,30 @@ class FederationMatchdayCommands(models.AbstractModel):
         unresolved = self.env["federation.matchday.incident"].search(
             [("matchday_id", "=", matchday.id), ("resolved", "=", False)]
         )
-        scheduled_matches = self.env["federation.match"].search(
-            [("schedule_publication_id", "=", matchday.current_publication_id.id)]
+        publication = matchday.sudo().current_publication_id
+        # Match-day authorization permits this read-only blocker check for the
+        # exact live publication, without granting operators match access.
+        scheduled_matches = self.env["federation.match"].sudo().search(
+            [("schedule_publication_id", "=", publication.id)]
         )
         unfinished = scheduled_matches.filtered(
             lambda match: match.state not in ("done", "cancelled")
         )
-        if (unresolved or unfinished) and not force:
+        unplayed_placeholders = self._unresolved_placeholders(matchday)
+        if (unresolved or unfinished or unplayed_placeholders) and not force:
             raise ValidationError(
                 _(
                     "Resolve incidents and complete or cancel every published "
-                    "match before closing."
+                    "match before closing.%(placeholders)s"
                 )
+                % {
+                    "placeholders": (
+                        _(" Still waiting for teams: %s.")
+                        % ", ".join(unplayed_placeholders.mapped("name"))
+                        if unplayed_placeholders
+                        else ""
+                    )
+                }
             )
         if force and not (close_note or "").strip():
             raise ValidationError(

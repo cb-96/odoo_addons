@@ -1,6 +1,6 @@
-name,birth_date,club_name
-Alice Example,1990-05-10,New Club
-Bob NoDate,,Real Club
-InvalidDate,not-a-date,Real Club
-NoClubPlayer,1985-08-20,Unknown Club
-,2000-01-01,New Club
+first_name,last_name,birth_date,club_code
+Alice,Example,1990-05-10,NEW
+Bob,NoDate,,REAL
+Invalid,Date,not-a-date,REAL
+NoClub,Player,1985-08-20,UNKNOWN
+,Nameless,2000-01-01,NEW

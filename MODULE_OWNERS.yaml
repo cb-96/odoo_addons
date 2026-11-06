@@ -1,8 +1,12 @@
 owner: Federation Platform Team
-last_reviewed: 2026-04-18
+last_reviewed: 2026-10-10
 review_cadence: Every release
 
 modules:
+  sports_federation_live_workspace:
+    primary_owner: Federation Platform Team
+    secondary_owner: Federation Competition Operations
+    surface: Scoped court capture, recovery evidence and governed visual planning
   sports_federation_app:
     primary_owner: Federation Platform Team
     secondary_owner: Federation Competition Operations
@@ -35,6 +39,10 @@ modules:
     primary_owner: Federation Competition Operations
     secondary_owner: Federation Platform Team
     surface: Schedule review and immutable publication snapshots
+  sports_federation_setup_flow:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Guided competition setup and planner readiness projections
   sports_federation_matchday:
     primary_owner: Federation Competition Operations
     secondary_owner: Federation Platform Team
@@ -67,6 +75,10 @@ modules:
     primary_owner: Federation Platform Team
     secondary_owner: Federation Portal and Public Experience
     surface: Notification rules, outbound delivery, and communication hooks
+  sports_federation_navigation:
+    primary_owner: Federation Platform Team
+    secondary_owner: Federation Competition Operations
+    surface: Cross-addon ordinary and advanced menu discoverability
   sports_federation_officiating:
     primary_owner: Federation Competition Operations
     secondary_owner: Federation Portal and Public Experience
@@ -111,3 +123,17 @@ modules:
     primary_owner: Federation Competition Operations
     secondary_owner: Federation Portal and Public Experience
     surface: Venue master data and schedule-level venue ownership
+
+  sports_federation_duty_coverage:
+    primary_owner: Federation Competition Operations
+    secondary_owner: Federation Platform Team
+    surface: Schedule-linked duty coverage, individual responses, attendance and replacement evidence
+
+  sports_federation_member_services:
+    primary_owner: Federation Platform Team
+    secondary_owner: Federation Portal and Public Experience
+    surface: Verified personal relationships and scoped membership requests
+  sports_federation_accounting:
+    primary_owner: Federation Finance and Compliance
+    secondary_owner: Federation Platform Team
+    surface: Native invoice linkage without a parallel accounting ledger

@@ -18,4 +18,16 @@
         <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
 
+    <!--
+        The normal manager group owns day-to-day federation work.  Advanced
+        navigation is deliberately opt-in so installing another domain addon
+        does not put its raw records in every operator's menu.  ACLs and model
+        actions remain unchanged: this group controls discoverability only.
+    -->
+    <record id="group_federation_advanced_operator" model="res.groups">
+        <field name="name">Advanced Federation Tools</field>
+        <field name="implied_ids" eval="[(4, ref('group_federation_manager'))]"/>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    </record>
+
 </odoo>

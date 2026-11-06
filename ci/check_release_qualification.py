@@ -9,10 +9,10 @@ rc_script = (ROOT / "scripts/ci/run_rc_validation.sh").read_text(encoding="utf-8
 workflow = (ROOT / ".github/workflows/release-candidate.yml").read_text(
     encoding="utf-8"
 )
-acceptance = (ROOT / "docs/release/COMPETITION_ACCEPTANCE.md").read_text(
+acceptance = (ROOT / "docs/release/acceptance/competition-acceptance.md").read_text(
     encoding="utf-8"
 )
-stabilization_plan = (ROOT / "docs/release/POST_CUTOVER_PHASES.md").read_text(
+stabilization_plan = (ROOT / "docs/release/stabilization-plan.md").read_text(
     encoding="utf-8"
 )
 baseline_script = (ROOT / "scripts/ci/run_release_baseline.sh").read_text(
@@ -56,7 +56,7 @@ checks = {
     ),
     "acceptance candidate evidence": "candidate commit" in acceptance.lower(),
     "single competition namespace evidence": "/competitions"
-    in (ROOT / "ROUTE_INVENTORY.md").read_text(encoding="utf-8"),
+    in (ROOT / "docs/reference/routes.md").read_text(encoding="utf-8"),
     "acceptance full lifecycle": all(
         token in acceptance.lower()
         for token in (

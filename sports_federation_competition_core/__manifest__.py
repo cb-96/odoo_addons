@@ -1,6 +1,6 @@
 {
     "name": "Competition Core",
-    "version": "19.0.1.5.0",
+    "version": "19.0.1.8.0",
     "category": "Sports",
     "summary": "Stable competition lifecycle, role ownership, and domain events",
     "author": "Sports Federation",
@@ -11,6 +11,7 @@
         "security/ir.model.access.csv",
         "views/competition_edition_views.xml",
         "views/menu.xml",
+        "views/competition_archive_views.xml",
     ],
     "installable": True,
     "application": False,

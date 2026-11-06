@@ -25,6 +25,7 @@ backup_dir=""
 target_db="${MIGRATION_TARGET_DB:-sf_rc_migration}"
 rollback_db="${MIGRATION_ROLLBACK_DB:-sf_rc_rollback}"
 evidence_dir="${MIGRATION_EVIDENCE_DIR:-$repo_root/artifacts/release/migration}"
+rc_log_file="${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
 rollback_owner="${ROLLBACK_OWNER:-}"
 rollback_trigger="${ROLLBACK_TRIGGER:-}"
 restore_flags=()
@@ -126,6 +127,7 @@ python3 ci/capture_migration_invariants.py \
   --database "$target_db" \
   --output "$evidence_dir/before-upgrade.json"
 
+: > "$rc_log_file"
 upgrade_command="UPGRADE_DB_NAME=$target_db scripts/ci/run_rc_validation.sh upgrade"
 upgrade_started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 upgrade_started_epoch="$(date +%s)"
@@ -141,6 +143,13 @@ fi
 upgrade_finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 upgrade_finished_epoch="$(date +%s)"
 upgrade_duration_seconds="$((upgrade_finished_epoch - upgrade_started_epoch))"
+upgrade_evidence_args=()
+if [[ "$upgrade_status" == "failed" ]]; then
+  upgrade_evidence_args+=(--failure-classification unclassified)
+fi
+if [[ -f "$rc_log_file" ]]; then
+  upgrade_evidence_args+=(--log "$rc_log_file")
+fi
 
 python3 ci/capture_release_evidence.py \
   --lane migration-upgrade \
@@ -152,7 +161,8 @@ python3 ci/capture_release_evidence.py \
   --duration-seconds "$upgrade_duration_seconds" \
   --database "$target_db" \
   --backup "$dump_file" \
-  --output "$evidence_dir/upgrade.json"
+  --output "$evidence_dir/upgrade.json" \
+  "${upgrade_evidence_args[@]}"
 
 [[ "$upgrade_status" == "passed" ]] || exit 1
 
@@ -175,6 +185,13 @@ fi
 acceptance_finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 acceptance_finished_epoch="$(date +%s)"
 acceptance_duration_seconds="$((acceptance_finished_epoch - acceptance_started_epoch))"
+acceptance_evidence_args=()
+if [[ "$acceptance_status" == "failed" ]]; then
+  acceptance_evidence_args+=(--failure-classification unclassified)
+fi
+if [[ -f "$rc_log_file" ]]; then
+  acceptance_evidence_args+=(--log "$rc_log_file")
+fi
 
 python3 ci/capture_release_evidence.py \
   --lane role-separated-acceptance \
@@ -185,7 +202,8 @@ python3 ci/capture_release_evidence.py \
   --finished-at "$acceptance_finished_at" \
   --duration-seconds "$acceptance_duration_seconds" \
   --database "$target_db" \
-  --output "$evidence_dir/operator-acceptance.json"
+  --output "$evidence_dir/operator-acceptance.json" \
+  "${acceptance_evidence_args[@]}"
 
 [[ "$acceptance_status" == "passed" ]] || exit 1
 

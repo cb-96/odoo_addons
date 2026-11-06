@@ -11,7 +11,7 @@
                 </button>
             </xpath>
             <xpath expr="//notebook" position="inside">
-                <page string="Match Sheets" name="match_sheets">
+                <page string="Lineups" name="match_sheets">
                     <field name="match_sheet_ids">
                         <list>
                             <field name="name"/>

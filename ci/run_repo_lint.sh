@@ -155,4 +155,6 @@ else
     echo "[lint] Repository-wide report is clean."
 fi
 
+python3 -m unittest ci.test_minimal_ux ci.test_complete_ux || exit 1
+
 exit 0

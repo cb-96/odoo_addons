@@ -132,6 +132,16 @@ class FederationMatchBracket(models.Model):
                     )
         return True
 
+    def _get_forfeit_winner(self):
+        """Team that won by forfeit or walkover, if the match was decided so."""
+        self.ensure_one()
+        if (
+            self.resolution_type in ("forfeit", "walkover")
+            and self.advancing_team_id in (self.home_team_id | self.away_team_id)
+        ):
+            return self.advancing_team_id
+        return self.env["federation.team"]
+
     def _get_result_team(self, result_type):
         self.ensure_one()
         if self.state != "done":

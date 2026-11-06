@@ -1,5 +1,5 @@
-name,email,phone,city
-New Club,new@example.com,123456,City1
-Real Club,real@example.com,234567,City2
-Test Club,test@example.com,555000,TestCity
-,missing@example.com,000000,NoNameCity
+name,code,email,phone,city
+New Club,NEW,new@example.com,123456,City1
+Real Club,REAL,real@example.com,234567,City2
+Test Club,TC001,test@example.com,555000,TestCity
+,MISSING,missing@example.com,000000,NoNameCity

@@ -1,0 +1,36 @@
+<odoo>
+  <record id="schedule_form_simple_status" model="ir.ui.view">
+    <field name="name">federation.schedule.form.simple.status</field>
+    <field name="model">federation.schedule</field>
+    <field name="inherit_id" ref="sports_federation_scheduling.schedule_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet/group[1]" position="before">
+        <div class="mb-3" name="simple_scheduling_status" invisible="not simple_checked">
+          <h2 class="h4"><field name="simple_summary" readonly="1"/></h2>
+          <div class="alert alert-danger" role="alert" invisible="not must_fix_count">
+            <strong>Must fix</strong> &#8212; these block review.
+            <field name="must_fix_html" readonly="1" nolabel="1"/>
+          </div>
+          <div class="alert alert-warning" role="status" invisible="not could_improve_count">
+            <strong>Could improve</strong> &#8212; these do not block review.
+            <field name="could_improve_html" readonly="1" nolabel="1"/>
+          </div>
+          <div class="alert alert-success" role="status" invisible="must_fix_count or could_improve_count">
+            No conflicts and no preference warnings.
+          </div>
+        </div>
+        <!-- Technical fields kept so the status block's visibility modifiers can read them. -->
+        <field name="simple_checked" invisible="1"/>
+        <!-- Technical field relay for the alert modifiers above. -->
+        <field name="must_fix_count" invisible="1"/>
+        <!-- Technical field relay for the alert modifiers above. -->
+        <field name="could_improve_count" invisible="1"/>
+      </xpath>
+      <!-- Low-level validation data is an advanced tool, not part of the default screen. -->
+      <xpath expr="//page[@name='calendar_fixtures']" position="attributes">
+        <attribute name="groups">sports_federation_base.group_federation_advanced_operator</attribute>
+        <attribute name="string">Calendar fixtures (advanced)</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

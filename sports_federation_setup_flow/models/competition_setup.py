@@ -7,8 +7,9 @@ class FederationCompetitionEditionSetup(models.Model):
 
     setup_step = fields.Selection(
         [
-            ("divisions", "Define divisions"),
-            ("participants", "Add teams"),
+            ("basics", "Define divisions"),
+            ("teams", "Finalize teams"),
+            ("format", "Freeze formats"),
             ("gamedays", "Define game days"),
             ("schedule", "Generate schedule"),
             ("publication", "Publish schedule"),
@@ -39,11 +40,16 @@ class FederationCompetitionEditionSetup(models.Model):
             )
             participant_count = len(participant_sets.mapped("line_ids.team_id"))
         gamedays = Matchday.search_count([("edition_id", "=", self.id)])
-        schedules = Schedule.search([("edition_id", "=", self.id)])
+        schedules = Schedule.search(
+            [("edition_id", "=", self.id), ("state", "!=", "superseded")]
+        )
         publications = 0
-        if "federation.schedule.publication" in self.env:
-            publications = self.env["federation.schedule.publication"].search_count(
-                [("edition_id", "=", self.id), ("state", "=", "live")]
+        if "current_publication_id" in Matchday._fields:
+            publications = Matchday.search_count(
+                [
+                    ("edition_id", "=", self.id),
+                    ("current_publication_id.state", "=", "live"),
+                ]
             )
         return len(divisions), participant_count, gamedays, len(schedules), publications
 
@@ -51,8 +57,9 @@ class FederationCompetitionEditionSetup(models.Model):
         self.ensure_one()
         assessment = self.env["federation.competition.setup.readiness"].evaluate(self)
         actions = {
-            "divisions": self.action_setup_divisions,
-            "participants": self.action_setup_participants,
+            "basics": self.action_setup_divisions,
+            "teams": self.action_setup_participants,
+            "format": self.action_setup_format,
             "gamedays": self.action_setup_gamedays,
             "schedule": self.action_setup_schedule,
             "publication": self.action_setup_publication,
@@ -92,17 +99,105 @@ class FederationCompetitionEditionSetup(models.Model):
         action["domain"] = [("edition_id", "=", self.id)]
         return action
 
+    def action_setup_teams_and_format(self):
+        """Open the one-screen teams and format editor for all divisions."""
+        self.ensure_one()
+        self.check_access("read")
+        wizard = self.env["federation.competition.division.setup.wizard"].with_context(
+            default_edition_id=self.id
+        ).create({"edition_id": self.id})
+        if not wizard.line_ids:
+            wizard.line_ids = [
+                fields.Command.create(
+                    self.env["federation.competition.division.setup.wizard"]._line_values(
+                        self, division
+                    )
+                )
+                for division in self.tournament_ids.sorted(lambda item: (item.name or "", item.id))
+            ] or [fields.Command.create({"name": _("Division 1")})]
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Teams & Format"),
+            "res_model": wizard._name,
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "views": [(False, "form")],
+            "target": "new",
+        }
+
     def action_setup_participants(self):
-        action = self._action_with_edition(
-            "sports_federation_registration.action_registration_desk"
+        self.ensure_one()
+        finalized_divisions = self.env["federation.participant.set"].search(
+            [("edition_id", "=", self.id), ("state", "=", "finalized")]
+        ).mapped("division_id")
+        division = (self.tournament_ids - finalized_divisions).sorted(
+            lambda item: (item.name or "", item.id)
+        )[:1] or self.tournament_ids.sorted(lambda item: (item.name or "", item.id))[:1]
+        if not division:
+            return self.action_setup_divisions()
+        wizard = self.env["federation.competition.team.selection.wizard"].create(
+            {"edition_id": self.id, "division_id": division.id}
         )
-        action["domain"] = [("edition_id", "=", self.id)]
-        return action
+        wizard._onchange_division_id()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Select Teams"),
+            "res_model": wizard._name,
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "views": [(False, "form")],
+            "target": "new",
+        }
+
+    def action_setup_format(self):
+        self.ensure_one()
+        structures = self.env["federation.competition.structure"].search(
+            [("edition_id", "=", self.id), ("state", "=", "frozen")]
+        )
+        division = (self.tournament_ids - structures.mapped("division_id")).sorted(
+            lambda item: (item.name or "", item.id)
+        )[:1] or self.tournament_ids.sorted(lambda item: (item.name or "", item.id))[:1]
+        if not division:
+            return self.action_setup_divisions()
+        participant_set = self.env["federation.participant.set"].search(
+            [
+                ("edition_id", "=", self.id),
+                ("division_id", "=", division.id),
+                ("state", "=", "finalized"),
+            ],
+            order="id desc",
+            limit=1,
+        )
+        if not participant_set:
+            return self.action_setup_participants()
+        wizard = self.env["federation.competition.format.setup.wizard"].create(
+            {
+                "edition_id": self.id,
+                "division_id": division.id,
+                "participant_set_id": participant_set.id,
+            }
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Choose Format"),
+            "res_model": wizard._name,
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "views": [(False, "form")],
+            "target": "new",
+        }
 
     def action_setup_gamedays(self):
         self.ensure_one()
         wizard = self.env["federation.competition.gameday.setup.wizard"].create(
-            {"edition_id": self.id}
+            {
+                "edition_id": self.id,
+                "new_date": self.date_start or fields.Date.context_today(self),
+                "default_venue_id": self.setup_default_venue_id.id,
+                "default_start_hour": self.setup_default_start_hour,
+                "default_end_hour": self.setup_default_end_hour,
+                "default_slot_duration_minutes": self.setup_default_slot_duration_minutes,
+            }
         )
         return {
             "type": "ir.actions.act_window",
@@ -110,16 +205,48 @@ class FederationCompetitionEditionSetup(models.Model):
             "res_model": wizard._name,
             "res_id": wizard.id,
             "view_mode": "form",
-            "target": "current",
+            "views": [(False, "form")],
+            "target": "new",
         }
 
     def action_setup_schedule(self):
-        return self._action_with_edition(
-            "sports_federation_scheduling.action_competition_schedule_wizard"
+        self.ensure_one()
+        wizard = self.env["federation.competition.schedule.wizard"].create(
+            {"edition_id": self.id}
         )
+        wizard._onchange_edition_id()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Plan Competition"),
+            "res_model": wizard._name,
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "views": [(False, "form")],
+            "target": "new",
+            "context": dict(
+                self.env.context,
+                competition_planner_edition_id=self.id,
+                return_to_competition_workspace=True,
+            ),
+        }
 
     def action_setup_publication(self):
-        return self._action_with_edition(
-            "sports_federation_schedule_approval.action_schedule_review_queue",
-            search_default_pending=1,
-        )
+        """Publish every ready game day in one command.
+
+        The former target, the pending review queue, is empty in Streamlined
+        mode because nothing has been submitted yet; that was a dead end.
+        """
+        self.ensure_one()
+        if self.schedule_approval_required and self._publication_waiting_for_review():
+            return self._action_with_edition(
+                "sports_federation_schedule_approval.action_schedule_review_queue",
+                search_default_pending=1,
+            )
+        return self.action_publish_competition_schedule()
+
+    def _publication_waiting_for_review(self):
+        self.ensure_one()
+        schedules = self._publishable_schedules()
+        return bool(schedules) and all(
+            schedule.state in ("ready_for_review", "published") for schedule in schedules
+        ) and any(schedule.state == "ready_for_review" for schedule in schedules)

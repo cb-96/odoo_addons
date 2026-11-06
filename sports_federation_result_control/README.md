@@ -1,6 +1,5 @@
 # Sports Federation Result Control
 
-Version: 19.0.1.2.0
 Owner: Federation Platform Team
 Last reviewed: 2026-08-20
 Review cadence: Every release
@@ -28,11 +27,6 @@ Portal and tournament-operation actions call the same model-owned result methods
 
 Coverage includes lifecycle transitions, immutability, duty separation, contest/correction recovery, audit records, and end-to-end result pipeline tours.
 
-## Removed document
-
-`ROADMAP_RC.md` is deleted. Approved-result immutability is an implemented invariant and belongs in this README and its regression tests, not a permanent mini-roadmap.
-
-
 ## Audit evidence protection
 
 Audit evidence is append-only operational history. Normal system and federation
@@ -59,3 +53,7 @@ in a database savepoint, returns a structured command result, preserves the
 result-specific audit trail, and emits a common workflow-transition audit event.
 Separation of duties is expressed as forbidden actor fields for verification
 and approval.
+
+## Safe score entry
+
+Result submission requires deliberate entry of both aggregate scores. A 0–0 result needs an explicit confirmation. Optional set / period rows store the official scoring breakdown and must total to the aggregate score before submission. Approved aggregate and set / period scores remain immutable until the governed correction workflow is used.

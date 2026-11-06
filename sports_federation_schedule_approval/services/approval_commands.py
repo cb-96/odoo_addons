@@ -36,13 +36,75 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
 
     def _ensure_operational_matches(self, schedule):
         fixtures = schedule.assignment_ids.mapped("fixture_id")
-        missing = fixtures.filtered(lambda fixture: not fixture.operational_match_id)
+        # Placeholder fixtures get their match once their teams are known.
+        missing = fixtures.filtered(
+            lambda fixture: not fixture.operational_match_id
+            and fixture.home_team_id
+            and fixture.away_team_id
+        )
         if missing:
             # Publication is already protected by the edition-role check.  The
             # materializer is the single authoritative path for creating the
             # derived operational matches, and the elevated section is limited
             # to these fixtures assigned to this schedule.
             self.env["federation.fixture.materializer"].sudo().materialize(missing)
+
+    @api.model
+    def _slot_location_values(self, match, slot):
+        """Venue and playing area of the slot a match is played in.
+
+        The venue and playing area used to come from the match's round. Matches
+        built from fixtures have no round, so the slot (a time on one playing
+        area of the match-day venue) is the only place the location lives; it
+        is copied to the match so finance, exports and the public schedule see it.
+        """
+        values = {}
+        court = slot.court_id
+        if "playing_area_id" in match._fields and court:
+            values["playing_area_id"] = court.id
+        if "venue_id" in match._fields:
+            venue = court.venue_id or slot.matchday_id.venue_id
+            if venue:
+                values["venue_id"] = venue.id
+        return values
+
+    @api.model
+    def _link_match_to_publication(self, match, assignment, publication):
+        match_values = {
+            "published_slot_id": assignment.slot_id.id,
+            "schedule_publication_id": publication.id,
+            "date_scheduled": assignment.slot_id.start_datetime,
+        }
+        match_values.update(self._slot_location_values(match, assignment.slot_id))
+        if match.state == "draft":
+            # A published match is scheduled; only draft matches move forward.
+            match_values["state"] = "scheduled"
+        if "operational_slot_id" in match._fields:
+            match_values.update(
+                {
+                    "operational_slot_id": assignment.slot_id.id,
+                    "operational_status": "as_published",
+                }
+            )
+        match.sudo().write(match_values)
+        return True
+
+    @api.model
+    def link_placeholder_matches(self, matches):
+        """Attach newly created matches to the live slot of their fixture."""
+        Publication = self.env["federation.schedule.publication"].sudo()
+        for match in matches.filtered(
+            lambda item: item.logical_fixture_id and not item.schedule_publication_id
+        ):
+            fixture = match.logical_fixture_id
+            for publication in Publication.search([("state", "=", "live")]):
+                assignment = publication.schedule_id.assignment_ids.filtered(
+                    lambda item: item.fixture_id == fixture
+                )[:1]
+                if assignment:
+                    self._link_match_to_publication(match, assignment, publication)
+                    break
+        return True
 
     @api.model
     def start_review(self, schedule_id):
@@ -216,10 +278,14 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             },
             expected_revision=schedule.revision,
             revision_field="submitted_revision",
-            forbidden_actor_fields=("submitted_by_id",),
+            forbidden_actor_fields=(
+                ()
+                if review.edition_id.schedule_self_approval_allowed
+                else ("submitted_by_id",)
+            ),
             writer=review._write_decision,
             event_type="schedule_review_approved",
-            description=_("Schedule approved by the assigned independent reviewer."),
+            description=_("Schedule approval recorded according to the competition workflow policy."),
         )
         transition.execute(
             review.schedule_id.sudo(),
@@ -241,8 +307,17 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
         if not schedule:
             raise ValidationError(_("The schedule no longer exists."))
+        live = schedule.sudo().matchday_id.current_publication_id
+        streamlined_first_publish = bool(
+            not schedule.edition_id.schedule_approval_required
+            and schedule.edition_id.schedule_self_approval_allowed
+            and schedule.edition_id.schedule_auto_publish_after_approval
+            and (not live or live.state != "live")
+        )
         self.env["federation.competition.role.assignment"].assert_role(
-            schedule.edition_id, "schedule_approver", "competition_director"
+            schedule.edition_id,
+            "schedule_planner" if streamlined_first_publish else "schedule_approver",
+            "competition_director",
         )
         # Publication also reads the full schedule, match day and fixture
         # graph.  Keep those internal reads controlled and read-only after the
@@ -354,22 +429,14 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
         for assignment in schedule.assignment_ids:
             match = assignment.fixture_id.operational_match_id
             if not match:
+                if assignment.fixture_id._is_schedulable():
+                    # Published as a placeholder ("Winner R1 M1"); linked when
+                    # the deciding results are approved.
+                    continue
                 raise ValidationError(
                     _("Every scheduled fixture must have an operational match.")
                 )
-            match_values = {
-                "published_slot_id": assignment.slot_id.id,
-                "schedule_publication_id": publication.id,
-                "date_scheduled": assignment.slot_id.start_datetime,
-            }
-            if "operational_slot_id" in match._fields:
-                match_values.update(
-                    {
-                        "operational_slot_id": assignment.slot_id.id,
-                        "operational_status": "as_published",
-                    }
-                )
-            match.sudo().write(match_values)
+            self._link_match_to_publication(match, assignment, publication)
         transition.execute(
             schedule.sudo(),
             "published",
@@ -385,6 +452,9 @@ class FederationScheduleApprovalCommands(models.AbstractModel):
             values={"current_publication_id": publication.id},
             event_type="matchday_schedule_published",
             description=_("Match day linked to the live publication."),
+        )
+        schedule.edition_id._advance_lifecycle(
+            "open", reason=_("First schedule published.")
         )
         self.env["federation.competition.event"].emit(
             schedule,

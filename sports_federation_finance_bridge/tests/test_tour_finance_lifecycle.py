@@ -57,6 +57,14 @@ class TestTourFinanceLifecycle(TransactionCase):
                 "default_amount": 100.00,
             }
         )
+        cls.fee_reimbursement = cls.env["federation.fee.type"].create(
+            {
+                "name": "Tour Reimbursement",
+                "code": "TOURREIMB",
+                "category": "reimbursement",
+                "default_amount": 150.00,
+            }
+        )
 
     def test_finance_event_full_lifecycle(self):
         """Finance events: draft → confirmed → settled; cancel; idempotent create; handoff."""
@@ -65,8 +73,8 @@ class TestTourFinanceLifecycle(TransactionCase):
         event = self.env["federation.finance.event"].create(
             {
                 "name": "Tour Registration 2026",
-                "fee_type_id": self.fee_registration.id,
-                "event_type": "charge",
+                "fee_type_id": self.fee_reimbursement.id,
+                "event_type": "reimbursement",
                 "amount": 150.00,
                 "source_model": "federation.club",
                 "source_res_id": self.club.id,

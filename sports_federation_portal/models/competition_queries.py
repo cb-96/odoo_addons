@@ -272,7 +272,10 @@ class FederationPortalMatchdayQueries(models.AbstractModel):
                 [
                     ("current_publication_id", "in", publication_ids),
                     ("current_publication_id.state", "=", "live"),
-                ],
+                ]
+                + self.env["federation.portal.archive.scope"].exclusion_domain(
+                    "federation.matchday"
+                ),
                 order="date asc,id asc",
             )
         )
@@ -284,6 +287,7 @@ class FederationPortalMatchdayQueries(models.AbstractModel):
             not day
             or not day.current_publication_id
             or day.current_publication_id.state != "live"
+            or not self.env["federation.portal.archive.scope"].filter_visible(day)
         ):
             raise AccessError(_("This match day has no visible live publication."))
         teams = self._scope().teams(user=user)

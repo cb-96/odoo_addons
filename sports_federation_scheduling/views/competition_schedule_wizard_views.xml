@@ -4,16 +4,37 @@
   <field name="model">federation.competition.schedule.wizard</field>
   <field name="arch" type="xml">
    <form string="Generate Competition Schedule">
+    <div class="oe_title"><h1>Generate schedule</h1><p class="text-muted">All divisions and game days of this competition are planned together. You can move matches afterwards.</p></div>
     <group>
-     <group><field name="edition_id"/><field name="structure_ids" widget="many2many_tags"/><field name="matchday_ids" widget="many2many_tags"/></group>
-     <group><field name="mode"/><field name="rebuild_reason" invisible="mode != 'rebuild'" required="mode == 'rebuild'"/><field name="generate_missing_fixtures"/><field name="preferred_rest_minutes"/></group>
+     <group string="Game days"><field name="matchday_ids" widget="many2many_tags" string="Game days"/><field name="preferred_rest_minutes" string="Rest between matches (min)"/></group>
+     <group string="Advanced" groups="sports_federation_base.group_federation_advanced_operator"><field name="edition_id"/><field name="structure_ids" widget="many2many_tags"/><field name="stage_ids" widget="many2many_tags"/><field name="mode"/><field name="rebuild_reason" invisible="mode != 'rebuild'" required="mode == 'rebuild'"/><field name="generate_missing_fixtures"/></group>
     </group>
-    <div class="alert alert-info" role="status">Each game day uses its own start, end, duration, pause, courts and blackout constraints. Preview separates feasibility from schedule quality.</div>
-    <group invisible="not preview_ready"><field name="blocking_issue_count"/><field name="warning_count"/></group>
-    <notebook invisible="not preview_ready"><page string="Feasibility"><field name="feasibility_report" nolabel="1" readonly="1"/></page><page string="Quality"><field name="quality_report" nolabel="1" readonly="1"/></page></notebook>
-    <!-- Technical modifier relay: preview_ready controls preview and apply. -->
+    <!-- Technical modifier relay: the stage game days section only shows for multi-stage formats. -->
+    <field name="has_stage_windows" invisible="1"/>
+    <details class="mb-3" invisible="not has_stage_windows">
+     <summary><strong>Stage game days</strong> <span class="text-muted">(optional)</span></summary>
+     <p class="text-muted mt-2">Later stages are always planned after the stage their teams come from. Pick game days only to fix a stage to part of the calendar, for example the second half or the finals day.</p>
+     <field name="stage_window_ids" nolabel="1">
+      <list editable="bottom" create="0" delete="0">
+       <field name="division_id" optional="show"/>
+       <field name="stage_id" readonly="1"/>
+       <field name="source_summary"/>
+       <field name="edition_id" column_invisible="1"/>
+       <field name="matchday_ids" widget="many2many_tags" placeholder="Any game day" options="{'no_create': True}"/>
+      </list>
+     </field>
+    </details>
+    <div class="alert alert-warning" role="alert" invisible="not blocking_issue_count">The schedule cannot be generated yet. Fix the items listed under Feasibility, then generate again.</div>
+    <div class="alert alert-warning" role="alert" invisible="blocking_issue_count or not rest_shortfall_html">
+     <p><strong>Some teams cannot get the preferred rest between their matches.</strong></p>
+     <field name="rest_shortfall_html" nolabel="1" readonly="1"/>
+     <p class="mb-0 mt-2">Change the rest above, the game days or the courts and generate again, or use <em>Generate anyway</em> and accept the short rest when you publish.</p>
+    </div>
+    <group invisible="not preview_ready"><group string="Scope"><field name="selected_stage_count"/><field name="included_fixture_count" string="Matches included"/><field name="excluded_fixture_count" string="Matches left out"/></group><group string="Checks"><field name="blocking_issue_count"/><field name="warning_count"/></group></group>
+    <notebook invisible="not preview_ready"><page string="By game day"><field name="allocation_report_html" nolabel="1" readonly="1"/></page><page string="Feasibility"><field name="feasibility_report_html" nolabel="1" readonly="1"/></page><page string="Quality"><field name="quality_report_html" nolabel="1" readonly="1"/></page></notebook>
+    <!-- Technical modifier relay: preview_ready controls the check results. -->
     <field name="preview_ready" invisible="1"/><field name="preview_signature" invisible="1"/>
-    <footer><button name="action_preview" type="object" string="Preview" class="btn-secondary"/><button name="action_apply" type="object" string="Generate Draft Schedules" class="btn-primary" invisible="not preview_ready or blocking_issue_count" confirm="Apply this complete competition plan?"/><button string="Cancel" special="cancel" class="btn-secondary"/></footer>
+    <footer><button name="action_generate" type="object" string="Generate schedule" class="btn-primary"/><button name="action_generate" type="object" string="Generate anyway" class="btn-secondary" context="{'accept_short_rest': True}" invisible="blocking_issue_count or not rest_shortfall_html"/><button name="action_preview" type="object" string="Check only" class="btn-secondary" groups="sports_federation_base.group_federation_advanced_operator"/><button string="Cancel" special="cancel" class="btn-secondary"/></footer>
    </form>
   </field>
  </record>

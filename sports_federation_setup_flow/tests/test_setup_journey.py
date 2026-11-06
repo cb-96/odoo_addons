@@ -1,6 +1,7 @@
 from datetime import date
 from unittest.mock import patch
 
+from odoo import Command
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
@@ -44,43 +45,81 @@ class TestCompetitionSetupJourney(TransactionCase):
 
     def test_readiness_explains_next_blocker(self):
         result = self.env["federation.competition.setup.readiness"].evaluate(self.edition)
-        self.assertEqual(result["step"], "divisions")
+        self.assertEqual(result["step"], "basics")
         self.assertTrue(result["blocker_hint"])
 
-    def test_continue_setup_routes_from_canonical_assessment(self):
-        routes = {
-            "divisions": "action_setup_divisions",
-            "participants": "action_setup_participants",
-            "gamedays": "action_setup_gamedays",
-            "schedule": "action_setup_schedule",
-            "publication": "action_setup_publication",
-        }
+    def test_continue_setup_opens_visual_planner(self):
         service = self.env["federation.competition.setup.readiness"]
-        for step, method in routes.items():
-            with self.subTest(step=step):
-                expected = {"type": "ir.actions.act_window", "name": step}
-                with patch.object(type(service), "evaluate", return_value={"step": step}):
-                    with patch.object(type(self.edition), method, return_value=expected) as target:
-                        self.assertEqual(self.edition.action_continue_setup(), expected)
-                        target.assert_called_once()
+        with patch.object(
+            type(service),
+            "evaluate",
+            side_effect=AssertionError("legacy readiness routing must not be used"),
+        ):
+            action = self.edition.action_continue_setup()
 
-    def test_completed_setup_stays_on_edition(self):
-        service = self.env["federation.competition.setup.readiness"]
-        with patch.object(type(service), "evaluate", return_value={"step": "complete"}):
-            with patch.object(type(self.edition), "action_setup_gamedays") as gamedays:
-                action = self.edition.action_continue_setup()
-                gamedays.assert_not_called()
-        self.assertEqual(action["res_id"], self.edition.id)
+        self.assertEqual(action["type"], "ir.actions.client")
+        self.assertEqual(
+            action["tag"], "sports_federation_setup_flow.CompetitionPlanner"
+        )
+        self.assertEqual(action["params"]["edition_id"], self.edition.id)
+
+    def test_legacy_workspace_entry_point_opens_planner_for_edition(self):
+        action = self.edition.action_open_next_workspace()
+
+        self.assertEqual(action["type"], "ir.actions.client")
+        self.assertEqual(
+            action["tag"], "sports_federation_setup_flow.CompetitionPlanner"
+        )
+        self.assertEqual(action["params"]["edition_id"], self.edition.id)
+
+    def test_advanced_workspace_keeps_the_competition_scope(self):
+        action = self.edition.action_open_advanced_workspace()
+
+        self.assertEqual(action["domain"], [("edition_id", "=", self.edition.id)])
+        self.assertEqual(action["context"]["default_edition_id"], self.edition.id)
 
     def test_creation_wizard_exposes_operator_defaults(self):
         fields = self.env["federation.create.competition.wizard"]._fields
         self.assertIn("workflow_mode", fields)
         self.assertIn("default_venue_id", fields)
+        self.assertFalse(fields["competition_id"].required)
+
+        view = self.env.ref(
+            "sports_federation_setup_flow.create_competition_wizard_journey"
+        )
+        for field_name in ("setup_template", "name", "date_start", "date_end"):
+            self.assertIn(f'<label for="{field_name}"', view.arch_db)
 
     def test_gameday_setup_supports_recurring_days(self):
         fields = self.env["federation.competition.gameday.setup.wizard"]._fields
         self.assertIn("repeat_every_weeks", fields)
         self.assertIn("repeat_count", fields)
+
+    def test_calendar_planner_can_create_gameday_setup_wizard(self):
+        groups = [
+            self.env.ref("base.group_user"),
+            self.env.ref("sports_federation_base.group_federation_user"),
+            self.env.ref("sports_federation_calendar.group_calendar_planner"),
+        ]
+        planner = self.env["res.users"].with_context(no_reset_password=True).create(
+            {
+                "name": "Calendar Planner Setup Test",
+                "login": "calendar.planner.setup@example.invalid",
+                "group_ids": [Command.set([group.id for group in groups])],
+            }
+        )
+
+        wizard = self.env["federation.competition.gameday.setup.wizard"].with_user(
+            planner
+        ).create(
+            {
+                "edition_id": self.edition.id,
+                "new_date": "2026-10-03",
+                "default_venue_id": self.venue.id,
+            }
+        )
+
+        self.assertEqual(wizard.edition_id, self.edition)
 
     def test_competition_can_open_clone_setup(self):
         self.assertTrue(
@@ -138,3 +177,61 @@ class TestCompetitionSetupJourney(TransactionCase):
             wizard.line_ids.mapped("date"),
             [date(2026, 10, 3), date(2026, 10, 17), date(2026, 10, 31)],
         )
+
+    def test_creation_workflow_modes_explain_their_operational_effect(self):
+        wizard = self.env["federation.create.competition.wizard"].new(
+            {"workflow_mode": "controlled"}
+        )
+        self.assertIn("second person", wizard.workflow_summary)
+        wizard.workflow_mode = "custom"
+        self.assertIn("configure each checkpoint", wizard.workflow_summary)
+
+    def test_competition_presets_supply_meaningful_editable_defaults(self):
+        wizard = self.env["federation.create.competition.wizard"].new(
+            {
+                "setup_template": "tournament_day",
+                "season_id": self.season.id,
+                "date_start": "2026-10-03",
+            }
+        )
+        wizard._onchange_competition_preset()
+
+        self.assertEqual(wizard.date_end, date(2026, 10, 3))
+        self.assertEqual(wizard.workflow_mode, "simple")
+        self.assertEqual(wizard.default_format_type, "single_round_robin")
+        self.assertTrue(wizard.registration_open)
+        self.assertTrue(wizard.registration_close)
+
+    def test_switching_seasons_realigns_an_out_of_range_start_date(self):
+        wizard = self.env["federation.create.competition.wizard"].new(
+            {
+                "setup_template": "league",
+                "season_id": self.season.id,
+                "date_start": "2026-10-03",
+            }
+        )
+        wizard.season_id = self.next_season
+        wizard._onchange_competition_season()
+
+        self.assertEqual(wizard.date_start, date(2027, 9, 1))
+        self.assertEqual(wizard.date_end, date(2028, 6, 30))
+
+    def test_add_game_day_defaults_venue_courts_and_has_clear_title(self):
+        wizard = self.env["federation.competition.gameday.setup.wizard"].create(
+            {
+                "edition_id": self.edition.id,
+                "new_date": "2026-10-03",
+                "default_venue_id": self.venue.id,
+            }
+        )
+
+        action = wizard.action_add_day()
+
+        self.assertEqual(wizard.line_ids.court_ids, self.court)
+        self.assertEqual(action["name"], "Define Game Days")
+
+    def test_game_day_setup_opens_as_dialog_for_footer_actions(self):
+        action = self.edition.action_setup_gamedays()
+
+        self.assertEqual(action["target"], "new")
+        self.assertEqual(action["res_model"], "federation.competition.gameday.setup.wizard")

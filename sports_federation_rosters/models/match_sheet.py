@@ -1,3 +1,5 @@
+from datetime import datetime, time, timedelta
+
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
@@ -123,6 +125,36 @@ class FederationMatchSheet(models.Model):
         "match_sheet_id",
         string="Audit Events",
     )
+    gameday_roster_limit = fields.Integer(
+        compute="_compute_participation",
+        compute_sudo=True,
+        string="Max Players on Gameday Roster",
+    )
+    match_participant_limit = fields.Integer(
+        compute="_compute_participation",
+        compute_sudo=True,
+        string="Max Players per Match",
+    )
+    participant_count = fields.Integer(
+        compute="_compute_participation",
+        compute_sudo=True,
+        string="Playing This Match",
+    )
+    crossed_out_count = fields.Integer(
+        compute="_compute_participation",
+        compute_sudo=True,
+        string="Crossed Out",
+    )
+    participation_feedback = fields.Char(
+        compute="_compute_participation",
+        compute_sudo=True,
+        string="Match Participation",
+    )
+    can_record_participation = fields.Boolean(
+        compute="_compute_participation",
+        compute_sudo=True,
+        string="Can Cross Out Players",
+    )
     coach_name = fields.Char(string="Coach Name")
     manager_name = fields.Char(string="Manager Name")
     notes = fields.Text(string="Notes")
@@ -230,6 +262,7 @@ class FederationMatchSheet(models.Model):
                     "match": record.match_id.display_name,
                 },
             )
+            record._inherit_existing_gameday_lineup()
         return records
 
     def write(self, vals):
@@ -269,6 +302,27 @@ class FederationMatchSheet(models.Model):
             record.ready_for_submission = not bool(issues)
             record.readiness_feedback = "\n".join(issues) if issues else False
 
+    @api.depends(
+        "state",
+        "roster_id",
+        "line_ids",
+        "line_ids.crossed_out",
+        "match_id.state",
+        "match_id.tournament_id",
+    )
+    def _compute_participation(self):
+        """Summarize this match's participants from the shared gameday roster."""
+        for record in self:
+            playing = record.line_ids.filtered(lambda line: not line.crossed_out)
+            record.gameday_roster_limit = record._get_gameday_roster_limit()
+            record.match_participant_limit = record._get_match_participant_limit()
+            record.participant_count = len(playing)
+            record.crossed_out_count = len(record.line_ids) - len(playing)
+            record.participation_feedback = (
+                "\n".join(record._get_participation_issues()) or False
+            )
+            record.can_record_participation = record._participation_is_open()
+
     @api.constrains("side", "team_id", "match_id")
     def _check_side_team_consistency(self):
         """Validate side team consistency."""
@@ -301,6 +355,220 @@ class FederationMatchSheet(models.Model):
             return fields.Datetime.to_datetime(self.match_id.date_scheduled).date()
         return fields.Date.context_today(self)
 
+    def _get_gameday_roster_limit(self):
+        """Players allowed on the team's shared roster for one gameday."""
+        self.ensure_one()
+        rule_set = self._get_effective_rule_set()
+        if rule_set and rule_set.gameday_roster_max_size:
+            return rule_set.gameday_roster_max_size
+        if self.roster_id:
+            return self.roster_id._get_required_player_bounds()[1]
+        return rule_set.squad_max_size if rule_set else 0
+
+    def _get_match_participant_limit(self):
+        """Players allowed to take part in this one match (0 = no extra limit)."""
+        self.ensure_one()
+        rule_set = self._get_effective_rule_set()
+        return rule_set.match_player_max_size if rule_set else 0
+
+    def _participation_is_open(self):
+        """Players can be crossed out until the match is finished."""
+        self.ensure_one()
+        return (
+            self.state in ("submitted", "approved")
+            and bool(self.line_ids)
+            and self.match_id.state not in ("done", "cancelled")
+        )
+
+    def _get_participation_issues(self):
+        """Return what still blocks this match's participant list."""
+        self.ensure_one()
+        limit = self._get_match_participant_limit()
+        playing = len(self.line_ids.filtered(lambda line: not line.crossed_out))
+        if limit and playing > limit:
+            return [
+                _(
+                    "%(playing)s players are listed for this match; at most "
+                    "%(limit)s may play. Cross out %(extra)s player(s)."
+                )
+                % {"playing": playing, "limit": limit, "extra": playing - limit}
+            ]
+        return []
+
+    def _get_gameday_scope(self):
+        """Return the explicit match-day scope, or a tournament/date fallback."""
+        self.ensure_one()
+        match = self.match_id
+        publication = (
+            match.schedule_publication_id
+            if "schedule_publication_id" in match._fields
+            else False
+        )
+        matchday = (
+            publication.matchday_id
+            if publication and "matchday_id" in publication._fields
+            else False
+        )
+        if matchday:
+            return ("matchday", matchday.id)
+        scheduled_date = (
+            match.round_id.round_date
+            if match.round_id and match.round_id.round_date
+            else (
+                fields.Datetime.to_datetime(match.date_scheduled).date()
+                if match.date_scheduled
+                else False
+            )
+        )
+        if scheduled_date and match.tournament_id:
+            return (
+                "tournament_date",
+                match.tournament_id.id,
+                scheduled_date,
+            )
+        return False
+
+    def _get_gameday_sheets(self):
+        """Return all sheets sharing this team's game-day declaration scope."""
+        self.ensure_one()
+        scope = self._get_gameday_scope()
+        if not scope:
+            return self
+        domain = [
+            ("team_id", "=", self.team_id.id),
+            ("match_id.state", "!=", "cancelled"),
+        ]
+        if scope[0] == "matchday":
+            domain.append(
+                ("match_id.schedule_publication_id.matchday_id", "=", scope[1])
+            )
+        else:
+            day_start = datetime.combine(scope[2], time.min)
+            day_end = day_start + timedelta(days=1)
+            matches = self.env["federation.match"].search(
+                [
+                    ("tournament_id", "=", scope[1]),
+                    ("state", "!=", "cancelled"),
+                    "|",
+                    ("round_id.round_date", "=", scope[2]),
+                    "&",
+                    ("date_scheduled", ">=", fields.Datetime.to_string(day_start)),
+                    ("date_scheduled", "<", fields.Datetime.to_string(day_end)),
+                ]
+            )
+            domain.append(("match_id", "in", matches.ids))
+        return self.search(domain, order="match_kickoff asc, id asc")
+
+    def _declared_lineup_signature(self):
+        """Return the match-independent portion of a game-day lineup."""
+        self.ensure_one()
+        lines = sorted(
+            (
+                line.player_id.id,
+                line.roster_line_id.id or False,
+                bool(line.is_starter),
+                bool(line.is_substitute),
+                bool(line.is_captain),
+                line.jersey_number or "",
+            )
+            for line in self.line_ids
+        )
+        return (self.roster_id.id or False, tuple(lines))
+
+    def _get_existing_gameday_lineup_source(self):
+        """Choose an existing declaration to initialize a newly-created sheet."""
+        self.ensure_one()
+        candidates = (self._get_gameday_sheets() - self).filtered("line_ids")
+        if not candidates:
+            return self.env["federation.match.sheet"]
+        state_rank = {"locked": 4, "approved": 3, "submitted": 2, "draft": 1}
+        return candidates.sorted(
+            key=lambda sheet: (-state_rank.get(sheet.state, 0), sheet.id)
+        )[:1]
+
+    def _copy_declared_lineup_from(self, source, inherit_approval=False):
+        """Copy only declaration fields; substitutions remain match-specific."""
+        self.ensure_one()
+        source.ensure_one()
+        if self == source:
+            return False
+        if self.state in ("approved", "locked"):
+            if self._declared_lineup_signature() != source._declared_lineup_signature():
+                raise ValidationError(
+                    _(
+                        "Game-day match sheets for team '%(team)s' must use the "
+                        "same approved lineup."
+                    )
+                    % {"team": self.team_id.display_name}
+                )
+            return False
+
+        target_vals = {"roster_id": source.roster_id.id or False}
+        if source.coach_name and not self.coach_name:
+            target_vals["coach_name"] = source.coach_name
+        if source.manager_name and not self.manager_name:
+            target_vals["manager_name"] = source.manager_name
+        self.write(target_vals)
+        crossed_out_players = set(
+            self.line_ids.filtered("crossed_out").mapped("player_id").ids
+        )
+        self.line_ids.unlink()
+        line_values = [
+            {
+                "match_sheet_id": self.id,
+                "player_id": line.player_id.id,
+                "roster_line_id": line.roster_line_id.id or False,
+                "is_starter": line.is_starter,
+                "is_substitute": line.is_substitute,
+                "is_captain": line.is_captain,
+                "jersey_number": line.jersey_number,
+                "crossed_out": line.player_id.id in crossed_out_players,
+            }
+            for line in source.line_ids
+        ]
+        if line_values:
+            self.env["federation.match.sheet.line"].create(line_values)
+        if inherit_approval and source.state in ("approved", "locked"):
+            self.write({"state": "approved"})
+            self._log_audit_event(
+                "match_sheet_approved",
+                _(
+                    "Match sheet '%(sheet)s' inherited the approved game-day lineup."
+                )
+                % {"sheet": self.display_name},
+            )
+        elif inherit_approval and source.state == "submitted":
+            self.write({"state": "submitted"})
+        return True
+
+    def _inherit_existing_gameday_lineup(self):
+        """Initialize new sheets from a previously declared lineup for the day."""
+        for record in self.filtered(lambda sheet: sheet.state == "draft"):
+            source = record._get_existing_gameday_lineup_source()
+            if source:
+                record._copy_declared_lineup_from(source, inherit_approval=True)
+
+    def _synchronize_gameday_lineup(self, source):
+        """Apply one declaration to every mutable sheet in the game-day scope."""
+        source.ensure_one()
+        sheets = source._get_gameday_sheets()
+        for sheet in sheets - source:
+            sheet._copy_declared_lineup_from(source)
+        return sheets
+
+    def _get_action_gameday_groups(self):
+        """Yield one selected source and complete sheet set per game-day scope."""
+        seen = set()
+        for record in self:
+            scope = (
+                record.team_id.id,
+                record._get_gameday_scope() or ("sheet", record.id),
+            )
+            if scope in seen:
+                continue
+            seen.add(scope)
+            yield record, record._get_gameday_sheets()
+
     def _get_submission_issues(self):
         """Return submission issues."""
         self.ensure_one()
@@ -331,11 +599,11 @@ class FederationMatchSheet(models.Model):
                 eligible_line_count += 1
 
         if self.roster_id:
-            min_required, max_allowed = self.roster_id._get_required_player_bounds()
+            min_required = self.roster_id._get_required_player_bounds()[0]
         else:
             rule_set = self._get_effective_rule_set()
             min_required = rule_set.squad_min_size if rule_set else 0
-            max_allowed = rule_set.squad_max_size if rule_set else 0
+        max_allowed = self._get_gameday_roster_limit()
 
         if min_required and eligible_line_count < min_required:
             issues.append(
@@ -347,12 +615,21 @@ class FederationMatchSheet(models.Model):
         if max_allowed and len(self.line_ids) > max_allowed:
             issues.append(
                 _(
-                    "Submitted players (%(actual)s) exceed the allowed maximum of %(expected)s."
+                    "The gameday roster lists %(actual)s players; the maximum is %(expected)s."
                 )
                 % {"actual": len(self.line_ids), "expected": max_allowed}
             )
 
         return issues
+
+    def _requires_gameday_lineup_approval(self):
+        """Return whether this declaration needs a separate approval handoff."""
+        self.ensure_one()
+        edition = self.match_id.tournament_id.edition_id
+        if not edition or "match_sheet_approval_required" not in edition._fields:
+            # Legacy tournaments keep their established explicit approval flow.
+            return True
+        return bool(edition.match_sheet_approval_required)
 
     def _log_audit_event(self, event_type, description, player=False):
         """Handle log audit event."""
@@ -373,25 +650,33 @@ class FederationMatchSheet(models.Model):
 
     def action_submit(self):
         """Execute the submit action."""
-        for record in self:
-            issues = record._get_submission_issues()
-            if issues:
-                raise ValidationError(
-                    _(
-                        "Match sheet '%(sheet)s' is not ready for submission:\n- %(issues)s"
+        for source, _initial_sheets in self._get_action_gameday_groups():
+            sheets = source._synchronize_gameday_lineup(source)
+            for record in sheets.filtered(lambda sheet: sheet.state == "draft"):
+                issues = record._get_submission_issues()
+                if issues:
+                    raise ValidationError(
+                        _(
+                            "Match sheet '%(sheet)s' is not ready for submission:\n"
+                            "- %(issues)s"
+                        )
+                        % {
+                            "sheet": record.display_name,
+                            "issues": "\n- ".join(issues),
+                        }
                     )
-                    % {
-                        "sheet": record.display_name,
-                        "issues": "\n- ".join(issues),
-                    }
+            submitted = sheets.filtered(lambda sheet: sheet.state == "draft")
+            submitted.write({"state": "submitted"})
+            for record in submitted:
+                record._log_audit_event(
+                    "match_sheet_submitted",
+                    _("Match sheet '%(sheet)s' submitted with its game-day lineup.")
+                    % {"sheet": record.display_name},
                 )
-        self.write({"state": "submitted"})
-        for record in self:
-            record._log_audit_event(
-                "match_sheet_submitted",
-                _("Match sheet '%(sheet)s' submitted.")
-                % {"sheet": record.display_name},
-            )
+            if submitted and not source._requires_gameday_lineup_approval():
+                # Streamlined mode still uses the existing approval command so
+                # readiness checks, synchronization and audit events are kept.
+                source.action_approve()
 
     def action_reset_to_draft(self):
         """Reset a submitted match sheet back to draft for corrections."""
@@ -400,11 +685,14 @@ class FederationMatchSheet(models.Model):
                 raise ValidationError(
                     _("Only submitted match sheets can be reset to draft.")
                 )
-        self.write({"state": "draft"})
-        for record in self:
+        reset_sheets = self.env["federation.match.sheet"]
+        for _source, sheets in self._get_action_gameday_groups():
+            reset_sheets |= sheets.filtered(lambda sheet: sheet.state == "submitted")
+        reset_sheets.write({"state": "draft"})
+        for record in reset_sheets:
             record._log_audit_event(
                 "match_sheet_reset",
-                _("Match sheet '%(sheet)s' reset to draft.")
+                _("Match sheet '%(sheet)s' reset with its game-day lineup.")
                 % {"sheet": record.display_name},
             )
 
@@ -413,18 +701,57 @@ class FederationMatchSheet(models.Model):
         for record in self:
             if record.state != "submitted":
                 raise ValidationError(_("Only submitted match sheets can be approved."))
-        self.write({"state": "approved"})
-        for record in self:
-            record._log_audit_event(
-                "match_sheet_approved",
-                _("Match sheet '%(sheet)s' approved.") % {"sheet": record.display_name},
+        for source, _initial_sheets in self._get_action_gameday_groups():
+            sheets = source._synchronize_gameday_lineup(source)
+            mutable_sheets = sheets.filtered(
+                lambda sheet: sheet.state in ("draft", "submitted")
             )
+            for record in mutable_sheets:
+                issues = record._get_submission_issues()
+                if issues:
+                    raise ValidationError(
+                        _(
+                            "Match sheet '%(sheet)s' is not ready for approval:\n"
+                            "- %(issues)s"
+                        )
+                        % {
+                            "sheet": record.display_name,
+                            "issues": "\n- ".join(issues),
+                        }
+                    )
+            newly_submitted = mutable_sheets.filtered(
+                lambda sheet: sheet.state == "draft"
+            )
+            if newly_submitted:
+                newly_submitted.write({"state": "submitted"})
+                for record in newly_submitted:
+                    record._log_audit_event(
+                        "match_sheet_submitted",
+                        _(
+                            "Match sheet '%(sheet)s' submitted through game-day "
+                            "lineup approval."
+                        )
+                        % {"sheet": record.display_name},
+                    )
+            mutable_sheets.write({"state": "approved"})
+            for record in mutable_sheets:
+                record._log_audit_event(
+                    "match_sheet_approved",
+                    _("Match sheet '%(sheet)s' game-day lineup approved.")
+                    % {"sheet": record.display_name},
+                )
 
     def action_lock(self):
         """Execute the lock action."""
         for record in self:
             if record.state != "approved":
                 raise ValidationError(_("Only approved match sheets can be locked."))
+            issues = record._get_participation_issues()
+            if issues:
+                raise ValidationError(
+                    _("Match sheet '%(sheet)s' cannot be locked: %(issues)s")
+                    % {"sheet": record.display_name, "issues": " ".join(issues)}
+                )
         self.write(
             {
                 "state": "locked",
@@ -437,3 +764,69 @@ class FederationMatchSheet(models.Model):
                 "match_sheet_locked",
                 _("Match sheet '%(sheet)s' locked.") % {"sheet": record.display_name},
             )
+
+    def action_sync_gameday_roster(self):
+        """Share this draft gameday roster with the team's other matches that day."""
+        for record in self:
+            if record.state != "draft":
+                raise ValidationError(
+                    _("Only a draft gameday roster can be shared again.")
+                )
+            record._synchronize_gameday_lineup(record)
+        return True
+
+    def action_set_crossed_out(self, player_ids):
+        """Record which gameday players do not play this match.
+
+        ``player_ids`` is the complete crossed-out list for this match. Other
+        matches on the same gameday keep their own list.
+        """
+        self.ensure_one()
+        if not self._participation_is_open():
+            raise ValidationError(
+                _(
+                    "Players can be crossed out once the gameday roster is "
+                    "submitted, until the match is finished."
+                )
+            )
+        try:
+            requested = {int(player_id) for player_id in (player_ids or [])}
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(_("Select players from this gameday roster.")) from exc
+        listed = set(self.line_ids.mapped("player_id").ids)
+        if requested - listed:
+            raise ValidationError(_("Select players from this gameday roster."))
+        limit = self._get_match_participant_limit()
+        playing = len(listed - requested)
+        if limit and playing > limit:
+            raise ValidationError(
+                _(
+                    "%(playing)s players would play; at most %(limit)s may play. "
+                    "Cross out %(extra)s more player(s)."
+                )
+                % {"playing": playing, "limit": limit, "extra": playing - limit}
+            )
+        if not playing:
+            raise ValidationError(_("At least one player must play this match."))
+        ineligible = []
+        for line in self.line_ids.filtered(
+            lambda item: item.player_id.id not in requested
+        ):
+            reasons = line._get_eligibility_reasons()
+            if reasons:
+                ineligible.append(
+                    "%s (%s)" % (line.player_id.display_name, "; ".join(reasons))
+                )
+        if ineligible:
+            raise ValidationError(
+                _(
+                    "These players are no longer eligible and must be crossed "
+                    "out for this match: %(players)s"
+                )
+                % {"players": ", ".join(ineligible)}
+            )
+        for line in self.line_ids:
+            crossed = line.player_id.id in requested
+            if line.crossed_out != crossed:
+                line.write({"crossed_out": crossed})
+        return True

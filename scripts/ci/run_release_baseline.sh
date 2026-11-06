@@ -27,6 +27,7 @@ required_lanes=(
   performance
   acceptance
   focus
+  lifecycle
 )
 mkdir -p "$evidence_dir/logs"
 rm -f "$evidence_dir"/lane-*.json "$evidence_dir/summary.json"

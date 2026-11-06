@@ -4,7 +4,12 @@ from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 
-@tagged("post_install", "-at_install", "sf_schedule_review_permissions")
+@tagged(
+    "post_install",
+    "-at_install",
+    "sf_schedule_review_permissions",
+    "sf_release_confidence",
+)
 @tagged("sf_release_focus")
 class TestScheduleReviewPermissions(TransactionCase):
     @classmethod
@@ -172,6 +177,12 @@ class TestScheduleReviewPermissions(TransactionCase):
         with self.assertRaises(AccessError):
             review.write({"review_note": "Unauthorized change"})
 
+    def test_schedule_planner_can_read_fixtures_without_mutating_them(self):
+        fixtures = self.env["federation.fixture"].with_user(self.planner)
+        fixtures.check_access("read")
+        with self.assertRaises(AccessError):
+            fixtures.check_access("write")
+
     def test_direct_writes_to_protected_fields_are_rejected(self):
         review = self.review.with_user(self.approver)
         review.write({"review_note": "Prepared decision note"})
@@ -200,3 +211,76 @@ class TestScheduleReviewPermissions(TransactionCase):
             limit=1,
         )
         self.assertEqual(event.actor_user_id, self.planner)
+
+    def test_streamlined_policy_allows_planner_to_approve_own_review(self):
+        self.edition.write({"workflow_mode": "simple"})
+
+        commands = self.env["federation.schedule.approval.commands"].with_user(
+            self.planner
+        )
+        commands.approve(self.review.id, "Approved by the streamlined workflow.")
+        publication = commands.publish(self.schedule.id)
+
+        self.review.invalidate_recordset()
+        self.schedule.invalidate_recordset()
+        self.assertEqual(self.review.state, "approved")
+        self.assertEqual(self.review.reviewer_id, self.planner)
+        self.assertEqual(self.schedule.state, "published")
+        self.assertEqual(publication.state, "live")
+        self.assertEqual(self.schedule.matchday_id.current_publication_id, publication)
+
+    def test_streamlined_submission_opens_the_auto_published_schedule(self):
+        self.edition.write({"workflow_mode": "simple"})
+        federation_user = self.env.ref(
+            "sports_federation_base.group_federation_user"
+        )
+        self.planner.write({"group_ids": [Command.link(federation_user.id)]})
+        matchday = self.env["federation.matchday"].create(
+            {
+                "name": "Streamlined Schedule Match Day",
+                "edition_id": self.edition.id,
+                "date": "2026-10-17",
+                "venue_id": self.schedule.matchday_id.venue_id.id,
+                "state": "scheduled",
+            }
+        )
+        schedule = self.env["federation.schedule"].create(
+            {
+                "name": "Streamlined Schedule",
+                "edition_id": self.edition.id,
+                "structure_id": self.schedule.structure_id.id,
+                "matchday_id": matchday.id,
+            }
+        )
+
+        action = schedule.with_user(self.planner).action_submit_for_review()
+
+        publication = matchday.current_publication_id
+        self.assertEqual(action["res_model"], "federation.schedule.publication")
+        self.assertEqual(action["res_id"], publication.id)
+        self.assertEqual(publication.schedule_id, schedule)
+        self.assertEqual(schedule.state, "published")
+
+    @tagged("post_install", "-at_install", "sf_release_confidence")
+    def test_planner_cannot_approve_own_review_when_independent_review_is_required(
+        self,
+    ):
+        self.edition.write({"workflow_mode": "controlled"})
+        self.env["federation.competition.role.assignment"].create(
+            {
+                "edition_id": self.edition.id,
+                "user_id": self.planner.id,
+                "role": "schedule_approver",
+            }
+        )
+
+        with self.assertRaisesRegex(ValidationError, "another person"):
+            self.env["federation.schedule.approval.commands"].with_user(
+                self.planner
+            ).approve(self.review.id, "Self-review must be rejected.")
+
+        self.review.invalidate_recordset()
+        self.schedule.invalidate_recordset()
+        self.assertEqual(self.review.state, "pending")
+        self.assertFalse(self.review.reviewer_id)
+        self.assertEqual(self.schedule.state, "ready_for_review")

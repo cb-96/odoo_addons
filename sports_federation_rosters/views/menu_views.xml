@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem id="menu_federation_match_sheets"
-              name="Match Sheets"
+              name="Lineups"
               parent="sports_federation_base.menu_federation_match_day"
               action="action_federation_match_sheet"
               sequence="20"/>

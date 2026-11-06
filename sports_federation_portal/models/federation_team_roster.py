@@ -1,4 +1,4 @@
-from odoo import _, api, models
+from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 
 
@@ -27,6 +27,31 @@ class FederationTeamRoster(models.Model):
         if club_scope:
             return [("club_id", "in", club_scope.ids)]
         return [("id", "=", False)]
+
+    @api.model
+    def _portal_current_season_ids(self):
+        """Seasons that still matter to clubs.
+
+        A season is current while it is draft or open and has not ended.
+        Closed, cancelled, ended and archived seasons are history.
+        """
+        today = fields.Date.context_today(self)
+        return (
+            self.env["federation.season"]
+            .sudo()
+            .search([("state", "in", ("draft", "open")), ("date_end", ">=", today)])
+            .ids
+        )
+
+    @api.model
+    def _portal_current_domain(self, season_field="season_id"):
+        """Domain keeping only records of the current seasons."""
+        return [(season_field, "in", self._portal_current_season_ids())]
+
+    @api.model
+    def _portal_past_domain(self, season_field="season_id"):
+        """Domain keeping only records of past seasons."""
+        return [(season_field, "not in", self._portal_current_season_ids())]
 
     @api.model
     def _portal_get_registration_scope_domain(self, user=None):
@@ -226,8 +251,10 @@ class FederationTeamRoster(models.Model):
         """Reuse an existing portal roster before creating a new season baseline.
 
         The portal first looks for a roster already linked to the confirmed
-        registration, then falls back to the latest generic roster for the same
-        team and season.
+        registration, then falls back to the team's season baseline roster
+        (see ``_pick_season_baseline``), so a roster created for a competition
+        rather than for the season is still found and the club is never offered
+        a second roster for the same season.
         """
         user = user or self.env.user
         season_registration = self._portal_assert_registration_access(
@@ -245,18 +272,17 @@ class FederationTeamRoster(models.Model):
         )
         if roster:
             return roster
-        return self.env["federation.portal.privilege"].portal_search(
+        season_rosters = self.env["federation.portal.privilege"].portal_search(
             self.env["federation.team.roster"],
             roster_scope_domain
             + [
                 ("team_id", "=", season_registration.team_id.id),
                 ("season_id", "=", season_registration.season_id.id),
-                ("competition_id", "=", False),
             ],
             user=user,
             order="id desc",
-            limit=1,
         )
+        return self._pick_season_baseline(season_rosters)
 
     @api.model
     def _portal_create_roster_for_registration(self, season_registration, user=None):
@@ -363,6 +389,27 @@ class FederationTeamRoster(models.Model):
             scope_domain=self._portal_get_scope_domain(user=user),
             user=user,
         )
+
+    def _portal_auto_activate(self, user=None):
+        """Activate draft rosters as soon as they meet the competition rules.
+
+        Clubs no longer press "Activate": a roster without readiness issues is
+        usable immediately.  Rosters with issues stay draft and keep showing
+        the readiness feedback.
+        """
+        user = user or self.env.user
+        activated = self.browse()
+        for roster in self:
+            elevated = self.env["federation.portal.privilege"].elevate(roster, user=user)
+            if elevated.status != "draft" or elevated._get_readiness_issues():
+                continue
+            try:
+                with self.env.cr.savepoint():
+                    roster._portal_action_activate(user=user)
+                activated |= roster
+            except ValidationError:
+                continue
+        return activated
 
     def _portal_action_set_draft(self, user=None):
         """Move rosters back to draft when the caller still owns the record."""
@@ -631,6 +678,43 @@ class FederationTeamRosterLine(models.Model):
             prepared,
             user=user,
         )
+
+    @api.model
+    def _portal_add_players(self, roster, player_ids, user=None):
+        """Add several players at once, each through the governed line path."""
+        user = user or self.env.user
+        roster._portal_assert_manage_access(user=user)
+        if roster.status == "closed":
+            raise ValidationError(_("Closed rosters cannot be edited in the portal."))
+        wanted = set()
+        for value in player_ids or []:
+            try:
+                wanted.add(int(value))
+            except (TypeError, ValueError) as exc:
+                raise ValidationError(_("Select valid players.")) from exc
+        if not wanted:
+            raise ValidationError(_("Select at least one player."))
+        available = self._portal_get_available_players(roster, user=user)
+        chosen = available.filtered(lambda player: player.id in wanted)
+        if len(chosen) != len(wanted):
+            raise ValidationError(
+                _("Some selected players cannot be added to this roster.")
+            )
+        licenses = self._portal_get_available_licenses(roster, user=user)
+        created = self.browse()
+        for player in chosen:
+            player_licenses = licenses.filtered(lambda item: item.player_id == player)
+            license_record = (
+                player_licenses.filtered(lambda item: item.state == "active")[:1]
+                or player_licenses[:1]
+            )
+            created |= self._portal_create_line(
+                roster,
+                values={"player_id": player.id, "license_id": license_record.id or False},
+                user=user,
+            )
+        roster._portal_auto_activate(user=user)
+        return created
 
     def _portal_update_line(self, values=None, user=None):
         """Update roster lines without allowing player swaps or closed-roster edits."""

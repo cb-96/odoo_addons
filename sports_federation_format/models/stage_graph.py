@@ -75,6 +75,44 @@ class FederationStructureStage(models.Model):
         related="standing_snapshot_id.line_ids", readonly=True
     )
 
+    def _planning_source_stages(self):
+        """Stages whose final table decides the teams of this stage."""
+        self.ensure_one()
+        if self.source_type != "progression":
+            return self.browse()
+        return self.incoming_progression_ids.filtered("active").mapped(
+            "source_stage_id"
+        )
+
+    def _planning_depths(self):
+        """Longest progression path from a first stage, per stage id.
+
+        First stages (groups, regular season) are depth 0, a knockout fed by
+        groups is depth 1, and so on. Planning places lower depths first.
+        """
+        stages = self.mapped("structure_id.stage_ids") | self
+        depths = {}
+
+        def depth(stage, trail=()):
+            if stage.id in depths:
+                return depths[stage.id]
+            if stage.id in trail:
+                return 0
+            sources = stage.incoming_progression_ids.filtered("active").mapped(
+                "source_stage_id"
+            )
+            value = (
+                max(depth(source, trail + (stage.id,)) for source in sources) + 1
+                if sources
+                else 0
+            )
+            depths[stage.id] = value
+            return value
+
+        for stage in stages:
+            depth(stage)
+        return depths
+
     def action_prepare_stage(self):
         for rec in self:
             self.env["federation.stage.graph.engine"].prepare_stage(rec)
@@ -124,6 +162,108 @@ class FederationFixture(models.Model):
     )
     placement_from = fields.Integer()
     placement_to = fields.Integer()
+    home_source_seed = fields.Integer(
+        readonly=True,
+        copy=False,
+        help="Stage seed that will play here once the previous stage is ranked.",
+    )
+    away_source_seed = fields.Integer(readonly=True, copy=False)
+
+    @api.depends(
+        "home_team_id",
+        "away_team_id",
+        "home_source_fixture_id",
+        "away_source_fixture_id",
+        "home_source_outcome",
+        "away_source_outcome",
+        "home_source_seed",
+        "away_source_seed",
+    )
+    def _compute_name(self):
+        for fixture in self:
+            fixture.name = "%s vs %s" % (
+                fixture._side_label("home"),
+                fixture._side_label("away"),
+            )
+
+    def _side_label(self, side):
+        """Team name, or a readable placeholder such as "Winner R1 M2"."""
+        self.ensure_one()
+        team = self["%s_team_id" % side]
+        if team:
+            return team.display_name
+        source = self["%s_source_fixture_id" % side]
+        if source:
+            outcome = self["%s_source_outcome" % side] or "winner"
+            return "%s R%s M%s" % (
+                "Loser" if outcome == "loser" else "Winner",
+                source.round_number,
+                max((source.sequence - 10) // 10 + 1, 1),
+            )
+        seed = self["%s_source_seed" % side]
+        if seed:
+            for edge in self.stage_id.incoming_progression_ids.filtered("active"):
+                size = edge.rank_to - edge.rank_from + 1
+                if edge.target_seed_from <= seed < edge.target_seed_from + size:
+                    return "#%s %s" % (
+                        edge.rank_from + seed - edge.target_seed_from,
+                        edge.source_stage_id.name,
+                    )
+            return "Seed %s" % seed
+        return "TBD"
+
+    def _is_placeholder_side(self, side):
+        self.ensure_one()
+        return not self["%s_team_id" % side] and bool(
+            self["%s_source_fixture_id" % side] or self["%s_source_seed" % side]
+        )
+
+    def _is_schedulable(self):
+        """Known teams, or placeholders that the competition will resolve."""
+        self.ensure_one()
+        if self.state == "cancelled" or self.bye_team_id:
+            return False
+        return all(
+            self["%s_team_id" % side] or self._is_placeholder_side(side)
+            for side in ("home", "away")
+        )
+
+    def _planning_sorted(self):
+        """Fixtures in planning order: earlier stages first, then by round.
+
+        Within one stage depth, rounds of different groups or divisions are
+        interleaved (round 1 of every group before round 2), as before.
+        """
+        depths = self.mapped("stage_id")._planning_depths()
+        return self.sorted(
+            lambda fixture: (
+                depths.get(fixture.stage_id.id, 0),
+                fixture.round_number,
+                fixture.sequence,
+                fixture.stage_id.sequence,
+                fixture.id,
+            )
+        )
+
+    def _planning_keys(self):
+        """Who plays: team ids, or stable tokens for unresolved sides."""
+        self.ensure_one()
+        keys = set()
+        for side in ("home", "away"):
+            team = self["%s_team_id" % side]
+            if team:
+                keys.add(team.id)
+            elif self["%s_source_seed" % side]:
+                keys.add(("seed", self.stage_id.id, self["%s_source_seed" % side]))
+            elif self["%s_source_fixture_id" % side]:
+                keys.add(
+                    (
+                        "fixture",
+                        self["%s_source_fixture_id" % side].id,
+                        self["%s_source_outcome" % side] or "winner",
+                    )
+                )
+        return keys
 
     def action_materialize_match(self):
         """Create or return the single operational match for each playable fixture."""

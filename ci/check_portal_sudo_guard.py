@@ -11,7 +11,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTROLLERS = ROOT / "sports_federation_portal" / "controllers"
-INVENTORY = ROOT / "docs" / "portal_sudo_inventory.json"
+INVENTORY = ROOT / "ci" / "contracts" / "portal_sudo_inventory.json"
 SAFE_TOKENS = (
     "_portal_",
     "portal_privilege",

@@ -19,8 +19,8 @@
         </group>
       </xpath>
       <xpath expr="//notebook" position="inside">
-        <page string="Workflow" name="workflow_policy">
-          <group><field name="workflow_mode"/><div class="alert alert-info" role="status">Simple keeps validation and history but removes routine approval handoffs. Controlled preserves independent approvals. Custom lets this competition choose every checkpoint.</div></group>
+        <page string="Advanced Workflow" name="workflow_policy" groups="sports_federation_base.group_federation_advanced_operator">
+          <group><field name="workflow_mode"/><div class="alert alert-info" role="status">Streamlined completes routine checkpoints automatically after validation. Independent Review requires another responsible person. Advanced / Custom exposes every checkpoint. All modes keep permissions, audit history and immutable official snapshots.</div></group>
           <group string="Registration and format"><field name="registration_approval_required"/><field name="structure_freeze_confirmation_required"/></group>
           <group string="Schedules"><field name="schedule_approval_required"/><field name="schedule_self_approval_allowed" invisible="not schedule_approval_required"/><field name="schedule_auto_publish_after_approval"/></group>
           <group string="Results"><field name="result_verification_required"/><field name="result_approval_required"/><field name="result_self_verification_allowed" invisible="not result_verification_required"/><field name="result_self_approval_allowed" invisible="not result_approval_required"/><field name="auto_recompute_standings"/></group>

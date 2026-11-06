@@ -28,11 +28,15 @@ class FederationManagerOperationTasks(http.Controller):
         self._require_manager()
         Task = request.env["federation.operation.task"].sudo()
         Task.sync_for_user(user=request.env.user)
-        domain = [("audience", "=", "manager"), ("state", "!=", "done")]
+        domain = [("audience", "=", "manager"), ("state", "=" if kw.get("status") == "recent" else "!=", "done")]
         allowed_types = dict(Task._fields["task_type"].selection)
         task_type = kw.get("task_type")
         if task_type in allowed_types:
             domain.append(("task_type", "=", task_type))
+        allowed_roles = dict(Task._fields["required_role"].selection)
+        required_role = kw.get("required_role")
+        if required_role in allowed_roles:
+            domain.append(("required_role", "=", required_role))
         if kw.get("blocking") == "1":
             domain.append(("blocking", "=", True))
         if kw.get("club_id", "").isdigit():
@@ -62,6 +66,10 @@ class FederationManagerOperationTasks(http.Controller):
                 "task_type_counts": counts,
                 "task_type_labels": allowed_types,
                 "active_task_type": task_type if task_type in allowed_types else False,
+                "required_role_labels": allowed_roles,
+                "active_required_role": (
+                    required_role if required_role in allowed_roles else False
+                ),
                 "active_blocking": kw.get("blocking") == "1",
                 "clubs": all_open.mapped("responsible_club_id"),
                 "tournaments": all_open.mapped("tournament_id"),

@@ -1,0 +1,9 @@
+# Overlay for the disposable browser-walkthrough server.
+# Used only by scripts/ci/run_end_to_end_release.sh together with
+# ci/docker-compose.ci.yaml. Publishes Odoo on the host loopback interface;
+# never expose this port beyond the machine that runs the walkthrough agent.
+
+services:
+  ci-odoo:
+    ports:
+      - "127.0.0.1:${SF_WALKTHROUGH_PORT:-18069}:8069"

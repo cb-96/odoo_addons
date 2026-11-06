@@ -7,6 +7,7 @@
             <list string="Operational Action Queue" default_order="blocking desc,priority desc,deadline asc">
                 <field name="name"/>
                 <field name="task_type"/>
+                <field name="required_role" optional="show"/>
                 <field name="responsible_club_id"/>
                 <field name="tournament_id"/>
                 <field name="audience"/>
@@ -34,6 +35,7 @@
                     <group>
                         <group>
                             <field name="task_type"/>
+                            <field name="required_role"/>
                             <field name="audience"/>
                             <field name="priority" widget="priority"/>
                             <field name="blocking"/>
@@ -72,6 +74,7 @@
             <search string="Operational Tasks">
                 <field name="name"/>
                 <field name="task_type"/>
+                <field name="required_role"/>
                 <field name="responsible_club_id"/>
                 <field name="tournament_id"/>
                 <filter name="open" string="Open" domain="[('state', 'in', ('open', 'acknowledged'))]"/>
@@ -80,6 +83,7 @@
                 <filter name="overdue" string="Overdue" domain="[('deadline', '&lt;', context_today())]"/>
                 <group>
                     <filter name="group_type" string="Task type" context="{'group_by': 'task_type'}"/>
+                    <filter name="group_required_role" string="Required role" context="{'group_by': 'required_role'}"/>
                     <filter name="group_club" string="Club" context="{'group_by': 'responsible_club_id'}"/>
                     <filter name="group_tournament" string="Tournament" context="{'group_by': 'tournament_id'}"/>
                     <filter name="group_state" string="State" context="{'group_by': 'state'}"/>

@@ -104,7 +104,7 @@
     <record id="rule_operation_task_portal_own" model="ir.rule">
         <field name="name">Portal: operational tasks for own clubs</field>
         <field name="model_id" ref="model_federation_operation_task"/>
-        <field name="domain_force">[('audience', '=', 'club'), ('responsible_club_id', 'in', user.portal_club_scope_ids.ids)]</field>
+        <field name="domain_force">[('audience', '=', 'club'), '|', ('responsible_club_id', 'in', user.portal_club_scope_ids.ids), ('journey_team_id', 'in', user.portal_team_scope_ids.ids)]</field>
         <field name="groups" eval="[(4, ref('group_federation_portal_club'))]"/>
     </record>
 

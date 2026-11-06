@@ -11,6 +11,7 @@ class FederationReportFinanceException(models.Model):
         ("missing_fine_event", "Missing Fine Event"),
     ]
 
+    company_id = fields.Many2one('res.company', readonly=True)
     sanction_id = fields.Many2one(
         "federation.sanction", string="Sanction", readonly=True
     )
@@ -47,16 +48,16 @@ class FederationReportFinanceException(models.Model):
             CREATE VIEW federation_report_finance_exception AS (
                 -- block: discipline_fee
                 WITH discipline_fee AS (
-                    SELECT id, default_amount
+                    SELECT id, default_amount, company_id
                     FROM federation_fee_type
                     WHERE code = 'discipline_fine'
-                    LIMIT 1
                 )
                 -- block: report_rows
                 SELECT
                     row_number() OVER (
                         ORDER BY COALESCE(s.effective_date, c.decided_on, c.opened_on) DESC, s.id DESC
                     ) AS id,
+                    c.company_id,
                     s.id AS sanction_id,
                     s.case_id,
                     c.reference AS case_reference,
@@ -74,11 +75,12 @@ class FederationReportFinanceException(models.Model):
                     'Fine sanction has no linked finance event.' AS issue_note
                 FROM federation_sanction s
                 JOIN federation_disciplinary_case c ON c.id = s.case_id
-                LEFT JOIN discipline_fee df ON TRUE
+                LEFT JOIN discipline_fee df ON df.company_id = c.company_id
                 LEFT JOIN federation_finance_event fe
                   ON fe.source_model = 'federation.sanction'
                  AND fe.source_res_id = s.id
                  AND (df.id IS NULL OR fe.fee_type_id = df.id)
+                 AND fe.company_id = c.company_id
                 WHERE s.sanction_type = 'fine'
                   AND fe.id IS NULL
             )

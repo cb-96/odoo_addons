@@ -11,20 +11,20 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 GLOBAL_REVIEW_FILES = {
-    "TECHNICAL_NOTE.md",
-    "RELEASE_RUNBOOK.md",
+    "docs/architecture/technical-reference.md",
+    "docs/operations/upgrade-notes.md",
 }
 ROUTE_REVIEW_FILES = {
-    "ROUTE_INVENTORY.md",
-    "STATE_AND_OWNERSHIP_MATRIX.md",
+    "docs/reference/routes.md",
+    "docs/architecture/state-and-ownership.md",
 }
 SENSITIVE_SURFACES = {
     "models": "model ownership",
     "views": "view ownership",
     "controllers": "route ownership",
 }
-DRY_RUN_EVIDENCE_FILE = "RELEASE_RUNBOOK.md"
-ROLLBACK_NOTES_FILE = "RELEASE_RUNBOOK.md"
+DRY_RUN_EVIDENCE_FILE = "docs/operations/upgrade-notes.md"
+ROLLBACK_NOTES_FILE = "docs/operations/upgrade-notes.md"
 
 
 def _normalize_repo_path(path_text: str) -> str:
@@ -103,7 +103,8 @@ def _has_review_evidence(
 
     if not has_surface_evidence:
         reasons.append(
-            "touch a migration script, module README, TECHNICAL_NOTE.md, RELEASE_RUNBOOK.md, or route ownership docs"
+            "touch a migration script, module README, the technical reference, "
+            "the upgrade notes, or route ownership docs"
         )
 
     if DRY_RUN_EVIDENCE_FILE not in changed_files:

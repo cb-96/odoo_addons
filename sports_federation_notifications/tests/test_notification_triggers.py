@@ -302,6 +302,13 @@ class TestNotificationTriggers(TransactionCase):
 
     def test_standing_freeze_creates_notification_log(self):
         """Test that standing freeze creates notification log."""
+        if "result_state" in self.match._fields:
+            self.match.write(
+                {
+                    "result_state": "approved",
+                    "include_in_official_standings": True,
+                }
+            )
         self.env["federation.tournament.participant"].create(
             {
                 "tournament_id": self.tournament.id,

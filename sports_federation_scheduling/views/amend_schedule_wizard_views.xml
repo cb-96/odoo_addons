@@ -5,11 +5,15 @@
     <field name="arch" type="xml">
       <form string="Amend Published Schedule">
         <div class="alert alert-warning" role="alert">
-          The live publication remains active while this replacement revision is edited and reviewed.
-          Publishing the approved amendment will supersede the current live publication.
+          If this game day is open, close live operations first. The live publication remains immutable while the replacement is edited and independently reviewed. Publishing the approved amendment supersedes the current version; reopen operations against the new publication afterwards.
         </div>
-        <group>
+        <group string="Before the change">
           <field name="schedule_id"/>
+          <field name="matchday_state"/>
+          <field name="published_assignment_count"/>
+          <field name="recovery_summary" nolabel="1"/>
+        </group>
+        <group string="Amendment">
           <field name="reason" placeholder="Describe the fixture or planning change..."/>
         </group>
         <footer>

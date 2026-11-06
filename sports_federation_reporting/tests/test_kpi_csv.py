@@ -221,6 +221,8 @@ class TestKpiCsvExport(TransactionCase):
                 "State",
                 "Event Count",
                 "Total Amount",
+                "Company",
+                "Currency",
             ]
         )
         for row in finance_rows:
@@ -231,6 +233,8 @@ class TestKpiCsvExport(TransactionCase):
                     row.state or "",
                     row.event_count,
                     row.total_amount,
+                    row.company_id.name,
+                    row.currency_id.name,
                 ]
             )
         output.seek(0)
@@ -341,7 +345,7 @@ class TestKpiCsvExport(TransactionCase):
         self.assertTrue(rows, "CSV should not be empty.")
         self.assertEqual(
             rows[0],
-            ["Fee Type", "Category", "State", "Event Count", "Total Amount"],
+            ["Fee Type", "Category", "State", "Event Count", "Total Amount", "Company", "Currency"],
         )
 
     def test_finance_csv_includes_confirmed_and_draft_rows(self):

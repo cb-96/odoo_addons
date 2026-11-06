@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = "sports_federation_app"
-EXCLUDED = {APP, "sports_federation_demo"}
+EXCLUDED = {APP, "sports_federation_demo", "sports_federation_member_services", "sports_federation_accounting"}
 
 
 def manifest(module):

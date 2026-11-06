@@ -78,11 +78,11 @@ class FederationMatchSheet(models.Model):
         user = user or self.env.user
         domain = self._portal_get_domain(user=user)
         if domain == [("id", "=", False)]:
-            raise AccessError(_("You do not have portal access to match sheets."))
+            raise AccessError(_("You do not have portal access to game-day line-ups."))
         self.env["federation.portal.privilege"].portal_assert_in_domain(
             self,
             domain,
-            _("You can only review match sheets for your assigned teams or club."),
+            _("You can only review line-ups for your assigned teams or club."),
             user=user,
         )
         return True
@@ -94,7 +94,7 @@ class FederationMatchSheet(models.Model):
         locked = self.filtered(lambda sheet: sheet.state == "locked")
         if locked:
             raise ValidationError(
-                _("Locked match sheets cannot be updated from the portal.")
+                _("Locked line-ups cannot be updated from the portal.")
             )
         values = values or {}
         prepared = {}
@@ -183,12 +183,13 @@ class FederationMatchSheet(models.Model):
         return True
 
     def _portal_sync_squad(self, squad_data, user=None):
-        """Sync match sheet lines from a portal squad selection.
+        """Save the team's game-day line-up from a portal selection.
 
         squad_data is a list of dicts:
-            [{"player_id": int, "role": "starter"|"substitute"|"other",
-              "is_captain": bool, "jersey_number": str|False}]
-        Only players that exist on the linked roster are accepted.
+            [{"player_id": int, "is_captain": bool, "jersey_number": str|False}]
+        Starting roles are not declared in advance; any submitted "role" is
+        ignored. Only players on the linked roster are accepted. The saved
+        roster is shared with every match the team plays that gameday.
         """
         user = user or self.env.user
         self._portal_assert_review_access(user=user)
@@ -197,11 +198,11 @@ class FederationMatchSheet(models.Model):
         for sheet in self:
             if sheet.state != "draft":
                 raise ValidationError(
-                    _("Squad selection can only be changed on draft match sheets.")
+                    _("The game-day line-up can only be changed while it is a draft.")
                 )
             if not sheet.roster_id:
                 raise ValidationError(
-                    _("A roster must be linked before managing the squad.")
+                    _("Choose a roster before selecting the game-day line-up.")
                 )
 
             valid_player_ids = set(sheet.roster_id.line_ids.mapped("player_id").ids)
@@ -224,10 +225,10 @@ class FederationMatchSheet(models.Model):
                     user=user,
                 )
 
-            # Add or update selected players
+            # Add or update selected players (no advance starter/substitute roles)
             for player_id, data in submitted.items():
-                is_starter = data.get("role") == "starter"
-                is_substitute = data.get("role") == "substitute"
+                is_starter = False
+                is_substitute = False
                 is_captain = bool(data.get("is_captain"))
                 jersey_number = data.get("jersey_number") or False
                 roster_line = sheet.roster_id.line_ids.filtered(
@@ -260,7 +261,26 @@ class FederationMatchSheet(models.Model):
                         },
                         user=user,
                     )
+            Privilege.portal_call(
+                sheet,
+                "action_sync_gameday_roster",
+                scope_domain=self._portal_get_domain(user=user),
+                user=user,
+            )
         return True
+
+    def _portal_set_participation(self, crossed_out_player_ids, user=None):
+        """Record the players crossed out for this one match from the portal."""
+        user = user or self.env.user
+        self._portal_assert_review_access(user=user)
+        self.ensure_one()
+        return self.env["federation.portal.privilege"].portal_call(
+            self,
+            "action_set_crossed_out",
+            list(crossed_out_player_ids or []),
+            scope_domain=self._portal_get_domain(user=user),
+            user=user,
+        )
 
     def _portal_action_submit(self, user=None):
         """Handle the portal-specific action submit flow."""
@@ -269,7 +289,7 @@ class FederationMatchSheet(models.Model):
         drafts = self.filtered(lambda sheet: sheet.state == "draft")
         if not drafts:
             raise ValidationError(
-                _("Only draft match sheets can be submitted from the portal.")
+                _("Only a draft line-up can be submitted from the portal.")
             )
         return self.env["federation.portal.privilege"].portal_call(
             drafts,

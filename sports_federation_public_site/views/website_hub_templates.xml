@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <odoo>
 
     <template id="public_tournament_subnav" name="Public Tournament Sub Navigation">
@@ -6,43 +6,29 @@
         <t t-set="subnav_has_public_bracket" t-value="bool(tournament.get_public_bracket_sections())"/>
         <div class="position-sticky top-0 bg-white border rounded-3 shadow-sm px-3 py-2 mb-4" style="z-index: 10;">
             <div class="d-flex flex-wrap gap-2 align-items-center">
-                <a t-att-href="tournament.get_public_path()"
-                   t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'tournament_overview' else 'btn-outline-secondary' }}">
+                <a t-att-href="tournament.get_public_path()" t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'tournament_overview' else 'btn-outline-secondary' }}">
                     Overview
                 </a>
-                <a t-att-href="tournament.get_public_teams_path()"
-                   t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_teams' else 'btn-outline-secondary' }}">
+                <a t-att-href="tournament.get_public_teams_path()" t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_teams' else 'btn-outline-secondary' }}">
                     Teams
                 </a>
-                <a t-if="subnav_has_public_schedule"
-                   t-att-href="tournament.get_public_schedule_path()"
-                   t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_schedule' else 'btn-outline-secondary' }}">
+                <a t-if="subnav_has_public_schedule" t-att-href="tournament.get_public_schedule_path()" t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_schedule' else 'btn-outline-secondary' }}">
                     Schedule
                 </a>
-                <a t-if="tournament.show_public_standings"
-                   t-att-href="tournament.get_public_standings_path()"
-                   t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_standings' else 'btn-outline-secondary' }}">
+                <a t-if="tournament.show_public_standings" t-att-href="tournament.get_public_standings_path()" t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_standings' else 'btn-outline-secondary' }}">
                     Standings
                 </a>
-                <a t-if="tournament.show_public_results"
-                   t-att-href="tournament.get_public_results_path()"
-                   t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_results' else 'btn-outline-secondary' }}">
+                <a t-if="tournament.show_public_results" t-att-href="tournament.get_public_results_path()" t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_results' else 'btn-outline-secondary' }}">
                     Results
                 </a>
-                <a t-if="subnav_has_public_bracket"
-                   t-att-href="tournament.get_public_bracket_path()"
-                   t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_bracket' else 'btn-outline-secondary' }}">
+                <a t-if="subnav_has_public_bracket" t-att-href="tournament.get_public_bracket_path()" t-attf-class="btn btn-sm {{ 'btn-primary' if page_name == 'competition_bracket' else 'btn-outline-secondary' }}">
                     Bracket
                 </a>
                 <span class="vr d-none d-md-inline-block" t-if="tournament.can_access_public_detail()"/>
-                <a t-if="tournament.can_access_public_detail()"
-                   t-att-href="tournament.get_public_schedule_ics_path()"
-                   class="btn btn-sm btn-outline-secondary">
+                <a t-if="tournament.can_access_public_detail()" t-att-href="tournament.get_public_schedule_ics_path()" class="btn btn-sm btn-outline-secondary">
                     <i class="fa fa-calendar-plus-o me-1"/> Subscribe
                 </a>
-                <a t-if="tournament.can_access_public_detail()"
-                   t-att-href="tournament.get_public_feed_path()"
-                   class="btn btn-sm btn-outline-secondary">
+                <a t-if="tournament.can_access_public_detail()" t-att-href="tournament.get_public_feed_path()" class="btn btn-sm btn-outline-secondary">
                     <i class="fa fa-rss me-1"/> Feed
                 </a>
             </div>
@@ -62,7 +48,7 @@
                 <div class="small text-muted mb-3">
                     <t t-if="match.date_scheduled">
                         <i class="fa fa-calendar me-1"/>
-                        <t t-esc="match.date_scheduled.strftime('%b %d, %Y %H:%M')"/>
+                        <t t-esc="request.env['federation.event.time'].display(match.date_scheduled, match)"/>
                     </t>
                     <t t-elif="match.scheduled_date">
                         <i class="fa fa-calendar me-1"/>
@@ -72,10 +58,7 @@
                 </div>
                 <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
                     <div class="text-start flex-fill">
-                        <a t-if="match.home_team_id and match.home_team_id.can_access_public_profile()"
-                           t-att-href="match.home_team_id.get_public_path()"
-                           class="fw-semibold text-decoration-none"
-                           t-esc="match.home_team_id.name"/>
+                        <a t-if="match.home_team_id and match.home_team_id.can_access_public_profile()" t-att-href="match.home_team_id.get_public_path()" class="fw-semibold text-decoration-none" t-esc="match.home_team_id.name"/>
                         <span t-else="" class="fw-semibold" t-esc="match.home_team_id.name or 'TBD'"/>
                     </div>
                     <div class="text-center px-2">
@@ -84,10 +67,7 @@
                         </strong>
                     </div>
                     <div class="text-end flex-fill">
-                        <a t-if="match.away_team_id and match.away_team_id.can_access_public_profile()"
-                           t-att-href="match.away_team_id.get_public_path()"
-                           class="fw-semibold text-decoration-none"
-                           t-esc="match.away_team_id.name"/>
+                        <a t-if="match.away_team_id and match.away_team_id.can_access_public_profile()" t-att-href="match.away_team_id.get_public_path()" class="fw-semibold text-decoration-none" t-esc="match.away_team_id.name"/>
                         <span t-else="" class="fw-semibold" t-esc="match.away_team_id.name or 'TBD'"/>
                     </div>
                 </div>
@@ -253,8 +233,8 @@
                                             <div>
                                                 <a t-att-href="tournament.get_public_path()" class="h4 text-decoration-none d-block mb-1" t-esc="tournament.name"/>
                                                 <div class="small text-muted">
-                                                    <t t-if="tournament.date_start" t-esc="tournament.date_start" t-options='{"widget": "date"}'/>
-                                                    <t t-if="tournament.date_end"> - <t t-esc="tournament.date_end" t-options='{"widget": "date"}'/></t>
+                                                    <t t-if="tournament.date_start" t-esc="tournament.date_start" t-options="{&quot;widget&quot;: &quot;date&quot;}"/>
+                                                    <t t-if="tournament.date_end"> - <t t-esc="tournament.date_end" t-options="{&quot;widget&quot;: &quot;date&quot;}"/></t>
                                                 </div>
                                             </div>
                                             <span class="badge text-bg-primary">Featured</span>
@@ -285,8 +265,8 @@
                                     <div class="card-body">
                                         <a t-att-href="tournament.get_public_path()" class="h6 text-decoration-none d-block mb-2" t-esc="tournament.name"/>
                                         <p class="small text-muted mb-3">
-                                            <t t-if="tournament.date_start" t-esc="tournament.date_start" t-options='{"widget": "date"}'/>
-                                            <t t-if="tournament.date_end"> - <t t-esc="tournament.date_end" t-options='{"widget": "date"}'/></t>
+                                            <t t-if="tournament.date_start" t-esc="tournament.date_start" t-options="{&quot;widget&quot;: &quot;date&quot;}"/>
+                                            <t t-if="tournament.date_end"> - <t t-esc="tournament.date_end" t-options="{&quot;widget&quot;: &quot;date&quot;}"/></t>
                                         </p>
                                         <a t-att-href="tournament.get_public_path()" class="btn btn-sm btn-outline-secondary">Open Overview</a>
                                     </div>
@@ -311,8 +291,8 @@
                                             <span class="badge text-bg-light" t-esc="tournament.get_public_site_state_label()"/>
                                         </div>
                                         <div class="small text-muted mb-2">
-                                            <t t-if="tournament.date_start" t-esc="tournament.date_start" t-options='{"widget": "date"}'/>
-                                            <t t-if="tournament.date_end"> - <t t-esc="tournament.date_end" t-options='{"widget": "date"}'/></t>
+                                            <t t-if="tournament.date_start" t-esc="tournament.date_start" t-options="{&quot;widget&quot;: &quot;date&quot;}"/>
+                                            <t t-if="tournament.date_end"> - <t t-esc="tournament.date_end" t-options="{&quot;widget&quot;: &quot;date&quot;}"/></t>
                                         </div>
                                         <div class="small text-muted mb-3">
                                             <t t-if="tournament.season_id"><span t-esc="tournament.season_id.name"/></t>
@@ -360,8 +340,8 @@
                                 <h1 class="display-6 mb-3" t-esc="tournament.name"/>
                                 <p class="lead mb-3" t-esc="tournament.public_editorial_summary or 'Entries, schedules, live updates, and final tables all live in this tournament hub.'"/>
                                 <div class="d-flex flex-wrap gap-3 small">
-                                    <span t-if="tournament.date_start"><i class="fa fa-calendar me-1"/><t t-esc="tournament.date_start" t-options='{"widget": "date"}'/></span>
-                                    <span t-if="tournament.date_end">to <t t-esc="tournament.date_end" t-options='{"widget": "date"}'/></span>
+                                    <span t-if="tournament.date_start"><i class="fa fa-calendar me-1"/><t t-esc="tournament.date_start" t-options="{&quot;widget&quot;: &quot;date&quot;}"/></span>
+                                    <span t-if="tournament.date_end">to <t t-esc="tournament.date_end" t-options="{&quot;widget&quot;: &quot;date&quot;}"/></span>
                                     <span t-if="tournament.location"><i class="fa fa-map-marker me-1"/><t t-esc="tournament.location"/></span>
                                     <span t-if="tournament.season_id"><i class="fa fa-flag me-1"/><t t-esc="tournament.season_id.name"/></span>
                                 </div>
@@ -452,10 +432,7 @@
                                     <div class="col-md-6 col-lg-4">
                                         <div class="card h-100 border-0 shadow-sm">
                                             <div class="card-body">
-                                                <a t-if="participant.team_id and participant.team_id.can_access_public_profile()"
-                                                   t-att-href="participant.team_id.get_public_path()"
-                                                   class="h6 text-decoration-none d-block mb-1"
-                                                   t-esc="participant.team_id.name"/>
+                                                <a t-if="participant.team_id and participant.team_id.can_access_public_profile()" t-att-href="participant.team_id.get_public_path()" class="h6 text-decoration-none d-block mb-1" t-esc="participant.team_id.name"/>
                                                 <span t-else="" class="h6 d-block mb-1" t-esc="participant.team_id.name"/>
                                                 <div class="small text-muted mb-2" t-esc="participant.club_id.name"/>
                                                 <span class="badge text-bg-light" t-esc="participant.get_public_site_state_label()"/>
@@ -702,8 +679,8 @@
                                             <a t-att-href="tournament.get_public_path()" class="list-group-item list-group-item-action px-0">
                                                 <div class="fw-semibold" t-esc="tournament.name"/>
                                                 <div class="text-muted">
-                                                    <t t-if="tournament.date_start" t-esc="tournament.date_start" t-options='{"widget": "date"}'/>
-                                                    <t t-if="tournament.date_end"> - <t t-esc="tournament.date_end" t-options='{"widget": "date"}'/></t>
+                                                    <t t-if="tournament.date_start" t-esc="tournament.date_start" t-options="{&quot;widget&quot;: &quot;date&quot;}"/>
+                                                    <t t-if="tournament.date_end"> - <t t-esc="tournament.date_end" t-options="{&quot;widget&quot;: &quot;date&quot;}"/></t>
                                                 </div>
                                             </a>
                                         </t>

@@ -2,7 +2,7 @@ import logging
 from uuid import uuid4
 
 from odoo.addons.sports_federation_base.correlation import ensure_correlation_id
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -88,6 +88,18 @@ class FederationStanding(models.Model):
         compute="_compute_recompute_queue_counts",
         string="Failed Recomputes",
     )
+    included_result_count = fields.Integer(
+        compute="_compute_finish_readiness", string="Approved Results Included"
+    )
+    remaining_result_count = fields.Integer(
+        compute="_compute_finish_readiness", string="Remaining Result Blockers"
+    )
+    finish_readiness = fields.Selection(
+        [("blocked", "Blocked"), ("review", "Ready for Review"), ("frozen", "Frozen")],
+        compute="_compute_finish_readiness",
+        string="Stage Finish Readiness",
+    )
+    finish_guidance = fields.Char(compute="_compute_finish_readiness")
 
     _unique_tournament_stage_group_name = models.Constraint(
         "UNIQUE(tournament_id, stage_id, group_id, name)",
@@ -99,6 +111,54 @@ class FederationStanding(models.Model):
         """Compute line count."""
         for record in self:
             record.line_count = len(record.line_ids)
+
+    def _scope_match_domain(self):
+        self.ensure_one()
+        domain = [
+            ("tournament_id", "=", self.tournament_id.id),
+            ("state", "!=", "cancelled"),
+            ("home_team_id", "!=", False),
+            ("away_team_id", "!=", False),
+        ]
+        if self.stage_id:
+            domain.append(("stage_id", "=", self.stage_id.id))
+        if self.group_id:
+            domain.append(("group_id", "=", self.group_id.id))
+        return domain
+
+    def _compute_finish_readiness(self):
+        Match = self.env["federation.match"]
+        has_result_control = "result_state" in Match._fields
+        for standing in self:
+            matches = Match.search(standing._scope_match_domain())
+            included = matches.filtered(
+                lambda match: match.state == "done"
+                and (not has_result_control or match.result_state == "approved")
+                and (
+                    "include_in_official_standings" not in Match._fields
+                    or match.include_in_official_standings
+                )
+            )
+            standing.included_result_count = len(included)
+            standing.remaining_result_count = len(matches - included)
+            if standing.state == "frozen":
+                standing.finish_readiness = "frozen"
+                standing.finish_guidance = _(
+                    "Frozen. Review website visibility to publish the final table."
+                )
+            elif standing.remaining_result_count:
+                standing.finish_readiness = "blocked"
+                standing.finish_guidance = _(
+                    "Approve %(count)s remaining result(s), then recompute the table.",
+                    count=standing.remaining_result_count,
+                )
+            else:
+                standing.finish_readiness = "review"
+                standing.finish_guidance = _(
+                    "%(count)s approved result(s) are included. Recompute, review, "
+                    "then freeze the table.",
+                    count=standing.included_result_count,
+                )
 
     @api.depends("recompute_job_ids.state")
     def _compute_recompute_queue_counts(self):
@@ -210,16 +270,8 @@ class FederationStanding(models.Model):
         is counted (fallback behaviour).
         """
         self.ensure_one()
-        domain = [
-            ("tournament_id", "=", self.tournament_id.id),
-            ("state", "=", "done"),
-            ("home_team_id", "!=", False),
-            ("away_team_id", "!=", False),
-        ]
-        if self.stage_id:
-            domain.append(("stage_id", "=", self.stage_id.id))
-        if self.group_id:
-            domain.append(("group_id", "=", self.group_id.id))
+        domain = self._scope_match_domain()
+        domain.append(("state", "=", "done"))
         # If result_control is installed, only count officially approved matches
         if "include_in_official_standings" in self.env["federation.match"]._fields:
             domain.append(("include_in_official_standings", "=", True))
@@ -249,56 +301,24 @@ class FederationStanding(models.Model):
         # Build a dict from team_id → participant for O(1) lookup in the match loop
         participants = self._get_participants()
         participant_map = {p.team_id.id: p for p in participants}
-        stats = {}
-        for participant in participants:
-            stats[participant.id] = {
-                "played": 0,
-                "won": 0,
-                "drawn": 0,
-                "lost": 0,
-                "score_for": 0,
-                "score_against": 0,
-            }
+        engine = self.env["federation.standings.rules"]
+        stats = {participant.id: engine.initial_stats() for participant in participants}
 
-        # Process matches
+        # One shared calculator for every table: regular, forfeit and rule-set
+        # point overrides behave the same as in the format engine.
         for match in matches:
-            # O(1) lookup instead of O(m) filtered() scan
             home_participant = participant_map.get(match.home_team_id.id)
             away_participant = participant_map.get(match.away_team_id.id)
-
             if not home_participant or not away_participant:
                 continue
-
-            home_pid = home_participant.id
-            away_pid = away_participant.id
-
-            # Update played count
-            stats[home_pid]["played"] += 1
-            stats[away_pid]["played"] += 1
-
-            # Update scores
-            stats[home_pid]["score_for"] += match.home_score
-            stats[home_pid]["score_against"] += match.away_score
-            stats[away_pid]["score_for"] += match.away_score
-            stats[away_pid]["score_against"] += match.home_score
-
-            # Update win/draw/loss
-            if match.home_score > match.away_score:
-                stats[home_pid]["won"] += 1
-                stats[away_pid]["lost"] += 1
-            elif match.away_score > match.home_score:
-                stats[away_pid]["won"] += 1
-                stats[home_pid]["lost"] += 1
-            else:
-                stats[home_pid]["drawn"] += 1
-                stats[away_pid]["drawn"] += 1
-
-        # Calculate points
-        for pid in stats:
-            stats[pid]["points"] = (
-                stats[pid]["won"] * points_values["win"]
-                + stats[pid]["drawn"] * points_values["draw"]
-                + stats[pid]["lost"] * points_values["loss"]
+            engine.apply_match(
+                stats,
+                home_participant.id,
+                away_participant.id,
+                match.home_score,
+                match.away_score,
+                points_values,
+                forfeit_winner=engine.match_forfeit_side(match),
             )
 
         return stats
@@ -395,26 +415,21 @@ class FederationStanding(models.Model):
     def action_freeze(self):
         """Freeze the standing to prevent recomputation.
 
-        If any stage progression rules have auto_advance=True for the
-        source stage/group of this standing, they are executed automatically.
+        Stage progression is not applied here. Tables linked to a competition
+        stage are frozen through ``sports_federation_format``, which freezes
+        the stage snapshot and applies its progression edges.
         """
         for record in self:
+            record._compute_finish_readiness()
+            if record.remaining_result_count:
+                raise ValidationError(
+                    _(
+                        "Cannot freeze this table while %(count)s result(s) still "
+                        "need completion or approval.",
+                        count=record.remaining_result_count,
+                    )
+                )
             record.state = "frozen"
-            # Trigger auto-advance progression rules
-            if record.tournament_id and record.stage_id:
-                Progression = self.env.get("federation.stage.progression")
-                if Progression is not None:
-                    domain = [
-                        ("tournament_id", "=", record.tournament_id.id),
-                        ("source_stage_id", "=", record.stage_id.id),
-                        ("auto_advance", "=", True),
-                        ("state", "=", "pending"),
-                    ]
-                    if record.group_id:
-                        domain.append(("source_group_id", "=", record.group_id.id))
-                    rules = Progression.search(domain)
-                    for rule in rules:
-                        rule.action_execute()
             Dispatcher = record.env.get("federation.notification.dispatcher")
             if Dispatcher is not None:
                 Dispatcher.send_standing_frozen(record)

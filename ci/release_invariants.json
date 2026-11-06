@@ -24,9 +24,17 @@
   "schema_version": 1,
   "zero_checks": {
     "duplicate_live_matchday_publications": "SELECT count(*) FROM (SELECT matchday_id FROM federation_schedule_publication WHERE state = 'live' GROUP BY matchday_id HAVING count(*) > 1) violations",
+    "finalized_participant_teams_without_participants": "SELECT count(*) FROM federation_participant_set_line line JOIN federation_participant_set pset ON pset.id = line.participant_set_id LEFT JOIN federation_tournament_participant participant ON participant.tournament_id = pset.division_id AND participant.team_id = line.team_id AND participant.state = 'confirmed' WHERE pset.state = 'finalized' AND participant.id IS NULL",
     "fixture_match_backlink_mismatches": "SELECT count(*) FROM federation_fixture fixture JOIN federation_match match ON match.id = fixture.operational_match_id WHERE match.logical_fixture_id IS DISTINCT FROM fixture.id",
+    "matches_without_expected_team_match_sheets": "SELECT count(*) FROM federation_match match WHERE match.home_team_id IS NOT NULL AND match.away_team_id IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM federation_match_sheet sheet WHERE sheet.match_id = match.id AND sheet.team_id = match.home_team_id) OR NOT EXISTS (SELECT 1 FROM federation_match_sheet sheet WHERE sheet.match_id = match.id AND sheet.team_id = match.away_team_id))",
+    "multiple_active_primary_rosters": "SELECT count(*) FROM (SELECT team_id, season_id, COALESCE(competition_id, 0) competition_scope FROM federation_team_roster WHERE status = 'active' GROUP BY team_id, season_id, COALESCE(competition_id, 0) HAVING count(*) > 1) violations",
     "orphan_competition_editions": "SELECT count(*) FROM federation_competition_edition edition LEFT JOIN federation_competition competition ON competition.id = edition.competition_id LEFT JOIN federation_season season ON season.id = edition.season_id WHERE competition.id IS NULL OR season.id IS NULL",
     "orphan_schedule_publications": "SELECT count(*) FROM federation_schedule_publication publication LEFT JOIN federation_matchday matchday ON matchday.id = publication.matchday_id WHERE matchday.id IS NULL",
+    "published_matches_without_published_slot": "SELECT count(*) FROM federation_match WHERE schedule_publication_id IS NOT NULL AND published_slot_id IS NULL",
+    "published_matches_without_venue_or_playing_area": "SELECT count(*) FROM federation_match WHERE schedule_publication_id IS NOT NULL AND (venue_id IS NULL OR playing_area_id IS NULL)",
+    "resolved_playable_fixtures_without_matches": "SELECT count(*) FROM federation_fixture fixture LEFT JOIN federation_match match ON match.logical_fixture_id = fixture.id WHERE fixture.state <> 'cancelled' AND fixture.bye_team_id IS NULL AND fixture.home_team_id IS NOT NULL AND fixture.away_team_id IS NOT NULL AND match.id IS NULL",
+    "retired_competition_engine_not_upgradeable": "SELECT count(*) FROM ir_module_module WHERE name = 'sports_federation_competition_engine' AND state <> 'uninstalled'",
+    "retired_engine_legacy_tables_remaining": "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name LIKE 'federation_competition_engine_%'",
     "stored_attachments_without_filename": "SELECT count(*) FROM ir_attachment WHERE type = 'binary' AND store_fname IS NOT NULL AND store_fname = ''"
   }
 }

@@ -19,7 +19,7 @@
                          invisible="state == 'draft' or website_published"
                          role="alert">
                         <strong>Hidden:</strong>
-                        This standings table is ready for review, but visitors cannot see it until you publish it here.
+                        Review and freeze this standings table first. Publication becomes editable after freeze.
                     </div>
                     <div class="alert alert-success"
                          invisible="not website_published"
@@ -29,7 +29,7 @@
                     </div>
                     <group>
                         <group string="Publication">
-                            <field name="website_published"/>
+                            <field name="website_published" readonly="state != 'frozen'"/>
                             <field name="public_title"/>
                         </group>
                     </group>

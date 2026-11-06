@@ -120,3 +120,104 @@ class TestRegistrationTeamSelection(TransactionCase):
         )
         self.assertIn(eligible_team.id, entry.available_team_ids.ids)
         self.assertNotIn(registered_team.id, entry.available_team_ids.ids)
+
+    def test_direct_team_picker_materializes_registration_and_participant_snapshot(self):
+        first = self._make_team("Direct Team A")
+        second = self._make_team("Direct Team B")
+        wizard = self.env["federation.competition.team.selection.wizard"].create(
+            {
+                "edition_id": self.edition.id,
+                "division_id": self.division.id,
+                "window_id": self.window.id,
+                "team_ids": [(6, 0, [first.id, second.id])],
+            }
+        )
+
+        wizard.action_apply()
+
+        self.assertEqual(self.window.state, "finalized")
+        self.assertEqual(
+            set(self.window.entry_ids.mapped("state")), {"approved"}
+        )
+        self.assertEqual(
+            set(self.window.participant_set_id.line_ids.mapped("team_id").ids),
+            {first.id, second.id},
+        )
+        participant_set = self.window.participant_set_id
+        self.assertEqual(
+            self.window.materialize_direct_team_selection(first | second),
+            participant_set,
+        )
+
+    # ── participant records follow the finalised team list ───────────────
+
+    def _participants(self):
+        return self.env["federation.tournament.participant"].search(
+            [("tournament_id", "=", self.division.id)]
+        )
+
+    def test_finalising_the_team_list_creates_confirmed_participants(self):
+        first = self._make_team("Sync Team A")
+        second = self._make_team("Sync Team B")
+
+        self.window.materialize_direct_team_selection(first | second)
+
+        participants = self._participants()
+        self.assertEqual(participants.mapped("team_id"), first | second)
+        self.assertEqual(set(participants.mapped("state")), {"confirmed"})
+        self.assertEqual(sorted(participants.mapped("seed")), [1, 2])
+
+    def test_participant_sync_is_idempotent(self):
+        first = self._make_team("Idempotent Team A")
+        second = self._make_team("Idempotent Team B")
+        participant_set = self.window.materialize_direct_team_selection(first | second)
+
+        self.window._sync_tournament_participants(participant_set)
+        self.window._sync_tournament_participants(participant_set)
+
+        self.assertEqual(len(self._participants()), 2)
+
+    def test_replacing_the_team_list_withdraws_teams_that_were_taken_out(self):
+        first = self._make_team("Replace Team A")
+        second = self._make_team("Replace Team B")
+        third = self._make_team("Replace Team C")
+        self.window.materialize_direct_team_selection(first | second)
+
+        self.window.materialize_direct_team_selection(second | third)
+
+        state_by_team = {
+            participant.team_id: participant.state
+            for participant in self._participants()
+        }
+        self.assertEqual(state_by_team[first], "withdrawn")
+        self.assertEqual(state_by_team[second], "confirmed")
+        self.assertEqual(state_by_team[third], "confirmed")
+
+    def test_a_team_selected_again_is_confirmed_again(self):
+        first = self._make_team("Return Team A")
+        second = self._make_team("Return Team B")
+        third = self._make_team("Return Team C")
+        self.window.materialize_direct_team_selection(first | second)
+        self.window.materialize_direct_team_selection(second | third)
+
+        self.window.materialize_direct_team_selection(first | second)
+
+        state_by_team = {
+            participant.team_id: participant.state
+            for participant in self._participants()
+        }
+        self.assertEqual(state_by_team[first], "confirmed")
+        self.assertEqual(state_by_team[third], "withdrawn")
+
+    def test_migration_style_sync_skips_a_team_that_is_no_longer_eligible(self):
+        first = self._make_team("Eligible Sync Team")
+        second = self._make_team("Later Ineligible Team")
+        participant_set = self.window.materialize_direct_team_selection(first | second)
+        self._participants().unlink()
+        second.write({"gender": "female"})
+
+        self.window._sync_tournament_participants(
+            participant_set, skip_ineligible=True
+        )
+
+        self.assertEqual(self._participants().mapped("team_id"), first)

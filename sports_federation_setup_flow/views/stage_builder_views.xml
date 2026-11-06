@@ -1,0 +1,12 @@
+<odoo>
+  <record id="structure_form_stage_builder" model="ir.ui.view">
+    <field name="name">competition.structure.stage.builder</field>
+    <field name="model">federation.competition.structure</field>
+    <field name="inherit_id" ref="sports_federation_format.structure_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_open_stage_builder" type="object" string="Stage builder" class="btn-primary"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

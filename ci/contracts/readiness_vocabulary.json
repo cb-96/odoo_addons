@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "vocabulary_module": "sports_federation_base/readiness_vocabulary.py",
+  "labels": [
+    "Ready",
+    "Action needed",
+    "Waiting for review",
+    "Blocked",
+    "Complete",
+    "Not applicable"
+  ],
+  "surfaces": [
+    "sports_federation_duty_coverage/views/coverage_views.xml",
+    "sports_federation_live_workspace/static/src/workspaces.xml",
+    "sports_federation_live_workspace/views/mobile_matchday.xml",
+    "sports_federation_matchday/views/matchday_views.xml",
+    "sports_federation_member_services/lifecycle_policy.py",
+    "sports_federation_member_services/models/family_summary.py",
+    "sports_federation_portal/models/gameday_overview.py",
+    "sports_federation_portal/models/portal_status_labels.py",
+    "sports_federation_portal/views/preparation_journey_templates.xml",
+    "sports_federation_setup_flow/static/src/competition_planner/planner.xml"
+  ],
+  "state_domains": [
+    {
+      "domain": "coverage",
+      "path": "sports_federation_duty_coverage/models/coverage.py",
+      "class": "Match",
+      "field": "coverage_state"
+    },
+    {
+      "domain": "roster",
+      "path": "sports_federation_rosters/models/team_roster.py",
+      "class": "FederationTeamRoster",
+      "field": "status"
+    },
+    {
+      "domain": "lineup",
+      "path": "sports_federation_rosters/models/match_sheet.py",
+      "class": "FederationMatchSheet",
+      "field": "state"
+    },
+    {
+      "domain": "schedule",
+      "path": "sports_federation_scheduling/models/schedule.py",
+      "class": "FederationSchedule",
+      "field": "state"
+    },
+    {
+      "domain": "court",
+      "path": "sports_federation_matchday/models/matchday_operation.py",
+      "class": "FederationMatchdayCourtStatus",
+      "field": "state"
+    },
+    {
+      "domain": "compliance",
+      "path": "sports_federation_compliance/models/compliance_check.py",
+      "class": "FederationComplianceCheck",
+      "field": "STATUS_SELECTION"
+    }
+  ],
+  "service": {
+    "model": "federation.matchday.readiness",
+    "owner": "sports_federation_matchday/models/matchday_readiness.py"
+  },
+  "providers": {
+    "schedule": "sports_federation_matchday/models/matchday_readiness.py",
+    "courts": "sports_federation_matchday/models/matchday_readiness.py",
+    "rosters": "sports_federation_rosters/models/matchday_readiness.py",
+    "lineups": "sports_federation_rosters/models/matchday_readiness.py",
+    "eligibility": "sports_federation_rosters/models/matchday_readiness.py",
+    "officials": "sports_federation_officiating/models/matchday_readiness.py",
+    "compliance": "sports_federation_compliance/models/matchday_readiness.py"
+  },
+  "consumers": {
+    "planner": {
+      "path": "sports_federation_setup_flow/models/planner_matchday_readiness.py",
+      "tokens": ["federation.matchday.readiness", "evaluate("]
+    },
+    "backend_match_day_screen": {
+      "path": "sports_federation_matchday/models/matchday_readiness.py",
+      "tokens": ["_compute_readiness_projection", "service.evaluate("]
+    },
+    "backend_match_day_view": {
+      "path": "sports_federation_matchday/views/matchday_views.xml",
+      "tokens": ["readiness_overall", "readiness_summary"]
+    },
+    "live_workspace": {
+      "path": "sports_federation_live_workspace/models/court.py",
+      "tokens": ["federation.matchday.readiness", ".brief("]
+    },
+    "release_tests": {
+      "path": "sports_federation_app/tests/test_matchday_readiness_release.py",
+      "tokens": ["federation.matchday.readiness", "component_keys"]
+    }
+  }
+}

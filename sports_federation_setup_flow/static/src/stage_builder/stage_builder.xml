@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="sports_federation_setup_flow.StageBuilder">
+    <div class="o_stage_builder h-100 overflow-auto">
+      <div t-if="state.loading" class="p-5 text-center" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"/> Loading stages…</div>
+      <section t-elif="state.error" class="alert alert-danger m-3" role="alert">
+        <p t-esc="state.error"/>
+        <button type="button" class="btn btn-outline-danger" t-on-click="load">Retry</button>
+      </section>
+      <main t-else="" class="container-fluid py-3" aria-labelledby="sf-builder-title">
+        <t t-set="data" t-value="state.data"/>
+        <header class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+          <div>
+            <button type="button" class="btn btn-link px-0" t-on-click="backToPlanner">← Back to the planner</button>
+            <h1 id="sf-builder-title" class="h3 mb-1">Stages · <t t-esc="data.structure.division"/></h1>
+            <p class="text-muted mb-0">
+              <t t-esc="data.structure.team_count"/> teams · <t t-esc="data.structure.match_count"/> matches · version <t t-esc="data.structure.version"/>
+            </p>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-secondary" t-on-click="() =&gt; this.state.templateOpen = !this.state.templateOpen" t-att-disabled="state.busy || !data.stages.length" t-att-aria-expanded="state.templateOpen ? 'true' : 'false'">Save as template</button>
+            <button t-if="!data.structure.editable &amp;&amp; data.structure.can_new_version" type="button" class="btn btn-outline-primary" t-on-click="newVersion" t-att-disabled="state.busy">Edit as new version</button>
+            <button t-if="data.structure.editable" type="button" class="btn btn-primary" t-on-click="generate" t-att-disabled="state.busy || data.issues.length || !data.stages.length">Generate all matches</button>
+            <button t-if="data.structure.can_confirm" type="button" class="btn btn-primary" t-on-click="generate" t-att-disabled="state.busy">Confirm these matches</button>
+          </div>
+        </header>
+
+        <form t-if="state.templateOpen" class="sf-builder-panel d-flex flex-wrap align-items-end gap-2 mb-3" t-on-submit="saveTemplate">
+          <label class="flex-grow-1">Template name
+            <input class="form-control" maxlength="120" t-model="state.templateName" t-att-placeholder="data.structure.name"/>
+          </label>
+          <button type="submit" class="btn btn-primary" t-att-disabled="state.busy">Save</button>
+          <button type="button" class="btn btn-link" t-on-click="() =&gt; this.state.templateOpen = false">Cancel</button>
+        </form>
+
+        <div t-if="!data.structure.editable" class="alert alert-info" role="status">
+          <t t-if="data.structure.can_confirm">These matches are generated but not confirmed yet. Choose <strong>Confirm these matches</strong> to plan them.</t>
+          <t t-elif="data.structure.state !== 'draft'">These matches are generated. <t t-if="data.structure.can_new_version">Use <strong>Edit as new version</strong> to change the stages.</t><t t-else="">Some matches are already planned or played, so the stages are locked.</t></t>
+          <t t-else="">You can view these stages but not change them.</t>
+        </div>
+
+        <section t-if="data.issues.length" class="alert alert-warning" role="alert" aria-labelledby="sf-builder-issues">
+          <h2 id="sf-builder-issues" class="h6">Fix before generating</h2>
+          <ul class="mb-0">
+            <li t-foreach="data.issues" t-as="issue" t-key="issue_index">
+              <button t-if="issue.stage_id || issue.link_id" type="button" class="btn btn-link p-0 text-start" t-on-click="() =&gt; this.focus(issue)" t-esc="issue.message"/>
+              <span t-else="" t-esc="issue.message"/>
+            </li>
+          </ul>
+        </section>
+        <p t-elif="data.stages.length &amp;&amp; data.structure.editable" class="text-success" role="status"><i class="fa fa-check" aria-hidden="true"/> Ready to generate.</p>
+
+        <section t-if="!data.stages.length" class="sf-builder-panel text-center py-5">
+          <h2 class="h5">No stages yet</h2>
+          <p class="text-muted">Start with the stage every registered team plays, for example a league or groups.</p>
+          <button t-if="data.structure.editable" type="button" class="btn btn-primary" t-on-click="() =&gt; this.openStageForm()">Add first stage</button>
+        </section>
+
+        <div t-else="" class="sf-builder-columns" t-attf-style="--sf-columns: {{ data.columns }}" role="list" aria-label="Stages in playing order">
+          <section t-foreach="columns" t-as="column" t-key="column.index" class="sf-builder-column" role="listitem" t-att-aria-label="column.label">
+            <h2 class="h6 text-muted text-uppercase" t-esc="column.label"/>
+            <article t-foreach="column.stages" t-as="stage" t-key="stage.id" t-att-id="'sf-stage-' + stage.id" tabindex="-1"
+                     t-attf-class="sf-stage-card card mb-3 {{ stage.has_issue ? 'border-warning' : '' }} {{ state.focusStage === stage.id ? 'sf-focus' : '' }}">
+              <div class="card-body">
+                <input t-if="data.structure.editable" class="form-control form-control-sm fw-bold mb-2" t-att-value="stage.name" t-att-aria-label="'Name of ' + stage.name" maxlength="80" t-on-change="(ev) =&gt; this.rename(stage, ev)" t-att-disabled="state.busy"/>
+                <h3 t-else="" class="h6" t-esc="stage.name"/>
+                <select t-if="data.structure.editable" class="form-select form-select-sm mb-2" t-att-aria-label="'How ' + stage.name + ' is played'" t-on-change="(ev) =&gt; this.changeFormat(stage, ev)" t-att-disabled="state.busy">
+                  <option t-foreach="data.formats" t-as="format" t-key="format.key" t-att-value="format.key" t-att-selected="format.key === stage.format_type" t-esc="format.label"/>
+                </select>
+                <p t-else="" class="mb-1" t-esc="stage.format_label"/>
+                <p class="small mb-1"><strong t-esc="stage.teams"/> teams · <strong t-esc="stage.matches"/> matches</p>
+                <p class="small text-muted mb-1" t-esc="stage.source_label"/>
+                <label t-if="stage.source_type === 'progression' &amp;&amp; data.structure.editable" class="small w-100 mb-1">Points from the earlier stage
+                  <select class="form-select form-select-sm" t-on-change="(ev) =&gt; this.changeCarryover(stage, ev)" t-att-disabled="state.busy">
+                    <option t-foreach="data.carryover" t-as="option" t-key="option.key" t-att-value="option.key" t-att-selected="option.key === stage.carryover_policy" t-esc="option.label"/>
+                  </select>
+                </label>
+                <p t-if="stage.game_days" class="small text-muted mb-1">Game days: <t t-esc="stage.game_days"/></p>
+                <ul t-if="linksOf(stage).length" class="list-unstyled small mb-2 sf-stage-next">
+                  <li t-foreach="linksOf(stage)" t-as="link" t-key="link.id">→ <t t-if="link.rank_from === link.rank_to">#<t t-esc="link.rank_from"/></t><t t-else="">#<t t-esc="link.rank_from"/>–<t t-esc="link.rank_to"/></t> to <t t-esc="stageName(link.target_id)"/></li>
+                </ul>
+                <p t-if="stage.places_free &amp;&amp; linksOf(stage).length" class="small text-muted mb-2"><t t-esc="stage.places_free"/> places are not linked (final places).</p>
+                <div t-if="data.structure.editable" class="d-flex flex-wrap gap-1">
+                  <button type="button" class="btn btn-sm btn-outline-primary" t-on-click="() =&gt; this.openStageForm(stage)" t-att-disabled="state.busy">Add next stage</button>
+                  <button t-if="data.stages.length &gt; 1" type="button" class="btn btn-sm btn-outline-secondary" t-on-click="() =&gt; this.openLinkForm(stage)" t-att-disabled="state.busy">Link places</button>
+                  <button type="button" class="btn btn-sm btn-outline-danger" t-att-aria-label="'Remove ' + stage.name" t-on-click="() =&gt; this.removeStage(stage)" t-att-disabled="state.busy"><i class="fa fa-trash" aria-hidden="true"/></button>
+                </div>
+              </div>
+            </article>
+          </section>
+        </div>
+
+        <div t-if="data.stages.length &amp;&amp; data.structure.editable &amp;&amp; !state.form" class="mb-3">
+          <button type="button" class="btn btn-outline-secondary" t-on-click="() =&gt; this.openStageForm()">Add a stage with registered teams</button>
+        </div>
+
+        <form t-if="state.form" class="sf-builder-panel mb-3" t-on-submit="submitForm" aria-labelledby="sf-builder-form-title">
+          <t t-if="state.form.kind === 'stage'">
+            <h2 id="sf-builder-form-title" class="h6">New stage</h2>
+            <div class="row g-2">
+              <label class="col-md-4">Name<input class="form-control" maxlength="80" required="required" t-model="state.form.name"/></label>
+              <label class="col-md-4">Played as
+                <select class="form-select" t-model="state.form.format_type">
+                  <option t-foreach="data.formats" t-as="format" t-key="format.key" t-att-value="format.key" t-esc="format.label"/>
+                </select>
+              </label>
+              <label class="col-md-4">Teams come from
+                <select class="form-select" t-model="state.form.after_stage_id">
+                  <option value="">Registered teams</option>
+                  <option t-foreach="data.stages" t-as="stage" t-key="stage.id" t-att-value="stage.id">Places of <t t-esc="stage.name"/></option>
+                </select>
+              </label>
+              <label t-if="state.form.after_stage_id" class="col-md-4">Number of places, starting at the first free place
+                <input type="number" min="2" class="form-control" t-model="state.form.places"/>
+              </label>
+            </div>
+          </t>
+          <t t-else="">
+            <h2 id="sf-builder-form-title" class="h6">Send places to another stage</h2>
+            <div class="row g-2 align-items-end">
+              <label class="col-md-3">From
+                <select class="form-select" t-model="state.form.source_id">
+                  <option t-foreach="data.stages" t-as="stage" t-key="stage.id" t-att-value="stage.id" t-esc="stage.name"/>
+                </select>
+              </label>
+              <label class="col-md-2">First place<input type="number" min="1" class="form-control" required="required" t-model="state.form.rank_from"/></label>
+              <label class="col-md-2">Last place<input type="number" min="1" class="form-control" required="required" t-model="state.form.rank_to"/></label>
+              <label class="col-md-3">To
+                <select class="form-select" required="required" t-model="state.form.target_id">
+                  <option value="">Choose a stage</option>
+                  <option t-foreach="data.stages.filter(s =&gt; String(s.id) !== state.form.source_id)" t-as="stage" t-key="stage.id" t-att-value="stage.id" t-esc="stage.name"/>
+                </select>
+              </label>
+              <label class="col-md-2">First seed <span class="text-muted">(optional)</span><input type="number" min="1" class="form-control" t-model="state.form.target_seed_from" placeholder="Next free"/></label>
+            </div>
+          </t>
+          <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-primary" t-att-disabled="state.busy">Add</button>
+            <button type="button" class="btn btn-link" t-on-click="closeForm">Cancel</button>
+          </div>
+        </form>
+
+        <section t-if="data.links.length" class="sf-builder-panel" aria-labelledby="sf-builder-links">
+          <h2 id="sf-builder-links" class="h6">How teams move between stages</h2>
+          <ul class="list-unstyled mb-0">
+            <li t-foreach="data.links" t-as="link" t-key="link.id" t-attf-class="d-flex align-items-center gap-2 py-1 {{ link.has_issue ? 'text-warning-emphasis fw-bold' : '' }}">
+              <span class="flex-grow-1" t-esc="link.sentence"/>
+              <button t-if="data.structure.editable" type="button" class="btn btn-sm btn-outline-danger" t-att-aria-label="'Remove link: ' + link.sentence" t-on-click="() =&gt; this.removeLink(link)" t-att-disabled="state.busy"><i class="fa fa-times" aria-hidden="true"/></button>
+            </li>
+          </ul>
+        </section>
+      </main>
+    </div>
+  </t>
+</templates>

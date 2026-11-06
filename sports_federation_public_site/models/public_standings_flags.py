@@ -14,6 +14,15 @@ class FederationStanding(models.Model):
         string="Public Title",
     )
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        # Tables created for a competition stage are the division's live
+        # table; the division and competition still control publication.
+        for vals in vals_list:
+            if vals.get("structure_stage_id") and "website_published" not in vals:
+                vals["website_published"] = True
+        return super().create(vals_list)
+
 
 class FederationTeam(models.Model):
     _inherit = "federation.team"

@@ -9,6 +9,8 @@ from . import federation_season_registration
 from . import federation_referee
 from . import federation_match_referee
 from . import federation_team_roster
+from . import federation_season
+from . import gameday_overview
 from . import federation_match_sheet
 from . import federation_player
 from . import portal_status_labels
@@ -17,3 +19,12 @@ from . import competition_queries
 from . import federation_competition_entry
 
 from . import qol_search
+from . import federation_parental_approval
+from . import task_projection_service
+from . import task_projection
+from . import journey_operation_task
+from . import archive_scope
+from . import archive_visibility
+from . import archive_rosters
+from . import journey_event
+from . import portal_privilege_instrumentation

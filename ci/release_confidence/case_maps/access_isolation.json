@@ -1,0 +1,7 @@
+{
+  "club_a_cannot_read_or_mutate_club_b": "TestPortalWorkflowHttpSmoke.test_roster_routes_hide_foreign_rosters_and_lines",
+  "anonymous_cannot_read_private_data": "TestPublicSiteHttpSmoke.test_unpublished_tournament_detail_returns_404",
+  "planner_cannot_self_approve_when_review_required": "TestScheduleReviewPermissions.test_planner_cannot_approve_own_review_when_independent_review_is_required",
+  "guardian_and_payer_scope": "TestReleaseConfidenceResultPolicy.test_unsupported_guardian_and_payer_accounts_are_denied",
+  "direct_rpc_and_http_negative_cases": "TestPortalWorkflowHttpSmoke.test_roster_routes_hide_foreign_rosters_and_lines"
+}

@@ -16,7 +16,7 @@ def _extract_csrf_token(response_text):
     return match.group(1)
 
 
-@tagged("-at_install", "post_install")
+@tagged("-at_install", "post_install", "sf_release_confidence")
 class TestPublicSiteHttpSmoke(HttpCase):
     @classmethod
     def setUpClass(cls):
@@ -248,6 +248,14 @@ class TestPublicSiteHttpSmoke(HttpCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(self.tournament.name, response.text)
         self.assertNotIn("Internal Server Error", response.text)
+
+    @tagged("-at_install", "post_install", "sf_release_confidence")
+    def test_unpublished_tournament_detail_returns_404(self):
+        response = self.url_open(
+            self.unpublished_tournament.get_public_path(), allow_redirects=False
+        )
+
+        self.assertEqual(response.status_code, 404)
 
     def test_hidden_season_detail_routes_fail_closed(self):
         for path in (

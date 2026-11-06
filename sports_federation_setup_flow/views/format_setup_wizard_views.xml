@@ -1,0 +1,64 @@
+<odoo>
+  <record id="competition_format_setup_wizard_form" model="ir.ui.view">
+    <field name="name">federation.competition.format.setup.wizard.form</field>
+    <field name="model">federation.competition.format.setup.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Choose Format">
+        <sheet>
+          <div class="oe_title">
+            <h1>Choose how this division will play</h1>
+            <p class="text-muted">Every match of every stage is created when you confirm, including later stages whose teams are not known yet. Published or played history is never replaced by this action.</p>
+          </div>
+          <group>
+            <field name="edition_id"/>
+            <field name="division_id" options="{'no_create': True}"/>
+            <!-- Technical fields kept invisible for view modifiers and domains. -->
+            <field name="participant_set_id" invisible="1"/>
+            <field name="preview_feasible" invisible="1"/>
+            <field name="team_count" readonly="1" string="Confirmed teams"/>
+          </group>
+          <!-- Technical modifier relay: the saved-format picker only shows when templates exist. -->
+          <field name="has_templates" invisible="1"/>
+          <div class="alert alert-info" role="status" invisible="not source_structure_id">Filled in with last season's format: <field name="source_structure_id" nolabel="1" class="d-inline"/>. Change anything you like before confirming.</div>
+          <group invisible="not has_templates">
+            <field name="template_id" options="{'no_create': True, 'no_open': True}" placeholder="Choose a saved format (optional)"/>
+          </group>
+          <field name="format_type" widget="radio"/>
+          <div class="alert alert-light border" role="note"><field name="format_hint" nolabel="1" readonly="1"/></div>
+          <group string="Options" invisible="format_type not in ('knockout', 'pool_knockout', 'split_pools')">
+            <group invisible="format_type != 'pool_knockout'">
+              <field name="pool_count"/>
+              <field name="qualifiers_per_pool"/>
+              <field name="first_phase_double" string="Groups play home &amp; away"/>
+            </group>
+            <group invisible="format_type != 'split_pools'">
+              <field name="split_rank" placeholder="Half of the teams"/>
+              <field name="first_phase_double" string="Regular season home &amp; away"/>
+              <field name="second_phase_double"/>
+              <field name="second_phase_carryover"/>
+            </group>
+            <group invisible="format_type not in ('knockout', 'pool_knockout')">
+              <field name="knockout_full_placement"/>
+            </group>
+          </group>
+          <group string="Format preview">
+            <field name="preview_outline" nolabel="1" colspan="2" readonly="1"/>
+            <field name="preview_match_count" invisible="format_type == 'custom'"/>
+            <field name="preview_matches_per_team" invisible="format_type not in ('single_round_robin', 'double_round_robin')"/>
+            <field name="preview_byes" invisible="format_type != 'knockout'"/>
+          </group>
+          <div class="alert alert-warning" role="alert" invisible="preview_feasible or format_type == 'custom'"><field name="preview_message" nolabel="1" readonly="1"/></div>
+          <div class="alert alert-info" role="status" invisible="format_type not in ('knockout', 'pool_knockout')">Knockout participation depends on results. Later rounds are created now as "Winner R1 M2" and get their teams when results are approved.</div>
+          <div class="alert alert-info" role="status" invisible="format_type not in ('pool_knockout', 'split_pools')">Matches of the next stage are created now with places such as "#1 Group A". They are filled in when the earlier table is frozen. In <em>Plan Competition</em> you can keep each stage on its own game days.</div>
+          <field name="preview_confirmed" invisible="format_type == 'custom'"/>
+        </sheet>
+        <footer>
+          <button name="action_apply" type="object" string="Confirm Format &amp; Continue" class="btn-primary" invisible="format_type == 'custom'"/>
+          <button name="action_open_stage_builder" type="object" string="Open Stage Builder" class="btn-primary" invisible="format_type != 'custom'"/>
+          <button name="action_apply" type="object" string="Generate All Matches" class="btn-secondary" invisible="format_type != 'custom'"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

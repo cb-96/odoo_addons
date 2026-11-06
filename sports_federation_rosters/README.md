@@ -10,10 +10,11 @@ Purpose
 -------
 
 Provides a formal roster, which is the pool of players a team may select from
-for a season or competition, and match sheets, which are the specific squad and
-starting lineup for an individual match. The module links to rule sets for
-squad-size validation and to the shared eligibility service for license,
-registration, and suspension checks.
+for a season or competition, and match sheets, which carry the specific squad
+and starting lineup for a game day. Every match played by the same team in that
+game-day scope receives the same declared players and roles. The module links
+to rule sets for squad-size validation and to the shared eligibility service
+for license, registration, and suspension checks.
 
 Dependencies
 ------------
@@ -77,6 +78,8 @@ Fields:
 
 Key behaviour:
 
+- Players under 16 cannot be added to a senior/adult roster unless their player
+  account has a verified parental approval that covers the participation date.
 - Once a submitted, approved, or locked match sheet references a roster line,
    that referenced line cannot be structurally changed or removed.
 
@@ -107,12 +110,28 @@ Fields:
 State machine:
 
 - ``draft -> submitted -> approved -> locked``.
+- Submission and approval operate on the team's whole game-day lineup. One
+  approval synchronizes and approves every match sheet for that team on the
+  explicit competition match day. Legacy tournament fixtures without an
+  explicit match-day publication use tournament plus scheduled date as the
+  fallback scope.
+- Newly created matches on an already approved game day inherit the same roster,
+  declared lineup, and approval. Match-specific substitution minutes are not
+  copied.
+- **Prepare Lineups** preselects a team with an active roster and initializes
+   the wizard before it is saved; if no published match-day team has an active
+   roster, the action reports that prerequisite instead of failing during
+   wizard creation. Changing teams replaces the draft player rows.
 - Submitted sheets may return to draft for operator corrections before
    approval.
 - Matches created interactively receive draft home and away sheets when the
    rosters module is installed. Demo data loading runs without this side
    effect, so explicit fixtures such as the demo pack can define their own
    sheets without colliding with automatically created records.
+- Starting a match rechecks every listed, non-crossed-out player against the
+   current eligibility rules. If a suspension or other eligibility change has
+   occurred since roster approval, the affected player must be crossed out for
+   that match before play can start.
 
 ``federation.match.sheet.line``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -181,11 +200,18 @@ Key Behaviours
    competition, preventing cross-competition player sharing.
 - **Eligibility-aware activation**: roster activation is blocked until active
    lines satisfy date windows, squad-size bounds, and shared eligibility rules.
+- **Under-16 adult-league safeguarding**: a player under 16 on the relevant date
+  requires a linked, verified, date-valid parental approval for senior teams or
+  tournaments. Youth categories remain unaffected.
 - **Readable operator feedback**: roster lines and match-sheet lines expose
    ``eligibility_feedback``, while rosters and match sheets aggregate blockers
    into readiness summaries.
 - **Match sheet from roster**: match sheets validate against explicit roster
    lines so team, date-window, and license mismatches are caught early.
+- **One lineup per game day**: declared players, starter/substitute/captain
+  roles, jersey numbers, and source roster are synchronized across all of the
+  team's matches in the game-day scope. The lineup is submitted and approved
+  once; substitutions and final locking remain match-specific.
 - **Match-day locking**: submitted and approved sheet activity locks roster
    scope changes and the referenced roster lines so historical lineups remain
    defensible.
@@ -222,3 +248,19 @@ Audit evidence is append-only operational history. Normal system and federation
 manager ACLs do not grant unlink access. Controllers must route elevated
 mutations through an owning command or the portal privilege boundary; static
 release checks reject direct controller `sudo()` mutations.
+
+## Simplified game-day lineup preparation
+The match-day **Prepare Lineups** action opens one team/day wizard. It starts from the active roster or an existing declaration and writes through the existing match-sheet models. The declared roster, players, starter/substitute/captain roles, and jersey numbers are synchronized across every match for that team on the explicit published match day. Substitution timing stays match-specific.
+
+**Save & Submit Lineup** keeps all readiness and parental-consent checks. Streamlined competition policy executes the existing approval command automatically; Independent Review leaves the synchronized sheets submitted. Legacy tournaments without a competition edition retain explicit approval.
+
+## Rosters follow participants
+A team that becomes a tournament participant gets its roster, and the roster is
+linked to the team's confirmed season registration. The portal finds a club's
+roster through that link, so a roster without it looked like "no roster yet" and
+the club was offered a second one. `federation.team.roster._pick_season_baseline`
+is the rule for which roster is "the" season roster of a team when none is linked
+to the registration (not closed, then without competition scope, then active,
+then newest); the portal's registration lookup uses it. Upgrading prepares the
+roster of every participant in a running season and links existing rosters to
+their registration.

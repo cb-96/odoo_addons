@@ -11,6 +11,10 @@ class FederationOperationTask(models.Model):
     visible in a shared queue and are regenerated from current source state.
     """
 
+    def _journey_actionable_cards(self, groups):
+        from ..journey_cards import actionable_cards
+        return actionable_cards(groups)
+
     _name = "federation.operation.task"
     _description = "Federation Operational Task"
     _inherit = ["mail.thread", "mail.activity.mixin"]
@@ -21,6 +25,8 @@ class FederationOperationTask(models.Model):
         [
             ("registration", "Competition entry"),
             ("roster_readiness", "Roster readiness"),
+            ("parental_consent", "Parental consent"),
+            ("gameday_lineup", "Game-day lineup"),
             ("referee_duty", "Club referee duty"),
             ("result_review", "Result follow-up"),
         ],
@@ -49,11 +55,23 @@ class FederationOperationTask(models.Model):
         required=True,
         index=True,
     )
+    required_role = fields.Selection(
+        [
+            ("result_submitter", "Result Submitter"),
+            ("result_verifier", "Result Verifier"),
+            ("result_approver", "Result Approver"),
+            ("competition_manager", "Competition Manager"),
+        ],
+        string="Required Role",
+        index=True,
+        readonly=True,
+    )
     blocking = fields.Boolean(default=True, index=True)
     blocking_reason = fields.Text()
     next_step = fields.Char()
     action_url = fields.Char(readonly=True)
     deadline = fields.Datetime(index=True)
+    is_overdue = fields.Boolean(compute="_compute_is_overdue")
     assigned_user_id = fields.Many2one("res.users", index=True, tracking=True)
     waiting_on = fields.Selection(
         [
@@ -101,236 +119,12 @@ class FederationOperationTask(models.Model):
         "unique(source_key)", "An operational task source key must be unique."
     )
 
-    @api.model
-    def _portal_club_ids(self, user):
-        return (
-            self.env["federation.club.representative"]
-            .sudo()
-            .search([("user_id", "=", user.id)])
-            .mapped("club_id")
-            .ids
-        )
 
-    @api.model
-    def _task_spec(
-        self,
-        source,
-        task_type,
-        audience,
-        name,
-        reason,
-        next_step,
-        *,
-        priority="0",
-        blocking=True,
-        deadline=False,
-    ):
-        values = {
-            "name": name,
-            "task_type": task_type,
-            "audience": audience,
-            "priority": priority,
-            "blocking": blocking,
-            "blocking_reason": reason,
-            "next_step": next_step,
-            "deadline": deadline,
-            "source_model": source._name,
-            "source_record_id": source.id,
-            "source_changed_on": source.write_date,
-            "source_key": "%s:%s:%s" % (source._name, source.id, task_type),
-        }
-        if source._name == "federation.competition.entry":
-            values.update(
-                competition_entry_id=source.id,
-                responsible_club_id=source.team_id.club_id.id,
-                season_id=source.edition_id.season_id.id,
-                tournament_id=source.window_id.division_id.id,
-                action_url="/my/competition-entries",
-            )
-        elif source._name == "federation.team.roster":
-            values.update(
-                roster_id=source.id,
-                responsible_club_id=source.club_id.id,
-                season_id=source.season_id.id,
-                action_url="/my/rosters/%s" % source.id,
-            )
-        elif source._name == "federation.match.club.referee.duty":
-            values.update(
-                duty_id=source.id,
-                responsible_club_id=source.club_id.id,
-                tournament_id=source.match_id.tournament_id.id,
-                match_id=source.match_id.id,
-                season_id=source.match_id.tournament_id.season_id.id,
-                action_url="/my/referee-duties/%s" % source.id,
-            )
-        elif source._name == "federation.match":
-            values.update(
-                match_id=source.id,
-                tournament_id=source.tournament_id.id,
-                season_id=source.tournament_id.season_id.id,
-                responsible_club_id=(
-                    source.home_team_id.club_id.id or source.away_team_id.club_id.id
-                ),
-                action_url="/my/results/%s" % source.id,
-            )
-        return values
 
     @api.model
     def _sync_specs(self, specs, scope_domain):
-        keys = {spec["source_key"] for spec in specs}
-        existing = self.sudo().search(scope_domain)
-        by_key = {task.source_key: task for task in existing}
-        for spec in specs:
-            task = by_key.get(spec["source_key"])
-            if task:
-                if task.state == "done":
-                    spec.update(state="open", completed_on=False)
-                task.sudo().write(spec)
-            else:
-                self.sudo().create(spec)
-        stale = existing.filtered(lambda task: task.source_key not in keys)
-        if stale:
-            stale.sudo().write({"state": "done", "completed_on": fields.Datetime.now()})
-
-    @api.model
-    def sync_for_user(self, user=None):
-        """Synchronise currently actionable source records for one user."""
-        user = user or self.env.user
-        is_manager = user.has_group("sports_federation_base.group_federation_manager")
-        club_ids = self._portal_club_ids(user) if not is_manager else []
-        if not is_manager and not club_ids:
-            return self.browse([])
-        specs = []
-        entry_domain = [] if is_manager else [("team_id.club_id", "in", club_ids)]
-        entries = (
-            self.env["federation.competition.entry"]
-            .sudo()
-            .search(
-                entry_domain + [("state", "in", ("draft", "submitted", "rejected"))]
-            )
-        )
-        for entry in entries:
-            audience = "manager" if entry.state == "submitted" else "club"
-            specs.append(
-                self._task_spec(
-                    entry,
-                    "registration",
-                    audience,
-                    _("Competition entry for %(team)s")
-                    % {"team": entry.team_id.display_name},
-                    _("Entry is %(state)s and needs follow-up.")
-                    % {"state": entry.state},
-                    (
-                        _("Review competition entry")
-                        if entry.state == "submitted"
-                        else _("Correct and submit competition entry")
-                    ),
-                    priority="1" if entry.state == "rejected" else "0",
-                )
-            )
-
-        rosters = (
-            self.env["federation.team.roster"]
-            .sudo()
-            .search(
-                ([] if is_manager else [("club_id", "in", club_ids)])
-                + [("status", "!=", "closed"), ("ready_for_activation", "=", False)]
-            )
-        )
-        for roster in rosters:
-            specs.append(
-                self._task_spec(
-                    roster,
-                    "roster_readiness",
-                    "club",
-                    _("Roster readiness: %(team)s")
-                    % {"team": roster.team_id.display_name},
-                    roster.readiness_feedback
-                    or _("The roster is not ready for activation."),
-                    _("Complete roster readiness"),
-                )
-            )
-
-        duties = (
-            self.env["federation.match.club.referee.duty"]
-            .sudo()
-            .search(
-                ([] if is_manager else [("club_id", "in", club_ids)])
-                + [("state", "in", ("open", "rejected"))]
-            )
-        )
-        for duty in duties:
-            overdue = duty.is_deadline_overdue
-            specs.append(
-                self._task_spec(
-                    duty,
-                    "referee_duty",
-                    "club",
-                    _("Official needed for %(match)s")
-                    % {"match": duty.match_id.display_name},
-                    (
-                        _("Nominate a club official.")
-                        if not overdue
-                        else _("The nomination deadline has passed.")
-                    ),
-                    _("Nominate a club official"),
-                    priority="2" if overdue else "1",
-                    deadline=duty.nomination_deadline,
-                )
-            )
-
-        match_domain = (
-            []
-            if is_manager
-            else [
-                "|",
-                ("home_team_id.club_id", "in", club_ids),
-                ("away_team_id.club_id", "in", club_ids),
-            ]
-        )
-        matches = (
-            self.env["federation.match"]
-            .sudo()
-            .search(
-                match_domain
-                + [
-                    (
-                        "result_state",
-                        "in",
-                        ("submitted", "verified", "contested", "corrected"),
-                    )
-                ]
-            )
-        )
-        for match in matches:
-            reason_by_state = {
-                "submitted": _("The result is waiting for validation."),
-                "verified": _("The result is waiting for approval."),
-                "contested": _("The result is contested and needs review."),
-                "corrected": _("The corrected result must be submitted again."),
-            }
-            specs.append(
-                self._task_spec(
-                    match,
-                    "result_review",
-                    "manager",
-                    _("Result follow-up: %(match)s") % {"match": match.display_name},
-                    reason_by_state[match.result_state],
-                    _("Open result follow-up"),
-                    priority="2" if match.result_state == "contested" else "1",
-                    deadline=(
-                        fields.Datetime.to_datetime(match.date_scheduled)
-                        + timedelta(days=1)
-                        if match.date_scheduled
-                        else False
-                    ),
-                )
-            )
-
-        scope_domain = [] if is_manager else [("responsible_club_id", "in", club_ids)]
-        scope_domain += [("audience", "=", "manager" if is_manager else "club")]
-        self._sync_specs(specs, scope_domain)
-        return self.sudo().search(scope_domain + [("state", "!=", "done")])
+        """Compatibility boundary; federation.task.projection owns writes."""
+        return self.env["federation.task.projection"]._apply(specs, scope_domain)
 
     @api.model
     def _portal_get_domain(self, user=None):
@@ -339,6 +133,14 @@ class FederationOperationTask(models.Model):
             ("audience", "=", "club"),
             ("responsible_club_id", "in", self._portal_club_ids(user)),
         ]
+
+    @api.depends("deadline", "state")
+    def _compute_is_overdue(self):
+        now = fields.Datetime.now()
+        for task in self:
+            task.is_overdue = bool(
+                task.state != "done" and task.deadline and task.deadline < now
+            )
 
     @api.depends("audience", "state", "deadline", "assigned_user_id", "completed_on")
     def _compute_qol_status(self):
@@ -361,21 +163,18 @@ class FederationOperationTask(models.Model):
                 task.work_bucket = "now"
 
     def _allowed_assignment_users(self):
-        """Return active representatives for the task club, never widening club scope."""
+        """Return active representatives in the task's club and optional team scope."""
         self.ensure_one()
         if not self.responsible_club_id:
             return self.env["res.users"].browse()
-        reps = (
-            self.env["federation.club.representative"]
-            .sudo()
-            .search(
-                [
-                    ("club_id", "=", self.responsible_club_id.id),
-                    ("is_current", "=", True),
-                    ("user_id", "!=", False),
-                ]
-            )
-        )
+        domain = [
+            ("club_id", "=", self.responsible_club_id.id),
+            ("is_current", "=", True),
+            ("user_id", "!=", False),
+        ]
+        if self.journey_team_id:
+            domain.append(("team_id", "in", [False, self.journey_team_id.id]))
+        reps = self.env["federation.club.representative"].sudo().search(domain)
         return reps.mapped("effective_user_id") | reps.mapped("user_id")
 
     def action_assign_user(self, user):
@@ -442,6 +241,8 @@ class FederationOperationTask(models.Model):
         )
         if not source:
             raise ValidationError(_("The source record no longer exists."))
+        if self.task_type == "parental_consent" and source._name == "federation.team.roster.line":
+            return source.player_id.action_view_parental_approvals()
         return {
             "type": "ir.actions.act_window",
             "name": source.display_name,

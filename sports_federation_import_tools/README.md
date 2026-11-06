@@ -23,7 +23,7 @@ The import wizards provide a safer operator workflow than direct list imports:
 - staged inbound deliveries that reuse the same governed preview and approval
   pipeline
 
-The menu entry is available at ``Federation > Import Tools``.
+The menu entry is available at ``Federation > Administration > Imports & Integrations``.
 The transient import models now live under the standard ``wizards/`` package to
 match the rest of the repository.
 
@@ -52,7 +52,7 @@ Shared capabilities:
 - Standardized error categories such as ``missing_reference``,
   ``duplicate_entry``, ``format_error``, and ``missing_required_field``.
 - Explicit compatibility handling for legacy CSV aliases tracked in
-  ``INTEGRATION_CONTRACTS.md``.
+  ``docs/reference/integration-contracts.md``.
 
 Managed Partner Integrations
 ----------------------------
@@ -110,34 +110,20 @@ Current controller layout:
 - ``controllers/integration_api_response_mixin.py`` keeps JSON response
   shaping and typed error payload helpers.
 
-Phased Maintainability Plan
----------------------------
+Code organization
+-----------------
 
-- Initial completed: the former multi-model gateway hotspot was split into
-  per-model files without changing model names, fields, or table ownership.
-  Test impact: existing import-tools tests should stay green. Migration risk:
-  none, because this is a file-layout change only.
-- Rules completed: delivery staging, idempotency, workflow handoff, and
-  retention cleanup now live in dedicated helper mixins while
-  ``federation.integration.delivery`` keeps the ORM contract stable. Test
-  impact: inbound delivery staging, idempotency, and retention coverage stays
-  green. Migration risk: replay semantics and attachment linkage.
-- Integration completed: token generation, hashing, verification, migration, and
-  rotation or audit helpers now live in dedicated partner mixins while
-  ``federation.integration.partner`` keeps the stable ORM entry points for
-  authentication and subscription lookup. Test impact: token rotation and
-  legacy-token migration coverage stay green. Migration risk: stored hash
-  compatibility and audit logging.
-- API completed: ``wizards/import_wizard_mixin.py`` now composes dedicated
-  CSV and governance or result helper mixins while preserving the shared wizard
-  API. Test impact: shared mixin coverage plus wizard-specific dry-run and
-  live-import flows stay green. Migration risk: approval checksum binding and
-  result-summary compatibility.
-- Operations completed: ``controllers/integration_api.py`` now composes dedicated
-  auth and response helper mixins while preserving the public route surface and
-  existing headers and status codes. Test impact: integration API credential,
-  rate-limit, finance export, and inbound delivery coverage stays green.
-  Migration risk: request patching in tests and route-level error semantics.
+The import and integration code is split into focused helper mixins while the
+public ORM and route contracts stay stable:
+
+- ``federation.integration.delivery`` delegates delivery staging, idempotency,
+  workflow handoff and retention cleanup to dedicated mixins.
+- ``federation.integration.partner`` delegates token generation, hashing,
+  verification, migration, rotation and audit to dedicated partner mixins.
+- ``wizards/import_wizard_mixin.py`` composes CSV parsing and governance/result
+  helper mixins behind the shared wizard API.
+- ``controllers/integration_api.py`` composes the auth and response mixins
+  listed above while keeping the public routes, headers and status codes.
 
 Managed Integration Behaviour
 -----------------------------
@@ -160,7 +146,7 @@ Managed Integration Contract Docs
 ---------------------------------
 
 - Narrative policy and deprecation guidance live in
-  ``INTEGRATION_CONTRACTS.md``.
+  ``docs/reference/integration-contracts.md``.
 - Machine-readable route and payload definitions live in
   ``openapi/integration_v1.yaml``.
 - Partner onboarding golden examples live in
@@ -206,7 +192,7 @@ Inbound Delivery Guardrails
   ``X-Federation-Delivery-Outcome`` so clients can distinguish fresh staging
   from checksum reuse and idempotent replay.
 - Terminal inbound deliveries are purged automatically once they exceed the
-  retention windows documented in ``DATA_RETENTION_POLICY.md``; the staged
+  retention windows documented in ``docs/reference/data-retention.md``; the staged
   payload attachment is deleted with the delivery record.
 
 Supported Wizards
@@ -248,14 +234,16 @@ Validation notes:
 ``federation.import.teams.wizard``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Required columns:
+Required columns (contract ``csv_codes``):
 
-- ``team_name`` or ``name``
-- ``club_code`` or ``club_name``
+- ``club_code``
+- ``team_name``
 
 Recommended columns:
 
 - ``code``, ``category``, ``gender``, ``email``, ``phone``
+
+Clubs are matched by ``club_code`` only.
 
 Duplicate matching:
 
@@ -266,8 +254,8 @@ Duplicate matching:
 
 Required columns:
 
-- ``first_name`` and ``last_name``
-- Legacy imports may use ``name`` when it contains both parts of the full name.
+- ``first_name`` and ``last_name`` (contract ``csv_codes``; a single ``name``
+  column is rejected)
 
 Recommended columns:
 
@@ -285,8 +273,11 @@ Validation notes:
 
 Required columns:
 
-- ``tournament_code`` or ``tournament_name``
-- ``team_code`` or ``team_name``
+- ``tournament_code``
+- ``team_code``
+
+Divisions and teams are matched by code only (contract ``csv_codes``). Give
+divisions and teams a code before importing participants.
 
 Optional columns:
 
@@ -296,6 +287,15 @@ Validation notes:
 
 - Team eligibility and duplicate participation reuse the same tournament-side
   checks as manual participant creation.
+
+Template versions
+~~~~~~~~~~~~~~~~~
+
+The players, teams and tournament-participants templates and their inbound
+partner contracts are at ``csv_codes``: name-based references were removed and
+only the columns above are accepted. Clubs and seasons remain at ``csv_v1``.
+A live import is refused when its approval was recorded under a different
+template version; run a fresh dry run and request approval again.
 
 Operational Behaviour
 ---------------------

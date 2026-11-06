@@ -23,14 +23,11 @@ class FederationOperationTaskPortal(FederationPortalBase):
                 lambda task: task.assigned_user_id == request.env.user
             ),
         }
-        completed_steps = 4 - len(set(tasks.mapped("task_type")))
-        journey_percent = max(0, min(100, int(completed_steps * 25)))
         return request.render(
             "sports_federation_portal.portal_my_operation_tasks",
             {
                 "tasks": tasks,
                 "task_groups": task_groups,
-                "journey_percent": journey_percent,
                 "page_name": "my_action_items",
             },
         )

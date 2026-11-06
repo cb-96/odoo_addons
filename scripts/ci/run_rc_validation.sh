@@ -54,6 +54,13 @@ validate_database_name() {
   fi
 }
 
+record_rc_error() {
+  local message="$*"
+  local logfile="${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
+  echo "ERROR: $message" >&2
+  printf 'ERROR: %s\n' "$message" >> "$logfile"
+}
+
 require_compose() {
   command -v docker >/dev/null 2>&1 || {
     echo "ERROR: Docker is required for Odoo RC validation." >&2
@@ -138,6 +145,10 @@ run_odoo() {
   local container_command
   container_command="$(cat <<'EOF'
 set -eu
+if [ "${SF_CONFIDENCE_ISOLATED_FILESTORE:-0}" = "1" ]; then
+  mkdir -p /var/lib/odoo/filestore
+  chown -R odoo:odoo /var/lib/odoo/filestore
+fi
 python3 -c 'import websocket; assert websocket.__version__ == "1.8.0"'
 if [ ! -e /usr/lib/python3/dist-packages/odoo-bin ]; then
   ln -s /usr/bin/odoo /usr/lib/python3/dist-packages/odoo-bin
@@ -155,6 +166,10 @@ EOF
   echo "[RC:$lane] Broad upstream-compatibility lanes may run for more than an hour."
   if "${compose[@]}" run --rm ci-odoo sh -lc "$container_command" -- \
     "${odoo_args[@]}" 2>&1 | tee "$logfile"; then
+    if ! python3 ci/check_odoo_registry_log.py "$logfile"; then
+      print_odoo_failure 1
+      return 1
+    fi
     echo "[RC:$lane] Odoo completed successfully."
     grep -E "odoo.tests.result:|[0-9]+ post-tests in" "$logfile" | tail -n 5 || true
     return 0
@@ -186,6 +201,10 @@ print('XML parse check passed')
 PY
   git -c core.whitespace=cr-at-eol diff --check
   python3 ci/check_legacy_engine_removed.py
+  python3 ci/test_check_odoo_registry_log.py
+  python3 ci/test_check_reliability_contract.py
+  python3 ci/test_check_lifecycle_coverage.py
+  python3 ci/test_check_end_to_end_evidence.py
   python3 ci/check_portal_sudo_guard.py
   python3 ci/check_privileged_inventory_quality.py
   python3 ci/check_privileged_mutation_boundaries.py
@@ -256,13 +275,40 @@ assert_modules_installed() {
   local expected
   expected="$(awk -F',' '{print NF}' <<<"$upgrade_modules")"
   if [[ "$installed" != "$expected" ]]; then
-    echo "ERROR: upgrade database $database has $installed of $expected required modules installed" >&2
+    record_rc_error "upgrade database $database has $installed of $expected required modules installed"
     exit 2
   fi
 }
 
+assert_retired_engine_uninstalled() {
+  local database="$1"
+  local state
+  state="$(
+    "${compose[@]}" exec -T ci-db psql \
+      -U "$ci_postgres_user" -d "$database" --tuples-only --no-align \
+      --command="SELECT state FROM ir_module_module WHERE name='sports_federation_competition_engine'" \
+  )"
+  if [[ -n "$state" && "$state" != "uninstalled" ]]; then
+    record_rc_error "retired addon sports_federation_competition_engine has database state '$state'; stop for a reviewed legacy-data migration"
+    exit 2
+  fi
+}
+
+run_lifecycle() {
+  # Fail before Odoo starts when the contracted scenarios are missing or use
+  # shortcuts; afterwards prove each one ran, because a tag that selects no test
+  # still exits successfully.
+  python3 ci/check_lifecycle_coverage.py --source || return 1
+  # The scenarios live in sports_federation_app, which depends on every addon.
+  run_odoo "${common[@]}" -d "$db_name" -u "$upgrade_modules" \
+    --test-enable --test-tags "${RC_LIFECYCLE_TEST_TAGS:-sf_competition_lifecycle}" || return 1
+  python3 ci/check_lifecycle_coverage.py --log "${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
+}
+
 run_upgrade() {
+  : > "${ODOO_LOGFILE:-$repo_root/odoo-rc.log}"
   assert_modules_installed "$upgrade_db_name"
+  assert_retired_engine_uninstalled "$upgrade_db_name"
   run_odoo "${common[@]}" -d "$upgrade_db_name" -u "$upgrade_modules"
 }
 
@@ -284,6 +330,7 @@ case "$lane" in
     run_odoo "${common[@]}" -d "$upgrade_db_name" -i "$install_modules"
     ;;
   upgrade) run_upgrade ;;
+  confidence) run_tags "${RC_CONFIDENCE_TEST_TAGS:-sf_release_confidence}" ;;
   core) run_tags 'sf_competition_core,sf_stage_graph,sf_calendar_slot_timeline,sf_fairness_solver,/sports_federation_officiating,/sports_federation_result_control,/sports_federation_notifications' ;;
   portal) run_tags '/sports_federation_portal,sf_frontend_http,sf_frontend_accessibility,sf_frontend_mobile' ;;
   public) run_tags '/sports_federation_public_site' ;;
@@ -293,6 +340,7 @@ case "$lane" in
     ;;
   acceptance) run_tags 'sf_operator_acceptance' ;;
   focus) run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus' ;;
+  lifecycle) run_lifecycle ;;
   full) run_tags_on "$upgrade_db_name" "$federation_test_tags" ;;
   upstream) run_tags 'standard' ;;
   all)
@@ -309,6 +357,7 @@ case "$lane" in
     run_tags '/sports_federation_standings:TestStandingsPerformance,/sports_federation_reporting:TestReportSnapshot,/sports_federation_reporting:TestYearFourReporting,/sports_federation_public_site:TestPublicSiteNewEndpoints'
     run_tags 'sf_operator_acceptance'
     run_tags 'sf_browser_competition_lifecycle,sf_browser_finance_bridge,sf_browser_public_site,sf_release_focus'
+    run_lifecycle
     ;;
-  *) echo "Usage: $0 {preflight|static|prepare|install|prepare-upgrade|upgrade|core|portal|public|performance|acceptance|focus|full|upstream|cleanup|all}" >&2; exit 2 ;;
+  *) echo "Usage: $0 {preflight|static|prepare|install|prepare-upgrade|upgrade|core|portal|public|performance|acceptance|focus|lifecycle|full|upstream|cleanup|all}" >&2; exit 2 ;;
 esac

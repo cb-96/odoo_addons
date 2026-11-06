@@ -1,3 +1,4 @@
+from odoo.exceptions import ValidationError
 from odoo.tests import TransactionCase
 
 
@@ -129,3 +130,33 @@ class TestRefereeReimbursementHooks(TransactionCase):
         )
         event.invalidate_recordset()
         self.assertEqual(event.state, "draft")
+
+    def test_exported_reimbursement_cannot_be_reopened_from_assignment(self):
+        assignment = self.env["federation.match.referee"].create(
+            {
+                "match_id": self.match.id,
+                "referee_id": self.referee.id,
+                "role": "assistant_2",
+            }
+        )
+        assignment.action_confirm()
+        assignment.action_done()
+        event = self.env["federation.finance.event"].search(
+            [
+                ("source_model", "=", assignment._name),
+                ("source_res_id", "=", assignment.id),
+            ],
+            limit=1,
+        )
+        event.action_confirm()
+        event.action_mark_exported()
+        event.action_cancel()
+
+        assignment.action_draft()
+        assignment.action_confirm()
+        with self.assertRaises(ValidationError):
+            assignment.action_done()
+
+        self.assertEqual(assignment.state, "confirmed")
+        self.assertEqual(event.state, "cancelled")
+        self.assertTrue(event.exported_on)

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="identity_candidate_list" model="ir.ui.view">
+    <field name="name">federation.identity.candidate.list</field>
+    <field name="model">federation.identity.candidate</field>
+    <field name="arch" type="xml">
+      <list create="0" delete="0">
+        <header>
+          <button name="action_run_backfill" type="object" string="Run identity backfill"
+                  class="btn-primary" display="always"/>
+        </header>
+        <field name="player_ids" widget="many2many_tags"/>
+        <field name="open_player_count"/>
+        <field name="status" widget="badge"/>
+        <field name="detected_on"/>
+      </list>
+    </field>
+  </record>
+  <record id="identity_candidate_form" model="ir.ui.view">
+    <field name="name">federation.identity.candidate.form</field>
+    <field name="model">federation.identity.candidate</field>
+    <field name="arch" type="xml">
+      <form create="0" delete="0">
+        <header>
+          <button name="action_review" type="object" string="Review identities"
+                  class="btn-primary" invisible="status != 'open'"/>
+          <button name="action_dismiss" type="object" string="Not a duplicate"
+                  invisible="status != 'open'"
+                  confirm="Record that these players are different people?"/>
+          <field name="status" widget="statusbar" statusbar_visible="open,resolved"/>
+        </header>
+        <sheet>
+          <div class="alert alert-info" role="status">
+            These players share the same name and birth date. Nothing is merged here:
+            use <strong>Review identities</strong> to preview and decide, with the full history kept.
+          </div>
+          <group>
+            <field name="player_ids" widget="many2many_tags"/>
+            <field name="open_player_count"/>
+            <field name="note" placeholder="Why are these different people? Required to dismiss."/>
+            <field name="decided_on" invisible="not decided_on"/>
+            <field name="decided_by_id" invisible="not decided_on"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+  <record id="identity_candidate_search" model="ir.ui.view">
+    <field name="name">federation.identity.candidate.search</field>
+    <field name="model">federation.identity.candidate</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="player_ids"/>
+        <filter name="to_review" string="To review" domain="[('status', '=', 'open')]"/>
+        <filter name="dismissed" string="Not a duplicate" domain="[('status', '=', 'dismissed')]"/>
+        <filter name="resolved" string="Resolved" domain="[('status', '=', 'resolved')]"/>
+      </search>
+    </field>
+  </record>
+  <record id="action_identity_candidate" model="ir.actions.act_window">
+    <field name="name">Identity review queue</field>
+    <field name="res_model">federation.identity.candidate</field>
+    <field name="view_mode">list,form</field>
+    <field name="search_view_id" ref="identity_candidate_search"/>
+    <field name="context">{'search_default_to_review': 1}</field>
+  </record>
+  <menuitem id="menu_identity_candidate" name="Identity review queue"
+            parent="sports_federation_base.menu_federation_administration"
+            action="action_identity_candidate"
+            groups="sports_federation_base.group_federation_manager" sequence="85"/>
+
+  <record id="person_membership_list_renewal" model="ir.ui.view">
+    <field name="name">person.membership.list.renewal</field>
+    <field name="model">federation.person.membership</field>
+    <field name="inherit_id" ref="person_membership_list"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='previous_id']" position="after">
+        <field name="renewal_step" optional="show"/>
+      </xpath>
+    </field>
+  </record>
+  <record id="person_membership_form_renewal" model="ir.ui.view">
+    <field name="name">person.membership.form.renewal</field>
+    <field name="model">federation.person.membership</field>
+    <field name="inherit_id" ref="person_membership_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet/group" position="after">
+        <group string="Renewal progress" invisible="renewal_step == 'none'">
+          <field name="renewal_step"/>
+          <field name="renewal_blockers"/>
+          <field name="renewal_payment_note"/>
+        </group>
+      </xpath>
+    </field>
+  </record>
+  <record id="action_membership_renewals" model="ir.actions.act_window">
+    <field name="name">Renewals to review</field>
+    <field name="res_model">federation.person.membership</field>
+    <field name="view_mode">list,form</field>
+    <field name="domain">[('previous_id', '!=', False), ('state', '=', 'draft')]</field>
+  </record>
+  <menuitem id="menu_membership_renewals" name="Renewals to review"
+            parent="sports_federation_base.menu_federation_administration"
+            action="action_membership_renewals"
+            groups="sports_federation_base.group_federation_manager" sequence="86"/>
+</odoo>

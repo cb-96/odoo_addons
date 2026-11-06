@@ -13,11 +13,21 @@ class FederationMatchFixtureBridge(models.Model):
         ondelete="restrict",
         index=True,
     )
+    is_format_knockout = fields.Boolean(compute="_compute_is_format_knockout")
 
     _unique_logical_fixture = models.Constraint(
         "unique(logical_fixture_id)",
         "A logical fixture can materialize into only one operational match.",
     )
+
+    @api.depends("logical_fixture_id.stage_id.stage_type")
+    def _compute_is_format_knockout(self):
+        for match in self:
+            match.is_format_knockout = bool(
+                match.logical_fixture_id
+                and match.logical_fixture_id.stage_id.stage_type
+                in ("knockout", "placement")
+            )
 
     @api.constrains(
         "logical_fixture_id", "tournament_id", "home_team_id", "away_team_id"
@@ -46,11 +56,11 @@ class FederationMatchFixtureBridge(models.Model):
             fixture = match.logical_fixture_id.sudo()
             graph_engine = self.env["federation.stage.graph.engine"].sudo()
             if match.result_state == "approved" and match.include_in_official_standings:
-                if (
-                    fixture.stage_id.stage_type in ("knockout", "placement")
-                    and match.home_score == match.away_score
-                ):
-                    raise ValidationError("Bracket matches require a winner.")
+                if match._bracket_tie_unresolved():
+                    raise ValidationError(
+                        "Bracket matches require a winner. Record how the tie was "
+                        "decided and the team that advances."
+                    )
                 fixture.state = "completed"
                 graph_engine.resolve_dependants(fixture)
                 continue
@@ -61,12 +71,47 @@ class FederationMatchFixtureBridge(models.Model):
                     raise ValidationError(
                         "This result already fed a later stage. Reopen the progression through an explicit competition correction workflow first."
                     )
+                # Undo what this result already decided inside the stage.
+                graph_engine.reopen_dependants(fixture)
                 fixture.state = "ready"
                 if fixture.stage_id.standing_snapshot_id:
                     fixture.stage_id.write(
                         {"standing_snapshot_id": False, "graph_state": "active"}
                     )
+                    # The published table showed the withdrawn snapshot.
+                    self.env["federation.standing"].sudo().search(
+                        [
+                            ("structure_stage_id", "=", fixture.stage_id.id),
+                            ("state", "=", "frozen"),
+                        ]
+                    ).write({"state": "computed"})
         return True
+
+    def _bracket_tie_unresolved(self):
+        """A tied bracket match without a recorded deciding team."""
+        self.ensure_one()
+        fixture = self.logical_fixture_id
+        if not fixture or fixture.stage_id.stage_type not in ("knockout", "placement"):
+            return False
+        if self._get_forfeit_winner():
+            return False
+        if self.home_score != self.away_score:
+            return False
+        return not (
+            self.resolution_type != "regulation"
+            and self.advancing_team_id in (self.home_team_id | self.away_team_id)
+        )
+
+    def _validate_result_entry(self):
+        result = super()._validate_result_entry()
+        for match in self:
+            if match._bracket_tie_unresolved():
+                raise ValidationError(
+                    "%s ended in a tie. Select how it was decided (overtime, "
+                    "tiebreak, forfeit, ...) and the team that advances before "
+                    "submitting." % match.display_name
+                )
+        return result
 
     def action_approve_result(self):
         result = super().action_approve_result()

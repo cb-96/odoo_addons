@@ -21,13 +21,33 @@ class FederationMatchVenueFinanceHooks(models.Model):
         return res
 
     def _sync_venue_finance_event(self):
-        """Synchronize venue finance event."""
+        """Synchronize venue finance event.
+
+        The automatic charge is created only for a "venue_booking" fee type the
+        federation configured with an amount. Without one, a scheduled match
+        with a venue would produce a zero-value charge (and create the fee type
+        itself) for every match of every published match day.
+        """
         FinanceEvent = self.env["federation.finance.event"].sudo()
         for match in self:
-            fee_type = match._get_venue_fee_type(
-                create_if_missing=bool(match.venue_id and match.state == "scheduled")
-            )
-            existing_event = fee_type and FinanceEvent.search(
+            fee_type = match._get_venue_fee_type(create_if_missing=False)
+            if not fee_type:
+                continue
+            if match.state == "scheduled" and match.venue_id:
+                if fee_type.default_amount:
+                    FinanceEvent.ensure_from_source(
+                        match.sudo(),
+                        fee_type,
+                        amount=fee_type.default_amount,
+                        event_type="charge",
+                        note=(
+                            f"Auto: venue booking for {match.name} "
+                            f"at {match.venue_id.name}"
+                        ),
+                        update_existing=True,
+                    )
+                continue
+            existing_event = FinanceEvent.search(
                 [
                     ("fee_type_id", "=", fee_type.id),
                     ("source_model", "=", match._name),
@@ -35,17 +55,7 @@ class FederationMatchVenueFinanceHooks(models.Model):
                 ],
                 limit=1,
             )
-
-            if match.state == "scheduled" and match.venue_id and fee_type:
-                FinanceEvent.ensure_from_source(
-                    match.sudo(),
-                    fee_type,
-                    amount=fee_type.default_amount,
-                    event_type="charge",
-                    note=f"Auto: venue booking for {match.name} at {match.venue_id.name}",
-                    update_existing=True,
-                )
-            elif existing_event and existing_event.state == "draft":
+            if existing_event and existing_event.state == "draft":
                 existing_event.action_cancel()
 
     def _get_venue_fee_type(

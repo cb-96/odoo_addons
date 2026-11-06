@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.7.1.0",
+    "version": "19.0.7.14.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
@@ -28,7 +28,6 @@ on top of the federation base modules.
         "sports_federation_schedule_approval",
         "sports_federation_matchday",
         "sports_federation_standings",
-        "sports_federation_public_site",
     ],
     "data": [
         "security/res_groups.xml",
@@ -36,6 +35,7 @@ on top of the federation base modules.
         "security/ir_rule.xml",
         "data/federation_club_role_type.xml",
         "data/operation_task_cron.xml",
+        "data/journey_event_cron.xml",
         "views/federation_club_role_type_views.xml",
         "views/federation_club_representative_views.xml",
         "views/federation_club_views.xml",
@@ -48,23 +48,30 @@ on top of the federation base modules.
         "views/qol_views.xml",
         "views/qol_search_templates.xml",
         "views/portal_templates.xml",
+        "views/portal_parental_approval_templates.xml",
         "views/portal_data_api_templates.xml",
         "views/competition_templates.xml",
         "views/portal_officiating_templates.xml",
         "views/portal_roster_templates.xml",
         "views/portal_result_templates.xml",
         "views/portal_referee_duty_templates.xml",
+        "views/preparation_journey_templates.xml",
         "views/operation_task_views.xml",
         "views/website_menus.xml",
         "views/menu_items.xml",
-    ],
+        "views/journey_event_views.xml",
+    
+                'views/role_journey_templates.xml',
+            ],
     "assets": {
         "web.assets_frontend": [
             "sports_federation_portal/static/src/scss/federation_portal.scss",
             "sports_federation_portal/static/src/js/qol_draft_guard.js",
             "sports_federation_portal/static/src/js/accessibility_recovery.js",
             "sports_federation_portal/static/src/js/portal_quick_actions.js",
-        ],
+        
+                                   'sports_federation_portal/static/src/js/journey_return_navigation.js',
+                               ],
     },
     "demo": [],
     "installable": True,

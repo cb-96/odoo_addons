@@ -282,7 +282,20 @@ class FederationTournament(models.Model):
         ]
         for match in self.get_public_schedule_matches().filtered("date_scheduled"):
             start_dt = fields.Datetime.to_datetime(match.date_scheduled)
-            end_dt = start_dt + timedelta(hours=1)
+            # A published match lasts as long as its slot; one hour is only the
+            # fallback for matches that were scheduled without a slot.
+            slot = False
+            for slot_field in ("operational_slot_id", "published_slot_id"):
+                if not slot and slot_field in match._fields:
+                    slot = match[slot_field]
+            duration = timedelta(hours=1)
+            if slot and slot.end_datetime and slot.start_datetime:
+                slot_length = fields.Datetime.to_datetime(
+                    slot.end_datetime
+                ) - fields.Datetime.to_datetime(slot.start_datetime)
+                if slot_length.total_seconds() > 0:
+                    duration = slot_length
+            end_dt = start_dt + duration
             summary = f"{match.home_team_id.name if match.home_team_id else 'TBD'} vs {match.away_team_id.name if match.away_team_id else 'TBD'}"
             location_parts = []
             if "venue_id" in match._fields and match.venue_id:

@@ -25,6 +25,7 @@ class FederationParticipationAudit(models.Model):
             ("sheet_line_updated", "Match Sheet Line Updated"),
             ("sheet_line_removed", "Match Sheet Line Removed"),
             ("substitution_recorded", "Substitution Recorded"),
+            ("match_participation_updated", "Match Participation Updated"),
         ],
         string="Event Type",
         required=True,

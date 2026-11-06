@@ -1,4 +1,4 @@
-from odoo import fields, http
+from odoo import http
 from odoo.addons.portal.controllers.portal import pager as portal_pager
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
@@ -25,6 +25,10 @@ class FederationMatchPortal(FederationRosterPortalBase):
             user=request.env.user,
         )
 
+    _GAMEDAY_PAGE_SIZE = 20
+    _GAMEDAY_PAST_LIMIT = 20
+    _GAMEDAY_SHEET_LIMIT = 2000
+
     @http.route(
         ["/my/match-sheets", "/my/match-sheets/page/<int:page>"],
         type="http",
@@ -32,40 +36,56 @@ class FederationMatchPortal(FederationRosterPortalBase):
         website=True,
     )
     def portal_my_match_sheets(self, page=1, **kw):
-        """List match sheets visible to the current portal user."""
+        """List the team game days: upcoming first, earlier ones collapsed.
+
+        One row per team game day; grouped before paging so a game day never
+        appears on two pages.
+        """
+        Privilege = request.env["federation.portal.privilege"]
         MatchSheet = self._portal_match_sheet_model()
-        PortalPrivilege = request.env["federation.portal.privilege"]
+        Gameday = request.env["federation.portal.gameday"]
         domain = self._portal_match_sheet_domain()
         if domain == [("id", "=", False)]:
             return self._redirect_with_query("/my/club")
-
-        total = PortalPrivilege.portal_search_count(
+        try:
+            context_domain, context_query = self._journey_list_scope(kw, season_domain=Gameday.season_domain)
+        except AccessError:
+            return self._render_access_denied()
+        scope = domain + context_domain
+        upcoming_sheets = Privilege.portal_search(
             MatchSheet,
-            domain,
+            scope + Gameday.upcoming_domain(),
+            limit=self._GAMEDAY_SHEET_LIMIT,
+            order="match_kickoff asc, id asc",
             user=request.env.user,
         )
+        upcoming = Gameday.group_gamedays(upcoming_sheets, upcoming=True)
+        total = len(upcoming)
         pager = portal_pager(
             url="/my/match-sheets",
             total=total,
             page=page,
-            step=20,
+            step=self._GAMEDAY_PAGE_SIZE,
+            url_args=context_query,
         )
-        match_sheets = PortalPrivilege.portal_search(
+        page_rows = upcoming[pager["offset"] : pager["offset"] + self._GAMEDAY_PAGE_SIZE]
+        past_sheets = Privilege.portal_search(
             MatchSheet,
-            domain,
-            limit=20,
-            offset=pager["offset"],
-            order="match_id desc, id desc",
+            scope + Gameday.past_domain(),
+            limit=self._GAMEDAY_SHEET_LIMIT,
+            order="match_kickoff desc, id desc",
             user=request.env.user,
         )
-        values = {
-            "match_sheets": match_sheets,
-            "pager": pager,
-            "page_name": "my_match_sheets",
-        }
+        past = Gameday.group_gamedays(past_sheets, upcoming=False)
         return request.render(
             "sports_federation_portal.portal_my_match_sheets",
-            values,
+            {
+                "upcoming_gamedays": page_rows,
+                "earlier_gamedays": past[: self._GAMEDAY_PAST_LIMIT],
+                "earlier_total": len(past),
+                "pager": pager,
+                "page_name": "my_match_sheets",
+            },
         )
 
     @http.route(
@@ -111,18 +131,16 @@ class FederationMatchPortal(FederationRosterPortalBase):
             else Representative.browse()
         )
 
-        available_rosters = (
-            PortalPrivilege.portal_search(
-                request.env["federation.team.roster"],
-                [
-                    ("team_id", "=", sheet.team_id.id),
-                    ("status", "in", ("active", "draft")),
-                ],
-                user=request.env.user,
-            )
-            if sheet.team_id
-            else request.env["federation.team.roster"].browse()
+        Gameday = request.env["federation.portal.gameday"]
+        available_rosters = Gameday.lineup_rosters(sheet, user=request.env.user)
+        selected_roster = Gameday.default_lineup_roster(sheet, available_rosters)
+        roster_lines = (
+            selected_roster.line_ids
+            if selected_roster
+            else request.env["federation.team.roster.line"].browse()
         )
+        # Back to the roster: the roster page lists the team's game days.
+        back_roster = sheet.roster_id or selected_roster
 
         values = {
             "sheet": sheet,
@@ -130,23 +148,134 @@ class FederationMatchPortal(FederationRosterPortalBase):
             "success": kw.get("success"),
             "error": kw.get("error"),
             "error_hint": kw.get("error_hint"),
-            "can_prepare_sheet": sheet.state != "locked",
-            "can_edit_squad": sheet.state == "draft",
+            # Approved and locked line-ups are read-only; submitted ones still
+            # allow coach, manager and notes to be corrected.
+            "can_prepare_sheet": sheet.state in ("draft", "submitted"),
+            "can_edit_lineup": sheet.state == "draft",
             "available_coaches": available_coaches,
             "available_managers": available_managers,
             "available_rosters": available_rosters,
-            "roster_lines": (
-                sheet.roster_id.line_ids
-                if sheet.roster_id
-                else request.env["federation.team.roster.line"].browse()
+            "selected_roster": selected_roster,
+            "back_url": (
+                "/my/rosters/%s" % back_roster.id if back_roster else "/my/rosters"
             ),
+            "roster_lines": roster_lines,
             "sheet_line_by_player": {
                 line.player_id.id: line for line in sheet.line_ids
             },
+            "lineup_state_label": Gameday.state_labels().get(
+                Gameday.lineup_state(sheet)
+            ),
         }
         return request.render(
             "sports_federation_portal.portal_my_match_sheet_detail",
             values,
+        )
+
+    @staticmethod
+    def _lineup_players_from_form(form):
+        """Read the selected game-day players and their details from the form."""
+        players = []
+        for pid in form.getlist("squad_player_ids"):
+            try:
+                player_id = int(pid)
+            except (ValueError, TypeError):
+                continue
+            jersey = (form.get(f"player_{player_id}_jersey") or "").strip()
+            players.append(
+                {
+                    "player_id": player_id,
+                    "is_captain": bool(form.get(f"player_{player_id}_captain")),
+                    "jersey_number": jersey or False,
+                }
+            )
+        return players
+
+    @http.route(
+        ["/my/match-sheets/<int:sheet_id>/lineup"],
+        type="http",
+        auth="user",
+        website=True,
+        methods=["POST"],
+        csrf=True,
+    )
+    def portal_my_match_sheet_lineup(self, sheet_id, **kw):
+        """Save roster, coach, manager and the game-day players in one step.
+
+        The line-up is saved first; submitting is a separate step so a
+        submission problem never throws away what the coach just filled in.
+        """
+        user = request.env.user
+        sheet = self._portal_match_sheet_by_id(sheet_id)
+        if not sheet.exists():
+            self._raise_not_found()
+        try:
+            sheet._portal_assert_review_access(user=user)
+        except AccessError:
+            return self._render_access_denied()
+
+        form = request.httprequest.form
+        values = {
+            "coach_id": kw.get("coach_id") or False,
+            "coach_name": kw.get("coach_name"),
+            "manager_id": kw.get("manager_id") or False,
+            "manager_name": kw.get("manager_name"),
+            "notes": kw.get("notes"),
+        }
+        # Only a draft line-up offers the roster choice; never clear it otherwise.
+        roster_changed = False
+        if "roster_id" in kw:
+            values["roster_id"] = kw.get("roster_id") or False
+            # The ticked players belong to the roster that was shown. When the
+            # club picked another roster in the same submit, do not guess which
+            # players carry over: save the roster and let them choose again.
+            shown = (kw.get("shown_roster_id") or "").strip()
+            roster_changed = bool(
+                kw.get("roster_id") and shown and str(kw["roster_id"]).strip() != shown
+            )
+        try:
+            with request.env.cr.savepoint():
+                sheet._portal_update_preparation(values=values, user=user)
+                if sheet.state == "draft" and form.get("has_lineup_players"):
+                    players = (
+                        []
+                        if roster_changed
+                        else self._lineup_players_from_form(form)
+                    )
+                    sheet._portal_sync_squad(players, user=user)
+        except AccessError:
+            return self._render_access_denied()
+        except ValidationError as exc:
+            return self._redirect_with_query(
+                f"/my/match-sheets/{sheet_id}",
+                error=str(exc),
+                error_hint="Choose a roster, then select the players for this game day within the allowed number.",
+            )
+
+        if roster_changed:
+            return self._redirect_with_query(
+                f"/my/match-sheets/{sheet_id}",
+                success="Roster changed. Now choose the players for this game day.",
+            )
+        if not kw.get("submit_sheet"):
+            return self._redirect_with_query(
+                f"/my/match-sheets/{sheet_id}", success="Line-up saved."
+            )
+        try:
+            with request.env.cr.savepoint():
+                sheet._portal_action_submit(user=user)
+        except AccessError:
+            return self._render_access_denied()
+        except ValidationError as exc:
+            return self._redirect_with_query(
+                f"/my/match-sheets/{sheet_id}",
+                success="Line-up saved.",
+                error=str(exc),
+                error_hint="The line-up is saved but could not be submitted yet. Resolve the points above and submit again.",
+            )
+        return self._redirect_with_query(
+            f"/my/match-sheets/{sheet_id}",
+            success="Line-up saved and submitted for all matches on this game day.",
         )
 
     @http.route(
@@ -259,40 +388,8 @@ class FederationMatchPortal(FederationRosterPortalBase):
         website=True,
     )
     def portal_my_match_day(self, page=1, **kw):
-        """List upcoming match-day sheets for the current user."""
-        MatchSheet = self._portal_match_sheet_model()
-        PortalPrivilege = request.env["federation.portal.privilege"]
-        domain = self._portal_match_sheet_domain()
-        if domain == [("id", "=", False)]:
-            return self._redirect_with_query("/my/club")
-
-        domain += [("match_kickoff", "!=", False)]
-        total = PortalPrivilege.portal_search_count(
-            MatchSheet,
-            domain,
-            user=request.env.user,
-        )
-        pager = portal_pager(
-            url="/my/match-day",
-            total=total,
-            page=page,
-            step=20,
-        )
-        match_day_sheets = PortalPrivilege.portal_search(
-            MatchSheet,
-            domain,
-            limit=20,
-            offset=pager["offset"],
-            order="match_kickoff asc, id asc",
-            user=request.env.user,
-        )
-        values = {
-            "match_day_sheets": match_day_sheets,
-            "pager": pager,
-            "page_name": "my_match_day",
-            "today": fields.Date.context_today(request.env["federation.match.sheet"]),
+        """The old preparation queue is now the game-day list."""
+        scope = {
+            key: kw.get(key) for key in ("club", "team", "registration") if kw.get(key)
         }
-        return request.render(
-            "sports_federation_portal.portal_my_match_day",
-            values,
-        )
+        return self._redirect_with_query("/my/match-sheets", **scope)

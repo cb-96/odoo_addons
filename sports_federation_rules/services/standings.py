@@ -50,6 +50,25 @@ class FederationStandingsRules(models.AbstractModel):
         return values
 
     @api.model
+    def apply_bye(self, stats, team_key, points):
+        """Award bye points without counting a played match."""
+        if team_key in stats:
+            stats[team_key]["points"] += points.get("bye", 0)
+        return stats
+
+    @api.model
+    def match_forfeit_side(self, match):
+        """Return "home"/"away" for the team that won a forfeited match."""
+        winner = match._get_forfeit_winner() if hasattr(match, "_get_forfeit_winner") else False
+        if not winner:
+            return None
+        if winner == match.home_team_id:
+            return "home"
+        if winner == match.away_team_id:
+            return "away"
+        return None
+
+    @api.model
     def tie_breaks(self, rule_set):
         if not rule_set or not rule_set.tie_break_rule_ids:
             return [
@@ -80,7 +99,22 @@ class FederationStandingsRules(models.AbstractModel):
         }
 
     @api.model
-    def apply_match(self, stats, home_key, away_key, home_score, away_score, points):
+    def apply_match(
+        self,
+        stats,
+        home_key,
+        away_key,
+        home_score,
+        away_score,
+        points,
+        forfeit_winner=None,
+    ):
+        """Add one result to both teams.
+
+        ``forfeit_winner`` is ``"home"`` or ``"away"`` when the match was
+        decided by forfeit or walkover; the forfeit win/loss points then apply
+        instead of the regular ones, whatever score was recorded.
+        """
         home = stats[home_key]
         away = stats[away_key]
         home["played"] += 1
@@ -89,6 +123,13 @@ class FederationStandingsRules(models.AbstractModel):
         home["score_against"] += away_score
         away["score_for"] += away_score
         away["score_against"] += home_score
+        if forfeit_winner in ("home", "away"):
+            winner, loser = (home, away) if forfeit_winner == "home" else (away, home)
+            winner["won"] += 1
+            loser["lost"] += 1
+            winner["points"] += points.get("forfeit_win", points["win"])
+            loser["points"] += points.get("forfeit_loss", points["loss"])
+            return stats
         if home_score > away_score:
             home["won"] += 1
             away["lost"] += 1

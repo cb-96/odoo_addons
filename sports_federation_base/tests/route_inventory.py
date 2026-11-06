@@ -1,8 +1,9 @@
 """Loader for the governed HTTP-route contract.
 
 The route contract is deliberately stored as JSON instead of being extracted
-from ROUTE_INVENTORY.md. The Markdown document explains ownership and review
-policy; this registry is the stable machine-readable source used by tests.
+from docs/reference/routes.md. The Markdown document explains ownership and
+review policy; this registry is the stable machine-readable source used by
+tests.
 """
 
 import json

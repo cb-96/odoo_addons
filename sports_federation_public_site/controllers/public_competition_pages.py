@@ -306,6 +306,8 @@ class PublicCompetitionController(PublicRequestInfrastructureMixin, http.Control
         )
         payload = {
             "publication": board["publication"].version,
+            "timezone": board["timezone"],
+            "timezone_reviewed": board["timezone_reviewed"],
             "matches": [
                 {
                     "id": row["match"].id,
@@ -315,7 +317,7 @@ class PublicCompetitionController(PublicRequestInfrastructureMixin, http.Control
                     "result_state": row["match"].result_state,
                     "court": row["slot"].court_id.display_name if row["slot"] else None,
                     "start": (
-                        row["slot"].start_datetime.isoformat() if row["slot"] else None
+                        row["slot"].start_datetime.isoformat() + "Z" if row["slot"] else None
                     ),
                 }
                 for row in board["matches"]

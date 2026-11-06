@@ -1,0 +1,78 @@
+<odoo>
+  <record id="action_competition_force_delete_wizard" model="ir.actions.act_window">
+    <field name="name">Delete permanently</field>
+    <field name="res_model">federation.competition.force.delete.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+    <field name="binding_model_id" ref="sports_federation_tournament.model_federation_competition_edition"/>
+    <field name="binding_view_types">list,form</field>
+    <field name="group_ids" eval="[(6, 0, [ref('base.group_system')])]"/>
+  </record>
+
+  <!-- Archived competitions: findable, restorable and clearly marked. -->
+  <record id="competition_edition_search_archived" model="ir.ui.view">
+    <field name="name">federation.competition.edition.search.archived</field>
+    <field name="model">federation.competition.edition</field>
+    <field name="inherit_id" ref="sports_federation_tournament.view_federation_competition_edition_search"/>
+    <field name="arch" type="xml">
+      <xpath expr="//search" position="inside">
+        <separator/>
+        <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+        <filter name="all_including_archived" string="Active and archived" domain="['|', ('active', '=', True), ('active', '=', False)]"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="competition_edition_list_archived" model="ir.ui.view">
+    <field name="name">federation.competition.edition.list.archived</field>
+    <field name="model">federation.competition.edition</field>
+    <field name="inherit_id" ref="sports_federation_tournament.view_federation_competition_edition_list"/>
+    <field name="arch" type="xml">
+      <xpath expr="//list" position="attributes">
+        <attribute name="decoration-muted">not active</attribute>
+      </xpath>
+      <xpath expr="//list" position="inside">
+        <!-- Technical decoration relay: mutes archived rows. -->
+        <field name="active" column_invisible="1"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="competition_edition_form_archive_actions" model="ir.ui.view">
+    <field name="name">federation.competition.edition.form.archive.actions</field>
+    <field name="model">federation.competition.edition</field>
+    <field name="inherit_id" ref="sports_federation_tournament.view_federation_competition_edition_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_unarchive" type="object" string="Restore" class="btn-secondary" invisible="active" groups="sports_federation_base.group_federation_manager"/>
+        <button name="%(action_competition_force_delete_wizard)d" type="action" string="Delete permanently" class="btn-secondary text-danger" groups="base.group_system"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="competition_force_delete_wizard_form" model="ir.ui.view">
+    <field name="name">federation.competition.force.delete.wizard.form</field>
+    <field name="model">federation.competition.force.delete.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Delete permanently">
+        <div class="alert alert-danger" role="alert">
+          <strong>This cannot be undone.</strong> The competitions below are deleted together with their divisions, entries, game days, schedules, publications, matches, results, lineups, referee duties, standings and tasks. Use Archive instead for real competitions that are over.
+        </div>
+        <group>
+          <field name="edition_ids" widget="many2many_tags"/>
+          <field name="include_parent"/>
+        </group>
+        <field name="preview_html" nolabel="1" readonly="1"/>
+        <group invisible="blocked">
+          <field name="confirmation" placeholder="DELETE"/>
+        </group>
+        <!-- Technical modifier relay: blocked hides the confirmation and delete button. -->
+        <field name="blocked" invisible="1"/>
+        <footer>
+          <button name="action_delete" type="object" string="Delete permanently" class="btn-danger" invisible="blocked"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

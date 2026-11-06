@@ -1,21 +1,41 @@
+from functools import wraps
 from odoo import _, api, models
 from odoo.exceptions import ValidationError
+
+
+def atomic_command(method):
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self.env.cr.savepoint():
+            return method(self, *args, **kwargs)
+    return wrapped
 
 
 class FederationScheduleCommands(models.AbstractModel):
     _name = "federation.schedule.commands"
     _description = "Schedule Command Service"
 
-    def _find_replay(self, schedule_id, idempotency_key):
+    def _find_replay(self, schedule_id, idempotency_key, command, fixture_id, slot_id=False, reason=False):
+        schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
+        if not schedule:
+            raise ValidationError(_("The schedule no longer exists."))
+        schedule.check_access("read")
+        self.env["federation.competition.role.assignment"].assert_role(
+            schedule.edition_id, "schedule_planner", "competition_director")
         if not idempotency_key:
             return False
-        return self.env["federation.schedule.change"].search(
-            [
-                ("schedule_id", "=", int(schedule_id)),
-                ("idempotency_key", "=", idempotency_key),
-            ],
-            limit=1,
-        )
+        if not isinstance(idempotency_key, str) or len(idempotency_key) > 128:
+            raise ValidationError(_("Use a bounded idempotency key."))
+        # Serialize duplicate retries, including those arriving concurrently.
+        self.env.cr.execute("SELECT id FROM federation_schedule WHERE id=%s FOR UPDATE", (schedule.id,))
+        replay = self.env["federation.schedule.change"].search([
+            ("schedule_id", "=", schedule.id), ("idempotency_key", "=", idempotency_key)], limit=1)
+        if replay and (replay.actor_id != self.env.user or replay.command != command or
+                       replay.fixture_id.id != int(fixture_id) or
+                       (command == "assign" and replay.new_slot_id.id != int(slot_id)) or
+                       (replay.reason or "") != (reason or "")):
+            raise ValidationError(_("Idempotency key was reused for different content or actor."))
+        return replay
 
     def _resolve(self, schedule_id, expected_revision):
         schedule = self.env["federation.schedule"].browse(int(schedule_id)).exists()
@@ -24,6 +44,7 @@ class FederationScheduleCommands(models.AbstractModel):
         self.env["federation.competition.role.assignment"].assert_role(
             schedule.edition_id, "schedule_planner", "competition_director"
         )
+        schedule.check_access("write")
         schedule.assert_mutable()
         self.env.cr.execute(
             "UPDATE federation_schedule SET revision=revision+1 WHERE id=%s AND revision=%s RETURNING revision",
@@ -41,6 +62,7 @@ class FederationScheduleCommands(models.AbstractModel):
         return {a.fixture_id.id: a.slot_id.id for a in schedule.assignment_ids}
 
     @api.model
+    @atomic_command
     def assign(
         self,
         schedule_id,
@@ -50,7 +72,7 @@ class FederationScheduleCommands(models.AbstractModel):
         reason=False,
         idempotency_key=False,
     ):
-        replay = self._find_replay(schedule_id, idempotency_key)
+        replay = self._find_replay(schedule_id, idempotency_key, "assign", fixture_id, slot_id, reason)
         if replay:
             return self.env["federation.schedule.queries"].delta(replay.schedule_id, [])
         schedule, new_revision = self._resolve(schedule_id, expected_revision)
@@ -93,6 +115,7 @@ class FederationScheduleCommands(models.AbstractModel):
         return self.env["federation.schedule.queries"].delta(schedule, assignment)
 
     @api.model
+    @atomic_command
     def unassign(
         self,
         schedule_id,
@@ -101,7 +124,7 @@ class FederationScheduleCommands(models.AbstractModel):
         reason=False,
         idempotency_key=False,
     ):
-        replay = self._find_replay(schedule_id, idempotency_key)
+        replay = self._find_replay(schedule_id, idempotency_key, "unassign", fixture_id, reason=reason)
         if replay:
             return self.env["federation.schedule.queries"].delta(replay.schedule_id, [])
         schedule, new_revision = self._resolve(schedule_id, expected_revision)
@@ -127,6 +150,7 @@ class FederationScheduleCommands(models.AbstractModel):
         return self.env["federation.schedule.queries"].delta(schedule, [])
 
     @api.model
+    @atomic_command
     def apply_proposal(self, schedule_id, expected_revision):
         schedule, new_revision = self._resolve(schedule_id, expected_revision)
         proposal = self.env["federation.schedule.solver"].propose(schedule)
@@ -158,6 +182,7 @@ class FederationScheduleCommands(models.AbstractModel):
         return self.env["federation.schedule.queries"].delta(schedule, created)
 
     @api.model
+    @atomic_command
     def submit(self, schedule_id, expected_revision, warning_override_reason=False):
         schedule, new_revision = self._resolve(schedule_id, expected_revision)
         validation = self.env["federation.schedule.validator"].validate_map(

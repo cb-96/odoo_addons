@@ -122,22 +122,13 @@ REPOSITORY_FILES = [
     ".gitignore",
     ".pre-commit-config.yaml",
     "CHANGELOG.md",
-    "CONTEXT.md",
     "CONTRIBUTING.md",
-    "DEPLOYMENT_GUIDE.md",
-    "DOCUMENTATION_REVIEW.md",
     "Dockerfile",
     "LICENSE",
     "Makefile",
     "MODULE_OWNERS.yaml",
     "README.md",
-    "RELEASE_RUNBOOK.md",
-    "ROADMAP.md",
-    "ROUTE_INVENTORY.md",
     "SECURITY.md",
-    "STATE_AND_OWNERSHIP_MATRIX.md",
-    "TECHNICAL_NOTE.md",
-    "TESTING_GUIDE.md",
     "docker-compose.yml",
     "pyproject.toml",
     "requirements-dev.txt",
@@ -147,11 +138,9 @@ REPOSITORY_FILES = [
 
 REPOSITORY_DIRECTORIES = [
     ".github",
-    "_workflows",
     "ci",
     "docs",
     "scripts",
-    "adr",
 ]
 
 
@@ -179,8 +168,10 @@ def command_output(*args: str, check: bool = False) -> str:
 
 
 def validate_repository_root() -> None:
-    top_level = command_output("git", "rev-parse", "--show-toplevel", check=True)
-    if top_level != str(ROOT):
+    top_level = Path(
+        command_output("git", "rev-parse", "--show-toplevel", check=True)
+    ).resolve()
+    if top_level != ROOT:
         raise SystemExit("Run this script from the Git repository root.")
 
     required = [

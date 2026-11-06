@@ -10,7 +10,7 @@ import sys
 
 CI_DIR = pathlib.Path(__file__).resolve().parent
 LEGACY_COMPOSE_DIR = CI_DIR / "legacy" / "compose"
-ACTIVE_COMPOSE = {"docker-compose.ci.yaml"}
+ACTIVE_COMPOSE = {"docker-compose.ci.yaml", "docker-compose.walkthrough.yaml"}
 KNOWN_LEGACY_COMPOSE = {
     "docker-compose.override.yaml",
     "docker-compose.integration_officiating.yaml",

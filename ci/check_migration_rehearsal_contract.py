@@ -21,12 +21,24 @@ REQUIRED = {
         "rollback-owner",
         "rollback-trigger",
         "invariant-comparison.json",
+        "--failure-classification unclassified",
+        "--log",
     ),
-    "RELEASE_RUNBOOK.md": (
+    "scripts/ci/run_rc_validation.sh": (
+        "assert_retired_engine_uninstalled",
+        "check_odoo_registry_log.py",
+    ),
+    "ci/check_odoo_registry_log.py": (
+        "Some modules have inconsistent states",
+        "is declared but cannot be loaded!",
+    ),
+    "docs/operations/release-runbook.md": (
         "Migration rehearsal evidence",
         "run_migration_rehearsal.sh",
+        "Odoo registry integrity",
+        "sports_federation_competition_engine",
     ),
-    "docs/DELIVERY_ROADMAP.md": (
+    "docs/roadmap.md": (
         "Release Candidate and Migration Evidence",
         "run_migration_rehearsal.sh",
     ),

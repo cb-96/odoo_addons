@@ -16,5 +16,11 @@ from . import test_qol
 from . import test_production_security_matrix
 
 from . import test_competition_portal
+from . import test_competition_entry_portal
 
 from . import test_qol_search
+from . import test_parental_approval_portal
+from . import test_role_journeys
+from . import test_gameday_overview
+from . import test_task_deadlines
+from . import test_journey_event

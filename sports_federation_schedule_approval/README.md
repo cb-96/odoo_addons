@@ -32,6 +32,17 @@ calendar and venue data, so approvers do not need CRUD access to those
 administrator-managed records. Reviewers may edit the note while a review is
 pending; state and audit fields remain command-service-only.
 
+Streamlined workflow policy permits the submitting planner to complete the
+approval command after all schedule checks pass. Independent Review requires a
+different assigned approver. The command service and model-level writer enforce
+the same edition policy, so the streamlined path is not contradicted by a second
+unconditional separation-of-duties guard. Global access-group membership and
+the per-edition responsibility assignment are separate requirements; neither
+is granted implicitly. Review and publication forms present immutable snapshot
+assignments as a match/court/time table while retaining the original JSON as the
+authoritative evidence. A publication note is optional for the first live
+publication and required when replacing one.
+
 ## Tests and contracts
 
 ```bash
@@ -64,3 +75,14 @@ publication handoff use `federation.workflow.transition`. Review decision fields
 remain protected by their private writer tokens. The shared service owns state,
 reason, revision, separation-of-duty, command-result, and audit mechanics while
 `federation.schedule.approval.commands` retains schedule-specific validation.
+
+## Published matches know their slot
+Publishing links a match to its slot and now also schedules it (draft matches
+become scheduled) and copies the slot's playing area and venue to the match.
+Matches built from fixtures have no round, so the round's venue defaults never
+applied and venue-dependent features (finance, exports, the public schedule
+location) could not see published matches. An operational move to another slot
+updates the playing area and venue as well; deleting a match day's publication
+history returns its scheduled matches to draft. Upgrading applies the same to
+matches that are already published, as a data update that does not re-run match
+constraints or create finance events.

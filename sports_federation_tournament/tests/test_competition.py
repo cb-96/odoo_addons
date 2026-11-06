@@ -208,6 +208,22 @@ class TestFederationCompetition(TransactionCase):
         with self.assertRaises(ValidationError):
             tournament.action_open()
 
+    def test_tournament_archived_planner_settings_round_trip(self):
+        settings = {
+            "planning_format": "single_round_robin",
+            "pool_count": 2,
+            "minimum_rest_minutes": 30,
+        }
+        tournament = self.env["federation.tournament"].create(
+            {
+                "name": "Archived planner settings",
+                "date_start": "2026-01-01",
+                "retired_planner_settings": settings,
+            }
+        )
+
+        self.assertEqual(tournament.retired_planner_settings, settings)
+
     def test_tournament_start_requires_stage_and_archive_rules(self):
         """Test that tournament start requires stage and archive rules."""
         tournament = self.env["federation.tournament"].create(

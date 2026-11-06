@@ -8,3 +8,4 @@ from . import format_feasibility
 from . import competition_simulator
 
 from . import dynamic_pairing
+from . import stage_lifecycle

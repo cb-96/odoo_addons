@@ -29,6 +29,82 @@ class FederationMatch(models.Model):
             matches._create_auto_match_sheets()
         return matches
 
+    def write(self, vals):
+        result = super().write(vals)
+        schedule_fields = {"date_scheduled", "round_id", "scheduled_time"}
+        if "schedule_publication_id" in self._fields:
+            schedule_fields.add("schedule_publication_id")
+        if schedule_fields.intersection(vals):
+            self.mapped("match_sheet_ids")._inherit_existing_gameday_lineup()
+        return result
+
+    def _get_match_participation_blockers(self):
+        """Explain why the listed participants cannot play this match.
+
+        Every gameday roster attached to the match is checked: no more players
+        may be listed to play than the per-match limit allows, and every
+        player still listed to play must be eligible on the match date
+        (for example, not suspended since the roster was approved).
+        """
+        self.ensure_one()
+        blockers = []
+        for sheet in self.match_sheet_ids.filtered(lambda item: item.line_ids):
+            blockers.extend(
+                "%s: %s" % (sheet.team_id.display_name, issue)
+                for issue in sheet._get_participation_issues()
+            )
+            for line in sheet.line_ids.filtered(lambda item: not item.crossed_out):
+                reasons = line._get_eligibility_reasons()
+                if reasons:
+                    blockers.append(
+                        _(
+                            "%(team)s: '%(player)s' is listed to play but is not "
+                            "eligible (%(reasons)s). Cross the player out for this match."
+                        )
+                        % {
+                            "team": sheet.team_id.display_name,
+                            "player": line.player_id.display_name,
+                            "reasons": "; ".join(reasons),
+                        }
+                    )
+        return blockers
+
+    def _validate_result_entry(self):
+        """Results need a valid participant list for every gameday roster."""
+        result = super()._validate_result_entry()
+        for match in self:
+            blockers = match._get_match_participation_blockers()
+            if blockers:
+                raise ValidationError(
+                    _("Correct the players for %(match)s before submitting the result:\n- %(issues)s")
+                    % {"match": match.display_name, "issues": "\n- ".join(blockers)}
+                )
+        return result
+
+    def action_start(self):
+        """Revalidate approved match participants immediately before play."""
+        for match in self:
+            blockers = match._get_match_participation_blockers()
+            if blockers:
+                raise ValidationError(
+                    _("Correct the players for %(match)s before starting:\n- %(issues)s")
+                    % {"match": match.display_name, "issues": "\n- ".join(blockers)}
+                )
+        return super().action_start()
+
+    def action_done(self):
+        """Lock valid approved gameday rosters once the match is finished."""
+        result = super().action_done()
+        sheets = self.mapped("match_sheet_ids").filtered(
+            lambda sheet: sheet.state == "approved"
+            and not sheet._get_participation_issues()
+        )
+        if sheets:
+            # Locking is a consequence of the already authorized result
+            # approval; result approvers do not hold match-sheet write access.
+            sheets.sudo().action_lock()
+        return result
+
     def _create_auto_match_sheets(self):
         """Create draft match sheets for home and away teams if not already present."""
         Sheet = self.env["federation.match.sheet"]

@@ -4,9 +4,11 @@ from unittest.mock import patch
 
 from odoo.addons.sports_federation_reporting.services import report_schedule_builders
 from odoo import fields
+from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
 
+@tagged("sf_release_confidence")
 class TestOperationalReporting(TransactionCase):
 
     @classmethod
@@ -308,6 +310,7 @@ class TestOperationalReporting(TransactionCase):
             row.sla_status, ("overdue", "escalated", "due_today", "within_sla")
         )
 
+    @tagged("at_install", "sf_release_confidence")
     def test_notification_exception_report_shows_failed_logs(self):
         """Test that notification exception report shows failed logs."""
         row = self.env["federation.report.notification.exception"].search(
@@ -588,6 +591,7 @@ class TestOperationalReporting(TransactionCase):
         action = checklist_row.action_open_queue()
         self.assertEqual(action["res_model"], "federation.report.schedule")
 
+    @tagged("at_install", "sf_release_confidence")
     def test_operator_checklist_surfaces_inbound_delivery_failures(self):
         """Test that inbound delivery issues appear in the operator checklist."""
         contract = self.env.ref(

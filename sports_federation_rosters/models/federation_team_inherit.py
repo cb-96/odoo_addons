@@ -41,19 +41,48 @@ class FederationTeam(models.Model):
         action["domain"] = [("team_id", "=", self.id)]
         return action
 
+    def _get_confirmed_season_registration(self, season):
+        """Return the team's confirmed registration for a season, if any."""
+        self.ensure_one()
+        return (
+            self.env["federation.season.registration"]
+            .sudo()
+            .search(
+                [
+                    ("team_id", "=", self.id),
+                    ("season_id", "=", season.id),
+                    ("state", "=", "confirmed"),
+                ],
+                order="id desc",
+                limit=1,
+            )
+        )
+
     def _ensure_tournament_roster(self, tournament):
-        """Handle ensure tournament roster."""
+        """Return the team's roster for a tournament, creating it when missing.
+
+        The roster is linked to the team's confirmed season registration. The
+        portal finds a club's roster through that link, so a roster without it
+        looked like "no roster yet" and the club was offered a second one.
+        """
         self.ensure_one()
         Roster = self.env["federation.team.roster"]
         if not tournament or not tournament.season_id:
             return Roster.browse([])
 
+        registration = self._get_confirmed_season_registration(tournament.season_id)
         roster = self._get_preferred_roster(
             tournament.season_id,
             competition=tournament.competition_id,
             statuses=("draft", "active"),
         )
         if roster:
+            if (
+                registration
+                and not roster.season_registration_id
+                and not roster.match_day_locked
+            ):
+                roster.sudo().write({"season_registration_id": registration.id})
             return roster
 
         roster_vals = {
@@ -63,6 +92,8 @@ class FederationTeam(models.Model):
                 tournament.competition_id.id if tournament.competition_id else False
             ),
         }
+        if registration:
+            roster_vals["season_registration_id"] = registration.id
         if tournament.rule_set_id and not tournament.competition_id:
             roster_vals["rule_set_id"] = tournament.rule_set_id.id
         return Roster.create(roster_vals)

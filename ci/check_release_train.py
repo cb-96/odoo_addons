@@ -9,8 +9,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TRAIN_FILES = [
-    "ROADMAP.md",
-    "RELEASE_RUNBOOK.md",
+    "docs/roadmap.md",
+    "docs/operations/release-runbook.md",
 ]
 TRAIN_PATTERN = re.compile(r"^\d{4}\.\d{2}$")
 

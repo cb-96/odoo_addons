@@ -84,6 +84,18 @@ class FederationImportWizardGovernanceMixin(models.AbstractModel):
             raise ValidationError(
                 "The selected import template does not match the approved governance job. Request approval again."
             )
+        if (
+            self.template_id.contract_version
+            and job.schema_version != self.template_id.contract_version
+        ):
+            raise ValidationError(
+                "The import template changed from %(old)s to %(new)s after this job "
+                "was approved. Run a fresh dry run and request approval again."
+                % {
+                    "old": job.schema_version,
+                    "new": self.template_id.contract_version,
+                }
+            )
 
     def _prepare_import_execution(self):
         """Return the baseline record count for live imports after approval checks."""
