@@ -358,11 +358,11 @@ choice is intentional and the upgrade is non-interactive.
 
 Verify these operator checkpoints immediately after the upgrade:
 
-1. Open Federation > Insights > Reports & Insights > Overview & Readiness > Operator Checklist and confirm there are no
+1. Open Federation > Reporting > Operator Checklist and confirm there are no
    unexpected blocked queues.
-2. Open Federation > Insights > Reports & Insights > Automation & History > Report Schedules and confirm there are no new
+2. Open Federation > Administration > Configuration > Report Schedules and confirm there are no new
    `Last Run Failed` schedules.
-3. Open Federation > Administration > Imports & Integrations > Inbound Deliveries and confirm there are no
+3. Open Federation > Administration > Data Exchange > Inbound Deliveries and confirm there are no
    unexpected `failed` or `processed_with_errors` deliveries.
 4. Validate the public and portal release surfaces manually if the release
    touched them:
@@ -372,7 +372,7 @@ Verify these operator checkpoints immediately after the upgrade:
    - `/my/teams/new`
    - `/my/season-registration/new`
    - `/my/compliance`
-5. Trigger one scheduled report manually from **Federation > Insights > Reports & Insights > Automation & History >
+5. Trigger one scheduled report manually from **Federation > Administration > Configuration >
    Report Schedules** if the release touched reporting code.
 
 ## Integration partner token rotation
@@ -384,13 +384,13 @@ scheduled rotation cycle, rotate partner tokens using the following procedure:
 - After upgrading `sports_federation_import_tools` (any release that changed
   token storage, authentication, or the integration controller surface).
 - When the `token_rotation_required` flag is set to `True` on a partner record
-  (visible in Federation > Administration > Imports & Integrations > Integration Partners).
+  (visible in Federation > Administration > Data Exchange > Integration Partners).
 - On a periodic schedule — at minimum once per year or whenever a partner
   personnel change occurs.
 
 **How to rotate (back-office procedure):**
 
-1. Open **Federation > Administration > Imports & Integrations > Integration Partners**.
+1. Open **Federation > Administration > Data Exchange > Integration Partners**.
 2. Filter for partners where **Token Rotation Required** is checked, or where
    **Last Rotated On** is older than the rotation policy window.
 3. For each partner, open the form and click **Rotate Token** (requires

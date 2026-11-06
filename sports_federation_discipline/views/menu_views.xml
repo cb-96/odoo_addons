@@ -5,32 +5,21 @@
               parent="sports_federation_base.menu_federation_match_day"
               sequence="30"/>
 
-    <menuitem id="menu_federation_discipline_root"
-              name="Discipline"
-              parent="menu_federation_discipline"
-              sequence="10"/>
-
     <menuitem id="menu_federation_incident"
               name="Incidents"
-              parent="menu_federation_discipline_root"
+              parent="menu_federation_discipline"
               action="action_federation_incident"
               sequence="10"/>
 
     <menuitem id="menu_federation_disciplinary_case"
               name="Cases"
-              parent="menu_federation_discipline_root"
+              parent="menu_federation_discipline"
               action="action_federation_disciplinary_case"
               sequence="20"/>
 
-    <menuitem id="menu_federation_sanction"
-              name="Sanctions"
-              parent="menu_federation_discipline_root"
-              action="action_federation_sanction"
-              sequence="30"/>
-
     <menuitem id="menu_federation_suspension"
               name="Suspensions"
-              parent="menu_federation_discipline_root"
+              parent="menu_federation_discipline"
               action="action_federation_suspension"
               sequence="40"/>
 </odoo>

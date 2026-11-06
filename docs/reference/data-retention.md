@@ -103,8 +103,8 @@ Rules:
 
 ### Legal hold and erasure of member evidence
 
-Federation managers open **Federation > Administration > Member evidence
-history**, select revisions and use **Action > Legal hold or erasure**:
+Federation managers open **Federation > Administration > System > Member Evidence
+History** (developer mode), select revisions and use **Action > Legal hold or erasure**:
 
 - **Place legal hold** excludes the revisions from scheduled retention and
   from erasure. The reason, person and time are recorded on the revision and
@@ -140,7 +140,7 @@ Every automated retention run appends a `federation.retention.evidence` record w
 
 ## Recovery visibility
 
-Federation managers use **Federation > Administration > System Health > Retention and Recovery** to verify policy freshness and outcomes. Failure evidence is committed independently before the owning cron re-raises, so transaction rollback cannot erase the recovery record.
+Federation managers use **Federation > Administration > System > Retention Policies** to verify policy freshness and outcomes. Failure evidence is committed independently before the owning cron re-raises, so transaction rollback cannot erase the recovery record.
 
 ## Coordinated notification mail retention
 

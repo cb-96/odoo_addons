@@ -35,7 +35,7 @@ future accounting integration.
 **Actor**: Federation administrator
 **Module**: `sports_federation_finance_bridge`
 
-1. Navigate to **Federation > Finance & Assurance > Finance > Fee Types**.
+1. Navigate to **Federation > Administration > Configuration > Fee Types**.
 2. Create fee type entries:
 
 | Example | Category | Default Amount |

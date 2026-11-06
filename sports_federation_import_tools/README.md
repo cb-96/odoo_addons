@@ -23,7 +23,7 @@ The import wizards provide a safer operator workflow than direct list imports:
 - staged inbound deliveries that reuse the same governed preview and approval
   pipeline
 
-The menu entry is available at ``Federation > Administration > Imports & Integrations``.
+The menu entry is available at ``Federation > Administration > Data Exchange``.
 The transient import models now live under the standard ``wizards/`` package to
 match the rest of the repository.
 

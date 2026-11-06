@@ -27,7 +27,7 @@ data-entry errors and disputed scores from corrupting competition tables.
 
 ## Verified UI navigation
 
-Backend users open **Federation > Match Operations > Matches**. Club representatives use **My Account > Results**. Standings are under **Federation > Publishing > Standings**. Result Control adds buttons to the match form; it does not add a separate Results menu.
+Backend users open **Federation > Competitions > Records > Matches**. Club representatives use **My Account > Results**. Standings are under **Federation > Competitions > Records > Standings**. Result Control adds buttons to the match form; it does not add a separate Results menu.
 
 ## Step-by-Step Flow
 

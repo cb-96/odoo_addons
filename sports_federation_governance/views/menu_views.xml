@@ -1,23 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Governance submenu -->
-    <menuitem id="menu_federation_governance"
-              name="Governance"
-              parent="sports_federation_base.menu_federation_business"
-              sequence="30"/>
-
     <!-- Override Requests -->
     <menuitem id="menu_federation_override_request"
               name="Override Requests"
-              parent="menu_federation_governance"
+              parent="sports_federation_base.menu_federation_business"
               action="action_federation_override_request"
               sequence="10"/>
-
-    <menuitem id="menu_federation_override_outcome"
-              name="Override Outcomes"
-              parent="menu_federation_governance"
-              action="action_federation_override_outcome"
-              sequence="20"/>
 
 </odoo>

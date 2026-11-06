@@ -1,6 +1,6 @@
 {
     "name": "Member and Family Services",
-    "version": "19.0.1.3.0",
+    "version": "19.0.1.3.1",
     "license": "LGPL-3",
     "depends": [
         "sports_federation_people",

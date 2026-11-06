@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Navigation",
-    "version": "19.0.1.1.1",
+    "version": "19.0.1.2.0",
     "category": "Sports",
     "summary": "Ordinary and advanced navigation assembly",
     "description": """
@@ -33,6 +33,10 @@ Domain addons continue to own actions, models, permissions, and migrations.
         "sports_federation_public_site",
         "sports_federation_notifications",
         "sports_federation_live_workspace",
+        "sports_federation_duty_coverage",
+        "sports_federation_finance_bridge",
+        "sports_federation_compliance",
+        "sports_federation_governance",
     ],
     "data": ["views/navigation.xml"],
     "installable": True,

@@ -62,7 +62,7 @@ draft → submitted → approved → implemented → closed
 **Actor**: Club representative
 **Module**: `sports_federation_governance` (via portal or back office)
 
-1. Navigate to **Federation > Finance & Assurance > Governance > Override Requests** (back office) or
+1. Navigate to **Federation > Finance & Assurance > Override Requests** (back office) or
    the portal appeal section (if enabled).
 2. Click **New** and fill in:
    - **Title** — clear one-line description of the dispute
@@ -84,7 +84,7 @@ made, click **Withdraw** to return from `submitted → draft`, edit, and resubmi
 **Module**: `sports_federation_governance`
 
 1. Open the submitted request from
-   **Federation > Finance & Assurance > Governance > Override Requests** (filter *Submitted*).
+   **Federation > Finance & Assurance > Override Requests** (filter *Submitted*).
 2. Review the request, target record, and any supporting attachments.
 3. Use the chatter to request clarification from the club if needed (keeps a
    timestamped record).

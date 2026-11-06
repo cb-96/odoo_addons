@@ -99,8 +99,7 @@ given season. Each license is scoped to one player, one season, and one club.
 #### License Creation
 
 1. Create or locate the player record (`federation.player`) with club affiliation.
-2. Navigate to the player's **Licenses** tab and click **New**, or go to
-   **Federation > Clubs & People > Players & Licensing > Configuration > Licenses** and create from there.
+2. Navigate to the player's **Licenses** tab and click **New**.
 3. Fill in:
    - **Season** (must be open)
    - **Club** (must match the player's current club)

@@ -12,23 +12,6 @@
               action="federation_referee_action"
               sequence="30"/>
 
-    <menuitem id="menu_federation_officiating_config"
-              name="Configuration"
-              parent="menu_federation_officiating"
-              sequence="50"/>
-
-    <menuitem id="menu_federation_referee_certification"
-              name="Certifications"
-              parent="menu_federation_officiating_config"
-              action="federation_referee_certification_action"
-              sequence="10"/>
-
-    <menuitem id="menu_federation_matchday_assign_official"
-              name="Plan Match-Day Officials"
-              parent="menu_federation_officiating"
-              action="action_matchday_assign_official_wizard"
-              sequence="5"/>
-
     <menuitem id="menu_federation_match_referee"
               name="Match Assignments"
               parent="menu_federation_officiating"

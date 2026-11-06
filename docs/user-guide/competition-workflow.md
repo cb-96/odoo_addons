@@ -68,7 +68,7 @@ The next action opens **Choose Format** with the preset default:
 - home-and-away league; or
 - knockout cup.
 
-The wizard creates or resumes the canonical competition structure, runs the existing feasibility and fixture-generation commands, and freezes the generated structure. Complex stage graphs remain in **Federation > Competitions > Advanced Competition Tools > Format Studio**.
+The wizard creates or resumes the canonical competition structure, runs the existing feasibility and fixture-generation commands, and freezes the generated structure. Complex stage graphs remain in **Federation > Competitions > Planning Tools > Format Studio**.
 
 ### 4. Define game days and plan the schedule
 
@@ -171,15 +171,19 @@ Important recovery rules remain unchanged:
 ## Retained advanced paths
 
 ```text
-Federation > Competitions > Advanced Competition Tools > Create Competition
-Federation > Competitions > Advanced Competition Tools > Registration Desk
-Federation > Competitions > Advanced Competition Tools > Format Studio
-Federation > Competitions > Advanced Competition Tools > Calendar Planner
-Federation > Competitions > Advanced Competition Tools > Schedule Planner
-Federation > Competitions > Advanced Competition Tools > Schedule Review Queue
-Federation > Administration > Competition Audit & Recovery > Role Assignments
-Federation > Administration > Action Queue
-Federation > Administration > System Health > Operational Job Health
+Federation > Competitions > Planning Tools > Registration Desk
+Federation > Competitions > Planning Tools > Format Studio
+Federation > Competitions > Planning Tools > Calendar Planner
+Federation > Competitions > Planning Tools > Schedule Planner
+Federation > Publishing > Schedules to Review
+Federation > Administration > Configuration > Rule Sets
+Federation > Administration > System > All Tasks
+Federation > Administration > System > Operational Jobs
+Federation > Administration > System > Competition Role Assignments
 ```
+
+Competition creation and schedule generation start from the Competition Hub;
+they have no separate menu. **Administration > System** is shown only in
+developer mode.
 
 These menus are intentionally absent from an ordinary manager’s navigation but their action XML IDs remain stable for bookmarks, contextual actions, tests, and integrations.

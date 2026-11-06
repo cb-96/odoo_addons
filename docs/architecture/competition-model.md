@@ -82,7 +82,7 @@ Required events: `participant_set_finalized`, `structure_frozen`,
 window for the selected division and call the same validated submission
 command, which enforces club ownership, eligibility, duplicate-entry and
 capacity rules. Federation staff review entries from the competition; the raw
-**Registration Desk** remains under **Advanced Competition Tools** for
+**Registration Desk** remains under **Competitions > Planning Tools** for
 recovery and specialist work.
 
 ## Schedule review and publication

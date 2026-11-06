@@ -296,9 +296,9 @@ Each export now exposes `X-Federation-Contract` and
 `X-Federation-Contract-Version` headers. The detailed finance-event handoff
 export uses the `finance_event_v1` contract.
 
-For recurring in-application reporting, create records under **Federation > Insights > Reports & Insights > Automation & History > Report Schedules**.
+For recurring in-application reporting, create records under **Federation > Administration > Configuration > Report Schedules**.
 Each schedule stores the last generated CSV snapshot directly on the schedule record.
-Use **Federation > Insights > Reports & Insights > Overview & Readiness > Operator Checklist** for the release-readiness
+Use **Federation > Reporting > Operator Checklist** for the release-readiness
 queue view that links back to the underlying exception surfaces.
 
 

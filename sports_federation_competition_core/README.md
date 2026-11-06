@@ -79,9 +79,9 @@ Registration Manager, Calendar Planner, Schedule Planner, Schedule Approver,
 ## Navigation
 
 The ordinary entry is **Federation > Competitions > Competitions**. The
-advanced **Competition Overview** and **Competition Audit & Recovery > Role
-Assignments** menus are defined here and shown to users with Advanced
-Federation Tools.
+**Competition Role Assignments** menu is defined here and placed under
+**Administration > System** (developer mode) by `sports_federation_navigation`.
+The Competition Overview action has no menu; the hub replaces it.
 
 ## Tests
 

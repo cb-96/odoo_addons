@@ -1,26 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <menuitem id="menu_federation_people"
-              name="Players &amp; Licensing"
-              parent="sports_federation_base.menu_federation_setup"
-              sequence="20"/>
-
     <menuitem id="menu_federation_player"
               name="Players"
-              parent="menu_federation_people"
+              parent="sports_federation_base.menu_federation_setup"
               action="federation_player_action"
-              sequence="10"/>
-
-    <menuitem id="menu_federation_player_config"
-              name="Configuration"
-              parent="menu_federation_people"
-              sequence="20"/>
-
-    <menuitem id="menu_federation_player_license"
-              name="Licenses"
-              parent="menu_federation_player_config"
-              action="federation_player_license_action"
               sequence="10"/>
 
 </odoo>

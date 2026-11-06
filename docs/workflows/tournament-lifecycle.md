@@ -277,8 +277,8 @@ on the match before submitting the result.
    replacement publication is needed.
 4. A tied knockout result is blocked until the tie resolution and advancing
    team are recorded on the match.
-5. Advanced stage-graph recovery uses **Federation > Competitions > Advanced
-   Competition Tools > Format Studio**, then the contextual schedule planner.
+5. Advanced stage-graph recovery uses **Federation > Competitions > Planning
+   Tools > Format Studio**, then the contextual schedule planner.
 
 ### 10. Finish
 

@@ -115,7 +115,7 @@ season:
 
 **Via back-office**:
 
-1. Navigate to **Federation > Clubs & People > Season Registrations**.
+1. Navigate to **Federation > Competitions > Records > Season Registrations**.
 2. Create a registration record for the club's first team in the current season.
 3. State: `draft → submitted → confirmed`.
 

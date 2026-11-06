@@ -15,26 +15,26 @@ contextual links and to users in the **Advanced Federation Tools** group. This
 keeps recovery, compliance, audit, security and specialist work possible
 without presenting implementation structure to every operator.
 
+The administrator account is a member of **Advanced Federation Tools** by
+default, so it always sees the advanced map. Test the ordinary map with a user
+that only has the Federation **Manager** group.
+
 ## Work areas
 
 The **Federation** application has these top-level work areas, in this order:
 
 - **Needs Attention**: one inbox of manager tasks and referee duties that need a person.
-- **Competitions**: create, plan, publish and finish competitions.
-- **Clubs & People**: clubs, teams, players and licences, representatives, season registrations.
-- **Match Operations**: game days, court operation, matches, line-ups, venues, officiating, discipline.
-- **Publishing**: approved and published schedules, standings, public editorial content.
-- **Finance & Assurance**: finance, compliance and governance (advanced).
-- **Insights**: operational, performance and assurance reports (advanced).
-- **Administration**: action queue, imports and integrations, notifications, member services, audit and recovery, system health (advanced).
-- **Reports**: opens the operational health dashboard.
+- **Competitions**: the Competition Hub, plus planning tools and raw records (advanced).
+- **Clubs & People**: clubs, teams, players, club representatives and membership work.
+- **Match Operations**: game days and court operation; courts and venues, officiating and discipline (advanced).
+- **Publishing**: schedule review, publication and public editorial content.
+- **Finance & Assurance**: finance, compliance and governance overrides (advanced).
+- **Reporting**: the operational health dashboard; checklists and performance reports (advanced).
+- **Administration**: configuration, data exchange, notifications and system records (advanced).
 
-Visibility is role based. An ordinary manager mainly sees Needs Attention,
-Competitions, Clubs & People, Match Operations, Publishing and Reports.
-Finance & Assurance, Insights, Administration and the raw competition menus
-are visible to the advanced or specialist groups that own them.
+## Ordinary manager map
 
-## Ordinary operator map
+A Federation Manager without specialist groups sees eleven entries:
 
 ```text
 Federation
@@ -43,111 +43,121 @@ Federation
 │   └── Competitions
 ├── Clubs & People
 │   ├── Clubs
-│   ├── Club Directory
 │   ├── Teams
 │   ├── Players
-│   ├── Players & Licensing
-│   ├── Club Representatives
-│   ├── Representatives & Access
-│   └── Season Registrations
+│   └── Club Representatives
 ├── Match Operations
 │   ├── Game Days
-│   └── Run this court
+│   └── Run This Court
 ├── Publishing
-│   ├── Approved Schedules
-│   ├── Published Schedules
-│   ├── Standings
+│   ├── Schedules to Review
 │   └── Public Editorial
-└── Reports
+└── Reporting
+    └── Operational Health
 ```
 
-The Competition Hub provides contextual actions for teams, format, game days,
-schedules, publication, rosters, game-day line-ups, officials, results and
-readiness. Contextual actions keep the active competition scope and replace
-most global queue menus for ordinary work.
+The Competition Hub provides contextual actions for creating competitions,
+teams, format, game days, schedule generation, publication, rosters, game-day
+line-ups, officials, results and readiness. Contextual actions keep the active
+competition scope and replace most global queue menus for ordinary work.
 
-## Advanced and administration map
+## Advanced map
+
+Users in **Advanced Federation Tools** additionally see these sections. The
+**System** section is only shown in developer mode. Entries marked *(optional)*
+come from addons that are not part of the default installation.
 
 ```text
 Federation
 ├── Competitions
-│   ├── Competitions
-│   ├── Seasons
-│   ├── Season Competitions
-│   ├── Competition Templates
-│   ├── Format Templates
-│   ├── Rules & Policies
-│   ├── Advanced Competition Tools
-│   │   ├── My Creation Drafts
-│   │   ├── Create Competition
-│   │   ├── Competition Overview
+│   ├── Planning Tools
+│   │   ├── Saved Drafts
 │   │   ├── Registration Desk
 │   │   ├── Format Studio
 │   │   ├── Calendar Planner
-│   │   ├── Generate Competition Schedule
-│   │   ├── Schedule Planner
-│   │   └── Schedule Review Queue
-│   └── Competition Records
-│       └── Divisions & Matches
+│   │   └── Schedule Planner
+│   └── Records
+│       ├── Seasons
+│       ├── Season Registrations
+│       ├── Divisions
+│       ├── Matches
+│       ├── Game-Day Lineups
+│       └── Standings
+├── Clubs & People
+│   └── Membership                          (optional member services)
+│       ├── Memberships, Member Requests, Renewals to Review
+│       ├── Guardian Claims, Identity Review Queue
+│       └── Family Relationships, Membership Retention
 ├── Match Operations
-│   ├── Game Days
-│   ├── Assign court operators
-│   ├── Run this court
-│   ├── Court recovery and exceptions
-│   ├── Matches
-│   ├── Venues
-│   ├── Game-Day Lineups
+│   ├── Courts & Venues
+│   │   ├── Venues
+│   │   ├── Court Operators
+│   │   └── Court Recovery
 │   ├── Officiating
-│   │   ├── Duty coverage board
-│   │   ├── Plan Match-Day Officials
-│   │   ├── Match Assignments
+│   │   ├── Duty Coverage Board
+│   │   ├── Referee Assignments
 │   │   ├── Club Duties
 │   │   ├── Referees
 │   │   └── Reimbursements
 │   └── Discipline
+│       ├── Incidents
+│       ├── Cases
+│       └── Suspensions
 ├── Publishing
-│   └── Standings
-│       └── Recompute Queue
+│   ├── Ready to Publish                    (schedule approvers)
+│   └── Published Schedules                 (schedule approvers)
 ├── Finance & Assurance
 │   ├── Finance
+│   │   ├── Finance Events
+│   │   ├── Charges & Invoice Balances      (optional accounting)
+│   │   └── Season Budgets
 │   ├── Compliance
-│   └── Governance
-├── Insights
-│   └── Reports & Insights
-│       ├── Overview & Readiness
-│       ├── Performance
-│       ├── Assurance & Exceptions
-│       └── Automation & History
+│   │   ├── Submissions
+│   │   ├── Checks
+│   │   └── Check History
+│   └── Override Requests
+├── Reporting
+│   ├── Operator Checklist
+│   ├── Standings Reconciliation
+│   ├── Trend Snapshots
+│   └── Performance
+│       ├── Operational KPIs, Season Portfolio, Participation
+│       ├── Club Performance, Officiating, Referee Coverage
+│       └── Compliance, Club Compliance Summary, Finance
 └── Administration
-    ├── Action Queue
-    ├── Imports & Integrations
-    ├── Notification Centre
-    ├── Participant delivery recovery
-    ├── Charges and invoice balances          (optional accounting add-on)
-    ├── Memberships, member requests, …       (optional member services add-on)
-    ├── Competition Audit & Recovery
-    │   ├── Role Assignments
-    │   ├── Incidents
-    │   └── Operational Deviations
-    ├── System Health
-    │   ├── Retention and Recovery
-    │   ├── Retention Evidence
-    │   └── Operational Job Health
-    └── Journey instrumentation
+    ├── Configuration
+    │   ├── Competition Templates, Format Templates, Rule Sets
+    │   ├── Club Role Types, Playing Area Capabilities
+    │   ├── Fee Types, Fee Schedules, Document Requirements
+    │   └── Report Schedules
+    ├── Data Exchange
+    │   ├── Import Clubs, Seasons, Players, Teams, Tournament Participants
+    │   ├── Import History, Import Templates
+    │   └── Integration Contracts, Integration Partners, Inbound Deliveries
+    ├── Notifications
+    │   ├── Delivery Recovery
+    │   ├── Delivery History
+    │   └── Notification Outcomes
+    └── System                              (developer mode)
+        ├── All Tasks, Operational Jobs, Standings Recompute Queue
+        ├── Retention Policies, Retention Evidence
+        ├── Competition Role Assignments, Game-Day Incidents, Operational Deviations
+        ├── Member Changes, Duplicate Person Decisions, Member Evidence History
+        └── Portal Audit, Token Rotation Audit, Journey Instrumentation
 ```
 
 Required advanced path contracts:
 
 ```text
-Federation > Competitions > Advanced Competition Tools > Create Competition
-Federation > Competitions > Advanced Competition Tools > Registration Desk
-Federation > Competitions > Advanced Competition Tools > Format Studio
-Federation > Competitions > Advanced Competition Tools > Calendar Planner
-Federation > Competitions > Advanced Competition Tools > Schedule Planner
-Federation > Competitions > Advanced Competition Tools > Schedule Review Queue
-Federation > Administration > Competition Audit & Recovery > Role Assignments
-Federation > Administration > Action Queue
-Federation > Administration > System Health > Operational Job Health
+Federation > Competitions > Planning Tools > Registration Desk
+Federation > Competitions > Planning Tools > Format Studio
+Federation > Competitions > Planning Tools > Calendar Planner
+Federation > Competitions > Planning Tools > Schedule Planner
+Federation > Publishing > Schedules to Review
+Federation > Administration > Configuration > Rule Sets
+Federation > Administration > System > All Tasks
+Federation > Administration > System > Operational Jobs
+Federation > Administration > System > Competition Role Assignments
 ```
 
 ## Canonical path contracts
@@ -157,39 +167,63 @@ Federation > Competitions > Competitions
 Federation > Clubs & People > Clubs
 Federation > Clubs & People > Teams
 Federation > Match Operations > Game Days
+Federation > Reporting > Operational Health
 ```
 
-`ci/check_competition_ui_workflow.py` verifies the top-level order, these
-paths, and that **Competitions** is the only non-advanced entry under
-Competitions in the supported application.
+## Screens without a menu
+
+These actions are kept but have no menu because a form, the hub or a report
+already opens them in context:
+
+| Screen | Opened from |
+|---|---|
+| Create Competition, Generate Competition Schedule | Competition Hub |
+| Competition Overview, Season Competitions | Competition Hub, competition template form |
+| Stages, Groups | Division form |
+| Points, tie-break, eligibility and qualification rules | Rule set form |
+| Licences | Player form |
+| Referee certifications | Referee form |
+| Plan Match-Day Officials | Competition planner, game day |
+| Sanctions | Disciplinary case form |
+| Venue constraint windows | Venue form |
+| Override outcomes | Override request form |
+| Representative Workspace | Club Representatives (same records) |
+| Workflow, finance and notification exceptions, compliance remediation, finance reconciliation, season checklists | Operator Checklist rows |
 
 ## Design rules
 
-- A business journey has one ordinary menu entry. Raw models and duplicate
-  queues are advanced or contextual.
+`ci/check_competition_ui_workflow.py` resolves the menus in install order and
+enforces these rules:
+
+- At most three levels below **Federation**: area > section > item.
+- A menu with child menus has no action; Odoo cannot open it from the menu bar.
+- No empty menu folders, no duplicate names in one dropdown, and no action
+  exposed by more than one menu.
+- An ordinary manager sees at most twelve entries, and **Competitions** is the
+  only ordinary entry under Competitions.
+- The top-level order and the path contracts above.
+
+In addition:
+
 - Hiding a menu never changes its action, ACL, record rule, protected command
   or external identifier.
-- Contextual deep links are the primary recovery path because they keep the
-  active competition, division, game day or team scope.
+- `sports_federation_navigation` is the single map of names, parents, ordering
+  and groups for the addons it depends on. It assigns groups with
+  `(6, 0, ...)` so upgrades converge on the map. Optional addons
+  (`sports_federation_accounting`, `sports_federation_member_services`) place
+  their own menus in the sections defined there or in `sports_federation_base`.
 - The **Advanced Federation Tools** group controls discoverability only. It
   implies Manager, but Manager does not imply it.
-- `sports_federation_navigation` owns cross-addon menu visibility and loads
-  after its domain dependencies. `sports_federation_app` stays dependency-only;
-  domain addons keep owning their actions and records.
-- Compliance, immutable snapshots, audit events, operation jobs, retention
-  evidence and security configuration remain available to advanced users.
-- A new ordinary competition menu needs an explicit product decision and an
-  update to `ci/check_competition_ui_workflow.py`.
+- Audit, recovery and technical records belong under **Administration >
+  System** (developer mode).
 
 ## Change checklist
 
-1. Prefer a Competition Hub action or form smart button over a new ordinary
-   menu.
+1. Prefer a Competition Hub action or form smart button over a new menu.
 2. Keep the active business scope in every contextual action domain and
    context.
 3. Preserve action XML IDs and model permissions when changing discoverability.
-4. Put audit, recovery and raw queues under Advanced Competition Tools or
-   Administration.
+4. Add the menu's final placement to `sports_federation_navigation/views/navigation.xml`.
 5. Update this file and the [competition workflow](competition-workflow.md).
 6. Run `python3 ci/check_competition_ui_workflow.py` and the browser tours.
 

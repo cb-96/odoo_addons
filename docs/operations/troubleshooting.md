@@ -86,7 +86,7 @@ in `frozen` state. Frozen standings are never recomputed automatically.
 
 **Fix A**:
 
-1. Open **Federation > Publishing > Standings** and locate the relevant standings record.
+1. Open **Federation > Competitions > Records > Standings** and locate the relevant standings record.
 2. Verify `state = frozen`.
 3. Click **Unfreeze** (requires Federation Manager group).
 4. Click **Recompute**.
@@ -157,7 +157,7 @@ docker compose exec odoo odoo \
 
 ## 4. Import Wizard Dry-Run Always Fails
 
-**Symptom**: Running a dry-run in **Federation > Administration > Imports & Integrations > Import [Entity]**
+**Symptom**: Running a dry-run in **Federation > Administration > Data Exchange > Import [Entity]**
 raises a duplicate key or unique constraint error on every attempt, even for
 a fresh payload.
 
@@ -166,7 +166,7 @@ or the module-specific staging model) from a previous failed import still
 occupy the unique key slot.
 
 **Fix**:
-1. Open **Federation > Administration > Imports & Integrations > Inbound Deliveries**.
+1. Open **Federation > Administration > Data Exchange > Inbound Deliveries**.
 2. Filter for `state = staged` deliveries from the failing batch.
 3. Archive or delete the stale staged rows.
 
@@ -299,7 +299,7 @@ EOF
 **Cause B**: The player also has an active suspension sanction in
 `sports_federation_discipline`. Suspension overrides the license-active state.
 
-**Fix B**: Check **Federation > Match Operations > Discipline > Sanctions** for an active
+**Fix B**: Check **Federation > Match Operations > Discipline > Suspensions** for an active
 suspension for the player. If the suspension is resolved, run the
 reinstatement action (see the
 [player licence workflow](../workflows/player-license.md)).
@@ -336,7 +336,7 @@ is generated and no error is visible.
 OOM kill, container restart) mid-execution, leaving the state flag uncleared.
 
 **Fix**:
-1. Open **Federation > Insights > Reports & Insights > Automation & History > Report Schedules**.
+1. Open **Federation > Administration > Configuration > Report Schedules**.
 2. Set the stuck schedule back to `draft` or `ready` via the developer mode
    form editor, or use:
 

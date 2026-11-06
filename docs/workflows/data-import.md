@@ -51,7 +51,7 @@ failures with explicit categories.
 **Actor**: Federation administrator
 **Module**: `sports_federation_import_tools`
 
-1. Navigate to **Federation > Administration > Imports & Integrations > Import [Entity]**.
+1. Navigate to **Federation > Administration > Data Exchange > Import [Entity]**.
 2. Open the appropriate wizard form.
 3. Upload the CSV file via the `upload_file` Binary field.
 4. Review the wizard's `mapping_guide` before the first run if you are using a new template.

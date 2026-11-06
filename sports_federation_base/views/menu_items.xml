@@ -46,20 +46,15 @@
               parent="menu_federation_root"
               sequence="70"/>
 
-    <menuitem id="menu_federation_master_data"
-              name="Club Directory"
-              parent="menu_federation_setup"
-              sequence="10"/>
-
     <menuitem id="menu_federation_club"
               name="Clubs"
-              parent="menu_federation_master_data"
+              parent="menu_federation_setup"
               action="federation_club_action"
               sequence="10"/>
 
     <menuitem id="menu_federation_team"
               name="Teams"
-              parent="menu_federation_master_data"
+              parent="menu_federation_setup"
               action="federation_team_action"
               sequence="20"/>
 

@@ -64,10 +64,10 @@
     <field name="search_view_id" ref="identity_candidate_search"/>
     <field name="context">{'search_default_to_review': 1}</field>
   </record>
-  <menuitem id="menu_identity_candidate" name="Identity review queue"
-            parent="sports_federation_base.menu_federation_administration"
+  <menuitem id="menu_identity_candidate" name="Identity Review Queue"
+            parent="menu_membership"
             action="action_identity_candidate"
-            groups="sports_federation_base.group_federation_manager" sequence="85"/>
+            groups="sports_federation_base.group_federation_manager" sequence="50"/>
 
   <record id="person_membership_list_renewal" model="ir.ui.view">
     <field name="name">person.membership.list.renewal</field>
@@ -99,8 +99,8 @@
     <field name="view_mode">list,form</field>
     <field name="domain">[('previous_id', '!=', False), ('state', '=', 'draft')]</field>
   </record>
-  <menuitem id="menu_membership_renewals" name="Renewals to review"
-            parent="sports_federation_base.menu_federation_administration"
+  <menuitem id="menu_membership_renewals" name="Renewals to Review"
+            parent="menu_membership"
             action="action_membership_renewals"
-            groups="sports_federation_base.group_federation_manager" sequence="86"/>
+            groups="sports_federation_base.group_federation_manager" sequence="30"/>
 </odoo>

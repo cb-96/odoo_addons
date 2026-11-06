@@ -9,7 +9,7 @@ Domain addons remain the implementation units so model names, tables, XML IDs, p
 Ordinary competition operators use:
 
 ```text
-Federation > Competitions > Competition Hub
+Federation > Competitions > Competitions
 ```
 
 Raw competition, specialist, publishing, assurance, reporting, audit, recovery, and administration menus are opt-in through `sports_federation_base.group_federation_advanced_operator` or an owning specialist group. Contextual actions remain available regardless of menu discoverability.

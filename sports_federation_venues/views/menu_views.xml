@@ -7,15 +7,9 @@
               action="federation_venue_action"
               sequence="10"/>
 
-    <menuitem id="menu_federation_venue_blackouts"
-              name="Constraint Windows"
-              parent="menu_federation_venues"
-              action="action_federation_venue_blackout"
-              sequence="10"/>
-
     <menuitem id="menu_federation_playing_area_capabilities"
               name="Playing Area Capabilities"
-              parent="menu_federation_venues"
+              parent="sports_federation_base.menu_federation_administration"
               action="action_federation_playing_area_capability"
               sequence="20"/>
 

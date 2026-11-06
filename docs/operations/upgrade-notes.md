@@ -36,6 +36,46 @@ passed unless they ran.
 
 ## Entries
 
+### Backend menu clean-up
+
+Affected modules (menu data only): `sports_federation_navigation` 19.0.1.1.1 → 19.0.1.2.0;
+`sports_federation_accounting` 19.0.1.1.1, `sports_federation_base` 19.0.1.6.1,
+`sports_federation_competition_core` 19.0.1.8.1, `sports_federation_discipline` 19.0.1.4.1,
+`sports_federation_governance` 19.0.1.1.1, `sports_federation_matchday` 19.0.2.5.1,
+`sports_federation_member_services` 19.0.1.3.1, `sports_federation_officiating` 19.0.2.1.1,
+`sports_federation_people` 19.0.1.2.2, `sports_federation_portal` 19.0.7.14.3,
+`sports_federation_registration` 19.0.1.4.1, `sports_federation_reporting` 19.0.1.5.1,
+`sports_federation_rules` 19.0.2.2.1, `sports_federation_scheduling` 19.0.3.10.1,
+`sports_federation_setup_flow` 19.0.4.11.1, `sports_federation_standings` 19.0.2.2.2,
+`sports_federation_tournament` 19.0.1.6.1, `sports_federation_venues` 19.0.1.1.1
+(patch bumps).
+
+**Data changes**: no schema change and no migration script. Duplicate,
+empty and contextual-only `ir.ui.menu` records are no longer loaded, so the
+module update deletes them; their actions, ACLs and XML IDs are unchanged.
+`sports_federation_portal/views/website_menus.xml` and
+`sports_federation_setup_flow/views/menu.xml` were removed from the manifests
+(the setup-flow file duplicated `menu_competition_setup_home`).
+`sports_federation_navigation` now depends on duty coverage, finance bridge,
+compliance and governance, which the application already installs, and
+rewrites menu groups with `(6, 0, ...)`.
+
+**Behaviour to verify**: as a Federation Manager without Advanced Federation
+Tools, the menu shows the eleven entries listed in
+[backend navigation](../user-guide/backend-navigation.md). As an advanced
+operator, the sections match the advanced map; **Administration > System**
+appears only in developer mode. Bookmarked URLs of removed menus still open
+because the actions are unchanged.
+
+**Dry-run evidence**: `python3 ci/check_competition_ui_workflow.py` passes
+(install-order menu resolution, depth, openability, duplicate and budget
+rules). The CI script suite gives the same results as before the change.
+The Odoo upgrade and `sports_federation_navigation` tests were not run in
+this change.
+
+**Rollback**: code-only rollback followed by a module update restores the
+previous menus; no data needs reversing.
+
 ### Practice competition readiness and planner routing
 
 Affected modules: `sports_federation_accounting`, `sports_federation_app`,

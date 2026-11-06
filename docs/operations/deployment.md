@@ -167,7 +167,7 @@ After the module install completes, perform these steps as the admin user:
    Settings > Technical > Email > Outgoing Mail Servers → create and test.
 
 3. **Create the first season**
-   **Federation > Competitions > Seasons > New** (advanced menu).
+   **Federation > Competitions > Records > Seasons > New** (advanced menu).
 
 4. **Create security groups for staff**
    Settings > Users > Users > New > assign group

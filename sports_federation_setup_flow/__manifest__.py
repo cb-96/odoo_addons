@@ -1,6 +1,6 @@
 {
     "name": "Competition Setup Flow",
-    "version": "19.0.4.11.0",
+    "version": "19.0.4.11.1",
     "category": "Sports",
     "summary": "Continuous and resumable competition setup",
     "author": "Sports Federation",
@@ -26,7 +26,6 @@
         "views/gameday_setup_wizard_views.xml",
         "views/format_setup_wizard_views.xml",
         "views/division_setup_wizard_views.xml",
-        "views/menu.xml",
         "views/setup_consolidation_views.xml",
         "views/setup_journey_views.xml",
         "views/usability_views.xml",

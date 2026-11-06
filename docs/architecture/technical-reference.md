@@ -284,8 +284,8 @@ version. See the [data import workflow](../workflows/data-import.md).
 - `federation.operation.job` is the shared reliability envelope for retryable
   operational work: source ownership, attempts, retry timing, correlation ID,
   stale-worker recovery, terminal operator action and idempotent manual retry.
-  Domain execution stays in the owning addon. **Administration > System Health
-  > Operational Job Health** groups jobs by state and source.
+  Domain execution stays in the owning addon. **Administration > System >
+  Operational Jobs** (developer mode) groups jobs by state and source.
 - Integration API calls, scheduled reports and notification flows propagate
   correlation IDs (`federation_correlation_id`) for cross-module tracing.
 - Use named loggers (`logging.getLogger(__name__)`): INFO for milestones,

@@ -48,7 +48,7 @@ the immediate issue is resolved.
 **Actor**: Federation official or authorised user
 **Module**: `sports_federation_governance`
 
-1. Navigate to **Federation > Finance & Assurance > Governance > Override Requests**.
+1. Navigate to **Federation > Finance & Assurance > Override Requests**.
 2. Create a new request with:
    - title
    - request type

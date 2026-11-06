@@ -79,7 +79,7 @@ standings are not changed.
 When results are corrected or the automatic trigger did not fire (e.g. an edge
 case during bulk import):
 
-1. Navigate to **Federation > Publishing > Standings** and open the relevant standings record.
+1. Navigate to **Federation > Competitions > Records > Standings** and open the relevant standings record.
 2. Click **Recompute** (only available in `draft` or `computed` states, never on
    `frozen` or `published`).
 3. The standings engine rebuilds all lines from approved results.

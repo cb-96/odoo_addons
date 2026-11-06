@@ -73,7 +73,7 @@ per level per issuance date.
 **Actor**: Federation referee coordinator
 **Module**: `sports_federation_officiating`
 
-1. Open the match record in **Federation > Match Operations > Matches**.
+1. Open the match record in **Federation > Competitions > Records > Matches**.
 2. In the **Referees** tab (or from the Referees list), click **Add a line**.
 3. Select the referee and assign a **role**:
    - `head` — Head Referee
@@ -255,7 +255,7 @@ If the referee does not confirm or decline before the `confirmation_deadline`:
 
 1. `is_confirmation_overdue` becomes `True` on the assignment.
 2. The assignment is surfaced in the coordinator's overdue-assignment dashboard
-   filter (**Federation > Match Operations > Officiating > Match Assignments**, *Overdue* filter).
+   filter (**Federation > Match Operations > Officiating > Referee Assignments**, *Overdue* filter).
 3. If `sports_federation_notifications` is installed, the scheduled notification
    scan sends an overdue alert to the coordinator.
 4. The coordinator:

@@ -7,34 +7,6 @@
               action="federation_competition_action"
               sequence="30"/>
 
-    <menuitem id="menu_federation_competition_edition"
-              name="Season Competitions"
-              parent="sports_federation_base.menu_federation_competitions"
-              action="federation_competition_edition_action"
-              sequence="15"/>
-
-    <menuitem id="menu_federation_tournament"
-              name="Structure &amp; Fixtures"
-              parent="sports_federation_base.menu_federation_planning"
-              sequence="10"/>
-
-    <menuitem id="menu_federation_tournament_config"
-              name="Tournament Structure"
-              parent="menu_federation_tournament"
-              sequence="40"/>
-
-    <menuitem id="menu_federation_tournament_stages"
-              name="Stages"
-              parent="menu_federation_tournament_config"
-              action="federation_tournament_stage_action"
-              sequence="10"/>
-
-    <menuitem id="menu_federation_tournament_groups"
-              name="Groups"
-              parent="menu_federation_tournament_config"
-              action="federation_tournament_group_action"
-              sequence="20"/>
-
     <menuitem id="menu_federation_matches"
               name="Matches"
               parent="sports_federation_base.menu_federation_match_day"
@@ -43,7 +15,7 @@
 
     <menuitem id="menu_federation_tournament_list"
               name="Divisions &amp; Tournaments"
-              parent="menu_federation_tournament"
+              parent="sports_federation_base.menu_federation_planning"
               action="federation_tournament_action"
               sequence="10"/>
 

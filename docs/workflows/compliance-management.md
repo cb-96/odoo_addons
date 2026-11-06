@@ -34,7 +34,7 @@ and reviewed, and how compliance is monitored.
 **Actor**: Federation administrator
 **Module**: `sports_federation_compliance`
 
-1. Navigate to **Federation > Finance & Assurance > Compliance > Requirements**.
+1. Navigate to **Federation > Administration > Configuration > Document Requirements**.
 2. Create requirements specifying:
    - Name and unique code
    - Target model: `club`, `player`, `referee`, `venue`, or `club_representative`

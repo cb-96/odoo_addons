@@ -45,7 +45,7 @@
     <field name="search_view_id" ref="journey_event_search"/>
   </record>
   <menuitem id="menu_journey_event" name="Journey instrumentation"
-            parent="sports_federation_base.menu_federation_administration"
+            parent="sports_federation_base.menu_federation_system_health"
             action="action_journey_event"
             groups="sports_federation_base.group_federation_manager" sequence="95"/>
 </odoo>

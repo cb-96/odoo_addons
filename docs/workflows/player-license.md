@@ -57,8 +57,7 @@ active → cancelled
 **Actor**: Federation administrator or club representative (portal)
 **Module**: `sports_federation_people`
 
-1. Navigate to **Federation > Clubs & People > Players & Licensing > Configuration > Licenses** and click **New**, or
-   open the player record and click **Create License** from the **Licenses** tab.
+1. Open the player record and click **Create License** from the **Licenses** tab.
 2. Fill in:
    - **License Number** — unique identifier (e.g. `LIC-2026-00042`)
    - **Player** — select the player

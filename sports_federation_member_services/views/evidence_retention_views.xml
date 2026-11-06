@@ -67,10 +67,10 @@
     <field name="search_view_id" ref="member_evidence_revision_search"/>
   </record>
 
-  <menuitem id="menu_member_evidence_revision" name="Member evidence history"
+  <menuitem id="menu_member_evidence_revision" name="Member Evidence History"
             action="action_member_evidence_revision"
-            parent="sports_federation_base.menu_federation_administration"
-            groups="sports_federation_base.group_federation_manager"/>
+            parent="sports_federation_base.menu_federation_system_health"
+            groups="sports_federation_base.group_federation_manager" sequence="72"/>
 
   <record id="member_evidence_governance_wizard_form" model="ir.ui.view">
     <field name="name">federation.member.evidence.governance.wizard.form</field>
