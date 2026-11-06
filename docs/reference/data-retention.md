@@ -141,3 +141,23 @@ Every automated retention run appends a `federation.retention.evidence` record w
 ## Recovery visibility
 
 Federation managers use **Federation > Administration > System Health > Retention and Recovery** to verify policy freshness and outcomes. Failure evidence is committed independently before the owning cron re-raises, so transaction rollback cannot erase the recovery record.
+
+## Coordinated notification mail retention
+
+Notification mail has an explicit `federation_notification_owned` marker. Only
+mail created by the notification producers or linked during upgrade is marked.
+Unlinked historical and unrelated mail is not inferred to belong to this policy.
+
+Expired sent logs are removed together with their owned mail only when no other
+log or communication delivery references the mail. Pending/failed mail and its
+log remain protected for retry or investigation. A live communication delivery
+protects its log even when sent. Once closed inbox retention removes the last
+finished delivery, its unshared terminal log and owned mail can be removed too.
+
+The daily log-retention cron also retries orphan cleanup in batches of 200 for
+owned sent/cancelled mail older than 90 days, recording execution evidence under
+`notification_mail_content`. This handles previously locked records without
+sweeping unrelated mail. Mail locks and a final reference check prevent cleanup
+from deleting mail still referenced by a delivery or log. Failed/outgoing mail
+is never selected by the orphan sweep. Cancelled legacy mail remains protected
+while its review-needed log exists.

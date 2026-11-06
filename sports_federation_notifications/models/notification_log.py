@@ -3,6 +3,7 @@ import logging
 from datetime import timedelta
 
 from odoo import api, fields, models
+from odoo.exceptions import AccessError, MissingError
 from odoo.addons.sports_federation_base.models.failure_feedback import (
     FAILURE_CATEGORY_SELECTION,
 )
@@ -69,6 +70,7 @@ class FederationNotificationLog(models.Model):
     )
 
     @api.depends("target_model", "target_res_id")
+    @api.depends_context("uid")
     def _compute_target_display_name(self):
         """Resolve the display name of the target record, guarding for optional models."""
         for rec in self:
@@ -80,8 +82,12 @@ class FederationNotificationLog(models.Model):
                 rec.target_display_name = rec.target_model
                 continue
             try:
-                record = model.sudo().browse(rec.target_res_id).exists()
+                record = model.browse(rec.target_res_id).exists()
+                if record:
+                    record.check_access("read")
                 rec.target_display_name = record.display_name if record else False
+            except (AccessError, MissingError):
+                rec.target_display_name = False
             except Exception:  # integration boundary: optional target model
                 _logger.exception(
                     "Could not resolve notification target %s,%s",
@@ -122,24 +128,19 @@ class FederationNotificationLog(models.Model):
 
     @api.model
     def _purge_retained_logs(self, reference_dt=None):
-        """Delete notification logs that exceeded the policy for their state."""
-        reference_dt = fields.Datetime.to_datetime(
-            reference_dt or fields.Datetime.now()
-        )
-        total_deleted = 0
+        now = fields.Datetime.to_datetime(reference_dt or fields.Datetime.now())
+        deleted = 0
         for state, days in self.RETENTION_DAYS_BY_STATE.items():
-            cutoff = fields.Datetime.to_string(reference_dt - timedelta(days=days))
-            logs = self.sudo().search(
-                [
-                    ("state", "=", state),
-                    *([("mail_id", "=", False)] if state == "pending" else []),
-                    ("create_date", "!=", False),
-                    ("create_date", "<", cutoff),
-                ]
-            )
-            total_deleted += len(logs)
+            logs = self.sudo().search([
+                ("state", "=", state), ("create_date", "!=", False),
+                ("create_date", "<", fields.Datetime.to_string(now - timedelta(days=days))),
+                *([("mail_id", "=", False)] if state == "pending" else []),
+            ])._retention_deletable()
+            mails = logs.mapped("mail_id")
+            deleted += len(logs)
             logs.unlink()
-        return total_deleted
+            mails._purge_notification_orphans()
+        return deleted
 
     @api.model
     def _retention_candidate_count(self, reference_dt=None):

@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Notifications",
-    "version": "19.0.1.5.1",
+    "version": "19.0.1.5.2",
     "category": "Sports",
     "summary": "Centralized federation notification helpers, templates, and scheduled reminders",
     "description": "Notification templates, reminder jobs, and outbound communication logs.",
@@ -33,6 +33,7 @@
         "views/communication_lifecycle_views.xml",
         "data/lifecycle_cron.xml",
         "data/communication_retention_data.xml",
+        "data/notification_mail_retention.xml",
     ],
     "demo": [],
     "installable": True,

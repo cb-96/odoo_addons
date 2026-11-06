@@ -14,3 +14,5 @@ from . import communication_lifecycle
 from . import communication_retention
 
 from . import notification_outbox
+
+from . import notification_operations

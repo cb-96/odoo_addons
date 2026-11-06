@@ -751,3 +751,32 @@ is unchanged; see `docs/operations/deployment.md`.
 Affected modules: no database migration.
 
 **DB migrations**: None.
+
+## Notification authorization, bounded inbox and retention update
+
+Upgrade `sports_federation_notifications` to `19.0.1.5.2` and
+`sports_federation_navigation` to `19.0.1.1.1`, then restart Odoo. The notification
+upgrade adds the mail-ownership marker and recipient/cursor index. Its migration
+marks only mail already linked to federation logs or deliveries; it does not
+send, recreate or delete mail. The navigation update leaves one publication-menu
+assignment for federation managers and schedule approvers.
+
+Validate the installed notification-operation regressions, existing trigger
+queue-success tests and navigation visibility tests before deployment. Check
+recipient-scoped legacy log access, revoked-source cursor pages, a routing/log
+creation failure after a business decision, and shared/failed mail retention.
+The isolated `ci.test_notification_operations` suite does not execute record
+rules, PostgreSQL locks, migration SQL or browser rendering. Release qualification
+still requires the installed ORM and browser suites.
+
+Dry-run evidence for this update is pending: the isolated Python regressions
+passed, but no Odoo upgrade or PostgreSQL migration was executed in the patch
+creation environment. Before deployment, rehearse on a database/filestore copy
+and verify the marker backfill, index, recipient rule and menu assignments.
+
+Rollback: stop the notification and retention schedulers before reverting code.
+Restore the approved pre-upgrade database and filestore if any retention cleanup
+has run, since deleted mail content cannot be recovered by reverting Python.
+The marker backfill and index creation alone do not delete or replay messages.
+Do not restore the former permissive log rule as a routine security rollback;
+keep the recipient restriction or disable legacy log access until corrected.

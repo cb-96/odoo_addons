@@ -1,7 +1,6 @@
 from odoo import _, http
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
-from odoo.addons.portal.controllers.portal import pager as portal_pager
 from ..models.actionable_communications import KIND_SELECTION
 from ..communication_policy import delivery_label
 
@@ -20,26 +19,20 @@ class CommunicationInbox(http.Controller):
 
     @http.route(['/my/notifications', '/my/notifications/page/<int:page>'], type='http', auth='user', website=True, methods=['GET'])
     def inbox(self, page=1, status='all', **kw):
-        model = request.env['federation.communication.receipt']
-        domain = [('recipient_id', '=', request.env.user.id), ('superseded_on', '=', False)]
-        if status == 'unacknowledged':
-            domain.append(('acknowledged_on', '=', False))
-        elif status == 'acknowledged':
-            domain.append(('acknowledged_on', '!=', False))
-        else:
-            status = 'all'
-        visible = []
-        for receipt in model.search(domain):
-            try:
-                info = receipt._presentation(request.env.user)
-                visible.append({'receipt': receipt, 'info': info,
-                                'deliveries': [(delivery, _(delivery_label(delivery.state))) for delivery in receipt.delivery_ids]})
-            except AccessError:
-                continue
-        pager = portal_pager(url='/my/notifications', url_args={'status': status}, total=len(visible), page=page, step=20)
+        if page != 1:
+            return request.redirect('/my/notifications')
+        try:
+            before = max(0, int(kw.get('before') or 0))
+        except (TypeError, ValueError):
+            before = 0
+        status = status if status in ('acknowledged', 'unacknowledged') else 'all'
+        result = request.env['federation.notification.service']._inbox_page(
+            request.env.user, status=status, before=before,
+        )
         return request.render('sports_federation_notifications.communication_inbox', {
-            'items': visible[pager['offset']:pager['offset'] + 20], 'pager': pager,
-            'status': status, 'page_name': 'notifications'})
+            'items': result['items'], 'next_before': result['next_before'],
+            'status': status, 'page_name': 'notifications',
+        })
 
     @http.route('/my/notifications/<int:receipt_id>', type='http', auth='user', website=True, methods=['GET'])
     def detail(self, receipt_id, **kw):

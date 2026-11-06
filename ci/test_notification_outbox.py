@@ -22,6 +22,8 @@ def feedback(error):
 def method(filename, name):
     scope = {
         "_": lambda text: text, "ValidationError": ValueError,
+        "DeadlockDetected": type("DeadlockDetected", (Exception,), {}),
+        "SerializationFailure": type("SerializationFailure", (Exception,), {}),
         "fields": SimpleNamespace(Datetime=SimpleNamespace(now=lambda: NOW)),
         "timedelta": timedelta, "MAX_AUTOMATIC_ATTEMPTS": 3,
         "build_failure_feedback": feedback, "_logger": logging.getLogger("outbox_test"),

@@ -7,6 +7,8 @@ from .actionable_communications import _lock
 class CommunicationMail(models.Model):
     _inherit = 'mail.mail'
 
+    federation_notification_owned = fields.Boolean(default=False, copy=False, index=True)
+
     def send(self, *args, **kwargs):
         # Last responsible moment: queue creation does not freeze permissions or preferences.
         deliveries = self.env['federation.communication.delivery'].sudo().search([('mail_id', 'in', self.ids)])

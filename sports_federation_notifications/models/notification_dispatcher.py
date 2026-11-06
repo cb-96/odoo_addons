@@ -1,3 +1,4 @@
+from .notification_boundary import notification_effect
 """
 Notification Dispatcher — event-driven notification routing.
 
@@ -125,6 +126,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
 
         return partner, email_to
 
+    @notification_effect()
     def send_season_registration_confirmed(self, registration):
         """Handle send season registration confirmed."""
         partner, email_to = self._get_season_registration_recipient(registration)
@@ -136,6 +138,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
             log_name=f"Season registration confirmed: {registration.name}",
         )
 
+    @notification_effect()
     def send_season_registration_rejected(self, registration):
         """Handle send season registration rejected."""
         partner, email_to = self._get_season_registration_recipient(registration)
@@ -151,6 +154,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
     # Tournament events
     # ------------------------------------------------------------------
 
+    @notification_effect()
     def send_tournament_published(self, tournament):
         """Handle send tournament published."""
         emails = tournament.participant_ids.mapped(
@@ -167,6 +171,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
     # Participant events
     # ------------------------------------------------------------------
 
+    @notification_effect()
     def send_participant_confirmed(self, participant):
         """Handle send participant confirmed."""
         emails = [participant.team_id.email, participant.club_id.email]
@@ -181,6 +186,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
     # Match result events
     # ------------------------------------------------------------------
 
+    @notification_effect()
     def send_result_submitted(self, match):
         """Handle send result submitted."""
         return self._create_group_activities(
@@ -190,6 +196,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
             note="A match result has been submitted and awaits verification.",
         )
 
+    @notification_effect()
     def send_result_approved(self, match):
         """Notify recipients after the owning workflow authorized approval."""
         notification_match = match.sudo()
@@ -206,6 +213,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
             emails,
         )
 
+    @notification_effect()
     def send_result_contested(self, match):
         """Handle send result contested."""
         manager_group = self.env.ref(
@@ -231,6 +239,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
     # Officiating events
     # ------------------------------------------------------------------
 
+    @notification_effect()
     def send_referee_confirmation_overdue(self, match_officiating):
         """Handle send referee confirmation overdue."""
         return self._create_group_activities(
@@ -241,6 +250,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
             or "Referee confirmation deadline has been missed.",
         )
 
+    @notification_effect()
     def send_referee_shortage_alert(self, match):
         """Handle send referee shortage alert."""
         return self._create_group_activities(
@@ -255,6 +265,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
     # Standings events
     # ------------------------------------------------------------------
 
+    @notification_effect()
     def send_standing_frozen(self, standing):
         """Handle send standing frozen."""
         emails = standing.tournament_id.participant_ids.mapped("club_id.email")
@@ -269,6 +280,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
     # Finance events
     # ------------------------------------------------------------------
 
+    @notification_effect()
     def send_finance_event_confirmed(self, finance_event):
         """Handle send finance event confirmed."""
         emails = [
@@ -288,6 +300,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
     # Compliance events
     # ------------------------------------------------------------------
 
+    @notification_effect()
     def send_compliance_submission_received(self, submission):
         """Handle send compliance submission received."""
         return self._create_group_activities(
@@ -300,6 +313,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
             ),
         )
 
+    @notification_effect()
     def send_compliance_remediation_requested(self, submission):
         """Handle send compliance remediation requested."""
         return self._create_group_activities(
@@ -317,6 +331,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
     # Officiating events
     # ------------------------------------------------------------------
 
+    @notification_effect()
     def send_referee_assigned(self, match_officiating):
         """Handle send referee assigned."""
         return self._send_email_or_log(
@@ -330,6 +345,7 @@ class FederationNotificationDispatcher(models.AbstractModel):
     # Discipline events
     # ------------------------------------------------------------------
 
+    @notification_effect()
     def send_suspension_issued(self, suspension):
         """Notify the player and club contact when a suspension is issued."""
         player = suspension.player_id

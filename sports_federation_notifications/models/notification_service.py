@@ -1,4 +1,6 @@
+from .notification_boundary import notification_effect
 import logging
+from psycopg2.errors import DeadlockDetected, SerializationFailure
 
 from odoo import api, fields, models
 from odoo.addons.sports_federation_base.correlation import ensure_correlation_id
@@ -20,6 +22,7 @@ class FederationNotificationService(models.AbstractModel):
     _name = "federation.notification.service"
     _description = "Federation Notification Service"
 
+    @notification_effect()
     def send_email_template(
         self, record, template_xmlid, partner=None, email_to=None, log_name=None
     ):
@@ -46,7 +49,7 @@ class FederationNotificationService(models.AbstractModel):
                 template = self.env.ref(log.template_xmlid, raise_if_not_found=False)
                 if not template:
                     raise ValueError("Template '%s' is not available in this database." % log.template_xmlid)
-                values = {"auto_delete": False}
+                values = {"auto_delete": False, "federation_notification_owned": True}
                 if partner:
                     values.update(recipient_ids=[(6, 0, [partner.id])], email_to=False)
                 elif email_to:
@@ -58,10 +61,13 @@ class FederationNotificationService(models.AbstractModel):
                 if not mail:
                     raise ValueError("Template did not create an outbound mail record.")
                 log._queued(mail)
+        except (DeadlockDetected, SerializationFailure):
+            raise
         except Exception as error:
             log._queue_failed(error)
         return log
 
+    @notification_effect()
     def queue_direct_email(self, record, subject, body_html, email_to, log_name=None):
         """Direct-content fallback uses the same mail queue and delivery evidence."""
         log = self.env["federation.notification.log"].sudo().create({
@@ -75,13 +81,16 @@ class FederationNotificationService(models.AbstractModel):
                     "subject": subject, "body_html": body_html, "email_to": email_to,
                     "email_from": (self.env.company.partner_id.email_formatted
                                    or self.env.user.email_formatted or False),
-                    "auto_delete": False,
+                    "auto_delete": False, "federation_notification_owned": True,
                 })
                 log._queued(mail)
+        except (DeadlockDetected, SerializationFailure):
+            raise
         except Exception as error:
             log._queue_failed(error)
         return log
 
+    @notification_effect()
     def create_activity(
         self,
         record,
@@ -137,6 +146,8 @@ class FederationNotificationService(models.AbstractModel):
                         "operator_message": False,
                     }
                 )
+        except (DeadlockDetected, SerializationFailure):
+            raise
         except Exception as e:
             failure_category, operator_message = build_failure_feedback(error=e)
             _logger.exception(

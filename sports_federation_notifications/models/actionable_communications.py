@@ -30,6 +30,10 @@ class CommunicationPreference(models.Model):
 
     @api.model
     def _mode_for(self, user, kind):
+        cached = self.env.context.get("notification_preference_modes")
+        if cached is not None and self.env.su:
+            return cached.get((user.id, kind),
+                              "digest" if kind == "due_soon" else "inbox" if kind == "delivery_failure" else "immediate")
         preference = self.sudo().search([('user_id', '=', user.id), ('kind', '=', kind)], limit=1)
         return preference.mode or ('digest' if kind == 'due_soon' else 'inbox' if kind == 'delivery_failure' else 'immediate')
 
@@ -183,7 +187,7 @@ class CommunicationDelivery(models.Model):
             mail = self.env['mail.mail'].sudo().create({
                 'subject': self.name, 'body_html': body, 'email_to': user.partner_id.email,
                 'email_from': self.env.company.partner_id.email_formatted or user.partner_id.email_formatted,
-                'auto_delete': False,
+                'auto_delete': False, 'federation_notification_owned': True,
             })
             self.write({'mail_id': mail.id})
         if not self.log_id:

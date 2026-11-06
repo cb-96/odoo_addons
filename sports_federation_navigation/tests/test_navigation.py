@@ -36,7 +36,7 @@ class TestFederationNavigation(TransactionCase):
         menu = self.env.ref("sports_federation_base.menu_federation_publication")
         expected_groups = {
             self.env.ref(
-                "sports_federation_base.group_federation_advanced_operator"
+                "sports_federation_base.group_federation_manager"
             ).id,
             self.env.ref(
                 "sports_federation_schedule_approval.group_schedule_approver"

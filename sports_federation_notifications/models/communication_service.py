@@ -1,3 +1,4 @@
+from .notification_boundary import notification_effect
 from datetime import timedelta
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError
@@ -126,6 +127,7 @@ class ActionableCommunicationService(models.AbstractModel):
                 'next_action': _('Recover delivery'), 'owner': _('Federation manager'),
                 'url': '/odoo/federation.communication.delivery/%s' % source.id, 'task_state': source.state}
 
+    @notification_effect(fallback_model="federation.communication.receipt")
     def _publish_action(self, source, kind, event_key, routes, urgent=False, occurred_on=None):
         source.ensure_one()
         receipts = self.env['federation.communication.receipt'].sudo()
@@ -159,57 +161,79 @@ class ActionableCommunicationService(models.AbstractModel):
         now = fields.Datetime.now()
         users = self.env['res.users'].sudo().search([('active', '=', True)])
         tasks = self.env['federation.operation.task'].sudo()
+        managers = users.filtered(lambda user: user.has_group('sports_federation_base.group_federation_manager'))
+        manager_refresh_ok = True
+        if managers:
+            refresh = self._run_notification_effect(
+                lambda: tasks.sync_for_user(user=managers[:1]),
+                name='Manager task refresh',
+            )
+            manager_refresh_ok = refresh._name != 'federation.notification.log'
+        preferences = self.env['federation.communication.preference'].sudo().search([
+            ('user_id', 'in', users.ids),
+        ])
+        modes = {(row.user_id.id, row.kind): row.mode for row in preferences}
+        service = self.with_context(notification_preference_modes=modes)
         for user in users:
-            # Refresh only accounts with a current club/team or manager responsibility.
-            club = bool(tasks._portal_club_ids(user))
-            manager = user.has_group('sports_federation_base.group_federation_manager')
-            if club or manager:
+            if user in managers and not manager_refresh_ok:
+                continue
+            service._run_notification_effect(
+                lambda user=user: service._digest_for_user(user, now, tasks),
+                name='Participant digest',
+            )
+        return True
+
+    def _digest_for_user(self, user, now, tasks):
+        # Refresh only accounts with a current club/team or manager responsibility.
+        club = bool(tasks._portal_club_ids(user))
+        manager = user.has_group('sports_federation_base.group_federation_manager')
+        if club or manager:
+            if not manager:
                 tasks.sync_for_user(user=user)
-                domain = [('state', '!=', 'done'), ('deadline', '>', now),
-                          ('deadline', '<=', now + timedelta(days=7))]
-                scope = tasks._portal_get_domain(user=user)
-                if manager and club:
-                    from odoo.osv import expression
-                    domain = expression.AND([domain, expression.OR([scope, [('audience', '=', 'manager')]])])
-                else:
-                    domain += [('audience', '=', 'manager')] if manager else scope
-                for task in tasks.search(domain):
-                    try:
-                        info = self._communication_presentation(task._name, task.id, 'due_soon', user)
-                    except AccessError:
-                        continue
-                    if not info.get('actionable') or (task.assigned_user_id and task.assigned_user_id != user):
-                        continue
-                    day = fields.Date.context_today(user.with_context(tz=user.tz or 'UTC'))
-                    self._publish_action(task, 'due_soon', 'due:%s:%s:%s' % (task.id, day, task.deadline), [(user.id, 'manager' if task.audience == 'manager' else 'club')])
-            local = fields.Datetime.context_timestamp(user.with_context(tz=user.tz or 'UTC'), now)
-            if local.hour < 8:
-                continue
-            key = 'digest:%s:%s' % (user.id, local.date())
-            _lock(self.env, key)
-            deliveries = self.env['federation.communication.delivery'].sudo()
-            if deliveries.search_count([('delivery_key', '=', key)]):
-                continue
-            candidates = self.env['federation.communication.receipt'].sudo().search([
-                ('recipient_id', '=', user.id), ('delivery_ids', '=', False), ('acknowledged_on', '=', False), ('superseded_on', '=', False)])
-            selected = candidates.browse()
-            seen_sources = set()
-            for receipt in candidates:
+            domain = [('state', '!=', 'done'), ('deadline', '>', now),
+                      ('deadline', '<=', now + timedelta(days=7))]
+            scope = tasks._portal_get_domain(user=user)
+            if manager and club:
+                from odoo.osv import expression
+                domain = expression.AND([domain, expression.OR([scope, [('audience', '=', 'manager')]])])
+            else:
+                domain += [('audience', '=', 'manager')] if manager else scope
+            for task in tasks.search(domain):
                 try:
-                    info = receipt._presentation(user)
-                    if self.env['federation.communication.preference']._mode_for(user, receipt.kind) == 'digest' and not info.get('complete', False):
-                        source_key = (receipt.kind, receipt.target_model, receipt.target_res_id)
-                        if source_key in seen_sources:
-                            receipt.write({'superseded_on': now})
-                            continue
-                        seen_sources.add(source_key)
-                        selected |= receipt
+                    info = self._communication_presentation(task._name, task.id, 'due_soon', user)
                 except AccessError:
                     continue
-            if selected:
-                deliveries.create({'name': _('Daily federation work digest'), 'delivery_key': key,
-                                   'recipient_id': user.id, 'receipt_ids': [(6, 0, selected.ids)]})
-        return True
+                if not info.get('actionable') or (task.assigned_user_id and task.assigned_user_id != user):
+                    continue
+                day = fields.Date.context_today(user.with_context(tz=user.tz or 'UTC'))
+                self._publish_action(task, 'due_soon', 'due:%s:%s:%s' % (task.id, day, task.deadline), [(user.id, 'manager' if task.audience == 'manager' else 'club')])
+        local = fields.Datetime.context_timestamp(user.with_context(tz=user.tz or 'UTC'), now)
+        if local.hour < 8:
+            return
+        key = 'digest:%s:%s' % (user.id, local.date())
+        _lock(self.env, key)
+        deliveries = self.env['federation.communication.delivery'].sudo()
+        if deliveries.search_count([('delivery_key', '=', key)]):
+            return
+        candidates = self.env['federation.communication.receipt'].sudo().search([
+            ('recipient_id', '=', user.id), ('delivery_ids', '=', False), ('acknowledged_on', '=', False), ('superseded_on', '=', False)])
+        selected = candidates.browse()
+        seen_sources = set()
+        for receipt in candidates:
+            try:
+                info = receipt._presentation(user)
+                if self.env['federation.communication.preference']._mode_for(user, receipt.kind) == 'digest' and not info.get('complete', False):
+                    source_key = (receipt.kind, receipt.target_model, receipt.target_res_id)
+                    if source_key in seen_sources:
+                        receipt.write({'superseded_on': now})
+                        continue
+                    seen_sources.add(source_key)
+                    selected |= receipt
+            except AccessError:
+                continue
+        if selected:
+            deliveries.create({'name': _('Daily federation work digest'), 'delivery_key': key,
+                               'recipient_id': user.id, 'receipt_ids': [(6, 0, selected.ids)]})
 
     def send_referee_assigned(self, match_officiating):
         user = match_officiating.referee_id.user_id

@@ -47,3 +47,28 @@ Pending logs linked to queued mail are excluded from age-based log purging.
 Already sent/failed historical logs are not replayed during upgrade. Keep the
 standard mail queue scheduler enabled; the reconciliation cron does not send
 mail itself. Test this upgrade in an installed Odoo database before deployment.
+
+## Complete producer isolation
+
+The notification effect boundary covers recipient routing, log/receipt creation,
+rendering and queueing. Business `write()` calls remain outside that boundary;
+their authorization, validation and transaction failures still propagate.
+Notification trigger routing runs after the authoritative write in its own
+savepoint. Failure rolls back notification changes, records a manager-visible
+failure in a separate savepoint when possible, and never claims successful
+queueing. If failure evidence itself cannot be written, the server log records
+that failure without undoing the decision. Serialization and deadlock failures
+propagate so Odoo can retry the whole transaction safely.
+
+Non-manager notification logs are recipient-partner scoped. Email-only legacy
+logs without an explicit recipient partner are manager-only, not broadly readable
+by federation users. Target display names use caller access and a user-dependent
+compute cache, never elevated target lookup. Inbox receipts still revalidate
+source access at presentation and mail transport time.
+
+Inbox pages use an ID cursor, not a total-count/offset scan: at most 200 receipt
+candidates and 20 authorized items are processed per page. A revoked-access window
+can return an empty page with an older-page continuation. Legacy numbered-page
+links return to the newest page. Digest processing refreshes the shared manager
+queue once, prefetches preferences, and isolates each account's work. Failed
+manager refresh prevents routing stale manager digests for that run.

@@ -52,9 +52,6 @@
     <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
 
-  <record id="sports_federation_base.menu_federation_publication" model="ir.ui.menu">
-    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator'), ref('sports_federation_schedule_approval.group_schedule_approver')])]"/>
-  </record>
   <record id="sports_federation_base.menu_federation_business" model="ir.ui.menu">
     <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>

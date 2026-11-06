@@ -18,6 +18,7 @@ EXPECTED_TEMPLATES = [
 EXPECTED_CRONS = [
     "ir_cron_notification_scan",
     "ir_cron_notification_log_retention",
+    "ir_cron_notification_outbox",
 ]
 
 

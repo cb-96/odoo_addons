@@ -112,7 +112,11 @@ class CommunicationReceiptRetention(models.Model):
             ]
         )
         result["deliveries"] = len(orphaned)
+        mails = orphaned.mapped("mail_id")
+        logs = orphaned.mapped("log_id")
         orphaned.unlink()
+        logs._retention_deletable(allow_cancelled=True).unlink()
+        mails._purge_notification_orphans()
         return result
 
     @api.model

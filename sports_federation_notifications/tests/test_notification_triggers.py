@@ -212,7 +212,9 @@ class TestNotificationTriggers(TransactionCase):
             limit=1,
         )
         self.assertTrue(log)
-        self.assertIn(log.state, ("pending", "sent", "failed"))
+        self.assertEqual(log.state, "pending")
+        self.assertTrue(log.mail_id)
+        self.assertEqual(log.mail_id.state, "outgoing")
 
     def test_tournament_published_write_creates_notification_log(self):
         """Test that tournament published write creates notification log."""
@@ -238,7 +240,9 @@ class TestNotificationTriggers(TransactionCase):
             limit=1,
         )
         self.assertTrue(log)
-        self.assertIn(log.state, ("pending", "sent", "failed"))
+        self.assertEqual(log.state, "pending")
+        self.assertTrue(log.mail_id)
+        self.assertEqual(log.mail_id.state, "outgoing")
 
     def test_referee_assignment_create_creates_notification_log(self):
         """Test that referee assignment create creates notification log."""
@@ -263,7 +267,9 @@ class TestNotificationTriggers(TransactionCase):
             limit=1,
         )
         self.assertTrue(log)
-        self.assertIn(log.state, ("pending", "sent", "failed"))
+        self.assertEqual(log.state, "pending")
+        self.assertTrue(log.mail_id)
+        self.assertEqual(log.mail_id.state, "outgoing")
 
     def test_result_approval_workflow_creates_result_logs(self):
         """Test that result approval workflow creates result logs."""
@@ -296,9 +302,10 @@ class TestNotificationTriggers(TransactionCase):
             limit=1,
         )
         self.assertTrue(activity_log)
-        self.assertIn(activity_log.state, ("sent", "failed"))
+        self.assertEqual(activity_log.state, "sent")
         self.assertTrue(approval_log)
-        self.assertIn(approval_log.state, ("pending", "sent", "failed"))
+        self.assertEqual(approval_log.state, "pending")
+        self.assertTrue(approval_log.mail_id)
 
     def test_standing_freeze_creates_notification_log(self):
         """Test that standing freeze creates notification log."""
@@ -331,7 +338,9 @@ class TestNotificationTriggers(TransactionCase):
             limit=1,
         )
         self.assertTrue(log)
-        self.assertIn(log.state, ("pending", "sent", "failed"))
+        self.assertEqual(log.state, "pending")
+        self.assertTrue(log.mail_id)
+        self.assertEqual(log.mail_id.state, "outgoing")
 
     def test_finance_event_confirm_creates_notification_log(self):
         """Test that finance event confirm creates notification log."""
@@ -350,4 +359,6 @@ class TestNotificationTriggers(TransactionCase):
             limit=1,
         )
         self.assertTrue(log)
-        self.assertIn(log.state, ("pending", "sent", "failed"))
+        self.assertEqual(log.state, "pending")
+        self.assertTrue(log.mail_id)
+        self.assertEqual(log.mail_id.state, "outgoing")

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+  <record id="retention_policy_notification_mail_content" model="federation.retention.policy">
+    <field name="name">Notification Mail Content</field>
+    <field name="code">notification_mail_content</field>
+    <field name="source_model">mail.mail</field>
+    <field name="expected_interval_hours">24</field>
+  </record>
+</odoo>
