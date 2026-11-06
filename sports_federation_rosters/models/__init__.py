@@ -2,6 +2,7 @@ from . import participation_audit
 from . import team_roster
 from . import roster_line
 from . import match_sheet
+from . import match_sheet_gameday
 from . import match_sheet_line
 from . import federation_team_inherit
 from . import federation_player_inherit

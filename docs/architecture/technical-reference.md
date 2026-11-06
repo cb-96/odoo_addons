@@ -325,3 +325,36 @@ Every behavioural change ships with a focused test. The test taxonomy,
 fixtures, query budgets, tags and suites are described in the
 [testing guide](../development/testing.md); the CI pipeline is described in
 [CI and quality gates](../development/ci.md).
+
+## Focused workflow implementation files
+
+The existing ORM models remain the public interfaces. Focused same-addon model
+extensions separate responsibilities without new models, fields, tables, service
+registries or forwarding wrappers:
+
+- Scheduling: `wizards/competition_schedule_wizard.py` owns interactive fields,
+  reports, preview/generate/apply commands and persistence. Its sibling
+  `competition_schedule_proposal.py` owns proposal calculation, input signatures,
+  scope validation, capacity/rest checks and fixture distribution inputs. The
+  scheduling algorithms remain in the existing services.
+- Planner: `models/planner_projection.py` authorizes the request and assembles
+  the response. `planner_readiness.py` owns division rows, issues, step status
+  and presentation labels. It does not perform lifecycle transitions.
+- Rosters: `models/match_sheet.py` owns fields, eligibility, protected writes and
+  submit/approve/lock commands. `match_sheet_gameday.py` owns shared declaration
+  scope, source selection and copying/synchronization. It is not an alternate
+  eligibility or approval entrypoint; existing lifecycle commands still govern
+  when these helpers are called.
+
+Each extension is imported immediately after its original model definition,
+using the existing Odoo `_inherit` mechanism. Method names, signatures and
+existing decorators are preserved, so downstream overrides still use the same
+ORM interface. No cross-addon imports are introduced.
+
+Run `python -m unittest ci.test_workflow_responsibilities` for isolated behavior
+and ownership checks. The extraction was also compared against the pre-change
+method ASTs, including decorators. This is a refactoring check, not a permanent
+source-fingerprint gate that would obstruct future intentional changes.
+Installed scheduling, planner and roster tests must still run to validate the
+actual Odoo registry and inherited method resolution. Restart Odoo after applying
+Python changes; no schema migration is required by this extraction.
