@@ -4,8 +4,8 @@ import sys
 from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[1]
-NAVIGATION = ROOT / "docs/FEDERATION_BACKEND_NAVIGATION.md"
-WORKFLOW = ROOT / "docs/COMPETITION_UI_WORKFLOW.md"
+NAVIGATION = ROOT / "docs/user-guide/backend-navigation.md"
+WORKFLOW = ROOT / "docs/user-guide/competition-workflow.md"
 ROOT_MENU = "sports_federation_base.menu_federation_root"
 TOP_LEVEL = (
     "Needs Attention",

@@ -40,8 +40,8 @@ Club representatives use the portal for only their scoped team entries and club
 operations; they cannot finalize participants or alter edition-wide setup.
 
 For operator routes, recovery instructions, and the full lifecycle see
-[`../docs/COMPETITION_UI_WORKFLOW.md`](../docs/COMPETITION_UI_WORKFLOW.md) and
-[`../_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md`](../_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md).
+the [competition workflow](../docs/user-guide/competition-workflow.md) and the
+[tournament lifecycle](../docs/workflows/tournament-lifecycle.md).
 
 Focused tests run through the repository's `ci/run_tests.sh` harness for
 `sports_federation_setup_flow`.
@@ -80,8 +80,7 @@ therefore include the ordered `views` pairs required by the browser runtime;
 `view_mode` remains present for the conventional server-side action contract.
 Model regressions cover step, exact-record blocker, and operational actions.
 
-## Simplified resumable workspace (19.0.4.0.0)
-
+## Simplified resumable workspace
 Competition Hub is the ordinary entry and always reopens the visual planner. It promotes one `primary_action` and one unified readiness summary. Direct team selection materializes registration records in the registration addon; the format picker generates and freezes structures through format commands; game-day setup continues directly into the complete competition scheduling wizard. Preset, format, venue, hours, and slot-duration defaults are remembered on the edition and are backfilled by the 19.0.4.0.0 migration.
 
 The format picker supports **Groups then knockout** for tournament-day and

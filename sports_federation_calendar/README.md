@@ -1,3 +1,6 @@
+# Competition Calendar
+
+Physical game days, court allocations, availability slots and event time zones for season competitions.
 
 ## Match-day slot generation
 

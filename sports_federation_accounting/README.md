@@ -1,6 +1,8 @@
 # Native accounting bridge
-Candidate implementation. Requires native `account_payment`, with the provider addon
-and credentials configured separately. No webhook or independent ledger is added.
+
+Optional addon; it is not installed by `sports_federation_app`. Requires native
+`account_payment`, with the payment-provider addon and credentials configured
+separately. No webhook or independent ledger is added.
 
 Confirmed positive charges create one draft `account.move` under a locked event.
 The selected product owns income accounts and tax defaults. Amount is the line unit
@@ -11,5 +13,9 @@ The payer is the invoice partner, never inferred from a guardian relationship.
 Native invoice portal checkout, payment transactions, reconciliation, credit notes
 and cancellation remain authoritative. Balance and payment state are related fields.
 An invoiced event cannot settle until its posted invoice is paid. Non-invoiced legacy
-events retain the existing handoff workflow. This does not certify provider sandbox
-callbacks, partial payments, refunds, multi-company rules or live reconciliation.
+events retain the existing handoff workflow.
+
+Provider sandbox callbacks, partial payments, refunds, multi-company rules and
+live reconciliation are not yet runtime-qualified; see the
+[roadmap](../docs/roadmap.md#known-gaps) and the
+[platform hardening acceptance suite](../docs/release/acceptance/platform-hardening.md).

@@ -1,6 +1,5 @@
 # Sports Federation Officiating
 
-Version: 19.0.1.6.0
 Owner: Federation Platform Team
 Last reviewed: 2026-09-11
 Review cadence: Every release
@@ -48,8 +47,7 @@ The `(match, club, role)` duty key is validated before insertion and is also
 protected by a database uniqueness constraint. Duplicate submissions therefore
 return a normal validation message without exposing a database constraint error.
 
-## Club duties on publication (19.0.2.1.0)
-
+## Club duties on publication
 Publishing a schedule now asks the clubs for officials itself, so a published
 match day no longer waits for someone to run the wizard. For every published,
 fixture-backed match the rule set decides what is needed: **Referees required

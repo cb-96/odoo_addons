@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "description": "Machine-readable registry of governed HTTP routes with smoke coverage. ROUTE_INVENTORY.md is explanatory documentation and is not parsed by CI.",
+  "description": "Machine-readable registry of governed HTTP routes with smoke coverage. docs/reference/routes.md is explanatory documentation and is not parsed by CI.",
   "routes": [
     {
       "method": "GET",

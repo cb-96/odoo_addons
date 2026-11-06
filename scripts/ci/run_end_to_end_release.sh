@@ -176,7 +176,7 @@ if seed["failed_steps"]:
 PY
   log "Walkthrough server ready: http://127.0.0.1:$walk_port"
   log "Agent handoff (contains disposable passwords): $walk_dir/handoff.json"
-  log "Give the agent docs/END_TO_END_RELEASE_AGENT.md, then run: $0 verify"
+  log "Give the agent docs/release/agents/end-to-end-release.md, then run: $0 verify"
 }
 
 run_verify() {

@@ -1,6 +1,5 @@
 # Sports Federation Base
 
-Version: 19.0.1.2.0
 Owner: Federation Platform Team
 Last reviewed: 2026-08-20
 Review cadence: Every release

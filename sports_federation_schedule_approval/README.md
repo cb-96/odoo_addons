@@ -76,8 +76,7 @@ remain protected by their private writer tokens. The shared service owns state,
 reason, revision, separation-of-duty, command-result, and audit mechanics while
 `federation.schedule.approval.commands` retains schedule-specific validation.
 
-## Published matches know their slot (19.0.2.6.0)
-
+## Published matches know their slot
 Publishing links a match to its slot and now also schedules it (draft matches
 become scheduled) and copies the slot's playing area and venue to the match.
 Matches built from fixtures have no round, so the round's venue defaults never

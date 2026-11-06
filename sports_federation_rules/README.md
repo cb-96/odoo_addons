@@ -1,6 +1,5 @@
 # Sports Federation Rules
 
-Version: 19.0.1.2.0
 Owner: Federation Platform Team
 Last reviewed: 2026-08-20
 Review cadence: Every release
@@ -28,7 +27,3 @@ A rule set used by historical or active competition records must not be silently
 ## Tests
 
 Coverage includes competition configuration, rule-set behavior, eligibility resolution, child rules, ordering, and historical compatibility expectations.
-
-## Removed document
-
-`ROADMAP_RC.md` is deleted. Its remaining concerns, rule-set immutability and regression coverage, are durable invariants documented here and enforced by tests.

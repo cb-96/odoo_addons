@@ -1,11 +1,10 @@
 # Sports Federation Club Roles and Portal
 
-Version: 19.0.7.5.0
 Owner: Federation Platform Team
-Last reviewed: 2026-10-29
+Last reviewed: 2026-11-06
 Review cadence: Every release
 
-Role-oriented self-service portal for club representatives, officials, and tournament operators.
+Role-oriented self-service portal for club representatives, officials and match-day staff. All portal routes are listed in the [route inventory](../docs/reference/routes.md#club-portal).
 
 ## Primary user journeys
 
@@ -24,15 +23,15 @@ Role-oriented self-service portal for club representatives, officials, and tourn
 - confirm or decline within the authorized scope
 - access relevant match information
 
-### Tournament operator
+### Match-day staff
 
-- use the tournament operations board
+- use the match-day operations board (`/sports/match-days/<matchday_id>/operations`)
 - monitor courts, matches, readiness, and action queues
 - execute scoped result and operational actions
 
 ## Trust boundary
 
-All privileged portal writes must use a model-owned method and the shared `federation.portal.privilege` boundary. Controllers validate input and resolve scope but do not perform raw elevated business writes. See `adr/0001-portal-trust-boundaries.md`.
+All privileged portal writes must use a model-owned method and the shared `federation.portal.privilege` boundary. Controllers validate input and resolve scope but do not perform raw elevated business writes. See [ADR-0001](../docs/architecture/decisions/0001-portal-trust-boundaries.md); the test files are the authoritative live coverage map.
 
 Every new privileged route requires:
 
@@ -48,17 +47,13 @@ The landing page should remain task-first. Common tasks are teams, registrations
 
 ## Operations board
 
-The board loads through scoped JSON-RPC, supports polling and structured failures, and exposes only matches and actions available to the current user. Server-side checks remain authoritative.
+The match-day operations board loads through scoped JSON-RPC, supports polling and structured failures, and exposes only matches and actions available to the current user. Server-side checks remain authoritative.
 
 ## Tests
 
 The module includes HTTP smoke, ownership, access-denied, team, player, roster, registration, officiating, result, accessibility, mobile, operations-board, and end-to-end portal workflow tests.
 
-## Consolidated documentation
-
-`PORTAL_OWNERSHIP_COVERAGE.md`, `PORTAL_OWNERSHIP_TEST_MATRIX.md`, and `ROADMAP_RC.md` are deleted. Their durable rules are consolidated here and in ADR-0001; the test files are the authoritative live coverage map.
-
-## competition portal
+## Competition portal
 
 The active competition portal is edition-based. Participation comes from
 competition entries and finalized participant sets. Match-day schedule data is
@@ -90,10 +85,10 @@ Primary routes:
 - `/my/match-days`
 - `/sports/match-days/<id>/operations`
 
-Legacy tournament workspace routes are redirect-only and render no V1 data.
-The backend tournament-registration action is loaded before the menus that use
-it, so a fresh module install and an upgrade both build the registration menu
-without relying on stale database metadata.
+The former tournament workspace routes have been removed. The backend
+tournament-registration action is loaded before the menus that use it, so a
+fresh install and an upgrade both build the registration menu without relying
+on stale database metadata.
 
 
 ## Accessible error recovery and focus management
@@ -140,16 +135,14 @@ must not mutate records that originated from those reads directly.
 
 Result follow-up tasks identify whether the next action belongs to the Result Submitter, Result Verifier, or Result Approver. Queue guidance names the required action while the underlying result commands continue to enforce separation of duties.
 
-## Unified action projection (19.0.7.3.2)
-
+## Unified action projection
 `federation.operation.task` remains the only persistent task projection. It now also emits one missing-parental-consent task per affected roster line and one shared game-day-lineup task per team/day scope. When an explicit game-day scope is unavailable, lineup tasks group by tournament and match kickoff date; unscheduled matches remain scoped to their individual sheet. Parental-consent tasks open the player's canonical approval action. Lineup tasks open the shared match-sheet source. Source models remain authoritative and stale projections still complete through the existing idempotent synchronization.
 
 Manager and club portal refreshes reuse operational tasks by their global source key, even when the task's audience differs from the current refresh scope. This keeps repeated dashboard visits idempotent while each queue continues to show only its intended audience.
 
 Task queues expose overdue status for unfinished tasks whose deadline has passed. Tasks without a deadline and completed tasks are not overdue.
 
-## Role workspaces and scoped handoffs (19.0.7.5.0)
-
+## Role workspaces and scoped handoffs
 `/my/work` is the role switchboard for club/team preparation, referee
 assignments, competition planning, result review, and manager operations. It
 links to existing workflow owners rather than introducing a second task or

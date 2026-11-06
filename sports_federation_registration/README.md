@@ -53,8 +53,7 @@ receiving general registration-window access. The picker reads only the window
 and existing team selection for its validated edition and division; applying
 changes still runs through the registration command's role check.
 
-## Participants follow the finalised team list (19.0.1.4.0)
-
+## Participants follow the finalised team list
 Finalising a division's team list (registration desk or direct selection) now
 creates a confirmed `federation.tournament.participant` for every team in the
 list, with its seed, and withdraws teams that an earlier selection contained and

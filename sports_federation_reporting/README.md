@@ -280,7 +280,7 @@ surfaces into a single reporting menu.
 9. **Contract-tagged exports** — Authenticated CSV responses now include explicit contract and version headers for downstream consumers.
 10. **Operator checklist** — Notification failures, workflow exceptions, finance follow-up, inbound delivery failures, blocked season readiness, and scheduled report failures now surface in one menu.
 11. **Persistent schedule failure tracking** — Report schedules keep the last failure timestamp, error message, and consecutive failure count so recurring problems survive beyond transient logs.
-12. **Generated-file retention** — Scheduled report artifacts are cleared automatically after the retention window in `DATA_RETENTION_POLICY.md`, while the schedule metadata and next run remain intact.
+12. **Generated-file retention** — Scheduled report artifacts are cleared automatically after the retention window in `docs/reference/data-retention.md`, while the schedule metadata and next run remain intact.
 
 ## CSV exports
 
@@ -296,9 +296,9 @@ Each export now exposes `X-Federation-Contract` and
 `X-Federation-Contract-Version` headers. The detailed finance-event handoff
 export uses the `finance_event_v1` contract.
 
-For recurring in-application reporting, create records under **Federation → Reporting → Report Schedules**.
+For recurring in-application reporting, create records under **Federation > Insights > Reports & Insights > Automation & History > Report Schedules**.
 Each schedule stores the last generated CSV snapshot directly on the schedule record.
-Use **Federation → Reporting → Operator Checklist** for the release-readiness
+Use **Federation > Insights > Reports & Insights > Overview & Readiness > Operator Checklist** for the release-readiness
 queue view that links back to the underlying exception surfaces.
 
 

@@ -1,11 +1,11 @@
 """
 Notification Dispatcher — event-driven notification routing.
 
-Each method here maps to one row in ``INTEGRATION_CONTRACTS.md`` and
-resolves recipients before delegating to ``send_email_template`` or
-``create_activity``. Most modeled workflow scenarios are now live; suspension
-issuance uses a direct-email fallback until a dedicated discipline template is
-introduced.
+Each method here maps to one row of the notification matrix in
+``docs/reference/integration-contracts.md`` and resolves recipients before
+delegating to ``send_email_template`` or ``create_activity``. Most modeled
+workflow scenarios are live; suspension issuance uses a direct-email fallback
+until a dedicated discipline template is introduced.
 
 Usage (from any model override):
 ::

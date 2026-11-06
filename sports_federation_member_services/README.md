@@ -1,6 +1,8 @@
-# Member and family lifecycle
+# Member and family services
 
-Implementation candidate. Runtime, browser and human acceptance remain required.
+Optional addon; it is not installed by `sports_federation_app`. Runtime,
+browser and human acceptance are still open; see the
+[member lifecycle acceptance suite](../docs/release/acceptance/member-lifecycle.md).
 
 `/my/family` separates named people and requires explicit subject confirmation for
 renewal, document, licence and lifecycle requests. Members and verified guardians
@@ -39,5 +41,6 @@ against a source revision. Reactivation and destination membership return to dra
 review. These commands do not change player clubs, licences, rosters or invoices;
 those actions remain with their sporting and finance owners.
 
-See `docs/MEMBER_FAMILY_LIFECYCLE.md` for installation, validation, role ownership,
-matching boundaries, retention qualification and all requested acceptance metrics.
+The [member lifecycle acceptance suite](../docs/release/acceptance/member-lifecycle.md)
+describes installation, validation, role ownership, matching boundaries,
+retention qualification and acceptance metrics.

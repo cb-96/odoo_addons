@@ -92,7 +92,7 @@ def main():
         "sports_federation_demo/tests/test_operator_role_acceptance.py",
         "sports_federation_demo/tests/test_browser_competition_lifecycle.py",
         "sports_federation_demo/tests/test_demo_data_pack.py",
-        "docs/RELEASE_PILOT_SCENARIO.md",
+        "docs/release/pilot-scenario.md",
         "scripts/ci/run_release_baseline.sh",
         "scripts/ci/run_migration_rehearsal.sh",
     )

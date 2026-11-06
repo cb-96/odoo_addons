@@ -122,22 +122,13 @@ REPOSITORY_FILES = [
     ".gitignore",
     ".pre-commit-config.yaml",
     "CHANGELOG.md",
-    "CONTEXT.md",
     "CONTRIBUTING.md",
-    "DEPLOYMENT_GUIDE.md",
-    "DOCUMENTATION_REVIEW.md",
     "Dockerfile",
     "LICENSE",
     "Makefile",
     "MODULE_OWNERS.yaml",
     "README.md",
-    "RELEASE_RUNBOOK.md",
-    "ROADMAP.md",
-    "ROUTE_INVENTORY.md",
     "SECURITY.md",
-    "STATE_AND_OWNERSHIP_MATRIX.md",
-    "TECHNICAL_NOTE.md",
-    "TESTING_GUIDE.md",
     "docker-compose.yml",
     "pyproject.toml",
     "requirements-dev.txt",
@@ -147,11 +138,9 @@ REPOSITORY_FILES = [
 
 REPOSITORY_DIRECTORIES = [
     ".github",
-    "_workflows",
     "ci",
     "docs",
     "scripts",
-    "adr",
 ]
 
 

@@ -140,7 +140,7 @@ An individual game between two teams.
 - Added backfill for `scheduled_date` and `round_number` on historical match rows where those persisted values were missing.
 - Added composite indexes for `(tournament_id, state)`, `(stage_id, state)`, `(group_id, state)`, `(scheduled_date, state)`, and `(date_scheduled, state)`.
 
-## Knockout result resolution (v19.0.1.2.0)
+## Knockout result resolution
 
 Knockout matches must have an unambiguous advancing team before they can be
 completed. A tied numeric score requires a non-regulation resolution, such as
@@ -150,7 +150,7 @@ explicit advancing team selected from the two match participants.
 Winner and loser bracket progression uses this explicit decision, preventing a
 completed knockout match from leaving downstream participants unresolved.
 
-## Retired planner settings (v19.0.1.6.0)
+## Retired planner settings
 
 The upgrade preserves any remaining legacy planning settings on a tournament
 in the administrator-only `retired_planner_settings` JSON field before the

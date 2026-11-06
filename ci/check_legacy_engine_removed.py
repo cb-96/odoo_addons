@@ -13,14 +13,11 @@ SCAN_ROOTS = (
     ROOT / "ci",
     ROOT / "scripts",
     ROOT / "docs",
-    ROOT / "_workflows",
 )
 SCAN_FILES = (
     ROOT / "README.md",
     ROOT / "CONTRIBUTING.md",
-    ROOT / "ROADMAP.md",
     ROOT / "MODULE_OWNERS.yaml",
-    ROOT / "TECHNICAL_NOTE.md",
 )
 SUFFIXES = {
     ".py",
@@ -39,7 +36,11 @@ ALLOWED_COMPATIBILITY_REFERENCES = {
     "ci/check_migration_rehearsal_contract.py": {
         "sports_federation_competition_engine"
     },
-    "TECHNICAL_NOTE.md": {"sports_federation_competition_engine"},
+    "docs/architecture/technical-reference.md": {
+        "sports_federation_competition_engine"
+    },
+    "docs/operations/release-runbook.md": {"sports_federation_competition_engine"},
+    "docs/operations/upgrade-notes.md": {"sports_federation_competition_engine"},
     "ci/release_invariants.json": {"sports_federation_competition_engine"},
 }
 errors = []

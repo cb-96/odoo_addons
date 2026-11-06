@@ -10,7 +10,7 @@ import sys
 from typing import Any
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
-CONTRACT_PATH = REPO_ROOT / "_workflows" / "contracts" / "workflow_state_contracts.json"
+CONTRACT_PATH = REPO_ROOT / "ci" / "contracts" / "workflow_state_contracts.json"
 
 
 def _resolve_expr(expr: ast.AST, symbols: dict[str, Any]) -> Any:
@@ -175,7 +175,7 @@ def main() -> int:
 
     for contract in contracts:
         contract_id = contract.get("id") or "unknown"
-        workflow_file = contract.get("workflow_file") or "_workflows/UNKNOWN"
+        workflow_file = contract.get("workflow_file") or "docs/workflows/UNKNOWN"
 
         canonical = sorted(set(contract.get("canonical_states") or []))
         try:
@@ -196,7 +196,7 @@ def main() -> int:
                 "[workflow-contracts] "
                 f"{contract_id}: states are implemented but not documented in {workflow_file}: "
                 + ", ".join(undocumented)
-                + ". Update _workflows contract markdown and "
+                + ". Update the workflow document and "
                 + contract["state_source"]["file"]
                 + " together."
             )
@@ -222,7 +222,8 @@ def main() -> int:
         for error in errors:
             print(error)
         print(
-            "[workflow-contracts] FAIL. See addons/CONTRIBUTING.md workflow contract guidance."
+            "[workflow-contracts] FAIL. See docs/workflows/README.md for workflow "
+            "contract guidance."
         )
         return 1
 

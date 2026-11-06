@@ -72,8 +72,7 @@ matches inherit the already-published slots.
 
 The competition schedule preview may be limited to selected competition stages and game days. It reports included and excluded fixtures, shows the proposed allocation and remaining capacity for every selected shared day, warns when multiple stages are mixed, and blocks application when selected fixtures exceed capacity. Published planning remains immutable; corrections use a replacement amendment after live operations are closed.
 
-## Competition workspace handoff (19.0.3.6.0)
-
+## Competition workspace handoff
 The complete-competition schedule wizard preserves the workspace return context through preview and returns to the same competition planner after apply. The generated schedules, allocations, slots, validation, fairness checks, and protected submission commands are unchanged.
 
 ## Exact day allocation and readable preview

@@ -1,197 +1,61 @@
-# Sports Federation — Odoo Addons (Odoo 19)
+# Sports Federation — Odoo 19 addons
 
-Lightweight collection of Odoo 19 addons to manage a sports federation: clubs,
-teams, seasons, tournaments, scheduling, officiating, rosters, results,
-standings, portal pages and reporting.
+Odoo 19 addons that run a sports federation: clubs, teams, seasons, players
+and licences, competitions from registration to final standings, game-day
+operations, officiating, rosters, results, a club portal, a public website,
+and the reporting, finance and governance work around them.
 
-This repository contains modular, opinionated addons named
-`sports_federation_<domain>` (e.g. `sports_federation_tournament`). The code is
-designed for clarity: algorithmic logic lives in `services/`, interactive flows
-use `wizards/`, and persistent objects in `models/`.
+The repository contains one addon per domain, named
+`sports_federation_<domain>`. `sports_federation_app` installs the complete
+production platform.
 
-Table of contents
-- Architecture overview
-- Quickstart / Installation
-- Development & tests
-- Contributing & docs
-- Module list (high level)
-
-Quick links
-- High-level context: `CONTEXT.md`
-- Technical notes: `TECHNICAL_NOTE.md`
-- Documentation map: `docs/README.md`
-- Backend navigation: `docs/FEDERATION_BACKEND_NAVIGATION.md`
-- Architecture decisions: `adr/README.md`
-- Route inventory: `ROUTE_INVENTORY.md`
-- Release runbook: `RELEASE_RUNBOOK.md`
-- Reproducible repository baseline: `docs/REPOSITORY_BASELINE.md`
-- Release evidence contract: `docs/RELEASE_EVIDENCE.md`
-- Data retention policy: `DATA_RETENTION_POLICY.md`
-- Module owners: `MODULE_OWNERS.yaml`
-- Demo data pack: `sports_federation_demo/README.md`
-- Integration contracts: `INTEGRATION_CONTRACTS.md`
-- Managed integration OpenAPI: `openapi/integration_v1.yaml`
-- Workflows: `_workflows/WORKFLOW_TOURNAMENT_LIFECYCLE.md`
-- Contributor guide: `CONTRIBUTING.md`
-
-Source review bundle:
-- Run `python3 source_collector.py` from this directory to regenerate the
-  current source, JSONL, and Git metadata bundles.
-- Generated artifacts under `artifacts/` are included by category, but only
-  the newest run directory in each category is collected. Runtime `.log`
-  files are included as text so release evidence remains reviewable.
-
-## Supported installation entry point
-
-Install the complete production platform through one addon:
+## Install
 
 ```bash
 odoo -d DATABASE -i sports_federation_app --stop-after-init
 ```
 
-The focused domain addons remain internal implementation and upgrade units.
-Install `sports_federation_demo` separately only for development or demos.
-See `docs/SIMPLIFIED_ARCHITECTURE.md`.
+Add `sports_federation_demo` for development or demonstrations only. The
+[deployment guide](docs/operations/deployment.md) covers a first installation
+on a server; the [release runbook](docs/operations/release-runbook.md) covers
+upgrades and rollback.
 
-**Architecture overview**
-
-High-level architecture (graph):
-
-```mermaid
-graph LR
-  subgraph Core
-    Base[sports_federation_base]
-    Tournament[sports_federation_tournament]
-    Engine[sports_federation_format / sports_federation_scheduling]
-    Standings[sports_federation_standings]
-  end
-  subgraph Support
-    People[sports_federation_people]
-    Rosters[sports_federation_rosters]
-    Officiating[sports_federation_officiating]
-    Venues[sports_federation_venues]
-    Finance[sports_federation_finance_bridge]
-    Public[sports_federation_public_site]
-  end
-
-  Engine -->|generates| Tournament
-  Engine -->|generates| Matches[federation.match]
-  Matches -->|belong to| Round[federation.tournament.round]
-  Round --> Venues
-  Matches --> Standings
-  Standings -->|feeds| Progression[federation.stage.progression]
-  Progression --> Tournament
-  Matches --> Finance
-  Rosters --> Matches
-  Officiating --> Matches
-  Public --> Standings
-
-  classDef core fill:#f8f9fa,stroke:#333
-  class Base,Tournament,Engine,Standings core;
-```
-
-Notes:
-- The `competition_engine` contains deterministic scheduling services (round-
-  robin, knockout). It supports per-round scheduling, round-owned date/venue
-  planning, and
-  full-bracket construction.
-- `federation.tournament.round` is the shared schedule block for a stage: rounds
-  own the calendar date and venue, while matches keep the exact kickoff time.
-- Standings computation and `stage_progression` rules automate advancement
-  across stages (optional `auto_advance`). See `TECHNICAL_NOTE.md`.
-
-Quickstart / Installation (example)
-
-Prerequisites
-- Python 3.10+ (for local linting and editor tooling)
-- Docker with Compose current (for the containerized Odoo test runner)
-- PostgreSQL 12+ only if you are running against a separate local Odoo checkout
-- Node.js/npm (optional: for asset tooling)
-- wkhtmltopdf (optional: PDF export)
-
-Example (local development on Windows / Powershell):
-
-```powershell
-git clone REPOSITORY_URL
-cd REPO_ROOT/odoo
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-black --check sports_federation_base sports_federation_tournament sports_federation_standings sports_federation_venues sports_federation_portal sports_federation_public_site ci
-flake8 sports_federation_base sports_federation_tournament sports_federation_standings sports_federation_venues sports_federation_portal sports_federation_public_site ci
-```
-
-Containerized module tests (Git Bash / WSL on Windows, or any POSIX shell):
+## Develop
 
 ```bash
 cp ci/.env.example ci/.env
+python -m pip install -r requirements.txt
 bash ./ci/run_tests.sh --module sports_federation_standings
 bash ./ci/run_tests.sh --suite competition_core
-bash ./ci/run_tests.sh --suite portal_public_ops
-bash ./ci/run_tests.sh --suite rosters_readiness_guard
 ```
 
-Validate CI helper scripts before pushing changes:
+Odoo runs in the `odoo:19` Docker image declared in
+`ci/docker-compose.ci.yaml`; no host `odoo-bin` is needed. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests, checks and the change
+checklist.
 
-```bash
-bash -n ci/run_tests.sh
-bash -n ci/apply_env_to_ir_config.sh
-python3 ci/check_ci_hygiene.py
-bash ci/prune_ci_logs.sh 30
-```
+## Documentation
 
-Notes and tips
-- `requirements.txt` pins repository-local tooling only. The Odoo runtime used
-  by module tests and release-candidate validation comes from the `odoo:19`
-  Docker image declared in `ci/docker-compose.ci.yaml`.
-- Keep local runtime credentials in `ci/.env`; do not commit that file. The checked-in `ci/.env.example` is the safe template.
-- This repository does not ship `odoo-bin`; release validation does not require
-  a host Odoo checkout. If you use a separate local Odoo checkout for
-  development, point its `addons_path` at this repository and run tests from
-  that checkout.
-- Use the module manifest `__manifest__.py` `data` entries to register new
-  views/security/data files. If you add or change models, update
-  `security/ir.model.access.csv` and include migration notes in the docs.
-- To run module tests (example):
+Start at the [documentation map](docs/README.md). The most used entry points:
 
-```bash
-bash ./ci/run_tests.sh --module sports_federation_format
-bash ./ci/run_tests.sh --module sports_federation_scheduling
-```
+| Topic | Document |
+| --- | --- |
+| What the product does | [Product overview](docs/overview/product.md) |
+| Which addon owns what | [Module catalogue](docs/overview/modules.md) |
+| Running a competition in the back office | [Competition workflow](docs/user-guide/competition-workflow.md) |
+| Business processes | [Workflows](docs/workflows/README.md) |
+| Architecture and conventions | [Architecture overview](docs/architecture/overview.md), [technical reference](docs/architecture/technical-reference.md) |
+| Routes and integrations | [Route inventory](docs/reference/routes.md), [integration contracts](docs/reference/integration-contracts.md) |
+| Testing and CI | [Testing guide](docs/development/testing.md), [CI and quality gates](docs/development/ci.md) |
+| Releasing | [Release qualification](docs/release/README.md), [upgrade notes](docs/operations/upgrade-notes.md) |
+| Current priorities and open gaps | [Roadmap](docs/roadmap.md) |
 
-Development & tests
-- Keep changes small and focused. Add at least one unit/integration test for
-  any change that affects scheduling, standings, or progression logic.
-- Where possible put algorithmic code in `services/` and keep models simple.
-- Use `wizards/` for interactive, admin-driven flows (preview + confirm).
+Each addon has its own `README.md` with its models, behaviour and
+configuration.
 
-Contributing & docs
-- Always update repository documentation as part of the same change set.
-  Update `TECHNICAL_NOTE.md`, relevant `_workflows/*`, and the affected module
-  `README.md`.
-- Treat `ROUTE_INVENTORY.md`, `INTEGRATION_CONTRACTS.md`, and `RELEASE_RUNBOOK.md`
-  as maintained release documents, not one-off notes.
-- Follow the PR checklist in `.github/copilot-instructions.md` and add tests
-  for behavioural changes. If you cannot update docs immediately, add a clear
-  TODO in the change and notify maintainers.
-- The canonical lifecycle and ownership reference for the core records is in
-  `STATE_AND_OWNERSHIP_MATRIX.md`.
-- Use `CONTRIBUTING.md` for the maintainer workflow: local prerequisites,
-  env setup, focused CI suites, and pre-push validation commands.
+## Review bundles
 
-Module list (high level)
-- `sports_federation_base` — master data (clubs, teams, seasons)
-- `sports_federation_tournament` — tournaments, stages, groups, matches
-- `sports_federation_format / sports_federation_scheduling` — scheduling services and wizards
-- `sports_federation_standings` — standings computation and publishing
-- `sports_federation_rosters` — rosters and match-sheets
-- `sports_federation_officiating` — referee registry and assignments
-- `sports_federation_venues` — venues, playing areas, and round-level venue scheduling
-- `sports_federation_finance_bridge` — finance event helpers
-- `sports_federation_public_site` / `sports_federation_portal` — public pages and portal flows
-
-
-## Operator workflow
-
-Use [`docs/COMPETITION_UI_WORKFLOW.md`](docs/COMPETITION_UI_WORKFLOW.md) for verified backend and portal paths.
+`python3 source_collector.py` regenerates the current source, JSONL and Git
+metadata bundles used for code review. Only the newest run directory per
+category under `artifacts/` is collected. The bundles are review artifacts and
+are not committed.

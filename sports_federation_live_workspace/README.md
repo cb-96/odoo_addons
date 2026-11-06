@@ -1,9 +1,10 @@
 # Court Operations and Visual Planning
 
-Implementation candidate, not a staging acceptance certificate.
+Court score capture with offline recovery, mobile match-day pages for officials
+and managers, the visual schedule planner and the season match board.
 
 ## Installation
-Install or upgrade the supported `sports_federation_app` entry point. Its dependency graph now includes this addon. Apply the incremental patch only to the supplied current source baseline. Do not reapply earlier patches: their release-confidence, journey and duty-coverage code is already in that baseline.
+Installed through the supported `sports_federation_app` entry point.
 
 ## Court operation
 1. Configure aggregate, period-total or sets-won scoring on the competition edition. Configure a winning set target where applicable.
@@ -39,18 +40,18 @@ Every preview is stored server-side, belongs to its actor and contains the exact
 
 Published schedules cannot be edited here. Create a governed amendment, then return to the existing independent review/publication controls. Live operations must be closed before replacement publication. Practical constraints copy to amendment revisions.
 
-## Verification
+## Tests
 Standalone: `python -m unittest discover -s ci -p test_live_workspace_policy.py`.
-Installed application: run Odoo tests tagged `sf_live_workspace` and the existing `sf_release_confidence` suite on fresh and upgraded disposable databases. The addon includes persisted command tests and real backend browser journeys. Database, HTTP/browser and independent-transaction concurrency tests were not executed in the authoring environment because Odoo/PostgreSQL and a staging connector were unavailable.
+Installed application: Odoo tests tagged `sf_live_workspace`,
+`sf_mobile_matchday` and `sf_visual_scheduling`, plus the `sf_release_confidence`
+suite, on fresh and upgraded databases. The addon includes persisted command
+tests and backend browser journeys.
 
-Keep production rollout blocked until fresh installation, upgrade, complete browser journeys, independent-transaction races, backup plus filestore restoration, monitoring recovery, fallback rehearsal and novice-user observations have actual evidence. The supplied acceptance audit distinguishes implementation from demonstrated acceptance.
-
-## ACL registration correction
-
-Version 19.0.1.0.1 registers the unchanged ACL rows through the standard
-security/ir.model.access.csv filename. The former access.csv is removed.
-Existing ACL external IDs and permissions are preserved. Upgrade this addon
-on staging so the corrected data registration is loaded.
+Staging acceptance (browser journeys, independent-transaction races, device
+interruptions and novice observations) is described in the
+[mobile match-day](../docs/release/acceptance/mobile-match-day.md) and
+[visual scheduling](../docs/release/acceptance/visual-scheduling.md) acceptance
+suites.
 
 ## Season match board
 

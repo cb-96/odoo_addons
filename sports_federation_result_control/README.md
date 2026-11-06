@@ -1,6 +1,5 @@
 # Sports Federation Result Control
 
-Version: 19.0.1.2.0
 Owner: Federation Platform Team
 Last reviewed: 2026-08-20
 Review cadence: Every release
@@ -27,11 +26,6 @@ Portal and tournament-operation actions call the same model-owned result methods
 ## Tests
 
 Coverage includes lifecycle transitions, immutability, duty separation, contest/correction recovery, audit records, and end-to-end result pipeline tours.
-
-## Removed document
-
-`ROADMAP_RC.md` is deleted. Approved-result immutability is an implemented invariant and belongs in this README and its regression tests, not a permanent mini-roadmap.
-
 
 ## Audit evidence protection
 
