@@ -32,8 +32,7 @@ class FederationImportTeamsWizard(models.TransientModel):
         if missing:
             raise ValidationError(
                 "Missing required columns: %s. Clubs are matched by club_code "
-                "only; club_name and name are no longer accepted."
-                % ", ".join(missing)
+                "only; club_name and name are no longer accepted." % ", ".join(missing)
             )
 
         line_count = 0

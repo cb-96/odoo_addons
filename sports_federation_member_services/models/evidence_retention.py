@@ -147,9 +147,7 @@ class EvidenceRevisionGovernance(models.Model):
     # ------------------------------------------------------------------
     @api.model
     def _evidence_retention_days(self):
-        value = (
-            self.env["ir.config_parameter"].sudo().get_param(RETENTION_PARAMETER)
-        )
+        value = self.env["ir.config_parameter"].sudo().get_param(RETENTION_PARAMETER)
         return evidence_retention_days_from_value(value)
 
     @api.model

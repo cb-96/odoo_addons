@@ -51,9 +51,7 @@ class CommunicationReceiptRetention(models.Model):
 
     @api.model
     def _inbox_retention_days(self):
-        value = (
-            self.env["ir.config_parameter"].sudo().get_param(RETENTION_PARAMETER)
-        )
+        value = self.env["ir.config_parameter"].sudo().get_param(RETENTION_PARAMETER)
         return retention_days_from_value(value)
 
     @api.model

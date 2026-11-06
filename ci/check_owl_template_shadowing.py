@@ -6,6 +6,7 @@ In an OWL template, ``t-foreach ... t-as="day"`` cannot shadow a getter called
 the getter's value. The match board's game-day buttons all showed the first
 day because of this.
 """
+
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -54,11 +55,15 @@ def main():
             for attribute, variable, _node in template_names(template):
                 if variable in getters[name]:
                     errors.append(
-                        f"{path.relative_to(ROOT)}: {name} uses {attribute}=\"{variable}\" "
+                        f'{path.relative_to(ROOT)}: {name} uses {attribute}="{variable}" '
                         f"but the component has a getter named {variable!r}"
                     )
     if errors:
-        print("OWL template variables shadow component getters:\n- " + "\n- ".join(errors), file=sys.stderr)
+        print(
+            "OWL template variables shadow component getters:\n- "
+            + "\n- ".join(errors),
+            file=sys.stderr,
+        )
         raise SystemExit(1)
     print(f"OWL template shadowing check passed ({len(getters)} components).")
 

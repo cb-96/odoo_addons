@@ -106,8 +106,12 @@ class TestMemberEvidenceRetention(FamilyFixture, TransactionCase):
         self.assertFalse(second.exists())
         self.assertTrue(first.exists())
         self.assertIn("erased", doc.message_ids[0].body)
-        evidence = self.env["federation.retention.evidence"].sudo().search(
-            [("policy", "=", "member_evidence_erasure")], order="id desc", limit=1
+        evidence = (
+            self.env["federation.retention.evidence"]
+            .sudo()
+            .search(
+                [("policy", "=", "member_evidence_erasure")], order="id desc", limit=1
+            )
         )
         self.assertEqual(evidence.deleted_count, 1)
         self.assertEqual(evidence.operator_message, REASON)
@@ -131,8 +135,12 @@ class TestMemberEvidenceRetention(FamilyFixture, TransactionCase):
         self.assertTrue(
             second.exists(), "the current revision of an open request stays"
         )
-        evidence = self.env["federation.retention.evidence"].sudo().search(
-            [("policy", "=", "member_evidence_revisions")], order="id desc", limit=1
+        evidence = (
+            self.env["federation.retention.evidence"]
+            .sudo()
+            .search(
+                [("policy", "=", "member_evidence_revisions")], order="id desc", limit=1
+            )
         )
         self.assertEqual(evidence.status, "passed")
         self.assertEqual(evidence.deleted_count, 1)
@@ -147,7 +155,11 @@ class TestMemberEvidenceRetention(FamilyFixture, TransactionCase):
 
         self.assertTrue(first.exists(), "legal hold wins over the retention period")
         self.assertTrue(second.exists(), "recent revisions stay")
-        evidence = self.env["federation.retention.evidence"].sudo().search(
-            [("policy", "=", "member_evidence_revisions")], order="id desc", limit=1
+        evidence = (
+            self.env["federation.retention.evidence"]
+            .sudo()
+            .search(
+                [("policy", "=", "member_evidence_revisions")], order="id desc", limit=1
+            )
         )
         self.assertEqual(evidence.skipped_count, 1)
