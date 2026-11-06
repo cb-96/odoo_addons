@@ -101,3 +101,20 @@ Run `python ci/check_task_projection.py` and
 `python -m unittest ci.test_task_projection` for structural and isolated
 behavioral checks. Portal ORM regressions in `test_operation_tasks` and
 `test_role_journeys` must also run in an installed Odoo test database.
+
+### Scoped and low-churn synchronization
+
+Source queries for entries, rosters and line-ups use the viewer's effective
+whole-club scope OR explicit team scope. Team-only representatives must not
+collect or close a sibling team's line-up work. Result and referee-duty source
+queries also restrict matches to the viewer's teams/whole clubs. Federation
+managers retain their federation-wide queue; their synchronization is deliberately
+global, not a portal-team query. Cleanup uses the portal task domain and a
+separately scoped line-up domain covering both audiences.
+
+The writer fetches existing cleanup candidates and desired keys in two batch
+queries, creates missing tasks in one ORM batch, and writes only changed fields.
+Date, datetime and many-to-one values are normalized for comparison so serialized
+values do not cause repeated writes. Reopening completed work still clears its
+completion and digest markers. Invalid and conflicting specifications emit an
+error containing the source key before raising, with no projection mutation.

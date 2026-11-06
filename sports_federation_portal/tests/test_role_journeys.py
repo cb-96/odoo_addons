@@ -58,6 +58,25 @@ class TestJourneyTasks(TransactionCase):
             and item["source_record_id"] == self.registration.id for item in calls[0]
         ))
 
+    def test_team_scoped_sync_does_not_touch_sibling_lineup(self):
+        self._scope_rep_to_team()
+        Task = self.env["federation.operation.task"]
+        sibling = Task.create({
+            "name": "Sibling review", "task_type": "lineup_review",
+            "audience": "manager", "responsible_club_id": self.club.id,
+            "journey_team_id": self.other_team.id,
+            "source_model": "federation.team", "source_record_id": self.other_team.id,
+            "source_key": "sibling-lineup-review",
+            "blocking_reason": "Review required", "next_step": "Review",
+        })
+        before = sibling.write_date
+        specs, scope = Task._project_task_specs(user=self.user)
+        self.assertNotIn(sibling, Task.search(scope))
+        self.assertFalse(any(item.get("journey_team_id") == self.other_team.id for item in specs))
+        Task.sync_for_user(user=self.user)
+        self.assertEqual(sibling.state, "open")
+        self.assertEqual(sibling.write_date, before)
+
     def test_missing_roster_sync_does_not_create_source(self):
         Task = self.env["federation.operation.task"]
         before = self.env["federation.team.roster"].search_count([("team_id", "=", self.team.id)])

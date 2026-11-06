@@ -226,6 +226,17 @@ class FederationOperationTaskExtension(models.Model):
 
 
     @api.model
+    def _task_team_scope(self, user, team_field="team_id"):
+        """Restrict sources and cleanup to effective whole-club or team scope."""
+        if user.has_group("sports_federation_base.group_federation_manager"):
+            return []
+        clubs = set(self._portal_club_ids(user)) & set(user.portal_club_scope_ids.ids)
+        return [
+            "|", (team_field + ".club_id", "in", sorted(clubs)),
+            (team_field, "in", user.portal_team_scope_ids.ids),
+        ]
+
+    @api.model
     def _collect_domain_task_specs(self, user=None):
         """Return domain specifications and cleanup scope without writing records."""
         user = user or self.env.user
@@ -237,7 +248,7 @@ class FederationOperationTaskExtension(models.Model):
         # Archived competitions produce no work: their sources are skipped,
         # so their existing tasks fall out of the specs and are closed below.
         hidden = self.env["federation.portal.archive.scope"].exclusion_domain
-        entry_domain = [] if is_manager else [("team_id.club_id", "in", club_ids)]
+        entry_domain = self._task_team_scope(user)
         entry_domain += hidden("federation.competition.entry")
         entries = (
             self.env["federation.competition.entry"]
@@ -271,7 +282,7 @@ class FederationOperationTaskExtension(models.Model):
             self.env["federation.team.roster"]
             .sudo()
             .search(
-                ([] if is_manager else [("club_id", "in", club_ids)])
+                self._task_team_scope(user)
                 + [("status", "!=", "closed"), ("ready_for_activation", "=", False)]
             )
         )
@@ -303,7 +314,7 @@ class FederationOperationTaskExtension(models.Model):
             self.env["federation.team.roster"]
             .sudo()
             .search(
-                ([] if is_manager else [("club_id", "in", club_ids)])
+                self._task_team_scope(user)
                 + [("status", "!=", "closed")]
             )
         )
@@ -342,7 +353,7 @@ class FederationOperationTaskExtension(models.Model):
                 )
             )
 
-        lineup_domain = [] if is_manager else [("team_id.club_id", "in", club_ids)]
+        lineup_domain = self._task_team_scope(user)
         lineup_domain += hidden("federation.match.sheet")
         sheets = (
             self.env["federation.match.sheet"]
@@ -394,7 +405,11 @@ class FederationOperationTaskExtension(models.Model):
             self.env["federation.match.club.referee.duty"]
             .sudo()
             .search(
-                ([] if is_manager else [("club_id", "in", club_ids)])
+                ([] if is_manager else [("club_id", "in", club_ids)]
+                 + expression.OR([
+                     self._task_team_scope(user, "match_id.home_team_id"),
+                     self._task_team_scope(user, "match_id.away_team_id"),
+                 ]))
                 + hidden("federation.match.club.referee.duty")
                 + [("state", "in", ("open", "rejected"))]
             )
@@ -489,13 +504,13 @@ class FederationOperationTaskExtension(models.Model):
                 )
             )
 
-        scope_domain = [] if is_manager else [("responsible_club_id", "in", club_ids)]
-        scope_domain += [("audience", "=", "manager" if is_manager else "club")]
+        scope_domain = ([("audience", "=", "manager")] if is_manager
+                        else self._portal_get_domain(user))
         # A handoff changes audience on the same key. Include both audiences
         # for line-ups so approval/locking also closes existing reviewer work.
         lineup_scope = [("task_type", "in", ("gameday_lineup", "lineup_review"))]
         if not is_manager:
-            lineup_scope += [("responsible_club_id", "in", club_ids)]
+            lineup_scope += self._task_team_scope(user, "journey_team_id")
         return specs, expression.OR([scope_domain, lineup_scope])
 
     @api.model

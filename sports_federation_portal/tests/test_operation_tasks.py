@@ -374,3 +374,33 @@ class TestFederationOperationTasks(TransactionCase):
         sheets.write({"state": "approved"})
         Task.sync_for_user(user=self.manager)
         self.assertEqual(task.state, "done")
+
+    def test_unchanged_projection_does_not_write_task(self):
+        Task = self.env["federation.operation.task"]
+        Task.sync_for_user(user=self.manager)
+        with patch.object(type(Task), "write", side_effect=AssertionError("unchanged task written")):
+            Task.sync_for_user(user=self.manager)
+
+    def test_projection_batches_task_creation(self):
+        Task = self.env["federation.operation.task"]
+        Service = self.env["federation.task.projection"]
+        specs = []
+        for index in range(3):
+            specs.append({
+                "name": "Batch projection %s" % index,
+                "task_type": "registration", "audience": "manager",
+                "blocking_reason": "Review required", "next_step": "Review",
+                "source_model": self.window._name, "source_record_id": self.window.id,
+                "source_key": "batch-projection:%s" % index,
+            })
+        original = type(Task).create
+        calls = []
+
+        def create_batch(recordset, values):
+            calls.append(values)
+            return original(recordset, values)
+
+        with patch.object(type(Task), "create", create_batch):
+            Service._apply(specs, [("source_key", "in", [item["source_key"] for item in specs])])
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(len(calls[0]), 3)
