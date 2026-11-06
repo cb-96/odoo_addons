@@ -1,5 +1,4 @@
 """Execute production queue methods with isolated doubles; no SMTP or Odoo."""
-import ast
 from contextlib import nullcontext
 from datetime import datetime, timedelta
 import logging
@@ -8,6 +7,7 @@ from types import SimpleNamespace
 import unittest
 
 from ci.check_notification_side_effect_contract import violations
+from ci.production_method import load_method
 
 ROOT = Path(__file__).resolve().parents[1]
 MODELS = ROOT / "sports_federation_notifications/models"
@@ -20,17 +20,13 @@ def feedback(error):
 
 
 def method(filename, name):
-    tree = ast.parse((MODELS / filename).read_text())
-    node = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == name)
-    node.decorator_list = []
     scope = {
         "_": lambda text: text, "ValidationError": ValueError,
         "fields": SimpleNamespace(Datetime=SimpleNamespace(now=lambda: NOW)),
         "timedelta": timedelta, "MAX_AUTOMATIC_ATTEMPTS": 3,
         "build_failure_feedback": feedback, "_logger": logging.getLogger("outbox_test"),
     }
-    exec(compile(ast.fix_missing_locations(ast.Module(body=[node], type_ignores=[])), filename, "exec"), scope)
-    return scope[name]
+    return load_method("sports_federation_notifications/models/" + filename, name, scope)
 
 
 class Mail:
@@ -125,6 +121,52 @@ class TestNotificationOutbox(unittest.TestCase):
             dispatcher, "record", "subject", "body", "log", ["a@test", "a@test"])
         self.assertEqual(result, "queued")
         self.assertEqual(calls[0][0][-1], "a@test")
+
+    def test_result_routing_reads_both_teams_with_elevated_source(self):
+        home = SimpleNamespace(email="home@test", club_id=SimpleNamespace(email="home-club@test"))
+        away = SimpleNamespace(email="away@test", club_id=SimpleNamespace(email="away-club@test"))
+        elevated = SimpleNamespace(home_team_id=home, away_team_id=away)
+        class Match:
+            name = "Result"
+            def sudo(self):
+                return elevated
+            @property
+            def home_team_id(self):
+                raise PermissionError("caller cannot read private team contact")
+            @property
+            def away_team_id(self):
+                raise PermissionError("caller cannot read private team contact")
+        match = Match()
+        calls = []
+        dispatcher = SimpleNamespace(_send_email_or_log=lambda *args: calls.append(args) or "queued")
+        result = method("notification_dispatcher.py", "send_result_approved")(dispatcher, match)
+        self.assertEqual(result, "queued")
+        self.assertIs(calls[0][0], match)
+        self.assertEqual(calls[0][-1], ["home@test", "home-club@test", "away@test", "away-club@test"])
+
+    def test_email_routing_deduplicates_and_queues(self):
+        calls = []
+        unique = method("notification_dispatcher.py", "_unique_emails")
+        dispatcher = SimpleNamespace(
+            _unique_emails=lambda emails: unique(None, emails),
+            send_email_template=lambda *args, **kwargs: calls.append((args, kwargs)) or "queued",
+        )
+        result = method("notification_dispatcher.py", "_send_email_or_log")(
+            dispatcher, "record", "template", "name", [" a@test ", "a@test", "", None])
+        self.assertEqual(result, "queued")
+        self.assertEqual(calls[0][1]["email_to"], ["a@test"])
+
+    def test_no_recipient_records_failure_instead_of_queueing(self):
+        calls = []
+        dispatcher = SimpleNamespace(
+            _unique_emails=lambda emails: [],
+            _log_missing_recipients=lambda *args: calls.append(args) or "failed",
+            send_email_template=lambda *args, **kwargs: self.fail("empty recipients queued"),
+        )
+        result = method("notification_dispatcher.py", "_send_email_or_log")(
+            dispatcher, "record", "template", "name", [])
+        self.assertEqual(result, "failed")
+        self.assertEqual(calls[0][2], "email")
 
     def test_structure_prohibits_immediate_send(self):
         self.assertEqual(violations(), [])

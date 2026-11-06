@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Protect the non-blocking result-notification contract."""
+"""Structural prohibition of SMTP in business-action producers.
+
+Recipient routing and failure behavior are tested by ci.test_notification_outbox."""
 
 import ast
 from pathlib import Path
@@ -14,21 +16,6 @@ def violations(root=ROOT):
     dispatcher = (root / DISPATCHER.relative_to(ROOT)).read_text(encoding="utf-8")
     service = (root / SERVICE.relative_to(ROOT)).read_text(encoding="utf-8")
     failures = []
-    required_dispatcher = (
-        "notification_match = match.sudo()",
-        "notification_match.home_team_id",
-        "notification_match.away_team_id",
-        "self._send_email_or_log(",
-    )
-    for token in required_dispatcher:
-        if token not in dispatcher:
-            failures.append(f"result notification is missing: {token}")
-    if "except Exception" not in service:
-        failures.append(
-            "notification service does not contain an integration failure boundary"
-        )
-    if "failure_category" not in service or "operator_message" not in service:
-        failures.append("notification failures do not persist operator feedback")
     for name, text in (("dispatcher", dispatcher), ("service", service)):
         tree = ast.parse(text)
         for node in ast.walk(tree):
@@ -50,7 +37,7 @@ def main():
         for failure in failures:
             print(f"- {failure}", file=sys.stderr)
         return 1
-    print("Notification side-effect contract passed.")
+    print("Notification queue structure passed; behavioral and ORM tests are separate.")
     return 0
 
 

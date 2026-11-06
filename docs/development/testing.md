@@ -445,3 +445,38 @@ rehearsal (`scripts/ci/run_migration_rehearsal.sh`, with invariants from
 evidence has been archived, add a count or integrity check when a new
 release-critical ownership boundary is introduced, and never remove a check to
 accommodate unexplained migration drift.
+
+## Behavioral contract gate
+
+Run `python ci/run_behavioral_contracts.py` for the isolated contract suite.
+Repository lint invokes the same gate. The legacy
+`ci/check_workflow_command_boundaries.py` entrypoint now runs workflow behavior
+instead of requiring particular source strings.
+
+| Guarantee | Executable evidence | Integration boundary |
+| --- | --- | --- |
+| Submission rejects invalid maps and unreasoned warnings | `ci.test_workflow_commands` | Installed scheduling/SQL tests |
+| Transition validates state, revision, reason and duties before writing | `ci.test_workflow_commands` | Installed ORM access and audit tests |
+| Task collection and synchronization preserve identity and scope | `ci.test_task_projection` | Portal ORM and browser tests |
+| Queue acceptance is not delivery; retry reuses mail/log | `ci.test_notification_outbox` | Notification ORM and real mail transport tests |
+| Result recipients come from both teams; empty recipients fail | `ci.test_notification_outbox` | Result workflow authorization tests |
+
+The notification static check only prohibits direct SMTP and non-queued
+`send_mail` calls in business-action producers. It does not claim to prove
+recipient routing, error isolation, authorization or delivery. The task
+projection static check only enforces its explicit structural boundary.
+Manifest, dependency and template checks remain useful structural checks.
+Readiness vocabulary and derived-record inventories remain structural coverage
+inventories, not proof that a workflow is usable or that reconciliation succeeds.
+
+Isolated tests execute production method bodies with explicit doubles. The
+schedule transaction test also executes the production savepoint decorator.
+These tests do not execute Odoo record rules, PostgreSQL locks, actual mail
+transport or browser rendering. A green isolated gate must never be reported as
+a green installed ORM or end-to-end suite. Tests added by the task and outbox
+patches remain required in the installed release-confidence run.
+
+Negative cases are first-class: rejected commands must not emit transition or
+audit side effects, missing recipients must not queue mail, and malformed task
+specifications must not close existing work. When replacing a wording check,
+add both the successful path and a rejection path before removing it.
