@@ -6,6 +6,7 @@ from .membership import manager
 from ..lifecycle_policy import fingerprint
 
 _COMMAND = object()
+LEGAL_HOLD_FIELDS = {'legal_hold', 'legal_hold_reason', 'legal_hold_by_id', 'legal_hold_on'}
 
 
 def lock(records):
@@ -402,6 +403,11 @@ class EvidenceRevision(models.Model):
     document = fields.Binary(attachment=True, required=True)
     filename = fields.Char()
     uploaded_by_id = fields.Many2one('res.users', required=True)
+    legal_hold = fields.Boolean(readonly=True, copy=False, index=True,
+                                help='Held evidence is excluded from retention and erasure until the hold is released.')
+    legal_hold_reason = fields.Text(readonly=True, copy=False)
+    legal_hold_by_id = fields.Many2one('res.users', readonly=True, copy=False)
+    legal_hold_on = fields.Datetime(readonly=True, copy=False)
     _revision_unique = models.Constraint('unique(request_id,revision)', 'This evidence revision is already retained.')
 
     @api.model_create_multi
@@ -410,7 +416,14 @@ class EvidenceRevision(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        # Only the legal-hold stamps change, and only through the governed command.
+        if self.env.context.get('member_lifecycle_token') is _COMMAND and set(vals) <= LEGAL_HOLD_FIELDS:
+            return super().write(vals)
         raise AccessError(_('Evidence revisions are immutable.'))
 
     def unlink(self):
-        raise AccessError(_('Evidence history requires the governed retention process.'))
+        if self.env.context.get('member_lifecycle_token') is not _COMMAND:
+            raise AccessError(_('Evidence history requires the governed retention process.'))
+        if self.filtered('legal_hold'):
+            raise ValidationError(_('Evidence under legal hold cannot be deleted. Release the hold first.'))
+        return super().unlink()

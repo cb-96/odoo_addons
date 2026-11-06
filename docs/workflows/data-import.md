@@ -173,9 +173,9 @@ failures with explicit categories.
 
 | Column | Maps To | Required |
 | ------ | ------- | -------- |
-| `team_name` or `name` | `federation.team.name` | Yes |
+| `team_name` | `federation.team.name` | Yes |
 | `code` | `federation.team.code` | No, but strongly recommended |
-| `club_code` or `club_name` | Lookup → `federation.club` | Yes |
+| `club_code` | Lookup → `federation.club` | Yes |
 
 ### Tournament Participants CSV
 
@@ -184,6 +184,12 @@ failures with explicit categories.
 | `team_code` | Lookup → `federation.team` | Yes |
 | `tournament_code` | Lookup → `federation.tournament` | Yes |
 | `seed` | `federation.tournament.participant.seed` | No |
+
+References to clubs, divisions and teams use codes only. Name-based columns
+(`name` for players, `club_name` and `name` for teams, `tournament_name` and
+`team_name` for participants) are rejected with a missing-column error. These
+three templates are at contract version `csv_codes`; an approval recorded under
+an earlier version must be renewed with a fresh dry run.
 
 ## Key Behaviours
 

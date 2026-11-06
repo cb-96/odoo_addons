@@ -14,7 +14,7 @@ class FederationImportTeamsWizard(models.TransientModel):
     def _get_mapping_guide(self):
         """Return mapping guide."""
         return (
-            "Required columns: team_name (or name) and club_code (preferred) or club_name.\n"
+            "Required columns: club_code and team_name.\n"
             "Recommended columns: code, category, gender, email, phone.\n"
             "Duplicate detection prefers team code when provided and falls back to club + team name."
         )
@@ -24,12 +24,17 @@ class FederationImportTeamsWizard(models.TransientModel):
         self.ensure_one()
         baseline_count = self._prepare_import_execution()
         reader = self._get_csv_reader()
-        if not any(
-            column in reader.fieldnames for column in ("club_code", "club_name")
-        ):
-            raise ValidationError("Missing required columns: club_code or club_name")
-        if not any(column in reader.fieldnames for column in ("team_name", "name")):
-            raise ValidationError("Missing required columns: team_name or name")
+        missing = [
+            column
+            for column in ("club_code", "team_name")
+            if column not in (reader.fieldnames or [])
+        ]
+        if missing:
+            raise ValidationError(
+                "Missing required columns: %s. Clubs are matched by club_code "
+                "only; club_name and name are no longer accepted."
+                % ", ".join(missing)
+            )
 
         line_count = 0
         success_count = 0
@@ -43,17 +48,16 @@ class FederationImportTeamsWizard(models.TransientModel):
         for row_num, row in enumerate(reader, start=2):
             line_count += 1
             club_code = self._get_row_value(row, "club_code")
-            club_name = self._get_row_value(row, "club_name")
-            team_name = self._get_row_value(row, "team_name", "name")
+            team_name = self._get_row_value(row, "team_name")
             team_code = self._get_row_value(row, "code", "team_code")
 
-            if not (club_code or club_name):
+            if not club_code:
                 self._record_error(
                     errors,
                     error_categories,
                     row_num,
                     "missing_required_field",
-                    "Club code or club name is required.",
+                    "Club code is required.",
                 )
                 error_count += 1
                 continue
@@ -69,18 +73,14 @@ class FederationImportTeamsWizard(models.TransientModel):
                 error_count += 1
                 continue
 
-            club = False
-            if club_code:
-                club = Club.search([("code", "=", club_code)], limit=1)
-            if not club and club_name:
-                club = Club.search([("name", "=", club_name)], limit=1)
+            club = Club.search([("code", "=", club_code)], limit=1)
             if not club:
                 self._record_error(
                     errors,
                     error_categories,
                     row_num,
                     "missing_reference",
-                    f"Club '{club_code or club_name}' not found.",
+                    f"Club '{club_code}' not found.",
                 )
                 error_count += 1
                 continue

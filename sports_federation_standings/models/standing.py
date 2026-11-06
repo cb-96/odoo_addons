@@ -415,8 +415,9 @@ class FederationStanding(models.Model):
     def action_freeze(self):
         """Freeze the standing to prevent recomputation.
 
-        If any stage progression rules have auto_advance=True for the
-        source stage/group of this standing, they are executed automatically.
+        Stage progression is not applied here. Tables linked to a competition
+        stage are frozen through ``sports_federation_format``, which freezes
+        the stage snapshot and applies its progression edges.
         """
         for record in self:
             record._compute_finish_readiness()
@@ -429,21 +430,6 @@ class FederationStanding(models.Model):
                     )
                 )
             record.state = "frozen"
-            # Trigger auto-advance progression rules
-            if record.tournament_id and record.stage_id:
-                Progression = self.env.get("federation.stage.progression")
-                if Progression is not None:
-                    domain = [
-                        ("tournament_id", "=", record.tournament_id.id),
-                        ("source_stage_id", "=", record.stage_id.id),
-                        ("auto_advance", "=", True),
-                        ("state", "=", "pending"),
-                    ]
-                    if record.group_id:
-                        domain.append(("source_group_id", "=", record.group_id.id))
-                    rules = Progression.search(domain)
-                    for rule in rules:
-                        rule.action_execute()
             Dispatcher = record.env.get("federation.notification.dispatcher")
             if Dispatcher is not None:
                 Dispatcher.send_standing_frozen(record)

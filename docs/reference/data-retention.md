@@ -4,9 +4,10 @@ Owner: Federation Platform Team
 Last reviewed: 2026-11-06
 Review cadence: Every release
 
-This document defines the default retention windows for operational logs,
-staged inbound deliveries, and generated report files stored by the federation
-addons, and lists the data that has no automated window yet.
+This document defines the retention windows for operational logs, staged
+inbound deliveries and generated report files, the configurable retention of
+personal communication and evidence data, and how court-scoring data on
+devices is handled.
 
 ## Review status
 
@@ -21,6 +22,11 @@ The current automated retention policy covers these repository-owned surfaces:
   in `sports_federation_import_tools`
 - `federation.report.schedule.generated_file` attachments created by
   `sports_federation_reporting`
+- `federation.communication.receipt` and `federation.communication.delivery`
+  (participant inbox) in `sports_federation_notifications`, once a period is
+  configured
+- `federation.member.evidence.revision` in the optional
+  `sports_federation_member_services`, once a period is configured
 
 Non-terminal workflow records are intentionally excluded from automated purge.
 If a delivery is still waiting for preview, approval, or live processing, it is
@@ -47,6 +53,8 @@ affected addons:
 - `sports_federation_notifications.ir_cron_notification_log_retention`
 - `sports_federation_import_tools.ir_cron_federation_integration_delivery_retention`
 - `sports_federation_reporting.ir_cron_federation_report_schedule_retention`
+- `sports_federation_notifications.ir_cron_participant_inbox_retention`
+- `sports_federation_member_services.ir_cron_member_evidence_retention`
 
 These jobs are active by default and call the corresponding model cleanup
 helpers during normal Odoo cron execution.
@@ -71,17 +79,60 @@ When retention windows or cleanup scope change:
 4. Re-run the affected module test suites to confirm the cleanup behavior still
    matches the documented policy.
 
-## Data without an automated retention window
+## Configurable retention for personal data
 
-These records are deliberately retained until an approved retention period,
-legal-hold handling and erasure procedure are defined. They are listed as open
-items in the [roadmap](../roadmap.md#known-gaps).
+The federation decides how long participant communications and member evidence
+are kept. The platform ships the mechanism but no period: until a period is
+configured, nothing is deleted and each daily run records a dry-run evidence
+entry saying so. Set the periods under **Settings > Technical > Parameters >
+System Parameters** after the federation has approved them.
 
-| Surface | Owner | Current behaviour |
-| --- | --- | --- |
-| Participant inbox receipts and deliveries | `sports_federation_notifications` | Unresolved inbox work is never deleted silently; the existing notification-log windows above still apply to notification logs. |
-| Member evidence revisions (current and replaced document bytes) | `sports_federation_member_services` (optional) | Immutable, reviewer-only records; ordinary editing and deletion are blocked. |
-| Court score journals and exported recovery evidence | `sports_federation_live_workspace` | Stored on the operator's device; exports are operational evidence handled under the federation's access policy. No automatic expiry is applied to unresolved evidence. |
+| Surface | System parameter | Removed after the period | Always kept |
+|---------|------------------|--------------------------|-------------|
+| Participant inbox items and their deliveries | `sports_federation_notifications.inbox_retention_days` | Inbox items that are closed (acted upon, expired or superseded) and whose closing date is older than the period; their deliveries once finished (`sent`, `cancelled`, `suppressed`) and no longer used by another item | Open items; items with a waiting, queued or failed delivery |
+| Member evidence revisions (optional member services) | `sports_federation_member_services.evidence_retention_days` | Replaced revisions, and revisions of cancelled requests, older than the period | The current revision of an open request; revisions under legal hold |
+
+Rules:
+
+- The value is a whole number of days. Empty or `0` disables deletion.
+- The inbox period must be at least 30 days. Inbox items also prevent the same
+  event from notifying a person twice, so a shorter period is refused: the run
+  deletes nothing and records a failed evidence entry with the reason.
+- An invalid value (not a whole number) is reported the same way.
+- Notification logs keep their own windows (see the table above).
+
+### Legal hold and erasure of member evidence
+
+Federation managers open **Federation > Administration > Member evidence
+history**, select revisions and use **Action > Legal hold or erasure**:
+
+- **Place legal hold** excludes the revisions from scheduled retention and
+  from erasure. The reason, person and time are recorded on the revision and
+  posted on the member request.
+- **Release legal hold** requires a reason and is posted the same way.
+- **Erase permanently** deletes the selected revisions and their files, for
+  example on a data-subject erasure request. It requires a reason and an
+  explicit confirmation, is refused for held revisions, is posted on the member
+  request and is recorded as retention evidence with policy
+  `member_evidence_erasure`.
+
+Revisions stay immutable otherwise: ordinary editing and deletion remain
+blocked for every user.
+
+### Court-scoring data on devices
+
+The court workspace keeps a score journal per match in the browser's local
+storage. When the workspace opens, it removes journals of the same database
+and user that are fully synchronised (no queued commands, no unsent edits) and
+were last saved more than 14 days ago; such a journal only repeats what the
+server already holds. Journals that cannot be read, or that still hold unsent
+work, are never removed automatically: they may be the only evidence and must
+be exported and reconciled by a person.
+
+Exported recovery evidence (`court-<match>-evidence.json`) is a file on the
+operator's device and cannot be governed by the platform. Attach it to the
+incident or result-correction record where it is needed, then delete the local
+copy. Do not keep exports in personal storage.
 
 ## Execution evidence
 

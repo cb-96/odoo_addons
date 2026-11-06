@@ -93,15 +93,13 @@ decision before it is closed.
 
 | Area | Gap |
 | --- | --- |
-| Retention | No approved retention period, legal hold or erasure procedure yet for participant inbox receipts and deliveries, member evidence revisions, and exported court recovery evidence ([data retention](reference/data-retention.md#data-without-an-automated-retention-window)). |
+| Retention periods | Retention, legal hold and erasure are implemented for participant inbox items and member evidence, but no period is configured. The federation must approve the periods and set them ([data retention](reference/data-retention.md#configurable-retention-for-personal-data)); until then nothing is deleted. |
 | Schedule validation | Referee availability, double-booking, certification and club-duty overlap, and venue opening, court suitability and playing-area constraints are not yet all part of schedule validation; approval and publication should block when required officiating or venue checks fail. Transaction tests are needed before parity with the removed planner is claimed. |
 | Member services (optional) | Identity backfill for historical records, licence renewal integration and full lifecycle reporting remain open; historical duplicates are not resolved until the legacy inventory is reviewed. |
 | Payments (optional accounting) | Payment-provider configuration, sandbox end-to-end integration, automatic settlement and the full failed/partial/refund/cancellation lifecycle are not runtime-qualified. |
 | Communications | External provider delivery receipts and webhooks are not implemented; `sent` means accepted by the outbound mail server. Suspension issuance still uses a direct-email fallback instead of a dedicated template. |
 | Mobile match day | No cold-start offline application: reloading while fully offline is not supported. Court editing requires a browser with Web Locks. |
 | Performance | The duty coverage board state filter, task synchronization and inbox query budgets need measurement on representative restored volumes. |
-| Code cleanup | `federation.standing.action_freeze` still looks up the removed `federation.stage.progression` model (a no-op); progression runs through the stage-table bridge in `sports_federation_format`. Remove the dead branch. |
-| Import compatibility | The player `name`, team-name and participant-name import fallbacks passed their target exit date (2026-10-15) without a removal decision ([integration contracts](reference/integration-contracts.md#deprecation-policy)). |
 
 ## Deferred
 

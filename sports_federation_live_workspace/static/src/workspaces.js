@@ -1,6 +1,6 @@
 /** @odoo-module **/
 import { restoreCourtCache } from "./court_cache";
-import { copy, readJournal, durableWrite, acknowledgedState, saveState, nextMatch } from "./mobile_recovery";
+import { copy, readJournal, durableWrite, acknowledgedState, saveState, nextMatch, pruneCleanJournals } from "./mobile_recovery";
 import { destinationLabel, canApply, comparable, navigationTarget, formatEventTime } from "./visual_helpers";
 import { Component, useEffect, useRef, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
@@ -48,6 +48,8 @@ export class CourtWorkspace extends Component {
             window.removeEventListener("storage", this.storageChanged);
         });
         onWillStart(async () => {
+            // Synchronised journals only repeat server state; unreadable or unsent ones stay.
+            try { pruneCleanJournals(localStorage, this.storagePrefix); } catch { /* Storage unavailable: nothing to prune. */ }
             try {
                 this.state.courts = await this.orm.call("federation.court.commands", "courts", []);
                 let remembered;

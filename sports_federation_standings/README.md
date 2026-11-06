@@ -96,8 +96,9 @@ Key Behaviours
    counted.
 - **Freeze behavior**: frozen standings reject recomputation unless
    ``force_recompute`` is provided in context.
-- **Auto-advance hook**: freezing a standing can trigger pending
-   ``federation.stage.progression`` rules with ``auto_advance = True``.
+- **Stage progression**: this addon does not advance teams. A table linked to a
+   competition stage is frozen through ``sports_federation_format``, which
+   freezes the stage snapshot and applies its progression edges.
 - **Publication is separate**: public visibility is handled by
    ``sports_federation_public_site`` through ``website_published``, not by a
    dedicated published standings state.

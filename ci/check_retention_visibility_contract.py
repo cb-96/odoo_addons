@@ -27,6 +27,18 @@ REQUIRED = {
         "_generated_file_retention_candidates",
         "record_execution",
     ),
+    "sports_federation_notifications/models/communication_retention.py": (
+        "_inbox_retention_candidates",
+        "OPEN_DELIVERY_STATES",
+        "record_execution",
+        "record_failure_durable",
+    ),
+    "sports_federation_member_services/models/evidence_retention.py": (
+        "_evidence_retention_candidates",
+        "legal_hold",
+        "record_execution",
+        "record_failure_durable",
+    ),
 }
 
 

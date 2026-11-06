@@ -18,8 +18,8 @@
         <field name="code">players_csv</field>
         <field name="wizard_model">federation.import.players.wizard</field>
         <field name="target_model">federation.player</field>
-        <field name="contract_version">csv_v1</field>
-        <field name="required_columns_text">first_name and last_name, or legacy name</field>
+        <field name="contract_version">csv_codes</field>
+        <field name="required_columns_text">first_name, last_name</field>
         <field name="optional_columns_text">birth_date, club_code, club_name, gender, email, phone, state</field>
         <field name="sample_header">first_name,last_name,birth_date,club_code,gender,email,phone,state</field>
         <field name="notes">Duplicate detection uses first name, last name, and birth date to align with player uniqueness rules.</field>
@@ -42,11 +42,11 @@
         <field name="code">teams_csv</field>
         <field name="wizard_model">federation.import.teams.wizard</field>
         <field name="target_model">federation.team</field>
-        <field name="contract_version">csv_v1</field>
-        <field name="required_columns_text">team_name or name, and club_code or club_name</field>
+        <field name="contract_version">csv_codes</field>
+        <field name="required_columns_text">club_code, team_name</field>
         <field name="optional_columns_text">code, category, gender, email, phone</field>
         <field name="sample_header">club_code,team_name,code,category,gender,email,phone</field>
-        <field name="notes">Team duplicates prefer code when present and otherwise use the club plus team name pair.</field>
+        <field name="notes">Clubs are matched by club_code only. Team duplicates prefer code when present and otherwise use the club plus team name pair.</field>
     </record>
 
     <record id="federation_import_template_tournament_participants" model="federation.import.template">
@@ -54,11 +54,11 @@
         <field name="code">tournament_participants_csv</field>
         <field name="wizard_model">federation.import.tournament.participants.wizard</field>
         <field name="target_model">federation.tournament.participant</field>
-        <field name="contract_version">csv_v1</field>
-        <field name="required_columns_text">tournament_code or tournament_name, and team_code or team_name</field>
+        <field name="contract_version">csv_codes</field>
+        <field name="required_columns_text">tournament_code, team_code</field>
         <field name="optional_columns_text">seed</field>
         <field name="sample_header">tournament_code,team_code,seed</field>
-        <field name="notes">Eligibility, duplicate, and seeding checks reuse the same backend rules as manual participant confirmation.</field>
+        <field name="notes">Divisions and teams are matched by code only. Eligibility, duplicate, and seeding checks reuse the same backend rules as manual participant confirmation.</field>
     </record>
 
 </odoo>

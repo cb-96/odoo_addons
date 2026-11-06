@@ -37,7 +37,7 @@ bypass or automatic score merge.
 
 Court editing requires a secure browser supporting Web Locks. Unsupported browsers fail closed with a fallback message instead of risking concurrent-tab overwrite. Use HTTPS in staging/production. Validate the actual mobile browsers before rollout.
 
-Local score journals are device data, not official results. They exclude cached player lineups. Recovery exports exclude the in-memory lineup list, but existing legacy raw journals may contain earlier cached fields. Treat exports as operational evidence and follow your retention/access policy. Clearing browser storage, private-mode expiry, device loss or deliberate deletion is outside the acknowledged-save interruption guarantee. No arbitrary automatic expiry is added to unresolved evidence.
+Local score journals are device data, not official results. They exclude cached player lineups. Recovery exports exclude the in-memory lineup list, but existing legacy raw journals may contain earlier cached fields. Treat exports as operational evidence and handle them as described in [data retention](../../reference/data-retention.md#court-scoring-data-on-devices). Fully synchronised journals are removed from the device after 14 days; unreadable journals and journals with unsent work are never removed automatically. Clearing browser storage, private-mode expiry, device loss or deliberate deletion is outside the acknowledged-save interruption guarantee.
 
 A check-in request is not proof of physical attendance. The organiser confirms attendance separately. Existing acceptance and eligibility requirements are not relaxed. Replacement starts unaccepted.
 
@@ -51,6 +51,7 @@ PYTHONDONTWRITEBYTECODE=1 python ci/static_checks.py
 PYTHONDONTWRITEBYTECODE=1 python ci/test_live_workspace_policy.py
 PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s ci -p test_duty_coverage_policy.py
 node ci/test_mobile_recovery.mjs
+node ci/test_court_journal_pruning.mjs
 node --check ci/mobile_matchday_browser.mjs
 node --check sports_federation_live_workspace/static/src/workspaces.js
 ```

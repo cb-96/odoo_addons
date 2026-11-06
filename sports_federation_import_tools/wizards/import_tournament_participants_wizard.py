@@ -14,7 +14,7 @@ class FederationImportTournamentParticipantsWizard(models.TransientModel):
     def _get_mapping_guide(self):
         """Return mapping guide."""
         return (
-            "Required columns: tournament_code (preferred) or tournament_name, and team_code (preferred) or team_name.\n"
+            "Required columns: tournament_code and team_code.\n"
             "Optional columns: seed.\n"
             "Duplicate and eligibility checks reuse the same backend availability rules as manual participant confirmation."
         )
@@ -24,17 +24,17 @@ class FederationImportTournamentParticipantsWizard(models.TransientModel):
         self.ensure_one()
         baseline_count = self._prepare_import_execution()
         reader = self._get_csv_reader()
-        if not any(
-            column in reader.fieldnames
-            for column in ("tournament_code", "tournament_name")
-        ):
+        missing = [
+            column
+            for column in ("tournament_code", "team_code")
+            if column not in (reader.fieldnames or [])
+        ]
+        if missing:
             raise ValidationError(
-                "Missing required columns: tournament_code or tournament_name"
+                "Missing required columns: %s. Divisions and teams are matched by "
+                "code only; tournament_name and team_name are no longer accepted."
+                % ", ".join(missing)
             )
-        if not any(
-            column in reader.fieldnames for column in ("team_code", "team_name")
-        ):
-            raise ValidationError("Missing required columns: team_code or team_name")
 
         line_count = 0
         success_count = 0
@@ -49,64 +49,50 @@ class FederationImportTournamentParticipantsWizard(models.TransientModel):
         for row_num, row in enumerate(reader, start=2):
             line_count += 1
             tournament_code = self._get_row_value(row, "tournament_code")
-            tournament_name = self._get_row_value(row, "tournament_name")
             team_code = self._get_row_value(row, "team_code")
-            team_name = self._get_row_value(row, "team_name")
 
-            if not (tournament_code or tournament_name):
+            if not tournament_code:
                 self._record_error(
                     errors,
                     error_categories,
                     row_num,
                     "missing_required_field",
-                    "Tournament code or tournament name is required.",
+                    "Tournament code is required.",
                 )
                 error_count += 1
                 continue
 
-            if not (team_code or team_name):
+            if not team_code:
                 self._record_error(
                     errors,
                     error_categories,
                     row_num,
                     "missing_required_field",
-                    "Team code or team name is required.",
+                    "Team code is required.",
                 )
                 error_count += 1
                 continue
 
-            tournament = False
-            if tournament_code:
-                tournament = Tournament.search(
-                    [("code", "=", tournament_code)], limit=1
-                )
-            if not tournament and tournament_name:
-                tournament = Tournament.search(
-                    [("name", "=", tournament_name)], limit=1
-                )
+            tournament = Tournament.search([("code", "=", tournament_code)], limit=1)
             if not tournament:
                 self._record_error(
                     errors,
                     error_categories,
                     row_num,
                     "missing_reference",
-                    f"Tournament '{tournament_code or tournament_name}' not found.",
+                    f"Tournament '{tournament_code}' not found.",
                 )
                 error_count += 1
                 continue
 
-            team = False
-            if team_code:
-                team = Team.search([("code", "=", team_code)], limit=1)
-            if not team and team_name:
-                team = Team.search([("name", "=", team_name)], limit=1)
+            team = Team.search([("code", "=", team_code)], limit=1)
             if not team:
                 self._record_error(
                     errors,
                     error_categories,
                     row_num,
                     "missing_reference",
-                    f"Team '{team_code or team_name}' not found.",
+                    f"Team '{team_code}' not found.",
                 )
                 error_count += 1
                 continue

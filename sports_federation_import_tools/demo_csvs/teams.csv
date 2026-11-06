@@ -1,7 +1,7 @@
-club_name,team_name
-New Club,Team A
-Real Club,Team B
-Test Club,Test Team
-New Club,Team A
-,NoClubTeam
-Nonexistent Club,Orphan Team
+club_code,team_name,code
+NEW,Team A,TEAM_A
+REAL,Team B,TEAM_B
+TC001,Test Team,TEAM001
+NEW,Team A,TEAM_A
+,NoClubTeam,NOCLUB
+UNKNOWN,Orphan Team,ORPHAN

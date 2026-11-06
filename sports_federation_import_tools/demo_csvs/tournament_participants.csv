@@ -1,6 +1,6 @@
-tournament_name,team_name
-Summer Cup,Team A
-Test Tournament,Test Team
-Test Tournament,Test Team
-,Team Without Tournament
-Test Tournament,Nonexistent Team
+tournament_code,team_code
+SUMMER_CUP,TEAM_A
+TT2024,TEAM001
+TT2024,TEAM001
+,TEAM_A
+TT2024,NONEXISTENT

@@ -273,9 +273,11 @@ README.
 
 All import wizards share `federation.import.wizard.mixin`: UTF-8 BOM handling,
 comma or semicolon delimiters, mapping guidance, dry-run statistics and
-categorized row-level failures. Imports match by code where codes exist,
-report and skip duplicates instead of overwriting, and populate player
-`first_name` and `last_name`. See the [data import workflow](../workflows/data-import.md).
+categorized row-level failures. Team, player-club and participant imports
+reference clubs, divisions and teams by code; players require `first_name`
+and `last_name`. Imports report and skip duplicates instead of overwriting. A
+live import is refused when its approval was recorded under another template
+version. See the [data import workflow](../workflows/data-import.md).
 
 ## Reliability and observability
 

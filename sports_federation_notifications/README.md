@@ -20,7 +20,9 @@ Notification delivery must not roll back the business transaction. Failures are 
 
 ## Retention
 
-Notification log cleanup follows `docs/reference/data-retention.md`. Changes to state-specific retention windows must update the policy, cleanup code, cron configuration, and tests together.
+Notification log cleanup follows [data retention](../docs/reference/data-retention.md). Changes to state-specific retention windows must update the policy, cleanup code, cron configuration, and tests together.
+
+Participant inbox items and their deliveries are removed by **Federation: Participant inbox retention** only after the federation sets `sports_federation_notifications.inbox_retention_days` (at least 30 days). Only closed items (acted upon, expired or superseded) past the period are removed, never items with a waiting, queued or failed delivery. Each run records evidence under policy `participant_inbox`. See `models/communication_retention.py`.
 
 ## Tests
 

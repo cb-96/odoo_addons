@@ -31,6 +31,12 @@ silently. New complete name/date matching scenarios use a normalised unique key;
 legacy records are not auto-linked. Email is never identity evidence.
 
 Evidence revisions are retained as immutable, company-scoped reviewer records.
+Federation managers can place or release a legal hold and erase revisions on a
+documented request from **Member evidence history** (**Action > Legal hold or
+erasure**); erasure is refused under legal hold. Replaced revisions and
+revisions of cancelled requests are removed by the daily retention run once
+`sports_federation_member_services.evidence_retention_days` is set; nothing is
+removed without it. See [data retention](../docs/reference/data-retention.md#legal-hold-and-erasure-of-member-evidence).
 Parental-purpose uploads create a draft in the owning parental-approval workflow;
 generic membership review cannot verify parental approval. Payment summaries expose
 native invoice balances only to an authorised invoice partner when the optional

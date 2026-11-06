@@ -36,6 +36,61 @@ passed unless they ran.
 
 ## Entries
 
+### Retention controls, code-only imports and standings cleanup
+
+Affected modules: `sports_federation_notifications` 19.0.1.4.1 → 19.0.1.5.0,
+`sports_federation_member_services` 19.0.1.2.0 → 19.0.1.3.0 (optional),
+`sports_federation_import_tools` 19.0.1.2.2 → 19.0.1.3.0,
+`sports_federation_live_workspace` 19.0.1.6.1 → 19.0.1.6.2,
+`sports_federation_standings` 19.0.2.2.0 → 19.0.2.2.1.
+
+**Data changes**:
+
+- New columns on `federation_member_evidence_revision`: `legal_hold`,
+  `legal_hold_reason`, `legal_hold_by_id`, `legal_hold_on`. Existing rows get
+  no hold. No migration script is needed.
+- New transient model `federation.member.evidence.governance.wizard`, menu
+  **Member evidence history** and ACL row.
+- New retention policies `participant_inbox` and `member_evidence_revisions`
+  and two daily scheduled actions (`noupdate`).
+- The players, teams and tournament-participants import templates and their
+  inbound integration contracts move from `csv_v1` to `csv_codes`.
+- No data is deleted by the upgrade. The new retention runs delete nothing
+  until `sports_federation_notifications.inbox_retention_days` or
+  `sports_federation_member_services.evidence_retention_days` is set.
+
+**Behaviour to verify**:
+
+- Imports: a players CSV with only `name`, a teams CSV with `club_name` or
+  `name`, and a participants CSV with `tournament_name`/`team_name` fail with a
+  missing-column message; code-based files import as before. Notify integration
+  partners that send these contracts: this is a breaking change for files that
+  still use names.
+- Import jobs approved before the upgrade for these three templates must be
+  re-previewed and re-approved; the live run refuses approvals recorded under
+  `csv_v1`.
+- **Retention and Recovery** lists the two new policies; their first runs are
+  recorded as dry runs while no period is set.
+- Member evidence: hold, release and erasure from **Member evidence history**;
+  erasure is refused under hold and is posted on the member request.
+- Court workspace: opening it removes this user's fully synchronised journals
+  older than 14 days from the device and keeps journals with unsent work.
+- Freezing standings behaves as before; stage progression still runs through
+  the format addon.
+
+**Dry-run evidence**: static checks only in the authoring environment
+(`py_compile`, CI documentation and contract checks,
+`node ci/test_court_journal_pruning.mjs`). The new ORM tests
+(`sf_notification_retention`, `sf_member_evidence_retention`, import-tools
+tests) and the module upgrade were not run there; run them on staging.
+
+**Rollback**: restore the pre-upgrade database and filestore together with the
+previous code. If only the import change must be reverted and no `csv_codes`
+approvals are pending, previous code and an upgrade of
+`sports_federation_import_tools` restore `csv_v1`. Records deleted by a
+configured retention run or an erasure cannot be restored without the backup;
+set the periods only after the federation has approved them.
+
 ### Custom format setup and team spread
 
 Affected modules: format, scheduling, setup_flow.

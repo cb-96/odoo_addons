@@ -56,3 +56,36 @@ export function nextMatch(queue, now = Date.now()) {
     return open.find(match => Date.parse(match.start.replace(' ', 'T') + 'Z') <= now
         && Date.parse(match.end.replace(' ', 'T') + 'Z') >= now) || open[0] || null;
 }
+
+// Days after which a fully synchronised court journal is removed from this
+// device. Such a journal only repeats what the server already holds.
+export const CLEAN_JOURNAL_MAX_AGE_DAYS = 14;
+
+/**
+ * Remove old, fully synchronised court journals for one database and user.
+ *
+ * A journal is removed only when it parses, has no queued commands, has no
+ * unsent edits and was last saved more than ``maxAgeDays`` ago. Journals that
+ * cannot be read are kept: they may be the only evidence and must be exported
+ * by a person. The ``last`` pointer and keys outside ``prefix`` are untouched.
+ * Returns the removed keys.
+ */
+export function pruneCleanJournals(storage, prefix, now = Date.now(), maxAgeDays = CLEAN_JOURNAL_MAX_AGE_DAYS) {
+    const removed = [];
+    const cutoff = now - maxAgeDays * 24 * 60 * 60 * 1000;
+    const keys = [];
+    for (let index = 0; index < storage.length; index++) {
+        const name = storage.key(index);
+        if (name && name.startsWith(prefix) && name !== `${prefix}last`) keys.push(name);
+    }
+    for (const name of keys) {
+        let record;
+        try { record = readJournal(storage.getItem(name)); } catch { continue; }
+        if (!record || record.dirty || record.pending.length) continue;
+        const savedAt = Date.parse(record.saved_at || '');
+        if (!Number.isFinite(savedAt) || savedAt >= cutoff) continue;
+        storage.removeItem(name);
+        removed.push(name);
+    }
+    return removed;
+}

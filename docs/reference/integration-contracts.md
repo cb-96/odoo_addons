@@ -291,11 +291,15 @@ The working list of compatibility aliases, owners, review dates, and target
 sunset dates is maintained here and must be updated in the same change set as
 any contract-facing deprecation decision.
 
-| Surface | Canonical replacement | Target exit |
+There are no open compatibility aliases.
+
+Removed compatibility surfaces:
+
+| Surface | Replacement | Removed in |
 |---|---|---|
-| Player import `name` column fallback | Explicit `first_name`, `last_name` columns | 2026-10-15 |
-| Team import name fallbacks | `club_code` and explicit team naming columns | 2026-10-15 |
-| Participant import tournament/team name fallbacks | `tournament_code` and `team_code` | 2026-10-15 |
+| Player import `name` column fallback | `first_name`, `last_name` columns | `players_csv` `csv_codes` |
+| Team import `club_name` and `name` fallbacks | `club_code`, `team_name` columns | `teams_csv` `csv_codes` |
+| Participant import `tournament_name` and `team_name` fallbacks | `tournament_code`, `team_code` columns | `tournament_participants_csv` `csv_codes` |
 
 Remove a compatibility surface only after its replacement is documented,
 covered by tests, and announced in the owning module README. If a target date

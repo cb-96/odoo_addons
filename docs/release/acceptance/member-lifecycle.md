@@ -162,11 +162,12 @@ partial renewal/evidence mutations are rolled back. Family responses and downloa
 are no-store. Already viewed/downloaded information cannot be recalled, but later
 requests from an active session must fail after access is revoked.
 
-**Retention qualification:** the evidence archive intentionally prevents ordinary
-editing and deletion. Before production, assign an approved retention period,
-legal-hold handling and a governed erasure procedure to this model (see
-[data retention](../../reference/data-retention.md#data-without-an-automated-retention-window)).
-No retention period is set, and indefinite retention is not implied. Do not enable public attachment links or unreviewed portal ACLs.
+**Retention qualification:** the evidence archive prevents ordinary editing and
+deletion. Before production, have the federation approve an evidence retention
+period and set `sports_federation_member_services.evidence_retention_days`
+(see [data retention](../../reference/data-retention.md#legal-hold-and-erasure-of-member-evidence)).
+On staging, verify legal hold, release, erasure (refused under hold) and that
+the scheduled run removes only replaced revisions past the period. Do not enable public attachment links or unreviewed portal ACLs.
 
 ## Automated staging browser / concurrency smoke
 

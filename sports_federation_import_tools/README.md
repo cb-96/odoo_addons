@@ -234,14 +234,16 @@ Validation notes:
 ``federation.import.teams.wizard``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Required columns:
+Required columns (contract ``csv_codes``):
 
-- ``team_name`` or ``name``
-- ``club_code`` or ``club_name``
+- ``club_code``
+- ``team_name``
 
 Recommended columns:
 
 - ``code``, ``category``, ``gender``, ``email``, ``phone``
+
+Clubs are matched by ``club_code`` only.
 
 Duplicate matching:
 
@@ -252,8 +254,8 @@ Duplicate matching:
 
 Required columns:
 
-- ``first_name`` and ``last_name``
-- Legacy imports may use ``name`` when it contains both parts of the full name.
+- ``first_name`` and ``last_name`` (contract ``csv_codes``; a single ``name``
+  column is rejected)
 
 Recommended columns:
 
@@ -271,8 +273,11 @@ Validation notes:
 
 Required columns:
 
-- ``tournament_code`` or ``tournament_name``
-- ``team_code`` or ``team_name``
+- ``tournament_code``
+- ``team_code``
+
+Divisions and teams are matched by code only (contract ``csv_codes``). Give
+divisions and teams a code before importing participants.
 
 Optional columns:
 
@@ -282,6 +287,15 @@ Validation notes:
 
 - Team eligibility and duplicate participation reuse the same tournament-side
   checks as manual participant creation.
+
+Template versions
+~~~~~~~~~~~~~~~~~
+
+The players, teams and tournament-participants templates and their inbound
+partner contracts are at ``csv_codes``: name-based references were removed and
+only the columns above are accepted. Clubs and seasons remain at ``csv_v1``.
+A live import is refused when its approval was recorded under a different
+template version; run a fresh dry run and request approval again.
 
 Operational Behaviour
 ---------------------

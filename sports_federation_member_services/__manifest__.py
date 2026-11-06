@@ -1,5 +1,5 @@
 {'name': 'Member and Family Services',
- 'version': '19.0.1.2.0',
+ 'version': '19.0.1.3.0',
  'license': 'LGPL-3',
  'depends': ['sports_federation_people',
              'sports_federation_portal',
@@ -10,6 +10,8 @@
           'views/services.xml',
           'views/growth.xml',
           'views/lifecycle.xml',
-          'views/identity_backfill_views.xml'],
+          'views/identity_backfill_views.xml',
+          'views/evidence_retention_views.xml',
+          'data/evidence_retention_data.xml'],
  'installable': True,
  'application': False}
