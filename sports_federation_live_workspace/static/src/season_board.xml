@@ -26,15 +26,16 @@
         </p>
 
         <nav class="sf-board-days d-flex gap-2 px-3 py-2 overflow-auto border-bottom" aria-label="Game days">
-          <button t-foreach="data.days" t-as="day" t-key="day.id" type="button"
-                  t-attf-class="sf-board-day btn {{ day.id === state.dayId ? 'btn-primary' : 'btn-outline-secondary' }} {{ state.dropTarget === 'day-' + day.id ? 'sf-board-over' : '' }}"
-                  t-att-aria-pressed="day.id === state.dayId ? 'true' : 'false'"
-                  t-on-click="() =&gt; this.chooseDay(day)"
-                  t-on-dragover="(ev) =&gt; this.dragOver('day-' + day.id, ev, !day.locked)"
-                  t-on-dragleave="() =&gt; this.dragLeave('day-' + day.id)"
-                  t-on-drop="(ev) =&gt; this.dropOnDay(day, ev)">
-            <span class="d-block fw-bold"><i t-if="day.locked" class="fa fa-lock me-1" aria-hidden="true"/><t t-esc="dayName(day)"/></span>
-            <span class="d-block small"><t t-esc="dayUsage(day).used"/>/<t t-esc="dayUsage(day).total"/> slots</span>
+          <!-- Loop variable is "gameday": "day" is the selected-day getter and cannot be shadowed. -->
+          <button t-foreach="data.days" t-as="gameday" t-key="gameday.id" type="button"
+                  t-attf-class="sf-board-day btn {{ gameday.id === state.dayId ? 'btn-primary' : 'btn-outline-secondary' }} {{ state.dropTarget === 'day-' + gameday.id ? 'sf-board-over' : '' }}"
+                  t-att-aria-pressed="gameday.id === state.dayId ? 'true' : 'false'"
+                  t-on-click="() =&gt; this.chooseDay(gameday)"
+                  t-on-dragover="(ev) =&gt; this.dragOver('day-' + gameday.id, ev, !gameday.locked)"
+                  t-on-dragleave="() =&gt; this.dragLeave('day-' + gameday.id)"
+                  t-on-drop="(ev) =&gt; this.dropOnDay(gameday, ev)">
+            <span class="d-block fw-bold"><i t-if="gameday.locked" class="fa fa-lock me-1" aria-hidden="true"/><t t-esc="dayName(gameday)"/></span>
+            <span class="d-block small"><t t-esc="dayUsage(gameday).used"/>/<t t-esc="dayUsage(gameday).total"/> slots</span>
           </button>
           <p t-if="!data.days.length" class="text-muted mb-0">No game days yet. Add game days in the planner first.</p>
         </nav>

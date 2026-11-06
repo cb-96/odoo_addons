@@ -1,5 +1,5 @@
 {'name': 'Court Operations and Visual Planning',
- 'version': '19.0.1.6.0',
+ 'version': '19.0.1.6.1',
  'license': 'LGPL-3',
  'depends': ['web',
              'sports_federation_duty_coverage',
