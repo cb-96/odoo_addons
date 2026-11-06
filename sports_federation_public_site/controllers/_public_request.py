@@ -75,13 +75,19 @@ class PublicRequestInfrastructureMixin:
     def _get_rate_limit_subject(self):
         headers = getattr(request.httprequest, "headers", {}) or {}
         remote_addr = (getattr(request.httprequest, "remote_addr", "") or "").strip()
-        configured = request.env["ir.config_parameter"].sudo().get_param(
-            "federation.trusted_proxy_networks", ""
+        configured = (
+            request.env["ir.config_parameter"]
+            .sudo()
+            .get_param("federation.trusted_proxy_networks", "")
         )
         trusted = False
         try:
             peer = ip_address(remote_addr)
-            trusted = any(peer in ip_network(item.strip(), strict=False) for item in configured.split(",") if item.strip())
+            trusted = any(
+                peer in ip_network(item.strip(), strict=False)
+                for item in configured.split(",")
+                if item.strip()
+            )
         except ValueError:
             trusted = False
         if trusted:

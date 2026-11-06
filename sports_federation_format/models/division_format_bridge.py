@@ -16,6 +16,7 @@ This bridge makes the frozen format the source of truth for those divisions:
 
 Divisions set up the old way, with legacy stages, behave exactly as before.
 """
+
 from html import escape
 
 from odoo import _, fields, models
@@ -41,7 +42,9 @@ class FederationTournamentFormatBridge(models.Model):
         string="Stages",
         sanitize=True,
     )
-    format_type_label = fields.Char(compute="_compute_format_structure", string="Plays as")
+    format_type_label = fields.Char(
+        compute="_compute_format_structure", string="Plays as"
+    )
     has_workspace_format = fields.Boolean(compute="_compute_format_structure")
 
     def _compute_format_structure(self):
@@ -62,8 +65,12 @@ class FederationTournamentFormatBridge(models.Model):
             structure = latest.get(division.id, Structure.browse())
             structure = structure.with_env(self.env)
             division.format_structure_id = structure
-            division.format_stage_summary = division._format_stage_summary(structure.sudo())
-            division.format_type_label = labels.get(structure.sudo().format_type) if structure else False
+            division.format_stage_summary = division._format_stage_summary(
+                structure.sudo()
+            )
+            division.format_type_label = (
+                labels.get(structure.sudo().format_type) if structure else False
+            )
             division.has_workspace_format = bool(structure)
 
     @staticmethod
@@ -73,7 +80,11 @@ class FederationTournamentFormatBridge(models.Model):
         stage_labels = dict(structure.stage_ids._fields["stage_type"].selection)
         rows = []
         for stage in structure.stage_ids.sorted(lambda item: (item.sequence, item.id)):
-            matches = len(structure.fixture_ids.filtered(lambda fixture, stage=stage: fixture.stage_id == stage))
+            matches = len(
+                structure.fixture_ids.filtered(
+                    lambda fixture, stage=stage: fixture.stage_id == stage
+                )
+            )
             rows.append(
                 "<li><strong>%s</strong> &#8212; %s, %s</li>"
                 % (
@@ -86,7 +97,9 @@ class FederationTournamentFormatBridge(models.Model):
 
     def action_start(self):
         """Start workspace divisions on their frozen format; legacy ones as before."""
-        workspace = self.filtered(lambda division: division.has_workspace_format and not division.stage_ids)
+        workspace = self.filtered(
+            lambda division: division.has_workspace_format and not division.stage_ids
+        )
         legacy = self - workspace
         if workspace:
             not_open = workspace.filtered(lambda division: division.state != "open")

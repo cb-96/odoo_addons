@@ -7,7 +7,9 @@ class FederationSanction(models.Model):
     _description = "Sanction"
     _order = "effective_date desc, id desc"
 
-    company_id = fields.Many2one(related='case_id.company_id', store=True, index=True, readonly=True)
+    company_id = fields.Many2one(
+        related="case_id.company_id", store=True, index=True, readonly=True
+    )
     name = fields.Char(required=True)
     case_id = fields.Many2one(
         "federation.disciplinary.case",
@@ -72,6 +74,6 @@ class FederationSanction(models.Model):
                 )
 
     def write(self, vals):
-        if 'case_id' in vals and any(row.case_id.id != vals['case_id'] for row in self):
-            raise ValidationError('Sanction case ownership is immutable.')
+        if "case_id" in vals and any(row.case_id.id != vals["case_id"] for row in self):
+            raise ValidationError("Sanction case ownership is immutable.")
         return super().write(vals)

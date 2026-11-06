@@ -40,4 +40,6 @@ class TestPortalcurrentContract(TransactionCase):
             "sports_federation_matchday",
         ):
             self.assertIn(dependency, module.dependencies_id.mapped("name"))
-        self.assertNotIn("sports_federation_public_site", module.dependencies_id.mapped("name"))
+        self.assertNotIn(
+            "sports_federation_public_site", module.dependencies_id.mapped("name")
+        )

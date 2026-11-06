@@ -35,7 +35,11 @@ class FederationPlayerParentalApproval(models.Model):
     )
     approval_document_filename = fields.Char(string="Document Filename")
     submitted_by_id = fields.Many2one(
-        "res.users", string="Submitted By", readonly=True, copy=False, ondelete="set null"
+        "res.users",
+        string="Submitted By",
+        readonly=True,
+        copy=False,
+        ondelete="set null",
     )
     submitted_on = fields.Datetime(string="Submitted On", readonly=True, copy=False)
     review_note = fields.Text(
@@ -152,9 +156,13 @@ class FederationPlayerParentalApproval(models.Model):
     def action_request_replacement(self):
         for record in self:
             if record.state != "draft":
-                raise ValidationError(_("Only draft parental approvals can require replacement."))
+                raise ValidationError(
+                    _("Only draft parental approvals can require replacement.")
+                )
             if not (record.review_note or "").strip():
-                raise ValidationError(_("Record a review note before requesting replacement."))
+                raise ValidationError(
+                    _("Record a review note before requesting replacement.")
+                )
         self.with_context(allow_verified_parental_approval_write=True).write(
             {"state": "replacement_requested"}
         )

@@ -4,6 +4,7 @@ Example: men's and women's divisions play on some game days, the mixed
 division on the others.  An empty selection keeps the previous behaviour: all
 divisions of the competition may be scheduled on the game day.
 """
+
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
@@ -30,8 +31,10 @@ class FederationMatchdayDivisions(models.Model):
             )
             if foreign:
                 raise ValidationError(
-                    _("%(day)s: only divisions of this competition can play on it.",
-                      day=day.display_name)
+                    _(
+                        "%(day)s: only divisions of this competition can play on it.",
+                        day=day.display_name,
+                    )
                 )
 
     def _allows_division(self, division):

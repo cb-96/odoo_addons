@@ -11,6 +11,7 @@ where the portal turns match sheets into game-day rows, decides what is
 upcoming or past and which rosters a line-up may use, so the roster page, the
 game-day list and the line-up page always agree.
 """
+
 from datetime import datetime
 
 from odoo import api, fields, models
@@ -186,11 +187,20 @@ class FederationPortalGameday(models.AbstractModel):
     def _gameday_row(self, group):
         lead = min(
             group,
-            key=lambda sheet: (STATE_RANK.get(sheet.state, 0), self._kickoff_key(sheet)),
+            key=lambda sheet: (
+                STATE_RANK.get(sheet.state, 0),
+                self._kickoff_key(sheet),
+            ),
         )
         first = group.sorted(key=self._kickoff_key)[:1]
         state = self.lineup_state(lead)
         roster = lead.roster_id or self.suggested_roster(lead)
+        limit = lead.gameday_roster_limit
+        if not limit and roster:
+            rule_set = roster._get_effective_rule_set()
+            limit = rule_set.gameday_roster_max_size if rule_set else 0
+            if not limit:
+                limit = roster._get_required_player_bounds()[1]
         return {
             "key": (lead.team_id.id, first.id),
             "team": lead.team_id,
@@ -205,7 +215,7 @@ class FederationPortalGameday(models.AbstractModel):
             "state": state,
             "state_label": self.state_labels().get(state, state),
             "selected": len(lead.line_ids),
-            "limit": lead.gameday_roster_limit,
+            "limit": limit,
             "playing": lead.participant_count,
             "needs_action": state in ("not_started", "draft"),
             "url": "/my/match-sheets/%s" % lead.id,

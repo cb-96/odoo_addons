@@ -37,14 +37,20 @@ class FederationCompetitionCloneSetupWizard(models.TransientModel):
         if not source:
             return
         self.name = _("Copy of %s") % source.name
-        self.date_start = source.date_start + relativedelta(years=1) if source.date_start else False
-        self.date_end = source.date_end + relativedelta(years=1) if source.date_end else False
+        self.date_start = (
+            source.date_start + relativedelta(years=1) if source.date_start else False
+        )
+        self.date_end = (
+            source.date_end + relativedelta(years=1) if source.date_end else False
+        )
 
     def action_copy_setup(self):
         self.ensure_one()
         source = self.source_edition_id
         if self.season_id == source.season_id:
-            raise ValidationError(_("Select a different season for the copied competition."))
+            raise ValidationError(
+                _("Select a different season for the copied competition.")
+            )
         if self.date_end < self.date_start:
             raise ValidationError(_("The end date must not be before the start date."))
         edition = source.copy(

@@ -55,7 +55,12 @@ def summarize(events, now, grace_minutes=DEFAULT_GRACE_MINUTES):
             continue
         session = sessions.setdefault(
             key,
-            {"entered": False, "actions": 0, "screens": set(), "last": event["occurred_on"]},
+            {
+                "entered": False,
+                "actions": 0,
+                "screens": set(),
+                "last": event["occurred_on"],
+            },
         )
         if kind == "entry":
             session["entered"] = True

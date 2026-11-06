@@ -1,6 +1,5 @@
 from odoo.tests.common import TransactionCase
 
-
 ADVANCED_MENU_XMLIDS = (
     "sports_federation_base.menu_federation_season",
     "sports_federation_tournament.menu_federation_competition_edition",

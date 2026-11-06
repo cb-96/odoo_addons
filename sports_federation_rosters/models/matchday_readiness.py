@@ -47,9 +47,7 @@ class FederationMatchdayReadinessRosters(models.AbstractModel):
         deadlines = {"blocked": [], "pending": []}
         for team in teams.sorted("id"):
             tournament = self._team_matches(scope, team)[:1].tournament_id
-            assessment = team._get_tournament_roster_assessment(
-                tournament, today=today
-            )
+            assessment = team._get_tournament_roster_assessment(tournament, today=today)
             if not assessment["has_issues"]:
                 ready |= team
             elif assessment["deadline_reached"]:
@@ -111,8 +109,10 @@ class FederationMatchdayReadinessRosters(models.AbstractModel):
             return self._ready_component(
                 "lineups", _("No matches"), vocabulary.NOT_APPLICABLE
             )
-        sheets = self.env["federation.match.sheet"].sudo().search(
-            [("match_id", "in", matches.ids)]
+        sheets = (
+            self.env["federation.match.sheet"]
+            .sudo()
+            .search([("match_id", "in", matches.ids)])
         )
         ready = self.env["federation.team"]
         open_teams = self.env["federation.team"]
@@ -190,8 +190,10 @@ class FederationMatchdayReadinessRosters(models.AbstractModel):
 
     @api.model
     def _readiness_eligibility(self, scope):
-        sheets = self.env["federation.match.sheet"].sudo().search(
-            [("match_id", "in", scope["matches"].ids)]
+        sheets = (
+            self.env["federation.match.sheet"]
+            .sudo()
+            .search([("match_id", "in", scope["matches"].ids)])
         )
         lines = sheets.mapped("line_ids").filtered(lambda line: not line.crossed_out)
         if not lines:
@@ -233,9 +235,11 @@ class FederationMatchdayReadinessRosters(models.AbstractModel):
                 % (
                     line.player_id.display_name,
                     line.match_sheet_id.team_id.display_name,
-                    (line.eligibility_feedback or "").splitlines()[0]
-                    if line.eligibility_feedback
-                    else _("not eligible"),
+                    (
+                        (line.eligibility_feedback or "").splitlines()[0]
+                        if line.eligibility_feedback
+                        else _("not eligible")
+                    ),
                 )
                 for line in ineligible
             ),

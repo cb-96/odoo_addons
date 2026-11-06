@@ -80,15 +80,19 @@ class FederationScheduleApprovalCommandsOfficials(models.AbstractModel):
     def _create_club_duties(self, matches, officials_per_match):
         # The wizard owns the allocation rules; an in-memory (unsaved) wizard
         # lets publication reuse them without leaving a record behind.
-        wizard = self.env["federation.matchday.assign.official.wizard"].sudo().new(
-            {
-                "assignment_type": "auto_club",
-                "officials_per_match": officials_per_match,
-                "open_duties": True,
-                "avoid_clubs_playing_same_slot": True,
-                "allow_playing_club_fallback": True,
-                "preserve_existing_assignments": True,
-            }
+        wizard = (
+            self.env["federation.matchday.assign.official.wizard"]
+            .sudo()
+            .new(
+                {
+                    "assignment_type": "auto_club",
+                    "officials_per_match": officials_per_match,
+                    "open_duties": True,
+                    "avoid_clubs_playing_same_slot": True,
+                    "allow_playing_club_fallback": True,
+                    "preserve_existing_assignments": True,
+                }
+            )
         )
         return wizard._auto_assign_club_duties(matches)
 

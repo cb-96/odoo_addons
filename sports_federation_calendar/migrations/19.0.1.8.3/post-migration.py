@@ -19,8 +19,7 @@ def migrate(cr, version):
                    AND publication.state = 'live'
             )
         """
-    cr.execute(
-      """
+    cr.execute("""
         UPDATE federation_matchday_allocation AS allocation
            SET manual_only = TRUE
          WHERE COALESCE(allocation.stage_id, 0) = 0
@@ -36,5 +35,4 @@ def migrate(cr, version):
                 WHERE schedule.matchday_id = allocation.matchday_id
                   AND schedule.state IN ('draft', 'changes_requested')
            )
-              """ + publication_guard
-    )
+              """ + publication_guard)

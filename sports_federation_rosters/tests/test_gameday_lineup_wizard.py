@@ -1,7 +1,6 @@
 import hashlib
 import json
 
-from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
 
@@ -83,25 +82,33 @@ class TestGamedayLineupWizard(TransactionCase):
         digest = hashlib.sha256(
             json.dumps(snapshot, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
-        review = cls.env["federation.schedule.review"].sudo().create(
-            {
-                "schedule_id": schedule.id,
-                "submitted_revision": schedule.revision,
-                "state": "approved",
-                "assignment_snapshot": snapshot,
-                "snapshot_digest": digest,
-                "submitted_by_id": cls.env.user.id,
-            }
+        review = (
+            cls.env["federation.schedule.review"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "submitted_revision": schedule.revision,
+                    "state": "approved",
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": digest,
+                    "submitted_by_id": cls.env.user.id,
+                }
+            )
         )
-        publication = cls.env["federation.schedule.publication"].sudo().create(
-            {
-                "schedule_id": schedule.id,
-                "version": 1,
-                "assignment_snapshot": snapshot,
-                "snapshot_digest": digest,
-                "source_revision": schedule.revision,
-                "review_id": review.id,
-            }
+        publication = (
+            cls.env["federation.schedule.publication"]
+            .sudo()
+            .create(
+                {
+                    "schedule_id": schedule.id,
+                    "version": 1,
+                    "assignment_snapshot": snapshot,
+                    "snapshot_digest": digest,
+                    "source_revision": schedule.revision,
+                    "review_id": review.id,
+                }
+            )
         )
         cls.matchday.sudo().write({"current_publication_id": publication.id})
         for kickoff in ("2024-06-15 10:00:00", "2024-06-15 14:00:00"):
@@ -158,7 +165,10 @@ class TestGamedayLineupWizard(TransactionCase):
         )
         self.assertEqual(len(sheets), 2)
         self.assertEqual(set(sheets.mapped("state")), {"approved"})
-        self.assertEqual(set(sheets.mapped("line_ids.player_id").ids), set(self.roster.line_ids.player_id.ids))
+        self.assertEqual(
+            set(sheets.mapped("line_ids.player_id").ids),
+            set(self.roster.line_ids.player_id.ids),
+        )
 
     def test_independent_review_keeps_shared_lineup_submitted(self):
         self.edition.write({"workflow_mode": "controlled"})

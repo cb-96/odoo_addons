@@ -13,6 +13,7 @@ class FederationOperationTask(models.Model):
 
     def _journey_actionable_cards(self, groups):
         from ..journey_cards import actionable_cards
+
         return actionable_cards(groups)
 
     _name = "federation.operation.task"
@@ -27,6 +28,7 @@ class FederationOperationTask(models.Model):
             ("roster_readiness", "Roster readiness"),
             ("parental_consent", "Parental consent"),
             ("gameday_lineup", "Game-day lineup"),
+            ("lineup_review", "Game-day lineup review"),
             ("referee_duty", "Club referee duty"),
             ("result_review", "Result follow-up"),
         ],
@@ -118,8 +120,6 @@ class FederationOperationTask(models.Model):
     _source_key_unique = models.Constraint(
         "unique(source_key)", "An operational task source key must be unique."
     )
-
-
 
     @api.model
     def _sync_specs(self, specs, scope_domain):
@@ -241,7 +241,10 @@ class FederationOperationTask(models.Model):
         )
         if not source:
             raise ValidationError(_("The source record no longer exists."))
-        if self.task_type == "parental_consent" and source._name == "federation.team.roster.line":
+        if (
+            self.task_type == "parental_consent"
+            and source._name == "federation.team.roster.line"
+        ):
             return source.player_id.action_view_parental_approvals()
         return {
             "type": "ir.actions.act_window",

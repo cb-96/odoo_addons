@@ -34,19 +34,27 @@ class TestCompetitionCore(TransactionCase):
             self.edition.transition_competition_state("closed")
 
     def test_competition_administrator_has_read_only_edition_access(self):
-        user = self.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Competition Planner",
-                "login": "competition.planner.acl@example.test",
-                "group_ids": [
-                    (6, 0, [
-                        self.env.ref("base.group_user").id,
-                        self.env.ref(
-                            "sports_federation_competition_core.group_competition_administrator"
-                        ).id,
-                    ])
-                ],
-            }
+        user = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Competition Planner",
+                    "login": "competition.planner.acl@example.test",
+                    "group_ids": [
+                        (
+                            6,
+                            0,
+                            [
+                                self.env.ref("base.group_user").id,
+                                self.env.ref(
+                                    "sports_federation_competition_core.group_competition_administrator"
+                                ).id,
+                            ],
+                        )
+                    ],
+                }
+            )
         )
         edition = self.edition.with_user(user)
         self.assertEqual(edition.read(["name"])[0]["name"], self.edition.name)
@@ -84,8 +92,15 @@ class TestContextualRoleGuidance(TransactionCase):
                 "season_id": season.id,
             }
         )
-        user = self.env["res.users"].with_context(no_reset_password=True).create(
-            {"name": "Unassigned Operator", "login": "unassigned.operator@example.com"}
+        user = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Unassigned Operator",
+                    "login": "unassigned.operator@example.com",
+                }
+            )
         )
         with self.assertRaisesRegex(ValidationError, "Schedule Approver") as error:
             (

@@ -48,7 +48,9 @@ class FederationMatchPortal(FederationRosterPortalBase):
         if domain == [("id", "=", False)]:
             return self._redirect_with_query("/my/club")
         try:
-            context_domain, context_query = self._journey_list_scope(kw, season_domain=Gameday.season_domain)
+            context_domain, context_query = self._journey_list_scope(
+                kw, season_domain=Gameday.season_domain
+            )
         except AccessError:
             return self._render_access_denied()
         scope = domain + context_domain
@@ -68,7 +70,9 @@ class FederationMatchPortal(FederationRosterPortalBase):
             step=self._GAMEDAY_PAGE_SIZE,
             url_args=context_query,
         )
-        page_rows = upcoming[pager["offset"] : pager["offset"] + self._GAMEDAY_PAGE_SIZE]
+        page_rows = upcoming[
+            pager["offset"] : pager["offset"] + self._GAMEDAY_PAGE_SIZE
+        ]
         past_sheets = Privilege.portal_search(
             MatchSheet,
             scope + Gameday.past_domain(),
@@ -238,9 +242,7 @@ class FederationMatchPortal(FederationRosterPortalBase):
                 sheet._portal_update_preparation(values=values, user=user)
                 if sheet.state == "draft" and form.get("has_lineup_players"):
                     players = (
-                        []
-                        if roster_changed
-                        else self._lineup_players_from_form(form)
+                        [] if roster_changed else self._lineup_players_from_form(form)
                     )
                     sheet._portal_sync_squad(players, user=user)
         except AccessError:

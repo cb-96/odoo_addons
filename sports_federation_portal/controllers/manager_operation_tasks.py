@@ -28,7 +28,10 @@ class FederationManagerOperationTasks(http.Controller):
         self._require_manager()
         Task = request.env["federation.operation.task"].sudo()
         Task.sync_for_user(user=request.env.user)
-        domain = [("audience", "=", "manager"), ("state", "=" if kw.get("status") == "recent" else "!=", "done")]
+        domain = [
+            ("audience", "=", "manager"),
+            ("state", "=" if kw.get("status") == "recent" else "!=", "done"),
+        ]
         allowed_types = dict(Task._fields["task_type"].selection)
         task_type = kw.get("task_type")
         if task_type in allowed_types:

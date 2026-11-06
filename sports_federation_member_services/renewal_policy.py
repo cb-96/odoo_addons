@@ -19,7 +19,9 @@ STEPS = (
 )
 
 
-def progress(is_renewal, state, has_review_note, unverified_documents, identity_current=True):
+def progress(
+    is_renewal, state, has_review_note, unverified_documents, identity_current=True
+):
     """Return ``(step, blockers)`` for one membership."""
     if not is_renewal:
         return "none", []
@@ -29,13 +31,18 @@ def progress(is_renewal, state, has_review_note, unverified_documents, identity_
         return "approved", []
     blockers = []
     if not identity_current:
-        blockers.append("This identity was merged. Renew the canonical identity instead.")
+        blockers.append(
+            "This identity was merged. Renew the canonical identity instead."
+        )
     if not has_review_note:
         blockers.append("Record the review of changed information.")
     if unverified_documents:
         blockers.append(
             "%s required %s still to verify."
-            % (unverified_documents, "document is" if unverified_documents == 1 else "documents are")
+            % (
+                unverified_documents,
+                "document is" if unverified_documents == 1 else "documents are",
+            )
         )
     if not identity_current or not has_review_note:
         return "initiated", blockers

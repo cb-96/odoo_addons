@@ -3,6 +3,7 @@
 Fixtures use canonical models and materialized logical fixtures. The clock is
 fixed so certificate, availability and escalation checks do not depend on today.
 """
+
 from unittest.mock import patch
 from odoo import fields
 

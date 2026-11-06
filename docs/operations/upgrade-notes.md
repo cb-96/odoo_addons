@@ -36,6 +36,62 @@ passed unless they ran.
 
 ## Entries
 
+### Practice competition readiness and planner routing
+
+Affected modules: `sports_federation_accounting`, `sports_federation_app`,
+`sports_federation_base`, `sports_federation_calendar`,
+`sports_federation_competition_core`, `sports_federation_demo`,
+`sports_federation_discipline`, `sports_federation_duty_coverage`,
+`sports_federation_finance_bridge`, `sports_federation_format`,
+`sports_federation_import_tools`, `sports_federation_live_workspace`,
+`sports_federation_matchday`, `sports_federation_member_services`,
+`sports_federation_notifications`, `sports_federation_officiating`,
+`sports_federation_people`, `sports_federation_portal`,
+`sports_federation_public_site`, `sports_federation_registration`,
+`sports_federation_reporting`, `sports_federation_result_control`,
+`sports_federation_rosters`, `sports_federation_schedule_approval`,
+`sports_federation_scheduling`, `sports_federation_setup_flow` and
+`sports_federation_tournament`. The demo addon now depends on
+`sports_federation_setup_flow` (19.0.1.2.0 → 19.0.1.3.0).
+
+**Data changes**: No stored fields or data migrations are added. Practice
+competitions now create active, licensed sample roster lines sufficient for
+the competition's roster rules. Planner team blockers open participant
+selection for ordinary managers, and portal game-day rows fall back to the
+effective roster rule when no roster-specific limit is set. Portal create
+capabilities now explicitly cover the fields used for competition entries,
+document submissions, player and team registration, rosters, and match-sheet
+lines, and the portal can remove an owned roster line through its action
+allowlist. Submitted game-day line-ups use the registered review task type.
+Competition Hub end-of-competition counts are computed only when the caller can
+read their source records, and the close action also requires edition write
+access. The abstract lifecycle-postcondition and derived-record-reconciliation
+services are owned by `sports_federation_setup_flow`; the application aggregate
+remains dependency-only, with model names and behavior unchanged.
+
+**Behaviour to verify**:
+
+- The practice competition wizard creates teams with eligible active rosters
+  and publishes the generated schedule.
+- Ordinary managers selecting a planner team blocker reach participant
+  selection; users with the advanced-operator role keep the registration
+  window route.
+- Portal game-day lineup limits use the roster rule when the roster has no
+  explicit game-day limit.
+- Connected planner journeys render for edition readers without exposing or
+  computing end-of-competition actions outside their source-record access.
+- Portal create workflows submit only fields explicitly permitted for their
+  target model.
+- Submitted game-day line-ups can be synchronized into manager review tasks.
+
+**Dry-run evidence**: Strict repository lint and static CI contracts passed.
+All five required Odoo CI matrix suites passed (1,255 tests), as did the
+conditional release-surfaces suite (660 tests), with optional Chrome bootstrap
+skipped. Browser-dependent checks and a database-upgrade run remain unverified.
+
+**Rollback**: Restore the previous code and restart Odoo. No schema or data
+rollback is required; the demo addon dependency can be reverted with its code.
+
 ### Retention controls, code-only imports and standings cleanup
 
 Affected modules: `sports_federation_notifications` 19.0.1.4.1 → 19.0.1.5.0,

@@ -31,6 +31,7 @@
   "sql_boundaries": {
     "allowed_runtime_files": [
       "sports_federation_base/models/operational_health.py",
+      "sports_federation_competition_core/models/competition_force_delete.py",
       "sports_federation_format/services/fixture_materializer.py",
       "sports_federation_matchday/services/matchday_commands.py",
       "sports_federation_reporting/models/report_sql_helper.py",
@@ -58,6 +59,7 @@
     ],
     "runtime_reviews": {
       "sports_federation_accounting/models/finance.py": "Locks the finance event row by parameterized primary key before invoice creation; the native invoice test verifies retry idempotency.",
+      "sports_federation_competition_core/models/competition_force_delete.py": "Clears optional internal restrict links with table and field identifiers taken from the ORM registry and record IDs passed as parameters before guarded records are removed.",
       "sports_federation_duty_coverage/models/assignment.py": "Locks match, referee, and assignment rows in stable ID order to serialize assignment and evidence transitions; persisted coverage tests exercise these commands.",
       "sports_federation_duty_coverage/models/coverage.py": "Locks match rows by parameterized ID before computing and syncing escalation activities; escalation tests verify replay and cleanup.",
       "sports_federation_duty_coverage/models/duty.py": "Locks matches and duty rows in stable order before nomination and coordinator transitions; duty workflow tests cover the state changes.",

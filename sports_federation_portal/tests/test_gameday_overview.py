@@ -139,6 +139,7 @@ class TestGamedayOverview(TransactionCase):
 
     def test_closing_a_season_closes_its_active_rosters(self):
         self.assertEqual(self.roster.status, "active")
+        self.tournament.action_cancel()
         self.season.action_close()
         self.assertEqual(self.roster.status, "closed")
 
@@ -152,6 +153,13 @@ class TestGamedayOverview(TransactionCase):
         Sheet = self.env["federation.match.sheet"]
         gameday = self.env["federation.portal.gameday"]
         scope = [("id", "in", self.sheets.ids)]
+        self.assertTrue(self.first_sheet.match_id.date_scheduled)
+        self.assertEqual(
+            self.first_sheet.match_scheduled_date, self.today + timedelta(days=7)
+        )
+        self.assertEqual(
+            self.past_sheet.match_scheduled_date, self.today - timedelta(days=10)
+        )
         upcoming = Sheet.search(scope + gameday.upcoming_domain())
         past = Sheet.search(scope + gameday.past_domain())
         self.assertEqual(
@@ -194,22 +202,26 @@ class TestGamedayOverview(TransactionCase):
 
     def _club_user(self):
         env = self.env
-        user = env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Overview Rep",
-                "login": "overview_rep_test",
-                "group_ids": [
-                    (
-                        6,
-                        0,
-                        [
-                            env.ref(
-                                "sports_federation_portal.group_federation_portal_club"
-                            ).id
-                        ],
-                    )
-                ],
-            }
+        user = (
+            env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Overview Rep",
+                    "login": "overview_rep_test",
+                    "group_ids": [
+                        (
+                            6,
+                            0,
+                            [
+                                env.ref(
+                                    "sports_federation_portal.group_federation_portal_club"
+                                ).id
+                            ],
+                        )
+                    ],
+                }
+            )
         )
         role = env["federation.club.role.type"].create(
             {"name": "Overview role", "code": "overview_test_role"}
@@ -226,6 +238,7 @@ class TestGamedayOverview(TransactionCase):
 
     def test_roster_page_lists_only_its_own_season_game_days(self):
         user = self._club_user()
+        self.assertIn(self.club, user.portal_club_scope_ids)
         gameday = self.env["federation.portal.gameday"]
         upcoming = gameday.roster_gamedays(self.roster, user=user, upcoming=True)
         self.assertEqual(len(upcoming), 1)
@@ -259,7 +272,8 @@ class TestGamedayOverview(TransactionCase):
         """A sheet made with its match has no roster yet but is still a game day."""
         gameday = self.env["federation.portal.gameday"]
         self.assertFalse((self.first_sheet | self.second_sheet).mapped("roster_id"))
-        sheets = gameday.team_sheets(self.team, self.season, user=self.env.user)
+        user = self._club_user()
+        sheets = gameday.team_sheets(self.team, self.season, user=user)
         self.assertEqual(sheets, self.first_sheet | self.second_sheet)
         # The other season's sheet is not part of this season's game days.
         self.assertNotIn(self.other_season_sheet, sheets)
@@ -290,10 +304,13 @@ class TestGamedayOverview(TransactionCase):
                 {
                     "tournament_id": tournament.id,
                     "home_team_id": late_team.id,
-                    "date_scheduled": "%s 10:00:00" % (self.today + timedelta(days=offset)),
+                    "date_scheduled": "%s 10:00:00"
+                    % (self.today + timedelta(days=offset)),
                 }
             )
-            return Sheet.create({"match_id": match.id, "team_id": late_team.id, "side": "home"})
+            return Sheet.create(
+                {"match_id": match.id, "team_id": late_team.id, "side": "home"}
+            )
 
         # Far enough ahead that the roster deadline has not been reached yet.
         this_season = sheet_for(self.tournament, 40)

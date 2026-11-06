@@ -110,7 +110,6 @@ class PublicScheduleQueries(models.AbstractModel):
             return _("%(division)s · %(gender)s", division=label, gender=gender)
         return label
 
-
     def edition_recent_results(self, edition, division=None, limit=None):
         """Return approved results intended for public competition pages."""
         divisions = edition.tournament_ids.filtered(

@@ -532,9 +532,7 @@ class FederationMatchSheet(models.Model):
             self.write({"state": "approved"})
             self._log_audit_event(
                 "match_sheet_approved",
-                _(
-                    "Match sheet '%(sheet)s' inherited the approved game-day lineup."
-                )
+                _("Match sheet '%(sheet)s' inherited the approved game-day lineup.")
                 % {"sheet": self.display_name},
             )
         elif inherit_approval and source.state == "submitted":
@@ -792,7 +790,9 @@ class FederationMatchSheet(models.Model):
         try:
             requested = {int(player_id) for player_id in (player_ids or [])}
         except (TypeError, ValueError) as exc:
-            raise ValidationError(_("Select players from this gameday roster.")) from exc
+            raise ValidationError(
+                _("Select players from this gameday roster.")
+            ) from exc
         listed = set(self.line_ids.mapped("player_id").ids)
         if requested - listed:
             raise ValidationError(_("Select players from this gameday roster."))

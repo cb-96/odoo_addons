@@ -25,7 +25,9 @@ class FederationRosterPortal(FederationRosterPortalBase):
             return self._redirect_with_query("/my/club")
 
         try:
-            context_domain, context_query = self._journey_list_scope(kw, season_field="season_id")
+            context_domain, context_query = self._journey_list_scope(
+                kw, season_field="season_id"
+            )
         except AccessError:
             return self._render_access_denied()
         domain += context_domain
@@ -57,10 +59,14 @@ class FederationRosterPortal(FederationRosterPortalBase):
         confirmed_registrations = confirmed_registrations.filtered(
             lambda r: r.season_id.id in current_season_ids
         )
-        if context_query.get('club'):
-            confirmed_registrations = confirmed_registrations.filtered(lambda r: r.team_id.club_id.id == context_query['club'])
-        if context_query.get('team'):
-            confirmed_registrations = confirmed_registrations.filtered(lambda r: r.team_id.id == context_query['team'])
+        if context_query.get("club"):
+            confirmed_registrations = confirmed_registrations.filtered(
+                lambda r: r.team_id.club_id.id == context_query["club"]
+            )
+        if context_query.get("team"):
+            confirmed_registrations = confirmed_registrations.filtered(
+                lambda r: r.team_id.id == context_query["team"]
+            )
         roster_opportunities = []
         for registration in confirmed_registrations:
             roster = request.env[

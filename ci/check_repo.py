@@ -67,9 +67,7 @@ def run_check(relative_path: str) -> Result:
     if not path.is_file():
         return Result(relative_path, "missing", 0.0, 2)
     started = time.monotonic()
-    completed = subprocess.run(
-        [sys.executable, str(path)], cwd=ROOT, check=False
-    )
+    completed = subprocess.run([sys.executable, str(path)], cwd=ROOT, check=False)
     duration = round(time.monotonic() - started, 3)
     status = "passed" if completed.returncode == 0 else "failed"
     return Result(relative_path, status, duration, completed.returncode)
@@ -101,7 +99,9 @@ def main(argv=None) -> int:
 
     payload = {
         "area": args.area,
-        "status": "passed" if all(not item.returncode for item in results) else "failed",
+        "status": (
+            "passed" if all(not item.returncode for item in results) else "failed"
+        ),
         "results": [asdict(item) for item in results],
     }
     if args.json_path:

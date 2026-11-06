@@ -11,6 +11,7 @@ The portal privilege boundary, the task projection and the few controllers
 that read records directly all use it.  Nothing is deleted or changed in the
 archived competition itself: restoring it makes everything visible again.
 """
+
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError
 
@@ -69,7 +70,9 @@ class FederationPortalArchiveScope(models.AbstractModel):
             return []
         path, kind = spec
         edition_ids = self.hidden_edition_ids()
-        ids = edition_ids if kind == "edition" else self.hidden_division_ids(edition_ids)
+        ids = (
+            edition_ids if kind == "edition" else self.hidden_division_ids(edition_ids)
+        )
         if not ids:
             return []
         return [(path, "not in", ids)]
@@ -83,9 +86,10 @@ class FederationPortalArchiveScope(models.AbstractModel):
         if not domain:
             return records
         visible_ids = set(
-            records.sudo().with_context(active_test=False).search(
-                domain + [("id", "in", records.ids)]
-            ).ids
+            records.sudo()
+            .with_context(active_test=False)
+            .search(domain + [("id", "in", records.ids)])
+            .ids
         )
         return records.filtered(lambda record: record.id in visible_ids)
 
@@ -105,10 +109,13 @@ class FederationPortalArchiveScope(models.AbstractModel):
         """
         if not division_ids:
             return 0
-        tasks = self.env["federation.operation.task"].sudo().search(
-            [("tournament_id", "in", list(division_ids)), ("state", "!=", "done")]
+        tasks = (
+            self.env["federation.operation.task"]
+            .sudo()
+            .search(
+                [("tournament_id", "in", list(division_ids)), ("state", "!=", "done")]
+            )
         )
         if tasks:
             tasks.write({"state": "done", "completed_on": fields.Datetime.now()})
         return len(tasks)
-

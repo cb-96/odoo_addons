@@ -49,7 +49,10 @@ class FederationStandingStage(models.Model):
             return super()._get_participants()
         teams = self.structure_stage_id.stage_participant_ids.mapped("team_id")
         return self.env["federation.tournament.participant"].search(
-            [("tournament_id", "=", self.tournament_id.id), ("team_id", "in", teams.ids)]
+            [
+                ("tournament_id", "=", self.tournament_id.id),
+                ("team_id", "in", teams.ids),
+            ]
         )
 
     def action_recompute(self):

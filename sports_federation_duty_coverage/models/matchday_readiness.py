@@ -23,9 +23,7 @@ class FederationMatchdayReadinessCoverage(models.AbstractModel):
 
     @api.model
     def _readiness_officials(self, scope):
-        snapshots = {
-            match.id: match._coverage_snapshot() for match in scope["matches"]
-        }
+        snapshots = {match.id: match._coverage_snapshot() for match in scope["matches"]}
         matches = scope["matches"].filtered(
             lambda match: snapshots[match.id]["state"] != "not_required"
         )

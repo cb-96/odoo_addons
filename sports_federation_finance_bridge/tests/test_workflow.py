@@ -200,13 +200,10 @@ class TestCreateInvoice(TransactionCase):
         cls.club = cls.env["federation.club"].create(
             {"name": "Invoice Club", "code": "IVC"}
         )
-        cls.partner = cls.env["res.partner"].create(
-            {"name": "Invoice Test Customer"}
-        )
+        cls.partner = cls.env["res.partner"].create({"name": "Invoice Test Customer"})
         native_accounting = (
             "account.move" in cls.env
-            and "invoice_product_id"
-            in cls.env["federation.finance.event"]._fields
+            and "invoice_product_id" in cls.env["federation.finance.event"]._fields
         )
         if native_accounting:
             journal_model = cls.env["account.journal"]
@@ -254,9 +251,7 @@ class TestCreateInvoice(TransactionCase):
                 "source_model": "federation.season",
                 "source_res_id": source_res_id or self.season.id,
                 "club_id": self.club.id,
-                "partner_id": (
-                    self.partner.id if partner_id is None else partner_id
-                ),
+                "partner_id": (self.partner.id if partner_id is None else partner_id),
                 "state": "confirmed",
                 **(
                     {"invoice_product_id": self.invoice_product.id}
@@ -286,12 +281,9 @@ class TestCreateInvoice(TransactionCase):
         """action_create_invoice creates one account.move with the correct amount."""
         if (
             "account.move" not in self.env
-            or "invoice_product_id"
-            not in self.env["federation.finance.event"]._fields
+            or "invoice_product_id" not in self.env["federation.finance.event"]._fields
         ):
-            self.skipTest(
-                "configured-product accounting integration is not installed"
-            )
+            self.skipTest("configured-product accounting integration is not installed")
         event = self._make_event(amount=150.0)
         invoice = self._create_invoice(event)
         self.assertTrue(invoice)
@@ -299,9 +291,7 @@ class TestCreateInvoice(TransactionCase):
         self.assertEqual(len(lines), 1)
         self.assertEqual(lines.price_unit, 150.0)
         self.assertEqual(lines.product_id, self.invoice_product)
-        self.assertTrue(
-            lines.account_id, "Invoice line must resolve an income account"
-        )
+        self.assertTrue(lines.account_id, "Invoice line must resolve an income account")
         if "account_move_id" in event._fields:
             self.assertEqual(event.account_move_id, invoice)
             self.assertEqual(invoice.partner_id, self.partner)
@@ -328,12 +318,9 @@ class TestCreateInvoice(TransactionCase):
         """Calling action_create_invoice twice raises ValidationError."""
         if (
             "account.move" not in self.env
-            or "invoice_product_id"
-            not in self.env["federation.finance.event"]._fields
+            or "invoice_product_id" not in self.env["federation.finance.event"]._fields
         ):
-            self.skipTest(
-                "configured-product accounting integration is not installed"
-            )
+            self.skipTest("configured-product accounting integration is not installed")
         event = self._make_event()
         invoice = self._create_invoice(event)
         if "account_move_id" in event._fields:

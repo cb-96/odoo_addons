@@ -60,18 +60,16 @@ on top of the federation base modules.
         "views/website_menus.xml",
         "views/menu_items.xml",
         "views/journey_event_views.xml",
-    
-                'views/role_journey_templates.xml',
-            ],
+        "views/role_journey_templates.xml",
+    ],
     "assets": {
         "web.assets_frontend": [
             "sports_federation_portal/static/src/scss/federation_portal.scss",
             "sports_federation_portal/static/src/js/qol_draft_guard.js",
             "sports_federation_portal/static/src/js/accessibility_recovery.js",
             "sports_federation_portal/static/src/js/portal_quick_actions.js",
-        
-                                   'sports_federation_portal/static/src/js/journey_return_navigation.js',
-                               ],
+            "sports_federation_portal/static/src/js/journey_return_navigation.js",
+        ],
     },
     "demo": [],
     "installable": True,

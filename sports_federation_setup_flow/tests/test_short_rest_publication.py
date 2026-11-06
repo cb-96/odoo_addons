@@ -27,7 +27,11 @@ class TestShortRestPublication(TransactionCase):
         with patch.object(
             type(Wizard),
             "_publish",
-            lambda wizard, edition, issues: {"published": 0, "waiting": [], "skipped": []},
+            lambda wizard, edition, issues: {
+                "published": 0,
+                "waiting": [],
+                "skipped": [],
+            },
         ):
             wizard = Wizard.create(
                 {
@@ -36,14 +40,17 @@ class TestShortRestPublication(TransactionCase):
                     "teams_per_division": 6,
                     "gameday_count": 1,
                     "first_gameday_today": False,
-                    "first_gameday": fields.Date.context_today(Wizard) + timedelta(days=30),
+                    "first_gameday": fields.Date.context_today(Wizard)
+                    + timedelta(days=30),
                 }
             )
             wizard.action_create()
         edition = self.env["federation.competition.edition"].search(
             [("name", "=", "[Practice] %s" % wizard.name)], limit=1
         )
-        schedule = self.env["federation.schedule"].search([("edition_id", "=", edition.id)])
+        schedule = self.env["federation.schedule"].search(
+            [("edition_id", "=", edition.id)]
+        )
         self.assertTrue(schedule)
         self.assertEqual(set(schedule.mapped("state")), {"draft"})
         # Every team plays five times on the single game day: far less than
@@ -54,7 +61,9 @@ class TestShortRestPublication(TransactionCase):
     def test_publish_asks_to_accept_short_rest_instead_of_failing(self):
         edition, schedule = self._draft_competition()
         action = edition.action_publish_competition_schedule()
-        self.assertEqual(action.get("res_model"), "federation.schedule.publish.confirm.wizard")
+        self.assertEqual(
+            action.get("res_model"), "federation.schedule.publish.confirm.wizard"
+        )
         confirm = self.env[action["res_model"]].browse(action["res_id"])
         self.assertEqual(confirm.warning_day_count, 1)
         self.assertIn("min rest", confirm.details_html)
@@ -76,6 +85,7 @@ class TestShortRestPublication(TransactionCase):
         wizard = self.env["federation.competition.schedule.wizard"].create(
             {"edition_id": edition.id, "preferred_rest_minutes": 600}
         )
+        wizard._onchange_edition_id()
         fixtures = day.allocation_ids.mapped("fixture_ids")
         messages = wizard._rest_shortfalls(
             fixtures, {"assignments": {day.id: fixtures.ids}}

@@ -16,7 +16,8 @@ class TestWebsitePublication(TransactionCase):
                 "teams_per_division": 4,
                 "gameday_count": 2,
                 "first_gameday_today": False,
-                "first_gameday": fields.Date.context_today(self.env.user) + timedelta(days=30),
+                "first_gameday": fields.Date.context_today(self.env.user)
+                + timedelta(days=30),
             }
         )
         wizard.action_create()

@@ -44,7 +44,9 @@ class FederationCompetitionStructureReuse(models.Model):
         """Stage name without the "<format name> - " prefix of generated stages."""
         prefix = "%s - " % (self.name or "")
         name = stage.name or ""
-        return name[len(prefix):] if prefix.strip() and name.startswith(prefix) else name
+        return (
+            name[len(prefix) :] if prefix.strip() and name.startswith(prefix) else name
+        )
 
     def _format_snapshot(self):
         """JSON description of this format, without teams or matches."""
@@ -111,7 +113,8 @@ class FederationCompetitionStructureReuse(models.Model):
         Stage = self.env["federation.structure.stage"]
         created = {}
         for item in sorted(
-            snapshot.get("stages") or (), key=lambda row: (row.get("sequence") or 0, row["key"])
+            snapshot.get("stages") or (),
+            key=lambda row: (row.get("sequence") or 0, row["key"]),
         ):
             values = {
                 "name": item.get("name") or _("Stage %s", item["key"]),
@@ -174,7 +177,9 @@ class FederationCompetitionStructureReuse(models.Model):
                 )
             )
         latest = self.search(
-            [("division_id", "=", self.division_id.id)], order="version desc,id desc", limit=1
+            [("division_id", "=", self.division_id.id)],
+            order="version desc,id desc",
+            limit=1,
         )
         snapshot = self._format_snapshot()
         draft = self.create(

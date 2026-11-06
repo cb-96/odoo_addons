@@ -399,8 +399,10 @@ class FederationMatchdayCommands(models.AbstractModel):
         publication = matchday.sudo().current_publication_id
         # Match-day authorization permits this read-only blocker check for the
         # exact live publication, without granting operators match access.
-        scheduled_matches = self.env["federation.match"].sudo().search(
-            [("schedule_publication_id", "=", publication.id)]
+        scheduled_matches = (
+            self.env["federation.match"]
+            .sudo()
+            .search([("schedule_publication_id", "=", publication.id)])
         )
         unfinished = scheduled_matches.filtered(
             lambda match: match.state not in ("done", "cancelled")

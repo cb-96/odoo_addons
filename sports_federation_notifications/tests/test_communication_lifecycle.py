@@ -19,7 +19,9 @@ class TestCommunicationLifecycle(TransactionCase):
         cls.other = (
             cls.env["res.users"]
             .with_context(no_reset_password=True)
-            .create({"name": "Lifecycle Other", "login": "lifecycle.other@example.test"})
+            .create(
+                {"name": "Lifecycle Other", "login": "lifecycle.other@example.test"}
+            )
         )
         cls.Receipt = cls.env["federation.communication.receipt"]
 
@@ -37,14 +39,18 @@ class TestCommunicationLifecycle(TransactionCase):
         return self.Receipt.create(base)
 
     def _delivery(self, receipt, key, state):
-        return self.env["federation.communication.delivery"].sudo().create(
-            {
-                "name": "Lifecycle delivery",
-                "delivery_key": key,
-                "recipient_id": self.user.id,
-                "receipt_ids": [(6, 0, receipt.ids)],
-                "state": state,
-            }
+        return (
+            self.env["federation.communication.delivery"]
+            .sudo()
+            .create(
+                {
+                    "name": "Lifecycle delivery",
+                    "delivery_key": key,
+                    "recipient_id": self.user.id,
+                    "receipt_ids": [(6, 0, receipt.ids)],
+                    "state": state,
+                }
+            )
         )
 
     def test_a_new_item_is_created(self):
@@ -78,7 +84,9 @@ class TestCommunicationLifecycle(TransactionCase):
     def test_resolved_requirement_becomes_acted_upon(self):
         receipt = self._receipt("lc-acted")
         receipt.mark_seen(self.user)
-        with patch.object(type(receipt), "_presentation", return_value={"complete": True}):
+        with patch.object(
+            type(receipt), "_presentation", return_value={"complete": True}
+        ):
             self.Receipt._cron_reconcile_lifecycle(batch=100000)
         self.assertEqual(receipt.lifecycle_state, "acted")
         self.assertTrue(receipt.acted_on)
@@ -86,7 +94,9 @@ class TestCommunicationLifecycle(TransactionCase):
     def test_seen_but_unresolved_stays_seen(self):
         receipt = self._receipt("lc-unresolved")
         receipt.mark_seen(self.user)
-        with patch.object(type(receipt), "_presentation", return_value={"complete": False}):
+        with patch.object(
+            type(receipt), "_presentation", return_value={"complete": False}
+        ):
             self.Receipt._cron_reconcile_lifecycle(batch=100000)
         self.assertEqual(receipt.lifecycle_state, "seen")
         self.assertFalse(receipt.acted_on)
@@ -94,14 +104,18 @@ class TestCommunicationLifecycle(TransactionCase):
     def test_old_unresolved_items_expire(self):
         old = fields.Datetime.now() - timedelta(days=90)
         receipt = self._receipt("lc-expired", available_on=old)
-        with patch.object(type(receipt), "_presentation", return_value={"complete": False}):
+        with patch.object(
+            type(receipt), "_presentation", return_value={"complete": False}
+        ):
             self.Receipt._cron_reconcile_lifecycle(batch=100000)
         self.assertEqual(receipt.lifecycle_state, "expired")
 
     def test_resolution_wins_over_expiry(self):
         old = fields.Datetime.now() - timedelta(days=90)
         receipt = self._receipt("lc-both", available_on=old)
-        with patch.object(type(receipt), "_presentation", return_value={"complete": True}):
+        with patch.object(
+            type(receipt), "_presentation", return_value={"complete": True}
+        ):
             self.Receipt._cron_reconcile_lifecycle(batch=100000)
         self.assertEqual(receipt.lifecycle_state, "acted")
 
@@ -109,7 +123,9 @@ class TestCommunicationLifecycle(TransactionCase):
         receipt = self._receipt("lc-superseded")
         receipt.sudo().write({"superseded_on": fields.Datetime.now()})
         self.assertEqual(receipt.lifecycle_state, "superseded")
-        with patch.object(type(receipt), "_presentation", return_value={"complete": True}):
+        with patch.object(
+            type(receipt), "_presentation", return_value={"complete": True}
+        ):
             self.Receipt._cron_reconcile_lifecycle(batch=100000)
         self.assertEqual(receipt.lifecycle_state, "superseded")
 

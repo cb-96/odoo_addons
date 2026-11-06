@@ -41,14 +41,18 @@ class FederationJourneyEvent(models.Model):
     screen = fields.Char()
     session_key = fields.Char(index=True)
     user_id = fields.Many2one("res.users", ondelete="set null", index=True)
-    occurred_on = fields.Datetime(default=fields.Datetime.now, required=True, index=True)
+    occurred_on = fields.Datetime(
+        default=fields.Datetime.now, required=True, index=True
+    )
 
     # ------------------------------------------------------------------
     # Recording: instrumentation must never break a request
     # ------------------------------------------------------------------
 
     @api.model
-    def record(self, journey, event, screen=None, session=None, dedupe_seconds=0, user=None):
+    def record(
+        self, journey, event, screen=None, session=None, dedupe_seconds=0, user=None
+    ):
         """Record one event; returns the event id, or ``False`` when skipped."""
         if event not in instrumentation.EVENTS:
             return False
@@ -80,7 +84,9 @@ class FederationJourneyEvent(models.Model):
                     }
                 ).id
         except Exception:  # pylint: disable=broad-except
-            _logger.warning("Journey event %s/%s was not recorded", journey, event, exc_info=True)
+            _logger.warning(
+                "Journey event %s/%s was not recorded", journey, event, exc_info=True
+            )
             return False
 
     @api.model
@@ -122,10 +128,18 @@ class FederationJourneyEvent(models.Model):
                 [("task_type", "=", task_type), ("create_date", ">=", since)]
             )
             closed = Task.search_count(
-                [("task_type", "=", task_type), ("state", "=", "done"), ("completed_on", ">=", since)]
+                [
+                    ("task_type", "=", task_type),
+                    ("state", "=", "done"),
+                    ("completed_on", ">=", since),
+                ]
             )
             overdue = Task.search_count(
-                [("task_type", "=", task_type), ("state", "!=", "done"), ("deadline", "<", now)]
+                [
+                    ("task_type", "=", task_type),
+                    ("state", "!=", "done"),
+                    ("deadline", "<", now),
+                ]
             )
             result[task_type] = {
                 "label": label,
@@ -136,7 +150,9 @@ class FederationJourneyEvent(models.Model):
         return result
 
     @api.model
-    def report(self, days=30, grace_minutes=instrumentation.DEFAULT_GRACE_MINUTES, limit=100000):
+    def report(
+        self, days=30, grace_minutes=instrumentation.DEFAULT_GRACE_MINUTES, limit=100000
+    ):
         """Instrumentation summary for the last ``days`` days."""
         now = fields.Datetime.now()
         since = now - timedelta(days=days)

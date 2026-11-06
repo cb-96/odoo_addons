@@ -1,5 +1,5 @@
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import ValidationError
 
 
 class FederationCompetitionEntry(models.Model):
@@ -21,7 +21,9 @@ class FederationCompetitionEntry(models.Model):
                 or (window.date_close and window.date_close < now)
             ):
                 raise ValidationError(
-                    _("The selected registration window is not currently open for this division.")
+                    _(
+                        "The selected registration window is not currently open for this division."
+                    )
                 )
             return window
         now = fields.Datetime.now()
@@ -141,7 +143,9 @@ class FederationCompetitionEntry(models.Model):
         self.env["federation.portal.scope"].assert_team(entry.team_id, user=user)
         if entry.state not in ("draft", "rejected", "withdrawn"):
             raise ValidationError(
-                _("Only draft, returned, rejected, or withdrawn entries can be resubmitted.")
+                _(
+                    "Only draft, returned, rejected, or withdrawn entries can be resubmitted."
+                )
             )
         self._portal_validate_submission(
             entry.window_id.division_id,
@@ -190,7 +194,6 @@ class FederationCompetitionEntry(models.Model):
             "rejected": _("Rejected"),
             "withdrawn": _("Withdrawn"),
         }.get(self.state, self.state or "")
-
 
     # -- One "Enter team" action ------------------------------------------
     # A club used to register a team for the season, wait, then enter it in

@@ -10,13 +10,21 @@ class TestSimpleScheduling(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         season = cls.env["federation.season"].create(
-            {"name": "Simple Season", "date_start": "2026-09-01", "date_end": "2027-06-30"}
+            {
+                "name": "Simple Season",
+                "date_start": "2026-09-01",
+                "date_end": "2027-06-30",
+            }
         )
         competition = cls.env["federation.competition"].create(
             {"name": "Simple Competition", "competition_type": "league"}
         )
         edition = cls.env["federation.competition.edition"].create(
-            {"name": "Simple Edition", "competition_id": competition.id, "season_id": season.id}
+            {
+                "name": "Simple Edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+            }
         )
         division = cls.env["federation.tournament"].create(
             {
@@ -73,7 +81,13 @@ class TestSimpleScheduling(TransactionCase):
     def test_errors_are_must_fix_and_warnings_could_improve(self):
         validation = {
             "valid": False,
-            "errors": [{"code": "slot_occupied", "message": "A slot contains more than one fixture."}] * 2,
+            "errors": [
+                {
+                    "code": "slot_occupied",
+                    "message": "A slot contains more than one fixture.",
+                }
+            ]
+            * 2,
             "warnings": [{"code": "rest", "message": "A team has little rest."}],
             "unassigned_fixture_ids": [1, 2, 3],
         }
@@ -85,8 +99,12 @@ class TestSimpleScheduling(TransactionCase):
             self.assertEqual(schedule.could_improve_count, 1)
             self.assertIn("5 blocking conflicts", schedule.simple_summary)
             self.assertIn("1 preference warning", schedule.simple_summary)
-            self.assertIn("A slot contains more than one fixture. (x2)", schedule.must_fix_html)
-            self.assertIn("3 matches still need a court and time.", schedule.must_fix_html)
+            self.assertIn(
+                "A slot contains more than one fixture. (x2)", schedule.must_fix_html
+            )
+            self.assertIn(
+                "3 matches still need a court and time.", schedule.must_fix_html
+            )
             self.assertIn("A team has little rest.", schedule.could_improve_html)
             self.assertNotIn("A team has little rest.", schedule.must_fix_html)
 
@@ -112,7 +130,9 @@ class TestSimpleScheduling(TransactionCase):
 
     def test_a_failing_check_is_never_reported_as_clean(self):
         with patch.object(
-            type(self.schedule), "_submission_validation", side_effect=RuntimeError("boom")
+            type(self.schedule),
+            "_submission_validation",
+            side_effect=RuntimeError("boom"),
         ):
             self.schedule.invalidate_recordset()
             self.assertTrue(self.schedule.simple_checked)
@@ -121,7 +141,9 @@ class TestSimpleScheduling(TransactionCase):
     def test_submitted_schedules_are_not_revalidated(self):
         self.schedule.sudo().write({"state": "ready_for_review"})
         with patch.object(
-            type(self.schedule), "_submission_validation", side_effect=AssertionError("no")
+            type(self.schedule),
+            "_submission_validation",
+            side_effect=AssertionError("no"),
         ):
             self.schedule.invalidate_recordset()
             self.assertFalse(self.schedule.simple_checked)

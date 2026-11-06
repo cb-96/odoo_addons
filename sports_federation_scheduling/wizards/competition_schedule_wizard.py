@@ -217,8 +217,7 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             or (
                 stage.graph_state == "waiting"
                 and any(
-                    fixture._is_schedulable()
-                    for fixture in stage.stage_fixture_ids
+                    fixture._is_schedulable() for fixture in stage.stage_fixture_ids
                 )
             )
         )
@@ -246,7 +245,10 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         )
         return [fields.Command.clear()] + [
             fields.Command.create(
-                {"stage_id": stage.id, "matchday_ids": [fields.Command.set(stage.matchday_ids.ids)]}
+                {
+                    "stage_id": stage.id,
+                    "matchday_ids": [fields.Command.set(stage.matchday_ids.ids)],
+                }
             )
             for stage in ordered
         ]
@@ -267,11 +269,17 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             self.structure_ids = False
             return
         self.matchday_ids = self.env["federation.matchday"].search(
-            [("edition_id", "=", self.edition_id.id), ("state", "in", ("draft", "capacity_ready"))],
+            [
+                ("edition_id", "=", self.edition_id.id),
+                ("state", "in", ("draft", "capacity_ready")),
+            ],
             order="date,id",
         )
         candidates = self.env["federation.competition.structure"].search(
-            [("edition_id", "=", self.edition_id.id), ("state", "in", ("draft", "generated", "frozen"))],
+            [
+                ("edition_id", "=", self.edition_id.id),
+                ("state", "in", ("draft", "generated", "frozen")),
+            ],
             order="division_id,version desc,id desc",
         )
         latest = self.env["federation.competition.structure"]
@@ -312,8 +320,12 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
                 "quality_report": proposal["quality"],
                 "blocking_issue_count": len(proposal["errors"]),
                 "warning_count": len(proposal["warnings"]),
-                "included_fixture_count": proposal["feasibility"]["included_fixture_count"],
-                "excluded_fixture_count": proposal["feasibility"]["excluded_fixture_count"],
+                "included_fixture_count": proposal["feasibility"][
+                    "included_fixture_count"
+                ],
+                "excluded_fixture_count": proposal["feasibility"][
+                    "excluded_fixture_count"
+                ],
                 "selected_stage_count": proposal["feasibility"]["selected_stage_count"],
                 "allocation_report": proposal["allocation_report"],
             }
@@ -345,7 +357,9 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             if rest_shortfalls
             else False
         )
-        stop_for_rest = rest_shortfalls and not self.env.context.get("accept_short_rest")
+        stop_for_rest = rest_shortfalls and not self.env.context.get(
+            "accept_short_rest"
+        )
         if self.blocking_issue_count or stop_for_rest:
             return {
                 "type": "ir.actions.act_window",
@@ -362,9 +376,13 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
     def action_apply(self):
         self.ensure_one()
         if not self.preview_ready:
-            raise ValidationError(_("Preview the competition schedule before applying it."))
+            raise ValidationError(
+                _("Preview the competition schedule before applying it.")
+            )
         if self.preview_signature != self._input_signature():
-            raise ValidationError(_("Competition planning changed after preview. Preview again."))
+            raise ValidationError(
+                _("Competition planning changed after preview. Preview again.")
+            )
         proposal = self._build_proposal()
         if proposal["errors"]:
             raise ValidationError("\n".join(proposal["errors"]))
@@ -384,11 +402,16 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
             day.action_capacity_ready()
             schedule = self._schedule_for_day(day, fixtures)
             self.env["federation.schedule.auto.wizard"].create(
-                {"schedule_id": schedule.id, "preferred_rest_minutes": self.preferred_rest_minutes}
+                {
+                    "schedule_id": schedule.id,
+                    "preferred_rest_minutes": self.preferred_rest_minutes,
+                }
             ).action_apply()
             schedule.invalidate_recordset()
             if schedule.unassigned_fixture_ids:
-                raise ValidationError(_("%s still has unscheduled fixtures.") % day.display_name)
+                raise ValidationError(
+                    _("%s still has unscheduled fixtures.") % day.display_name
+                )
             schedules |= schedule
         if self.env.context.get("return_to_competition_workspace") and hasattr(
             self.edition_id, "action_open_competition_planner"
@@ -405,10 +428,21 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         errors, warnings = self._validate_scope(require_generated)
         fixtures, deferred, excluded = self._fixtures()
         capacities = self._capacities(errors)
-        distribution = self.env["federation.competition.schedule.distributor"].propose(
-            fixtures, capacities, pinned=self._pinned_fixture_days(),
-            known_days=self._known_fixture_dates(),
-        ) if capacities else {"assignments": {}, "remaining_capacity": {}, "errors": [], "valid": False}
+        distribution = (
+            self.env["federation.competition.schedule.distributor"].propose(
+                fixtures,
+                capacities,
+                pinned=self._pinned_fixture_days(),
+                known_days=self._known_fixture_dates(),
+            )
+            if capacities
+            else {
+                "assignments": {},
+                "remaining_capacity": {},
+                "errors": [],
+                "valid": False,
+            }
+        )
         errors.extend(distribution["errors"])
         duplicate_team_days = self._duplicate_team_days(fixtures, distribution)
         rest_shortfalls = self._rest_shortfalls(fixtures, distribution)
@@ -416,7 +450,9 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         total_capacity = sum(day["capacity"] for day in capacities)
         if len(fixtures) > total_capacity:
             errors.append(
-                _("Selected stages contain %(fixtures)s playable fixtures but the selected game days provide only %(slots)s slots.")
+                _(
+                    "Selected stages contain %(fixtures)s playable fixtures but the selected game days provide only %(slots)s slots."
+                )
                 % {"fixtures": len(fixtures), "slots": total_capacity}
             )
         allocation_report = [
@@ -454,7 +490,8 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
                 "teams_with_multiple_same_day_matches": duplicate_team_days,
                 "rest_shortfalls": rest_shortfalls,
                 "planned_fixture_counts": {
-                    str(day_id): len(ids) for day_id, ids in distribution["assignments"].items()
+                    str(day_id): len(ids)
+                    for day_id, ids in distribution["assignments"].items()
                 },
                 "remaining_capacity": distribution["remaining_capacity"],
             },
@@ -467,10 +504,14 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         if self.stage_ids and self.stage_ids.filtered(
             lambda stage: stage.structure_id not in self.structure_ids
         ):
-            errors.append(_("Every selected stage must belong to a selected competition format."))
+            errors.append(
+                _("Every selected stage must belong to a selected competition format.")
+            )
         if len(self.stage_ids) > 1:
             warnings.append(
-                _("This preview mixes %(count)s competition stages. Review the per-day allocation before applying it.")
+                _(
+                    "This preview mixes %(count)s competition stages. Review the per-day allocation before applying it."
+                )
                 % {"count": len(self.stage_ids)}
             )
         selected_fixtures = self.structure_ids.mapped("fixture_ids")
@@ -500,20 +541,35 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
                     }
                 )
         for structure in self.structure_ids:
-            if structure.state == "draft" and (require_generated or not self.generate_missing_fixtures):
+            if structure.state == "draft" and (
+                require_generated or not self.generate_missing_fixtures
+            ):
                 errors.append(_("Generate fixtures for %s.") % structure.display_name)
             elif structure.state == "draft":
-                warnings.append(_("Fixtures for %s will be generated on apply.") % structure.display_name)
+                warnings.append(
+                    _("Fixtures for %s will be generated on apply.")
+                    % structure.display_name
+                )
         for day in self.matchday_ids:
             if day.state not in ("draft", "capacity_ready"):
                 errors.append(_("%s is no longer mutable.") % day.display_name)
             if not day.planning_court_ids:
                 errors.append(_("Select planning courts for %s.") % day.display_name)
-            schedules = self.env["federation.schedule"].search([("matchday_id", "=", day.id)])
-            if schedules.filtered(lambda schedule: schedule.state not in ("draft", "changes_requested")):
-                errors.append(_("%s has reviewed or published planning.") % day.display_name)
-            if self.mode == "fill" and (day.slot_ids or day.allocation_ids or schedules):
-                warnings.append(_("Existing planning on %s will be retained.") % day.display_name)
+            schedules = self.env["federation.schedule"].search(
+                [("matchday_id", "=", day.id)]
+            )
+            if schedules.filtered(
+                lambda schedule: schedule.state not in ("draft", "changes_requested")
+            ):
+                errors.append(
+                    _("%s has reviewed or published planning.") % day.display_name
+                )
+            if self.mode == "fill" and (
+                day.slot_ids or day.allocation_ids or schedules
+            ):
+                warnings.append(
+                    _("Existing planning on %s will be retained.") % day.display_name
+                )
         return errors, warnings
 
     def _fixtures(self):
@@ -559,22 +615,37 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
                 continue
             try:
                 plan = generator.plan(
-                    day, day.planning_court_ids, day.default_day_start_hour,
-                    day.default_day_end_hour, day.default_slot_duration_minutes,
+                    day,
+                    day.planning_court_ids,
+                    day.default_day_start_hour,
+                    day.default_day_end_hour,
+                    day.default_slot_duration_minutes,
                     noon_pause=day.default_noon_pause,
                     noon_pause_minutes=day.default_noon_pause_minutes,
                 )
             except ValidationError as exc:
                 errors.append("%s: %s" % (day.display_name, exc))
                 continue
-            retained = len(day.slot_ids.filtered(lambda slot: slot.state == "available")) if self.mode == "fill" else 0
+            retained = (
+                len(day.slot_ids.filtered(lambda slot: slot.state == "available"))
+                if self.mode == "fill"
+                else 0
+            )
             rows = self._day_time_rows(day)
             capacities.append(
-                {"matchday_id": day.id, "date": day.date,
-                 "capacity": retained or len(plan["available"]), "blocked": plan["blocked_count"],
-                 "division_ids": day.division_ids.ids,
-                 # Most matches one team can play on this day with the rest.
-                 "team_limit": max_matches_with_rest(rows, self.preferred_rest_minutes) if rows else 0}
+                {
+                    "matchday_id": day.id,
+                    "date": day.date,
+                    "capacity": retained or len(plan["available"]),
+                    "blocked": plan["blocked_count"],
+                    "division_ids": day.division_ids.ids,
+                    # Most matches one team can play on this day with the rest.
+                    "team_limit": (
+                        max_matches_with_rest(rows, self.preferred_rest_minutes)
+                        if rows
+                        else 0
+                    ),
+                }
             )
         return capacities
 
@@ -590,14 +661,22 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         """Time rows of the slots this game day will offer."""
         if self.mode == "fill" and day.slot_ids:
             slots = [
-                {"start_datetime": slot.start_datetime, "end_datetime": slot.end_datetime}
-                for slot in day.slot_ids.filtered(lambda item: item.state == "available")
+                {
+                    "start_datetime": slot.start_datetime,
+                    "end_datetime": slot.end_datetime,
+                }
+                for slot in day.slot_ids.filtered(
+                    lambda item: item.state == "available"
+                )
             ]
         else:
             try:
                 slots = self.env["federation.slot.generator"].plan(
-                    day, day.planning_court_ids, day.default_day_start_hour,
-                    day.default_day_end_hour, day.default_slot_duration_minutes,
+                    day,
+                    day.planning_court_ids,
+                    day.default_day_start_hour,
+                    day.default_day_end_hour,
+                    day.default_slot_duration_minutes,
                     noon_pause=day.default_noon_pause,
                     noon_pause_minutes=day.default_noon_pause_minutes,
                 )["available"]
@@ -618,7 +697,9 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         limits = {}
         for day in days:
             rows = self._day_time_rows(day)
-            limits[day.id] = max_matches_with_rest(rows, self.preferred_rest_minutes) if rows else 0
+            limits[day.id] = (
+                max_matches_with_rest(rows, self.preferred_rest_minutes) if rows else 0
+            )
         team_total, team_division = {}, {}
         for fixture in fixtures:
             for team in (fixture.home_team_id, fixture.away_team_id):
@@ -629,8 +710,11 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         def season_room(team):
             division = team_division.get(team)
             playing = [
-                day for day in days
-                if not division or not hasattr(day, "_allows_division") or day._allows_division(division)
+                day
+                for day in days
+                if not division
+                or not hasattr(day, "_allows_division")
+                or day._allows_division(division)
             ]
             return len(playing), sum(limits.get(day.id, 0) for day in playing)
 
@@ -715,9 +799,13 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         if self.mode == "fill":
             return
         for day in self.matchday_ids:
-            schedules = self.env["federation.schedule"].search([("matchday_id", "=", day.id)])
+            schedules = self.env["federation.schedule"].search(
+                [("matchday_id", "=", day.id)]
+            )
             if self.mode == "replace_auto":
-                schedules.mapped("assignment_ids").filtered(lambda item: item.method == "automatic").unlink()
+                schedules.mapped("assignment_ids").filtered(
+                    lambda item: item.method == "automatic"
+                ).unlink()
             else:
                 schedules.unlink()
                 day.allocation_ids.unlink()
@@ -735,8 +823,11 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
         if day.slot_ids and self.mode in ("fill", "replace_auto"):
             return
         self.env["federation.slot.generator"].generate_plan(
-            day, day.planning_court_ids, day.default_day_start_hour,
-            day.default_day_end_hour, day.default_slot_duration_minutes,
+            day,
+            day.planning_court_ids,
+            day.default_day_start_hour,
+            day.default_day_end_hour,
+            day.default_slot_duration_minutes,
             noon_pause=day.default_noon_pause,
             noon_pause_minutes=day.default_noon_pause_minutes,
             replace_existing=bool(day.slot_ids),
@@ -744,7 +835,9 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
 
     def _create_allocations(self, day, fixtures):
         for structure in fixtures.mapped("structure_id"):
-            allocated = fixtures.filtered(lambda fixture: fixture.structure_id == structure)
+            allocated = fixtures.filtered(
+                lambda fixture: fixture.structure_id == structure
+            )
             current = day.allocation_ids.filtered(
                 lambda item: item.structure_id == structure and item.manual_only
             )[:1]
@@ -752,39 +845,69 @@ class FederationCompetitionScheduleWizard(models.TransientModel):
                 current.manual_fixture_ids |= allocated
             else:
                 self.env["federation.matchday.allocation"].create(
-                    {"matchday_id": day.id, "structure_id": structure.id,
-                     "manual_fixture_ids": [(6, 0, allocated.ids)], "manual_only": True}
+                    {
+                        "matchday_id": day.id,
+                        "structure_id": structure.id,
+                        "manual_fixture_ids": [(6, 0, allocated.ids)],
+                        "manual_only": True,
+                    }
                 )
 
     def _schedule_for_day(self, day, fixtures):
         schedule = self.env["federation.schedule"].search(
-            [("matchday_id", "=", day.id), ("state", "in", ("draft", "changes_requested"))], limit=1
+            [
+                ("matchday_id", "=", day.id),
+                ("state", "in", ("draft", "changes_requested")),
+            ],
+            limit=1,
         )
         if schedule and schedule.preferred_rest_minutes != self.preferred_rest_minutes:
             # The schedule is planned and later checked with this rest; a
             # reused draft must not keep the value of an earlier generation.
             schedule.preferred_rest_minutes = self.preferred_rest_minutes
         return schedule or self.env["federation.schedule"].create(
-            {"name": _("%s schedule") % day.display_name, "edition_id": self.edition_id.id,
-             "structure_id": fixtures[:1].structure_id.id, "matchday_id": day.id,
-             "preferred_rest_minutes": self.preferred_rest_minutes}
+            {
+                "name": _("%s schedule") % day.display_name,
+                "edition_id": self.edition_id.id,
+                "structure_id": fixtures[:1].structure_id.id,
+                "matchday_id": day.id,
+                "preferred_rest_minutes": self.preferred_rest_minutes,
+            }
         )
 
     def _input_signature(self):
         payload = {
             "edition": self.edition_id.id,
-            "structures": [(item.id, item.state, item.version, item.write_date) for item in self.structure_ids],
-            "stages": [(stage.id, stage.graph_state, stage.write_date) for stage in self.stage_ids],
+            "structures": [
+                (item.id, item.state, item.version, item.write_date)
+                for item in self.structure_ids
+            ],
+            "stages": [
+                (stage.id, stage.graph_state, stage.write_date)
+                for stage in self.stage_ids
+            ],
             "stage_days": [
                 (stage.id, sorted(stage.matchday_ids.ids))
                 for stage in self.structure_ids.mapped("stage_ids")
             ],
-            "days": [(day.id, day.state, day.date, day.default_day_start_hour,
-                      day.default_day_end_hour, day.default_slot_duration_minutes,
-                      day.planning_court_ids.ids, day.write_date) for day in self.matchday_ids],
+            "days": [
+                (
+                    day.id,
+                    day.state,
+                    day.date,
+                    day.default_day_start_hour,
+                    day.default_day_end_hour,
+                    day.default_slot_duration_minutes,
+                    day.planning_court_ids.ids,
+                    day.write_date,
+                )
+                for day in self.matchday_ids
+            ],
             "mode": self.mode,
         }
-        return hashlib.sha256(json.dumps(payload, default=str, sort_keys=True).encode()).hexdigest()
+        return hashlib.sha256(
+            json.dumps(payload, default=str, sort_keys=True).encode()
+        ).hexdigest()
 
 
 class FederationCompetitionScheduleStageWindow(models.TransientModel):
@@ -801,9 +924,7 @@ class FederationCompetitionScheduleStageWindow(models.TransientModel):
     division_id = fields.Many2one(
         related="stage_id.structure_id.division_id", string="Division"
     )
-    source_summary = fields.Char(
-        string="Teams from", compute="_compute_source_summary"
-    )
+    source_summary = fields.Char(string="Teams from", compute="_compute_source_summary")
     edition_id = fields.Many2one(related="wizard_id.edition_id")
     matchday_ids = fields.Many2many(
         "federation.matchday",

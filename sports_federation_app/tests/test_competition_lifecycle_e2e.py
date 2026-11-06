@@ -7,7 +7,9 @@ from odoo.exceptions import ValidationError
 from odoo.tests import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", "sf_competition_lifecycle", "sf_release_confidence")
+@tagged(
+    "post_install", "-at_install", "sf_competition_lifecycle", "sf_release_confidence"
+)
 class TestCompetitionLifecycleE2E(TransactionCase):
     """Exercise the contracted competition release path through Odoo commands."""
 
@@ -28,9 +30,7 @@ class TestCompetitionLifecycleE2E(TransactionCase):
             "sports_federation_format.group_competition_designer"
         )
         calendar_planner = group("sports_federation_calendar.group_calendar_planner")
-        schedule_planner = group(
-            "sports_federation_scheduling.group_schedule_planner"
-        )
+        schedule_planner = group("sports_federation_scheduling.group_schedule_planner")
         schedule_approver = group(
             "sports_federation_schedule_approval.group_schedule_approver"
         )
@@ -82,7 +82,9 @@ class TestCompetitionLifecycleE2E(TransactionCase):
             [schedule_planner.id, calendar_planner.id, competition_designer.id],
         )
         cls.schedule_approver = make_user(
-            "Lifecycle Schedule Approver", "lifecycle.schedule.approver", [schedule_approver.id]
+            "Lifecycle Schedule Approver",
+            "lifecycle.schedule.approver",
+            [schedule_approver.id],
         )
         cls.matchday_manager = make_user(
             "Lifecycle Match-Day Manager",
@@ -98,10 +100,14 @@ class TestCompetitionLifecycleE2E(TransactionCase):
             [federation_manager.id, competition_designer.id],
         )
         cls.result_validator = make_user(
-            "Lifecycle Result Validator", "lifecycle.result.validator", [result_validator.id]
+            "Lifecycle Result Validator",
+            "lifecycle.result.validator",
+            [result_validator.id],
         )
         cls.result_approver = make_user(
-            "Lifecycle Result Approver", "lifecycle.result.approver", [result_approver.id]
+            "Lifecycle Result Approver",
+            "lifecycle.result.approver",
+            [result_approver.id],
         )
         cls.discipline_officer = make_user(
             "Lifecycle Discipline Officer",
@@ -133,8 +139,16 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         cls.env["federation.points.rule"].create(
             [
                 {"rule_set_id": cls.rule_set.id, "result_type": "bye", "points": 4},
-                {"rule_set_id": cls.rule_set.id, "result_type": "forfeit_win", "points": 7},
-                {"rule_set_id": cls.rule_set.id, "result_type": "forfeit_loss", "points": 1},
+                {
+                    "rule_set_id": cls.rule_set.id,
+                    "result_type": "forfeit_win",
+                    "points": 7,
+                },
+                {
+                    "rule_set_id": cls.rule_set.id,
+                    "result_type": "forfeit_loss",
+                    "points": 1,
+                },
             ]
         )
         cls.env["federation.eligibility.rule"].create(
@@ -228,76 +242,118 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         team_count=4,
         day_count=2,
     ):
-        wizard = self.env["federation.create.competition.wizard"].with_user(
-            self.organizer
-        ).create(
-            {
-                "setup_template": setup_template,
-                "competition_id": self.competition_template.id,
-                "name": f"Lifecycle {suffix}",
-                "season_id": self.season.id,
-                "date_start": "2027-03-01",
-                "date_end": (
-                    "2027-03-01"
-                    if setup_template == "tournament_day"
-                    else "2027-12-31"
-                ),
-                "rule_set_id": self.rule_set.id,
-                "workflow_mode": workflow_mode,
-                "default_venue_id": self.venue.id,
-                "default_format_type": format_type,
-                "default_start_hour": 9.0,
-                "default_end_hour": 18.0,
-                "default_slot_duration_minutes": 40,
-                "division_line_ids": [
-                    Command.create(
-                        {
-                            "name": f"Lifecycle {suffix} Division",
-                            "code": f"{suffix[:8].upper()}-DIV",
-                            "category": "senior",
-                            "gender": "male",
-                            "tournament_type": (
-                                "single_day" if setup_template == "tournament_day" else "multi_day"
-                            ),
-                        }
-                    )
-                ],
-                "role_line_ids": [
-                    Command.create({"role": "administrator", "user_id": self.organizer.id}),
-                    Command.create({"role": "registration_manager", "user_id": self.organizer.id}),
-                    Command.create({"role": "competition_designer", "user_id": self.organizer.id}),
-                    Command.create({"role": "calendar_planner", "user_id": self.organizer.id}),
-                    Command.create({"role": "schedule_planner", "user_id": self.schedule_planner.id}),
-                    Command.create({"role": "schedule_approver", "user_id": self.schedule_approver.id}),
-                    Command.create({"role": "matchday_manager", "user_id": self.matchday_manager.id}),
-                    Command.create({"role": "competition_director", "user_id": self.organizer.id}),
-                ],
-            }
+        wizard = (
+            self.env["federation.create.competition.wizard"]
+            .with_user(self.organizer)
+            .create(
+                {
+                    "setup_template": setup_template,
+                    "competition_id": self.competition_template.id,
+                    "name": f"Lifecycle {suffix}",
+                    "season_id": self.season.id,
+                    "date_start": "2027-03-01",
+                    "date_end": (
+                        "2027-03-01"
+                        if setup_template == "tournament_day"
+                        else "2027-12-31"
+                    ),
+                    "rule_set_id": self.rule_set.id,
+                    "workflow_mode": workflow_mode,
+                    "default_venue_id": self.venue.id,
+                    "default_format_type": format_type,
+                    "default_start_hour": 9.0,
+                    "default_end_hour": 18.0,
+                    "default_slot_duration_minutes": 40,
+                    "division_line_ids": [
+                        Command.create(
+                            {
+                                "name": f"Lifecycle {suffix} Division",
+                                "code": f"{suffix[:8].upper()}-DIV",
+                                "category": "senior",
+                                "gender": "male",
+                                "tournament_type": (
+                                    "single_day"
+                                    if setup_template == "tournament_day"
+                                    else "multi_day"
+                                ),
+                            }
+                        )
+                    ],
+                    "role_line_ids": [
+                        Command.create(
+                            {"role": "administrator", "user_id": self.organizer.id}
+                        ),
+                        Command.create(
+                            {
+                                "role": "registration_manager",
+                                "user_id": self.organizer.id,
+                            }
+                        ),
+                        Command.create(
+                            {
+                                "role": "competition_designer",
+                                "user_id": self.organizer.id,
+                            }
+                        ),
+                        Command.create(
+                            {"role": "calendar_planner", "user_id": self.organizer.id}
+                        ),
+                        Command.create(
+                            {
+                                "role": "schedule_planner",
+                                "user_id": self.schedule_planner.id,
+                            }
+                        ),
+                        Command.create(
+                            {
+                                "role": "schedule_approver",
+                                "user_id": self.schedule_approver.id,
+                            }
+                        ),
+                        Command.create(
+                            {
+                                "role": "matchday_manager",
+                                "user_id": self.matchday_manager.id,
+                            }
+                        ),
+                        Command.create(
+                            {
+                                "role": "competition_director",
+                                "user_id": self.organizer.id,
+                            }
+                        ),
+                    ],
+                }
+            )
         )
         action = wizard.with_user(self.organizer).action_create_competition()
         edition = self.env["federation.competition.edition"].browse(
             action["params"]["edition_id"]
         )
         picker_action = edition.with_user(self.organizer).action_setup_participants()
-        picker = self.env[picker_action["res_model"]].with_user(self.organizer).browse(
-            picker_action["res_id"]
+        picker = (
+            self.env[picker_action["res_model"]]
+            .with_user(self.organizer)
+            .browse(picker_action["res_id"])
         )
         picker.write({"team_ids": [Command.set(self.teams[:team_count].ids)]})
         picker.with_user(self.organizer).action_apply()
 
         format_action = edition.with_user(self.organizer).action_setup_format()
-        format_wizard = self.env[format_action["res_model"]].with_user(
-            self.organizer
-        ).browse(format_action["res_id"])
-        format_wizard.write(
-            {"format_type": format_type, "preview_confirmed": True}
+        format_wizard = (
+            self.env[format_action["res_model"]]
+            .with_user(self.organizer)
+            .browse(format_action["res_id"])
         )
+        format_wizard.write({"format_type": format_type, "preview_confirmed": True})
         format_wizard.with_user(self.organizer).action_apply()
 
         gameday_action = edition.with_user(self.organizer).action_setup_gamedays()
-        gameday_wizard = self.env[gameday_action["res_model"]].with_user(
-            self.organizer
-        ).browse(gameday_action["res_id"])
+        gameday_wizard = (
+            self.env[gameday_action["res_model"]]
+            .with_user(self.organizer)
+            .browse(gameday_action["res_id"])
+        )
         for _index in range(day_count):
             gameday_wizard.with_user(self.organizer).action_add_day()
         gameday_wizard.with_user(self.organizer).action_save_close()
@@ -305,8 +361,10 @@ class TestCompetitionLifecycleE2E(TransactionCase):
 
     def _plan_schedules(self, edition):
         action = edition.with_user(self.schedule_planner).action_setup_schedule()
-        wizard = self.env[action["res_model"]].with_user(self.schedule_planner).browse(
-            action["res_id"]
+        wizard = (
+            self.env[action["res_model"]]
+            .with_user(self.schedule_planner)
+            .browse(action["res_id"])
         )
         wizard.with_user(self.schedule_planner).action_preview()
         wizard.with_user(self.schedule_planner).action_apply()
@@ -316,14 +374,20 @@ class TestCompetitionLifecycleE2E(TransactionCase):
 
     def _publish_schedules(self, schedules):
         for schedule in schedules:
-            action = schedule.with_user(self.schedule_planner).action_submit_for_review()
+            action = schedule.with_user(
+                self.schedule_planner
+            ).action_submit_for_review()
             if schedule.edition_id.schedule_approval_required:
                 review = self.env["federation.schedule.review"].browse(action["res_id"])
                 review.with_user(self.schedule_approver).action_approve_schedule()
-                publish_action = review.with_user(self.schedule_approver).action_publish_schedule()
-                publish_wizard = self.env[publish_action["res_model"]].with_user(
+                publish_action = review.with_user(
                     self.schedule_approver
-                ).browse(publish_action["res_id"])
+                ).action_publish_schedule()
+                publish_wizard = (
+                    self.env[publish_action["res_model"]]
+                    .with_user(self.schedule_approver)
+                    .browse(publish_action["res_id"])
+                )
                 publish_wizard.action_publish()
         return schedules
 
@@ -348,8 +412,10 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         for _index in range(len(teams)):
             action = matchday.with_user(self.organizer).action_prepare_lineups()
             self.assertEqual(action["res_model"], "federation.gameday.lineup.wizard")
-            wizard = self.env[action["res_model"]].with_user(self.organizer).browse(
-                action["res_id"]
+            wizard = (
+                self.env[action["res_model"]]
+                .with_user(self.organizer)
+                .browse(action["res_id"])
             )
             self.assertIn(wizard.team_id, teams - prepared)
             self.assertEqual(len(wizard.line_ids), 14)
@@ -384,20 +450,26 @@ class TestCompetitionLifecycleE2E(TransactionCase):
             [("match_id", "=", match.id), ("team_id", "=", team.id)], limit=1
         )
         self.assertTrue(sheet)
-        player_ids = [sheet.line_ids.sorted("id")[index].player_id.id for index in indexes]
+        player_ids = [
+            sheet.line_ids.sorted("id")[index].player_id.id for index in indexes
+        ]
         sheet.with_user(self.organizer).action_set_crossed_out(player_ids)
         return sheet
 
     def _open_gameday(self, matchday):
         self._create_court_access(matchday)
-        result = self.env["federation.matchday.commands"].with_user(
-            self.matchday_manager
-        ).open_matchday(matchday.id)
+        result = (
+            self.env["federation.matchday.commands"]
+            .with_user(self.matchday_manager)
+            .open_matchday(matchday.id)
+        )
         self.assertEqual(matchday.state, "open")
         self.assertTrue(result["session_id"])
         return result
 
-    def _court_command(self, command_service, matchday, match, operation, payload, base):
+    def _court_command(
+        self, command_service, matchday, match, operation, payload, base
+    ):
         return command_service.sync(
             matchday.id,
             (match.operational_slot_id or match.published_slot_id).court_id.id,
@@ -447,9 +519,11 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         )
 
     def _finish_gameday(self, matchday):
-        return self.env["federation.matchday.commands"].with_user(
-            self.matchday_manager
-        ).close_matchday(matchday.id)
+        return (
+            self.env["federation.matchday.commands"]
+            .with_user(self.matchday_manager)
+            .close_matchday(matchday.id)
+        )
 
     def test_league_runs_from_creation_to_closed_competition(self):
         edition = self._create_competition("full-league", day_count=2)
@@ -474,11 +548,16 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         schedules = self._plan_schedules(edition)
         self.assertTrue(schedules)
         self._publish_schedules(schedules)
-        self.assertEqual(set(matchdays.mapped("current_publication_id.state")), {"live"})
+        self.assertEqual(
+            set(matchdays.mapped("current_publication_id.state")), {"live"}
+        )
         self.assertEqual(edition.state, "open")
         self.assertEqual(
             self.env["federation.competition.event"].search_count(
-                [("edition_id", "=", edition.id), ("event_type", "=", "schedule_published")]
+                [
+                    ("edition_id", "=", edition.id),
+                    ("event_type", "=", "schedule_published"),
+                ]
             ),
             2,
         )
@@ -488,7 +567,9 @@ class TestCompetitionLifecycleE2E(TransactionCase):
             self._open_gameday(matchday)
             if day_index == 0:
                 self.assertEqual(edition.state, "in_progress")
-            for match_index, match in enumerate(matchday.published_match_ids.sorted("id")):
+            for match_index, match in enumerate(
+                matchday.published_match_ids.sorted("id")
+            ):
                 for team in match.home_team_id | match.away_team_id:
                     start = (match_index * 2) % 12
                     self._cross_out(match, team, (start, start + 1))
@@ -568,10 +649,14 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         )
 
         review.with_user(self.schedule_approver).action_approve_schedule()
-        publish_action = review.with_user(self.schedule_approver).action_publish_schedule()
-        publish_wizard = self.env[publish_action["res_model"]].with_user(
+        publish_action = review.with_user(
             self.schedule_approver
-        ).browse(publish_action["res_id"])
+        ).action_publish_schedule()
+        publish_wizard = (
+            self.env[publish_action["res_model"]]
+            .with_user(self.schedule_approver)
+            .browse(publish_action["res_id"])
+        )
         publish_wizard.action_publish()
         self.assertEqual(review.state, "approved")
         self.assertEqual(schedule.matchday_id.current_publication_id.state, "live")
@@ -675,13 +760,18 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         structure = self.env["federation.competition.structure"].search(
             [("edition_id", "=", edition.id)], limit=1
         )
-        pool_stages = structure.stage_ids.filtered(lambda stage: stage.stage_type == "pool")
+        pool_stages = structure.stage_ids.filtered(
+            lambda stage: stage.stage_type == "pool"
+        )
         knockout = structure.stage_ids.filtered(
             lambda stage: stage.stage_type == "knockout"
         )
         self.assertEqual(len(pool_stages), 2)
         self.assertEqual(len(knockout), 1)
-        self.assertEqual(set(pool_stages.mapped("stage_participant_ids.team_id").ids), set(self.teams.ids))
+        self.assertEqual(
+            set(pool_stages.mapped("stage_participant_ids.team_id").ids),
+            set(self.teams.ids),
+        )
         self.assertTrue(
             all(len(stage.stage_participant_ids) == 2 for stage in pool_stages)
         )
@@ -699,7 +789,9 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         schedules = self._plan_schedules(edition)
         self.assertEqual(len(schedules), 1)
         schedule = schedules[0]
-        self.assertEqual(set(schedule.assignment_ids.fixture_id.ids), set(structure.fixture_ids.ids))
+        self.assertEqual(
+            set(schedule.assignment_ids.fixture_id.ids), set(structure.fixture_ids.ids)
+        )
         self._publish_schedules(schedules)
         matchday = schedule.matchday_id
         publication = matchday.current_publication_id
@@ -726,7 +818,9 @@ class TestCompetitionLifecycleE2E(TransactionCase):
             lambda fixture: fixture.round_number == 1
         ).sorted("sequence")
         self.assertEqual(len(semifinal_fixtures), 2)
-        self.assertTrue(all(fixture.operational_match_id for fixture in semifinal_fixtures))
+        self.assertTrue(
+            all(fixture.operational_match_id for fixture in semifinal_fixtures)
+        )
         tie_match = semifinal_fixtures[0].operational_match_id
         tie_advancing_team = tie_match.home_team_id
         self.assertTrue(tie_match.is_format_knockout)
@@ -761,7 +855,9 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         final_fixture = final_fixture[0]
         final_match = final_fixture.operational_match_id
         self.assertTrue(final_match)
-        self.assertIn(tie_advancing_team, final_match.home_team_id | final_match.away_team_id)
+        self.assertIn(
+            tie_advancing_team, final_match.home_team_id | final_match.away_team_id
+        )
         self.assertEqual(final_fixture.placement_from, 1)
         self.assertEqual(final_fixture.placement_to, 2)
         for team in final_match.home_team_id | final_match.away_team_id:
@@ -770,11 +866,17 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         self.assertEqual(final_match.result_state, "approved")
         self.assertEqual(final_fixture.state, "completed")
         final_placement = final_match._get_result_team("winner")
-        self.assertIn(final_placement, final_match.home_team_id | final_match.away_team_id)
+        self.assertIn(
+            final_placement, final_match.home_team_id | final_match.away_team_id
+        )
 
         self.assertEqual(matchday.current_publication_id.id, publication_id)
-        self.assertEqual(matchday.current_publication_id.snapshot_digest, publication_digest)
-        self.assertEqual(set(schedule.assignment_ids.fixture_id.ids), assignment_fixture_ids)
+        self.assertEqual(
+            matchday.current_publication_id.snapshot_digest, publication_digest
+        )
+        self.assertEqual(
+            set(schedule.assignment_ids.fixture_id.ids), assignment_fixture_ids
+        )
         self.assertEqual(
             self.env["federation.schedule.publication"].search_count(
                 [("schedule_id", "=", schedule.id), ("state", "=", "live")]
@@ -794,9 +896,14 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         matchday = schedules[0].matchday_id
         self._prepare_gameday_rosters(matchday)
         self._open_gameday(matchday)
-        first_round = schedules[0].structure_id.fixture_ids.filtered(
-            lambda fixture: fixture.round_number == 1 and fixture.operational_match_id
-        ).sorted("sequence")
+        first_round = (
+            schedules[0]
+            .structure_id.fixture_ids.filtered(
+                lambda fixture: fixture.round_number == 1
+                and fixture.operational_match_id
+            )
+            .sorted("sequence")
+        )
         self.assertEqual(len(first_round), 2)
         for fixture in first_round:
             match = fixture.operational_match_id
@@ -821,16 +928,27 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         source_match.with_user(self.organizer).action_correct_result()
         self.assertEqual(source_match.result_state, "corrected")
         self.assertFalse(final_fixture.operational_match_id)
-        self.assertFalse(final_fixture.home_team_id == original_winner or final_fixture.away_team_id == original_winner)
+        self.assertFalse(
+            final_fixture.home_team_id == original_winner
+            or final_fixture.away_team_id == original_winner
+        )
         withdrawal = edition.event_ids.filtered(
             lambda event: event.event_type == "follow_up_match_withdrawn"
         )
         self.assertEqual(len(withdrawal), 1)
-        self.assertEqual(json.loads(withdrawal.payload_json)["match_id"], original_follow_up.id)
-        self.assertEqual(json.loads(withdrawal.payload_json)["source_fixture_id"], first_round[0].id)
+        self.assertEqual(
+            json.loads(withdrawal.payload_json)["match_id"], original_follow_up.id
+        )
+        self.assertEqual(
+            json.loads(withdrawal.payload_json)["source_fixture_id"], first_round[0].id
+        )
 
         source_match.with_user(self.organizer).write(
-            {"home_score": 0, "away_score": 2, "result_correction_reason": "Corrected semifinal score."}
+            {
+                "home_score": 0,
+                "away_score": 2,
+                "result_correction_reason": "Corrected semifinal score.",
+            }
         )
         source_match.with_user(self.organizer).action_submit_result()
         self.assertEqual(source_match.result_state, "approved")
@@ -851,7 +969,9 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         follow_up.with_user(self.organizer).action_start()
         self.assertEqual(follow_up.state, "in_progress")
         source_match.with_user(self.organizer).write(
-            {"result_correction_reason": "A correction after follow-up start must be refused."}
+            {
+                "result_correction_reason": "A correction after follow-up start must be refused."
+            }
         )
         unchanged = (
             source_match.result_state,
@@ -982,7 +1102,9 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         )
         self.assertTrue(result["current"]["submitted"])
         self.assertEqual(forfeit_match.result_state, "approved")
-        self.assertEqual(forfeit_match._get_forfeit_winner(), forfeit_match.away_team_id)
+        self.assertEqual(
+            forfeit_match._get_forfeit_winner(), forfeit_match.away_team_id
+        )
         final_fixture = stage.stage_fixture_ids.filtered(
             lambda fixture: fixture.round_number == 2
         )
@@ -998,8 +1120,7 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         )
         stage.with_user(self.organizer).action_freeze_standings()
         points = {
-            line.team_id.id: line.points
-            for line in stage.standing_snapshot_id.line_ids
+            line.team_id.id: line.points for line in stage.standing_snapshot_id.line_ids
         }
         self.assertEqual(len(points), 3)
         bye_team_id = bye_fixture.bye_team_id.id
@@ -1077,7 +1198,11 @@ class TestCompetitionLifecycleE2E(TransactionCase):
                 [("match_id", "=", first_match.id), ("team_id", "=", team.id)],
                 limit=1,
             )
-            required_player = count_player if team == first_match.home_team_id else sheet.line_ids[0].player_id
+            required_player = (
+                count_player
+                if team == first_match.home_team_id
+                else sheet.line_ids[0].player_id
+            )
             ids = [required_player.id]
             ids.extend(
                 line.player_id.id
@@ -1143,9 +1268,7 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         self.assertEqual(second_match.state, previous_state)
 
     def test_gameday_roster_limits_hold_through_result_submission(self):
-        edition = self._create_competition(
-            "fourteen-twelve", team_count=4, day_count=1
-        )
+        edition = self._create_competition("fourteen-twelve", team_count=4, day_count=1)
         schedules = self._plan_schedules(edition)
         self._publish_schedules(schedules)
         matchday = schedules[0].matchday_id
@@ -1155,7 +1278,10 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         self._open_gameday(matchday)
         first_match = matches[0]
         home_sheet = self.env["federation.match.sheet"].search(
-            [("match_id", "=", first_match.id), ("team_id", "=", first_match.home_team_id.id)],
+            [
+                ("match_id", "=", first_match.id),
+                ("team_id", "=", first_match.home_team_id.id),
+            ],
             limit=1,
         )
         self.assertEqual(len(home_sheet.line_ids), 14)
@@ -1164,7 +1290,9 @@ class TestCompetitionLifecycleE2E(TransactionCase):
             self.court_operator
         )
         slot = first_match.operational_slot_id or first_match.published_slot_id
-        opened = command_service.open_match(matchday.id, slot.court_id.id, first_match.id)
+        opened = command_service.open_match(
+            matchday.id, slot.court_id.id, first_match.id
+        )
         payload = {
             "home": 2,
             "away": 1,
@@ -1220,7 +1348,11 @@ class TestCompetitionLifecycleE2E(TransactionCase):
         self.assertEqual(len(next_sheet.line_ids), 14)
         self._cross_out(next_match, repeated_team, (2, 3))
         self.assertNotEqual(
-            set(first_home_sheet.line_ids.filtered("crossed_out").mapped("player_id").ids),
+            set(
+                first_home_sheet.line_ids.filtered("crossed_out")
+                .mapped("player_id")
+                .ids
+            ),
             set(next_sheet.line_ids.filtered("crossed_out").mapped("player_id").ids),
         )
         self.assertEqual(first_home_sheet.participant_count, 12)

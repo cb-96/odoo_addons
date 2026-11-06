@@ -266,9 +266,7 @@ class FederationStageLifecycle(models.AbstractModel):
         Participant = self.env["federation.tournament.participant"].sudo()
         existing = {
             participant.team_id.id
-            for participant in Participant.search(
-                [("tournament_id", "=", division.id)]
-            )
+            for participant in Participant.search([("tournament_id", "=", division.id)])
         }
         missing = stage.stage_participant_ids.mapped("team_id").filtered(
             lambda team: team.id not in existing
@@ -278,7 +276,11 @@ class FederationStageLifecycle(models.AbstractModel):
             # which apply the same division eligibility check.
             Participant.create(
                 [
-                    {"tournament_id": division.id, "team_id": team.id, "state": "confirmed"}
+                    {
+                        "tournament_id": division.id,
+                        "team_id": team.id,
+                        "state": "confirmed",
+                    }
                     for team in missing
                 ]
             )
@@ -312,8 +314,10 @@ class FederationStageLifecycle(models.AbstractModel):
     @api.model
     def freeze_standings(self, stage):
         result = super().freeze_standings(stage)
-        standings = self.env["federation.standing"].sudo().search(
-            [("structure_stage_id", "=", stage.id), ("state", "!=", "frozen")]
+        standings = (
+            self.env["federation.standing"]
+            .sudo()
+            .search([("structure_stage_id", "=", stage.id), ("state", "!=", "frozen")])
         )
         if standings:
             standings.with_context(stage_engine_freeze=True).action_freeze()
@@ -335,9 +339,10 @@ class FederationStageLifecycle(models.AbstractModel):
         for target in targets:
             values = {}
             for side in ("home", "away"):
-                if target["%s_source_fixture_id" % side] == fixture and target[
-                    "%s_team_id" % side
-                ]:
+                if (
+                    target["%s_source_fixture_id" % side] == fixture
+                    and target["%s_team_id" % side]
+                ):
                     values["%s_team_id" % side] = False
             if not values and not target.bye_team_id:
                 continue
@@ -355,7 +360,11 @@ class FederationStageLifecycle(models.AbstractModel):
                 self.env["federation.competition.event"].sudo().emit(
                     fixture.edition_id,
                     "follow_up_match_withdrawn",
-                    {"fixture_id": target.id, "match_id": match.id, "source_fixture_id": fixture.id},
+                    {
+                        "fixture_id": target.id,
+                        "match_id": match.id,
+                        "source_fixture_id": fixture.id,
+                    },
                 )
                 match.sudo().unlink()
             target.write(values)

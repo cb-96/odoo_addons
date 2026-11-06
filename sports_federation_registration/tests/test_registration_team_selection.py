@@ -121,7 +121,9 @@ class TestRegistrationTeamSelection(TransactionCase):
         self.assertIn(eligible_team.id, entry.available_team_ids.ids)
         self.assertNotIn(registered_team.id, entry.available_team_ids.ids)
 
-    def test_direct_team_picker_materializes_registration_and_participant_snapshot(self):
+    def test_direct_team_picker_materializes_registration_and_participant_snapshot(
+        self,
+    ):
         first = self._make_team("Direct Team A")
         second = self._make_team("Direct Team B")
         wizard = self.env["federation.competition.team.selection.wizard"].create(
@@ -136,9 +138,7 @@ class TestRegistrationTeamSelection(TransactionCase):
         wizard.action_apply()
 
         self.assertEqual(self.window.state, "finalized")
-        self.assertEqual(
-            set(self.window.entry_ids.mapped("state")), {"approved"}
-        )
+        self.assertEqual(set(self.window.entry_ids.mapped("state")), {"approved"})
         self.assertEqual(
             set(self.window.participant_set_id.line_ids.mapped("team_id").ids),
             {first.id, second.id},
@@ -216,8 +216,6 @@ class TestRegistrationTeamSelection(TransactionCase):
         self._participants().unlink()
         second.write({"gender": "female"})
 
-        self.window._sync_tournament_participants(
-            participant_set, skip_ineligible=True
-        )
+        self.window._sync_tournament_participants(participant_set, skip_ineligible=True)
 
         self.assertEqual(self._participants().mapped("team_id"), first)

@@ -13,7 +13,9 @@ class TestGamedayParticipation(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        club = cls.env["federation.club"].create({"name": "Gameday Club", "code": "GDC"})
+        club = cls.env["federation.club"].create(
+            {"name": "Gameday Club", "code": "GDC"}
+        )
         cls.team = cls.env["federation.team"].create(
             {"name": "Gameday Home", "club_id": club.id, "code": "GDH"}
         )

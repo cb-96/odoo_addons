@@ -8,6 +8,7 @@ competition looks like.  It is only marked ``is_practice`` so that it
 * shows a clear "Practice" marker in lists and forms, and
 * can be removed (archived) in one click together with its sample clubs.
 """
+
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
@@ -60,7 +61,9 @@ class FederationCompetitionEditionPractice(models.Model):
         """
         practice = self.filtered("is_practice")
         if practice != self:
-            raise ValidationError(_("Only practice competitions can be removed this way."))
+            raise ValidationError(
+                _("Only practice competitions can be removed this way.")
+            )
         for edition in practice:
             edition.activity_ids.unlink()
             for record in edition._practice_activity_targets():
@@ -79,9 +82,9 @@ class FederationCompetitionEditionPractice(models.Model):
             ).mapped("practice_club_ids")
             unused = clubs - still_used
             if unused:
-                self.env["federation.team"].search([("club_id", "in", unused.ids)]).write(
-                    {"active": False}
-                )
+                self.env["federation.team"].search(
+                    [("club_id", "in", unused.ids)]
+                ).write({"active": False})
                 unused.write({"active": False})
         practice.write({"active": False})
         return {
@@ -89,7 +92,9 @@ class FederationCompetitionEditionPractice(models.Model):
             "tag": "display_notification",
             "params": {
                 "title": _("Practice competition removed"),
-                "message": _("The practice competition and its sample clubs were archived."),
+                "message": _(
+                    "The practice competition and its sample clubs were archived."
+                ),
                 "type": "success",
                 "next": {"type": "ir.actions.act_window_close"},
             },
@@ -97,9 +102,11 @@ class FederationCompetitionEditionPractice(models.Model):
 
     def _practice_activity_targets(self):
         self.ensure_one()
-        return self.env["federation.matchday"].search(
+        matchdays = self.env["federation.matchday"].search(
             [("edition_id", "=", self.id)]
-        ) | self.with_context(active_test=False).tournament_ids
+        )
+        divisions = self.with_context(active_test=False).tournament_ids
+        return list(matchdays) + list(divisions)
 
 
 class FederationTournamentPractice(models.Model):
@@ -110,7 +117,9 @@ class FederationTournamentPractice(models.Model):
             self.mapped("edition_id.is_practice")
         ):
             raise ValidationError(
-                _("Divisions of a practice competition cannot be published on the website.")
+                _(
+                    "Divisions of a practice competition cannot be published on the website."
+                )
             )
         return super().write(values)
 
@@ -118,9 +127,13 @@ class FederationTournamentPractice(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get("website_published") and vals.get("edition_id"):
-                edition = self.env["federation.competition.edition"].browse(vals["edition_id"])
+                edition = self.env["federation.competition.edition"].browse(
+                    vals["edition_id"]
+                )
                 if edition.is_practice:
                     raise ValidationError(
-                        _("Divisions of a practice competition cannot be published on the website.")
+                        _(
+                            "Divisions of a practice competition cannot be published on the website."
+                        )
                     )
         return super().create(vals_list)

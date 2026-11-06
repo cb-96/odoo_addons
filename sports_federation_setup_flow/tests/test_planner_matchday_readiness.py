@@ -16,6 +16,12 @@ class TestPlannerMatchdayReadiness(TransactionCase):
         competition = cls.env["federation.competition"].create(
             {"name": "Planner Readiness Competition", "competition_type": "league"}
         )
+        empty_competition = cls.env["federation.competition"].create(
+            {
+                "name": "Planner Readiness Empty Competition",
+                "competition_type": "league",
+            }
+        )
         cls.edition = cls.env["federation.competition.edition"].create(
             {
                 "name": "Planner Readiness Edition",
@@ -26,7 +32,7 @@ class TestPlannerMatchdayReadiness(TransactionCase):
         cls.empty_edition = cls.env["federation.competition.edition"].create(
             {
                 "name": "Planner Readiness Empty Edition",
-                "competition_id": competition.id,
+                "competition_id": empty_competition.id,
                 "season_id": season.id,
             }
         )

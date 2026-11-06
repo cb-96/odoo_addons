@@ -11,13 +11,21 @@ class TestFormatOptions(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         season = cls.env["federation.season"].create(
-            {"name": "Options 26-27", "date_start": "2026-09-01", "date_end": "2027-06-30"}
+            {
+                "name": "Options 26-27",
+                "date_start": "2026-09-01",
+                "date_end": "2027-06-30",
+            }
         )
         competition = cls.env["federation.competition"].create(
             {"name": "Options Cup", "competition_type": "cup"}
         )
         cls.edition = cls.env["federation.competition.edition"].create(
-            {"name": "Options Edition", "competition_id": competition.id, "season_id": season.id}
+            {
+                "name": "Options Edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+            }
         )
         cls.division = cls.env["federation.tournament"].create(
             {
@@ -42,7 +50,11 @@ class TestFormatOptions(TransactionCase):
         )
         cls.env["federation.participant.set.line"].create(
             [
-                {"participant_set_id": cls.participant_set.id, "team_id": team.id, "seed": seed}
+                {
+                    "participant_set_id": cls.participant_set.id,
+                    "team_id": team.id,
+                    "seed": seed,
+                }
                 for seed, team in enumerate(cls.teams, 1)
             ]
         )
@@ -68,24 +80,32 @@ class TestFormatOptions(TransactionCase):
 
     def _wizard(self, **values):
         # Defaults come from the context, exactly like the planner opens it.
-        return self.env["federation.competition.format.setup.wizard"].with_context(
-            default_edition_id=self.edition.id, default_division_id=self.division.id
-        ).create(
-            {
-                "edition_id": self.edition.id,
-                "division_id": self.division.id,
-                "participant_set_id": self.participant_set.id,
-                **values,
-            }
+        return (
+            self.env["federation.competition.format.setup.wizard"]
+            .with_context(
+                default_edition_id=self.edition.id, default_division_id=self.division.id
+            )
+            .create(
+                {
+                    "edition_id": self.edition.id,
+                    "division_id": self.division.id,
+                    "participant_set_id": self.participant_set.id,
+                    **values,
+                }
+            )
         )
 
     def _structure(self):
         return self.env["federation.competition.structure"].search(
-            [("division_id", "=", self.division.id)], order="version desc,id desc", limit=1
+            [("division_id", "=", self.division.id)],
+            order="version desc,id desc",
+            limit=1,
         )
 
     def test_preview_outline_and_options(self):
-        wizard = self._wizard(format_type="pool_knockout", pool_count=2, qualifiers_per_pool=3)
+        wizard = self._wizard(
+            format_type="pool_knockout", pool_count=2, qualifiers_per_pool=3
+        )
         self.assertEqual(wizard.preview_match_count, 6 + 6 + 5)
         self.assertIn("Group A", wizard.preview_outline)
         self.assertIn("Top 3 of every group", wizard.preview_outline)
@@ -97,7 +117,9 @@ class TestFormatOptions(TransactionCase):
 
     def test_confirm_generates_every_stage_and_reopens_with_the_choice(self):
         self._wizard(
-            format_type="split_pools", split_rank=4, preview_confirmed=True,
+            format_type="split_pools",
+            split_rank=4,
+            preview_confirmed=True,
             second_phase_carryover="same_group_results",
         ).action_apply()
         structure = self._structure()
@@ -143,34 +165,47 @@ class TestFormatOptions(TransactionCase):
 
     def test_planning_keeps_the_knockout_after_the_groups(self):
         self._wizard(
-            format_type="pool_knockout", pool_count=2, qualifiers_per_pool=2,
+            format_type="pool_knockout",
+            pool_count=2,
+            qualifiers_per_pool=2,
             preview_confirmed=True,
         ).action_apply()
         structure = self._structure()
-        knockout = structure.stage_ids.filtered(lambda stage: stage.source_type == "progression")
+        knockout = structure.stage_ids.filtered(
+            lambda stage: stage.source_type == "progression"
+        )
         wizard = self.env["federation.competition.schedule.wizard"].create(
             {"edition_id": self.edition.id}
         )
         wizard._onchange_edition_id()
         self.assertEqual(len(wizard.stage_window_ids), len(structure.stage_ids))
-        window = wizard.stage_window_ids.filtered(lambda line: line.stage_id == knockout)
+        window = wizard.stage_window_ids.filtered(
+            lambda line: line.stage_id == knockout
+        )
         window.matchday_ids = [(6, 0, self.days[2].ids)]
         wizard.action_generate()
         self.assertEqual(knockout.matchday_ids, self.days[2])
         knockout_days = self.days.filtered(
-            lambda day: day.allocation_ids.mapped("fixture_ids") & knockout.stage_fixture_ids
+            lambda day: day.allocation_ids.mapped("fixture_ids")
+            & knockout.stage_fixture_ids
         )
         self.assertEqual(knockout_days, self.days[2])
         group_fixtures = structure.fixture_ids - knockout.stage_fixture_ids
-        self.assertFalse(self.days[2].allocation_ids.mapped("fixture_ids") & group_fixtures)
+        self.assertFalse(
+            self.days[2].allocation_ids.mapped("fixture_ids") & group_fixtures
+        )
 
     def test_validator_rejects_stage_outside_its_game_days(self):
         self._wizard(format_type="pool_knockout", preview_confirmed=True).action_apply()
         structure = self._structure()
-        knockout = structure.stage_ids.filtered(lambda stage: stage.source_type == "progression")
+        knockout = structure.stage_ids.filtered(
+            lambda stage: stage.source_type == "progression"
+        )
         knockout.matchday_ids = [(6, 0, self.days[2].ids)]
         day = self.days[0]
-        fixture = knockout.stage_fixture_ids.filtered(lambda item: item._is_schedulable())[:1]
+        fixture = knockout.stage_fixture_ids.filtered(
+            lambda item: item._is_schedulable()
+        )[:1]
         self.env["federation.matchday.allocation"].create(
             {
                 "matchday_id": day.id,

@@ -15,7 +15,8 @@ class FederationCompetitionSetupReadiness(models.AbstractModel):
         planner = edition.get_competition_planner_data()
         step = "complete" if planner["complete"] else planner["current_step"]
         progress = round(
-            100 * sum(item["complete"] for item in planner["steps"])
+            100
+            * sum(item["complete"] for item in planner["steps"])
             / len(planner["steps"])
         )
         labels = {

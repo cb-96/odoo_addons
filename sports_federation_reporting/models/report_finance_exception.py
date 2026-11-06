@@ -11,7 +11,7 @@ class FederationReportFinanceException(models.Model):
         ("missing_fine_event", "Missing Fine Event"),
     ]
 
-    company_id = fields.Many2one('res.company', readonly=True)
+    company_id = fields.Many2one("res.company", readonly=True)
     sanction_id = fields.Many2one(
         "federation.sanction", string="Sanction", readonly=True
     )

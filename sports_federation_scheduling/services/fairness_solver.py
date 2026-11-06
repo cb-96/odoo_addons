@@ -26,18 +26,24 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
         # schedule's structure is its creation context, not a boundary for the
         # fixture pool that must be planned and published.
         allocated = schedule.matchday_id.allocation_ids.mapped("fixture_ids")
-        fixtures = allocated.filtered(lambda f: f.id not in assignment_map)._planning_sorted()
+        fixtures = allocated.filtered(
+            lambda f: f.id not in assignment_map
+        )._planning_sorted()
         used_slots = set(assignment_map.values())
         available = schedule.matchday_id.slot_ids.filtered(
             lambda s: s.state == "available" and s.id not in used_slots
         ).sorted(lambda s: (s.start_datetime, s.court_id.id, s.id))
         # Stages whose table feeds another stage on this same day (groups
         # before a knockout) are packed early so the next stage fits after.
-        feeding_stage_ids = set(
-            allocated.mapped("stage_id")
-            .mapped(lambda stage: stage._planning_source_stages())
-            .ids
-        ) if allocated else set()
+        feeding_stage_ids = (
+            set(
+                allocated.mapped("stage_id")
+                .mapped(lambda stage: stage._planning_source_stages())
+                .ids
+            )
+            if allocated
+            else set()
+        )
         proposed = []
         for fixture in fixtures:
             feeds_same_day = fixture.stage_id.id in feeding_stage_ids
@@ -51,11 +57,13 @@ class FederationScheduleFairnessSolver(models.AbstractModel):
                     continue
                 report = self.evaluate(schedule, candidate, cfg)
                 key = (
-                    (slot.start_datetime,) if feeds_same_day else ()
-                ) + self._quality_key(report) + (
-                    slot.start_datetime,
-                    slot.court_id.id,
-                    slot.id,
+                    ((slot.start_datetime,) if feeds_same_day else ())
+                    + self._quality_key(report)
+                    + (
+                        slot.start_datetime,
+                        slot.court_id.id,
+                        slot.id,
+                    )
                 )
                 if best is None or key < best[0]:
                     best = (key, slot, report)

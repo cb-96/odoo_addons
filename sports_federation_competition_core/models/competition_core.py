@@ -40,7 +40,10 @@ class FederationCompetitionEdition(models.Model):
                 if blockers:
                     raise ValidationError(
                         _("%(edition)s cannot be closed yet:\n- %(blockers)s")
-                        % {"edition": rec.display_name, "blockers": "\n- ".join(blockers)}
+                        % {
+                            "edition": rec.display_name,
+                            "blockers": "\n- ".join(blockers),
+                        }
                     )
             if rec.state == "cancelled" and target == "draft":
                 blockers = rec._get_reset_blockers()
@@ -73,7 +76,10 @@ class FederationCompetitionEdition(models.Model):
         self.ensure_one()
         Match = self.env["federation.match"]
         if "result_state" in Match._fields and Match.search_count(
-            [("tournament_id", "in", self.tournament_ids.ids), ("result_state", "=", "approved")],
+            [
+                ("tournament_id", "in", self.tournament_ids.ids),
+                ("result_state", "=", "approved"),
+            ],
             limit=1,
         ):
             return [_("Approved results exist; create a new competition instead.")]

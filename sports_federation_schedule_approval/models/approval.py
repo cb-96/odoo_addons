@@ -14,9 +14,7 @@ def _assignment_snapshot_html(env, snapshot):
 
     def records_by_id(model_name, key):
         ids = {
-            int(item[key])
-            for item in entries
-            if item.get(key) not in (None, False, "")
+            int(item[key]) for item in entries if item.get(key) not in (None, False, "")
         }
         return {
             record.id: record
@@ -37,9 +35,21 @@ def _assignment_snapshot_html(env, snapshot):
         rows.append(
             "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
             % (
-                escape(match.display_name if match else (_("Match #%s") % match_id if match_id else "—")),
-                escape(fixture.display_name if fixture else (_("Fixture #%s") % fixture_id if fixture_id else "—")),
-                escape(court.display_name if court else (_("Court #%s") % court_id if court_id else "—")),
+                escape(
+                    match.display_name
+                    if match
+                    else (_("Match #%s") % match_id if match_id else "—")
+                ),
+                escape(
+                    fixture.display_name
+                    if fixture
+                    else (_("Fixture #%s") % fixture_id if fixture_id else "—")
+                ),
+                escape(
+                    court.display_name
+                    if court
+                    else (_("Court #%s") % court_id if court_id else "—")
+                ),
                 escape(str(item.get("start") or "—")),
                 escape(str(item.get("end") or "—")),
             )
@@ -136,6 +146,7 @@ class FederationSchedulePublication(models.Model):
             publication.assignment_summary_html = _assignment_snapshot_html(
                 publication.env, publication.assignment_snapshot
             )
+
     _unique_version = models.Constraint(
         "unique(matchday_id,version)",
         "Publication versions must be unique per match day.",

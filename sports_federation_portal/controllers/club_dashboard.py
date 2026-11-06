@@ -1,4 +1,5 @@
 """Club representative home: stable club overview with contextual action badges."""
+
 from odoo.http import request
 
 from .portal_helpers import FederationPortalBase
@@ -38,9 +39,9 @@ class FederationClubDashboard(FederationPortalBase):
             roster_model._portal_get_scope_domain(user=user) + [("active", "=", True)],
             user=user,
         )
-        editions = request.env["federation.portal.competition.queries"].visible_editions(
-            user=user
-        )
+        editions = request.env[
+            "federation.portal.competition.queries"
+        ].visible_editions(user=user)
         values["federation_club_dashboard"] = {
             "teams": len(teams),
             "players": privilege.portal_search_count(

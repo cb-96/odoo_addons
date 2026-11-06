@@ -20,9 +20,7 @@ class TestReleaseConfidenceResultPolicy(TransactionCase):
         validator = cls.env.ref(
             "sports_federation_result_control.group_result_validator"
         )
-        approver = cls.env.ref(
-            "sports_federation_result_control.group_result_approver"
-        )
+        approver = cls.env.ref("sports_federation_result_control.group_result_approver")
 
         def make_user(name, login, groups):
             return users.create(
@@ -238,19 +236,27 @@ class TestReleaseConfidenceResultPolicy(TransactionCase):
         role_type = self.env.ref(
             "sports_federation_portal.role_type_competition_contact"
         )
-        guardian = self.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Unsupported Guardian Account",
-                "login": "unsupported.guardian@example.invalid",
-                "group_ids": [Command.set([self.env.ref("base.group_portal").id])],
-            }
+        guardian = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Unsupported Guardian Account",
+                    "login": "unsupported.guardian@example.invalid",
+                    "group_ids": [Command.set([self.env.ref("base.group_portal").id])],
+                }
+            )
         )
-        payer = self.env["res.users"].with_context(no_reset_password=True).create(
-            {
-                "name": "Unsupported Payer Account",
-                "login": "unsupported.payer@example.invalid",
-                "group_ids": [Command.set([portal_club_group.id])],
-            }
+        payer = (
+            self.env["res.users"]
+            .with_context(no_reset_password=True)
+            .create(
+                {
+                    "name": "Unsupported Payer Account",
+                    "login": "unsupported.payer@example.invalid",
+                    "group_ids": [Command.set([portal_club_group.id])],
+                }
+            )
         )
         club = self.env["federation.club"].create(
             {"name": "Unsupported External Accounts Club"}
@@ -277,7 +283,9 @@ class TestReleaseConfidenceResultPolicy(TransactionCase):
         )
 
         with self.assertRaises(AccessError):
-            self.env["federation.player.parental.approval"]._portal_create_parental_approval(
+            self.env[
+                "federation.player.parental.approval"
+            ]._portal_create_parental_approval(
                 player,
                 {"guardian_name": "Guardian", "approval_date": "2026-10-11"},
                 upload,

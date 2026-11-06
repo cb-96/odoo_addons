@@ -11,16 +11,33 @@ class TestSeasonBoard(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.env.user.write(
-            {"group_ids": [(4, cls.env.ref("sports_federation_base.group_federation_manager").id)]}
+            {
+                "group_ids": [
+                    (
+                        4,
+                        cls.env.ref(
+                            "sports_federation_base.group_federation_manager"
+                        ).id,
+                    )
+                ]
+            }
         )
         season = cls.env["federation.season"].create(
-            {"name": "Board 26-27", "date_start": "2026-09-01", "date_end": "2027-06-30"}
+            {
+                "name": "Board 26-27",
+                "date_start": "2026-09-01",
+                "date_end": "2027-06-30",
+            }
         )
         competition = cls.env["federation.competition"].create(
             {"name": "Board League", "competition_type": "league"}
         )
         cls.edition = cls.env["federation.competition.edition"].create(
-            {"name": "Board Edition", "competition_id": competition.id, "season_id": season.id}
+            {
+                "name": "Board Edition",
+                "competition_id": competition.id,
+                "season_id": season.id,
+            }
         )
         division = cls.env["federation.tournament"].create(
             {
@@ -142,10 +159,15 @@ class TestSeasonBoard(TransactionCase):
             lambda fixture: team in (fixture.home_team_id | fixture.away_team_id)
         )[:2]
         same_time = self._slots(self.days[0]).filtered(
-            lambda slot: slot.start_datetime == self._slots(self.days[0])[0].start_datetime
+            lambda slot: slot.start_datetime
+            == self._slots(self.days[0])[0].start_datetime
         )
-        data = self.board.move(self.edition.id, both[0].id, same_time[0].id, data["signature"])
-        result = self.board.move(self.edition.id, both[1].id, same_time[1].id, data["signature"])
+        data = self.board.move(
+            self.edition.id, both[0].id, same_time[0].id, data["signature"]
+        )
+        result = self.board.move(
+            self.edition.id, both[1].id, same_time[1].id, data["signature"]
+        )
         self.assertFalse(result["ok"])
         self.assertTrue(result["rejected"])
         self.assertFalse(self._fixture(result, both[1])["slot_id"])
@@ -153,11 +175,19 @@ class TestSeasonBoard(TransactionCase):
     def test_place_on_day_uses_fitting_slots(self):
         data = self._ready()
         fixtures = self.structure.fixture_ids.filtered(lambda f: f.round_number == 1)
-        data = self.board.place_on_day(self.edition.id, fixtures.ids, self.days[0].id, data["signature"])
-        placed = [row for row in data["fixtures"] if row["id"] in fixtures.ids and row["slot_id"]]
+        data = self.board.place_on_day(
+            self.edition.id, fixtures.ids, self.days[0].id, data["signature"]
+        )
+        placed = [
+            row
+            for row in data["fixtures"]
+            if row["id"] in fixtures.ids and row["slot_id"]
+        ]
         self.assertEqual(len(placed), len(fixtures))
         self.assertFalse(any(row["pinned"] for row in placed))
-        data = self.board.set_pinned(self.edition.id, fixtures[0].id, True, data["signature"])
+        data = self.board.set_pinned(
+            self.edition.id, fixtures[0].id, True, data["signature"]
+        )
         self.assertTrue(self._fixture(data, fixtures[0])["pinned"])
 
     def test_stale_board_and_locked_days(self):
@@ -170,7 +200,9 @@ class TestSeasonBoard(TransactionCase):
         schedule = self.board._active_schedule(self.days[0])
         schedule.write({"state": "published"})
         data = self._load()
-        self.assertTrue(next(day for day in data["days"] if day["id"] == self.days[0].id)["locked"])
+        self.assertTrue(
+            next(day for day in data["days"] if day["id"] == self.days[0].id)["locked"]
+        )
         with self.assertRaises(ValidationError):
             self.board.unplan(self.edition.id, fixture.ids, data["signature"])
 

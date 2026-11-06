@@ -68,7 +68,11 @@ class FederationScheduleSimpleSummary(models.Model):
                         must_fix_count=1,
                         simple_summary=_("The schedule could not be checked."),
                         must_fix_html=self._simple_list_html(
-                            [_("The schedule check failed. Ask an administrator to check the server log.")]
+                            [
+                                _(
+                                    "The schedule check failed. Ask an administrator to check the server log."
+                                )
+                            ]
                         ),
                     )
                 else:
@@ -78,7 +82,9 @@ class FederationScheduleSimpleSummary(models.Model):
                         simple_checked=True,
                         must_fix_count=blockers,
                         could_improve_count=warnings,
-                        simple_summary=simple_status.summary(scheduled, warnings, blockers),
+                        simple_summary=simple_status.summary(
+                            scheduled, warnings, blockers
+                        ),
                         must_fix_html=self._simple_list_html(must_fix),
                         could_improve_html=self._simple_list_html(could_improve),
                     )

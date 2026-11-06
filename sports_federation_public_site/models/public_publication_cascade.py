@@ -13,6 +13,7 @@ started with legacy stages that the competition workspace never creates.
 Divisions that are not ready stay unpublished and are reported.  The existing
 publishability checks still run before the competition goes live.
 """
+
 import re
 
 from odoo import _, models
@@ -27,15 +28,14 @@ class FederationCompetitionEditionPublishCascade(models.Model):
         return self.tournament_ids.filtered(
             lambda division: division.active
             and division.state != "cancelled"
-            and (
-                getattr(division, "has_workspace_format", False)
-                or division.stage_ids
-            )
+            and (getattr(division, "has_workspace_format", False) or division.stage_ids)
         )
 
     def _unique_public_slug(self):
         self.ensure_one()
-        base = re.sub(r"[^a-z0-9]+", "-", (self.name or "competition").lower()).strip("-")
+        base = re.sub(r"[^a-z0-9]+", "-", (self.name or "competition").lower()).strip(
+            "-"
+        )
         base = base or "competition"
         slug = base
         suffix = 2

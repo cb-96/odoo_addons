@@ -153,12 +153,16 @@ class FederationRegistrationWindow(models.Model):
                 Participant.create(
                     {"tournament_id": division.id, "team_id": team_id, **values}
                 )
-        earlier_sets = self.env["federation.participant.set"].sudo().search(
-            [
-                ("division_id", "=", division.id),
-                ("id", "!=", participant_set.id),
-                ("state", "=", "superseded"),
-            ]
+        earlier_sets = (
+            self.env["federation.participant.set"]
+            .sudo()
+            .search(
+                [
+                    ("division_id", "=", division.id),
+                    ("id", "!=", participant_set.id),
+                    ("state", "=", "superseded"),
+                ]
+            )
         )
         removed = set(earlier_sets.mapped("line_ids.team_id").ids) - set(wanted)
         for team_id in removed:
@@ -213,7 +217,9 @@ class FederationRegistrationWindow(models.Model):
         entries = self.entry_ids
         by_team = {entry.team_id.id: entry for entry in entries}
         approved = self.env["federation.competition.entry"]
-        for seed, team in enumerate(teams.sorted(lambda item: (item.name or "", item.id)), 1):
+        for seed, team in enumerate(
+            teams.sorted(lambda item: (item.name or "", item.id)), 1
+        ):
             entry = by_team.get(team.id)
             values = {
                 "seed": seed,
@@ -361,7 +367,9 @@ class FederationCompetitionEntry(models.Model):
         )
         if invalid:
             raise ValidationError(
-                _("Only draft, returned, rejected, or withdrawn entries can be submitted.")
+                _(
+                    "Only draft, returned, rejected, or withdrawn entries can be submitted."
+                )
             )
         self.write(
             {
@@ -372,14 +380,18 @@ class FederationCompetitionEntry(models.Model):
                 "reviewed_on": False,
             }
         )
-        automatic = self.filtered(lambda entry: not entry.edition_id.registration_approval_required)
+        automatic = self.filtered(
+            lambda entry: not entry.edition_id.registration_approval_required
+        )
         if automatic:
             automatic.write(
                 {
                     "state": "approved",
                     "reviewed_by_id": self.env.user.id,
                     "reviewed_on": fields.Datetime.now(),
-                    "review_note": _("Automatically approved by competition workflow policy."),
+                    "review_note": _(
+                        "Automatically approved by competition workflow policy."
+                    ),
                 }
             )
         return True
@@ -426,7 +438,9 @@ class FederationCompetitionEntry(models.Model):
     def action_withdraw(self):
         if self.filtered(lambda entry: entry.state == "approved"):
             raise ValidationError(_("Approved entries cannot be withdrawn directly."))
-        if self.filtered(lambda entry: entry.state not in ("draft", "submitted", "rejected")):
+        if self.filtered(
+            lambda entry: entry.state not in ("draft", "submitted", "rejected")
+        ):
             raise ValidationError(
                 _("Only draft, submitted, or rejected entries can be withdrawn.")
             )

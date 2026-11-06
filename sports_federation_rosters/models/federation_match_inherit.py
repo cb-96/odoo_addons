@@ -76,7 +76,9 @@ class FederationMatch(models.Model):
             blockers = match._get_match_participation_blockers()
             if blockers:
                 raise ValidationError(
-                    _("Correct the players for %(match)s before submitting the result:\n- %(issues)s")
+                    _(
+                        "Correct the players for %(match)s before submitting the result:\n- %(issues)s"
+                    )
                     % {"match": match.display_name, "issues": "\n- ".join(blockers)}
                 )
         return result
@@ -87,7 +89,9 @@ class FederationMatch(models.Model):
             blockers = match._get_match_participation_blockers()
             if blockers:
                 raise ValidationError(
-                    _("Correct the players for %(match)s before starting:\n- %(issues)s")
+                    _(
+                        "Correct the players for %(match)s before starting:\n- %(issues)s"
+                    )
                     % {"match": match.display_name, "issues": "\n- ".join(blockers)}
                 )
         return super().action_start()

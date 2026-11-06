@@ -23,9 +23,7 @@ def _load(name, relative):
     return module
 
 
-presets = _load(
-    "format_presets", "sports_federation_format/services/format_presets.py"
-)
+presets = _load("format_presets", "sports_federation_format/services/format_presets.py")
 
 
 def _load_distributor():
@@ -68,7 +66,13 @@ class Records(list):
         return Records(
             sorted(
                 self,
-                key=lambda f: (f.stage_id.depth, f.round_number, f.sequence, f.stage_id.sequence, f.id),
+                key=lambda f: (
+                    f.stage_id.depth,
+                    f.round_number,
+                    f.sequence,
+                    f.stage_id.sequence,
+                    f.id,
+                ),
             )
         )
 
@@ -146,15 +150,23 @@ class FormatPresetTests(unittest.TestCase):
     def test_guided_plans(self):
         groups = presets.plan("pool_knockout", 8, pool_count=2, qualifiers_per_pool=2)
         self.assertEqual(groups["fixture_count"], 6 + 6 + 3)
-        self.assertEqual([s["name"] for s in groups["stages"]], ["Group A", "Group B", "Knockout"])
+        self.assertEqual(
+            [s["name"] for s in groups["stages"]], ["Group A", "Group B", "Knockout"]
+        )
         three = presets.plan("pool_knockout", 12, pool_count=3, qualifiers_per_pool=3)
         self.assertEqual(three["stages"][-1]["teams"], 9)
         split = presets.plan("split_pools", 10, split_rank=6)
         self.assertEqual(split["fixture_count"], 45 + 15 + 6)
         halves = presets.plan("split_pools", 8, split_rank=8)
-        self.assertEqual([s["name"] for s in halves["stages"]], ["Regular season", "Second half"])
+        self.assertEqual(
+            [s["name"] for s in halves["stages"]], ["Regular season", "Second half"]
+        )
         self.assertFalse(presets.plan("split_pools", 8, split_rank=7)["feasible"])
-        self.assertFalse(presets.plan("pool_knockout", 8, pool_count=2, qualifiers_per_pool=5)["feasible"])
+        self.assertFalse(
+            presets.plan("pool_knockout", 8, pool_count=2, qualifiers_per_pool=5)[
+                "feasible"
+            ]
+        )
         self.assertFalse(presets.plan("custom", 8)["feasible"])
 
 
@@ -170,7 +182,9 @@ class DistributorTests(unittest.TestCase):
         ]
 
     def _day_of(self, result, fixture):
-        return next(day for day, ids in result["assignments"].items() if fixture.id in ids)
+        return next(
+            day for day, ids in result["assignments"].items() if fixture.id in ids
+        )
 
     def test_split_season_starts_after_the_regular_season(self):
         season = Stage(1, "Regular season")
@@ -199,7 +213,9 @@ class DistributorTests(unittest.TestCase):
     def test_stage_game_days_are_respected_and_explained(self):
         season = Stage(1, "Regular season", days=[1])
         top = Stage(2, "Second half", depth=1, sources=[season], days=[3])
-        fixtures = Records([Fixture(1, season, 1, {1, 2}), Fixture(2, top, 1, {("s", 1)})])
+        fixtures = Records(
+            [Fixture(1, season, 1, {1, 2}), Fixture(2, top, 1, {("s", 1)})]
+        )
         result = self.Distributor().propose(
             fixtures, self._days(date(2027, 1, 1), date(2027, 1, 8), date(2027, 1, 15))
         )
@@ -208,7 +224,9 @@ class DistributorTests(unittest.TestCase):
         blocked = Stage(3, "Finals", depth=1, sources=[season], days=[1])
         season_two = Stage(4, "Season", days=[2])
         blocked._sources = Records([season_two])
-        late = Records([Fixture(5, season_two, 1, {1, 2}), Fixture(6, blocked, 1, {("s", 3)})])
+        late = Records(
+            [Fixture(5, season_two, 1, {1, 2}), Fixture(6, blocked, 1, {("s", 3)})]
+        )
         result = self.Distributor().propose(
             late, self._days(date(2027, 1, 1), date(2027, 1, 8))
         )
@@ -225,14 +243,15 @@ class DistributorTests(unittest.TestCase):
         )
         self.assertGreaterEqual(self._day_of(result, final), self._day_of(result, semi))
 
-
     def test_season_groups_then_knockout_rounds_on_their_own_days(self):
         groups = Stage(1, "Group A")
         knockout = Stage(2, "Knockout", depth=1, sources=[groups])
         group_matches = [Fixture(i, groups, i, {i, i + 50}) for i in range(1, 7)]
         semi_one = Fixture(20, knockout, 1, {("seed", 2, 1), ("seed", 2, 4)})
         semi_two = Fixture(21, knockout, 1, {("seed", 2, 2), ("seed", 2, 3)})
-        final = Fixture(22, knockout, 2, {("fixture", 20, "winner")}, home_source=semi_one)
+        final = Fixture(
+            22, knockout, 2, {("fixture", 20, "winner")}, home_source=semi_one
+        )
         fixtures = Records(group_matches + [semi_one, semi_two, final])
         days = self._days(*[date(2027, 1, day) for day in (1, 8, 15, 22, 29)])
         result = self.Distributor().propose(fixtures, days)
@@ -243,11 +262,12 @@ class DistributorTests(unittest.TestCase):
         self.assertGreater(self._day_of(result, semi_one), last_group_day)
         self.assertGreater(self._day_of(result, final), self._day_of(result, semi_one))
 
-
     def _league(self, teams, double=True):
         stage = Stage(1, "League")
         fixtures, number = [], 0
-        for round_number, pairs in enumerate(presets.round_robin_pairs(teams, double), 1):
+        for round_number, pairs in enumerate(
+            presets.round_robin_pairs(teams, double), 1
+        ):
             for home, away in pairs:
                 number += 1
                 fixtures.append(Fixture(number, stage, round_number, {home, away}))
@@ -268,8 +288,13 @@ class DistributorTests(unittest.TestCase):
         # 7 per team per day with the rest. Spread evenly: at most 6 per day.
         fixtures = self._league(9)
         days = [
-            {"matchday_id": index, "date": date(2027, 1, index * 7), "capacity": 40,
-             "division_ids": [], "team_limit": 7}
+            {
+                "matchday_id": index,
+                "date": date(2027, 1, index * 7),
+                "capacity": 40,
+                "division_ids": [],
+                "team_limit": 7,
+            }
             for index in (1, 2, 3)
         ]
         result = self.Distributor().propose(fixtures, days)
@@ -282,9 +307,27 @@ class DistributorTests(unittest.TestCase):
         # sends the overflow to the other days.
         fixtures = self._league(6)
         days = [
-            {"matchday_id": 1, "date": date(2027, 1, 7), "capacity": 60, "division_ids": [], "team_limit": 4},
-            {"matchday_id": 2, "date": date(2027, 1, 14), "capacity": 10, "division_ids": [], "team_limit": 4},
-            {"matchday_id": 3, "date": date(2027, 1, 21), "capacity": 10, "division_ids": [], "team_limit": 4},
+            {
+                "matchday_id": 1,
+                "date": date(2027, 1, 7),
+                "capacity": 60,
+                "division_ids": [],
+                "team_limit": 4,
+            },
+            {
+                "matchday_id": 2,
+                "date": date(2027, 1, 14),
+                "capacity": 10,
+                "division_ids": [],
+                "team_limit": 4,
+            },
+            {
+                "matchday_id": 3,
+                "date": date(2027, 1, 21),
+                "capacity": 10,
+                "division_ids": [],
+                "team_limit": 4,
+            },
         ]
         result = self.Distributor().propose(fixtures, days)
         self.assertFalse(result["errors"])
@@ -294,8 +337,13 @@ class DistributorTests(unittest.TestCase):
         # 8 teams home & away: 14 matches each, exactly 7 + 7 with the rest.
         fixtures = self._league(8)
         days = [
-            {"matchday_id": index, "date": date(2027, 1, index * 7), "capacity": 60,
-             "division_ids": [], "team_limit": 7}
+            {
+                "matchday_id": index,
+                "date": date(2027, 1, index * 7),
+                "capacity": 60,
+                "division_ids": [],
+                "team_limit": 7,
+            }
             for index in (1, 2)
         ]
         result = self.Distributor().propose(fixtures, days)
@@ -305,13 +353,20 @@ class DistributorTests(unittest.TestCase):
     def test_more_matches_than_rest_allows_still_plans_everything(self):
         fixtures = self._league(9)
         days = [
-            {"matchday_id": index, "date": date(2027, 1, index * 7), "capacity": 40,
-             "division_ids": [], "team_limit": 7}
+            {
+                "matchday_id": index,
+                "date": date(2027, 1, index * 7),
+                "capacity": 40,
+                "division_ids": [],
+                "team_limit": 7,
+            }
             for index in (1, 2)
         ]
         result = self.Distributor().propose(fixtures, days)
         self.assertFalse(result["errors"])
-        self.assertEqual(sum(len(ids) for ids in result["assignments"].values()), len(fixtures))
+        self.assertEqual(
+            sum(len(ids) for ids in result["assignments"].values()), len(fixtures)
+        )
         # 16 matches over two days of at most 7 cannot fit: everything is still
         # planned and the planner reports the shortfall with the numbers.
         self.assertLessEqual(max(self._loads(result, fixtures).values()), 9)

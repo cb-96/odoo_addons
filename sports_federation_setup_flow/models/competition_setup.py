@@ -103,17 +103,21 @@ class FederationCompetitionEditionSetup(models.Model):
         """Open the one-screen teams and format editor for all divisions."""
         self.ensure_one()
         self.check_access("read")
-        wizard = self.env["federation.competition.division.setup.wizard"].with_context(
-            default_edition_id=self.id
-        ).create({"edition_id": self.id})
+        wizard = (
+            self.env["federation.competition.division.setup.wizard"]
+            .with_context(default_edition_id=self.id)
+            .create({"edition_id": self.id})
+        )
         if not wizard.line_ids:
             wizard.line_ids = [
                 fields.Command.create(
-                    self.env["federation.competition.division.setup.wizard"]._line_values(
-                        self, division
-                    )
+                    self.env[
+                        "federation.competition.division.setup.wizard"
+                    ]._line_values(self, division)
                 )
-                for division in self.tournament_ids.sorted(lambda item: (item.name or "", item.id))
+                for division in self.tournament_ids.sorted(
+                    lambda item: (item.name or "", item.id)
+                )
             ] or [fields.Command.create({"name": _("Division 1")})]
         return {
             "type": "ir.actions.act_window",
@@ -125,14 +129,26 @@ class FederationCompetitionEditionSetup(models.Model):
             "target": "new",
         }
 
-    def action_setup_participants(self):
+    def action_setup_participants(self, division=False):
         self.ensure_one()
-        finalized_divisions = self.env["federation.participant.set"].search(
-            [("edition_id", "=", self.id), ("state", "=", "finalized")]
-        ).mapped("division_id")
-        division = (self.tournament_ids - finalized_divisions).sorted(
-            lambda item: (item.name or "", item.id)
-        )[:1] or self.tournament_ids.sorted(lambda item: (item.name or "", item.id))[:1]
+        if division:
+            if division.edition_id != self:
+                raise ValidationError(
+                    _("The selected division does not belong to this competition.")
+                )
+        else:
+            finalized_divisions = (
+                self.env["federation.participant.set"]
+                .search([("edition_id", "=", self.id), ("state", "=", "finalized")])
+                .mapped("division_id")
+            )
+            division = (self.tournament_ids - finalized_divisions).sorted(
+                lambda item: (item.name or "", item.id)
+            )[:1] or self.tournament_ids.sorted(
+                lambda item: (item.name or "", item.id)
+            )[
+                :1
+            ]
         if not division:
             return self.action_setup_divisions()
         wizard = self.env["federation.competition.team.selection.wizard"].create(
@@ -247,6 +263,11 @@ class FederationCompetitionEditionSetup(models.Model):
     def _publication_waiting_for_review(self):
         self.ensure_one()
         schedules = self._publishable_schedules()
-        return bool(schedules) and all(
-            schedule.state in ("ready_for_review", "published") for schedule in schedules
-        ) and any(schedule.state == "ready_for_review" for schedule in schedules)
+        return (
+            bool(schedules)
+            and all(
+                schedule.state in ("ready_for_review", "published")
+                for schedule in schedules
+            )
+            and any(schedule.state == "ready_for_review" for schedule in schedules)
+        )

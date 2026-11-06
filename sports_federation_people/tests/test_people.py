@@ -102,9 +102,7 @@ class TestFederationPlayer(TransactionCase):
     def test_parental_approval_stat_action_uses_canonical_window_action(self):
         action = self.player.action_view_parental_approvals()
 
-        self.assertEqual(
-            action["res_model"], "federation.player.parental.approval"
-        )
+        self.assertEqual(action["res_model"], "federation.player.parental.approval")
         self.assertEqual(action["domain"], [("player_id", "=", self.player.id)])
         self.assertEqual(action["context"]["default_player_id"], self.player.id)
 

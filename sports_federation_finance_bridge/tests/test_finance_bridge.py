@@ -334,9 +334,7 @@ class TestFinanceBridge(TransactionCase):
         )
 
         finance_events = self.env["federation.finance.event"]
-        expected_ids = finance_events.search(
-            [], order="create_date desc, id desc"
-        ).ids
+        expected_ids = finance_events.search([], order="create_date desc, id desc").ids
         first_batch = finance_events.get_handoff_export_batch(limit=2)
 
         self.assertEqual(first_batch["events"].ids, expected_ids[:2])
