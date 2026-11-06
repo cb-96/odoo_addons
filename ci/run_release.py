@@ -28,6 +28,8 @@ def parser():
         command.add_argument("--migration-evidence-dir")
         command.add_argument("--rollback-owner")
         command.add_argument("--rollback-trigger")
+    complete = profiles.add_parser("verify-complete", help="Verify existing exact-commit confidence and usability evidence")
+    complete.add_argument("--evidence-dir", required=True)
     rc = profiles.add_parser("rc", help="Run one existing RC lane")
     rc.add_argument("--lane", choices=RC_LANES, default="all")
     for name, script in (
@@ -69,6 +71,14 @@ def run(args, env=None, execute=invoke, get_revision=revision, root=ROOT):
     def script(name, *argv):
         command("bash", "scripts/ci/" + name, *argv)
 
+    if args.profile == "verify-complete":
+        evidence = external(args.evidence_dir, root)
+        sha = get_revision(root)
+        command(python, "ci/release_confidence.py", "verify", "--evidence-dir", evidence)
+        command(python, "ci/check_end_to_end_evidence.py", "--evidence-dir", evidence / "baseline",
+                "--level", "release", "--commit", sha)
+        print("Complete runtime, restore and usability evidence verified for " + sha)
+        return
     if args.profile == "rc":
         script("run_rc_validation.sh", args.lane)
         return

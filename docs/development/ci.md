@@ -135,3 +135,40 @@ The public-competition structural check now runs in repository lint. Its dead
 invocation after `exit` in the Odoo test script was removed. Test orchestration
 with `python -m unittest ci.test_release_runner`; these tests use subprocess
 doubles and do not run Docker, migration, Odoo or human acceptance.
+
+## Exact-commit runtime, restore and usability closure
+
+`python ci/run_release.py verify-complete --evidence-dir /private/confidence-run`
+verifies existing evidence only. It runs the existing confidence verifier for
+runtime/scenario/attachment-restore evidence, then the end-to-end verifier at
+`release` level against that run's `baseline` directory. Both must pass for the
+same current commit. This command does not create runtime or human evidence and
+does not deploy, restore a database or conduct usability sessions.
+
+The migration rehearsal now requires a clean committed source before execution
+and checks that source again before sealing its manifest. Schema-2 migration
+manifests bind the candidate commit, invariant contract and required artifacts
+with checksums. Sign-off rejects old unbound manifests, incomplete snapshots,
+changed count modes, non-passing upgrade/acceptance records, changed logs,
+missing rollback evidence and skipped filestore restoration. Upgrade and
+acceptance logs are copied separately before capture, so later lanes cannot
+silently replace the log referenced by an earlier record. Invariants are
+recomputed from the snapshots, including exact rollback counts and the existing
+retired-engine integrity checks; a `passed` string alone cannot clear a blocker.
+
+Existing historical evidence remains historical. Rerun the approved isolated
+rehearsal for the new candidate; do not edit an old manifest to claim a new
+commit. Checksums detect changes but are not independent attestations that a
+restore or session actually occurred. Retain the approved backup and use the
+existing confidence runner's backup checks and attachment-restore scenario.
+
+Human acceptance still uses the existing minimum of five sessions per role,
+but only sessions with boolean `completed: true` count. Incomplete or malformed
+sessions cannot satisfy that minimum. Store real walkthrough and human records
+under the confidence run's `baseline` directory before `verify-complete`.
+
+The automated `qualification` profile remains technical migration sign-off,
+not a claim of complete usability validation. `verify-complete` is the closure
+check for runtime, restore and usability together. Run
+`python -m unittest ci.test_complete_release_evidence` for negative evidence
+regressions. Those fixtures are not real runtime, restore or usability evidence.

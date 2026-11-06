@@ -54,6 +54,10 @@ done
 [[ -n "$backup_dir" ]] || { echo "--backup-dir is required" >&2; exit 2; }
 [[ -n "$rollback_owner" ]] || { echo "--rollback-owner is required" >&2; exit 2; }
 [[ -n "$rollback_trigger" ]] || { echo "--rollback-trigger is required" >&2; exit 2; }
+candidate_commit="$(git rev-parse HEAD)"
+[[ -z "$(git status --porcelain --untracked-files=all)" ]] || {
+  echo "Migration rehearsal requires a clean committed candidate." >&2; exit 2;
+}
 command -v docker >/dev/null 2>&1 || { echo "docker is required" >&2; exit 2; }
 mkdir -p "$evidence_dir"
 
@@ -148,7 +152,8 @@ if [[ "$upgrade_status" == "failed" ]]; then
   upgrade_evidence_args+=(--failure-classification unclassified)
 fi
 if [[ -f "$rc_log_file" ]]; then
-  upgrade_evidence_args+=(--log "$rc_log_file")
+  cp "$rc_log_file" "$evidence_dir/upgrade.log"
+  upgrade_evidence_args+=(--log "$evidence_dir/upgrade.log")
 fi
 
 python3 ci/capture_release_evidence.py \
@@ -190,7 +195,8 @@ if [[ "$acceptance_status" == "failed" ]]; then
   acceptance_evidence_args+=(--failure-classification unclassified)
 fi
 if [[ -f "$rc_log_file" ]]; then
-  acceptance_evidence_args+=(--log "$rc_log_file")
+  cp "$rc_log_file" "$evidence_dir/operator-acceptance.log"
+  acceptance_evidence_args+=(--log "$evidence_dir/operator-acceptance.log")
 fi
 
 python3 ci/capture_release_evidence.py \
@@ -218,31 +224,12 @@ python3 ci/compare_migration_invariants.py \
   --rollback "$evidence_dir/rollback.json" \
   --output "$evidence_dir/invariant-comparison.json"
 
-python3 - "$evidence_dir" "$rollback_owner" "$rollback_trigger" "$dump_file" <<'PY'
-import hashlib
-import json
-import sys
-from datetime import datetime, timezone
-from pathlib import Path
-
-root = Path(sys.argv[1])
-owner, trigger, dump_name = sys.argv[2:]
-dump = Path(dump_name)
-digest = hashlib.sha256()
-with dump.open("rb") as stream:
-    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-        digest.update(chunk)
-manifest = {
-    "schema_version": 1,
-    "recorded_at": datetime.now(timezone.utc).isoformat(),
-    "status": "passed",
-    "rollback_owner": owner,
-    "rollback_trigger": trigger,
-    "backup": {"path": str(dump), "sha256": digest.hexdigest()},
-    "artifacts": sorted(path.name for path in root.iterdir() if path.is_file()),
+[[ "$(git rev-parse HEAD)" == "$candidate_commit" && -z "$(git status --porcelain --untracked-files=all)" ]] || {
+  echo "Candidate changed during migration rehearsal; evidence is not signable." >&2; exit 1;
 }
-(root / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
-print(root / "manifest.json")
-PY
+python3 ci/migration_evidence.py seal \
+  --evidence-dir "$evidence_dir" --commit "$candidate_commit" \
+  --backup "$dump_file" --rollback-owner "$rollback_owner" \
+  --rollback-trigger "$rollback_trigger"
 
 echo "Migration rehearsal passed. Evidence: $evidence_dir"
