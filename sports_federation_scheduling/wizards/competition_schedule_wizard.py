@@ -533,3 +533,187 @@ class FederationCompetitionScheduleStageWindow(models.TransientModel):
             line.source_summary = (
                 ", ".join(sources.mapped("name")) if sources else _("Registered teams")
             )
+
+
+class FederationCompetitionScheduleWizardGuidance(models.TransientModel):
+    """Plain-language guidance for the competition schedule wizard.
+
+    The wizard keeps its planning behaviour; this extension only explains the
+    current check result, the next step and what a rerun mode changes.
+    """
+
+    _inherit = "federation.competition.schedule.wizard"
+
+    guidance_status_html = fields.Html(
+        string="Status",
+        compute="_compute_guidance_status_html",
+        readonly=True,
+    )
+    mode_impact_html = fields.Html(
+        string="What this does",
+        compute="_compute_mode_impact_html",
+        readonly=True,
+    )
+    existing_slot_count = fields.Integer(
+        string="Existing court times",
+        compute="_compute_existing_planning",
+        help="Court times already created on the selected game days.",
+    )
+    existing_draft_schedule_count = fields.Integer(
+        string="Unpublished schedules",
+        compute="_compute_existing_planning",
+        help="Draft or change-requested schedules on the selected game days.",
+    )
+
+    @api.depends("matchday_ids", "matchday_ids.slot_ids")
+    def _compute_existing_planning(self):
+        Schedule = self.env["federation.schedule"]
+        for wizard in self:
+            days = wizard.matchday_ids
+            day_ids = [day_id for day_id in days._origin.ids if day_id]
+            wizard.existing_slot_count = sum(len(day.slot_ids) for day in days)
+            wizard.existing_draft_schedule_count = (
+                Schedule.search_count(
+                    [
+                        ("matchday_id", "in", day_ids),
+                        ("state", "in", ("draft", "changes_requested")),
+                    ]
+                )
+                if day_ids
+                else 0
+            )
+
+    @api.depends(
+        "matchday_ids",
+        "preview_ready",
+        "blocking_issue_count",
+        "warning_count",
+        "included_fixture_count",
+        "excluded_fixture_count",
+        "rest_shortfall_html",
+    )
+    def _compute_guidance_status_html(self):
+        for wizard in self:
+            wizard.guidance_status_html = wizard._guidance_status_markup()
+
+    @api.depends(
+        "mode", "existing_slot_count", "existing_draft_schedule_count"
+    )
+    def _compute_mode_impact_html(self):
+        for wizard in self:
+            wizard.mode_impact_html = wizard._mode_impact_markup()
+
+    def _guidance_status(self):
+        """Return ``(tone, title, body)`` for the current wizard state."""
+        self.ensure_one()
+        if not self.matchday_ids:
+            return (
+                "warning",
+                _("Choose the game days to plan"),
+                _(
+                    "Matches are only placed on the game days you select. "
+                    "Select at least one game day."
+                ),
+            )
+        if not self.preview_ready:
+            return (
+                "info",
+                _("Ready to check and generate"),
+                _(
+                    "Generate schedule first checks capacity and conflicts on "
+                    "every selected game day. If something must be fixed, the "
+                    "problems are listed here with the way to solve them."
+                ),
+            )
+        if self.blocking_issue_count:
+            return (
+                "danger",
+                _(
+                    "%(count)s problem(s) must be fixed first",
+                    count=self.blocking_issue_count,
+                ),
+                _(
+                    "Nothing has been planned yet. Open Feasibility below to see "
+                    "each problem and how to fix it, then generate again."
+                ),
+            )
+        if self.warning_count or self.rest_shortfall_html:
+            return (
+                "warning",
+                _(
+                    "Can be generated, with %(count)s preference warning(s)",
+                    count=self.warning_count,
+                ),
+                _(
+                    "Every rule that must hold is met, but some preferences, "
+                    "such as rest between matches, cannot all be met. Change the "
+                    "input and generate again, or generate anyway and accept the "
+                    "short rest when you publish."
+                ),
+            )
+        return (
+            "success",
+            _("Ready to generate"),
+            _("All checks passed. Generate the schedule, then review it."),
+        )
+
+    def _guidance_status_markup(self):
+        self.ensure_one()
+        tone, title, body = self._guidance_status()
+        facts = [(_("Game days"), len(self.matchday_ids))]
+        if self.matchday_ids and self.preview_ready:
+            facts += [
+                (_("Matches included"), self.included_fixture_count),
+                (_("Matches left out"), self.excluded_fixture_count),
+                (_("Must fix"), self.blocking_issue_count),
+                (_("Could improve"), self.warning_count),
+            ]
+        fact_html = "".join(
+            '<span class="me-4"><span class="text-muted">%s</span> <strong>%s</strong></span>'
+            % (escape(str(label)), escape(str(value or 0)))
+            for label, value in facts
+        )
+        return (
+            '<div class="alert alert-%(tone)s mb-2" role="status">'
+            "<p class=\"mb-1\"><strong>%(title)s</strong></p>"
+            '<p class="mb-1">%(body)s</p>'
+            '<p class="mb-0 small">%(facts)s</p>'
+            "</div>"
+        ) % {
+            "tone": tone,
+            "title": escape(str(title)),
+            "body": escape(str(body)),
+            "facts": fact_html,
+        }
+
+    def _mode_impact_markup(self):
+        self.ensure_one()
+        if self.mode == "replace_auto":
+            tone = "warning"
+            text = _(
+                "Matches the scheduler placed earlier are removed and planned "
+                "again. Matches you placed by hand stay where they are, and "
+                "existing court times are kept."
+            )
+        elif self.mode == "rebuild":
+            tone = "danger"
+            text = _(
+                "Deletes the unpublished planning of the selected game days "
+                "(%(slots)s court time(s) and %(schedules)s unpublished "
+                "schedule(s)), including matches placed by hand, and builds it "
+                "again from the game-day settings. Game days that are in review, "
+                "published, open or closed are never rebuilt. Explain why in the "
+                "reason.",
+                slots=self.existing_slot_count,
+                schedules=self.existing_draft_schedule_count,
+            )
+        else:
+            tone = "info"
+            text = _(
+                "Keeps everything already planned. Only matches that do not have "
+                "a court and time yet are added."
+            )
+        return '<div class="alert alert-%s mb-0 py-2" role="note">%s</div>' % (
+            tone,
+            escape(str(text)),
+        )

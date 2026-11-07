@@ -36,6 +36,34 @@ passed unless they ran.
 
 ## Entries
 
+### Clearer schedule generation and auto-schedule guidance
+
+Affected modules: `sports_federation_scheduling` (views and a transient-model
+extension; manifest version unchanged).
+
+**Data changes**: None. The competition schedule wizard gains non-stored
+computed fields (`guidance_status_html`, `mode_impact_html`,
+`existing_slot_count`, `existing_draft_schedule_count`). No stored column,
+migration script, ACL or menu change.
+
+**Behaviour to verify**: open **Generate schedule** for a competition and
+confirm the step strip and status card; without a check the card says
+*Ready to check and generate*; with blocking findings it lists the count and
+points to Feasibility; with only rest warnings it offers *Generate anyway*. As
+an advanced operator, switch the rerun mode and confirm the explanation; for
+*rebuild* it shows the number of court times and unpublished schedules that
+will be deleted. On a draft schedule, run **Auto-schedule**: *Preview* is the
+primary action, and a proposal with unplaced matches shows the explanation.
+Generation, preview signatures, governance and publication behave as before.
+
+**Dry-run evidence**: Python syntax and XML well-formedness were checked in the
+patch environment. No Odoo upgrade, Odoo test run or browser check was executed
+there. Run `bash ./ci/run_tests.sh --module sports_federation_scheduling` and
+upgrade the module on a staging copy before release.
+
+**Rollback**: code-only. Revert the change and upgrade
+`sports_federation_scheduling`; no data needs to be restored.
+
 ### Offline court scoring on personal phones
 
 Affected modules: `sports_federation_live_workspace` 19.0.1.6.3 → 19.0.1.7.0,

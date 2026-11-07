@@ -5,10 +5,52 @@
   <field name="arch" type="xml">
    <form string="Generate Competition Schedule">
     <div class="oe_title"><h1>Generate schedule</h1><p class="text-muted">All divisions and game days of this competition are planned together. You can move matches afterwards.</p></div>
+    <ol class="list-inline small text-muted mb-3" aria-label="Scheduling steps">
+     <li class="list-inline-item"><span class="badge text-bg-success">1</span> Game days</li>
+     <li class="list-inline-item">→ <span class="badge text-bg-primary">2</span> <strong>Generate</strong></li>
+     <li class="list-inline-item">→ <span class="badge text-bg-secondary">3</span> Review and move matches</li>
+     <li class="list-inline-item">→ <span class="badge text-bg-secondary">4</span> Publish</li>
+    </ol>
+    <field name="guidance_status_html" nolabel="1" readonly="1"/>
     <group>
-     <group string="Game days"><field name="matchday_ids" widget="many2many_tags" string="Game days"/><field name="preferred_rest_minutes" string="Rest between matches (min)"/></group>
-     <group string="Advanced" groups="sports_federation_base.group_federation_advanced_operator"><field name="edition_id"/><field name="structure_ids" widget="many2many_tags"/><field name="stage_ids" widget="many2many_tags"/><field name="mode"/><field name="rebuild_reason" invisible="mode != 'rebuild'" required="mode == 'rebuild'"/><field name="generate_missing_fixtures"/></group>
+     <group string="What to plan">
+      <field name="matchday_ids" widget="many2many_tags" string="Game days" help="Matches are only placed on these game days, on their courts and between their start and end times."/>
+      <field name="preferred_rest_minutes" string="Preferred rest between matches (min)" help="The scheduler tries to give every team at least this much time between two matches. This is a preference: when the game days are too full it can be shorter, and you decide whether to accept that when you publish."/>
+     </group>
+     <group string="Advanced" groups="sports_federation_base.group_federation_advanced_operator">
+      <field name="edition_id"/>
+      <field name="structure_ids" widget="many2many_tags" help="Competition formats whose matches are planned. Formats that are not generated yet are generated and frozen first."/>
+      <field name="stage_ids" widget="many2many_tags"/>
+      <field name="mode" string="When planning exists" help="What happens to planning that already exists on the selected game days. The explanation below shows exactly what is kept and what is removed."/>
+      <field name="mode_impact_html" nolabel="1" colspan="2" readonly="1"/>
+      <field name="rebuild_reason" invisible="mode != 'rebuild'" required="mode == 'rebuild'" placeholder="Why the unpublished planning is rebuilt"/>
+      <field name="generate_missing_fixtures"/>
+     </group>
     </group>
+    <details class="mb-3">
+     <summary><strong>Rules and preferences</strong> <span class="text-muted">(how the scheduler decides)</span></summary>
+     <div class="row mt-2">
+      <div class="col-md-6">
+       <p class="mb-1"><strong>Rules that always hold</strong></p>
+       <ul class="mb-2">
+        <li>Each match gets its own court and time; a court never hosts two matches at once.</li>
+        <li>Matches stay on the selected game days, within their courts and hours.</li>
+        <li>Later stages are planned after the stage their teams come from.</li>
+        <li>Matches you placed by hand are kept, unless you choose to rebuild.</li>
+       </ul>
+       <p class="text-muted small mb-0">When a rule cannot be met, the problem appears under <em>Must fix</em> and nothing is planned.</p>
+      </div>
+      <div class="col-md-6">
+       <p class="mb-1"><strong>Preferences the scheduler tries to meet</strong></p>
+       <ul class="mb-2">
+        <li>The preferred rest between a team's matches.</li>
+        <li>Teams of the same club not playing at the same time.</li>
+        <li>A fair spread of early and late matches and of courts.</li>
+       </ul>
+       <p class="text-muted small mb-0">Unmet preferences appear under <em>Could improve</em>. You can still generate and publish.</p>
+      </div>
+     </div>
+    </details>
     <!-- Technical modifier relay: the stage game days section only shows for multi-stage formats. -->
     <field name="has_stage_windows" invisible="1"/>
     <details class="mb-3" invisible="not has_stage_windows">
@@ -24,14 +66,26 @@
       </list>
      </field>
     </details>
-    <div class="alert alert-warning" role="alert" invisible="not blocking_issue_count">The schedule cannot be generated yet. Fix the items listed under Feasibility, then generate again.</div>
     <div class="alert alert-warning" role="alert" invisible="blocking_issue_count or not rest_shortfall_html">
      <p><strong>Some teams cannot get the preferred rest between their matches.</strong></p>
      <field name="rest_shortfall_html" nolabel="1" readonly="1"/>
      <p class="mb-0 mt-2">Change the rest above, the game days or the courts and generate again, or use <em>Generate anyway</em> and accept the short rest when you publish.</p>
     </div>
-    <group invisible="not preview_ready"><group string="Scope"><field name="selected_stage_count"/><field name="included_fixture_count" string="Matches included"/><field name="excluded_fixture_count" string="Matches left out"/></group><group string="Checks"><field name="blocking_issue_count"/><field name="warning_count"/></group></group>
-    <notebook invisible="not preview_ready"><page string="By game day"><field name="allocation_report_html" nolabel="1" readonly="1"/></page><page string="Feasibility"><field name="feasibility_report_html" nolabel="1" readonly="1"/></page><page string="Quality"><field name="quality_report_html" nolabel="1" readonly="1"/></page></notebook>
+    <group invisible="not preview_ready"><group string="Scope"><field name="selected_stage_count"/><field name="included_fixture_count" string="Matches included"/><field name="excluded_fixture_count" string="Matches left out"/></group><group string="Checks"><field name="blocking_issue_count" string="Must fix"/><field name="warning_count" string="Could improve"/></group></group>
+    <notebook invisible="not preview_ready">
+     <page string="Feasibility" name="must_fix">
+      <p class="text-muted">Must fix: rules that cannot be met with the current game days, courts or formats. Fix these, then generate again.</p>
+      <field name="feasibility_report_html" nolabel="1" readonly="1"/>
+     </page>
+     <page string="Quality" name="could_improve">
+      <p class="text-muted">Could improve: preferences that are not fully met. The schedule can still be generated and published.</p>
+      <field name="quality_report_html" nolabel="1" readonly="1"/>
+     </page>
+     <page string="By game day" name="by_game_day">
+      <p class="text-muted">How many matches each game day receives and how much room it has.</p>
+      <field name="allocation_report_html" nolabel="1" readonly="1"/>
+     </page>
+    </notebook>
     <!-- Technical modifier relay: preview_ready controls the check results. -->
     <field name="preview_ready" invisible="1"/><field name="preview_signature" invisible="1"/>
     <footer><button name="action_generate" type="object" string="Generate schedule" class="btn-primary"/><button name="action_generate" type="object" string="Generate anyway" class="btn-secondary" context="{'accept_short_rest': True}" invisible="blocking_issue_count or not rest_shortfall_html"/><button name="action_preview" type="object" string="Check only" class="btn-secondary" groups="sports_federation_base.group_federation_advanced_operator"/><button string="Cancel" special="cancel" class="btn-secondary"/></footer>
