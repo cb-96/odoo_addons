@@ -354,6 +354,44 @@ class CourtCommands(models.AbstractModel):
             }
         )
 
+    def _device_signature(self, match):
+        """Match context a phone scored against, without the match-day session.
+
+        A phone downloads its game day before the session opens, so it cannot
+        know the session. Any schedule, deviation, scoring-rule or official
+        result change still changes this signature and turns queued phone
+        commands into a conflict.
+        """
+        match = match.sudo()
+        slot = match.operational_slot_id or match.published_slot_id
+        edition = match._competition_workflow_edition()
+        return digest(
+            {
+                "publication": match.schedule_publication_id.id,
+                "publication_digest": match.schedule_publication_id.snapshot_digest,
+                "slot": slot.id,
+                "start": str(slot.start_datetime),
+                "end": str(slot.end_datetime),
+                "deviations": match.operational_deviation_ids.ids,
+                "operational_state": match.operational_status,
+                "home": match.home_score,
+                "away": match.away_score,
+                "state": match.result_state,
+                "teams": [match.home_team_id.id, match.away_team_id.id],
+                "scoring": [
+                    edition.court_scoring_mode,
+                    edition.court_set_target,
+                    edition.court_set_win_points,
+                    edition.court_set_draw_points,
+                    edition.court_max_periods,
+                ],
+                "periods": [
+                    (p.sequence, p.home_score, p.away_score)
+                    for p in match.result_period_ids
+                ],
+            }
+        )
+
     def _capture(self, match, signature):
         Capture = (
             self.env["federation.court.capture"]

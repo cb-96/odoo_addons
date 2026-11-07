@@ -219,6 +219,22 @@ def test_consume_blocks_after_limit(self):
 
 ---
 
+### Offline court app (phone code)
+
+The phone app in `sports_federation_live_workspace/static/court_app/` is plain
+JavaScript and does not run inside Odoo tests. Three layers cover it:
+
+```bash
+python -m unittest ci.test_court_app_logic         # server rules + Node.js unit tests
+node --test ci/js/test_court_app.mjs                # phone logic only (Node.js 18+)
+python ci/court_app_browser/run.py --chromium PATH  # optional browser check (Playwright)
+```
+
+`ci/fixtures/court_scoring_cases.json` holds scoring cases that both the
+server (`policy.py`) and the phone (`policy.js`) must accept or refuse in the
+same way; add a case whenever a scoring rule changes. The browser check runs
+the real app against a stand-in server, including a reload without a network.
+
 ## Query-count budgets
 
 Several test suites assert exact query counts to catch N+1 regressions:

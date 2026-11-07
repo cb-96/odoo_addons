@@ -1,6 +1,6 @@
 {
     "name": "Court Operations and Visual Planning",
-    "version": "19.0.1.6.3",
+    "version": "19.0.1.7.0",
     "license": "LGPL-3",
     "depends": [
         "web",
@@ -15,6 +15,8 @@
         "views/workspaces.xml",
         "views/mobile_matchday.xml",
         "views/season_board_views.xml",
+        "views/court_device_views.xml",
+        "views/court_device_portal.xml",
     ],
     "assets": {
         "web.assets_frontend": [

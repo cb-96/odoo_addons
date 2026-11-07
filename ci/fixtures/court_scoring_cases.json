@@ -1,0 +1,570 @@
+{
+ "description": "Court scoring cases. ci/test_court_app_logic.py runs them through policy.py; ci/js/test_court_app.mjs through the phone's policy.js. Both must agree.",
+ "cases": [
+  {
+   "name": "aggregate score",
+   "mode": "aggregate",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 2,
+    "away": 1,
+    "periods": [],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": true
+  },
+  {
+   "name": "aggregate with periods refused",
+   "mode": "aggregate",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 1,
+    "away": 0,
+    "periods": [
+     {
+      "home": 1,
+      "away": 0
+     }
+    ],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": false
+  },
+  {
+   "name": "periods sum",
+   "mode": "periods",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 5,
+    "away": 3,
+    "periods": [
+     {
+      "home": 2,
+      "away": 1
+     },
+     {
+      "home": 3,
+      "away": 2
+     }
+    ],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": true
+  },
+  {
+   "name": "periods wrong sum",
+   "mode": "periods",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 5,
+    "away": 4,
+    "periods": [
+     {
+      "home": 2,
+      "away": 1
+     },
+     {
+      "home": 3,
+      "away": 2
+     }
+    ],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": false
+  },
+  {
+   "name": "sets need periods on submit",
+   "mode": "sets",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 0,
+    "away": 0,
+    "periods": [],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": false
+  },
+  {
+   "name": "sets draft without periods",
+   "mode": "sets",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": false,
+   "payload": {
+    "home": 0,
+    "away": 0,
+    "periods": [],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": true
+  },
+  {
+   "name": "drawn set counts for neither (default points)",
+   "mode": "sets",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 1,
+    "away": 0,
+    "periods": [
+     {
+      "home": 2,
+      "away": 2
+     },
+     {
+      "home": 3,
+      "away": 1
+     }
+    ],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": true
+  },
+  {
+   "name": "drawn set is not a win",
+   "mode": "sets",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 1,
+    "away": 1,
+    "periods": [
+     {
+      "home": 2,
+      "away": 2
+     }
+    ],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": false
+  },
+  {
+   "name": "wdbf points 3-3",
+   "mode": "sets",
+   "set_target": 0,
+   "set_points": [
+    2,
+    1
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 5,
+    "away": 3,
+    "periods": [
+     {
+      "home": 3,
+      "away": 0
+     },
+     {
+      "home": 2,
+      "away": 2
+     },
+     {
+      "home": 1,
+      "away": 4
+     },
+     {
+      "home": 5,
+      "away": 1
+     }
+    ],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": true
+  },
+  {
+   "name": "wdbf sets-won count refused",
+   "mode": "sets",
+   "set_target": 0,
+   "set_points": [
+    2,
+    1
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 2,
+    "away": 1,
+    "periods": [
+     {
+      "home": 3,
+      "away": 0
+     },
+     {
+      "home": 2,
+      "away": 2
+     },
+     {
+      "home": 1,
+      "away": 4
+     },
+     {
+      "home": 5,
+      "away": 1
+     }
+    ],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": false
+  },
+  {
+   "name": "wdbf all drawn",
+   "mode": "sets",
+   "set_target": 0,
+   "set_points": [
+    2,
+    1
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 3,
+    "away": 3,
+    "periods": [
+     {
+      "home": 1,
+      "away": 1
+     },
+     {
+      "home": 0,
+      "away": 0
+     },
+     {
+      "home": 2,
+      "away": 2
+     }
+    ],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": true
+  },
+  {
+   "name": "set target reached",
+   "mode": "sets",
+   "set_target": 2,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 2,
+    "away": 1,
+    "periods": [
+     {
+      "home": 6,
+      "away": 2
+     },
+     {
+      "home": 2,
+      "away": 6
+     },
+     {
+      "home": 6,
+      "away": 3
+     }
+    ],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": true
+  },
+  {
+   "name": "set target not reached",
+   "mode": "sets",
+   "set_target": 2,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 1,
+    "away": 1,
+    "periods": [
+     {
+      "home": 6,
+      "away": 2
+     },
+     {
+      "home": 2,
+      "away": 6
+     }
+    ],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": false
+  },
+  {
+   "name": "set after target",
+   "mode": "sets",
+   "set_target": 2,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 3,
+    "away": 0,
+    "periods": [
+     {
+      "home": 6,
+      "away": 2
+     },
+     {
+      "home": 6,
+      "away": 2
+     },
+     {
+      "home": 6,
+      "away": 2
+     }
+    ],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": false
+  },
+  {
+   "name": "draw does not reach target",
+   "mode": "sets",
+   "set_target": 2,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 2,
+    "away": 0,
+    "periods": [
+     {
+      "home": 4,
+      "away": 1
+     },
+     {
+      "home": 2,
+      "away": 2
+     },
+     {
+      "home": 3,
+      "away": 0
+     }
+    ],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": true
+  },
+  {
+   "name": "too many periods",
+   "mode": "sets",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 2,
+   "complete": true,
+   "payload": {
+    "home": 3,
+    "away": 0,
+    "periods": [
+     {
+      "home": 1,
+      "away": 0
+     },
+     {
+      "home": 1,
+      "away": 0
+     },
+     {
+      "home": 1,
+      "away": 0
+     }
+    ],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": false
+  },
+  {
+   "name": "negative score",
+   "mode": "aggregate",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": -1,
+    "away": 0,
+    "periods": [],
+    "outcome": "normal",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": false
+  },
+  {
+   "name": "exceptional outcome needs reason",
+   "mode": "aggregate",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": false,
+   "payload": {
+    "home": 0,
+    "away": 0,
+    "periods": [],
+    "outcome": "abandoned",
+    "reason": "",
+    "zero_confirmed": false
+   },
+   "valid": false
+  },
+  {
+   "name": "exceptional outcome saved with reason",
+   "mode": "aggregate",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": false,
+   "payload": {
+    "home": 0,
+    "away": 0,
+    "periods": [],
+    "outcome": "abandoned",
+    "reason": "Injury",
+    "zero_confirmed": false
+   },
+   "valid": true
+  },
+  {
+   "name": "home forfeit needs away win",
+   "mode": "aggregate",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 1,
+    "away": 0,
+    "periods": [],
+    "outcome": "forfeit_home",
+    "reason": "No show",
+    "zero_confirmed": false
+   },
+   "valid": false
+  },
+  {
+   "name": "home forfeit with away win",
+   "mode": "aggregate",
+   "set_target": 0,
+   "set_points": [
+    1,
+    0
+   ],
+   "max_periods": 100,
+   "complete": true,
+   "payload": {
+    "home": 0,
+    "away": 5,
+    "periods": [],
+    "outcome": "forfeit_home",
+    "reason": "No show",
+    "zero_confirmed": false
+   },
+   "valid": true
+  }
+ ]
+}

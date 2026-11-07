@@ -1,13 +1,13 @@
 .sf-season-board {
-    background: var(--body-bg, #f6f7f9);
+    background: var(--bs-tertiary-bg);
 
     .sf-board-day { min-width: 7.5rem; line-height: 1.2; }
-    .sf-board-list { width: 20rem; min-width: 16rem; background: var(--o-view-background-color, #fff); }
+    .sf-board-list { width: 20rem; min-width: 16rem; background: var(--bs-body-bg); }
 
     .sf-board-card {
         display: block; width: 100%; text-align: left; cursor: grab;
-        border: 1px solid var(--border-color, #ced4da); border-left: 4px solid #6c757d;
-        border-radius: .375rem; background: var(--o-view-background-color, #fff);
+        border: 1px solid var(--bs-border-color); border-left: 4px solid #6c757d;
+        border-radius: .375rem; background: var(--bs-body-bg);
         padding: .35rem .5rem; position: relative;
         &[draggable="false"] { cursor: default; }
     }
@@ -26,7 +26,7 @@
     .sf-board-time { width: 4.5rem; text-align: right; }
 
     .sf-board-slot {
-        min-height: 4.2rem; border: 1px dashed var(--border-color, #ced4da);
+        min-height: 4.2rem; border: 1px dashed var(--bs-border-color);
         border-radius: .375rem; padding: .2rem; cursor: pointer;
     }
     .sf-board-slot-off { background: repeating-linear-gradient(45deg, #f1f1f1, #f1f1f1 6px, #fafafa 6px, #fafafa 12px); cursor: not-allowed; }

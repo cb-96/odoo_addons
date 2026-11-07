@@ -73,18 +73,28 @@ its submitter or verifier unless the edition permits self-approval. The queue
 is navigational only; the match result command continues to enforce group,
 state, and separation-of-duties rules when a decision is submitted.
 
+Results submitted from a court app (backend **Run This Court** or the offline
+court app) never verify or approve automatically, even when the competition
+does not require review: they always wait for the tournament manager.
+
 ### 4. Result Approval
 
 **Actor**: Result Approver (security group)
 **Module**: `sports_federation_result_control`
 
-1. Approver reviews the verified result.
-2. Click **Approve Result**.
-3. `result_state` transitions from `verified` → `approved`.
+1. The tournament manager (Result Approver) reviews the submitted or verified
+   result; for a court result, the **Court evidence** tab shows what was
+   recorded on court.
+2. Click **Approve Result**. On a submitted result this verifies and approves in
+   one step (`action_approve_result_one_step`): both steps are recorded with
+   the approver, and the audit says *approved in one step*. **Verify Only**
+   keeps the two-person route available.
+3. `result_state` transitions to `approved`.
 4. `result_approved_by_id` and `result_approved_on` are recorded.
 5. `include_in_official_standings` is set to `True`.
 6. Any non-frozen standings linked to the same tournament, stage, or group are recomputed automatically.
-7. The approver must be different from both the submitter and the verifier for the same result.
+7. The approver must be different from the submitter. In the two-step route
+   the approver must also be different from the verifier.
 8. Approved scores are treated as immutable until the result leaves the approved state.
 9. Home and away team / club contacts receive an approval email with the official scoreline.
 10. Match forms now surface a direct tournament handoff after verification,

@@ -122,6 +122,9 @@ Owner: `sports_federation_portal` unless noted. Auth: user (portal).
 | GET | `/my/duty-assignments`, `/my/duty-assignments/<assignment_id>`; POST `…/respond` | Individual official assignment workspace (owner: `sports_federation_duty_coverage`) |
 | POST | `/my/duty-assignments/<assignment_id>/checkin` | Signed check-in request (owner: `sports_federation_live_workspace`) |
 | GET | `/my/matchday-mobile` | Mobile match-day entry (owner: `sports_federation_live_workspace`) |
+| GET | `/my/court-duties`; POST `/my/court-duties/prepare`, `/my/court-duties/devices/<device_id>/revoke`, `/my/court-duties/pin`, `/my/court-duties/scorers`, `/my/court-duties/scorers/<scorer_id>/withdraw` | Matches to score, phone preparation, own phones, referee PIN, club scorers (owner: `sports_federation_live_workspace`) |
+| GET | `/court/app`, `/court/sw.js`, `/court/manifest.webmanifest` | Offline court app shell, service worker and manifest; public, no data |
+| POST | `/court/api/activate`, `/court/api/pack`, `/court/api/sync`, `/court/api/claim`, `/court/api/forget` | Offline court app API; bearer device token except `activate` (one-time code); rate limited |
 | POST | `/my/matchday-mobile/assignments/<assignment_id>/present`; GET, POST `…/replace` | Manager attendance confirmation and official replacement |
 
 ### Notifications and family

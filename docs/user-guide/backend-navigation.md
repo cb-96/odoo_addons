@@ -99,6 +99,8 @@ Federation
 │   │   ├── Venues
 │   │   ├── Court Operators
 │   │   └── Court Recovery
+│   ├── Scoring Phones                      (prepared phones; revoke)
+│   ├── Club Scorers                        (club-nominated scorers)
 │   ├── Officiating
 │   │   ├── Duty Coverage Board
 │   │   ├── Referee Assignments

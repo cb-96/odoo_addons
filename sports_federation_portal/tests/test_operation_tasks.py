@@ -212,7 +212,7 @@ class TestFederationOperationTasks(TransactionCase):
         self.assertTrue(task)
         self.assertEqual(task.task_type, "result_review")
         self.assertEqual(task.required_role, "result_verifier")
-        self.assertEqual(task.next_step, "Verify result")
+        self.assertEqual(task.next_step, "Approve result")
 
     def test_parental_consent_uses_the_existing_action_projection(self):
         player = self.env["federation.player"].create(

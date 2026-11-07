@@ -461,7 +461,7 @@ class FederationOperationTaskExtension(models.Model):
         for match in matches:
             reason_by_state = {
                 "submitted": _(
-                    "The result is waiting for verification by a Result Verifier."
+                    "The result is waiting for approval by the tournament manager."
                 ),
                 "verified": _(
                     "The result is waiting for approval by a Result Approver."
@@ -474,7 +474,7 @@ class FederationOperationTaskExtension(models.Model):
                 ),
             }
             next_step_by_state = {
-                "submitted": _("Verify result"),
+                "submitted": _("Approve result"),
                 "verified": _("Approve result"),
                 "contested": _("Correct contested result"),
                 "corrected": _("Submit corrected result"),

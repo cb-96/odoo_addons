@@ -36,6 +36,82 @@ passed unless they ran.
 
 ## Entries
 
+### Offline court scoring on personal phones
+
+Affected modules: `sports_federation_live_workspace` 19.0.1.6.3 → 19.0.1.7.0,
+`sports_federation_result_control` 19.0.1.6.0 → 19.0.1.7.0,
+`sports_federation_portal` 19.0.7.14.5 → 19.0.7.14.6,
+`sports_federation_setup_flow` 19.0.4.11.2 (see the next entry).
+
+**Data changes**: new models `federation.court.device` (prepared phones, token
+hashes only) and `federation.match.scorer` (club scorer nominations). New
+columns on `federation.court.capture` (device, scorer, scorer source and club,
+referee confirmation, match log, conflict count), `federation.court.receipt`
+(device) and `federation.referee` (PIN hash, set date, failures, lock). New
+ACLs for match-day managers and result validators, two record rules, an
+hourly cron that expires codes and tokens, and the menus **Match Operations >
+Scoring Phones** and **Club Scorers** (Advanced Federation Tools). No
+migration script; existing captures get empty evidence fields.
+
+Behaviour changes for existing data: a result submitted from a court app
+(backend **Run This Court** included) no longer auto-verifies or
+auto-approves when the competition does not require review; it stays
+*submitted* until a result approver clicks **Approve Result**. On the match
+form and the result list, **Approve Result** now verifies and approves a
+submitted result in one step; the submitter can still never approve their own
+result. The Review Queue shows *Approve result* for submitted results.
+
+**Behaviour to verify**: with a portal referee whose head-referee assignment
+is confirmed, open **My court duties**, prepare a phone, open the court app,
+switch the phone to aeroplane mode, reload the app, score sets, cross out
+players and record a card, then reconnect: the changes arrive. Submit as head
+referee; on the match, the **Court evidence** tab shows the scores, cards,
+scorer, phone and confirmation; **Approve Result** makes it official. Repeat
+with an assistant referee and the head referee's PIN, with a club scorer added
+by a club representative, with a revoked phone and with a second phone taking
+over a match. Test on Android Chrome and iPhone Safari, also installed on the
+home screen. The site must be served over HTTPS for the service worker.
+
+**Dry-run evidence**: `python -m unittest ci.test_court_app_logic` passes (21
+shared scoring cases on the server rules, device-command validation, and the
+32 Node.js tests of the phone logic). The phone app was run in headless
+Chromium against a stand-in server (`ci/court_app_browser/run.py`): 24 checks
+pass, including reloading the app without a network, keeping unsent changes,
+sending them when back online, PIN confirmation, conflicts, a revoked phone,
+and a 320 px dark-mode layout. The new Odoo tests
+(`sports_federation_live_workspace/tests/test_court_devices.py`), the module
+upgrade and real-device tests were not run in this change.
+
+**Rollback**: code-only rollback followed by a module update removes the
+routes, menus and cron; the new tables and columns remain unused. Court
+results then auto-approve again where the competition does not require
+review. Revoke all phones before rolling back.
+
+### Readable Competition Hub next-action card
+
+Affected modules (static assets only): `sports_federation_setup_flow`
+19.0.4.11.1 → 19.0.4.11.2, `sports_federation_base` 19.0.1.6.1 → 19.0.1.6.2;
+the `sports_federation_live_workspace` stylesheets ship with 19.0.1.7.0
+(previous entry).
+
+**Data changes**: none. `planner.scss` contained two rules for the
+next-action card: the second replaced the purple background with white but
+kept the white text. The file now has one rule set built on Bootstrap 5.3
+theme variables. The same files in the live workspace, stage builder and base
+UX stylesheet referenced CSS variables Odoo does not define (`--body-bg`,
+`--border-color`, `--text-muted`, `--o-brand-primary`,
+`--o-view-background-color`), so their light fallbacks were also used in dark
+mode; they now use the `--bs-*` equivalents.
+
+**Behaviour to verify**: in light and dark mode, the Competition Hub
+**Next action** card, setup steps, season board and court workspace are
+readable. Clear the browser cache or regenerate assets after the update.
+
+**Dry-run evidence**: the new `ci/check_scss_contrast.py` passes and fails on
+the previous `planner.scss`. The browser tours were not run in this change.
+
+**Rollback**: code-only rollback followed by a module update.
+
 ### Printable match scoresheet, drawn sets and set points
 
 Affected modules: `sports_federation_rosters` 19.0.1.12.0 → 19.0.1.13.0,

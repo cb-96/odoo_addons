@@ -18,10 +18,13 @@
             <xpath expr="//header/button[@name='action_draft']" position="after">
                 <button name="action_submit_result" string="Submit Result" type="object" class="btn-primary"
                         invisible="result_state != 'draft'"/>
-                <button name="action_verify_result" string="Verify Result" type="object" class="btn-primary"
-                        invisible="result_state != 'submitted'"/>
-                <button name="action_approve_result" string="Approve Result" type="object" class="btn-primary"
-                        invisible="result_state != 'verified'"/>
+                <button name="action_approve_result_one_step" string="Approve Result" type="object" class="btn-primary"
+                        invisible="result_state not in ('submitted', 'verified')"
+                        groups="sports_federation_result_control.group_result_approver"
+                        confirm="Approve this result? It becomes official and updates the standings."/>
+                <button name="action_verify_result" string="Verify Only" type="object"
+                        invisible="result_state != 'submitted'"
+                        groups="sports_federation_result_control.group_result_validator"/>
                 <button name="action_raise_dispute_request_exception" string="Raise Dispute / Request Exception" type="object" class="btn-warning"
                         invisible="result_state not in ('submitted', 'verified', 'approved')"/>
                 <button name="action_correct_result" string="Correct Result" type="object"

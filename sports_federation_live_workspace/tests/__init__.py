@@ -5,3 +5,4 @@ from . import test_mobile_matchday
 
 from . import test_visual_experience
 from . import test_season_board
+from . import test_court_devices

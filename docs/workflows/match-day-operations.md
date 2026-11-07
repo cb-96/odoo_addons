@@ -336,6 +336,22 @@ entered from the sheet (the QR code opens the match) after the match. The
 signed sheet is kept until the result is approved. See the
 [rosters module](../../sports_federation_rosters/README.md#printable-scoresheet).
 
+## Offline court scoring
+
+Head and assistant referees with a confirmed assignment score their matches on
+their own phone; a club representative may add an optional club scorer per
+match. Before the game day, each scorer opens **My court duties** while online
+and chooses **Prepare this phone**. On the game day the court app works without
+a network: scores per set, crossed-out players, cards, time-outs and
+challenges. It sends changes whenever there is a connection and the match-day
+session is open. The head referee confirms a result scored by someone else
+with their PIN; without it the result is marked as not confirmed.
+
+Every court result waits for the tournament manager, who checks the **Court
+evidence** tab on the match and clicks **Approve Result** (one step). The
+printed scoresheet remains the fallback. See the
+[court operations module](../../sports_federation_live_workspace/README.md#offline-court-app).
+
 ## Live operations and controlled deviations
 
 1. Open **Match-Day Control** and resolve all readiness blockers.
