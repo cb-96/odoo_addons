@@ -6,7 +6,7 @@ from odoo.addons.sports_federation_result_control.services.result_commands impor
     _RESULT_COMMAND_CONTEXT_KEY,
     _RESULT_COMMAND_TOKEN,
 )
-from ..policy import digest, validate_capture, validate_command
+from ..policy import digest, set_points, validate_capture, validate_command
 
 
 from .court import _TOKEN, _CONTEXT
@@ -85,6 +85,8 @@ class CourtCommandsExtension(models.AbstractModel):
                             edition.court_set_target,
                             edition.court_max_periods,
                             complete=operation == "submit",
+                            win_points=edition.court_set_win_points,
+                            draw_points=edition.court_set_draw_points,
                         )
                     except ValueError as error:
                         raise ValidationError(str(error)) from error
@@ -176,7 +178,11 @@ class CourtCommandsExtension(models.AbstractModel):
         for index, period in enumerate(payload["periods"], 1):
             home, away = period["home"], period["away"]
             if edition.court_scoring_mode == "sets":
-                home, away = int(home > away), int(away > home)
+                home, away = set_points(
+                    period,
+                    edition.court_set_win_points,
+                    edition.court_set_draw_points,
+                )
             target.env["federation.match.result.period"].create(
                 {
                     "match_id": target.id,

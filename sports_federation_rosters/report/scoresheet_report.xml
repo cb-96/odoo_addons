@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_match_scoresheet" model="report.paperformat">
+        <field name="name">Match scoresheet (A4)</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">8</field>
+        <field name="margin_bottom">8</field>
+        <field name="margin_left">8</field>
+        <field name="margin_right">8</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">96</field>
+    </record>
+
+    <!-- Print > Scoresheet on one or more matches: one page per match. -->
+    <record id="action_report_match_scoresheet" model="ir.actions.report">
+        <field name="name">Scoresheet</field>
+        <field name="model">federation.match</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sports_federation_rosters.report_match_scoresheet</field>
+        <field name="report_file">sports_federation_rosters.report_match_scoresheet</field>
+        <field name="print_report_name">'Scoresheet - %s' % (object.name or object.id)</field>
+        <field name="paperformat_id" ref="paperformat_match_scoresheet"/>
+        <field name="binding_model_id" ref="sports_federation_tournament.model_federation_match"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_match_scoresheet_team_general">
+        <table>
+            <tr>
+                <td class="sf-section" rowspan="8"><span t-esc="'TEAM %s' % team['letter']"/></td>
+                <td class="sf-label">Name</td><td class="sf-fill" t-esc="team['name']"/>
+            </tr>
+            <tr><td class="sf-label">Coach</td><td class="sf-fill" t-esc="team['coach']"/></tr>
+            <tr><td class="sf-label">Ass. coach</td><td class="sf-fill" t-esc="team['assistant_coach']"/></tr>
+            <tr><td class="sf-label">Captain</td><td class="sf-fill" t-esc="team['captain']"/></tr>
+            <tr>
+                <td class="sf-label">Time-out</td>
+                <td><span class="sf-box"/><span class="sf-box-label">1st half</span><span class="sf-box"/><span class="sf-box-label">2nd half</span></td>
+            </tr>
+            <tr>
+                <td class="sf-label">Challenges</td>
+                <td><t t-foreach="challenge_boxes" t-as="box"><span class="sf-box"/></t></td>
+            </tr>
+            <tr>
+                <td class="sf-label">Team cards</td>
+                <td><span class="sf-box sf-card-y"/><span class="sf-box-label">Yellow</span><span class="sf-box sf-card-r"/><span class="sf-box-label">Red</span></td>
+            </tr>
+            <tr>
+                <td class="sf-label">Staff cards</td>
+                <td><span class="sf-box sf-card-y"/><span class="sf-box-label">Yellow</span><span class="sf-box sf-card-r"/><span class="sf-box-label">Red</span></td>
+            </tr>
+        </table>
+    </template>
+
+    <template id="report_match_scoresheet_players">
+        <table class="sf-players">
+            <tr>
+                <td class="sf-section" t-att-rowspan="len(team['players']) + 2"><span t-esc="'TEAM %s PLAYERS' % team['letter']"/></td>
+                <th class="sf-no">No.</th>
+                <th>Game-day line-up</th>
+                <th class="sf-out" title="Not playing this match: cross out">Out</th>
+                <th class="sf-card sf-card-b" title="First blue card">B1</th>
+                <th class="sf-card sf-card-b" title="Second blue card">B2</th>
+                <th class="sf-card sf-card-y" title="Yellow card">Y</th>
+                <th class="sf-card sf-card-r" title="Red card">R</th>
+            </tr>
+            <tr t-foreach="team['players']" t-as="player" t-att-class="'sf-crossed' if player['crossed_out'] else None">
+                <td class="sf-no" t-esc="player['number']"/>
+                <td class="sf-name"><t t-esc="player['name']"/><span t-if="player['captain']" class="sf-cap">(C)</span></td>
+                <td class="sf-out"><t t-if="player['crossed_out']">X</t></td>
+                <td class="sf-card sf-card-b-cell"/>
+                <td class="sf-card sf-card-b-cell"/>
+                <td class="sf-card sf-card-y-cell"/>
+                <td class="sf-card sf-card-r-cell"/>
+            </tr>
+            <tr>
+                <td colspan="7" class="sf-playing">Playing this match: ____ (max. <t t-esc="team['match_players']"/>) · others: <strong>X</strong> in <strong>Out</strong></td>
+            </tr>
+        </table>
+    </template>
+
+    <template id="report_match_scoresheet">
+        <t t-call="web.html_container">
+            <t t-foreach="sheets" t-as="sheet">
+                <div class="sf-scoresheet">
+                    <!-- Header -->
+                    <table class="sf-header">
+                        <tr>
+                            <td style="width:42mm">
+                                <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" class="sf-logo" alt="Logo"/>
+                            </td>
+                            <td>
+                                <div class="sf-title"><t t-esc="company.name"/> Scoresheet</div>
+                                <div class="sf-subtitle">
+                                    <t t-esc="sheet['competition']"/><t t-if="sheet['competition'] and sheet['division']"> · </t><t t-esc="sheet['division']"/>
+                                </div>
+                            </td>
+                            <td class="sf-reference" style="width:34mm">
+                                <img class="sf-qr" alt="Open this match" t-att-src="sheet['qr_src']"/>
+                                <div t-esc="sheet['reference']"/>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- General -->
+                    <table>
+                        <tr>
+                            <td class="sf-section" rowspan="5"><span>GENERAL</span></td>
+                            <td class="sf-label">Team A</td><td class="sf-fill" t-esc="sheet['teams'][0]['name']"/>
+                            <td class="sf-label">Team B</td><td class="sf-fill" t-esc="sheet['teams'][1]['name']"/>
+                        </tr>
+                        <tr>
+                            <td class="sf-label">Date / time</td>
+                            <td class="sf-fill"><t t-esc="sheet['date']"/><t t-if="sheet['time']"> · <t t-esc="sheet['time']"/></t></td>
+                            <td class="sf-label">Venue / court</td><td class="sf-fill" t-esc="sheet['venue']"/>
+                        </tr>
+                        <tr>
+                            <td class="sf-label">Head referee</td><td class="sf-fill" t-esc="sheet['head_referee']"/>
+                            <td class="sf-label">Ass. ref. 1</td><td class="sf-fill" t-esc="sheet['assistants'][0]"/>
+                        </tr>
+                        <tr>
+                            <td class="sf-label">Ass. ref. 2</td><td class="sf-fill" t-esc="sheet['assistants'][1]"/>
+                            <td class="sf-label">Ass. ref. 3</td><td class="sf-fill" t-esc="sheet['assistants'][2]"/>
+                        </tr>
+                        <tr>
+                            <td class="sf-label">Ass. ref. 4</td><td class="sf-fill" t-esc="sheet['assistants'][3]"/>
+                            <td class="sf-label">Ass. ref. 5</td><td class="sf-fill" t-esc="sheet['assistants'][4]"/>
+                        </tr>
+                    </table>
+                    <div class="sf-gap"/>
+
+                    <!-- Teams -->
+                    <table>
+                        <tr>
+                            <td style="border:0;padding:0 1mm 0 0;vertical-align:top">
+                                <t t-set="team" t-value="sheet['teams'][0]"/>
+                                <t t-call="sports_federation_rosters.report_match_scoresheet_team_general"/>
+                                <div class="sf-gap"/>
+                                <t t-call="sports_federation_rosters.report_match_scoresheet_players"/>
+                            </td>
+                            <td style="border:0;padding:0 0 0 1mm;vertical-align:top">
+                                <t t-set="team" t-value="sheet['teams'][1]"/>
+                                <t t-call="sports_federation_rosters.report_match_scoresheet_team_general"/>
+                                <div class="sf-gap"/>
+                                <t t-call="sports_federation_rosters.report_match_scoresheet_players"/>
+                            </td>
+                        </tr>
+                    </table>
+                    <div class="sf-notice" t-if="not sheet['lineups_final']">
+                        <div class="sf-warning">Line-up not approved when printed: check every player against the official line-up before play.</div>
+                    </div>
+                    <div class="sf-gap"/>
+
+                    <!-- Sets: write the points each team earns per set -->
+                    <table class="sf-scores">
+                        <t t-foreach="sheet['halves']" t-as="half">
+                            <tr>
+                                <td t-if="half_first" class="sf-section" t-att-rowspan="3 * len(sheet['halves'])"><span>SETS</span></td>
+                                <th class="sf-row-label" t-esc="half['label']"/>
+                                <th t-foreach="half['sets']" t-as="set_no" t-esc="set_no"/>
+                                <th class="sf-total">Half</th>
+                            </tr>
+                            <tr t-foreach="sheet['teams']" t-as="team">
+                                <td class="sf-row-label" t-esc="'Team %s' % team['letter']"/>
+                                <td t-foreach="half['sets']" t-as="set_no"/>
+                                <td class="sf-total"/>
+                            </tr>
+                        </t>
+                    </table>
+                    <div class="sf-legend">
+                        Per set and team write the points: <strong t-esc="sheet['win_points']"/> won ·
+                        <strong t-esc="sheet['draw_points']"/> drawn (both teams) · <strong>0</strong> lost.
+                        Mark a set forfeited by a blue-card or team-yellow-card penalty with <strong>F</strong> next to the points.
+                    </div>
+                    <div class="sf-gap"/>
+
+                    <!-- Result, remarks and sign-off -->
+                    <table class="sf-result">
+                        <tr>
+                            <td class="sf-section" rowspan="4"><span>RESULT</span></td>
+                            <td class="sf-label">Points A – B</td>
+                            <td class="sf-big">
+                                <t t-if="sheet['result_known']"><t t-esc="sheet['match'].home_score"/> – <t t-esc="sheet['match'].away_score"/></t>
+                                <t t-else="">____ – ____</t>
+                            </td>
+                            <td class="sf-label">Match result</td>
+                            <td><span class="sf-box"/><span class="sf-box-label">A wins</span><span class="sf-box"/><span class="sf-box-label">B wins</span><span class="sf-box"/><span class="sf-box-label">Draw</span></td>
+                        </tr>
+                        <tr>
+                            <td class="sf-label">Tie-breaking set</td>
+                            <td><span class="sf-box"/><span class="sf-box-label">A</span><span class="sf-box"/><span class="sf-box-label">B</span><span class="sf-box"/>sudden death</td>
+                            <td class="sf-label">Forfeit</td>
+                            <td><span class="sf-box"/><span class="sf-box-label">by A</span><span class="sf-box"/><span class="sf-box-label">by B</span>(reason in remarks)</td>
+                        </tr>
+                        <tr>
+                            <td class="sf-label">Remarks, incidents, challenges</td>
+                            <td colspan="3" class="sf-remarks"/>
+                        </tr>
+                        <tr>
+                            <td class="sf-label">Signatures</td>
+                            <td class="sf-sign">Captain A</td>
+                            <td class="sf-sign">Captain B</td>
+                            <td class="sf-sign">Head referee</td>
+                        </tr>
+                    </table>
+                    <div class="sf-rules">
+                        <strong>Cards (WDBF 32-35):</strong> Blue: penalty area for the rest of the set and the next set, team plays short-handed; max. 2 per player, a 3rd becomes yellow.
+                        Yellow: penalty area for 5 min match time; max. 1 per player, a 2nd becomes red. Red: ejected, team short-handed for the rest of the match.
+                        Team yellow: forfeits the current (or next full) set. Team red, or 4 yellow cards for a team (red counts as 2): match forfeited.
+                    </div>
+                    <div class="sf-notice">
+                        Printed <t t-esc="printed_on"/>. The court app result is the official record; when the app was unavailable, the head referee enters this sheet after the match and keeps it until the result is approved.
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

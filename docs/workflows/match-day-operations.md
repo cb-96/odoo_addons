@@ -323,6 +323,19 @@ management rights are not required. Publishing the approved schedule
 materializes any missing operational matches for its assigned fixtures before
 linking them to the immutable publication.
 
+## Paper fallback: scoresheets
+
+Before every game day, the match-day manager prints the scoresheets: select
+the game day's matches and use **Print > Scoresheet** (one A4 page per
+match, prefilled with officials and the game-day line-ups). Keep one printed
+sheet per court. Before each match, the scorekeeper crosses out the game-day
+players who do not play that match (**X** in **Out**), because the match
+selection is made after printing. When the court app is unavailable, the head referee completes the
+paper sheet, both captains and the head referee sign it, and the result is
+entered from the sheet (the QR code opens the match) after the match. The
+signed sheet is kept until the result is approved. See the
+[rosters module](../../sports_federation_rosters/README.md#printable-scoresheet).
+
 ## Live operations and controlled deviations
 
 1. Open **Match-Day Control** and resolve all readiness blockers.

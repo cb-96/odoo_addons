@@ -173,8 +173,12 @@ export class CourtWorkspace extends Component {
     removePeriod(index) { this.state.draft.periods.splice(index, 1); this.retotal(); }
     periodScore(index, side, event) { this.state.draft.periods[index][side] = Number(event.target.value); this.retotal(); }
     retotal() {
-        this.state.draft.home = this.state.draft.periods.reduce((sum, period) => sum + (this.state.match.mode === "sets" ? Number(period.home > period.away) : period.home), 0);
-        this.state.draft.away = this.state.draft.periods.reduce((sum, period) => sum + (this.state.match.mode === "sets" ? Number(period.away > period.home) : period.away), 0);
+        // Sets mode: the match score is the sum of set points (won / drawn).
+        const [win, draw] = this.state.match.set_points || [1, 0];
+        const points = (own, other) => own > other ? win : own === other ? draw : 0;
+        const sets = this.state.match.mode === "sets";
+        this.state.draft.home = this.state.draft.periods.reduce((sum, period) => sum + (sets ? points(period.home, period.away) : period.home), 0);
+        this.state.draft.away = this.state.draft.periods.reduce((sum, period) => sum + (sets ? points(period.away, period.home) : period.away), 0);
         this.edited();
     }
     async command(operation) {

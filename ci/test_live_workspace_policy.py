@@ -71,9 +71,66 @@ class TestCapturePolicy(unittest.TestCase):
             set_target=2,
         )
 
-    def test_tied_set(self):
+    def test_drawn_set_counts_for_neither_team(self):
+        p.validate_capture(
+            self.payload(
+                home=1,
+                away=0,
+                periods=[{"home": 2, "away": 2}, {"home": 3, "away": 1}],
+            ),
+            "sets",
+        )
+
+    def test_drawn_set_is_not_a_win(self):
         with self.assertRaises(ValueError):
-            p.validate_capture(self.payload(periods=[{"home": 2, "away": 2}]), "sets")
+            p.validate_capture(
+                self.payload(home=1, away=1, periods=[{"home": 2, "away": 2}]),
+                "sets",
+            )
+
+    def test_wdbf_set_points(self):
+        # WDBF 10.2-10.3: won set 2 points, drawn set 1 point to each team.
+        periods = [
+            {"home": 3, "away": 0},
+            {"home": 2, "away": 2},
+            {"home": 1, "away": 4},
+            {"home": 5, "away": 1},
+        ]
+        p.validate_capture(
+            self.payload(home=5, away=3, periods=periods),
+            "sets",
+            win_points=2,
+            draw_points=1,
+        )
+        with self.assertRaises(ValueError):
+            # Counting won sets instead of points is rejected.
+            p.validate_capture(
+                self.payload(home=2, away=1, periods=periods),
+                "sets",
+                win_points=2,
+                draw_points=1,
+            )
+
+    def test_set_points_helper(self):
+        self.assertEqual(p.set_points({"home": 2, "away": 2}, 2, 1), (1, 1))
+        self.assertEqual(p.set_points({"home": 3, "away": 2}, 2, 1), (2, 0))
+        self.assertEqual(p.set_points({"home": 0, "away": 2}, 2, 1), (0, 2))
+
+    def test_drawn_set_does_not_reach_set_target(self):
+        # Before draws were allowed, the draw was counted as an away win here.
+        p.validate_capture(
+            self.payload(
+                home=2,
+                away=0,
+                periods=[
+                    {"home": 4, "away": 1},
+                    {"home": 2, "away": 2},
+                    {"home": 3, "away": 0},
+                ],
+            ),
+            "sets",
+            set_target=2,
+        )
 
     def test_extra_set_after_target(self):
         with self.assertRaises(ValueError):

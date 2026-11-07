@@ -36,6 +36,42 @@ passed unless they ran.
 
 ## Entries
 
+### Printable match scoresheet, drawn sets and set points
+
+Affected modules: `sports_federation_rosters` 19.0.1.12.0 → 19.0.1.13.0,
+`sports_federation_live_workspace` 19.0.1.6.2 → 19.0.1.6.3.
+
+**Data changes**: adds the `Scoresheet` PDF report on `federation.match`
+(**Print** menu), its A4 paper format and a report stylesheet in
+`web.report_assets_common`. Adds two stored integer fields on
+`federation.competition.edition`: `court_set_win_points` (default 1) and
+`court_set_draw_points` (default 0); the update fills existing rows with the
+defaults, so existing competitions keep sets-won scoring. No migration
+script. The court app capture policy no longer rejects a drawn set in `sets`
+mode; the match score is the sum of set points, and a drawn set no longer
+counts as an away win when a set target is configured.
+
+**Behaviour to verify**: on a dodgeball competition, set **Points per won
+set** to 2 and **Points per drawn set** to 1 with scoring mode **Sets**. In
+the court app, a set with equal scores shows **Draw**; won 3-0, drawn 2-2 and
+lost 1-4 sets give 3-3, and the result can be submitted. Result periods store
+the set points. Print one match and a selection of matches: one A4 page per
+match with the whole game-day line-up (14 rows, shirt-number order) and Out,
+B1, B2, Y and R columns, players already crossed out printed struck through,
+time-out boxes per half, challenges, team and staff cards, sets per half and
+the configured set points in the legend.
+Printing needs a working `wkhtmltopdf` on the server.
+
+**Dry-run evidence**: `python -m pytest ci/test_live_workspace_policy.py`
+passes (26 tests); the drawn-set tests fail on the previous policy. The
+scoresheet template was rendered outside Odoo with sample data to check the
+layout. The new `test_scoresheet` tests, an Odoo PDF print and the court-app
+browser tour were not run in this change.
+
+**Rollback**: code-only rollback followed by a module update removes the
+report and restores the previous set validation; the two new columns are
+left unused.
+
 ### Portal line-up save no longer fails with Access Denied
 
 Affected modules: `sports_federation_portal` 19.0.7.14.4 → 19.0.7.14.5.

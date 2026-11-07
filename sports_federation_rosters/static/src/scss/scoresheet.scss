@@ -1,0 +1,67 @@
+// Match scoresheet. Printed on paper, so it is always black on white and
+// uses tables only: wkhtmltopdf does not lay out flex or grid reliably.
+.sf-scoresheet {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #000;
+    background: #fff;
+    page-break-after: always;
+
+    &:last-child { page-break-after: auto; }
+
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    td, th { border: 0.6pt solid #000; padding: 0.7mm 1.5mm; vertical-align: middle; }
+    th { font-weight: 700; text-align: center; background: #e6e6e6; }
+
+    .sf-gap { height: 1.6mm; border: 0; }
+    .sf-label { width: 24mm; text-align: right; color: #333; font-size: 7.5pt; white-space: nowrap; }
+    .sf-fill { font-weight: 600; font-size: 9pt; }
+    .sf-section {
+        width: 7mm; padding: 0; text-align: center; background: #333; color: #fff;
+        font-weight: 700; font-size: 7pt; letter-spacing: .5pt;
+    }
+    .sf-section span { display: block; -webkit-transform: rotate(-90deg); transform: rotate(-90deg); white-space: nowrap; }
+
+    .sf-header td { border: 0; padding: 0 0 1.5mm; vertical-align: middle; }
+    .sf-title { font-size: 15pt; font-weight: 700; }
+    .sf-subtitle { font-size: 8pt; color: #333; }
+    .sf-logo { max-height: 14mm; max-width: 40mm; }
+    .sf-reference { text-align: right; font-size: 8pt; }
+    .sf-qr { width: 15mm; height: 15mm; }
+
+    .sf-players td { height: 5.0mm; padding-top: 0; padding-bottom: 0; }
+    .sf-players .sf-no { width: 9mm; text-align: center; font-weight: 700; }
+    .sf-players .sf-card { width: 6.5mm; text-align: center; padding: 0; font-size: 7pt; }
+    .sf-players .sf-cap { font-weight: 700; margin-left: 1mm; }
+    .sf-players .sf-out { width: 8mm; text-align: center; font-weight: 700; padding: 0; }
+    .sf-players .sf-crossed .sf-name,
+    .sf-players .sf-crossed .sf-no { text-decoration: line-through; color: #555; }
+    .sf-players .sf-playing { height: 5mm; white-space: nowrap; font-size: 7pt; color: #333; }
+    // Light tints keep handwriting readable and still show the colour.
+    .sf-card-b { background: #d6e6ff; }
+    .sf-card-y { background: #fff6bf; }
+    .sf-card-r { background: #ffd6d6; }
+    // Card cells keep a faint tint so the column colour is visible when filled.
+    .sf-card-b-cell { background: #eef4ff; }
+    .sf-card-y-cell { background: #fffbe6; }
+    .sf-card-r-cell { background: #fff0f0; }
+
+    .sf-box { display: inline-block; width: 4mm; height: 4mm; border: 0.6pt solid #000; margin-right: 1mm; vertical-align: middle; }
+    .sf-box-label { margin-right: 2.5mm; }
+
+    .sf-scores td, .sf-scores th { height: 5.5mm; padding: 0; text-align: center; }
+    .sf-scores .sf-row-label { width: 16mm; text-align: left; padding-left: 1.5mm; font-weight: 700; }
+    .sf-scores .sf-total { width: 12mm; background: #e6e6e6; font-weight: 700; font-size: 7pt; }
+    .sf-legend { font-size: 7pt; color: #333; margin-top: 0.8mm; }
+
+    .sf-result td { height: 7mm; }
+    .sf-result .sf-label { white-space: normal; }
+    .sf-result .sf-big { font-size: 12pt; font-weight: 700; text-align: center; }
+
+    .sf-remarks { height: 11mm; vertical-align: top; }
+    .sf-sign { height: 10mm; vertical-align: bottom; font-size: 7pt; color: #333; }
+
+    .sf-rules { font-size: 6.5pt; color: #333; margin-top: 1mm; line-height: 1.25; }
+    .sf-notice { font-size: 7pt; color: #333; margin-top: 1.5mm; }
+    .sf-warning { border: 0.8pt solid #000; padding: 1mm 2mm; font-weight: 700; margin-bottom: 1.5mm; }
+}

@@ -187,8 +187,25 @@ class LiveEdition(models.Model):
     )
     court_set_target = fields.Integer(default=0)
     court_max_periods = fields.Integer(default=100)
+    # Points per set in "sets" mode. The defaults keep "sets won" as the match
+    # score; WDBF dodgeball uses 2 for a won set and 1 for a drawn set.
+    court_set_win_points = fields.Integer(
+        string="Points per won set",
+        default=1,
+        help="Points a team earns for winning a set. WDBF dodgeball: 2.",
+    )
+    court_set_draw_points = fields.Integer(
+        string="Points per drawn set",
+        default=0,
+        help="Points each team earns for a drawn set. WDBF dodgeball: 1.",
+    )
 
-    @api.constrains("court_set_target", "court_max_periods")
+    @api.constrains(
+        "court_set_target",
+        "court_max_periods",
+        "court_set_win_points",
+        "court_set_draw_points",
+    )
     def _check_scoring_config(self):
         for item in self:
             if (
@@ -197,6 +214,16 @@ class LiveEdition(models.Model):
             ):
                 raise ValidationError(
                     _("Use a bounded set target and 1 to 100 periods.")
+                )
+            if not (
+                1 <= item.court_set_win_points <= 10
+                and 0 <= item.court_set_draw_points <= item.court_set_win_points
+            ):
+                raise ValidationError(
+                    _(
+                        "A won set earns 1 to 10 points, and a drawn set earns "
+                        "no more than a won set."
+                    )
                 )
 
 
@@ -476,6 +503,10 @@ class CourtCommands(models.AbstractModel):
             {
                 "mode": edition.court_scoring_mode,
                 "set_target": edition.court_set_target,
+                "set_points": [
+                    edition.court_set_win_points,
+                    edition.court_set_draw_points,
+                ],
                 "max_periods": edition.court_max_periods,
                 "lineups": self._lineups(match),
             }

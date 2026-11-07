@@ -7,7 +7,7 @@ and managers, the visual schedule planner and the season match board.
 Installed through the supported `sports_federation_app` entry point.
 
 ## Court operation
-1. Configure aggregate, period-total or sets-won scoring on the competition edition. Configure a winning set target where applicable.
+1. Configure aggregate, period-total or sets scoring on the competition edition. Configure a winning set target where applicable. In sets mode, a set can be drawn, and the match score is the sum of set points: **Points per won set** (default 1) and **Points per drawn set** (default 0) keep the classic sets-won score. For WDBF dodgeball, set 2 and 1 (rules 10.2-10.3) and no set target, because a match is played over two timed halves.
 2. Publish through the existing independent schedule review and publication workflow.
 3. Open the canonical match-day session and assign named internal court operators.
 4. Operators open Match Day > Run this court, select their court, inspect lineups and separate accepted/eligible/present official facts, save drafts, then submit for result review.

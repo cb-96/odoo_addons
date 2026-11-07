@@ -26,8 +26,23 @@ def digest(value):
     ).hexdigest()
 
 
+def set_points(period, win_points=1, draw_points=0):
+    """Points each team earns for one set (WDBF 10.2-10.3: 2 won, 1 drawn)."""
+    if period["home"] == period["away"]:
+        return draw_points, draw_points
+    if period["home"] > period["away"]:
+        return win_points, 0
+    return 0, win_points
+
+
 def validate_capture(
-    value, mode="aggregate", set_target=0, max_periods=100, complete=True
+    value,
+    mode="aggregate",
+    set_target=0,
+    max_periods=100,
+    complete=True,
+    win_points=1,
+    draw_points=0,
 ):
     if not isinstance(value, dict) or set(value) - {
         "home",
@@ -83,9 +98,12 @@ def validate_capture(
     if periods:
         totals = (sum(p["home"] for p in periods), sum(p["away"] for p in periods))
         if mode == "sets":
-            if complete and any(p["home"] == p["away"] for p in periods):
-                raise ValueError("A completed set cannot be tied.")
-            totals = (
+            # A set can end in a draw (WDBF rule 10.3). The match score is the
+            # sum of set points; with the defaults (1 won, 0 drawn) that is
+            # "sets won". The set target always counts won sets.
+            points = [set_points(p, win_points, draw_points) for p in periods]
+            totals = (sum(p[0] for p in points), sum(p[1] for p in points))
+            wins = (
                 sum(p["home"] > p["away"] for p in periods),
                 sum(p["away"] > p["home"] for p in periods),
             )
@@ -93,13 +111,14 @@ def validate_capture(
                 complete
                 and set_target
                 and result["outcome"] == "normal"
-                and max(totals) != set_target
+                and max(wins) != set_target
             ):
                 raise ValueError("The winning set target has not been reached.")
             if set_target:
                 wins = [0, 0]
                 for index, p in enumerate(periods):
-                    wins[0 if p["home"] > p["away"] else 1] += 1
+                    if p["home"] != p["away"]:
+                        wins[0 if p["home"] > p["away"] else 1] += 1
                     if max(wins) >= set_target and index != len(periods) - 1:
                         raise ValueError("No sets may follow the winning set.")
         if totals != (result["home"], result["away"]):

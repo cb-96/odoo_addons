@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Rosters",
-    "version": "19.0.1.12.0",
+    "version": "19.0.1.13.0",
     "category": "Sports",
     "summary": "Season/competition-bound team rosters and match sheets",
     "description": """
@@ -31,7 +31,13 @@
         "views/player_views_inherit.xml",
         "views/match_views_inherit.xml",
         "views/menu_views.xml",
+        "report/scoresheet_report.xml",
     ],
+    "assets": {
+        "web.report_assets_common": [
+            "sports_federation_rosters/static/src/scss/scoresheet.scss",
+        ],
+    },
     "demo": [],
     "application": False,
     "installable": True,

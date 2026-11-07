@@ -8,3 +8,4 @@ from . import test_tour_roster_lifecycle
 from . import test_gameday_lineup_wizard
 from . import test_gameday_participation
 from . import test_participant_rosters
+from . import test_scoresheet

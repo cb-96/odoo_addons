@@ -264,3 +264,44 @@ to the registration (not closed, then without competition scope, then active,
 then newest); the portal's registration lookup uses it. Upgrading prepares the
 roster of every participant in a running season and links existing rosters to
 their registration.
+
+## Printable scoresheet
+
+**Print > Scoresheet** on one or more matches prints one A4 page per match:
+the paper record for a court when the court app cannot be used, and the
+sheet the officials sign. It is prefilled with what is known when it is
+printed:
+
+- competition, division, date, time, venue and court;
+- head referee and up to five other officials (non-cancelled assignments);
+- per team: coach, assistant coach (team manager field), captain and the
+  whole game-day line-up (up to 14 players) in shirt-number order.
+
+The match selection is made minutes before the start, after the sheets are
+printed. So the sheet lists the game-day line-up, and the players who do not
+play this match are crossed out by hand: **X** in the **Out** column and the
+name struck through, with the number of players playing (at most the
+match limit, 12 by default) written below the list. Players already crossed
+out in the system when printing are printed struck through with an **X**.
+
+Missing values stay as blank lines, so the same report prints a blank sheet
+for a match without line-ups. The sheet follows the WDBF cloth rules 2026:
+
+- 14 game-day line-up rows with an **Out** column, two blue-card columns
+  (B1, B2: a third blue becomes yellow, rule 33.3), a yellow and a red column;
+- per team: a time-out box per half (9.8.1), two challenge boxes (37.1), and
+  team and staff yellow and red cards;
+- sets per half (15 + 15) where each team gets its set points, with half
+  totals. The points come from the competition's court scoring settings in
+  sets mode, otherwise WDBF 2 won / 1 drawn / 0 lost;
+- a result block (points, A wins / B wins / draw, tie-breaking set with
+  sudden death, forfeit), remarks, signatures for both captains and the head
+  referee, and a short card-rules reminder.
+
+A QR code opens the match in the backend for result entry. When a line-up
+was not approved at print time, the sheet says so, and the officials check
+players against the official line-up.
+
+Values are prepared in `report/scoresheet.py`; the template and print
+stylesheet only lay them out.
+

@@ -42,6 +42,7 @@
        <span><t t-esc="period_index + 1"/></span>
        <label>Home<input type="number" min="0" class="form-control" t-att-value="period.home" t-on-change="(ev) =&gt; this.periodScore(period_index, 'home', ev)"/></label>
        <label>Away<input type="number" min="0" class="form-control" t-att-value="period.away" t-on-change="(ev) =&gt; this.periodScore(period_index, 'away', ev)"/></label>
+       <span t-if="state.match.mode === 'sets' and period.home === period.away" class="badge text-bg-secondary">Draw</span>
        <button class="btn btn-outline-danger" t-on-click="() =&gt; this.removePeriod(period_index)" t-att-aria-label="'Remove period ' + (period_index + 1)" type="button">Remove</button>
       </div></t><button class="btn btn-outline-primary" t-on-click="addPeriod" t-att-disabled="state.draft.periods.length &gt;= state.match.max_periods" type="button">Add set / period</button>
      </div>
