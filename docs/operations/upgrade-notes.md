@@ -36,6 +36,38 @@ passed unless they ran.
 
 ## Entries
 
+### Game-day handoff in the Competition Hub and event-time court times
+
+Affected modules: `sports_federation_setup_flow`, `sports_federation_calendar`,
+`sports_federation_live_workspace` (models, views and planner assets; manifest
+versions unchanged).
+
+**Data changes**: None. New non-stored computed fields:
+`federation.schedule.slot.event_window`,
+`federation.matchday.user_timezone_differs` and
+`federation.matchday.timezone_notice`. The slot display name is now computed in
+the event timezone of its game day instead of the viewer's timezone. No stored
+column, migration, ACL or menu change.
+
+**Behaviour to verify**: in the Competition Hub, every listed blocker of the
+next game day has *Fix this*, which opens the exact record or list the blocker
+names; a blocker solved in another tab is refused with a refresh message.
+*Open game day* opens the game day. *Later game days* lists up to three
+further open game days with their readiness and open items. On a game-day
+form, *Courts and times* shows an *Event time* column; with a user timezone
+whose clock differs from the event timezone, a notice explains which times are
+yours and which teams see. Court-time names in schedule dropdowns read the
+same for every user. The visual planner header reads *Start (event time)*.
+Assets must be rebuilt for the planner changes.
+
+**Dry-run evidence**: Python and XML syntax and a JavaScript parse check ran in
+the patch environment. No Odoo upgrade, Odoo test run or browser check ran
+there. Run the setup-flow, calendar and live-workspace module tests and the
+`competition_planner_intent` tour, and upgrade the modules on a staging copy.
+
+**Rollback**: code-only. Revert the change and upgrade the three modules; no
+data needs to be restored.
+
 ### Clearer schedule generation and auto-schedule guidance
 
 Affected modules: `sports_federation_scheduling` (views and a transient-model
