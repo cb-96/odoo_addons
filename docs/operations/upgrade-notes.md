@@ -36,6 +36,35 @@ passed unless they ran.
 
 ## Entries
 
+### Club team ranking: playing up and promotion
+
+Affected modules: `sports_federation_rosters` 19.0.1.13.0 → 19.0.1.14.0,
+`sports_federation_portal` (template only; version unchanged).
+
+**Data changes**: new stored field `federation.team.club_rank`, computed once
+for existing teams from the name suffix (A-F, 1-9; otherwise 0) and editable
+afterwards. New model `federation.club.rank.promotion` with access rules in
+`security/club_rank_access.xml` (read for internal users, full for federation
+managers). No migration script.
+
+**Behaviour to verify**: check **Rank within club** on teams of clubs with
+several teams, and set it by hand where the name has no suffix (for example a
+first team without "A"). On the higher team's roster, players of the lower
+team are offered and show *Playing up*; on the lower team's roster, players of
+the higher team are not offered and adding one is refused. In the game-day
+line-up wizard, on the match sheet and on the portal line-up page, a player
+who would reach two matches for the higher team gets a warning. After the
+second played match (line-up approved, not crossed out, match done) the
+player has a team promotion, cannot be added to the lower roster, and the
+lower line is removed or explained in the roster chatter.
+
+**Dry-run evidence**: Python syntax and XML well-formedness were checked in the
+patch environment. No Odoo upgrade, Odoo test run or browser check ran there.
+Run the `sf_club_rank` tests and upgrade both modules on a staging copy.
+
+**Rollback**: code-only rollback leaves the `club_rank` column and promotion
+table unused; restore the pre-upgrade backup to remove them.
+
 ### Game-day handoff in the Competition Hub and event-time court times
 
 Affected modules: `sports_federation_setup_flow`, `sports_federation_calendar`,

@@ -305,3 +305,30 @@ players against the official line-up.
 Values are prepared in `report/scoresheet.py`; the template and print
 stylesheet only lay them out.
 
+## Club team ranking
+
+When a club has several ranked teams of the same gender and category, team
+rank 1 (A) is the highest. The rank sits on the team (**Rank within club**); it
+is filled from a name ending in A-F or 1-9 and can be changed by hand. Teams
+with rank 0 are not ranked and are not affected.
+
+Within the same club, season and roster competition:
+
+- a player of a lower-ranked team can be added to the roster of a
+  higher-ranked team and play for it. The roster shows *Playing up* with the
+  number of matches played for that team;
+- after two matches for the higher-ranked team the player moves to that team
+  permanently. A match counts once the line-up is approved or locked, the
+  player is not crossed out for that match, and the match is done. The move is
+  stored as a team promotion (player form, *Team promotions*);
+- a player of a higher-ranked team, or a promoted player, cannot be added to a
+  lower-ranked team's roster and is not offered there. A promoted player's
+  lower-team line-ups are flagged as not eligible.
+
+On promotion the player's lower-team roster line is set to *Removed* when no
+line-up locks it; otherwise it stays listed and the roster chatter explains
+that the player can no longer play for that team.
+
+The game-day line-up wizard, the match sheet and the portal line-up page warn
+before a match that would complete the move.
+
