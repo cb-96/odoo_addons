@@ -7,8 +7,59 @@
     </xpath>
     <xpath expr="//table/tbody/t/tr/td[last()]" position="after">
       <td class="text-end">
-        <a t-attf-href="/my/players/#{player.id}/parental-approvals" class="btn btn-sm btn-outline-primary">Manage document</a>
+        <div t-if="pa.get('show_badge')" class="d-flex flex-column align-items-end gap-1 mb-1" data-parental-status="1">
+          <span t-attf-class="badge #{pa['badge']}"><i t-attf-class="fa #{pa['icon']} me-1" aria-hidden="true"/><t t-esc="pa['label']"/></span>
+          <span t-if="pa.get('detail')" class="small text-muted" t-esc="pa['detail']"/>
+        </div>
+        <span t-elif="pa.get('key') == 'not_required'" class="small text-muted d-block mb-1">Not required</span>
+        <a t-attf-href="/my/players/#{player.id}/parental-approvals" t-attf-class="btn btn-sm #{pa.get('cta_class') or 'btn-outline-secondary'}"><t t-esc="pa.get('cta') or 'Manage document'"/></a>
       </td>
+    </xpath>
+    <!-- Which players would need parental approval: summary above the filters. -->
+    <xpath expr="//form[@action='/my/players']" position="before">
+      <t t-set="parental_overview" t-value="request.env['federation.player.parental.approval']._portal_player_overview(players)"/>
+      <t t-set="parental_counts" t-value="parental_overview['counts']"/>
+      <t t-set="parental_needed_only" t-value="request.httprequest.args.get('approval') == 'needed'"/>
+      <t t-set="parental_rows" t-value="players.filtered(lambda p: parental_overview['by_player'].get(p.id, {}).get('needs_action')) if parental_needed_only else players"/>
+      <section t-if="parental_counts['under_age'] or parental_counts['no_birth_date']" class="card border-0 shadow-sm mb-4" data-parental-overview="1" aria-labelledby="parental-overview-title">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+            <div>
+              <h3 id="parental-overview-title" class="h5 mb-1"><i class="fa fa-shield me-2" aria-hidden="true"/>Parental approval</h3>
+              <p class="text-muted small mb-0">Players under 16 need a verified parental approval to play in a senior (adult) league. The federation checks it against the match date.</p>
+            </div>
+            <div t-if="parental_counts['needs_action']">
+              <a t-if="not parental_needed_only" t-attf-href="/my/players?approval=needed&amp;gender=#{filter_gender or ''}&amp;state=#{filter_state or ''}" class="btn btn-sm btn-outline-danger">Show only players who need action (<t t-esc="parental_counts['needs_action']"/>)</a>
+              <a t-else="" t-attf-href="/my/players?gender=#{filter_gender or ''}&amp;state=#{filter_state or ''}" class="btn btn-sm btn-outline-secondary">Show all players</a>
+            </div>
+          </div>
+          <div t-if="parental_overview['bar']" class="progress mt-3" style="height: 1.25rem;" role="img" t-att-aria-label="parental_overview['summary']">
+            <div t-foreach="parental_overview['bar']" t-as="segment" t-attf-class="progress-bar #{segment['css']}" t-attf-style="width: #{segment['pct']}%;" t-att-title="segment['label']"><t t-esc="segment['count']"/></div>
+          </div>
+          <div class="row g-2 mt-1">
+            <div t-foreach="parental_overview['tiles']" t-as="tile" class="col-6 col-lg">
+              <div t-attf-class="border rounded p-2 h-100 #{tile['css']}">
+                <div class="fw-semibold"><i t-attf-class="fa #{tile['icon']} me-1" aria-hidden="true"/><t t-esc="tile['count']"/> <t t-esc="tile['label']"/></div>
+                <div class="small text-muted" t-esc="tile['hint']"/>
+              </div>
+            </div>
+          </div>
+          <p t-if="parental_needed_only and not parental_counts['needs_action']" class="mb-0 mt-2 small text-success">No players need action.</p>
+        </div>
+      </section>
+    </xpath>
+    <xpath expr="//table/tbody/t" position="attributes">
+      <attribute name="t-foreach">parental_rows</attribute>
+    </xpath>
+    <xpath expr="//table/tbody/t/tr" position="attributes">
+      <attribute name="t-att-class">(parental_overview['by_player'].get(player.id) or {}).get('row_class') or None</attribute>
+    </xpath>
+    <xpath expr="//table/tbody/t/tr/td[1]" position="before">
+      <t t-set="pa" t-value="parental_overview['by_player'].get(player.id) or {}"/>
+    </xpath>
+    <xpath expr="//table/tbody/t/tr/td[1]" position="inside">
+      <span t-if="pa.get('under_age')" class="badge text-bg-light border ms-2"><t t-esc="pa['age_label']"/></span>
+      <div t-if="pa.get('age_note')" class="small text-muted fw-normal" t-esc="pa['age_note']"/>
     </xpath>
   </template>
 

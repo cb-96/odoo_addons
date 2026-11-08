@@ -36,6 +36,36 @@ passed unless they ran.
 
 ## Entries
 
+### Players needing parental approval on the club portal
+
+Affected modules: `sports_federation_portal` (portal template and a read-only
+helper on the parental-approval model; manifest version unchanged).
+
+**Data changes**: None. No stored field, migration, ACL or menu change. The
+players page `/my/players` gains a summary card and a status per player.
+
+**Behaviour to verify**: as a club representative, open `/my/players`. A card
+shows a stacked bar and four tiles: needed now (player under 16 on an active
+senior roster of the current season, no valid approval), needed for senior play
+(under 16, not on a senior roster), awaiting review, approved. Rows that need
+action are highlighted; each row shows a status badge with a short explanation
+and *Upload approval*, *View status*, *Upload renewal* or *Manage document*.
+*Show only players who need action* filters the list and keeps the gender and
+status filters. Players who are 16 or older read *Not required*; a player
+without a birth date reads *Birth date missing*. A verified approval that
+expires within 30 days is shown as *Approved, expires soon*. The rule mirrors
+roster eligibility: under 16 on the date, senior team, verified approval that
+covers the date. A junior team entered in a senior tournament is not detected
+from the roster alone.
+
+**Dry-run evidence**: Python and XML syntax, the template XPaths against a
+reconstruction of the base players template, and the status logic against test
+doubles ran in the patch environment. No Odoo upgrade, Odoo test run or browser
+check ran there. Run the `sf_player_parental_overview` tests and upgrade
+`sports_federation_portal` on a staging copy.
+
+**Rollback**: code-only; revert the change and upgrade the module.
+
 ### Club team ranking: playing up and promotion
 
 Affected modules: `sports_federation_rosters` 19.0.1.13.0 → 19.0.1.14.0,
