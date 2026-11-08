@@ -81,6 +81,18 @@ class FederationTeamRoster(models.Model):
         related="team_id.club_id",
         store=True,
     )
+    team_gender = fields.Selection(
+        related="team_id.gender",
+        string="Team Gender",
+    )
+    player_gender_a = fields.Char(
+        compute="_compute_player_gender_filter",
+        help="Technical: first player gender allowed on this roster's team.",
+    )
+    player_gender_b = fields.Char(
+        compute="_compute_player_gender_filter",
+        help="Technical: second player gender allowed on this roster's team.",
+    )
     min_players_required = fields.Integer(
         string="Min Players Required",
         help="Minimum number of eligible active players the squad must contain before"
@@ -134,6 +146,23 @@ class FederationTeamRoster(models.Model):
     #   1. _assert_unique_active_roster() Python check in write()
     #   2. DB partial unique indexes from migration 19.0.1.4.0
     #      (federation_team_roster_unique_active_no_comp / _with_comp)
+
+    @api.depends("team_id.gender")
+    def _compute_player_gender_filter(self):
+        """Expose the player genders that fit the team, for the roster form.
+
+        Men's and women's teams accept players of that gender; mixed teams
+        accept both. The two values feed the player picker's domain, which
+        cannot hold a conditional list itself.
+        """
+        allowed = {
+            "male": ("male", "male"),
+            "female": ("female", "female"),
+        }
+        for roster in self:
+            first, second = allowed.get(roster.team_id.gender, ("male", "female"))
+            roster.player_gender_a = first
+            roster.player_gender_b = second
 
     def _build_generated_name(self, team, season, competition=False):
         """Build generated name."""

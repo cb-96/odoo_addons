@@ -144,9 +144,15 @@
                     </div>
                     <notebook>
                         <page string="Roster Lines" name="roster_lines">
+                            <!-- Technical relays for the player picker domain below. -->
+                            <field name="club_id" invisible="1"/>
+                            <field name="player_gender_a" invisible="1"/>
+                            <field name="player_gender_b" invisible="1"/>
                             <field name="line_ids">
                                 <list editable="bottom">
-                                    <field name="player_id"/>
+                                    <field name="player_id"
+                                           domain="[('club_id', '=', parent.club_id), '|', ('gender', '=', False), ('gender', 'in', [parent.player_gender_a, parent.player_gender_b])]"
+                                           options="{'no_create': True}"/>
                                     <field name="status"/>
                                     <field name="jersey_number"/>
                                     <field name="is_captain"/>
