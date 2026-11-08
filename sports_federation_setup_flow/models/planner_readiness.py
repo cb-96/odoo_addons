@@ -188,7 +188,13 @@ class FederationCompetitionPlannerReadiness(models.Model):
         allocated_fixtures = gamedays.mapped("allocation_ids.fixture_ids").filtered(
             lambda item: item.state != "cancelled"
         )
-        unallocated_fixtures = expected_fixtures - allocated_fixtures
+        # Only matches that can be placed on a game day need a game day. A
+        # placeholder whose participants are not resolved yet (for example a
+        # bye or "#1 Top vs TBD" waiting for progression) is not schedulable and
+        # is not offered on the match board either; it counts once it is.
+        unallocated_fixtures = (expected_fixtures - allocated_fixtures).filtered(
+            lambda item: item._is_schedulable()
+        )
         if unallocated_fixtures:
             issues.append(
                 {
