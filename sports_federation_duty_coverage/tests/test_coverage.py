@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from odoo import fields
 from odoo.exceptions import AccessError, ValidationError
+from odoo.tests import Form
 from odoo.tests.common import TransactionCase, tagged
 
 from .common import CoverageFixture
@@ -415,3 +416,48 @@ class TestCoverage(CoverageFixture, TransactionCase):
         self._assert_rejected(ValidationError, self.assignment.unlink)
         self.assertTrue(self.assignment.exists())
         self.assertEqual(self.assignment.state, "cancelled")
+
+    # ------------------------------------------------------------------
+    # The wizard as the web client uses it
+    # ------------------------------------------------------------------
+
+    def _form(self):
+        return Form(
+            self.env["federation.coverage.resolve.wizard"].with_context(
+                default_match_id=self.match.id
+            )
+        )
+
+    def test_form_keeps_the_preview_signature(self):
+        """The signature is read-only and invisible, yet must survive saving."""
+        form = self._form()
+        form.operation = "club"
+        form.selected_role = "fourth"
+        form.club_id = self.club
+        wizard = form.save()
+        self.assertTrue(wizard.expected_signature)
+        self.assertEqual(wizard.expected_signature, wizard._signature())
+
+    def test_club_duty_can_be_added_from_the_form(self):
+        form = self._form()
+        form.operation = "club"
+        form.selected_role = "fourth"
+        form.club_id = self.club
+        form.save().action_apply()
+        duty = self.env["federation.match.club.referee.duty"].search(
+            [
+                ("match_id", "=", self.match.id),
+                ("club_id", "=", self.club.id),
+                ("role", "=", "fourth"),
+            ]
+        )
+        self.assertEqual(len(duty), 1)
+        self.assertEqual(duty.state, "open")
+
+    def test_missing_preview_is_reported_as_such(self):
+        wizard = self.env["federation.coverage.resolve.wizard"].create(
+            {"match_id": self.match.id, "operation": "club", "club_id": self.club.id}
+        )
+        self.assertFalse(wizard.expected_signature)
+        with self.assertRaisesRegex(ValidationError, "no coverage preview"):
+            wizard.action_apply()
