@@ -249,11 +249,11 @@ class FederationOperationTask(models.Model):
         )
         if not source:
             raise ValidationError(_("The source record no longer exists."))
-        if (
-            self.task_type == "parental_consent"
-            and source._name == "federation.team.roster.line"
-        ):
-            return source.player_id.action_view_parental_approvals()
+        if self.task_type == "parental_consent":
+            if source._name == "federation.player":
+                return source.action_view_parental_approvals()
+            if source._name == "federation.team.roster.line":
+                return source.player_id.action_view_parental_approvals()
         return {
             "type": "ir.actions.act_window",
             "name": source.display_name,

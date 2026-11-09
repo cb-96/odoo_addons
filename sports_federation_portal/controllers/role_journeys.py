@@ -15,45 +15,13 @@ from ..journey_navigation import return_url, reviewer_can_act, safe_destination
 
 
 class RoleJourneys(FederationRosterPortalBase):
-    @http.route("/my/work", type="http", auth="user", website=True, methods=["GET"])
-    def role_home(self, **kw):
-        user = request.env.user
-        task_model = request.env["federation.operation.task"].with_context(
-            journey_viewer_id=user.id
-        )
-        has_club_access = bool(task_model._portal_club_ids(user))
-        if has_club_access:
-            task_model.sync_for_user(user=user)
-        tasks = request.env["federation.portal.privilege"].portal_search(
-            task_model,
-            task_model._portal_get_domain(user) + [("state", "!=", "done")],
-            user=user,
-        )
-        referee = request.env["federation.referee"]._portal_get_for_user(user=user)
-        return request.render(
-            "sports_federation_portal.role_home",
-            {
-                "tasks": tasks,
-                "club_access": has_club_access,
-                "official_access": bool(referee),
-                "planner_access": user.has_group(
-                    "sports_federation_competition_core.group_competition_administrator"
-                ),
-                "reviewer_access": user.has_group(
-                    "sports_federation_result_control.group_result_validator"
-                )
-                or user.has_group(
-                    "sports_federation_result_control.group_result_approver"
-                ),
-                "manager_access": user.has_group(
-                    "sports_federation_base.group_federation_manager"
-                ),
-                "page_name": "role_work",
-                "journey_user_id": user.id,
-            },
-        )
+    """Role work reached from the portal overview (``/my``).
 
-    @http.route("/my/work/context", type="http", auth="user", methods=["GET"])
+    The overview itself is rendered by ``home``; these routes are the lists and
+    bridges its sections link to.
+    """
+
+    @http.route("/my/journey-context", type="http", auth="user", methods=["GET"])
     def journey_context(self, **kw):
         response = request.make_json_response(
             {"user_id": request.env.user.id, "database": request.env.cr.dbname}
@@ -62,7 +30,7 @@ class RoleJourneys(FederationRosterPortalBase):
         return response
 
     @http.route(
-        "/my/work/reviews", type="http", auth="user", website=True, methods=["GET"]
+        "/my/result-reviews", type="http", auth="user", website=True, methods=["GET"]
     )
     def review_work(self, **kw):
         user = request.env.user
@@ -100,7 +68,7 @@ class RoleJourneys(FederationRosterPortalBase):
         )
 
     @http.route(
-        "/my/work/tasks/<int:task_id>/open",
+        "/my/action-items/<int:task_id>/open",
         type="http",
         auth="user",
         website=True,
@@ -128,7 +96,7 @@ class RoleJourneys(FederationRosterPortalBase):
         return request.redirect(task.action_url)
 
     @http.route(
-        "/my/work/registrations/<int:registration_id>",
+        "/my/season-registrations/<int:registration_id>/roster",
         type="http",
         auth="user",
         website=True,
@@ -159,6 +127,42 @@ class RoleJourneys(FederationRosterPortalBase):
                 "page_name": "create_roster",
                 "journey_user_id": request.env.user.id,
             },
+        )
+
+
+class RetiredWorkRoutes(http.Controller):
+    """Permanent redirects for bookmarks of the retired ``/my/work`` pages.
+
+    ``/my/work`` was the role switchboard; the portal overview (``/my``) now
+    shows every role in its own section. Only redirects remain here.
+    """
+
+    @http.route(["/my/work"], type="http", auth="user", methods=["GET"])
+    def retired_work_home(self, **kw):
+        return request.redirect("/my", code=301)
+
+    @http.route(["/my/work/reviews"], type="http", auth="user", methods=["GET"])
+    def retired_review_work(self, **kw):
+        return request.redirect("/my/result-reviews", code=301)
+
+    @http.route(
+        ["/my/work/tasks/<int:task_id>/open"],
+        type="http",
+        auth="user",
+        methods=["GET"],
+    )
+    def retired_open_task(self, task_id, **kw):
+        return request.redirect("/my/action-items/%s/open" % task_id, code=301)
+
+    @http.route(
+        ["/my/work/registrations/<int:registration_id>"],
+        type="http",
+        auth="user",
+        methods=["GET"],
+    )
+    def retired_missing_roster(self, registration_id, **kw):
+        return request.redirect(
+            "/my/season-registrations/%s/roster" % registration_id, code=301
         )
 
 

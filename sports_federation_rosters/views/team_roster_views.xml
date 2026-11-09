@@ -144,15 +144,18 @@
                     </div>
                     <notebook>
                         <page string="Roster Lines" name="roster_lines">
-                            <!-- Technical relays for the player picker domain below. -->
+                            <!-- Technical relay for the player picker domain below: club. -->
                             <field name="club_id" invisible="1"/>
+                            <!-- Technical relay for the player picker domain below: allowed gender. -->
                             <field name="player_gender_a" invisible="1"/>
+                            <!-- Technical relay for the player picker domain below: allowed gender. -->
                             <field name="player_gender_b" invisible="1"/>
-                            <field name="rostered_player_ids" invisible="1"/>
+                            <!-- Technical relay for the player picker domain below: players this roster cannot take. -->
+                            <field name="unavailable_player_ids" invisible="1"/>
                             <field name="line_ids">
                                 <list editable="bottom">
                                     <field name="player_id"
-                                           domain="[('club_id', '=', parent.club_id), ('id', 'not in', parent.rostered_player_ids), '|', ('gender', '=', False), ('gender', 'in', [parent.player_gender_a, parent.player_gender_b])]"
+                                           domain="[('club_id', '=', parent.club_id), ('id', 'not in', parent.unavailable_player_ids), '|', ('gender', '=', False), ('gender', 'in', [parent.player_gender_a, parent.player_gender_b])]"
                                            options="{'no_create': True}"/>
                                     <field name="status"/>
                                     <field name="jersey_number"/>

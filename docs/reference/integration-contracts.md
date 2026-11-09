@@ -78,8 +78,6 @@ notes, discipline records, unpublished schedules or unapproved results.
   - top-level keys in the v1 payload are stable;
   - additive nested fields are allowed in v1 when they do not alter existing
     semantics.
-- Club representatives find live examples under **My Account > Data API**
-  (`/my/data-api`).
 
 ## Team feed
 

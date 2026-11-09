@@ -13,11 +13,12 @@ the scenario-by-scenario validation steps are in the
 
 ## Behaviour under test
 
-- `/my/work` is the role-aware entry for club and team preparation, official
-  assignments, competition planning, manager follow-up and result review. It
+- The portal overview (`/my`) is the single entry: the club first, then one
+  section each for official assignments, competition planning, result review
+  and the federation work queue, shown only for roles the account has. It
   links to the existing workflow owners; there is no second task or approval
-  system.
-- `/my/work/reviews` lists submitted and verified results under the user's own
+  system. Old `/my/work` URLs redirect permanently.
+- `/my/result-reviews` lists submitted and verified results under the user's own
   ORM permissions, filtered by the edition's self-review policy.
 - Club tasks are bucketed into actionable, waiting, completed and unavailable,
   with an explicit status and next owner. Entry tasks open the exact entry.

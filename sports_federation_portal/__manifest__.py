@@ -1,14 +1,14 @@
 {
     "name": "Sports Federation Club Roles & Portal",
-    "version": "19.0.7.14.6",
+    "version": "19.0.7.15.0",
     "category": "Sports",
     "summary": "Club contacts, representative roles, portal website and registration flows",
     "description": """
 Portal and website flows for sports federation club representatives.
 
-Provides club representative ownership, portal dashboards, season and
-tournament registration workflows, and the live tournament operations board
-on top of the federation base modules.
+Provides club representative ownership, the portal overview (one page with a
+section per role), season registrations, competition entries and team
+preparation on top of the federation base modules.
 """,
     "author": "Sports Federation",
     "website": "",
@@ -49,7 +49,6 @@ on top of the federation base modules.
         "views/qol_search_templates.xml",
         "views/portal_templates.xml",
         "views/portal_parental_approval_templates.xml",
-        "views/portal_data_api_templates.xml",
         "views/competition_templates.xml",
         "views/portal_officiating_templates.xml",
         "views/portal_roster_templates.xml",

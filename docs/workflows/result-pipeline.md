@@ -65,7 +65,8 @@ At this point the result is entered but **not yet official**.
 5. `result_verified_by_id` and `result_verified_on` are recorded.
 6. The verifier cannot verify their own submission.
 
-Users can open **My federation work → Result review** (`/my/work/reviews`) to
+Users can open the **Result review** section of the portal overview
+(`/my/result-reviews` for the full list) to
 find submitted and verified records visible to their reviewer role. The queue
 omits a submitted result when the current user is its submitter unless the
 edition permits self-verification. It omits a verified result when the user is

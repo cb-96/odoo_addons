@@ -36,6 +36,53 @@ passed unless they ran.
 
 ## Entries
 
+### Portal overview replaces `/my/work`; club portal cleanup
+
+Affected modules: `sports_federation_portal` 19.0.7.14.x → 19.0.7.15.0,
+`sports_federation_rosters` 19.0.1.14.0 → 19.0.1.15.0 (models, views,
+security), and view-only changes in `sports_federation_compliance`,
+`sports_federation_duty_coverage`, `sports_federation_live_workspace`,
+`sports_federation_member_services`, `sports_federation_notifications` and
+`sports_federation_setup_flow`.
+
+**Data changes**: no migration script and no stored-field change.
+- Removed templates and routes: `role_home`, `portal_journey_entry` and the
+  Data API page (`/my/data-api`, `portal_home_data_api_link`). The
+  `/my/work` routes now only redirect (301) to `/my`, `/my/result-reviews`,
+  `/my/action-items/<id>/open` and `/my/season-registrations/<id>/roster`.
+  Task `journey_url`/`action_url` values are recomputed on the next task
+  refresh. Inheriting views in the other modules were removed or retargeted
+  to `portal_federation_links`; upgrade all affected modules in the same run.
+- Parental-consent tasks are now one per player (`source_model`
+  `federation.player`) instead of one per roster line. The first refresh
+  closes the old per-line tasks and opens one per player.
+- `federation.club.rank.promotion` ACLs moved from
+  `security/club_rank_access.xml` to `security/ir.model.access.csv` (same
+  xml ids, same rights). The orphan file `views/federation_tournament_views.xml`
+  (never loaded, pointing at methods that do not exist) is deleted.
+- Journey event retention defaults to 90 days (was 180) unless
+  `federation.journey_event_retention_days` is set.
+
+**Behaviour to verify**: `/my` for a club representative shows the club
+hero, **Prepare your team** and the club areas; for an account with other
+roles it shows a section per role with at most five cards and a link to the
+full list; an account without any role sees the access notice. Old `/my/work`
+bookmarks land on the overview. Other portal pages no longer refresh tasks on
+every load. A representative of two clubs can switch `/my/club?club=<id>` and
+must choose the club when adding a player. The backend roster picker and the
+portal "Add players" page hide the same players (already on the roster,
+blocked by club ranking, or on another club team in the same division), and
+saving such a line is refused. Portal compliance uploads for officials and
+club representatives are accepted (the create allowlist now contains
+`referee_id` and `club_representative_id`).
+
+**Dry-run evidence**: Python syntax, XML well-formedness, the pure-helper CI
+tests and the static contract checks ran in the patch environment. No Odoo
+upgrade, Odoo test run or browser check ran there.
+
+**Rollback**: code-only rollback restores the previous routes and templates;
+per-player consent tasks close and per-line tasks reopen on the next refresh.
+
 ### Players needing parental approval on the club portal
 
 Affected modules: `sports_federation_portal` (portal template and a read-only

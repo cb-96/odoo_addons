@@ -24,3 +24,5 @@ from . import test_role_journeys
 from . import test_gameday_overview
 from . import test_task_deadlines
 from . import test_journey_event
+from . import test_player_parental_overview
+from . import test_portal_create_fields

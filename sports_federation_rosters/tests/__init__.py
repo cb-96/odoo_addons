@@ -9,3 +9,5 @@ from . import test_gameday_lineup_wizard
 from . import test_gameday_participation
 from . import test_participant_rosters
 from . import test_scoresheet
+from . import test_club_rank
+from . import test_roster_availability

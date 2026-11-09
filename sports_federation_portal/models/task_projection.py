@@ -196,6 +196,11 @@ class FederationOperationTaskExtension(models.Model):
                     else "/my/rosters/%s" % roster.id
                 ),
             )
+        elif source._name == "federation.player":
+            values.update(
+                responsible_club_id=source.club_id.id,
+                action_url="/my/players/%s/parental-approvals" % source.id,
+            )
         elif source._name == "federation.match.sheet":
             match = source.match_id
             values.update(
@@ -331,27 +336,48 @@ class FederationOperationTaskExtension(models.Model):
         self._prefetch_roster_deadlines(
             deadline_cache, self._roster_deadline_keys(roster_lines.mapped("roster_id"))
         )
+        # One task per player: a player on two senior rosters needs one approval,
+        # so the club gets one action, due at the earliest roster deadline.
+        lines_by_player = {}
         for line in roster_lines:
-            specs.append(
-                self._task_spec(
-                    line,
-                    "parental_consent",
-                    "club",
-                    _("Parental consent: %(player)s")
-                    % {"player": line.player_id.display_name},
-                    _(
-                        "A player under 16 in a senior team needs a verified approval covering participation."
-                    ),
-                    _("Upload and verify parental approval"),
-                    priority="2",
-                    deadline=self._roster_deadline(
+            lines_by_player.setdefault(line.player_id, []).append(line)
+        for player, lines in lines_by_player.items():
+            dated = [
+                (
+                    self._roster_deadline(
                         line.roster_id.team_id,
                         line.roster_id.season_id,
                         line.roster_id.competition_id,
                         deadline_cache,
                     ),
+                    line,
                 )
+                for line in lines
+            ]
+            deadline, first_line = min(
+                dated,
+                key=lambda item: (not item[0], item[0] or datetime.max, item[1].id),
             )
+            spec = self._task_spec(
+                player,
+                "parental_consent",
+                "club",
+                _("Parental consent: %(player)s") % {"player": player.display_name},
+                _(
+                    "A player under 16 in a senior team needs a verified approval covering participation."
+                ),
+                _("Upload and verify parental approval"),
+                priority="2",
+                deadline=deadline,
+            )
+            roster = first_line.roster_id
+            spec.update(
+                responsible_club_id=roster.club_id.id,
+                season_id=roster.season_id.id,
+                roster_id=roster.id,
+                journey_team_id=roster.team_id.id,
+            )
+            specs.append(spec)
 
         lineup_domain = self._task_team_scope(user)
         lineup_domain += hidden("federation.match.sheet")

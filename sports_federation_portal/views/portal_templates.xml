@@ -11,41 +11,67 @@
         </xpath>
     </template>
 
+    <!-- The portal overview: the club first, then one section per other role. -->
     <template id="portal_federation_links" name="Federation Portal Links">
-            <div t-if="federation_representative" class="o_fed_portal_shell o_fed_club_dashboard o_fed_portal_home mb-5">
-                <!-- Legacy targets let Odoo validate stored child views during dashboard upgrades. -->
-                <nav class="o_fed_portal_quicknav d-none" aria-hidden="true"/>
-        <t t-set="dash" t-value="federation_club_dashboard or {}"/>
-        <t t-set="badges" t-value="dash.get('badges', {})"/>
+      <t t-set="overview" t-value="federation_overview or {}"/>
+      <t t-set="dash" t-value="overview.get('club') or {}"/>
+      <t t-set="badges" t-value="dash.get('badges', {})"/>
+      <div t-if="federation_representative" class="o_fed_portal_shell o_fed_club_dashboard o_fed_portal_home mb-5" t-att-data-journey-user="journey_user_id">
         <section class="o_fed_portal_hero mb-4" aria-labelledby="club-dashboard-title">
           <div class="o_fed_portal_eyebrow">Dodgeball Belgium · Club portal</div>
           <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mt-2">
-            <div><h2 id="club-dashboard-title" class="mb-1"><t t-esc="federation_club.name if federation_club else 'My club'"/></h2><p class="mb-0">Your teams, people, competitions and match-day work in one overview.</p></div>
+            <div><h2 id="club-dashboard-title" class="mb-1"><t t-esc="', '.join(dash['clubs'].mapped('name')) if dash.get('clubs') else 'My club'"/></h2><p class="mb-0">Your teams, people, competitions and match-day work in one overview.</p></div>
             <a href="/my/action-items" class="btn btn-light position-relative"><i class="fa fa-check-square-o me-2"/>All actions<span t-if="dash.get('tasks')" class="badge rounded-pill text-bg-danger ms-2"><t t-esc="dash.get('tasks')"/></span></a>
           </div>
         </section>
 
+        <a href="/my/preparation" class="o_fed_portal_task mb-4 text-decoration-none" data-journey-open="1">
+          <span><strong>Prepare your team</strong><span class="d-block small text-muted">The next step for each team before its game days: roster, eligibility, parental approval and line-ups.</span></span>
+          <span class="btn btn-primary">Continue<span t-if="badges.get('preparation')" class="badge rounded-pill text-bg-light ms-2"><t t-esc="badges.get('preparation')"/></span></span>
+        </a>
+
         <div class="d-flex justify-content-between align-items-center mb-3"><div><h3 class="h4 mb-1">Club overview</h3><p class="text-muted mb-0">Open an area at any time. A red badge means something needs attention there.</p></div></div>
         <div class="o_fed_club_grid mb-4">
           <a href="/my/teams" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-users"/></span><span class="o_fed_club_content"><strong>Teams</strong><small><t t-esc="dash.get('teams', 0)"/> active team(s)</small></span><span t-if="badges.get('teams')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('teams')"/></span><i class="fa fa-chevron-right text-muted"/></a>
-          <a href="/my/players" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-user"/></span><span class="o_fed_club_content"><strong>Players</strong><small><t t-esc="dash.get('players', 0)"/> player(s)</small></span><span t-if="badges.get('players')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('players')"/></span><i class="fa fa-chevron-right text-muted"/></a>
+          <a t-attf-href="/my/players#{'?approval=needed' if badges.get('players') else ''}" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-user"/></span><span class="o_fed_club_content"><strong>Players</strong><small><t t-esc="dash.get('players', 0)"/> player(s)</small></span><span t-if="badges.get('players')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('players')"/></span><i class="fa fa-chevron-right text-muted"/></a>
           <a href="/my/rosters" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-list-alt"/></span><span class="o_fed_club_content"><strong>Rosters and line-ups</strong><small><t t-esc="dash.get('rosters', 0)"/> roster(s) · game-day line-ups</small></span><span t-if="badges.get('rosters')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('rosters')"/></span><i class="fa fa-chevron-right text-muted"/></a>
           <a href="/my/competitions" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-trophy"/></span><span class="o_fed_club_content"><strong>Competitions</strong><small><t t-esc="dash.get('competitions', 0)"/> competition(s)</small></span><i class="fa fa-chevron-right text-muted"/></a>
-          <a href="/my/preparation" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-calendar-check-o"/></span><span class="o_fed_club_content"><strong>Game-day preparation</strong><small>Next steps per team before each game day</small></span><span t-if="badges.get('preparation')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('preparation')"/></span><i class="fa fa-chevron-right text-muted"/></a>
           <a href="/my/referee-duties" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-gavel"/></span><span class="o_fed_club_content"><strong>Officials</strong><small>Club referee duties and nominations</small></span><span t-if="badges.get('officials')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('officials')"/></span><i class="fa fa-chevron-right text-muted"/></a>
           <a href="/my/results" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-flag-checkered"/></span><span class="o_fed_club_content"><strong>Results</strong><small>Submitted results and follow-up</small></span><span t-if="badges.get('results')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('results')"/></span><i class="fa fa-chevron-right text-muted"/></a>
           <a href="/my/compliance" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-shield"/></span><span class="o_fed_club_content"><strong>Compliance</strong><small>Documents, approvals and renewals</small></span><i class="fa fa-chevron-right text-muted"/></a>
         </div>
-        <div class="d-flex flex-wrap gap-2"><a href="/my/season-registrations" class="btn btn-outline-secondary"><i class="fa fa-pencil-square-o me-2"/>Registrations</a><a href="/my/match-days" class="btn btn-outline-secondary"><i class="fa fa-calendar me-2"/>Match days</a><a href="/my/club" class="btn btn-outline-secondary"><i class="fa fa-building me-2"/>Club details</a></div>
+        <div class="d-flex flex-wrap gap-2"><a href="/my/season-registrations" class="btn btn-outline-secondary"><i class="fa fa-pencil-square-o me-2"/>Season registrations</a><a href="/my/match-days" class="btn btn-outline-secondary"><i class="fa fa-calendar me-2"/>Match days</a><a href="/my/club" class="btn btn-outline-secondary"><i class="fa fa-building me-2"/>Club details</a></div>
       </div>
 
-      <div t-if="federation_referee and not federation_representative" class="o_fed_portal_shell mb-4"><section class="o_fed_portal_hero"><div class="o_fed_portal_eyebrow">Dodgeball Belgium · Officials portal</div><h2 class="mt-2">My officiating assignments</h2><p>Review assigned matches and respond before each confirmation deadline.</p><div class="o_fed_portal_task"><div><strong><t t-esc="federation_pending_assignment_count or 0"/> pending assignment(s)</strong><div class="small text-muted"><t t-esc="federation_overdue_assignment_count or 0"/> overdue</div></div><a href="/my/referee-assignments" class="btn btn-primary">Review assignments</a></div></section></div>
-      <div t-if="not federation_representative and not federation_referee" class="alert alert-info" role="status"><i class="fa fa-info-circle me-2"/>You are not currently assigned as a club representative or match official. Please contact the federation for access.</div>
+      <!-- One section per other responsibility of the account. -->
+      <div t-if="overview.get('sections')" class="o_fed_overview_roles mb-4" t-att-data-journey-user="journey_user_id">
+        <section t-foreach="overview['sections']" t-as="section" class="card mb-4" t-att-data-overview-section="section['key']" t-attf-aria-labelledby="overview-#{section['key']}">
+          <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+              <div>
+                <h2 t-attf-id="overview-#{section['key']}" class="h4 mb-1"><t t-esc="section['title']"/> <span t-if="section['todo_count']" class="badge rounded-pill text-bg-danger"><t t-esc="section['todo_count']"/></span></h2>
+                <p class="text-muted mb-0" t-esc="section['intro']"/>
+              </div>
+              <a t-att-href="section['url']" class="btn btn-outline-primary" data-journey-open="1"><t t-esc="section['url_label']"/></a>
+            </div>
+            <t t-set="bucket" t-value="('now', 'To do')"/>
+            <t t-foreach="section['todo']" t-as="card"><t t-call="sports_federation_portal.connected_work_card"/></t>
+            <p t-if="not section['todo']" class="sf-empty text-muted mb-0">Nothing needs your attention here.</p>
+            <p t-if="section['todo_count'] &gt; len(section['todo'])" class="small text-muted mb-0">Showing the <t t-esc="len(section['todo'])"/> most urgent of <t t-esc="section['todo_count']"/>. Open the full list for the rest.</p>
+            <p t-if="section['waiting_count']" class="small text-muted mb-0"><t t-esc="section['waiting_count']"/> item(s) are waiting for someone else.</p>
+          </div>
+        </section>
+      </div>
+
+      <!-- Other modules add shortcuts here (match-day work, notifications, ...). -->
+      <nav class="o_fed_overview_shortcuts d-flex flex-wrap gap-2 mb-4" aria-label="More federation work"/>
+
+      <div t-if="not federation_representative and not overview.get('sections')" data-fed-overview="no-role" class="alert alert-info" role="status"><i class="fa fa-info-circle me-2"/>You are not currently assigned as a club representative or match official. Please contact the federation for access.</div>
     </template>
 
     <template id="portal_my_operation_tasks" name="Club Work Inbox">
       <t t-call="portal.portal_layout"><div class="container py-4">
-        <div class="d-flex justify-content-between gap-3 flex-wrap mb-4"><div><h2><i class="fa fa-inbox me-2"/>Club work inbox</h2><p class="text-muted mb-0">Deadlines, returned work and direct next steps in one place.</p></div><a href="/my/work" class="btn btn-outline-primary">Back to my work</a></div>
+        <div class="d-flex justify-content-between gap-3 flex-wrap mb-4"><div><h2><i class="fa fa-inbox me-2"/>Club work inbox</h2><p class="text-muted mb-0">Deadlines, returned work and direct next steps in one place.</p></div><a href="/my" class="btn btn-outline-primary">Back to overview</a></div>
         <div t-if="success" class="alert alert-success" role="status"><t t-esc="success"/></div><div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div><div class="card mb-4"><div class="card-body">
           <strong>Next match and club actions</strong>
           <div t-if="next_match" class="mt-2">
@@ -80,8 +106,8 @@
                         </h2>
                     </div>
                     <div class="col-auto">
-                        <a href="/my/home" class="btn btn-outline-secondary btn-sm">
-                            <i class="fa fa-arrow-left me-1"/>Back
+                        <a href="/my" class="btn btn-outline-secondary btn-sm">
+                            <i class="fa fa-arrow-left me-1"/>Back to overview
                         </a>
                     </div>
                 </div>
@@ -90,6 +116,17 @@
                     <t t-esc="error"/>
                     <p t-if="error_hint" class="small text-muted mt-1 mb-0"><t t-esc="error_hint"/></p>
                 </div>
+
+                <!-- Representatives of several clubs choose which club to show. -->
+                <form t-if="clubs and len(clubs) &gt; 1" method="GET" action="/my/club" class="d-flex flex-wrap align-items-end gap-2 mb-3">
+                    <div>
+                        <label class="form-label mb-1" for="club_selector">Club</label>
+                        <select id="club_selector" name="club" class="form-select form-select-sm">
+                            <option t-foreach="clubs" t-as="item" t-att-value="item.id" t-att-selected="item == club"><t t-esc="item.name"/></option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Show</button>
+                </form>
 
                 <t t-if="club">
                     <div class="card mb-4">
@@ -399,6 +436,15 @@
 
                 <form action="/my/players/new" method="POST">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                    <div t-if="clubs and len(clubs) &gt; 1" class="mb-3">
+                        <label class="form-label" for="player_club">Club <span class="text-danger">*</span></label>
+                        <select id="player_club" name="club_id" class="form-select" required="required">
+                            <option value="">— Select —</option>
+                            <option t-foreach="clubs" t-as="item" t-att-value="item.id" t-att-selected="item.id == selected_club_id"><t t-esc="item.name"/></option>
+                        </select>
+                    </div>
+                    <input t-elif="clubs" type="hidden" name="club_id" t-att-value="clubs[0].id"/>
 
                     <div class="mb-3">
                         <label class="form-label" for="player_first_name">First Name <span class="text-danger">*</span></label>

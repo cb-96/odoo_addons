@@ -12,25 +12,19 @@
         </field>
     </record>
 
-    <!-- Roster: hide players of higher-ranked teams and show who plays up. -->
+    <!-- Roster: explain the ranking rule and show who plays up. -->
     <record id="view_federation_team_roster_form_club_rank" model="ir.ui.view">
         <field name="name">federation.team.roster.form.club.rank</field>
         <field name="model">federation.team.roster</field>
         <field name="inherit_id" ref="sports_federation_rosters.view_federation_team_roster_form"/>
         <field name="arch" type="xml">
             <xpath expr="//page[@name='roster_lines']/field[@name='line_ids']" position="before">
-                <!-- Technical relay for the player picker domain below. -->
-                <field name="club_rank_blocked_player_ids" invisible="1"/>
-                <field name="same_division_player_ids" invisible="1"/>
                 <p class="text-muted small">
                     Players of lower-ranked teams of the club can be added here to play up.
                     After two matches for this team they move to this team permanently.
                     Players of higher-ranked teams cannot be added, and neither can players
                     already on another team of the club in the same division.
                 </p>
-            </xpath>
-            <xpath expr="//page[@name='roster_lines']/field[@name='line_ids']/list/field[@name='player_id']" position="attributes">
-                <attribute name="domain">[('club_id', '=', parent.club_id), ('id', 'not in', parent.rostered_player_ids), ('id', 'not in', parent.club_rank_blocked_player_ids), ('id', 'not in', parent.same_division_player_ids), '|', ('gender', '=', False), ('gender', 'in', [parent.player_gender_a, parent.player_gender_b])]</attribute>
             </xpath>
             <xpath expr="//page[@name='roster_lines']/field[@name='line_ids']/list/field[@name='status']" position="after">
                 <field name="club_rank_note" optional="show"/>

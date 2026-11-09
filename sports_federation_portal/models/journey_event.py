@@ -7,7 +7,7 @@ from .. import journey_instrumentation as instrumentation
 
 _logger = logging.getLogger(__name__)
 RETENTION_PARAMETER = "federation.journey_event_retention_days"
-DEFAULT_RETENTION_DAYS = 180
+DEFAULT_RETENTION_DAYS = 90
 
 
 def current_session():

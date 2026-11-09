@@ -11,7 +11,7 @@ Role-oriented self-service portal for club representatives, officials and match-
 ### Club representative
 
 - manage club teams and players
-- submit season and tournament registrations
+- register teams for a season and enter competitions
 - prepare and activate rosters
 - complete match sheets and readiness tasks
 - nominate officials
@@ -102,18 +102,26 @@ cues. The focused accessibility suite covers these contracts together with
 mobile table and action wrapping.
 
 
-## Club representative home
+## Portal overview
 
-**My account** (`/my` and `/my/home`) opens the club overview for club
-representatives: one page with teams, players, rosters, competitions,
-game-day preparation, officials, results, compliance and club details.
-**My work** (`/my/work`) stays one click away and links back with
-**Club overview**. Users without a club representative record are still
-redirected to **My work** when they have another federation role.
+**My account** (`/my` and `/my/home`) is the one overview for every portal
+user. Club representatives see their club first: **Prepare your team**
+(`/my/preparation`, the single next-step flow per team) and the club areas
+(teams, players, rosters and line-ups, competitions, officials, results,
+compliance and club details), each with a badge when something needs
+attention. Every other responsibility of the account gets its own section
+below: official assignments, competition planning, result review and the
+federation work queue. A section shows the five most urgent items and links
+to its full list. Other modules add shortcuts (for example match-day work).
 
-## Club competition data tutorial
+The former role switchboard `/my/work` is retired; its old URLs redirect
+permanently (`/my/work` to `/my`, `/my/work/reviews` to `/my/result-reviews`,
+`/my/work/tasks/<id>/open` to `/my/action-items/<id>/open`,
+`/my/work/registrations/<id>` to `/my/season-registrations/<id>/roster`).
 
-Club representatives use **My Account > Data API** (`/my/data-api`) for live URLs, curl and JavaScript examples, privacy rules, and caching guidance.
+Portal layout values are limited to the representative and official persona
+lookups; counts are computed by the overview only, so other portal pages do
+not refresh tasks on every load.
 
 
 ## Owned portal command boundaries
@@ -143,10 +151,10 @@ Manager and club portal refreshes reuse operational tasks by their global source
 Task queues expose overdue status for unfinished tasks whose deadline has passed. Tasks without a deadline and completed tasks are not overdue.
 
 ## Role workspaces and scoped handoffs
-`/my/work` is the role switchboard for club/team preparation, referee
-assignments, competition planning, result review, and manager operations. It
-links to existing workflow owners rather than introducing a second task or
-approval system. The manager queue route is
+The portal overview (`/my`) has a section per role for club/team preparation,
+referee assignments, competition planning, result review, and manager
+operations. It links to existing workflow owners rather than introducing a
+second task or approval system. The manager queue route is
 `/federation/operations/action-items`.
 
 Team-scoped representatives see and assign work only for their assigned team;

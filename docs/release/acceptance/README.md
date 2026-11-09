@@ -15,7 +15,7 @@ independent transactions, restored data and novice users.
 | [Human acceptance test](human-acceptance-test.md) | Full federation walkthrough with realistic roles, data and devices before tagging a candidate |
 | [Novice usability](novice-usability.md) | Protocol for first-time users across the main journeys |
 | [Performance qualification](performance-qualification.md) | Competition performance measurements |
-| [Role journeys](role-journeys.md) | `/my/work`, task projection and return navigation |
+| [Role journeys](role-journeys.md) | Portal overview (`/my`), task projection and return navigation |
 | [Duty coverage and restored-database](duty-coverage.md) | Official coverage, plus restored-database, concurrency, recovery and role-journey validation |
 | [Communications](communications.md) | Participant inbox, preferences, digests and delivery recovery |
 | [Mobile match day](mobile-match-day.md) | Court capture, interruption recovery, official and manager mobile pages |

@@ -29,17 +29,17 @@ class FederationPortalPrivilege(models.AbstractModel):
         "federation.competition.entry": {
             "window_id",
             "team_id",
-            "club_id",
             "submission_note",
             "submitted_by_id",
         },
         "federation.document.submission": {
             "requirement_id",
-            "partner_id",
+            # Target fields of the compliance requirement (club, official or
+            # club representative; players for player requirements).
             "club_id",
             "player_id",
-            "official_id",
-            "attachment_id",
+            "referee_id",
+            "club_representative_id",
             "name",
             "notes",
             "status",
@@ -71,7 +71,6 @@ class FederationPortalPrivilege(models.AbstractModel):
             "submitted_on",
         },
         "federation.player": {
-            "partner_id",
             "first_name",
             "last_name",
             "birth_date",
@@ -92,9 +91,7 @@ class FederationPortalPrivilege(models.AbstractModel):
         "federation.team": {
             "name",
             "club_id",
-            "season_id",
             "category",
-            "category_id",
             "gender",
             "email",
             "phone",
@@ -104,9 +101,7 @@ class FederationPortalPrivilege(models.AbstractModel):
             "club_id",
             "season_id",
             "competition_id",
-            "game_day_id",
             "season_registration_id",
-            "state",
             "name",
             "valid_from",
             "valid_to",
@@ -115,7 +110,6 @@ class FederationPortalPrivilege(models.AbstractModel):
             "roster_id",
             "player_id",
             "license_id",
-            "shirt_number",
             "is_captain",
             "status",
             "jersey_number",

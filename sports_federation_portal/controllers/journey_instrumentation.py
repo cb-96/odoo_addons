@@ -26,9 +26,9 @@ def record_entry(journey, screen):
 
 class InstrumentedRoleJourneys(ConnectedRoleJourneys):
     @http.route()
-    def role_home(self, **kw):
-        response = super().role_home(**kw)
-        record_entry("work", "work_home")
+    def home(self, **kw):
+        response = super().home(**kw)
+        record_entry("work", "overview")
         return response
 
     @http.route()

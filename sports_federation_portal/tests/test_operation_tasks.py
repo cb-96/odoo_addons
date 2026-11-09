@@ -250,8 +250,8 @@ class TestFederationOperationTasks(TransactionCase):
         task = self.env["federation.operation.task"].search(
             [
                 ("task_type", "=", "parental_consent"),
-                ("source_model", "=", line._name),
-                ("source_record_id", "=", line.id),
+                ("source_model", "=", player._name),
+                ("source_record_id", "=", player.id),
                 ("state", "!=", "done"),
             ],
             limit=1,
@@ -259,10 +259,78 @@ class TestFederationOperationTasks(TransactionCase):
 
         self.assertTrue(task)
         self.assertEqual(task.priority, "2")
+        self.assertEqual(task.roster_id, line.roster_id)
+        self.assertEqual(
+            task.action_url, "/my/players/%s/parental-approvals" % player.id
+        )
         self.assertEqual(
             task.action_open_source()["res_model"],
             "federation.player.parental.approval",
         )
+
+    def test_parental_consent_is_one_task_per_player(self):
+        """A minor on two senior rosters needs one approval, so one task."""
+        player = self.env["federation.player"].create(
+            {
+                "first_name": "Twice",
+                "last_name": "Rostered",
+                "birth_date": "2013-01-01",
+                "club_id": self.team.club_id.id,
+            }
+        )
+        second_team = self.env["federation.team"].create(
+            {
+                "name": "Action Queue Second Team",
+                "club_id": self.team.club_id.id,
+                "category": "senior",
+                "gender": "mixed",
+            }
+        )
+        # Lines are created while an approval is valid, as in real use; the
+        # approval is withdrawn afterwards.
+        approval = self.env["federation.player.parental.approval"].create(
+            {
+                "player_id": player.id,
+                "guardian_name": "Twice Guardian",
+                "approval_date": "2020-01-01",
+                "valid_until": "2030-01-01",
+                "approval_document": b"c2lnbmVk",
+            }
+        )
+        approval.action_verify()
+        for team in self.team | second_team:
+            roster = self.env["federation.team.roster"].create(
+                {
+                    "team_id": team.id,
+                    "season_id": self.season.id,
+                    "competition_id": self.competition.id,
+                }
+            )
+            self.env["federation.team.roster.line"].create(
+                {"roster_id": roster.id, "player_id": player.id}
+            )
+        approval.revocation_reason = "Consent withdrawn"
+        approval.action_revoke()
+
+        self.env["federation.operation.task"].sync_for_user(user=self.manager)
+        tasks = self.env["federation.operation.task"].search(
+            [("task_type", "=", "parental_consent"), ("state", "!=", "done")]
+        )
+        lines = self.env["federation.team.roster.line"].search(
+            [("player_id", "=", player.id)]
+        )
+        tasks = tasks.filtered(
+            lambda task: (
+                task.source_model == "federation.player"
+                and task.source_record_id == player.id
+            )
+            or (
+                task.source_model == "federation.team.roster.line"
+                and task.source_record_id in lines.ids
+            )
+        )
+        self.assertEqual(len(tasks), 1)
+        self.assertEqual(tasks.source_model, "federation.player")
 
     def test_shared_gameday_lineup_projects_one_task_per_team_and_day(self):
         away_club = self.env["federation.club"].create({"name": "Lineup Away Club"})

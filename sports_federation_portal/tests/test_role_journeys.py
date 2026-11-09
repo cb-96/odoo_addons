@@ -136,7 +136,8 @@ class TestJourneyTasks(TransactionCase):
         self.assertEqual(len(tasks), 1)
         self.assertEqual(tasks.journey_team_id, self.team)
         self.assertEqual(
-            tasks.action_url, "/my/work/registrations/%s" % self.registration.id
+            tasks.action_url,
+            "/my/season-registrations/%s/roster" % self.registration.id,
         )
         self.assertEqual(
             self.env["federation.team.roster"].search_count(
@@ -626,21 +627,22 @@ class TestJourneyHttp(HttpCase):
             )
             cr.commit()
 
-    def test_role_home_renders_for_ordinary_role_users(self):
+    def test_overview_renders_a_section_per_role(self):
         roles = (
-            ("journey.club@example.test", "Club and team preparation"),
-            ("journey.team@example.test", "Club and team preparation"),
-            ("journey.official@example.test", "My official assignments"),
-            ("journey.planner@example.test", "Competition planning"),
-            ("journey.reviewer@example.test", "Result review"),
-            ("journey.manager@example.test", "Manager work queue"),
+            ("journey.club@example.test", 'class="o_fed_club_grid'),
+            ("journey.team@example.test", 'class="o_fed_club_grid'),
+            ("journey.official@example.test", 'data-overview-section="official"'),
+            ("journey.planner@example.test", 'data-overview-section="planner"'),
+            ("journey.reviewer@example.test", 'data-overview-section="reviewer"'),
+            ("journey.manager@example.test", 'data-overview-section="manager"'),
         )
         for login, expected in roles:
             with self.subTest(role=login):
                 self.authenticate(login, "journey-test-password")
-                response = self.url_open("/my/work")
+                response = self.url_open("/my")
                 self.assertEqual(response.status_code, 200)
                 self.assertIn(expected, response.text)
+                self.assertNotIn('href="/my/work', response.text)
 
     def test_preparation_counts_game_days_of_a_team_without_roster(self):
         """Matches exist for the team, so its line-up check must not say there are none.
@@ -733,45 +735,52 @@ class TestJourneyHttp(HttpCase):
 
     def test_review_queue_renders_for_reviewer_without_admin(self):
         self.authenticate("journey.reviewer@example.test", "journey-test-password")
-        response = self.url_open("/my/work/reviews")
+        response = self.url_open("/my/result-reviews")
         self.assertEqual(response.status_code, 200)
         self.assertIn("Result review", response.text)
 
     def test_context_is_not_cached(self):
         self.authenticate("journey.club@example.test", "journey-test-password")
-        response = self.url_open("/my/work/context")
+        response = self.url_open("/my/journey-context")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers.get("Cache-Control"), "no-store")
         self.assertEqual(response.json()["user_id"], self.club_user.id)
 
-    def test_connected_groups_render_for_each_role(self):
-        for role in ("club", "official", "planner", "reviewer", "manager"):
-            self.authenticate("journey.%s@example.test" % role, "journey-test-password")
-            response = self.url_open("/my/work?role=%s" % role)
-            self.assertEqual(response.status_code, 200)
-            from lxml import html
+    def test_overview_sections_render_work_cards(self):
+        from lxml import html
 
-            tree = html.fromstring(response.text)
-            self.assertTrue(tree.xpath('//*[contains(@class, "sf-connected-work")]'))
-            for node in tree.xpath(
-                '//*[@data-journey-bucket="waiting" or @data-journey-bucket="recent"]'
-            ):
-                self.assertEqual(node.tag, "details")
-                self.assertNotIn("open", node.attrib)
+        for role in ("official", "planner", "reviewer", "manager"):
+            with self.subTest(role=role):
+                self.authenticate(
+                    "journey.%s@example.test" % role, "journey-test-password"
+                )
+                response = self.url_open("/my")
+                self.assertEqual(response.status_code, 200)
+                tree = html.fromstring(response.text)
+                section = tree.xpath('//section[@data-overview-section="%s"]' % role)
+                self.assertTrue(section)
+                self.assertTrue(section[0].xpath(".//a[@data-journey-open]"))
 
-    def test_connected_role_switch_cannot_grant_access(self):
-        self.authenticate("journey.club@example.test", "journey-test-password")
-        response = self.url_open("/my/work?role=reviewer")
-        self.assertEqual(response.status_code, 403)
-
-    def test_connected_default_home_and_generic_escape(self):
+    def test_overview_shows_only_the_roles_of_the_account(self):
         self.authenticate("journey.club@example.test", "journey-test-password")
         response = self.url_open("/my")
         self.assertEqual(response.status_code, 200)
-        self.assertIn("My work", response.text)
-        generic = self.url_open("/my?generic=1")
-        self.assertEqual(generic.status_code, 200)
-        self.assertNotIn("data-journey-bucket=", generic.text)
+        for role in ("reviewer", "planner", "manager"):
+            self.assertNotIn('data-overview-section="%s"' % role, response.text)
+
+    def test_retired_work_routes_redirect(self):
+        self.authenticate("journey.club@example.test", "journey-test-password")
+        for old, new in (
+            ("/my/work", "/my"),
+            ("/my/work?role=club", "/my"),
+            ("/my/work/reviews", "/my/result-reviews"),
+            ("/my/work/tasks/12/open", "/my/action-items/12/open"),
+            ("/my/work/registrations/7", "/my/season-registrations/7/roster"),
+        ):
+            with self.subTest(path=old):
+                response = self.url_open(old, allow_redirects=False)
+                self.assertEqual(response.status_code, 301)
+                self.assertTrue(response.headers["Location"].split("?")[0].endswith(new))
 
     def test_my_account_opens_club_overview_for_club_representative(self):
         self.authenticate("journey.club@example.test", "journey-test-password")
@@ -781,29 +790,14 @@ class TestJourneyHttp(HttpCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertIn("o_fed_club_grid", response.text)
                 self.assertIn('href="/my/club"', response.text)
-                self.assertIn('href="/my/work"', response.text)
+                self.assertIn('href="/my/preparation"', response.text)
 
-    def test_my_account_still_opens_work_for_non_representatives(self):
+    def test_my_account_stays_on_overview_for_non_representatives(self):
         self.authenticate("journey.reviewer@example.test", "journey-test-password")
         response = self.url_open("/my", allow_redirects=False)
-        self.assertIn(response.status_code, (301, 302, 303))
-        self.assertTrue(response.headers["Location"].endswith("/my/work"))
-
-    def test_work_home_links_back_to_club_overview_for_representative(self):
-        self.authenticate("journey.club@example.test", "journey-test-password")
-        response = self.url_open("/my/work")
-        self.assertIn("Club overview", response.text)
-        self.authenticate("journey.reviewer@example.test", "journey-test-password")
-        response = self.url_open("/my/work")
-        self.assertNotIn("Club overview", response.text)
-
-    def test_connected_role_remembered(self):
-        self.authenticate("journey.reviewer@example.test", "journey-test-password")
-        self.assertEqual(self.url_open("/my/work?role=reviewer").status_code, 200)
-        response = self.url_open("/my/work")
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Result review", response.text)
-        self.assertNotIn('id="journey-role"', response.text)
+        self.assertIn('data-overview-section="reviewer"', response.text)
+        self.assertNotIn("o_fed_club_grid", response.text)
 
     def test_connected_participation_summary(self):
         self.authenticate("journey.club@example.test", "journey-test-password")
@@ -817,22 +811,13 @@ class TestJourneyHttp(HttpCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Completed work", response.text)
 
-    def test_minimal_home_rejects_foreign_and_malformed_club(self):
+    def test_club_details_reject_foreign_and_malformed_club(self):
         self.authenticate("journey.club@example.test", "journey-test-password")
         for value in ("not-a-number", "-1", "999999999"):
-            self.assertEqual(
-                self.url_open("/my/work?role=club&club=" + value).status_code, 403
-            )
-
-    def test_minimal_home_single_role_has_no_switch_control(self):
-        from lxml import html
-
-        self.authenticate("journey.club@example.test", "journey-test-password")
-        response = self.url_open("/my/work?role=club")
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(
-            html.fromstring(response.text).xpath('//select[@id="journey-role"]')
-        )
+            with self.subTest(club=value):
+                self.assertEqual(
+                    self.url_open("/my/club?club=" + value).status_code, 403
+                )
 
     def test_preparation_rejects_forged_context(self):
         self.authenticate("journey.club@example.test", "journey-test-password")

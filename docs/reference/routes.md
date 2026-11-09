@@ -73,17 +73,17 @@ Owner: `sports_federation_portal` unless noted. Auth: user (portal).
 
 | Method | Route | Purpose |
 | --- | --- | --- |
-| GET | `/my/club` | Club overview: teams, rosters, competitions and what needs attention |
-| GET | `/my/work` | Role-aware home: club/team preparation, official assignments, planning, follow-up and reviews |
-| GET | `/my/work/context` | Switch active role or club context |
-| GET | `/my/work/reviews` | Results waiting for the user's verification or approval |
-| GET | `/my/work/registrations/<registration_id>` | Missing-roster explanation for a confirmed registration |
-| GET | `/my/work/tasks/<task_id>/open` | Open the source record of a task after rechecking access |
+| GET | `/my`, `/my/home` | Portal overview: the club first, then one section per other role (official, planning, result review, federation work queue) |
+| GET | `/my/club` | Club details; `?club=<id>` for representatives of several clubs |
+| GET | `/my/journey-context` | User and database id for return navigation (not cached) |
+| GET | `/my/result-reviews` | Results waiting for the user's verification or approval |
+| GET | `/my/season-registrations/<registration_id>/roster` | Missing-roster explanation for a confirmed registration |
+| GET | `/my/action-items/<task_id>/open` | Open the source record of a task after rechecking access |
+| GET | `/my/work`, `/my/work/…` | Retired: permanent redirects to the routes above |
 | GET | `/my/action-items` | Club task list |
 | POST | `/my/action-items/assign` | Assign a task to a team or club representative |
 | GET | `/my/milestones` | Club milestones |
 | GET | `/my/preparation` | Team preparation: registration, roster, line-ups and consent documents |
-| GET | `/my/data-api` | Tutorial for the public data API |
 
 ### Teams, players and registrations
 

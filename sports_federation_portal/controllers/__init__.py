@@ -12,7 +12,6 @@ from . import competition_portal
 
 from . import qol_search
 
-from . import data_api
 from . import parental_approval_portal
 
 from . import preparation_journey
@@ -22,4 +21,3 @@ from . import connected_journeys
 from . import journey_instrumentation
 from . import roster_bulk
 
-from . import club_dashboard
