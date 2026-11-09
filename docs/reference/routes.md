@@ -92,6 +92,10 @@ Owner: `sports_federation_portal` unless noted. Auth: user (portal).
 | GET | `/my/teams`; GET, POST `/my/teams/new` | Club teams; create a team (`federation.team._portal_create_team`) |
 | GET | `/my/players`; GET, POST `/my/players/new` | Club players; create a player (`federation.player._portal_create_player`) |
 | GET, POST | `/my/players/<player_id>/parental-approvals[/upload]`, GET `…/<approval_id>/download` | Parental approval evidence |
+| GET | `/my/availability`; POST `/my/availability/new`; GET `/my/availability/<request_id>`; POST `…/answer`, `…/remind` | Optional player availability per game day (clubs that switched it on) |
+| POST | `/my/club/player-availability` | Whole-club representative switches player availability on or off |
+| GET, POST | `/availability/<token>` | Player answers through the personal link in the email (public, no account) |
+| GET | `/my/club-invoices` | Club invoices with online payment (owner: `sports_federation_accounting`) |
 | GET | `/my/season-registrations`; GET, POST `/my/season-registration/new`; POST `/my/season-registration/<reg_id>/cancel` | Season registrations (`federation.season.registration._portal_submit_registration_request`) |
 | GET | `/my/competitions`, `/my/competitions/<edition_id>` | Competitions the club's teams take part in |
 | GET | `/my/competition-entries`, `/my/competition-entries/<entry_id>` | Competition entries |

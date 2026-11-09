@@ -19,3 +19,13 @@ Provider sandbox callbacks, partial payments, refunds, multi-company rules and
 live reconciliation are not yet runtime-qualified; see the
 [roadmap](../docs/roadmap.md#known-gaps) and the
 [platform hardening acceptance suite](../docs/release/acceptance/platform-hardening.md).
+
+## Club invoices in the portal
+
+Whole-club representatives see **Invoices** on the club overview, with a badge
+for unpaid invoices, and the list at `/my/club-invoices`: posted invoices of
+charges owned by their clubs (`charge_owner = club`). **View and pay** opens
+Odoo's invoice page through its access link, where the club can download the
+invoice and pay online with the configured payment providers. Team-only
+representatives do not see club invoices. This addon depends on
+`sports_federation_portal` for the portal pages.

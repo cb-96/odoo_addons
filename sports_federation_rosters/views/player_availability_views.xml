@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="federation_club_form_player_availability" model="ir.ui.view">
+        <field name="name">federation.club.form.player.availability</field>
+        <field name="model">federation.club</field>
+        <field name="inherit_id" ref="sports_federation_base.view_federation_club_form"/>
+        <field name="arch" type="xml">
+            <field name="mobile" position="after">
+                <field name="player_availability_enabled"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

@@ -1,5 +1,6 @@
 from . import main
 from . import web_auth
+from . import player_availability
 from . import officiating
 from . import rosters
 from . import gameday_participation

@@ -239,3 +239,26 @@ The portal's primary-roster lookup falls back to the team's season baseline
 roster (`federation.team.roster._pick_season_baseline`) when no roster is linked
 to the registration, so a roster created for a competition is found and adopted
 instead of a second roster being offered.
+
+## Player availability (optional per club)
+
+A whole-club representative switches it on or off under **Club details**
+(`/my/club`). It is off by default, so clubs that already use Spond or another
+app are not affected. When it is on, **Player availability**
+(`/my/availability`) lists the upcoming published game days of the user's
+teams. **Ask players** emails each active roster player a personal link
+(`/availability/<token>`, no account needed) to answer Available, Maybe or
+Not available with an optional note, until the game day. The club can enter
+answers itself for players without an email address and send one reminder to
+players who did not answer. Answers appear as badges next to the players on the
+game-day line-up page and in the backend line-up wizard; nothing is selected
+automatically. Scope checks and writes live in
+`federation.player.availability.request` portal commands.
+
+## Translations
+
+The portal ships Dutch (`i18n/nl.po`) and French (`i18n/fr.po`) translations,
+used for Dutch (Belgium) and French (Belgium). Activate the languages under
+**Settings > Languages** and add them to the website; portal users then see
+their own language. Messages that controllers pass as plain text in the URL
+(for example "Team created successfully") are not translated yet.

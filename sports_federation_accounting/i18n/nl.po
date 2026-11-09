@@ -1,0 +1,100 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+#	* sports_federation_accounting
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Language: nl\n"
+"Plural-Forms: \n"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "<i class=\"fa fa-arrow-left me-1\"/>Back to overview"
+msgstr "<i class=\"fa fa-arrow-left me-1\"/>Terug naar het overzicht"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "<i class=\"fa fa-file-text-o me-2\"/>Club invoices"
+msgstr "<i class=\"fa fa-file-text-o me-2\"/>Facturen van de club"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_overview_invoices
+msgid "<span class=\"o_fed_club_icon\"><i class=\"fa fa-file-text-o\"/></span><span class=\"o_fed_club_content\"><strong>Invoices</strong><small>Fees, payments and receipts</small></span>"
+msgstr "<span class=\"o_fed_club_icon\"><i class=\"fa fa-file-text-o\"/></span><span class=\"o_fed_club_content\"><strong>Facturen</strong><small>Kosten, betalingen en betaalbewijzen</small></span>"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "<span class=\"visually-hidden\">Actions</span>"
+msgstr "<span class=\"visually-hidden\">Acties</span>"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "Amount"
+msgstr "Bedrag"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "Date"
+msgstr "Datum"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "Due"
+msgstr "Vervaldatum"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "For"
+msgstr "Voor"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "Invoice"
+msgstr "Factuur"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "Invoices for your club's registrations, entries and other federation charges. Open an invoice to download it or pay online."
+msgstr "Facturen voor de inschrijvingen en andere kosten van je club bij de federatie. Open een factuur om ze te downloaden of online te betalen."
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "Invoices of your club."
+msgstr "Facturen van je club."
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "Overdue"
+msgstr "Te laat"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "Status"
+msgstr "Status"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "Still to pay"
+msgstr "Nog te betalen"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "View"
+msgstr "Bekijken"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "View and pay"
+msgstr "Bekijken en betalen"
+
+#. module: sports_federation_accounting
+#: model_terms:ir.ui.view,arch_db:sports_federation_accounting.portal_club_invoices
+msgid "Your club has no invoices."
+msgstr "Je club heeft geen facturen."

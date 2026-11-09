@@ -1,4 +1,6 @@
 from . import test_club_representative
+from . import test_portal_translations
+from . import test_player_availability_portal
 from . import test_http_smoke
 from . import test_officiating_portal_access
 from . import test_player_portal_access

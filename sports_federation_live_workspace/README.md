@@ -153,3 +153,12 @@ their original keys. Logic shared with the server is checked by
 `ci/test_court_app_logic.py` and `ci/js/test_court_app.mjs` against
 `ci/fixtures/court_scoring_cases.json`.
 
+## Printing a game day
+
+The game-day form has **Print schedule** and **Print score sheets** once the
+game day has a live publication. The schedule is one landscape page to pin at
+the venue: courts across, start times (event time zone) down, each match with
+its division, teams and officials, followed by the club duties per club. A
+match moved on the day prints on its operational court and time. **Print score
+sheets** prints the existing score sheet of every published match in schedule
+order as one PDF.

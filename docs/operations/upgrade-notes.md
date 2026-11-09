@@ -36,6 +36,45 @@ passed unless they ran.
 
 ## Entries
 
+### Game-day printouts, club invoices, Dutch and French portal, optional player availability
+
+Affected modules: `sports_federation_live_workspace` 19.0.1.7.0 → 19.0.1.8.0,
+`sports_federation_accounting` 19.0.1.1.1 → 19.0.1.2.0,
+`sports_federation_rosters`, `sports_federation_portal` (models, views,
+translations; manifest versions unchanged).
+
+**Data changes**: new stored field `federation.club.player_availability_enabled`
+(default off) and new models `federation.player.availability.request` and
+`federation.player.availability` with ACLs in the rosters CSV. New report
+`action_report_gameday_schedule` with an A4 landscape paper format. The
+accounting addon now depends on `sports_federation_portal`; the live workspace
+declares its existing use of `sports_federation_calendar`. New
+`i18n/nl.po` and `i18n/fr.po` in the portal, rosters, accounting and live
+workspace addons. No migration script.
+
+**Behaviour to verify**: on a game day with a live publication, **Print
+schedule** shows courts across and event-local times down with teams,
+officials and club duties; **Print score sheets** prints every published match.
+A whole-club representative sees **Invoices** on the club overview with an
+unpaid badge, and **View and pay** opens the invoice payment page. Activate
+Dutch (Belgium) and French (Belgium) under Settings > Languages (this loads the
+new files) and on the website, then check the club overview, rosters,
+line-ups, officials and results pages in both languages. Under Club details,
+switch **Player availability** on, ask players for an upcoming game day, answer
+through the emailed link (outgoing mail must be configured), enter an answer for
+a player without email, and check the badges on the line-up page and in the
+backend line-up wizard. With the option off, nothing appears.
+
+**Dry-run evidence**: Python syntax, XML well-formedness, template XPath
+anchors, `.po` round-trip parsing and placeholder/markup checks of every
+translation, and the static contract checks ran in the patch environment. No
+Odoo upgrade, Odoo test run, PDF rendering, email delivery or browser check ran
+there. Run the `sf_gameday_print`, `sf_club_invoices`, `sf_player_availability`
+and `sf_portal_translations` tests and upgrade the four modules on a staging copy.
+
+**Rollback**: code-only rollback removes the pages and buttons; restore the
+pre-upgrade backup to remove the new tables and the club field.
+
 ### Portal overview replaces `/my/work`; club portal cleanup
 
 Affected modules: `sports_federation_portal` 19.0.7.14.x → 19.0.7.15.0,

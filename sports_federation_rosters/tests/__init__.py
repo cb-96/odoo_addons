@@ -1,4 +1,5 @@
 from . import test_rosters
+from . import test_player_availability
 from . import test_match_sheets
 from . import test_participant_readiness
 from . import test_season_registration_handoff

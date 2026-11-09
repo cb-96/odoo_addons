@@ -332,3 +332,12 @@ that the player can no longer play for that team.
 The game-day line-up wizard, the match sheet and the portal line-up page warn
 before a match that would complete the move.
 
+## Player availability
+
+Clubs can opt in to asking players before a game day
+(`federation.club.player_availability_enabled`, off by default). A request per
+team and game day (`federation.player.availability.request`) holds one answer
+per active roster player (`federation.player.availability`) with a personal
+token for the email link. Answers can change until the game day and are shown,
+not applied, in the game-day line-up wizard. The portal pages are described in
+the portal README.

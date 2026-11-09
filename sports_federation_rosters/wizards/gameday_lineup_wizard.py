@@ -248,3 +248,27 @@ class FederationGamedayLineupWizardLine(models.TransientModel):
     roster_line_id = fields.Many2one("federation.team.roster.line", required=True)
     is_captain = fields.Boolean()
     jersey_number = fields.Char()
+    availability = fields.Selection(
+        [
+            ("pending", "No answer yet"),
+            ("yes", "Available"),
+            ("maybe", "Maybe"),
+            ("no", "Not available"),
+        ],
+        compute="_compute_availability",
+        help="The player's answer to the club's availability request for this "
+        "game day. Empty when the club does not ask its players.",
+    )
+
+    @api.depends("player_id", "wizard_id.team_id", "wizard_id.matchday_id")
+    def _compute_availability(self):
+        Request = self.env["federation.player.availability.request"]
+        cache = {}
+        for line in self:
+            key = (line.wizard_id.team_id.id, line.wizard_id.matchday_id.id)
+            if key not in cache:
+                cache[key] = Request._lineup_availability(
+                    line.wizard_id.team_id, line.wizard_id.matchday_id
+                )
+            answer = cache[key].get(line.player_id.id)
+            line.availability = answer["response"] if answer else False

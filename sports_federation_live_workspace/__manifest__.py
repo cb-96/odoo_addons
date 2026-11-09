@@ -1,10 +1,11 @@
 {
     "name": "Court Operations and Visual Planning",
-    "version": "19.0.1.7.0",
+    "version": "19.0.1.8.0",
     "license": "LGPL-3",
     "depends": [
         "web",
         "sports_federation_duty_coverage",
+        "sports_federation_calendar",
         "sports_federation_result_control",
         "sports_federation_matchday",
         "sports_federation_scheduling",
@@ -17,6 +18,8 @@
         "views/season_board_views.xml",
         "views/court_device_views.xml",
         "views/court_device_portal.xml",
+        "views/gameday_print_views.xml",
+        "report/gameday_schedule_report.xml",
     ],
     "assets": {
         "web.assets_frontend": [

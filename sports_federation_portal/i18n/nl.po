@@ -1,0 +1,4377 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+#	* sports_federation_portal
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Language: nl\n"
+"Plural-Forms: \n"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+#, python-format
+msgid "%(approved)s of %(total)s players under %(age)s have a valid parental approval; %(action)s need action and %(pending)s await review."
+msgstr "%(approved)s van %(total)s spelers jonger dan %(age)s hebben een geldige ouderlijke toestemming; %(action)s vragen actie en %(pending)s wachten op nazicht."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/qol.py:0
+#, python-format
+msgid "%(copied)s player(s) copied; %(skipped)s skipped for review."
+msgstr "%(copied)s speler(s) gekopieerd; %(skipped)s overgeslagen voor nazicht."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/roster_bulk.py:0
+#, python-format
+msgid "%(count)s player(s) added."
+msgstr "%(count)s speler(s) toegevoegd."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+#, python-format
+msgid "%(count)s upcoming game day(s). Create the roster first, then choose the players for each game day."
+msgstr "%(count)s komende speeldag(en). Maak eerst de selectie aan en kies dan de spelers voor elke speeldag."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+#, python-format
+msgid "%(open)s of %(total)s upcoming game day(s) still need a line-up."
+msgstr "%(open)s van %(total)s komende speeldag(en) hebben nog een opstelling nodig."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/qol.py:0
+#, python-format
+msgid "%(record)s: %(error)s"
+msgstr "%(record)s: %(error)s"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+#, python-format
+msgid "%(team)s - %(season)s Roster"
+msgstr "%(team)s - selectie %(season)s"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+#, python-format
+msgid "%s expire within 30 days."
+msgstr "%s verlopen binnen 30 dagen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/player_availability.py:0
+#, python-format
+msgid "%s player(s) received an email."
+msgstr "%s speler(s) kregen een e-mail."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "(at most"
+msgstr "(maximaal"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid ""
+".\n"
+"                            Crossing out a player only affects this match; your other matches that day keep their own choice."
+msgstr ". Een speler schrappen geldt alleen voor deze wedstrijd; je andere wedstrijden van die dag houden hun eigen keuze."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid ". Players come from"
+msgstr ". Spelers komen uit"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid ". You do not choose starters: at each match you cross out the players who do not play."
+msgstr ". Je kiest geen basisspelers: bij elke wedstrijd schrap je de spelers die niet spelen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_season_registration_form
+msgid "<i class=\"fa fa-arrow-left me-1\"/>Back"
+msgstr "<i class=\"fa fa-arrow-left me-1\"/>Terug"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid "<i class=\"fa fa-arrow-left me-1\"/>Back to Duties"
+msgstr "<i class=\"fa fa-arrow-left me-1\"/>Terug naar diensten"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "<i class=\"fa fa-arrow-left me-1\"/>Back to overview"
+msgstr "<i class=\"fa fa-arrow-left me-1\"/>Terug naar het overzicht"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "<i class=\"fa fa-arrow-left me-1\"/>Back to Results"
+msgstr "<i class=\"fa fa-arrow-left me-1\"/>Terug naar uitslagen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "<i class=\"fa fa-arrow-left me-1\"/>Player availability"
+msgstr "<i class=\"fa fa-arrow-left me-1\"/>Beschikbaarheid spelers"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "<i class=\"fa fa-arrow-left me-2\"/>Back to players"
+msgstr "<i class=\"fa fa-arrow-left me-2\"/>Terug naar spelers"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "<i class=\"fa fa-building me-2\"/>Club details"
+msgstr "<i class=\"fa fa-building me-2\"/>Clubgegevens"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.role_home
+msgid "<i class=\"fa fa-building me-2\"/>Club overview"
+msgstr "<i class=\"fa fa-building me-2\"/>Cluboverzicht"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club
+msgid "<i class=\"fa fa-calendar me-1\"/>Season Registrations"
+msgstr "<i class=\"fa fa-calendar me-1\"/>Seizoensinschrijvingen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "<i class=\"fa fa-calendar me-2\"/>Match days"
+msgstr "<i class=\"fa fa-calendar me-2\"/>Speeldagen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+msgid "<i class=\"fa fa-calendar me-2\"/>My Season Registrations"
+msgstr "<i class=\"fa fa-calendar me-2\"/>Mijn seizoensinschrijvingen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+msgid "<i class=\"fa fa-calendar-check-o me-2\"/>Game days"
+msgstr "<i class=\"fa fa-calendar-check-o me-2\"/>Speeldagen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_season_registration_form
+msgid "<i class=\"fa fa-calendar-plus me-2\"/>New Season Registration"
+msgstr "<i class=\"fa fa-calendar-plus me-2\"/>Nieuwe seizoensinschrijving"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "<i class=\"fa fa-check me-1\"/>Approve Result"
+msgstr "<i class=\"fa fa-check me-1\"/>Uitslag goedkeuren"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid ""
+"<i class=\"fa fa-check-circle me-1\"/>\n"
+"                    This duty has been confirmed."
+msgstr "<i class=\"fa fa-check-circle me-1\"/> Deze dienst is bevestigd."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_results
+msgid "<i class=\"fa fa-check-circle me-2\"/>Result Follow-Up Queue"
+msgstr "<i class=\"fa fa-check-circle me-2\"/>Opvolging van uitslagen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "<i class=\"fa fa-check-circle me-2\"/>Result Follow-Up:"
+msgstr "<i class=\"fa fa-check-circle me-2\"/>Opvolging uitslag:"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "<i class=\"fa fa-check-square-o me-2\"/>All actions"
+msgstr "<i class=\"fa fa-check-square-o me-2\"/>Alle acties"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid ""
+"<i class=\"fa fa-clock-o me-1\"/>\n"
+"                                <strong>Awaiting verification.</strong>\n"
+"                                A federation official must verify this result before it can be approved.\n"
+"                                You may raise a dispute/exception below if you believe the score is incorrect."
+msgstr "<i class=\"fa fa-clock-o me-1\"/> <strong>Wacht op controle.</strong> Een official van de federatie moet deze uitslag controleren voor ze goedgekeurd kan worden. Je kan hieronder een betwisting of uitzondering aanvragen als je denkt dat de score niet klopt."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid ""
+"<i class=\"fa fa-clock-o me-1\"/>\n"
+"                    Your nomination is awaiting federation review."
+msgstr "<i class=\"fa fa-clock-o me-1\"/> Je aanduiding wacht op controle door de federatie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "<i class=\"fa fa-envelope-o me-1\"/>Send a reminder to"
+msgstr "<i class=\"fa fa-envelope-o me-1\"/>Stuur een herinnering naar"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid ""
+"<i class=\"fa fa-exclamation-circle me-1\"/>\n"
+"                                This result has been contested and is under federation review.\n"
+"                                No further action is required from your club at this time."
+msgstr "<i class=\"fa fa-exclamation-circle me-1\"/> Deze uitslag is betwist en wordt door de federatie bekeken. Je club hoeft nu niets te doen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "<i class=\"fa fa-exclamation-triangle me-1\"/>Dispute / Exception Reason"
+msgstr "<i class=\"fa fa-exclamation-triangle me-1\"/>Reden van betwisting / uitzondering"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "<i class=\"fa fa-flag me-1\"/>Raise Dispute / Request Exception"
+msgstr "<i class=\"fa fa-flag me-1\"/>Uitslag betwisten / uitzondering aanvragen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignments
+msgid "<i class=\"fa fa-flag me-2\"/>My Officiating Assignments"
+msgstr "<i class=\"fa fa-flag me-2\"/>Mijn aanstellingen als official"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "<i class=\"fa fa-flag me-2\"/>Officiating Assignment"
+msgstr "<i class=\"fa fa-flag me-2\"/>Aanstelling als official"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "<i class=\"fa fa-hand-paper-o me-2\"/>Player availability"
+msgstr "<i class=\"fa fa-hand-paper-o me-2\"/>Beschikbaarheid spelers"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_403_access_denied
+msgid "<i class=\"fa fa-home me-2\"/>Go to my dashboard"
+msgstr "<i class=\"fa fa-home me-2\"/>Naar mijn overzicht"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "<i class=\"fa fa-id-card me-2\"/>Rosters and game days"
+msgstr "<i class=\"fa fa-id-card me-2\"/>Selecties en speeldagen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+msgid "<i class=\"fa fa-inbox me-2\"/>Club work inbox"
+msgstr "<i class=\"fa fa-inbox me-2\"/>Werkbak van de club"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_season_registration_form
+msgid ""
+"<i class=\"fa fa-info-circle me-2\"/>\n"
+"                    No seasons are currently open for registration. Please check back later or contact the federation."
+msgstr "<i class=\"fa fa-info-circle me-2\"/> Er zijn momenteel geen seizoenen open voor inschrijving. Kom later terug of neem contact op met de federatie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "<i class=\"fa fa-info-circle me-2\"/>You are not currently assigned as a club representative or match official. Please contact the federation for access."
+msgstr "<i class=\"fa fa-info-circle me-2\"/>Je bent momenteel niet aangesteld als clubvertegenwoordiger of wedstrijdofficial. Neem contact op met de federatie voor toegang."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "<i class=\"fa fa-list-alt me-2\"/>Game-day line-up"
+msgstr "<i class=\"fa fa-list-alt me-2\"/>Opstelling van de speeldag"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_season_registration_form
+msgid "<i class=\"fa fa-paper-plane me-1\"/>Submit Registration"
+msgstr "<i class=\"fa fa-paper-plane me-1\"/>Inschrijving indienen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+msgid "<i class=\"fa fa-pencil me-2\"/>Edit Roster"
+msgstr "<i class=\"fa fa-pencil me-2\"/>Selectie bewerken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "<i class=\"fa fa-pencil-square-o me-2\"/>Registrations"
+msgstr "<i class=\"fa fa-pencil-square-o me-2\"/>Inschrijvingen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+msgid "<i class=\"fa fa-plus me-1\"/> Browse Tournaments"
+msgstr "<i class=\"fa fa-plus me-1\"/> Toernooien bekijken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+msgid "<i class=\"fa fa-plus me-1\"/> New Registration"
+msgstr "<i class=\"fa fa-plus me-1\"/> Nieuwe inschrijving"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "<i class=\"fa fa-plus me-1\"/>Add Player"
+msgstr "<i class=\"fa fa-plus me-1\"/>Speler toevoegen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+msgid "<i class=\"fa fa-plus me-1\"/>New Team"
+msgstr "<i class=\"fa fa-plus me-1\"/>Nieuwe ploeg"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_team_new
+msgid "<i class=\"fa fa-plus me-2\"/>New Team"
+msgstr "<i class=\"fa fa-plus me-2\"/>Nieuwe ploeg"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players_parental_approval_action
+msgid "<i class=\"fa fa-shield me-2\" aria-hidden=\"true\"/>Parental approval"
+msgstr "<i class=\"fa fa-shield me-2\" aria-hidden=\"true\"/>Ouderlijke toestemming"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club
+msgid "<i class=\"fa fa-sitemap me-1\"/>Club Operations Workspace"
+msgstr "<i class=\"fa fa-sitemap me-1\"/>Clubwerkruimte"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid ""
+"<i class=\"fa fa-trophy me-1\"/>\n"
+"                                This result is approved and included in official standings."
+msgstr "<i class=\"fa fa-trophy me-1\"/> Deze uitslag is goedgekeurd en opgenomen in het officiële klassement."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+msgid "<i class=\"fa fa-trophy me-2\"/>My Tournament Registrations"
+msgstr "<i class=\"fa fa-trophy me-2\"/>Mijn toernooi-inschrijvingen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "<i class=\"fa fa-user me-2\"/>Players"
+msgstr "<i class=\"fa fa-user me-2\"/>Spelers"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_player_new
+msgid "<i class=\"fa fa-user-plus me-2\"/>Add Player"
+msgstr "<i class=\"fa fa-user-plus me-2\"/>Speler toevoegen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid "<i class=\"fa fa-user-plus me-2\"/>Nominate a Player"
+msgstr "<i class=\"fa fa-user-plus me-2\"/>Een speler aanduiden"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club
+msgid "<i class=\"fa fa-users me-1\"/>Teams"
+msgstr "<i class=\"fa fa-users me-1\"/>Ploegen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_bulk_add
+msgid "<i class=\"fa fa-users me-2\"/>Add players to"
+msgstr "<i class=\"fa fa-users me-2\"/>Spelers toevoegen aan"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_list
+msgid "<i class=\"fa fa-users me-2\"/>Club Referee Duties"
+msgstr "<i class=\"fa fa-users me-2\"/>Scheidsrechtersdiensten van de club"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+msgid "<i class=\"fa fa-users me-2\"/>Teams"
+msgstr "<i class=\"fa fa-users me-2\"/>Ploegen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.role_home
+msgid "<option value=\"\">All my clubs</option>"
+msgstr "<option value=\"\">Al mijn clubs</option>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+msgid "<option value=\"\">All task types</option>"
+msgstr "<option value=\"\">Alle taaktypes</option>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "<option value=\"\">All</option>"
+msgstr "<option value=\"\">Alle</option>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "<option value=\"\">Choose roster</option>"
+msgstr "<option value=\"\">Kies een selectie</option>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+msgid "<option value=\"\">No license selected</option>"
+msgstr "<option value=\"\">Geen licentie gekozen</option>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+msgid "<option value=\"\">Select a player</option>"
+msgstr "<option value=\"\">Kies een speler</option>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+msgid "<option value=\"\">Select</option>"
+msgstr "<option value=\"\">Kies</option>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid "<option value=\"\">— choose a player —</option>"
+msgstr "<option value=\"\">— kies een speler —</option>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "<option value=\"\">— Select a coach —</option>"
+msgstr "<option value=\"\">— Kies een coach —</option>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "<option value=\"\">— Select a manager —</option>"
+msgstr "<option value=\"\">— Kies een verantwoordelijke —</option>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_season_registration_form
+msgid "<option value=\"\">— Select a season —</option>"
+msgstr "<option value=\"\">— Kies een seizoen —</option>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_season_registration_form
+msgid "<option value=\"\">— Select a team —</option>"
+msgstr "<option value=\"\">— Kies een ploeg —</option>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_player_new
+msgid ""
+"<select id=\"player_gender\" name=\"gender\" class=\"form-select\">\n"
+"                            <option value=\"\">— Select —</option>\n"
+"                            <option value=\"male\">Male</option>\n"
+"                            <option value=\"female\">Female</option>\n"
+"                        </select>"
+msgstr "<select id=\"player_gender\" name=\"gender\" class=\"form-select\"><option value=\"\">— Kies —</option><option value=\"male\">Man</option><option value=\"female\">Vrouw</option></select>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_team_new
+msgid ""
+"<select id=\"team_category\" name=\"category\" class=\"form-select\" required=\"required\">\n"
+"                            <option value=\"senior\">Senior</option>\n"
+"                            <option value=\"youth\">Youth</option>\n"
+"                            <option value=\"junior\">Junior</option>\n"
+"                            <option value=\"cadet\">Cadet</option>\n"
+"                            <option value=\"mini\">Mini</option>\n"
+"                        </select>"
+msgstr "<select id=\"team_category\" name=\"category\" class=\"form-select\" required=\"required\"><option value=\"senior\">Senioren</option><option value=\"youth\">Jeugd</option><option value=\"junior\">Junioren</option><option value=\"cadet\">Cadetten</option><option value=\"mini\">Mini</option></select>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_team_new
+msgid ""
+"<select id=\"team_gender\" name=\"gender\" class=\"form-select\" required=\"required\">\n"
+"                            <option value=\"male\">Male</option>\n"
+"                            <option value=\"female\">Female</option>\n"
+"                            <option value=\"mixed\">Mixed</option>\n"
+"                        </select>"
+msgstr "<select id=\"team_gender\" name=\"gender\" class=\"form-select\" required=\"required\"><option value=\"male\">Heren</option><option value=\"female\">Dames</option><option value=\"mixed\">Gemengd</option></select>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "<span class=\"badge bg-secondary\">Federation verification required</span>"
+msgstr "<span class=\"badge bg-secondary\">Controle door de federatie nodig</span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club_player_availability
+msgid "<span class=\"badge text-bg-light border\">Off</span>"
+msgstr "<span class=\"badge text-bg-light border\">Uit</span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club_player_availability
+msgid "<span class=\"badge text-bg-success\">On</span>"
+msgstr "<span class=\"badge text-bg-success\">Aan</span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "<span class=\"mx-1\">vs</span>"
+msgstr "<span class=\"mx-1\">tegen</span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "<span class=\"o_fed_club_icon\"><i class=\"fa fa-calendar-check-o\"/></span><span class=\"o_fed_club_content\"><strong>Game-day preparation</strong><small>Next steps per team before each game day</small></span>"
+msgstr "<span class=\"o_fed_club_icon\"><i class=\"fa fa-calendar-check-o\"/></span><span class=\"o_fed_club_content\"><strong>Voorbereiding speeldag</strong><small>Volgende stappen per ploeg voor elke speeldag</small></span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "<span class=\"o_fed_club_icon\"><i class=\"fa fa-flag-checkered\"/></span><span class=\"o_fed_club_content\"><strong>Results</strong><small>Submitted results and follow-up</small></span>"
+msgstr "<span class=\"o_fed_club_icon\"><i class=\"fa fa-flag-checkered\"/></span><span class=\"o_fed_club_content\"><strong>Uitslagen</strong><small>Ingediende uitslagen en opvolging</small></span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "<span class=\"o_fed_club_icon\"><i class=\"fa fa-gavel\"/></span><span class=\"o_fed_club_content\"><strong>Officials</strong><small>Club referee duties and nominations</small></span>"
+msgstr "<span class=\"o_fed_club_icon\"><i class=\"fa fa-gavel\"/></span><span class=\"o_fed_club_content\"><strong>Officials</strong><small>Scheidsrechtersdiensten en aanduidingen van de club</small></span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_club_overview_player_availability
+msgid "<span class=\"o_fed_club_icon\"><i class=\"fa fa-hand-paper-o\"/></span><span class=\"o_fed_club_content\"><strong>Player availability</strong><small>Who can play on the next game days</small></span><i class=\"fa fa-chevron-right text-muted\"/>"
+msgstr "<span class=\"o_fed_club_icon\"><i class=\"fa fa-hand-paper-o\"/></span><span class=\"o_fed_club_content\"><strong>Beschikbaarheid spelers</strong><small>Wie kan spelen op de volgende speeldagen</small></span><i class=\"fa fa-chevron-right text-muted\"/>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "<span class=\"o_fed_club_icon\"><i class=\"fa fa-shield\"/></span><span class=\"o_fed_club_content\"><strong>Compliance</strong><small>Documents, approvals and renewals</small></span><i class=\"fa fa-chevron-right text-muted\"/>"
+msgstr "<span class=\"o_fed_club_icon\"><i class=\"fa fa-shield\"/></span><span class=\"o_fed_club_content\"><strong>Documenten</strong><small>Documenten, goedkeuringen en vernieuwingen</small></span><i class=\"fa fa-chevron-right text-muted\"/>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "<span class=\"visually-hidden\">Actions</span>"
+msgstr "<span class=\"visually-hidden\">Acties</span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "<span class=\"visually-hidden\">Include</span>"
+msgstr "<span class=\"visually-hidden\">Opnemen</span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "<span class=\"visually-hidden\">Set answer</span>"
+msgstr "<span class=\"visually-hidden\">Antwoord invullen</span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "<strong>Actions</strong>"
+msgstr "<strong>Acties</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "<strong>Competitions</strong>"
+msgstr "<strong>Competities</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "<strong>Contest Reason:</strong>"
+msgstr "<strong>Reden van betwisting:</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_competition_entry_detail
+msgid "<strong>Correct and resubmit</strong>"
+msgstr "<strong>Verbeteren en opnieuw indienen</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "<strong>Correction Reason:</strong>"
+msgstr "<strong>Reden van correctie:</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_matchday_operations_page
+msgid "<strong>Courts</strong>"
+msgstr "<strong>Velden</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+msgid "<strong>Current entries</strong>"
+msgstr "<strong>Huidige inschrijvingen</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "<strong>Federation feedback:</strong>"
+msgstr "<strong>Feedback van de federatie:</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_competition_entry_detail
+msgid "<strong>Federation feedback</strong>"
+msgstr "<strong>Feedback van de federatie</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_detail
+msgid "<strong>Fixtures and results</strong>"
+msgstr "<strong>Wedstrijden en uitslagen</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "<strong>Match Details</strong>"
+msgstr "<strong>Wedstrijdgegevens</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+msgid "<strong>Next match and club actions</strong>"
+msgstr "<strong>Volgende wedstrijd en clubacties</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignments
+msgid ""
+"<strong>Next step:</strong>\n"
+"                        respond to"
+msgstr "<strong>Volgende stap:</strong> antwoord op"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid ""
+"<strong>Next step:</strong>\n"
+"                    confirm this assignment if you are available, or decline with a short reason so the coordinator can replace you."
+msgstr "<strong>Volgende stap:</strong> bevestig deze aanstelling als je beschikbaar bent, of weiger met een korte reden zodat de coördinator je kan vervangen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+msgid "<strong>No action items.</strong> No tasks are visible in this filter. Check participation and publication status separately."
+msgstr "<strong>Geen acties.</strong> Er zijn geen taken zichtbaar in deze filter. Controleer deelname en publicatiestatus apart."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_matchday_operations_page
+msgid "<strong>Open incidents</strong>"
+msgstr "<strong>Open incidenten</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_detail
+msgid "<strong>Participation</strong>"
+msgstr "<strong>Deelname</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "<strong>Players</strong>"
+msgstr "<strong>Spelers</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competitions
+msgid "<strong>Published match days:</strong>"
+msgstr "<strong>Gepubliceerde speeldagen:</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_matchday_operations_page
+msgid "<strong>Published matches</strong>"
+msgstr "<strong>Gepubliceerde wedstrijden</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid ""
+"<strong>Response overdue:</strong>\n"
+"                    this assignment has passed its confirmation deadline. Reply now so the coordinator can resolve coverage."
+msgstr "<strong>Antwoord te laat:</strong> de bevestigingstermijn van deze aanstelling is voorbij. Antwoord nu zodat de coördinator de bezetting kan regelen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competitions
+msgid "<strong>Result follow-up:</strong>"
+msgstr "<strong>Opvolging uitslagen:</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "<strong>Result</strong>"
+msgstr "<strong>Uitslag</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid ""
+"<strong>Roster is closed:</strong>\n"
+"                                    A closed roster cannot be used for new game-day line-ups. Reopen it to use it again."
+msgstr "<strong>Selectie is afgesloten:</strong> een afgesloten selectie kan niet gebruikt worden voor nieuwe opstellingen. Heropen ze om ze opnieuw te gebruiken."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "<strong>Rosters and line-ups</strong>"
+msgstr "<strong>Selecties en opstellingen</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_competition_entry_detail
+msgid "<strong>Submission details</strong>"
+msgstr "<strong>Details van de inschrijving</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+msgid "<strong>Submit a new entry</strong>"
+msgstr "<strong>Nieuwe inschrijving indienen</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail_club_rank
+msgid "<strong>Team promotion:</strong>"
+msgstr "<strong>Ploegpromotie:</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "<strong>Teams</strong>"
+msgstr "<strong>Ploegen</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_detail
+msgid "<strong>Upcoming published match days</strong>"
+msgstr "<strong>Komende gepubliceerde speeldagen</strong>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "<strong>Your club does not ask players for their availability here.</strong>"
+msgstr "<strong>Je club vraagt hier niet naar de beschikbaarheid van spelers.</strong>"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_club_representative.py:0
+msgid "A club representative without a federation function must use portal access and cannot be an internal Odoo user."
+msgstr "Een clubvertegenwoordiger zonder functie bij de federatie gebruikt portaaltoegang en kan geen interne Odoo-gebruiker zijn."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "A decline requires a short reason."
+msgstr "Een weigering vraagt een korte reden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "A parental approval for this player is already awaiting federation review."
+msgstr "Er wacht al een ouderlijke toestemming voor deze speler op nazicht door de federatie."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "A player under 16 in a senior team needs a verified approval covering participation."
+msgstr "Een speler jonger dan 16 in een seniorenploeg heeft een gecontroleerde toestemming nodig die de deelname dekt."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/qol.py:0
+msgid "A reason is required."
+msgstr "Een reden is verplicht."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "A roster can only be created after the season registration has been confirmed."
+msgstr "Een selectie kan pas aangemaakt worden nadat de seizoensinschrijving bevestigd is."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "A roster is your team's player pool for the season. Open a roster to see its game days and choose the line-up for each one."
+msgstr "Een selectie is de spelerskern van je ploeg voor het seizoen. Open een selectie om de speeldagen te zien en voor elke speeldag de opstelling te kiezen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Accept or decline assignment"
+msgstr "Aanstelling aanvaarden of weigeren"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Accept or decline assignments before their confirmation deadline."
+msgstr "Aanvaard of weiger aanstellingen vóór hun bevestigingstermijn."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Acceptance is recorded separately from eligibility, attendance and completion."
+msgstr "Aanvaarding wordt apart bijgehouden van speelgerechtigdheid, aanwezigheid en afronding."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_403_access_denied
+msgid "Access Denied"
+msgstr "Geen toegang"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/competition_portal.py:0
+msgid "Access denied."
+msgstr "Geen toegang."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_results
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_list
+msgid "Action"
+msgstr "Actie"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/competition_portal.py:0
+msgid "Action failed."
+msgstr "Actie mislukt."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/qol.py:0
+msgid "Action reassigned."
+msgstr "Actie opnieuw toegewezen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+msgid "Actions"
+msgstr "Acties"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "Active"
+msgstr "Actief"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "active team(s)"
+msgstr "actieve ploeg(en)"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Add one player with details"
+msgstr "Eén speler met details toevoegen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_player_new
+msgid "Add Player"
+msgstr "Speler toevoegen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Add players"
+msgstr "Spelers toevoegen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Add players before consent requirements can be checked."
+msgstr "Voeg spelers toe voor de toestemmingsvereisten gecontroleerd kunnen worden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Add players before eligibility can be checked."
+msgstr "Voeg spelers toe voor de speelgerechtigdheid gecontroleerd kan worden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Add players to the roster"
+msgstr "Voeg eerst spelers toe aan de selectie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_bulk_add
+msgid "Add selected players"
+msgstr "Gekozen spelers toevoegen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Add the birth date so the age rule can be checked."
+msgstr "Vul de geboortedatum in zodat de leeftijdsregel gecontroleerd kan worden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "Add Your First Player"
+msgstr "Je eerste speler toevoegen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "Add your first player to begin building your club roster."
+msgstr "Voeg je eerste speler toe om je clubkern op te bouwen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Add your players to this roster. It becomes active automatically once it meets the competition rules."
+msgstr "Voeg je spelers toe aan deze selectie. Ze wordt automatisch actief zodra ze aan de competitieregels voldoet."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+msgid "After registering a team for a season, build a"
+msgstr "Na de seizoensinschrijving van een ploeg maak je een"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignments
+msgid "All"
+msgstr "Alle"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+msgid "All clear"
+msgstr "Alles in orde"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+msgid "All club actions"
+msgstr "Alle clubacties"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "All game days"
+msgstr "Alle speeldagen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+msgid "All manager work:"
+msgstr "Al het beheerderswerk:"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "All my assignments"
+msgstr "Al mijn aanstellingen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "All results to review"
+msgstr "Alle uitslagen om na te kijken"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "All upcoming line-ups are submitted and approved."
+msgstr "Alle komende opstellingen zijn ingediend en goedgekeurd."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "Answer"
+msgstr "Antwoord"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/player_availability.py:0
+msgid "Answer saved."
+msgstr "Antwoord opgeslagen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "Answers"
+msgstr "Antwoorden"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "Answers of the roster players."
+msgstr "Antwoorden van de spelers uit de selectie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_season_registration_form
+msgid "Any additional information for the federation…"
+msgstr "Extra informatie voor de federatie…"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.role_home
+msgid "Apply"
+msgstr "Toepassen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "Approval date"
+msgstr "Datum van toestemming"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Approval date is required."
+msgstr "De datum van toestemming is verplicht."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Approval expired"
+msgstr "Toestemming verlopen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Approval needed"
+msgstr "Toestemming nodig"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Approval revoked"
+msgstr "Toestemming ingetrokken"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "Approve or return the line-up"
+msgstr "De opstelling goedkeuren of terugsturen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "Approve result"
+msgstr "Uitslag goedkeuren"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Approve verified result"
+msgstr "Gecontroleerde uitslag goedkeuren"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Approved"
+msgstr "Goedgekeurd"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Approved, expires soon"
+msgstr "Goedgekeurd, verloopt binnenkort"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "Ask a team's roster players whether they can play on a game day. Players answer through a link in their email, without an account. You see the answers when you make the line-up."
+msgstr "Vraag de spelers van een ploeg of ze op een speeldag kunnen spelen. Spelers antwoorden via een link in hun e-mail, zonder account. Je ziet de antwoorden wanneer je de opstelling maakt."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club_player_availability
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "Ask players"
+msgstr "Spelers vragen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club_player_availability
+msgid "Ask players by email before each game day whether they can play, and see their answers when you make the line-up. Optional: leave it off if your club already uses Spond or another app."
+msgstr "Vraag spelers vóór elke speeldag per e-mail of ze kunnen spelen en zie hun antwoorden wanneer je de opstelling maakt. Optioneel: laat dit uit als je club al Spond of een andere app gebruikt."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.connected_work_card
+msgid "Assign"
+msgstr "Toewijzen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.connected_work_card
+msgid "Assign action"
+msgstr "Actie toewijzen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "Assignment Notes"
+msgstr "Opmerkingen bij de aanstelling"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "At each match, cross out the players who do not play."
+msgstr "Schrap bij elke wedstrijd de spelers die niet spelen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Audit history entries recorded for this roster."
+msgstr "Geschiedenis van deze selectie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_milestones
+msgid "Authoritative deadlines from registrations, rosters, officials and results."
+msgstr "Officiële termijnen van inschrijvingen, selecties, officials en uitslagen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "available"
+msgstr "beschikbaar"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "Available"
+msgstr "Beschikbaar"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Awaiting an independent registration decision"
+msgstr "Wacht op een onafhankelijke beslissing over de inschrijving"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
+msgid "Awaiting federation review"
+msgstr "Wacht op nazicht door de federatie"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Awaiting review"
+msgstr "Wacht op nazicht"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "Away"
+msgstr "Uit"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "Back to Assignments"
+msgstr "Terug naar aanstellingen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.roster_preparation_link
+msgid "Back to my work"
+msgstr "Terug naar mijn werk"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Back to overview"
+msgstr "Terug naar het overzicht"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.missing_roster
+msgid "Back to preparation inbox"
+msgstr "Terug naar de voorbereiding"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_bulk_add
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+msgid "Back to Roster"
+msgstr "Terug naar de selectie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Back to roster"
+msgstr "Terug naar de selectie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Back to rosters"
+msgstr "Terug naar selecties"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Back to team preparation"
+msgstr "Terug naar de voorbereiding van de ploeg"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignments
+msgid "before"
+msgstr "vóór"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_player_new
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "Birth Date"
+msgstr "Geboortedatum"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Birth date missing"
+msgstr "Geboortedatum ontbreekt"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Blocked"
+msgstr "Geblokkeerd"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+msgid "blocking"
+msgstr "blokkerend"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/operation_task.py:0
+msgid "Blocking tasks must be resolved in the linked record."
+msgstr "Blokkerende taken moeten in het gekoppelde record opgelost worden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/competition_portal.py:0
+msgid "Both scores are 0. Confirm the 0–0 result before saving."
+msgstr "Beide scores zijn 0. Bevestig de uitslag 0–0 voor je opslaat."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "breadcrumb"
+msgstr "kruimelpad"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+msgid "Browse Tournaments"
+msgstr "Toernooien bekijken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.missing_roster
+msgid "but no roster."
+msgstr "maar geen selectie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "by"
+msgstr "door"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignments
+msgid "can review and respond to assigned matches here."
+msgstr "kan hier toegewezen wedstrijden bekijken en beantwoorden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link
+msgid "Can you play?"
+msgstr "Kan je spelen?"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_player_new
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_team_new
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_season_registration_form
+msgid "Cancel"
+msgstr "Annuleren"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+msgid "Captain"
+msgstr "Kapitein"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Captaincy"
+msgstr "Kapiteinschap"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_team_new
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+msgid "Category"
+msgstr "Categorie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Checks"
+msgstr "Controles"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "Checks apply to this roster and its upcoming line-ups. They do not replace match-day approval."
+msgstr "Controles gelden voor deze selectie en haar komende opstellingen. Ze vervangen de goedkeuring van de speeldag niet."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/player_availability_portal.py:0
+msgid "Choose a player of this request."
+msgstr "Kies een speler van deze vraag."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_match_sheet.py:0
+msgid "Choose a roster before selecting the game-day line-up."
+msgstr "Kies een selectie voor je de opstelling kiest."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/qol.py:0
+msgid "Choose a valid bulk decision."
+msgstr "Kies een geldige beslissing voor meerdere records."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team.py:0
+msgid "Choose a valid team category."
+msgstr "Kies een geldige categorie voor de ploeg."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team.py:0
+msgid "Choose a valid team gender."
+msgstr "Kies een geldig geslacht voor de ploeg."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/player_availability.py:0
+msgid "Choose Available, Maybe or Not available."
+msgstr "Kies Beschikbaar, Misschien of Niet beschikbaar."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "Clear"
+msgstr "Wissen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "Clear Filters"
+msgstr "Filters wissen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Close Roster"
+msgstr "Selectie afsluiten"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "Closed rosters cannot be edited in the portal."
+msgstr "Afgesloten selecties kunnen niet via het portaal aangepast worden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_team_new
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.role_home
+msgid "Club"
+msgstr "Club"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Club <span class=\"text-danger\">*</span>"
+msgstr "Club <span class=\"text-danger\">*</span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Club details"
+msgstr "Clubgegevens"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Club overview"
+msgstr "Cluboverzicht"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_list
+msgid "Club referee duties open for nomination."
+msgstr "Scheidsrechtersdiensten van de club die op een aanduiding wachten."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Coach"
+msgstr "Coach"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Coach name"
+msgstr "Naam van de coach"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club
+msgid "Code"
+msgstr "Code"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Competition"
+msgstr "Competitie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+msgid "Competition entries"
+msgstr "Inschrijvingen voor competities"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.inbox_journey
+msgid "Competition entries waiting for federation review"
+msgstr "Inschrijvingen voor competities die op nazicht door de federatie wachten"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+#, python-format
+msgid "Competition entry for %(team)s"
+msgstr "Inschrijving voor competitie van %(team)s"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Competition organiser"
+msgstr "Organisator van de competitie"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Competition planning"
+msgstr "Competitieplanning"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "competition(s)"
+msgstr "competitie(s)"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.federation_qol_search_results
+msgid "Competition, team, schedule or match"
+msgstr "Competitie, ploeg, kalender of wedstrijd"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competitions
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_matchdays
+msgid "Competitions"
+msgstr "Competities"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Competitions that still need a setup or scheduling step."
+msgstr "Competities die nog een stap in opzet of planning nodig hebben."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "Complete roster readiness"
+msgstr "Selectie klaarmaken"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Complete the linked action. Existing approval rules still apply."
+msgstr "Voer de gekoppelde actie uit. De bestaande goedkeuringsregels blijven gelden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "Complete the next requirement. Submission and approval remain separate."
+msgstr "Voer de volgende vereiste uit. Indienen en goedkeuren blijven aparte stappen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+msgid "Completed recently"
+msgstr "Recent afgerond"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+msgid "Completed work"
+msgstr "Afgerond werk"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "Confirm Assignment"
+msgstr "Aanstelling bevestigen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "Confirmation Deadline"
+msgstr "Bevestigingstermijn"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Confirmed registration"
+msgstr "Bevestigde inschrijving"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Confirmed season registrations that still need a roster."
+msgstr "Bevestigde seizoensinschrijvingen die nog een selectie nodig hebben."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_club_representative.py:0
+msgid "Contact"
+msgstr "Contact"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "Continue"
+msgstr "Verder"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+#, python-format
+msgid "Continue: %s"
+msgstr "Verder: %s"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Copy eligible players"
+msgstr "Speelgerechtigde spelers kopiëren"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Copy eligible players from"
+msgstr "Speelgerechtigde spelers kopiëren uit"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "Correct and submit competition entry"
+msgstr "Inschrijving voor competitie verbeteren en indienen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "Correct contested result"
+msgstr "Betwiste uitslag verbeteren"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+msgid "Correction note"
+msgstr "Opmerking voor correctie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_matchday_detail
+msgid "Court"
+msgstr "Veld"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Create a roster"
+msgstr "Een selectie aanmaken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_season_registration_form
+msgid "Create a team first."
+msgstr "Maak eerst een ploeg aan."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.missing_roster
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Create roster"
+msgstr "Selectie aanmaken"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/journey_operation_task.py:0
+#, python-format
+msgid "Create roster: %(team)s"
+msgstr "Selectie aanmaken: %(team)s"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_team_new
+msgid "Create Team"
+msgstr "Ploeg aanmaken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Create the roster"
+msgstr "De selectie aanmaken"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Create the roster from the existing registration."
+msgstr "Maak de selectie aan op basis van de bestaande inschrijving."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.missing_roster
+msgid "Create the roster, add eligible players and activate it before preparing a lineup."
+msgstr "Maak de selectie aan, voeg speelgerechtigde spelers toe en activeer ze voor je een opstelling voorbereidt."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/journey_operation_task.py:0
+msgid "Create the roster, add eligible players and activate it."
+msgstr "Maak de selectie aan, voeg speelgerechtigde spelers toe en activeer ze."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.missing_roster
+msgid "Create the team roster"
+msgstr "De selectie van de ploeg aanmaken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+msgid "Create Your First Team"
+msgstr "Je eerste ploeg aanmaken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+msgid "Create your first team, then register it for the current season."
+msgstr "Maak je eerste ploeg aan en schrijf ze in voor het huidige seizoen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Cross out line-up players who do not play this match."
+msgstr "Schrap spelers uit de opstelling die deze wedstrijd niet spelen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Cross out player for this match"
+msgstr "Speler schrappen voor deze wedstrijd"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/gameday_participation.py:0
+msgid "Cross out players until no more than the allowed number play."
+msgstr "Schrap spelers tot er niet meer dan het toegelaten aantal spelen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid "Current Nominee"
+msgstr "Huidige aangeduide"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_matchday_operations_page
+msgid "Current official schedule revision"
+msgstr "Huidige officiële kalenderversie"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Current roster checks passed; match-day approval remains separate."
+msgstr "De huidige controles van de selectie zijn in orde; de goedkeuring van de speeldag blijft apart."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Current roster-date checks passed."
+msgstr "De huidige controles op datum van de selectie zijn in orde."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Current roster-date parental-consent checks passed or are not required."
+msgstr "De controles op ouderlijke toestemming zijn in orde of niet nodig."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Current rosters"
+msgstr "Huidige selecties"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+msgid "Current Scope"
+msgstr "Huidig bereik"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Current-season rosters available to the current portal representative, with their next game day."
+msgstr "Selecties van het huidige seizoen voor deze vertegenwoordiger, met hun volgende speeldag."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_results
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+msgid "Date"
+msgstr "Datum"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+msgid "Date From"
+msgstr "Vanaf"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+msgid "Date To"
+msgstr "Tot"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Date to be announced"
+msgstr "Datum nog niet bekend"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Date unknown"
+msgstr "Datum onbekend"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Dates"
+msgstr "Data"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_list
+msgid "Deadline"
+msgstr "Termijn"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+msgid "Deadlines, returned work and direct next steps in one place."
+msgstr "Termijnen, teruggestuurd werk en directe volgende stappen op één plek."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "Decline Assignment"
+msgstr "Aanstelling weigeren"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_club_representative.py:0
+msgid "Delegation must stay within the same club."
+msgstr "Delegatie moet binnen dezelfde club blijven."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "Describe the dispute or exception request for this result…"
+msgstr "Beschrijf de betwisting of de gevraagde uitzondering voor deze uitslag…"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Description"
+msgstr "Beschrijving"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.connected_work_card
+msgid "Details"
+msgstr "Details"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "Dispute / Exception Reason <span class=\"text-danger\">*</span>"
+msgstr "Reden van betwisting / uitzondering <span class=\"text-danger\">*</span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+msgid "Division"
+msgstr "Reeks"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "Document uploaded. Verification pending."
+msgstr "Document opgeladen. Controle loopt."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Dodgeball Belgium · Club portal"
+msgstr "Dodgeball Belgium · Clubportaal"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Dodgeball Belgium · Officials portal"
+msgstr "Dodgeball Belgium · Portaal voor officials"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "Download submitted document"
+msgstr "Ingediend document downloaden"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
+msgid "Draft"
+msgstr "Ontwerp"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_list
+msgid "Duties your club must fulfil by nominating a player as a table or assistant official."
+msgstr "Diensten die je club moet vervullen door een speler aan te duiden als tafel- of assistent-official."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Earlier game days ("
+msgstr "Vorige speeldagen ("
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+msgid "Earlier game days and their line-ups."
+msgstr "Vorige speeldagen en hun opstellingen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Earlier game days of this roster."
+msgstr "Vorige speeldagen van deze selectie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+msgid "earlier game days."
+msgstr "vorige speeldagen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Edit"
+msgstr "Bewerken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Edit roster"
+msgstr "Selectie bewerken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Eligibility"
+msgstr "Speelgerechtigdheid"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Eligible"
+msgstr "Speelgerechtigd"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_bulk_add
+msgid "Eligible players"
+msgstr "Speelgerechtigde spelers"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_player_new
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_team_new
+msgid "Email"
+msgstr "E-mail"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/competition_portal.py:0
+msgid "Enter both scores before saving the result."
+msgstr "Vul beide scores in voor je de uitslag opslaat."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Entered"
+msgstr "Ingekomen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "Entered by the club"
+msgstr "Ingevuld door de club"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+#, python-format
+msgid "Entry is %(state)s and needs follow-up."
+msgstr "Inschrijving is %(state)s en vraagt opvolging."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Event"
+msgstr "Gebeurtenis"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_bulk_add
+msgid "Every eligible player of your club is already on this roster."
+msgstr "Elke speelgerechtigde speler van je club zit al in deze selectie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competitions
+msgid "Everything your teams need for registration, schedules, match days and results."
+msgstr "Alles wat je ploegen nodig hebben voor inschrijving, kalenders, speeldagen en uitslagen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+#, python-format
+msgid "Expired on %s."
+msgstr "Verlopen op %s."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/journey_operation_task.py:0
+#: code:addons/sports_federation_portal/models/operation_task.py:0
+#, python-format
+msgid "Federation action digest: %(count)s open item(s)"
+msgstr "Overzicht federatie-acties: %(count)s openstaande actie(s)"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/operation_task.py:0
+msgid "Federation manager access is required."
+msgstr "Toegang als federatiebeheerder is vereist."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Federation registration reviewer"
+msgstr "Controleur van inschrijvingen bij de federatie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.federation_qol_search_results
+msgid "Federation search"
+msgstr "Zoeken in de federatie"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Federation work queue"
+msgstr "Werkbak van de federatie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "Female"
+msgstr "Vrouw"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
+msgid "Filed with the competition entry."
+msgstr "Toegevoegd aan de inschrijving voor de competitie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "Filter"
+msgstr "Filteren"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/competition_queries.py:0
+msgid "Finished"
+msgstr "Afgelopen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_player_new
+msgid "First Name <span class=\"text-danger\">*</span>"
+msgstr "Voornaam <span class=\"text-danger\">*</span>"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_player.py:0
+msgid "First name is required."
+msgstr "Voornaam is verplicht."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "first."
+msgstr "."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_detail
+msgid "Fixtures and results"
+msgstr "Wedstrijden en uitslagen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "Focus on this team"
+msgstr "Focus op deze ploeg"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link
+msgid "For example: only the morning matches"
+msgstr "Bijvoorbeeld: alleen de wedstrijden in de voormiddag"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "Game day"
+msgstr "Speeldag"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "Game days"
+msgstr "Speeldagen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Game days and line-ups"
+msgstr "Speeldagen en opstellingen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Game-day line-up"
+msgstr "Opstelling van de speeldag"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Game-day line-ups"
+msgstr "Opstellingen per speeldag"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+#, python-format
+msgid "Game-day lineup: %(team)s"
+msgstr "Opstelling van de speeldag: %(team)s"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_player_new
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_team_new
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+msgid "Gender"
+msgstr "Geslacht"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "Guardian email"
+msgstr "E-mail van de voogd"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.missing_roster
+msgid "has a confirmed registration for"
+msgstr "heeft een bevestigde inschrijving voor"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignments
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "History"
+msgstr "Geschiedenis"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "Home"
+msgstr "Thuis"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "How the roster and the line-up work together"
+msgstr "Hoe selectie en opstelling samenwerken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link
+msgid "I can play"
+msgstr "Ik kan spelen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link
+msgid "I cannot play"
+msgstr "Ik kan niet spelen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "In line-up"
+msgstr "In opstelling"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "Inactive"
+msgstr "Inactief"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+msgid "Inbox filters"
+msgstr "Filters van de werkbak"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Include player in the line-up"
+msgstr "Speler opnemen in de opstelling"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Independent review requires another authorised reviewer."
+msgstr "Onafhankelijk nazicht vraagt een andere bevoegde controleur."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Inspect current status"
+msgstr "Huidige status bekijken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Jersey #"
+msgstr "Rugnr."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+msgid "Jersey Number"
+msgstr "Rugnummer"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Jersey number"
+msgstr "Rugnummer"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "Kickoff"
+msgstr "Aanvang"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_player_new
+msgid "Last Name <span class=\"text-danger\">*</span>"
+msgstr "Achternaam <span class=\"text-danger\">*</span>"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_player.py:0
+msgid "Last name is required."
+msgstr "Achternaam is verplicht."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Left"
+msgstr "Vertrokken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+msgid "License"
+msgstr "Licentie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Line-up"
+msgstr "Opstelling"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Line-up audit events recorded for this match."
+msgstr "Geschiedenis van de opstelling voor deze wedstrijd."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Line-up history"
+msgstr "Geschiedenis van de opstelling"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "line-up players play this match"
+msgstr "spelers uit de opstelling spelen deze wedstrijd"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Line-up summary"
+msgstr "Samenvatting opstelling"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/competition_queries.py:0
+msgid "Live"
+msgstr "Live"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_matchday_operations_page
+msgid "Live session"
+msgstr "Live sessie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club
+msgid "Location"
+msgstr "Locatie"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_match_sheet.py:0
+msgid "Locked line-ups cannot be updated from the portal."
+msgstr "Vergrendelde opstellingen kunnen niet via het portaal aangepast worden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "Male"
+msgstr "Man"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Manage document"
+msgstr "Document beheren"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Manager / Representative"
+msgstr "Ploegverantwoordelijke"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Manager name"
+msgstr "Naam van de verantwoordelijke"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+msgid "Manager work queue"
+msgstr "Werkbak van de beheerder"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_matchday_operations_page
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_matchday_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_results
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_list
+msgid "Match"
+msgstr "Wedstrijd"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competitions
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_matchdays
+msgid "Match days"
+msgstr "Speeldagen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_results
+msgid "Match results pending review or already actioned by your club."
+msgstr "Uitslagen die wachten op nazicht of die je club al verwerkt heeft."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "match(es)"
+msgstr "wedstrijd(en)"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Match-day organiser"
+msgstr "Organisator van de speeldag"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid "Match:"
+msgstr "Wedstrijd:"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Matches"
+msgstr "Wedstrijden"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Matches sharing this game-day line-up"
+msgstr "Wedstrijden met dezelfde opstelling"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+msgid "matching tasks in this view."
+msgstr "overeenkomende taken in deze weergave."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "maybe"
+msgstr "misschien"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "Maybe"
+msgstr "Misschien"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_player.py:0
+#, python-format
+msgid "Member registration fee for %(player)s at %(club)s"
+msgstr "Lidgeld voor %(player)s bij %(club)s"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_milestones
+msgid "Milestones"
+msgstr "Mijlpalen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.role_home
+msgid "More"
+msgstr "Meer"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+msgid "more match(es)"
+msgstr "meer wedstrijd(en)"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+msgid "more match(es), same line-up"
+msgstr "meer wedstrijd(en), zelfde opstelling"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "most recent of"
+msgstr "meest recente van"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+msgid "My actions"
+msgstr "Mijn acties"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "My official assignments"
+msgstr "Mijn aanstellingen als official"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "My officiating assignments"
+msgstr "Mijn aanstellingen als official"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.inbox_journey
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_journey_entry
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.review_work
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.role_home
+msgid "My work"
+msgstr "Mijn werk"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "Name"
+msgstr "Naam"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Needed before they play in a senior team."
+msgstr "Nodig voor ze in een seniorenploeg spelen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Needed for senior play"
+msgstr "Nodig om bij de senioren te spelen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Needed now"
+msgstr "Nu nodig"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Next game day"
+msgstr "Volgende speeldag"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "No action on the current checks. Match-day approval remains separate."
+msgstr "Geen actie nodig voor de huidige controles. De goedkeuring van de speeldag blijft apart."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "no answer"
+msgstr "geen antwoord"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "No approval documents uploaded yet."
+msgstr "Nog geen documenten opgeladen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competitions
+msgid "No competitions are available yet. Your competitions will appear after a team entry is accepted."
+msgstr "Er zijn nog geen competities. Je competities verschijnen zodra een inschrijving van een ploeg aanvaard is."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "No confirmed registration in this view."
+msgstr "Geen bevestigde inschrijving in deze weergave."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "No current blocking issues are recorded."
+msgstr "Er zijn momenteel geen blokkerende problemen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_detail
+msgid "No current publication is available."
+msgstr "Er is geen actuele publicatie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "No current rosters yet. A roster appears here once your team's season registration is confirmed."
+msgstr "Nog geen huidige selecties. Een selectie verschijnt hier zodra de seizoensinschrijving van je ploeg bevestigd is."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "No email"
+msgstr "Geen e-mail"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "No expiry date."
+msgstr "Geen vervaldatum."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "No federation responsibility assigned"
+msgstr "Geen verantwoordelijkheid bij de federatie toegewezen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "No further result decision"
+msgstr "Geen verdere beslissing over de uitslag"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_results
+msgid "No match results to review at this time."
+msgstr "Momenteel geen uitslagen om na te kijken."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.federation_qol_search_results
+msgid "No matching federation records were found."
+msgstr "Geen resultaten gevonden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+msgid "No matching tasks. This does not certify that all competition checks passed."
+msgstr "Geen overeenkomende taken. Dit bevestigt niet dat alle competitiecontroles in orde zijn."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignments
+msgid "No officiating assignments match the current filter."
+msgstr "Geen aanstellingen die overeenkomen met de huidige filter."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignments
+msgid "No pending responses. Keep an eye on upcoming assignments."
+msgstr "Geen openstaande antwoorden. Hou de komende aanstellingen in de gaten."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.review_work
+msgid "No pending results are visible to your current role."
+msgstr "Er zijn geen openstaande uitslagen zichtbaar voor je huidige rol."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "No players found"
+msgstr "Geen spelers gevonden"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid "No players found for your club. Please contact the federation."
+msgstr "Geen spelers gevonden voor je club. Neem contact op met de federatie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "No players have been added to this roster yet."
+msgstr "Er zijn nog geen spelers aan deze selectie toegevoegd."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "No players have been selected for this line-up yet."
+msgstr "Er zijn nog geen spelers gekozen voor deze opstelling."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "No players match the selected filters."
+msgstr "Geen spelers voor de gekozen filters."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players_parental_approval_action
+msgid "No players need action."
+msgstr "Geen spelers die actie vragen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "No players on this roster yet."
+msgstr "Nog geen spelers in deze selectie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_matchdays
+msgid "No published match days are visible."
+msgstr "Er zijn geen gepubliceerde speeldagen zichtbaar."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "No recorded blocker"
+msgstr "Geen blokkering geregistreerd"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_list
+msgid "No referee duties assigned to your club at this time."
+msgstr "Je club heeft momenteel geen scheidsrechtersdiensten."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "No registered coaches found for this club."
+msgstr "Geen geregistreerde coaches gevonden voor deze club."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "No registered representatives found for this club."
+msgstr "Geen geregistreerde vertegenwoordigers gevonden voor deze club."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_competition_entry_detail
+msgid "No review note has been added."
+msgstr "Er is nog geen opmerking bij de beoordeling."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+msgid "No roster yet"
+msgstr "Nog geen selectie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+msgid "No season registrations have been submitted yet. Start with the next eligible team when you are ready."
+msgstr "Er zijn nog geen seizoensinschrijvingen ingediend. Begin met de volgende ploeg wanneer je klaar bent."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_competition_entry_detail
+msgid "No submission note."
+msgstr "Geen opmerking bij de inschrijving."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_season_registration_form
+msgid "No teams found."
+msgstr "Geen ploegen gevonden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+msgid "No teams yet"
+msgstr "Nog geen ploegen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+msgid "No tournament registrations have been sent yet. Browse the published tournament hub to find the next open event."
+msgstr "Er zijn nog geen toernooi-inschrijvingen verzonden. Bekijk de gepubliceerde toernooien om het volgende open evenement te vinden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_milestones
+msgid "No upcoming deadlines."
+msgstr "Geen komende termijnen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "No upcoming game day"
+msgstr "Geen komende speeldag"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "No upcoming game days are scheduled yet. Line-ups open when a schedule is published."
+msgstr "Er zijn nog geen speeldagen gepland. Opstellingen openen zodra een kalender gepubliceerd is."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "No upcoming game days yet. They appear here as soon as your team's matches are scheduled; you can then prepare the line-up from this page."
+msgstr "Nog geen komende speeldagen. Ze verschijnen hier zodra de wedstrijden van je ploeg gepland zijn; dan kan je de opstelling vanaf deze pagina voorbereiden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+msgid "No upcoming game days. They appear here as soon as your team's matches are scheduled."
+msgstr "Geen komende speeldagen. Ze verschijnen hier zodra de wedstrijden van je ploeg gepland zijn."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+msgid "No upcoming published match for your club."
+msgstr "Geen komende gepubliceerde wedstrijd voor je club."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_list
+msgid "Nominate"
+msgstr "Aanduiden"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "Nominate a club official"
+msgstr "Een club-official aanduiden"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "Nominate a club official."
+msgstr "Duid een club-official aan."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid "Nomination Deadline"
+msgstr "Termijn voor aanduiding"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "Not asked yet"
+msgstr "Nog niet gevraagd"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "not available"
+msgstr "niet beschikbaar"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "Not available"
+msgstr "Niet beschikbaar"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Not chosen yet"
+msgstr "Nog niet gekozen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Not on a senior roster, but would need one to play there."
+msgstr "Niet in een seniorenselectie, maar nodig om daar te spelen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Not playing"
+msgstr "Speelt niet"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players_parental_approval_action
+msgid "Not required"
+msgstr "Niet nodig"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Not selected"
+msgstr "Niet gekozen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Not valid until the federation verifies it."
+msgstr "Pas geldig nadat de federatie het gecontroleerd heeft."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+#, python-format
+msgid "Not valid until the federation verifies it. On %s."
+msgstr "Pas geldig nadat de federatie het gecontroleerd heeft. In %s."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "Note"
+msgstr "Opmerking"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link
+msgid "Note for your team (optional)"
+msgstr "Opmerking voor je ploeg (optioneel)"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid "Notes"
+msgstr "Opmerkingen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_season_registration_form
+msgid "Notes <span class=\"text-muted\">(optional)</span>"
+msgstr "Opmerkingen <span class=\"text-muted\">(optioneel)</span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Nothing is blocking this line-up right now."
+msgstr "Niets blokkeert deze opstelling op dit moment."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Nothing needs your attention here."
+msgstr "Niets vraagt hier je aandacht."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.connected_work_groups
+msgid "Nothing needs your attention in this view."
+msgstr "Niets vraagt je aandacht in deze weergave."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "of"
+msgstr "van"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+#, python-format
+msgid "Official needed for %(match)s"
+msgstr "Official nodig voor %(match)s"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_matchdays
+msgid "official schedule revision"
+msgstr "officiële kalenderversie"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+#, python-format
+msgid "On %s."
+msgstr "In %s."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "On a senior roster without a valid approval."
+msgstr "In een seniorenselectie zonder geldige toestemming."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_match_sheet.py:0
+msgid "Only a draft line-up can be submitted from the portal."
+msgstr "Alleen een ontwerpopstelling kan via het portaal ingediend worden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
+msgid "Only draft, returned, rejected, or withdrawn entries can be resubmitted."
+msgstr "Alleen ontwerp-, teruggestuurde, geweigerde of teruggetrokken inschrijvingen kunnen opnieuw ingediend worden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_match_referee.py:0
+msgid "Only newly assigned officiating requests can be confirmed from the portal."
+msgstr "Alleen nieuw toegewezen aanstellingen kunnen via het portaal bevestigd worden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_match_referee.py:0
+msgid "Only newly assigned officiating requests can be declined from the portal."
+msgstr "Alleen nieuw toegewezen aanstellingen kunnen via het portaal geweigerd worden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/player_availability_portal.py:0
+msgid "Only representatives of the whole club can change this."
+msgstr "Alleen vertegenwoordigers van de hele club kunnen dit wijzigen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Only rosters of this team for the same season are shown. Save to load the players of another roster. An active roster is required for submission."
+msgstr "Alleen selecties van deze ploeg voor hetzelfde seizoen worden getoond. Sla op om de spelers van een andere selectie te laden. Om in te dienen is een actieve selectie nodig."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "Open"
+msgstr "Openen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Open a game day and tick the players available that day. Submit the line-up once."
+msgstr "Open een speeldag en vink de spelers aan die die dag beschikbaar zijn. Dien de opstelling één keer in."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Open an area at any time. A red badge means something needs attention there."
+msgstr "Open op elk moment een onderdeel. Een rode badge betekent dat daar iets aandacht vraagt."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competitions
+msgid "Open competition"
+msgstr "Competitie openen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+msgid "open items"
+msgstr "openstaande items"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Open line-up"
+msgstr "Opstelling openen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Open next line-up"
+msgstr "Volgende opstelling openen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Open roster"
+msgstr "Selectie openen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/operation_task.py:0
+msgid "Open the action inbox to review deadlines, blockers, and direct next steps."
+msgstr "Open de werkbak om termijnen, blokkeringen en volgende stappen te bekijken."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Open the competition planner"
+msgstr "De competitieplanner openen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+msgid "Open the linked task and its source through the backend. Current source permissions and independent review checks apply."
+msgstr "Open de gekoppelde taak en haar bron in de backend. De huidige rechten en onafhankelijke controles blijven gelden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Open the task to continue"
+msgstr "Open de taak om verder te gaan"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Open the work queue"
+msgstr "De werkbak openen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+msgid "Open work"
+msgstr "Openstaand werk"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.role_home
+msgid "Open workspace"
+msgstr "Werkruimte openen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/journey_operation_task.py:0
+msgid "Open your work inbox for current owners, deadlines and next steps."
+msgstr "Open je werkbak voor de huidige verantwoordelijken, termijnen en volgende stappen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_matchday_operations_page
+msgid "Operational"
+msgstr "Operationeel"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_matchday_detail
+msgid "Operational status"
+msgstr "Operationele status"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "Optional note for confirmation, or a short reason if you need to decline."
+msgstr "Optionele opmerking bij een bevestiging, of een korte reden als je moet weigeren."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Other matches on this game day"
+msgstr "Andere wedstrijden op deze speeldag"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.role_home
+msgid "Other services"
+msgstr "Andere diensten"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "Other team work"
+msgstr "Ander ploegwerk"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignments
+msgid "overdue"
+msgstr "te laat"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_list
+msgid "Overdue"
+msgstr "Te laat"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Owner not yet assigned"
+msgstr "Nog geen verantwoordelijke toegewezen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "Parent or guardian name"
+msgstr "Naam van ouder of voogd"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Parent or guardian name is required."
+msgstr "De naam van de ouder of voogd is verplicht."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players_parental_approval_action
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "Parental approval"
+msgstr "Ouderlijke toestemming"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Parental consent"
+msgstr "Ouderlijke toestemming"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+#, python-format
+msgid "Parental consent: %(player)s"
+msgstr "Ouderlijke toestemming: %(player)s"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "past rosters."
+msgstr "vorige selecties."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Past seasons ("
+msgstr "Vorige seizoenen ("
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "PDF, PNG or JPG, maximum 10 MiB. The federation verifies the document before it becomes valid."
+msgstr "PDF, PNG of JPG, maximaal 10 MiB. De federatie controleert het document voor het geldig wordt."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "pending assignment(s)"
+msgstr "openstaande aanstelling(en)"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignments
+msgid "pending response"
+msgstr "wacht op antwoord"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignments
+msgid "Pending Response"
+msgstr "Wacht op antwoord"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_player_new
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_team_new
+msgid "Phone"
+msgstr "Telefoon"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Pick the players available on this game day and press <strong>Save and submit</strong>. The same line-up is used for every match your team plays that day."
+msgstr "Kies de spelers die op deze speeldag beschikbaar zijn en klik op <strong>Opslaan en indienen</strong>. Dezelfde opstelling wordt gebruikt voor elke wedstrijd die je ploeg die dag speelt."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "Player"
+msgstr "Speler"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club_player_availability
+msgid "Player availability"
+msgstr "Beschikbaarheid spelers"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/player_availability.py:0
+msgid "Player availability is off."
+msgstr "Beschikbaarheid spelers staat uit."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/player_availability.py:0
+msgid "Player availability is on. Ask your players from Player availability."
+msgstr "Beschikbaarheid spelers staat aan. Vraag je spelers via Beschikbaarheid spelers."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Player eligibility and licences"
+msgstr "Speelgerechtigdheid en licenties van spelers"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "player(s)"
+msgstr "speler(s)"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "player(s) have no email address. Ask them yourself and enter their answer below."
+msgstr "speler(s) hebben geen e-mailadres. Vraag het hen zelf en vul hun antwoord hieronder in."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "player(s) without an answer"
+msgstr "speler(s) zonder antwoord"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+msgid "Players"
+msgstr "Spelers"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Players appear here once the team has a roster for this season."
+msgstr "Spelers verschijnen hier zodra de ploeg een selectie heeft voor dit seizoen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Players can be crossed out after the line-up is submitted, until the match is finished."
+msgstr "Spelers kunnen geschrapt worden nadat de opstelling ingediend is, tot de wedstrijd afgelopen is."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "Players can only be copied into a draft roster."
+msgstr "Spelers kunnen alleen naar een ontwerpselectie gekopieerd worden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Players currently on this roster and whether they are in the next game-day line-up."
+msgstr "Spelers die nu in deze selectie zitten en of ze in de volgende opstelling staan."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Players for this game day"
+msgstr "Spelers voor deze speeldag"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Players for this match"
+msgstr "Spelers voor deze wedstrijd"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/gameday_participation.py:0
+msgid "Players for this match saved."
+msgstr "Spelers voor deze wedstrijd opgeslagen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Players in the game-day line-up of this team."
+msgstr "Spelers in de opstelling van deze ploeg voor de speeldag."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Players on this roster"
+msgstr "Spelers in deze selectie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "Players registered under the current club representative's clubs."
+msgstr "Spelers geregistreerd bij de clubs van deze clubvertegenwoordiger."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players_parental_approval_action
+msgid "Players under 16 need a verified parental approval to play in a senior (adult) league. The federation checks it against the match date."
+msgstr "Spelers jonger dan 16 hebben een gecontroleerde ouderlijke toestemming nodig om in een seniorencompetitie te spelen. De federatie controleert dit op de wedstrijddatum."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Playing"
+msgstr "Speelt"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "playing"
+msgstr "spelen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+#, python-format
+msgid "Plays in %s. Upload a signed approval."
+msgstr "Speelt in %s. Laad een ondertekende toestemming op."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link
+msgid "plays on"
+msgstr "speelt op"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_match_referee.py:0
+msgid "Please provide a short reason before declining the assignment."
+msgstr "Geef een korte reden voor je de aanstelling weigert."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "Portal roster editing only supports active roster lines. Remove a player from the roster if they should no longer be available."
+msgstr "In het portaal kan je alleen actieve spelers in de selectie beheren. Verwijder een speler uit de selectie als die niet meer beschikbaar is."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "Prepare game-day lineup"
+msgstr "Opstelling van de speeldag voorbereiden"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Prepare line-up"
+msgstr "Opstelling voorbereiden"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Prepare next line-up"
+msgstr "Volgende opstelling voorbereiden"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+msgid "Prepare one line-up per game day from your roster. It is shared by all your matches that day."
+msgstr "Maak per speeldag één opstelling uit je selectie. Ze geldt voor al je wedstrijden van die dag."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.competition_preparation_link
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Prepare your team"
+msgstr "Je ploeg voorbereiden"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/competition_queries.py:0
+msgid "Preparing"
+msgstr "In voorbereiding"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_matchday_operations_page
+msgid "Published"
+msgstr "Gepubliceerd"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_detail
+msgid "Published slot"
+msgstr "Gepubliceerd tijdslot"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "Readiness"
+msgstr "Klaar"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/competition_queries.py:0
+msgid "Ready"
+msgstr "Klaar"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Reason"
+msgstr "Reden"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid "Referee assignment created."
+msgstr "Aanstelling als scheidsrechter aangemaakt."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+msgid "referee duties"
+msgstr "scheidsrechtersdiensten"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+msgid "Reference"
+msgstr "Referentie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "Register a team"
+msgstr "Een ploeg inschrijven"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+msgid "Register a Team for a Season"
+msgstr "Een ploeg inschrijven voor een seizoen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+msgid "Register for Season"
+msgstr "Inschrijven voor het seizoen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Registration"
+msgstr "Inschrijving"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
+msgid "Registration is not open for this division."
+msgstr "De inschrijving is niet open voor deze reeks."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+msgid "Registration window"
+msgstr "Inschrijvingsperiode"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+msgid "Registration windows and entries for your represented teams."
+msgstr "Inschrijvingsperiodes en inschrijvingen voor de ploegen die je vertegenwoordigt."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
+msgid "Rejected"
+msgstr "Geweigerd"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/player_availability.py:0
+#, python-format
+msgid "Reminder sent to %s player(s)."
+msgstr "Herinnering verstuurd naar %s speler(s)."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/qol.py:0
+msgid "Reminders created."
+msgstr "Herinneringen aangemaakt."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Remove"
+msgstr "Verwijderen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Reopen Roster"
+msgstr "Selectie heropenen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Replacement needed"
+msgstr "Nieuw document nodig"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "Requirements and status"
+msgstr "Vereisten en status"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "Respond"
+msgstr "Antwoorden"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignments
+msgid "Respond now"
+msgstr "Nu antwoorden"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "Response Note"
+msgstr "Opmerking bij het antwoord"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.role_home
+msgid "Responsibility"
+msgstr "Verantwoordelijkheid"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+msgid "Resubmit"
+msgstr "Opnieuw indienen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_competition_entry_detail
+msgid "Resubmit entry"
+msgstr "Inschrijving opnieuw indienen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_matchday_detail
+msgid "Result"
+msgstr "Uitslag"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Result approver"
+msgstr "Goedkeurder van uitslagen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Result audit events linked to this match."
+msgstr "Geschiedenis van de uitslag van deze wedstrijd."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "Result Follow-Up"
+msgstr "Opvolging uitslag"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+#, python-format
+msgid "Result follow-up: %(match)s"
+msgstr "Opvolging uitslag: %(match)s"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Result history"
+msgstr "Geschiedenis van de uitslag"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.review_work
+msgid "Result review"
+msgstr "Nazicht van uitslagen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Result validator"
+msgstr "Controleur van uitslagen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Results waiting for your verification or approval."
+msgstr "Uitslagen die op jouw controle of goedkeuring wachten."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
+msgid "Returned for updates"
+msgstr "Teruggestuurd voor aanpassing"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_results
+msgid "Review"
+msgstr "Nakijken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Review assigned matches and respond before each confirmation deadline."
+msgstr "Bekijk je toegewezen wedstrijden en antwoord vóór elke bevestigingstermijn."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Review assignments"
+msgstr "Aanstellingen bekijken"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "Review competition entry"
+msgstr "Inschrijving voor competitie nakijken"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+#, python-format
+msgid "Review game-day line-up: %(team)s"
+msgstr "Opstelling nakijken: %(team)s"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "Review requirement"
+msgstr "Vereiste bekijken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.review_work
+msgid "Review the results assigned to your role. Independent approval checks still apply."
+msgstr "Kijk de uitslagen na die bij je rol horen. Onafhankelijke goedkeuringscontroles blijven gelden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Reviews and follow-up that wait for the federation."
+msgstr "Nazicht en opvolging die op de federatie wachten."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_list
+msgid "Role"
+msgstr "Rol"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Roster"
+msgstr "Selectie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+msgid "roster"
+msgstr "selectie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Roster <span class=\"text-danger\">*</span>"
+msgstr "Selectie <span class=\"text-danger\">*</span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+msgid "roster actions"
+msgstr "acties voor selecties"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Roster and team staff"
+msgstr "Selectie en ploegbegeleiding"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+msgid "Roster Details"
+msgstr "Gegevens van de selectie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+msgid "Roster Name"
+msgstr "Naam van de selectie"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "Roster name is required."
+msgstr "De naam van de selectie is verplicht."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Roster players available for this game-day line-up."
+msgstr "Spelers uit de selectie die beschikbaar zijn voor deze opstelling."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+#, python-format
+msgid "Roster readiness: %(team)s"
+msgstr "Selectie klaarmaken: %(team)s"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Roster status"
+msgstr "Status selectie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Roster summary"
+msgstr "Samenvatting selectie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "roster(s) · game-day line-ups"
+msgstr "selectie(s) · opstellingen per speeldag"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "Rosters"
+msgstr "Selecties"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Rosters and line-ups"
+msgstr "Selecties en opstellingen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Rosters of finished seasons are kept for history only."
+msgstr "Selecties van afgelopen seizoenen worden alleen bewaard als geschiedenis."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Rosters of past seasons."
+msgstr "Selecties van vorige seizoenen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Save and submit"
+msgstr "Opslaan en indienen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+msgid "Save Changes"
+msgstr "Wijzigingen opslaan"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Save changes"
+msgstr "Wijzigingen opslaan"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Save line-up"
+msgstr "Opstelling opslaan"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link
+msgid "Save my answer"
+msgstr "Antwoord opslaan"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+msgid "Save Player"
+msgstr "Speler opslaan"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Save players for this match"
+msgstr "Spelers voor deze wedstrijd opslaan"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_matchdays
+msgid "Schedules are shown only from current live publications."
+msgstr "Kalenders worden alleen getoond uit actuele live publicaties."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_results
+msgid "Score"
+msgstr "Score"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/competition_portal.py:0
+msgid "Scores cannot be negative."
+msgstr "Scores kunnen niet negatief zijn."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.federation_qol_search_results
+msgid "Search"
+msgstr "Zoeken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.federation_qol_search_results
+msgid "Search competitions, teams, schedules and matches"
+msgstr "Zoek competities, ploegen, kalenders en wedstrijden"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+msgid "Season"
+msgstr "Seizoen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_season_registration_form
+msgid "Season <span class=\"text-danger\">*</span>"
+msgstr "Seizoen <span class=\"text-danger\">*</span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Season registrations"
+msgstr "Seizoensinschrijvingen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+msgid "Season registrations submitted through the portal."
+msgstr "Seizoensinschrijvingen ingediend via het portaal."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "Select a player."
+msgstr "Kies een speler."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Select a signed approval document to upload."
+msgstr "Kies een ondertekend document om op te laden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_player.py:0
+msgid "Select a valid club before adding a player."
+msgstr "Kies een geldige club voor je een speler toevoegt."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team.py:0
+msgid "Select a valid club before creating a team."
+msgstr "Kies een geldige club voor je een ploeg aanmaakt."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
+msgid "Select a valid competition division."
+msgstr "Kies een geldige reeks van de competitie."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "Select a valid license."
+msgstr "Kies een geldige licentie."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "Select a valid player."
+msgstr "Kies een geldige speler."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_season_registration.py:0
+msgid "Select a valid team before continuing."
+msgstr "Kies een geldige ploeg om verder te gaan."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "Select at least one player."
+msgstr "Kies minstens één speler."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid "Select Player"
+msgstr "Speler kiezen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/gameday_participation.py:0
+msgid "Select players from this game-day line-up."
+msgstr "Kies spelers uit de opstelling van deze speeldag."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/qol.py:0
+msgid "Select submitted competition entries only."
+msgstr "Kies alleen ingediende inschrijvingen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "Select valid players."
+msgstr "Kies geldige spelers."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "selected"
+msgstr "gekozen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Selected"
+msgstr "Gekozen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/qol.py:0
+msgid "Selected competition entries processed."
+msgstr "Gekozen inschrijvingen verwerkt."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Show"
+msgstr "Tonen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players_parental_approval_action
+msgid "Show all players"
+msgstr "Toon alle spelers"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players_parental_approval_action
+msgid "Show only players who need action ("
+msgstr "Toon alleen spelers die actie vragen ("
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.role_home
+msgid "Showing at most"
+msgstr "Toont maximaal"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.review_work
+msgid "Showing at most 100 recent pending records. Use the backend filters for older work."
+msgstr "Toont maximaal 100 recente openstaande records. Gebruik de filters in de backend voor ouder werk."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.inbox_journey
+msgid "Showing at most 100 recent submissions."
+msgstr "Toont maximaal 100 recente inzendingen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "Showing the"
+msgstr "Toont de"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "Signed document"
+msgstr "Ondertekend document"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "Some selected players cannot be added to this roster."
+msgstr "Sommige gekozen spelers kunnen niet aan deze selectie toegevoegd worden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.role_home
+msgid "source records. Use the workspace for older work."
+msgstr "bronrecords. Gebruik de werkruimte voor ouder werk."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid "Stage"
+msgstr "Fase"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid "State"
+msgstr "Status"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_matchday_operations_page
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_results
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_list
+msgid "Status"
+msgstr "Status"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "Submission history"
+msgstr "Geschiedenis van de documenten"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_competition_entry_detail
+msgid "Submission note"
+msgstr "Opmerking bij de inschrijving"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Submission, verification and approval are separate decisions."
+msgstr "Indienen, controleren en goedkeuren zijn aparte beslissingen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+msgid "Submit"
+msgstr "Indienen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "Submit corrected result"
+msgstr "Verbeterde uitslag indienen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid "Submit Nomination"
+msgstr "Aanduiding indienen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "Submit the shared lineup for this game day."
+msgstr "Dien de gedeelde opstelling voor deze speeldag in."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "Submitted"
+msgstr "Ingediend"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Submitted line-ups await review."
+msgstr "Ingediende opstellingen wachten op nazicht."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Submitted successfully. No resubmission is needed while review is pending."
+msgstr "Succesvol ingediend. Opnieuw indienen is niet nodig zolang het nazicht loopt."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Substitutions"
+msgstr "Wissels"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_players
+msgid "Suspended"
+msgstr "Geschorst"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "Switch it on in Club details"
+msgstr "Inschakelen bij Clubgegevens"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club_player_availability
+msgid "Switch off"
+msgstr "Uitschakelen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club_player_availability
+msgid "Switch on"
+msgstr "Inschakelen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.connected_work_groups
+msgid "Task completion does not replace eligibility or approval checks."
+msgstr "Een taak afronden vervangt de controles op speelgerechtigdheid of goedkeuring niet."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+msgid "Task status"
+msgstr "Taakstatus"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.manager_queue
+msgid "Task type"
+msgstr "Taaktype"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_entries
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_season_registrations
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "Team"
+msgstr "Ploeg"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_season_registration_form
+msgid "Team <span class=\"text-danger\">*</span>"
+msgstr "Ploeg <span class=\"text-danger\">*</span>"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_team_new
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+msgid "Team Name"
+msgstr "Naam van de ploeg"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team.py:0
+msgid "Team name is required."
+msgstr "De naam van de ploeg is verplicht."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "Team work"
+msgstr "Ploegwerk"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "Teams"
+msgstr "Ploegen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+msgid "Teams available to the current club representative."
+msgstr "Ploegen die deze clubvertegenwoordiger kan beheren."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link
+msgid "Thank you. Your team can see your answer. You can change it with the same link until the game day."
+msgstr "Bedankt. Je ploeg ziet je antwoord. Je kan het met dezelfde link aanpassen tot de speeldag."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "The age rule cannot be checked."
+msgstr "De leeftijdsregel kan niet gecontroleerd worden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "The corrected result must be submitted again by a Result Submitter."
+msgstr "De verbeterde uitslag moet opnieuw ingediend worden door een indiener van uitslagen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "The existing planner resumes at the first incomplete step. Publication still requires independent review."
+msgstr "De planner gaat verder bij de eerste onvolledige stap. Publicatie vraagt nog altijd een onafhankelijk nazicht."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "The federation asked for a new document."
+msgstr "De federatie vroeg een nieuw document."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "The federation revoked the last approval."
+msgstr "De federatie heeft de laatste toestemming ingetrokken."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_match_sheet.py:0
+msgid "The game-day line-up can only be changed while it is a draft."
+msgstr "De opstelling kan alleen aangepast worden zolang ze een ontwerp is."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "The game-day line-up was submitted and needs approval."
+msgstr "De opstelling van de speeldag werd ingediend en moet goedgekeurd worden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "The last approval does not cover today."
+msgstr "De laatste toestemming geldt niet voor vandaag."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link_invalid
+msgid "The link is incomplete or no longer valid. Ask your team manager for a new one."
+msgstr "De link is onvolledig of niet meer geldig. Vraag je ploegverantwoordelijke om een nieuwe."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "The next step for each team before its game days: roster, eligibility, parental approval and line-ups."
+msgstr "De volgende stap voor elke ploeg vóór haar speeldagen: selectie, speelgerechtigdheid, ouderlijke toestemming en opstellingen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "The nomination deadline has passed."
+msgstr "De termijn voor de aanduiding is voorbij."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "The planner resumes at the first incomplete step. Publication still requires independent review."
+msgstr "De planner gaat verder bij de eerste onvolledige stap. Publicatie vraagt nog altijd een onafhankelijk nazicht."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/role_journeys.py:0
+msgid "The registration must be confirmed before roster creation."
+msgstr "De inschrijving moet bevestigd zijn voor de selectie aangemaakt wordt."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/competition_portal.py:0
+msgid "The registration window was not found."
+msgstr "De inschrijvingsperiode werd niet gevonden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "The result is contested and must return to the submitter for correction."
+msgstr "De uitslag is betwist en gaat terug naar de indiener voor correctie."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "The result is waiting for approval by a Result Approver."
+msgstr "De uitslag wacht op goedkeuring door een goedkeurder van uitslagen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "The result is waiting for approval by the tournament manager."
+msgstr "De uitslag wacht op goedkeuring door de toernooiverantwoordelijke."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "The roster is not ready for activation."
+msgstr "De selectie is nog niet klaar om te activeren."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/operation_task.py:0
+msgid "The selected assignee is not authorized for this club task."
+msgstr "De gekozen persoon is niet bevoegd voor deze clubtaak."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "The selected license must belong to the chosen player, your club, and the roster season."
+msgstr "De gekozen licentie moet horen bij de gekozen speler, je club en het seizoen van de selectie."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
+msgid "The selected registration window is not currently open for this division."
+msgstr "De gekozen inschrijvingsperiode is momenteel niet open voor deze reeks."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_season_registration.py:0
+msgid "The selected season is not open for registrations."
+msgstr "Het gekozen seizoen is niet open voor inschrijvingen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "The source cannot be checked with your current access. No readiness is implied."
+msgstr "De bron kan met je huidige toegang niet gecontroleerd worden. Dit betekent niet dat alles in orde is."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/operation_task.py:0
+msgid "The source record no longer exists."
+msgstr "Het bronrecord bestaat niet meer."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/journey_operation_task.py:0
+msgid "The source was removed. Refresh your workspace."
+msgstr "De bron werd verwijderd. Vernieuw je werkruimte."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_operation_tasks
+msgid "There are no actions in this view."
+msgstr "Er zijn geen acties in deze weergave."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.inbox_journey
+msgid "These submissions are not unfinished club actions. Open an entry to view its current status."
+msgstr "Deze inzendingen zijn geen onafgewerkte clubacties. Open een inschrijving om de huidige status te zien."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+msgid "These teams have a confirmed season registration but no roster yet."
+msgstr "Deze ploegen hebben een bevestigde seizoensinschrijving maar nog geen selectie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "This assignment is ready for confirmation."
+msgstr "Deze aanstelling kan bevestigd worden."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/archive_scope.py:0
+msgid "This competition is no longer available."
+msgstr "Deze competitie is niet meer beschikbaar."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/journey_operation_task.py:0
+msgid "This confirmed registration has no roster."
+msgstr "Deze bevestigde inschrijving heeft geen selectie."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
+msgid "This division has reached its entry capacity."
+msgstr "Deze reeks heeft het maximale aantal inschrijvingen bereikt."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/player_availability_portal.py:0
+msgid "This game day has already been played."
+msgstr "Deze speeldag is al gespeeld."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability_detail
+msgid "This game day has been played. Answers can no longer change."
+msgstr "Deze speeldag is gespeeld. Antwoorden kunnen niet meer veranderen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "This is optional. Clubs that already use Spond or another app can leave it off."
+msgstr "Dit is optioneel. Clubs die al Spond of een andere app gebruiken, kunnen dit uit laten."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_results
+msgid "This is the direct post-match queue. Start in the Club Operations Workspace when you need team context, then use this list for unresolved score approval, review, or contest work."
+msgstr "Dit is de lijst na de wedstrijd. Begin in de clubwerkruimte als je de context van een ploeg nodig hebt, en gebruik deze lijst om uitslagen goed te keuren, na te kijken of te betwisten."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/operation_task.py:0
+msgid "This item must be corrected in its owning workflow."
+msgstr "Dit moet in de bijhorende werkstroom verbeterd worden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "This line-up is final. Use <strong>Players for this match</strong> below to cross out players who do not play."
+msgstr "Deze opstelling is definitief. Gebruik <strong>Spelers voor deze wedstrijd</strong> hieronder om spelers te schrappen die niet spelen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link_invalid
+msgid "This link does not work"
+msgstr "Deze link werkt niet"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "This match"
+msgstr "Deze wedstrijd"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/competition_queries.py:0
+msgid "This match day has no visible live publication."
+msgstr "Deze speeldag heeft geen zichtbare live publicatie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+msgid ""
+"This result has been verified by a federation official.\n"
+"                                Approve it to include it in official standings."
+msgstr "Deze uitslag is gecontroleerd door een official van de federatie. Keur ze goed om ze in het officiële klassement op te nemen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "This roster becomes active automatically as soon as it meets the competition rules."
+msgstr "Deze selectie wordt automatisch actief zodra ze aan de competitieregels voldoet."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "This roster belongs to a past season. It is kept for history and no longer appears in your current rosters."
+msgstr "Deze selectie hoort bij een vorig seizoen. Ze wordt bewaard als geschiedenis en verschijnt niet meer bij je huidige selecties."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "This roster can only be managed in the portal after the team's season registration has been confirmed."
+msgstr "Deze selectie kan pas via het portaal beheerd worden nadat de seizoensinschrijving van de ploeg bevestigd is."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "This roster is still a draft. It becomes active automatically once it meets the competition rules; an active roster is required for submission."
+msgstr "Deze selectie is nog een ontwerp. Ze wordt automatisch actief zodra ze aan de competitieregels voldoet; om in te dienen is een actieve selectie nodig."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "This roster is your season pool. For every game day you choose the players available that day from it. That line-up is shared by all your matches that day; at each match you only cross out the players who do not play."
+msgstr "Deze selectie is je spelerskern voor het seizoen. Voor elke speeldag kies je daaruit de spelers die die dag beschikbaar zijn. Die opstelling geldt voor al je wedstrijden van die dag; bij elke wedstrijd schrap je alleen de spelers die niet spelen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "This task is complete; source approval and eligibility remain separate checks."
+msgstr "Deze taak is afgerond; goedkeuring en speelgerechtigdheid blijven aparte controles."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
+msgid "This team already has an active entry."
+msgstr "Deze ploeg heeft al een actieve inschrijving."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/player_availability_portal.py:0
+msgid "This team does not play on that game day."
+msgstr "Deze ploeg speelt niet op die speeldag."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "This team has no roster for this season yet. Create the roster first, then come back to choose the players."
+msgstr "Deze ploeg heeft nog geen selectie voor dit seizoen. Maak eerst de selectie aan en kom dan terug om de spelers te kiezen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_season_registration.py:0
+msgid "This team is already registered for this season."
+msgstr "Deze ploeg is al ingeschreven voor dit seizoen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_bulk_add
+msgid "Tick every player who plays for this team. Licenses are linked automatically."
+msgstr "Vink elke speler aan die voor deze ploeg speelt. Licenties worden automatisch gekoppeld."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+msgid "Tick the players available on this game day"
+msgstr "Vink de spelers aan die op deze speeldag beschikbaar zijn"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_matchday_detail
+msgid "Time"
+msgstr "Tijd"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.connected_work_groups
+msgid "To do"
+msgstr "Te doen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_teams
+msgid "to prepare for tournament entry."
+msgstr "om de inschrijving in een competitie voor te bereiden."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_result_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+msgid "Tournament"
+msgstr "Toernooi"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/qol.py:0
+msgid "Tournament manager access is required."
+msgstr "Toegang als toernooiverantwoordelijke is vereist."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_tournament_registrations
+msgid "Tournament registrations visible in the portal."
+msgstr "Toernooi-inschrijvingen zichtbaar in het portaal."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+#, python-format
+msgid "Under %(age)s until %(date)s"
+msgstr "Jonger dan %(age)s tot %(date)s"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+#, python-format
+msgid "Under %s"
+msgstr "Jonger dan %s"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/competition_portal.py:0
+msgid "Unsupported match-day action."
+msgstr "Niet-ondersteunde actie op de speeldag."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignments
+msgid "Upcoming"
+msgstr "Komend"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+msgid "Upcoming game days"
+msgstr "Komende speeldagen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "Upcoming game days of this roster and the state of each line-up."
+msgstr "Komende speeldagen van deze selectie en de stand van elke opstelling."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "Upcoming game days of your teams."
+msgstr "Komende speeldagen van je ploegen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+msgid "Upcoming game days with the state of each line-up."
+msgstr "Komende speeldagen met de stand van elke opstelling."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/task_projection.py:0
+msgid "Upload and verify parental approval"
+msgstr "Ouderlijke toestemming opladen en laten controleren"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Upload approval"
+msgstr "Toestemming opladen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "Upload for review"
+msgstr "Opladen ter controle"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Upload renewal"
+msgstr "Vernieuwing opladen"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "Upload signed approval"
+msgstr "Ondertekende toestemming opladen"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Uploaded; the federation still has to verify it."
+msgstr "Opgeladen; de federatie moet het nog controleren."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_club_representative.py:0
+msgid "User"
+msgstr "Gebruiker"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+msgid "Valid From"
+msgstr "Geldig vanaf"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_edit
+msgid "Valid To"
+msgstr "Geldig tot"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "Valid today."
+msgstr "Vandaag geldig."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "Valid until"
+msgstr "Geldig tot"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+#, python-format
+msgid "Valid until %(date)s (%(days)s days left)."
+msgstr "Geldig tot %(date)s (nog %(days)s dagen)."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+#, python-format
+msgid "Valid until %s."
+msgstr "Geldig tot %s."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Verify submitted result"
+msgstr "Ingediende uitslag controleren"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_line_form
+msgid "Vice Captain"
+msgstr "Vicekapitein"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheets
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_rosters
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_list
+msgid "View"
+msgstr "Bekijken"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "View approved result"
+msgstr "Goedgekeurde uitslag bekijken"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "View assignment status"
+msgstr "Status van de aanstelling bekijken"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "View completed work"
+msgstr "Afgerond werk bekijken"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "View status"
+msgstr "Status bekijken"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "View submission status"
+msgstr "Status van de inzending bekijken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_club
+msgid "Website"
+msgstr "Website"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_match_sheet_detail
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "When"
+msgstr "Wanneer"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_roster_detail
+msgid "When matches are scheduled, each game day is listed above."
+msgstr "Zodra wedstrijden gepland zijn, staat elke speeldag hierboven."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_competition_entry_detail
+msgid "Withdraw entry"
+msgstr "Inschrijving terugtrekken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_competition_entry_detail
+msgid "Withdraw this entry from the registration window."
+msgstr "Deze inschrijving terugtrekken uit de inschrijvingsperiode."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_competition_entry.py:0
+msgid "Withdrawn"
+msgstr "Teruggetrokken"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_milestones
+msgid "Work inbox"
+msgstr "Werkbak"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "You"
+msgstr "Jij"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "You can only access rosters for your assigned teams or clubs."
+msgstr "Je hebt alleen toegang tot selecties van je eigen ploegen of clubs."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "You can only access season registrations for your assigned teams or clubs."
+msgstr "Je hebt alleen toegang tot seizoensinschrijvingen van je eigen ploegen of clubs."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_referee.py:0
+msgid "You can only access your own referee profile."
+msgstr "Je hebt alleen toegang tot je eigen scheidsrechtersprofiel."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_player.py:0
+msgid "You can only add players to your own club."
+msgstr "Je kan alleen spelers aan je eigen club toevoegen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team.py:0
+msgid "You can only create teams for your own club."
+msgstr "Je kan alleen ploegen aanmaken voor je eigen club."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_season_registration.py:0
+msgid "You can only register your own teams."
+msgstr "Je kan alleen je eigen ploegen inschrijven."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_match_sheet.py:0
+msgid "You can only review line-ups for your assigned teams or club."
+msgstr "Je kan alleen opstellingen van je eigen ploegen of club bekijken."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_match_referee.py:0
+msgid "You can only review your own officiating assignments."
+msgstr "Je kan alleen je eigen aanstellingen als official bekijken."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_parental_approval.py:0
+msgid "You can only upload parental approval for players in your club."
+msgstr "Je kan alleen ouderlijke toestemming opladen voor spelers van je club."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/player_availability_portal.py:0
+msgid "You do not have access to this availability request."
+msgstr "Je hebt geen toegang tot deze beschikbaarheidsvraag."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/journey_operation_task.py:0
+msgid "You do not have access to this club duty."
+msgstr "Je hebt geen toegang tot deze clubdienst."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/competition_queries.py:0
+msgid "You do not have access to this competition."
+msgstr "Je hebt geen toegang tot deze competitie."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/competition_queries.py:0
+msgid "You do not have access to this match day."
+msgstr "Je hebt geen toegang tot deze speeldag."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/journey_operation_task.py:0
+msgid "You do not have access to this match result."
+msgstr "Je hebt geen toegang tot deze wedstrijduitslag."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "You do not have access to this player."
+msgstr "Je hebt geen toegang tot deze speler."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/portal_privilege.py:0
+msgid "You do not have access to this record."
+msgstr "Je hebt geen toegang tot dit record."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/competition_queries.py:0
+msgid "You do not have access to this team."
+msgstr "Je hebt geen toegang tot deze ploeg."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_match_sheet.py:0
+msgid "You do not have portal access to game-day line-ups."
+msgstr "Je hebt geen portaaltoegang tot opstellingen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "You do not have portal access to season registrations."
+msgstr "Je hebt geen portaaltoegang tot seizoensinschrijvingen."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/models/federation_team_roster.py:0
+msgid "You do not have portal access to team rosters."
+msgstr "Je hebt geen portaaltoegang tot selecties."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_403_access_denied
+msgid ""
+"You don't have permission to view this record.\n"
+"                            If you believe this is a mistake, please contact the federation."
+msgstr "Je hebt geen toegang tot dit record. Denk je dat dit een vergissing is, neem dan contact op met de federatie."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link
+msgid "Your answer"
+msgstr "Jouw antwoord"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.player_availability_link
+msgid "Your answer:"
+msgstr "Jouw antwoord:"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competitions
+msgid "Your competitions"
+msgstr "Jouw competities"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_referee_assignment_detail
+msgid "Your Response"
+msgstr "Jouw antwoord"
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/web_auth.py:0
+msgid "Your session expired. Please sign in again and retry your last action."
+msgstr "Je sessie is verlopen. Meld je opnieuw aan en probeer je laatste actie opnieuw."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.club_preparation_journey
+msgid "Your submission is waiting for review. No resubmission is needed."
+msgstr "Je inzending wacht op nazicht. Opnieuw indienen is niet nodig."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_availability
+msgid "Your teams have no upcoming published game days."
+msgstr "Je ploegen hebben geen komende gepubliceerde speeldagen."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_federation_links
+msgid "Your teams, people, competitions and match-day work in one overview."
+msgstr "Je ploegen, mensen, competities en speeldagwerk in één overzicht."
+
+#. module: sports_federation_portal
+#: code:addons/sports_federation_portal/controllers/connected_journeys.py:0
+msgid "Your work is handed over. The owner shown is responsible for the next decision."
+msgstr "Je werk is doorgegeven. De vermelde verantwoordelijke neemt de volgende beslissing."
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.connected_work_card
+msgid "· Due"
+msgstr "· Uiterlijk"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_matchday_detail
+msgid "· live official schedule revision"
+msgstr "· live officiële kalenderversie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_detail
+msgid "· official schedule revision"
+msgstr "· officiële kalenderversie"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_player_parental_approvals
+msgid "· valid until"
+msgstr "· geldig tot"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_referee_duty_form
+msgid "— Role:"
+msgstr "— Rol:"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_competition_entry_detail
+msgid "← Competition entries"
+msgstr "← Inschrijvingen voor competities"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_competition_detail
+msgid "← Competitions"
+msgstr "← Competities"
+
+#. module: sports_federation_portal
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_matchday_operations_page
+#: model_terms:ir.ui.view,arch_db:sports_federation_portal.portal_my_matchday_detail
+msgid "← Match days"
+msgstr "← Speeldagen"

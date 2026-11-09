@@ -24,6 +24,7 @@
         "views/team_roster_views.xml",
         "views/match_sheet_views.xml",
         "views/gameday_lineup_wizard_views.xml",
+        "views/player_availability_views.xml",
         "views/gameday_participation_views.xml",
         "views/season_registration_views_inherit.xml",
         "views/tournament_participant_views_inherit.xml",

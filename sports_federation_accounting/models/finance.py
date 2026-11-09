@@ -175,3 +175,70 @@ class Finance(models.Model):
                 "closed_by_id": self.env.uid,
             }
         )
+
+
+UNPAID_STATES = ("not_paid", "partial")
+
+
+class FinanceClubPortal(models.Model):
+    _inherit = "federation.finance.event"
+
+    @api.model
+    def _portal_club_invoices(self, user=None):
+        """Posted invoices of charges owned by the user's clubs.
+
+        Only whole-club representatives see them; a team-only scope does not
+        include the club's money.
+        """
+        user = user or self.env.user
+        clubs = user.portal_club_scope_ids
+        if not clubs:
+            return self.browse()
+        return self.sudo().search(
+            [
+                ("charge_owner", "=", "club"),
+                ("club_id", "in", clubs.ids),
+                ("account_move_id", "!=", False),
+                ("account_move_id.state", "=", "posted"),
+            ],
+            order="id desc",
+        )
+
+    @api.model
+    def _portal_unpaid_invoice_count(self, user=None):
+        moves = self._portal_club_invoices(user=user).account_move_id
+        return len(moves.filtered(lambda move: move.payment_state in UNPAID_STATES))
+
+    @api.model
+    def _portal_club_invoice_rows(self, user=None):
+        """Display values; the link opens Odoo's invoice page with online payment."""
+        events = self._portal_club_invoices(user=user)
+        labels = dict(
+            self.env["account.move"]._fields["payment_state"]._description_selection(
+                self.env
+            )
+        )
+        rows = []
+        for event in events:
+            move = event.account_move_id
+            rows.append(
+                {
+                    "club": event.club_id.display_name,
+                    "number": move.name,
+                    "description": event.name,
+                    "date": move.invoice_date,
+                    "due": move.invoice_date_due,
+                    "amount": move.amount_total,
+                    "residual": move.amount_residual,
+                    "currency": move.currency_id,
+                    "unpaid": move.payment_state in UNPAID_STATES,
+                    "overdue": bool(
+                        move.payment_state in UNPAID_STATES
+                        and move.invoice_date_due
+                        and move.invoice_date_due < fields.Date.context_today(self)
+                    ),
+                    "state_label": labels.get(move.payment_state, move.payment_state),
+                    "url": move.get_portal_url(),
+                }
+            )
+        return rows
