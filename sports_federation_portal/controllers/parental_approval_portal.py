@@ -129,5 +129,5 @@ class FederationParentalApprovalPortal(FederationPortalBase):
             )
         return self._redirect_with_query(
             f"/my/players/{player.id}/parental-approvals",
-            success="Parental approval uploaded and sent for federation review.",
+            success=request.env._("Parental approval uploaded and sent for federation review."),
         )

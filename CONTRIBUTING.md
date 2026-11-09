@@ -60,6 +60,7 @@ bash ci/run_repo_lint.sh --strict
 python3 ci/check_addon_integrity.py
 python3 ci/check_module_dependency_drift.py
 python3 ci/check_access_csv_integrity.py
+python3 ci/check_translations.py
 python3 ci/check_workflow_state_contracts.py
 python3 ci/check_migration_review.py --base-ref origin/main
 python3 ci/check_constraint_index_contracts.py
@@ -89,6 +90,8 @@ For every behavioural change:
 - [ ] New view, data and asset files are declared in `__manifest__.py`; direct
       dependencies are declared; `version` is bumped when an upgrade is needed.
 - [ ] Packages export their files in `__init__.py`.
+- [ ] User-facing text is translatable and the templates are re-exported
+      (see [Translations](docs/development/translations.md)).
 - [ ] A focused test covers the business rule (deterministic for scheduling
       and standings logic) and is tagged for suite selection.
 - [ ] Documentation is updated in the same change (see below).

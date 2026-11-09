@@ -36,6 +36,30 @@ passed unless they ran.
 
 ## Entries
 
+### Translation foundation: language registry, Weblate tooling, translatable portal messages
+
+Affected modules: `sports_federation_people` 19.0.1.2.2 → 19.0.1.3.0,
+`sports_federation_portal` (controllers only; version unchanged), and new
+repository tooling (`i18n/`, `scripts/i18n/`, `ci/check_translations.py`).
+
+**Data changes**: new optional field `federation.player.lang` (language for
+emails to the player; empty means the federation's language). No migration
+script.
+
+**Behaviour to verify**: portal success and error messages (for example after
+creating a team or saving a roster) appear in the user's language once
+translations exist; in English nothing changes. The player form shows
+**Language**. `python3 ci/check_translations.py` passes and lists the
+glossary completeness for Dutch, French and German.
+
+**Dry-run evidence**: Python syntax, the translation check and its unit tests,
+the PO round trip and the static contract checks ran in the patch environment.
+`scripts/i18n/export_pot.sh` and the Odoo tests did not run there (no Docker
+or Odoo). Run the export once, review the generated templates, and run the
+`sf_translations` tests on staging.
+
+**Rollback**: code-only; the player language field stays unused.
+
 ### Game-day printouts, club invoices, Dutch and French portal, optional player availability
 
 Affected modules: `sports_federation_live_workspace` 19.0.1.7.0 → 19.0.1.8.0,

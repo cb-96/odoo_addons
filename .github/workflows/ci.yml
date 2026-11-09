@@ -104,6 +104,11 @@ jobs:
       - name: Verify access CSV integrity
         run: python ci/check_access_csv_integrity.py
 
+      - name: Check translations
+        run: |
+          python -m unittest ci/test_check_translations.py
+          python ci/check_translations.py
+
       - name: Verify source collector completeness
         run: python ci/check_source_collector_contract.py
 

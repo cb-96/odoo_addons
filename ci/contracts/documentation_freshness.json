@@ -25,6 +25,7 @@
     "docs/reference/data-retention.md",
     "docs/development/testing.md",
     "docs/development/ci.md",
+    "docs/development/translations.md",
     "docs/operations/deployment.md",
     "docs/operations/release-runbook.md",
     "docs/operations/upgrade-notes.md",

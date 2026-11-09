@@ -41,10 +41,28 @@ class FederationPlayer(models.Model):
         "federation.team", string="Teams", relation="federation_player_team_rel"
     )
     email = fields.Char(string="Email")
+    lang = fields.Selection(
+        selection="_lang_selection",
+        string="Language",
+        help="Language for emails to this player. Leave empty to use the "
+        "federation's language.",
+    )
     phone = fields.Char(string="Phone")
     mobile = fields.Char(string="Mobile")
     photo = fields.Binary(string="Photo")
     notes = fields.Text(string="Notes")
+
+    @api.model
+    def _lang_selection(self):
+        return self.env["res.lang"].get_installed()
+
+    def _communication_lang(self):
+        """Language for messages to this player, who usually has no account.
+
+        The player's own choice, otherwise the federation's (company) language.
+        """
+        self.ensure_one()
+        return self.lang or self.env.company.partner_id.lang or "en_US"
 
     license_ids = fields.One2many(
         "federation.player.license", "player_id", string="Licenses"

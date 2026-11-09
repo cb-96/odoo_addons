@@ -131,13 +131,13 @@ class FederationClubRefereeDutyPortal(FederationPortalBase):
         if duty.state not in _NOMINATABLE_STATES:
             return self._redirect_with_query(
                 f"/my/referee-duties/{duty_id}",
-                error="This duty cannot be nominated in its current state.",
+                error=request.env._("This duty cannot be nominated in its current state."),
             )
 
         if not player_id:
             return self._redirect_with_query(
                 f"/my/referee-duties/{duty_id}",
-                error_hint="Please select a player before submitting.",
+                error_hint=request.env._("Please select a player before submitting."),
             )
 
         try:
@@ -145,7 +145,7 @@ class FederationClubRefereeDutyPortal(FederationPortalBase):
         except (ValueError, TypeError):
             return self._redirect_with_query(
                 f"/my/referee-duties/{duty_id}",
-                error_hint="Invalid player selection.",
+                error_hint=request.env._("Invalid player selection."),
             )
 
         try:
@@ -164,5 +164,5 @@ class FederationClubRefereeDutyPortal(FederationPortalBase):
 
         return self._redirect_with_query(
             f"/my/referee-duties/{duty_id}",
-            success="Your nomination has been submitted.",
+            success=request.env._("Your nomination has been submitted."),
         )

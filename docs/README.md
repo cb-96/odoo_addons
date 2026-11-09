@@ -31,6 +31,7 @@ and update that file instead of creating a new one.
 | Check how long data is kept | [Data retention](reference/data-retention.md) |
 | Set up a development environment and contribute | [Contributing](../CONTRIBUTING.md) |
 | Write or run tests | [Testing guide](development/testing.md) |
+| Translate the platform or add a language | [Translations](development/translations.md) |
 | Understand the CI checks | [CI and quality gates](development/ci.md) |
 | Deploy a new server | [Deployment guide](operations/deployment.md) |
 | Upgrade production or roll back | [Release runbook](operations/release-runbook.md) |
