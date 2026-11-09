@@ -25,6 +25,7 @@ and update that file instead of creating a new one.
 | Understand competition records and handoffs | [Competition model](architecture/competition-model.md) |
 | Show readiness to users | [Readiness vocabulary](architecture/readiness-vocabulary.md) |
 | Read an architecture decision | [Decision records](architecture/decisions/README.md) |
+| See how other sports and federations could be supported later | [Multi-sport direction](architecture/multi-sport-direction.md) |
 | Look up an HTTP route | [Route inventory](reference/routes.md) |
 | Integrate with the platform | [Integration contracts](reference/integration-contracts.md) |
 | Check how long data is kept | [Data retention](reference/data-retention.md) |

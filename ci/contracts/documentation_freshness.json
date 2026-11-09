@@ -12,6 +12,7 @@
     "docs/architecture/overview.md",
     "docs/architecture/technical-reference.md",
     "docs/architecture/competition-model.md",
+    "docs/architecture/multi-sport-direction.md",
     "docs/architecture/state-and-ownership.md",
     "docs/architecture/readiness-vocabulary.md",
     "docs/architecture/exception-handling.md",
