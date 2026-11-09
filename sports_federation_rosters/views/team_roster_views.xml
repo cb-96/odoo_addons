@@ -150,6 +150,8 @@
                             <field name="player_gender_a" invisible="1"/>
                             <!-- Technical relay for the player picker domain below: allowed gender. -->
                             <field name="player_gender_b" invisible="1"/>
+                            <!-- Retained while stored inherited views are upgraded. -->
+                            <field name="rostered_player_ids" invisible="1"/>
                             <!-- Technical relay for the player picker domain below: players this roster cannot take. -->
                             <field name="unavailable_player_ids" invisible="1"/>
                             <field name="line_ids">

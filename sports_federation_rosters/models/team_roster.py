@@ -93,6 +93,12 @@ class FederationTeamRoster(models.Model):
         compute="_compute_player_gender_filter",
         help="Technical: second player gender allowed on this roster's team.",
     )
+    rostered_player_ids = fields.Many2many(
+        "federation.player",
+        compute="_compute_rostered_player_ids",
+        help="Compatibility field for stored roster-picker views during upgrade; "
+        "contains players already on this roster.",
+    )
     min_players_required = fields.Integer(
         string="Min Players Required",
         help="Minimum number of eligible active players the squad must contain before"
@@ -163,6 +169,11 @@ class FederationTeamRoster(models.Model):
             first, second = allowed.get(roster.team_id.gender, ("male", "female"))
             roster.player_gender_a = first
             roster.player_gender_b = second
+
+    @api.depends("line_ids.player_id")
+    def _compute_rostered_player_ids(self):
+        for roster in self:
+            roster.rostered_player_ids = roster.line_ids.player_id
 
     def _build_generated_name(self, team, season, competition=False):
         """Build generated name."""

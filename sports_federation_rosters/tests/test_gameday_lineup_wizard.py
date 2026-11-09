@@ -218,6 +218,7 @@ class TestGamedayLineupWizard(TransactionCase):
         )
 
     def test_wizard_reports_gameday_and_match_limits(self):
+        self.assertIn("club_rank_warning", self.env["federation.gameday.lineup.wizard"]._fields)
         self.roster.rule_set_id.write(
             {"gameday_roster_max_size": 14, "match_player_max_size": 12}
         )

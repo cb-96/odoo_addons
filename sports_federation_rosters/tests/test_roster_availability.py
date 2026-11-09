@@ -76,6 +76,7 @@ class TestRosterAvailability(TransactionCase):
         )
 
     def test_player_on_the_roster_is_unavailable_there(self):
+        self.assertIn(self.player, self.second_roster.rostered_player_ids)
         self.assertIn(self.player, self.second_roster.unavailable_player_ids)
 
     def test_same_division_club_team_is_unavailable(self):
