@@ -1,0 +1,15 @@
+<odoo>
+  <record id="teams_handoff_form" model="ir.ui.view"><field name="name">teams.handoff.form</field><field name="model">federation.teams.handoff.wizard</field><field name="arch" type="xml"><form>
+    <group><field name="window_id"/><field name="amendment"/><field name="expected_digest"/><field name="expected_participant_set_id"/></group>
+    <p>Approval decides eligibility. Finalization creates the accepted playing list; no second participant approval is needed. Amendments preserve previous snapshots and require a reason. Changes after format creation require a governed format correction.</p>
+    <field name="entry_ids" readonly="True"><list create="False" delete="False"><field name="team_id"/><field name="seed"/><field name="state"/></list></field>
+    <group invisible="not amendment"><field name="team_ids" widget="many2many_tags"/><field name="reason" required="amendment"/></group>
+    <footer><button name="action_apply" type="object" string="Apply reviewed team list" class="btn-primary"/><button special="cancel" string="Cancel"/></footer>
+  </form></field></record>
+  <record id="registration_handoff_form" model="ir.ui.view"><field name="name">registration.handoff.form</field><field name="model">federation.registration.window</field><field name="inherit_id" ref="registration_window_form"/><field name="arch" type="xml">
+    <xpath expr="//button[@name='action_finalize']" position="attributes"><attribute name="name">action_review_finalization</attribute><attribute name="string">Review and finalize teams</attribute></xpath>
+    <xpath expr="//header" position="inside"><button name="action_review_finalization" type="object" string="Amend finalized teams" invisible="state != 'finalized'"/></xpath>
+    <xpath expr="//field[@name='entry_ids']" position="attributes"><attribute name="readonly">state == 'finalized'</attribute></xpath>
+    <xpath expr="//field[@name='participant_set_id']" position="after"><field name="finalized_by_id"/><field name="finalized_on"/></xpath>
+  </field></record>
+</odoo>

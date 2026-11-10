@@ -1,6 +1,6 @@
 {
     "name": "Competition Registration",
-    "version": "19.0.1.4.2",
+    "version": "19.0.1.5.0",
     "category": "Sports",
     "summary": "Role-separated registration desk and finalized participant sets",
     "author": "Sports Federation",
@@ -13,6 +13,7 @@
         "wizards/team_selection_wizard_views.xml",
         "views/registration_views.xml",
         "views/menu.xml",
+        "views/participant_handoff.xml",
     ],
     "installable": True,
     "application": False,
