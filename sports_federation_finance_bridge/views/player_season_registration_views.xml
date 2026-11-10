@@ -1,0 +1,18 @@
+<odoo>
+  <record id="club_season_registration_charges" model="ir.ui.view">
+    <field name="name">club.season.registration.charges</field><field name="model">federation.club.season.registration</field>
+    <field name="inherit_id" ref="sports_federation_people.club_season_registration_form"/>
+    <field name="arch" type="xml"><xpath expr="//header" position="inside">
+      <button name="action_view_player_charges" type="object" string="Player charges"/>
+    </xpath><xpath expr="//field[@name='club_id'][not(ancestor::field)]" position="after">
+      <field name="billing_partner_id"/>
+    </xpath></field>
+  </record>
+  <record id="season_team_fee_policy" model="ir.ui.view">
+    <field name="name">season.team.fee.policy</field><field name="model">federation.season</field>
+    <field name="inherit_id" ref="sports_federation_base.view_federation_season_form"/>
+    <field name="arch" type="xml"><xpath expr="//field[@name='date_end']" position="after">
+      <field name="team_registration_fee_enabled"/>
+    </xpath></field>
+  </record>
+</odoo>

@@ -172,3 +172,12 @@ The former monolithic competition engine has been removed from the source
 tree. Databases that once installed it must follow the retirement procedure
 in the [release runbook](../operations/release-runbook.md#retiring-the-legacy-competition-engine)
 before an upgrade can be called clean.
+
+## Annual club player pool
+
+A club season registration groups the club's annual player licences for approval
+and billing. The licence is the canonical player-season registration. Team-level
+season enrolment remains an internal team participation record, not a player
+registration. Team roster and match-day eligibility require an active licence for
+the same club and competition season, valid on the relevant date. See the
+[annual player workflow](../workflows/club-season-player-registration.md).

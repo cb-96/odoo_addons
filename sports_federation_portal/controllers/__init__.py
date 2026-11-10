@@ -21,4 +21,4 @@ from . import role_journeys
 from . import connected_journeys
 from . import journey_instrumentation
 from . import roster_bulk
-
+from . import club_season_players

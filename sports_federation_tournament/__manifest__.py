@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Tournament",
-    "version": "19.0.1.6.1",
+    "version": "19.0.1.6.2",
     "category": "Sports",
     "summary": "Tournaments, stages, groups, participants, and matches",
     "description": """

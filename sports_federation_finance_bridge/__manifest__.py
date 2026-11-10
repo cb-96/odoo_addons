@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation Finance Bridge",
-    "version": "19.0.1.3.0",
+    "version": "19.0.1.4.0",
     "category": "Sports",
     "summary": "Record billable and reimbursable federation events without accounting integration",
     "description": "Finance event tracking for billable and reimbursable federation operations.",
@@ -26,6 +26,7 @@
         "views/finance_event_views.xml",
         "views/federation_match_finance_views.xml",
         "views/season_budget_views.xml",
+        "views/player_season_registration_views.xml",
         "views/menu_views.xml",
     ],
     "demo": [],

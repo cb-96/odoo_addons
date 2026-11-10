@@ -1,0 +1,50 @@
+<odoo>
+  <template id="portal_season_players" name="Season Player Registrations">
+    <t t-call="portal.portal_layout"><div class="container py-4">
+      <h1>Season player registrations</h1>
+      <p>Register your club's players once per season. Federation approval enables team roster selection and creates the annual player charges.</p>
+      <div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div>
+      <form action="/my/season-players/start" method="post" class="row g-2 mb-4">
+        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+        <div class="col-md-5"><label for="registration_club">Club</label><select id="registration_club" name="club_id" class="form-select" required="required">
+          <option t-foreach="clubs" t-as="club" t-att-value="club.id"><t t-esc="club.display_name"/></option>
+        </select></div>
+        <div class="col-md-5"><label for="registration_season">Season</label><select id="registration_season" name="season_id" class="form-select" required="required">
+          <option t-foreach="seasons" t-as="season" t-att-value="season.id"><t t-esc="season.display_name"/></option>
+        </select></div><div class="col-md-2 align-self-end"><button class="btn btn-primary" type="submit">Open registration</button></div>
+      </form>
+      <div t-foreach="registrations" t-as="registration" class="card mb-2"><div class="card-body">
+        <a t-attf-href="/my/season-players/#{registration.id}"><t t-esc="registration.display_name"/></a>
+        <span class="ms-3"><t t-esc="registration.registered_player_count"/> approved / <t t-esc="registration.pending_player_count"/> pending</span>
+        <span class="badge text-bg-secondary ms-2" t-field="registration.state"/>
+      </div></div><a href="/my/preparation" class="btn btn-outline-secondary mt-3">Back to preparation</a>
+    </div></t>
+  </template>
+  <template id="portal_season_players_detail" name="Club Season Players">
+    <t t-call="portal.portal_layout"><div class="container py-4">
+      <h1 t-esc="registration.display_name"/>
+      <p>Pending players are not eligible for team rosters until the federation approves their registration. Adding more players does not revoke previous approvals.</p>
+      <div t-if="error" class="alert alert-danger" role="alert"><t t-esc="error"/></div>
+      <table class="table"><thead><tr><th>Player</th><th>Status</th><th>Valid until</th></tr></thead><tbody>
+        <tr t-foreach="registration.license_ids" t-as="license"><td t-esc="license.player_id.display_name"/><td t-field="license.state"/><td t-field="license.expiry_date"/></tr>
+      </tbody></table>
+      <t t-if="registration.state != 'cancelled' and registration.season_id.state == 'open'">
+        <form t-attf-action="/my/season-players/#{registration.id}/add" method="post">
+          <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+          <fieldset><legend>Add club players</legend><label t-foreach="players" t-as="player" class="d-block mb-2">
+            <input type="checkbox" name="player_ids" t-att-value="player.id" class="form-check-input me-2"/><t t-esc="player.display_name"/>
+          </label></fieldset><button t-if="players" type="submit" class="btn btn-outline-primary">Add selected players</button>
+        </form>
+        <form t-if="registration.pending_player_count" t-attf-action="/my/season-players/#{registration.id}/submit" method="post" class="mt-3">
+          <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/><button type="submit" class="btn btn-primary">Submit pending players for approval</button>
+        </form>
+      </t><a href="/my/season-players" class="btn btn-outline-secondary mt-3">Back to season players</a>
+    </div></t>
+  </template>
+  <template id="season_players_preparation_link" inherit_id="sports_federation_portal.club_preparation_journey">
+    <xpath expr="//h1" position="after"><div class="alert alert-info">
+      Register players for the season before adding them to team rosters.
+      <a href="/my/season-players" class="btn btn-outline-primary ms-2">Season players</a>
+    </div></xpath>
+  </template>
+</odoo>

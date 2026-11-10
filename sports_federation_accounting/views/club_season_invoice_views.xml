@@ -1,0 +1,10 @@
+<odoo>
+  <record id="club_season_player_invoice" model="ir.ui.view">
+    <field name="name">club.season.player.invoice</field><field name="model">federation.club.season.registration</field>
+    <field name="inherit_id" ref="sports_federation_finance_bridge.club_season_registration_charges"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='billing_partner_id']" position="after"><field name="invoice_product_id"/></xpath>
+      <xpath expr="//header" position="inside"><button name="action_create_player_invoice" type="object" string="Create club player invoice" groups="account.group_account_invoice"/></xpath>
+    </field>
+  </record>
+</odoo>

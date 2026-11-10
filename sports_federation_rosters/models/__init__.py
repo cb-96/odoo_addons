@@ -14,3 +14,4 @@ from . import matchday_lineup
 from . import matchday_readiness
 from . import club_rank
 from . import roster_division_filter
+from . import season_player_registration

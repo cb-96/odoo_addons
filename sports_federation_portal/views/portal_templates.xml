@@ -40,7 +40,7 @@
           <a href="/my/results" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-flag-checkered"/></span><span class="o_fed_club_content"><strong>Results</strong><small>Submitted results and follow-up</small></span><span t-if="badges.get('results')" class="badge rounded-pill text-bg-danger"><t t-esc="badges.get('results')"/></span><i class="fa fa-chevron-right text-muted"/></a>
           <a href="/my/compliance" class="o_fed_club_area"><span class="o_fed_club_icon"><i class="fa fa-shield"/></span><span class="o_fed_club_content"><strong>Compliance</strong><small>Documents, approvals and renewals</small></span><i class="fa fa-chevron-right text-muted"/></a>
         </div>
-        <div class="d-flex flex-wrap gap-2"><a href="/my/season-registrations" class="btn btn-outline-secondary"><i class="fa fa-pencil-square-o me-2"/>Season registrations</a><a href="/my/match-days" class="btn btn-outline-secondary"><i class="fa fa-calendar me-2"/>Match days</a><a href="/my/club" class="btn btn-outline-secondary"><i class="fa fa-building me-2"/>Club details</a></div>
+        <div class="d-flex flex-wrap gap-2"><a href="/my/season-players" class="btn btn-outline-secondary"><i class="fa fa-users me-2"/>Season players</a><a href="/my/match-days" class="btn btn-outline-secondary"><i class="fa fa-calendar me-2"/>Match days</a><a href="/my/club" class="btn btn-outline-secondary"><i class="fa fa-building me-2"/>Club details</a></div>
       </div>
 
       <!-- One section per other responsibility of the account. -->

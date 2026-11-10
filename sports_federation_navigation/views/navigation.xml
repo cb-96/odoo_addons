@@ -92,15 +92,15 @@
   </record>
   <record id="sports_federation_base.menu_federation_season" model="ir.ui.menu">
     <field name="name">Seasons</field>
-    <field name="parent_id" ref="sports_federation_base.menu_federation_planning"/>
+    <field name="parent_id" ref="sports_federation_base.menu_federation_administration"/>
     <field name="sequence">10</field>
     <field name="group_ids" eval="[(6, 0, [])]"/>
   </record>
   <record id="sports_federation_base.menu_federation_registration" model="ir.ui.menu">
-    <field name="name">Season Registrations</field>
+    <field name="name">Annual Team Enrolments</field>
     <field name="parent_id" ref="sports_federation_base.menu_federation_planning"/>
     <field name="sequence">20</field>
-    <field name="group_ids" eval="[(6, 0, [])]"/>
+    <field name="group_ids" eval="[(6, 0, [ref('sports_federation_base.group_federation_advanced_operator')])]"/>
   </record>
   <record id="sports_federation_tournament.menu_federation_tournament_list" model="ir.ui.menu">
     <field name="name">Divisions</field>

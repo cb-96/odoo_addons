@@ -1,6 +1,6 @@
 {
     "name": "Sports Federation People",
-    "version": "19.0.1.3.0",
+    "version": "19.0.1.4.0",
     "category": "Sports",
     "summary": "Player master data and license management",
     "author": "Sports Federation",
@@ -9,11 +9,13 @@
     "depends": ["sports_federation_base"],
     "data": [
         "security/ir.model.access.csv",
+        "security/club_season_registration_rules.xml",
         "data/ir_sequence.xml",
         "views/federation_parental_approval_views.xml",
         "views/federation_player_views.xml",
         "views/federation_player_license_views.xml",
         "views/menu_items.xml",
+        "views/club_season_registration_views.xml",
     ],
     "demo": [],
     "installable": True,

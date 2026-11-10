@@ -25,6 +25,7 @@ class TestSeasonRegistrationFinance(TransactionCase):
                 "code": "FRS2026",
                 "date_start": "2026-01-01",
                 "date_end": "2026-12-31",
+                "team_registration_fee_enabled": True,
             }
         )
 

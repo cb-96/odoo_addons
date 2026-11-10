@@ -17,6 +17,7 @@ class TestFeeSchedule(TransactionCase):
                 "code": "FSTS",
                 "date_start": "2026-01-01",
                 "date_end": "2026-12-31",
+                "team_registration_fee_enabled": True,
             }
         )
         cls.fee_type = cls.env["federation.fee.type"].create(

@@ -12,3 +12,4 @@ from . import test_participant_rosters
 from . import test_scoresheet
 from . import test_club_rank
 from . import test_roster_availability
+from . import test_season_player_registration
